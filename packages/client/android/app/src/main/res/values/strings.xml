@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Liftr</string>
+    <string name="title_activity_main">Liftr</string>
+    <string name="package_name">dev.liftr.app</string>
+    <string name="custom_url_scheme">dev.liftr.app</string>
+</resources>

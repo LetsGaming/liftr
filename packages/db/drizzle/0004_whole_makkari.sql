@@ -1,0 +1,1 @@
+ALTER TABLE `sets` ADD `kind` text DEFAULT 'normal' NOT NULL;

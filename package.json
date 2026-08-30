@@ -1,0 +1,37 @@
+{
+  "name": "liftr",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm bootstrap && concurrently -n server,client -c blue,green \"pnpm --filter @liftr/server dev\" \"pnpm --filter @liftr/client dev\"",
+    "build": "pnpm -r --filter=./packages/* build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --filter=./packages/* run typecheck",
+    "db:generate": "pnpm --filter @liftr/db generate",
+    "db:migrate": "pnpm --filter @liftr/db migrate",
+    "ingest": "pnpm --filter @liftr/ingest start",
+    "bootstrap": "pnpm --filter @liftr/ingest bootstrap",
+    "recompute": "pnpm --filter @liftr/server recompute"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^10.10.0",
+    "globals": "^17.11.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "vue-eslint-parser": "^10.4.1"
+  }
+}

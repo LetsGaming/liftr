@@ -1,0 +1,259 @@
+<script setup lang="ts">
+/**
+ * Post-workout reward sequence (engagement rework W4). Replaces the old single flat summary
+ * card — duration/volume/sets were shown, but the session's actual *earned* signals (rank-ups,
+ * streak, XP/level) were computed and then silently discarded (see WorkoutPage.vue's old
+ * finishWorkout(): prCount hardcoded to 0, rankUps hardcoded to []). Three timed beats, each
+ * skippable by a tap, each optional if there's nothing to show — never manufacture a reward.
+ * No new currencies: rank/streak/XP all already existed, this only makes them felt at the one
+ * moment they were being thrown away.
+ */
+import { computed, onMounted, ref, watch } from "vue";
+import { useCelebrate } from "../../composables/useCelebrate";
+import { useCountUp } from "../../composables/useCountUp";
+import { haptics } from "../../lib/haptics";
+import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+
+export interface RankUpSummary {
+  exerciseName: string;
+  tier: string;
+  division: number;
+  isPr: boolean;
+  lp: number;
+  prevLp: number;
+}
+export interface StreakDay {
+  label: string;
+  active: boolean;
+}
+
+const props = defineProps<{
+  rankUps: RankUpSummary[];
+  streak: number;
+  streakDays: StreakDay[];
+  tokensRemaining: number;
+  sessionXp: number;
+  levelBefore: number;
+  levelAfter: number;
+  /** 0-100, the level bar's fill *before* this session's XP was added. */
+  progressBefore: number;
+  /** 0-100, the level bar's fill *after* — if levelAfter > levelBefore this is progress into
+   *  the new level, not a continuation of the old bar (the bar resets at a level-up). */
+  progressAfter: number;
+}>();
+const emit = defineEmits<{ done: [] }>();
+
+const celebrate = useCelebrate();
+const leveledUp = computed(() => props.levelAfter > props.levelBefore);
+
+// Both roll-ups are driven by plain refs (not computeds derived straight from props): a
+// computed target that already equals its final value at mount never fires useCountUp's
+// `watch(target, ...)` (nothing changes), so it would render the final number instantly with
+// no animation at all. Instead both start at 0/before and only get retargeted to their real
+// value once beat 3 actually activates — that retarget is what triggers the roll-up.
+const xpRollTarget = ref(0);
+const { value: xpDisplay } = useCountUp(xpRollTarget, 700);
+const barPercentTarget = ref(0);
+const { value: barPercent } = useCountUp(barPercentTarget, 700);
+watch(
+  () => celebrate.activeIndex.value,
+  (i) => {
+    if (i === 2) {
+      xpDisplay.value = 0;
+      barPercent.value = leveledUp.value ? 0 : props.progressBefore;
+      requestAnimationFrame(() => {
+        xpRollTarget.value = props.sessionXp;
+        barPercentTarget.value = props.progressAfter;
+      });
+      if (leveledUp.value) void haptics.success();
+    }
+  },
+);
+
+onMounted(() => {
+  void celebrate.run([
+    { show: props.rankUps.length > 0, holdMs: 1800 },
+    { show: true, holdMs: 1600 },
+    { show: true, holdMs: 1800 },
+  ]);
+});
+
+watch(
+  () => celebrate.running.value,
+  (running, wasRunning) => {
+    if (wasRunning && !running) emit("done");
+  },
+);
+</script>
+
+<template>
+  <div class="finish-seq" @click="celebrate.skip()">
+    <!-- Beat 1: Rangaufstiege — omitted entirely when the session had none. -->
+    <div v-if="celebrate.activeIndex.value === 0" class="beat pop-in">
+      <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
+      <div class="rankup-list">
+        <div v-for="(r, i) in rankUps" :key="i" class="rankup-row pop-in" :style="{ animationDelay: i * 90 + 'ms' }">
+          <span class="badge" :class="`t-${r.tier}`">
+            <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
+          </span>
+          <div class="rankup-meta">
+            <b>{{ r.exerciseName }}</b>
+            <span>{{ r.isPr ? "Neuer Rekord" : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
+            <div class="rankbar">
+              <i class="bar-fill" :style="{ width: Math.round(r.lp) + '%' }" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Beat 2: Serie — the 7-day dot strip, plain days vs. active-with-flame. A day is marked
+         "active" purely from that day's logged history, not a full re-derivation of the
+         protection-token walk (streak.ts's own math already runs server-side for the number
+         itself) — good enough to show the week's shape, not a claim of exact token attribution. -->
+    <div v-else-if="celebrate.activeIndex.value === 1" class="beat pop-in">
+      <div class="streak-num tnum">{{ streak }} 🔥</div>
+      <div class="eyebrow beat-eyebrow">Trainingsserie</div>
+      <div class="streak-strip">
+        <div v-for="(d, i) in streakDays" :key="i" class="streak-day">
+          <span class="dot" :class="{ active: d.active }">{{ d.active ? "🔥" : "" }}</span>
+          <span class="dl">{{ d.label }}</span>
+        </div>
+      </div>
+      <p v-if="tokensRemaining > 0" class="streak-note">{{ tokensRemaining }} Schutz-Token übrig</p>
+    </div>
+
+    <!-- Beat 3: Fortschritt — session XP rolls up into the level bar; a level-up gets the
+         shared stamp-in treatment (motion.css) instead of a plain number change. -->
+    <div v-else-if="celebrate.activeIndex.value === 2" class="beat pop-in">
+      <div class="eyebrow beat-eyebrow">Fortschritt</div>
+      <div class="xp-line tnum">+{{ Math.round(xpDisplay) }} XP</div>
+      <div v-if="leveledUp" class="level-up stamp-in">LEVEL {{ levelAfter }}!</div>
+      <div v-else class="level-line tnum">Lv. {{ levelAfter }}</div>
+      <div class="rankbar level-bar">
+        <i class="bar-fill" :style="{ width: barPercent + '%' }" />
+      </div>
+    </div>
+
+    <p class="skip-hint">Tippen zum Überspringen</p>
+  </div>
+</template>
+
+<style scoped>
+.finish-seq {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp3);
+  padding: var(--sp5) 0;
+}
+.beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp3);
+}
+.beat-eyebrow {
+  --eyebrow-color: var(--fire-hi);
+}
+.rankup-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+}
+.rankup-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--sp3);
+  text-align: left;
+}
+.rankup-row .badge {
+  width: 32px;
+  height: 36px;
+  flex: none;
+}
+.rankup-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+}
+.rankup-meta span {
+  color: var(--dim);
+  font-size: 11.5px;
+}
+.rankup-meta .rankbar {
+  height: 5px;
+  margin-top: 2px;
+}
+.streak-num {
+  font-size: 40px;
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+.streak-strip {
+  display: flex;
+  gap: var(--sp2);
+}
+.streak-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.dot.active {
+  background: linear-gradient(160deg, var(--fire-hi), var(--fire));
+}
+.dl {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.streak-note {
+  font-size: 12px;
+  color: var(--dim);
+}
+.xp-line {
+  font-size: 34px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--pr);
+}
+.level-line {
+  font-size: 16px;
+  color: var(--dim);
+}
+.level-up {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--blue-hi);
+}
+.level-bar {
+  width: 200px;
+  max-width: 80%;
+  height: 9px;
+}
+.skip-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--faint);
+}
+</style>

@@ -1,0 +1,1372 @@
+# Curated exercise catalog (plan 0.3 / audit §2.6 "the catalog serves the rank system").
+#
+# ~90 hand-picked movements, not the full 800+ dataset. Structure:
+#   - 9 anchors (trust: real) — either a loaded lift with a real external-standard table
+#     (back-squat, bench-press, deadlift, overhead-press, barbell-row: OpenPowerlifting-derived,
+#     see packages/shared/src/rank/defaultStandards.ts ANCHOR_STANDARDS) or a bodyweight
+#     movement with a real published rep-norm table (pushup, pullup, chinup, dip: REP_STANDARDS).
+#     Anchors omit `anchor`/`ratio` entirely.
+#   - Everything else declares `anchor` (must be one of the 9 anchor slugs above) + `ratio`,
+#     the load (or rep-count) multiplier applied to the anchor's threshold table
+#     (audit §7's synthetic-standard method). `trust: derived` for close variants of the
+#     anchor movement, `trust: synthetic` for the isolation long tail.
+#
+# primaryMuscles/secondaryMuscles use wger's 15-muscle taxonomy (Anterior deltoid, Biceps
+# brachii, Biceps femoris, Brachialis, Gastrocnemius, Gluteus maximus, Latissimus dorsi,
+# Obliquus externus abdominis, Pectoralis major, Quadriceps femoris, Rectus abdominis,
+# Serratus anterior, Soleus, Trapezius, Triceps brachii — see packages/ingest/src/muscles.ts
+# for the slug list), matching the muscle-map SVG assets mirrored from wger. Deliberately
+# adopted wholesale rather than approximated: earlier revisions had 17 looser tags (forearms,
+# lower-back, side-delts, rear-delts, upper-back) that no highlight shape exists for; those
+# were dropped or consolidated (upper-back -> traps) when the muscle map was rebuilt on real
+# anatomical assets. wrist-curl/reverse-wrist-curl now have no primaryMuscles as a result (no
+# forearm shape exists in the 15-muscle set) — known, accepted gap, not a bug.
+#
+# freeExerciseDbId: hand-verified against free-exercise-db's dist/exercises.json (fuzzy-matched
+# then manually checked, per plan 0.3's "hand-verify the join" requirement — auto-accepting the
+# top fuzzy-match score would have produced wrong photos for several exercises, e.g. reverse-fly
+# nearly matched to "Reverse Crunch"). 12 exercises are left with no id on purpose: no matching
+# open-licensed photo exists for them (e.g. pec-deck, diamond-pushup, glute-bridge) — a real
+# ceiling of the open-source photo sets, not an oversight.
+#
+# wgerId: populated via packages/ingest/src/matchWgerIds.ts (exact English-name lookup, falling
+# back to token-overlap fuzzy scoring against wger's full exercise-translation list; re-run it
+# after adding a new curated entry). Same "auto-accept high confidence, hand-check the rest"
+# process as freeExerciseDbId above — a few of the script's own top fuzzy guesses were still
+# wrong (e.g. "Barbell Curl" nearly landed on "Barbell Wrist Curl", a different exercise) and got
+# manually corrected or left unset rather than trusted blindly. 21 exercises are left with no
+# wgerId: some have no good wger equivalent at all (e.g. dumbbell-bench-press — wger only has
+# decline/incline/close-grip dumbbell bench press variants, not the plain flat one), others just
+# scored below the auto-accept threshold and weren't worth hand-verifying one at a time. Every
+# entry without a wgerId falls back to @liftr/shared's rule-based deriveRequirements() for its
+# requiredEquipment tiers instead of wger's real per-exercise tags — see ingestCatalog.ts.
+#
+# ratios are starting estimates, not measured — audit §7 explicitly leaves this open and
+# expects tuning. They are data, not code: adjust here and re-run `pnpm ingest --standards`.
+
+exercises:
+  - slug: back-squat
+    nameDe: Langhantel-Kniebeuge
+    nameEn: Back Squat
+    equipment: barbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+      - abs
+    trust: real
+    freeExerciseDbId: Barbell_Squat
+  - slug: bench-press
+    wgerId: 73
+    nameDe: Bankdrücken
+    nameEn: Bench Press
+    equipment: barbell
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+    trust: real
+    freeExerciseDbId: Barbell_Bench_Press_-_Medium_Grip
+  - slug: deadlift
+    wgerId: 184
+    nameDe: Kreuzheben
+    nameEn: Deadlift
+    equipment: barbell
+    movementPattern: hinge
+    primaryMuscles:
+      - glutes
+      - hamstrings
+    secondaryMuscles:
+      - traps
+      - lats
+    trust: real
+    freeExerciseDbId: Barbell_Deadlift
+  - slug: overhead-press
+    wgerId: 687
+    nameDe: Langhantel-Schulterdrücken
+    nameEn: Overhead Press
+    equipment: barbell
+    movementPattern: push-vertical
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - triceps
+      - abs
+    trust: real
+    freeExerciseDbId: Standing_Military_Press
+  - slug: barbell-row
+    wgerId: 1698
+    nameDe: Langhantelrudern
+    nameEn: Barbell Row
+    equipment: barbell
+    movementPattern: pull-horizontal
+    primaryMuscles:
+      - traps
+      - lats
+    secondaryMuscles:
+      - biceps
+    trust: real
+    freeExerciseDbId: Bent_Over_Barbell_Row
+  - slug: pushup
+    wgerId: 1551
+    nameDe: Liegestütze
+    nameEn: Push-up
+    freeExerciseDbId: Pushups
+    equipment: bodyweight
+    movementPattern: push-horizontal
+    isBodyweight: true
+    bodyweightLeverage: 0.64
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+      - abs
+    trust: real
+  - slug: pullup
+    wgerId: 1545
+    nameDe: Klimmzug (Obergriff)
+    nameEn: Pull-up
+    equipment: bodyweight
+    movementPattern: pull-vertical
+    isBodyweight: true
+    bodyweightLeverage: 1
+    primaryMuscles:
+      - lats
+      - traps
+    secondaryMuscles:
+      - biceps
+    trust: real
+    freeExerciseDbId: Pullups
+  - slug: chinup
+    wgerId: 152
+    nameDe: Klimmzug (Untergriff)
+    nameEn: Chin-up
+    equipment: bodyweight
+    movementPattern: pull-vertical
+    isBodyweight: true
+    bodyweightLeverage: 1
+    primaryMuscles:
+      - lats
+      - biceps
+    secondaryMuscles:
+      - traps
+    trust: real
+    freeExerciseDbId: Chin-Up
+  - slug: dip
+    wgerId: 194
+    nameDe: Dips
+    nameEn: Dip
+    equipment: bodyweight
+    movementPattern: push-vertical
+    isBodyweight: true
+    bodyweightLeverage: 1
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+    trust: real
+    freeExerciseDbId: Dips_-_Chest_Version
+  - slug: front-squat
+    wgerId: 257
+    nameDe: Frontkniebeuge
+    nameEn: Front Squat
+    equipment: barbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - abs
+    secondaryMuscles:
+      - glutes
+      - traps
+    anchor: back-squat
+    ratio: 0.85
+    trust: derived
+    freeExerciseDbId: Front_Barbell_Squat
+  - slug: goblet-squat
+    wgerId: 203
+    nameDe: Goblet Squat
+    nameEn: Goblet Squat
+    equipment: dumbbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - abs
+    anchor: back-squat
+    ratio: 0.35
+    trust: derived
+    freeExerciseDbId: Goblet_Squat
+  - slug: leg-press
+    wgerId: 371
+    nameDe: Beinpresse
+    nameEn: Leg Press
+    equipment: machine
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 1.8
+    trust: derived
+    freeExerciseDbId: Leg_Press
+  - slug: bulgarian-split-squat
+    wgerId: 989
+    nameDe: Bulgarian Split Squat
+    nameEn: Bulgarian Split Squat
+    equipment: dumbbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 0.4
+    trust: synthetic
+    freeExerciseDbId: Split_Squat_with_Dumbbells
+  - slug: walking-lunge
+    wgerId: 802
+    nameDe: Ausfallschritt (gehend)
+    nameEn: Walking Lunge
+    equipment: dumbbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Barbell_Walking_Lunge
+  - slug: hack-squat
+    wgerId: 1414
+    nameDe: Hackenschmidt-Maschine
+    nameEn: Hack Squat
+    equipment: machine
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+    secondaryMuscles:
+      - glutes
+    anchor: back-squat
+    ratio: 1.6
+    trust: derived
+    freeExerciseDbId: Hack_Squat
+  - slug: zercher-squat
+    nameDe: Zercher-Kniebeuge
+    nameEn: Zercher Squat
+    equipment: barbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - abs
+    secondaryMuscles:
+      - traps
+      - glutes
+    anchor: back-squat
+    ratio: 0.75
+    trust: synthetic
+    freeExerciseDbId: Zercher_Squats
+  - slug: goblet-lunge
+    nameDe: Goblet-Ausfallschritt
+    nameEn: Goblet Lunge
+    equipment: dumbbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 0.3
+    trust: synthetic
+  - slug: romanian-deadlift
+    wgerId: 507
+    nameDe: Rumänisches Kreuzheben
+    nameEn: Romanian Deadlift
+    equipment: barbell
+    movementPattern: hinge
+    primaryMuscles:
+      - hamstrings
+      - glutes
+    secondaryMuscles: []
+    anchor: deadlift
+    ratio: 0.75
+    trust: derived
+    freeExerciseDbId: Romanian_Deadlift
+  - slug: sumo-deadlift
+    wgerId: 630
+    nameDe: Sumo-Kreuzheben
+    nameEn: Sumo Deadlift
+    equipment: barbell
+    movementPattern: hinge
+    primaryMuscles:
+      - glutes
+      - quads
+    secondaryMuscles:
+      - hamstrings
+    anchor: deadlift
+    ratio: 1.05
+    trust: derived
+    freeExerciseDbId: Sumo_Deadlift
+  - slug: trap-bar-deadlift
+    nameDe: Trapstangen-Kreuzheben
+    nameEn: Trap Bar Deadlift
+    equipment: trap-bar
+    movementPattern: hinge
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - traps
+    anchor: deadlift
+    ratio: 1.1
+    trust: derived
+    freeExerciseDbId: Trap_Bar_Deadlift
+  - slug: good-morning
+    wgerId: 1392
+    nameDe: Good Morning
+    nameEn: Good Morning
+    equipment: barbell
+    movementPattern: hinge
+    primaryMuscles:
+      - hamstrings
+    secondaryMuscles:
+      - glutes
+    anchor: deadlift
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Good_Morning
+  - slug: single-leg-rdl
+    wgerId: 1388
+    nameDe: Einbeiniges RDL
+    nameEn: Single-Leg RDL
+    equipment: dumbbell
+    movementPattern: hinge
+    primaryMuscles:
+      - hamstrings
+      - glutes
+    secondaryMuscles: []
+    anchor: deadlift
+    ratio: 0.25
+    trust: synthetic
+  - slug: hip-thrust
+    wgerId: 294
+    nameDe: Hüftheben (Langhantel)
+    nameEn: Hip Thrust
+    equipment: barbell
+    # Shoulders braced on a bench — the derived-requirements rules don't catch this slug
+    # pattern (it isn't a "bench-press"-style lift), so it needs an explicit override.
+    requiresEquipment: [barbell, plates, bench]
+    movementPattern: hinge
+    primaryMuscles:
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+      - abs
+    anchor: deadlift
+    ratio: 1.3
+    trust: derived
+    freeExerciseDbId: Barbell_Hip_Thrust
+  - slug: back-extension
+    wgerId: 1348
+    nameDe: Rückenstrecker
+    nameEn: Back Extension
+    equipment: machine
+    movementPattern: hinge
+    primaryMuscles:
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: deadlift
+    ratio: 0.3
+    trust: synthetic
+    freeExerciseDbId: Hyperextensions_Back_Extensions
+  - slug: kettlebell-swing
+    wgerId: 960
+    nameDe: Kettlebell Swing
+    nameEn: Kettlebell Swing
+    equipment: kettlebell
+    movementPattern: hinge
+    primaryMuscles:
+      - glutes
+      - hamstrings
+    secondaryMuscles:
+      - abs
+    anchor: deadlift
+    ratio: 0.4
+    trust: synthetic
+    freeExerciseDbId: One-Arm_Kettlebell_Swings
+  - slug: farmers-carry
+    wgerId: 1116
+    nameDe: Farmers Walk
+    nameEn: Farmer's Carry
+    equipment: dumbbell
+    movementPattern: carry
+    primaryMuscles:
+      - traps
+    secondaryMuscles:
+      - abs
+    anchor: deadlift
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Farmers_Walk
+  - slug: shrug
+    wgerId: 570
+    nameDe: Shrugs
+    nameEn: Shrug
+    equipment: barbell
+    movementPattern: isolation-back
+    primaryMuscles:
+      - traps
+    secondaryMuscles: []
+    anchor: deadlift
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Barbell_Shrug
+  - slug: leg-curl
+    wgerId: 364
+    nameDe: Beinbeuger (Maschine)
+    nameEn: Leg Curl
+    equipment: machine
+    movementPattern: isolation-legs
+    primaryMuscles:
+      - hamstrings
+    secondaryMuscles: []
+    anchor: deadlift
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Lying_Leg_Curls
+  - slug: incline-bench-press
+    wgerId: 538
+    nameDe: Schrägbankdrücken
+    nameEn: Incline Bench Press
+    equipment: barbell
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - chest
+      - front-delts
+    secondaryMuscles:
+      - triceps
+    anchor: bench-press
+    ratio: 0.8
+    trust: derived
+    freeExerciseDbId: Barbell_Incline_Bench_Press_-_Medium_Grip
+  - slug: decline-bench-press
+    wgerId: 185
+    nameDe: Negativbankdrücken
+    nameEn: Decline Bench Press
+    equipment: barbell
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - chest
+    secondaryMuscles:
+      - triceps
+    anchor: bench-press
+    ratio: 1.05
+    trust: derived
+    freeExerciseDbId: Decline_Barbell_Bench_Press
+  - slug: dumbbell-bench-press
+    nameDe: Kurzhantel-Bankdrücken
+    nameEn: Dumbbell Bench Press
+    equipment: dumbbell
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+    anchor: bench-press
+    ratio: 0.8
+    trust: derived
+    freeExerciseDbId: Dumbbell_Bench_Press
+  - slug: dumbbell-incline-press
+    wgerId: 537
+    nameDe: Kurzhantel-Schrägbankdrücken
+    nameEn: Dumbbell Incline Press
+    equipment: dumbbell
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - chest
+      - front-delts
+    secondaryMuscles:
+      - triceps
+    anchor: bench-press
+    ratio: 0.65
+    trust: derived
+    freeExerciseDbId: Incline_Dumbbell_Press
+  - slug: close-grip-bench-press
+    wgerId: 1228
+    nameDe: Enges Bankdrücken
+    nameEn: Close-Grip Bench Press
+    equipment: barbell
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - triceps
+      - chest
+    secondaryMuscles:
+      - front-delts
+    anchor: bench-press
+    ratio: 0.9
+    trust: derived
+    freeExerciseDbId: Close-Grip_Barbell_Bench_Press
+  - slug: machine-chest-press
+    wgerId: 379
+    nameDe: Brustpresse (Maschine)
+    nameEn: Machine Chest Press
+    equipment: machine
+    movementPattern: push-horizontal
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+    anchor: bench-press
+    ratio: 0.95
+    trust: derived
+  - slug: cable-fly
+    wgerId: 237
+    nameDe: Kabelzug-Fliegende
+    nameEn: Cable Fly
+    equipment: cable
+    movementPattern: isolation-chest
+    primaryMuscles:
+      - chest
+    secondaryMuscles:
+      - front-delts
+    anchor: bench-press
+    ratio: 0.25
+    trust: synthetic
+    freeExerciseDbId: Cable_Crossover
+  - slug: pec-deck
+    wgerId: 1904
+    nameDe: Butterfly (Maschine)
+    nameEn: Pec Deck
+    equipment: machine
+    movementPattern: isolation-chest
+    primaryMuscles:
+      - chest
+    secondaryMuscles: []
+    anchor: bench-press
+    ratio: 0.3
+    trust: synthetic
+  - slug: dumbbell-pullover
+    nameDe: Kurzhantel-Überzüge
+    nameEn: Dumbbell Pullover
+    equipment: dumbbell
+    movementPattern: isolation-chest
+    primaryMuscles:
+      - chest
+      - lats
+    secondaryMuscles:
+      - triceps
+    anchor: bench-press
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Bent-Arm_Dumbbell_Pullover
+  - slug: tricep-pushdown
+    wgerId: 1185
+    nameDe: Trizepsdrücken (Kabel)
+    nameEn: Tricep Pushdown
+    equipment: cable
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - triceps
+    secondaryMuscles: []
+    anchor: bench-press
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Triceps_Pushdown
+  - slug: overhead-tricep-extension
+    wgerId: 1519
+    nameDe: Trizepsstrecken über Kopf
+    nameEn: Overhead Tricep Extension
+    equipment: dumbbell
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - triceps
+    secondaryMuscles: []
+    anchor: bench-press
+    ratio: 0.3
+    trust: synthetic
+    freeExerciseDbId: Seated_Triceps_Press
+  - slug: skull-crusher
+    wgerId: 1468
+    nameDe: Skull Crusher
+    nameEn: Skull Crusher
+    equipment: ez-bar
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - triceps
+    secondaryMuscles: []
+    anchor: bench-press
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: EZ-Bar_Skullcrusher
+  - slug: cable-crunch
+    nameDe: Kabel-Crunch
+    nameEn: Cable Crunch
+    equipment: cable
+    movementPattern: isolation-core
+    primaryMuscles:
+      - abs
+    secondaryMuscles: []
+    anchor: bench-press
+    ratio: 0.2
+    trust: synthetic
+    freeExerciseDbId: Cable_Crunch
+  - slug: diamond-pushup
+    nameDe: Diamant-Liegestütze
+    nameEn: Diamond Push-up
+    equipment: bodyweight
+    movementPattern: push-horizontal
+    isBodyweight: true
+    bodyweightLeverage: 0.64
+    primaryMuscles:
+      - triceps
+      - chest
+    secondaryMuscles:
+      - front-delts
+    anchor: pushup
+    ratio: 0.7
+    trust: derived
+  - slug: close-grip-pushup
+    nameDe: Enge Liegestütze
+    nameEn: Close-Grip Push-up
+    equipment: bodyweight
+    movementPattern: push-horizontal
+    isBodyweight: true
+    bodyweightLeverage: 0.64
+    primaryMuscles:
+      - triceps
+      - chest
+    secondaryMuscles:
+      - front-delts
+    anchor: pushup
+    ratio: 0.75
+    trust: derived
+    freeExerciseDbId: Close-Grip_Push-Up_off_of_a_Dumbbell
+  - slug: decline-pushup
+    nameDe: Liegestütze (Füße erhöht)
+    nameEn: Decline Push-up
+    equipment: bodyweight
+    movementPattern: push-horizontal
+    isBodyweight: true
+    bodyweightLeverage: 0.7
+    primaryMuscles:
+      - chest
+      - front-delts
+    secondaryMuscles:
+      - triceps
+    anchor: pushup
+    ratio: 0.85
+    trust: derived
+    freeExerciseDbId: Decline_Push-Up
+  - slug: incline-pushup
+    nameDe: Liegestütze (Hände erhöht)
+    nameEn: Incline Push-up
+    equipment: bodyweight
+    movementPattern: push-horizontal
+    isBodyweight: true
+    bodyweightLeverage: 0.5
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+    anchor: pushup
+    ratio: 1.3
+    trust: derived
+    freeExerciseDbId: Incline_Push-Up
+  - slug: pike-pushup
+    nameDe: Pike-Liegestütze
+    nameEn: Pike Push-up
+    equipment: bodyweight
+    movementPattern: push-vertical
+    isBodyweight: true
+    bodyweightLeverage: 0.5
+    primaryMuscles:
+      - front-delts
+      - triceps
+    secondaryMuscles:
+      - chest
+    anchor: pushup
+    ratio: 0.6
+    trust: synthetic
+  - slug: ab-wheel-rollout
+    nameDe: Ab-Roller
+    nameEn: Ab Wheel Rollout
+    equipment: ab-wheel
+    movementPattern: isolation-core
+    isBodyweight: true
+    bodyweightLeverage: 0.4
+    primaryMuscles:
+      - abs
+    secondaryMuscles:
+      - lats
+    anchor: pushup
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Barbell_Ab_Rollout
+  - slug: dumbbell-shoulder-press
+    wgerId: 567
+    nameDe: Kurzhantel-Schulterdrücken
+    nameEn: Dumbbell Shoulder Press
+    equipment: dumbbell
+    movementPattern: push-vertical
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - triceps
+    anchor: overhead-press
+    ratio: 0.8
+    trust: derived
+    freeExerciseDbId: Dumbbell_Shoulder_Press
+  - slug: arnold-press
+    wgerId: 20
+    nameDe: Arnold Press
+    nameEn: Arnold Press
+    equipment: dumbbell
+    movementPattern: push-vertical
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - triceps
+    anchor: overhead-press
+    ratio: 0.75
+    trust: derived
+    freeExerciseDbId: Arnold_Dumbbell_Press
+  - slug: machine-shoulder-press
+    wgerId: 543
+    nameDe: Schulterpresse (Maschine)
+    nameEn: Machine Shoulder Press
+    equipment: machine
+    movementPattern: push-vertical
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - triceps
+    anchor: overhead-press
+    ratio: 0.9
+    trust: derived
+    freeExerciseDbId: Machine_Shoulder_Military_Press
+  - slug: push-press
+    wgerId: 478
+    nameDe: Push Press
+    nameEn: Push Press
+    equipment: barbell
+    movementPattern: push-vertical
+    primaryMuscles:
+      - front-delts
+      - quads
+    secondaryMuscles:
+      - triceps
+    anchor: overhead-press
+    ratio: 1.2
+    trust: derived
+    freeExerciseDbId: Push_Press
+  - slug: landmine-press
+    wgerId: 346
+    nameDe: Landmine Press
+    nameEn: Landmine Press
+    equipment: barbell
+    movementPattern: push-vertical
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - triceps
+      - abs
+    anchor: overhead-press
+    ratio: 0.55
+    trust: synthetic
+  - slug: lateral-raise
+    wgerId: 348
+    nameDe: Seitheben
+    nameEn: Lateral Raise
+    equipment: dumbbell
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.12
+    trust: synthetic
+    freeExerciseDbId: Side_Lateral_Raise
+  - slug: barbell-front-raise
+    nameDe: Langhantel-Vorheben
+    nameEn: Barbell Front Raise
+    equipment: barbell
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.14
+    trust: synthetic
+    freeExerciseDbId: Standing_Front_Barbell_Raise_Over_Head
+  - slug: rear-delt-fly
+    wgerId: 822
+    nameDe: Reverse Butterfly
+    nameEn: Rear Delt Fly
+    equipment: dumbbell
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - traps
+    anchor: overhead-press
+    ratio: 0.12
+    trust: synthetic
+    freeExerciseDbId: Reverse_Flyes
+  - slug: upright-row
+    nameDe: Aufrechtes Rudern
+    nameEn: Upright Row
+    equipment: barbell
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - traps
+    secondaryMuscles:
+      - biceps
+    anchor: overhead-press
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Upright_Barbell_Row
+  - slug: barbell-curl
+    wgerId: 91
+    nameDe: Bizepscurls (LH)
+    nameEn: Barbell Curl
+    equipment: barbell
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.55
+    trust: synthetic
+    freeExerciseDbId: Barbell_Curl
+  - slug: dumbbell-curl
+    wgerId: 1931
+    nameDe: Bizepscurls (KH)
+    nameEn: Dumbbell Curl
+    equipment: dumbbell
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Dumbbell_Bicep_Curl
+  - slug: hammer-curl
+    wgerId: 272
+    nameDe: Hammer Curls
+    nameEn: Hammer Curl
+    equipment: dumbbell
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Alternate_Hammer_Curl
+  - slug: ez-bar-curl
+    nameDe: SZ-Stangen-Curls
+    nameEn: EZ-Bar Curl
+    equipment: ez-bar
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.55
+    trust: synthetic
+    freeExerciseDbId: EZ-Bar_Curl
+  - slug: concentration-curl
+    wgerId: 1109
+    nameDe: Konzentrationscurls
+    nameEn: Concentration Curl
+    equipment: dumbbell
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.25
+    trust: synthetic
+    freeExerciseDbId: Standing_Concentration_Curl
+  - slug: preacher-curl
+    wgerId: 465
+    nameDe: Scott-Curls
+    nameEn: Preacher Curl
+    equipment: ez-bar
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.45
+    trust: synthetic
+    freeExerciseDbId: Preacher_Curl
+  - slug: cable-curl
+    wgerId: 1531
+    nameDe: Kabel-Curls
+    nameEn: Cable Curl
+    equipment: cable
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - biceps
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Standing_Biceps_Cable_Curl
+  - slug: wrist-curl
+    wgerId: 51
+    nameDe: Unterarmcurls
+    nameEn: Wrist Curl
+    equipment: barbell
+    movementPattern: isolation-arms
+    primaryMuscles: []
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.2
+    trust: synthetic
+    freeExerciseDbId: Seated_Palm-Up_Barbell_Wrist_Curl
+  - slug: reverse-wrist-curl
+    wgerId: 48
+    nameDe: Unterarmcurls (Reverse)
+    nameEn: Reverse Wrist Curl
+    equipment: barbell
+    movementPattern: isolation-arms
+    primaryMuscles: []
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.15
+    trust: synthetic
+    freeExerciseDbId: Palms-Down_Wrist_Curl_Over_A_Bench
+  - slug: dumbbell-row
+    wgerId: 310
+    nameDe: Kurzhantelrudern
+    nameEn: Dumbbell Row
+    equipment: dumbbell
+    movementPattern: pull-horizontal
+    primaryMuscles:
+      - traps
+      - lats
+    secondaryMuscles:
+      - biceps
+    anchor: barbell-row
+    ratio: 0.42
+    trust: derived
+    freeExerciseDbId: One-Arm_Dumbbell_Row
+  - slug: seated-cable-row
+    wgerId: 1117
+    nameDe: Rudern am Kabelzug (sitzend)
+    nameEn: Seated Cable Row
+    equipment: cable
+    movementPattern: pull-horizontal
+    primaryMuscles:
+      - traps
+      - lats
+    secondaryMuscles:
+      - biceps
+    anchor: barbell-row
+    ratio: 0.95
+    trust: derived
+    freeExerciseDbId: Seated_Cable_Rows
+  - slug: t-bar-row
+    wgerId: 919
+    nameDe: T-Bar-Rudern
+    nameEn: T-Bar Row
+    equipment: barbell
+    movementPattern: pull-horizontal
+    primaryMuscles:
+      - traps
+      - lats
+    secondaryMuscles:
+      - biceps
+    anchor: barbell-row
+    ratio: 1
+    trust: derived
+    freeExerciseDbId: Lying_T-Bar_Row
+  - slug: chest-supported-row
+    nameDe: Rudern (brustgestützt)
+    nameEn: Chest-Supported Row
+    equipment: machine
+    movementPattern: pull-horizontal
+    primaryMuscles:
+      - traps
+      - lats
+    secondaryMuscles:
+      - biceps
+    anchor: barbell-row
+    ratio: 0.85
+    trust: derived
+  - slug: inverted-row
+    wgerId: 1198
+    nameDe: Invertiertes Rudern
+    nameEn: Inverted Row
+    equipment: bodyweight
+    # Needs a low bar to pull under (squat rack bar, Smith machine, or suspension trainer) —
+    # not derivable from "bodyweight" + pull-horizontal alone.
+    requiresEquipment: [bodyweight, rack]
+    movementPattern: pull-horizontal
+    isBodyweight: true
+    bodyweightLeverage: 0.5
+    primaryMuscles:
+      - traps
+      - lats
+    secondaryMuscles:
+      - biceps
+    anchor: barbell-row
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Inverted_Row
+  - slug: face-pull
+    wgerId: 222
+    nameDe: Face Pull
+    nameEn: Face Pull
+    equipment: cable
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - traps
+    secondaryMuscles: []
+    anchor: barbell-row
+    ratio: 0.15
+    trust: synthetic
+    freeExerciseDbId: Face_Pull
+  - slug: reverse-fly
+    wgerId: 1709
+    nameDe: Reverse Fly (Kabel)
+    nameEn: Reverse Fly
+    equipment: cable
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles:
+      - traps
+    anchor: barbell-row
+    ratio: 0.15
+    trust: synthetic
+    freeExerciseDbId: Reverse_Flyes
+  - slug: lat-pulldown
+    nameDe: Latzug
+    nameEn: Lat Pulldown
+    equipment: cable
+    movementPattern: pull-vertical
+    primaryMuscles:
+      - lats
+      - traps
+    secondaryMuscles:
+      - biceps
+    anchor: barbell-row
+    ratio: 0.9
+    trust: derived
+    freeExerciseDbId: Wide-Grip_Lat_Pulldown
+  - slug: wide-grip-pullup
+    nameDe: Klimmzug (weiter Griff)
+    nameEn: Wide-Grip Pull-up
+    equipment: bodyweight
+    movementPattern: pull-vertical
+    isBodyweight: true
+    bodyweightLeverage: 1
+    primaryMuscles:
+      - lats
+    secondaryMuscles:
+      - traps
+      - biceps
+    anchor: pullup
+    ratio: 0.85
+    trust: derived
+    freeExerciseDbId: Wide-Grip_Rear_Pull-Up
+  - slug: neutral-grip-pullup
+    nameDe: Klimmzug (neutraler Griff)
+    nameEn: Neutral-Grip Pull-up
+    equipment: bodyweight
+    movementPattern: pull-vertical
+    isBodyweight: true
+    bodyweightLeverage: 1
+    primaryMuscles:
+      - lats
+      - biceps
+    secondaryMuscles:
+      - traps
+    anchor: pullup
+    ratio: 1
+    trust: derived
+  - slug: hanging-leg-raise
+    wgerId: 283
+    nameDe: Hängendes Beinheben
+    nameEn: Hanging Leg Raise
+    equipment: bodyweight
+    movementPattern: isolation-core
+    isBodyweight: true
+    bodyweightLeverage: 0.3
+    primaryMuscles:
+      - abs
+    secondaryMuscles: []
+    anchor: pullup
+    ratio: 1.5
+    trust: synthetic
+    freeExerciseDbId: Hanging_Leg_Raise
+  - slug: ring-dip
+    wgerId: 501
+    nameDe: Ring-Dips
+    nameEn: Ring Dip
+    equipment: rings
+    # Rings need something to hang from — a pull-up bar/rig, not just the rings themselves.
+    requiresEquipment: [rings, pullup-bar]
+    movementPattern: push-vertical
+    isBodyweight: true
+    bodyweightLeverage: 1
+    primaryMuscles:
+      - chest
+      - triceps
+    secondaryMuscles:
+      - front-delts
+    anchor: dip
+    ratio: 0.85
+    trust: derived
+    freeExerciseDbId: Ring_Dips
+  - slug: leg-extension
+    wgerId: 369
+    nameDe: Beinstrecker
+    nameEn: Leg Extension
+    equipment: machine
+    movementPattern: isolation-legs
+    primaryMuscles:
+      - quads
+    secondaryMuscles: []
+    anchor: back-squat
+    ratio: 0.55
+    trust: synthetic
+    freeExerciseDbId: Leg_Extensions
+  - slug: calf-raise-standing
+    wgerId: 622
+    nameDe: Wadenheben (stehend)
+    nameEn: Standing Calf Raise
+    equipment: machine
+    movementPattern: isolation-legs
+    primaryMuscles:
+      - calves
+    secondaryMuscles: []
+    anchor: back-squat
+    ratio: 0.5
+    trust: synthetic
+    freeExerciseDbId: Standing_Calf_Raises
+  - slug: calf-raise-seated
+    wgerId: 1620
+    nameDe: Wadenheben (sitzend)
+    nameEn: Seated Calf Raise
+    equipment: machine
+    movementPattern: isolation-legs
+    primaryMuscles:
+      - calves
+    secondaryMuscles: []
+    anchor: back-squat
+    ratio: 0.3
+    trust: synthetic
+    freeExerciseDbId: Seated_Calf_Raise
+  - slug: hip-abduction-machine
+    wgerId: 1748
+    nameDe: Abduktoren-Maschine
+    nameEn: Hip Abduction Machine
+    equipment: machine
+    movementPattern: isolation-legs
+    primaryMuscles:
+      - glutes
+    secondaryMuscles: []
+    anchor: back-squat
+    ratio: 0.25
+    trust: synthetic
+  - slug: hip-adduction-machine
+    nameDe: Adduktoren-Maschine
+    nameEn: Hip Adduction Machine
+    equipment: machine
+    movementPattern: isolation-legs
+    primaryMuscles:
+      - quads
+    secondaryMuscles: []
+    anchor: back-squat
+    ratio: 0.25
+    trust: synthetic
+    freeExerciseDbId: Cable_Hip_Adduction
+  - slug: step-up
+    wgerId: 981
+    nameDe: Step-up
+    nameEn: Step-Up
+    equipment: dumbbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 0.4
+    trust: synthetic
+    freeExerciseDbId: Dumbbell_Step_Ups
+  - slug: glute-bridge
+    wgerId: 265
+    nameDe: Hüftheben (Boden)
+    nameEn: Glute Bridge
+    equipment: bodyweight
+    movementPattern: hinge
+    isBodyweight: true
+    bodyweightLeverage: 0.5
+    primaryMuscles:
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 0.3
+    trust: synthetic
+  - slug: crunch
+    wgerId: 167
+    nameDe: Crunches
+    nameEn: Crunch
+    equipment: bodyweight
+    movementPattern: isolation-core
+    isBodyweight: true
+    bodyweightLeverage: 0.2
+    primaryMuscles:
+      - abs
+    secondaryMuscles: []
+    anchor: pushup
+    ratio: 3
+    trust: synthetic
+    freeExerciseDbId: Crunches
+  - slug: situp
+    wgerId: 1476
+    nameDe: Sit-ups
+    nameEn: Sit-up
+    equipment: bodyweight
+    movementPattern: isolation-core
+    isBodyweight: true
+    bodyweightLeverage: 0.3
+    primaryMuscles:
+      - abs
+    secondaryMuscles:
+      - obliques
+    anchor: pushup
+    ratio: 2
+    trust: synthetic
+    freeExerciseDbId: Sit-Up
+  - slug: russian-twist
+    wgerId: 1193
+    nameDe: Russian Twist
+    nameEn: Russian Twist
+    equipment: bodyweight
+    movementPattern: isolation-core
+    isBodyweight: true
+    bodyweightLeverage: 0.2
+    primaryMuscles:
+      - obliques
+    secondaryMuscles:
+      - abs
+    anchor: pushup
+    ratio: 2.5
+    trust: synthetic
+    freeExerciseDbId: Russian_Twist
+  - slug: plank
+    wgerId: 458
+    nameDe: Unterarmstütz
+    nameEn: Plank
+    equipment: bodyweight
+    movementPattern: isolation-core
+    isBodyweight: true
+    primaryMuscles:
+      - abs
+    secondaryMuscles: []
+    freeExerciseDbId: Plank
+  - slug: side-plank
+    wgerId: 580
+    nameDe: Seitstütz
+    nameEn: Side Plank
+    equipment: bodyweight
+    movementPattern: isolation-core
+    isBodyweight: true
+    primaryMuscles:
+      - obliques
+    secondaryMuscles:
+      - abs
+  - slug: cable-pull-through
+    wgerId: 1751
+    nameDe: Kabelzug-Hüftstrecken
+    nameEn: Cable Pull-Through
+    equipment: cable
+    movementPattern: hinge
+    primaryMuscles:
+      - glutes
+      - hamstrings
+    secondaryMuscles: []
+    anchor: deadlift
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Pull_Through
+  - slug: dumbbell-fly
+    wgerId: 238
+    nameDe: Kurzhantel-Fliegende
+    nameEn: Dumbbell Fly
+    equipment: dumbbell
+    movementPattern: isolation-chest
+    primaryMuscles:
+      - chest
+    secondaryMuscles:
+      - front-delts
+    anchor: bench-press
+    ratio: 0.2
+    trust: synthetic
+    freeExerciseDbId: Dumbbell_Flyes
+  - slug: cable-lateral-raise
+    wgerId: 1882
+    nameDe: Kabelzug-Seitheben
+    nameEn: Cable Lateral Raise
+    equipment: cable
+    movementPattern: isolation-shoulders
+    primaryMuscles:
+      - front-delts
+    secondaryMuscles: []
+    anchor: overhead-press
+    ratio: 0.1
+    trust: synthetic
+    freeExerciseDbId: Cable_Seated_Lateral_Raise
+  - slug: tricep-kickback
+    wgerId: 1509
+    nameDe: Trizeps-Kickback
+    nameEn: Tricep Kickback
+    equipment: dumbbell
+    movementPattern: isolation-arms
+    primaryMuscles:
+      - triceps
+    secondaryMuscles: []
+    anchor: bench-press
+    ratio: 0.15
+    trust: synthetic
+    freeExerciseDbId: Tricep_Dumbbell_Kickback
+  - slug: reverse-lunge
+    wgerId: 999
+    nameDe: Rückwärts-Ausfallschritt
+    nameEn: Reverse Lunge
+    equipment: dumbbell
+    movementPattern: squat
+    primaryMuscles:
+      - quads
+      - glutes
+    secondaryMuscles:
+      - hamstrings
+    anchor: back-squat
+    ratio: 0.35
+    trust: synthetic
+    freeExerciseDbId: Dumbbell_Rear_Lunge
