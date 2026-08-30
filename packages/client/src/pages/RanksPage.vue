@@ -82,8 +82,11 @@ const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
   flex-direction: column;
   /* Entrance stagger (matches the dashboard's — feedback: the rest of the app was still
      missing that liveliness). nth-child on the wrapper, not the button, so the chart slot
-     that appears on expand doesn't itself replay this. */
-  animation: pop-in var(--dur-base) var(--ease-spring) both;
+     that appears on expand doesn't itself replay this. --ease-out, not --ease-spring — this
+     is routine page-load motion, not an earned moment (motion.css's own convention: reserve
+     the overshoot easing for things the user actually earned, or it cheapens rank-up/PR
+     celebrations that use the same curve). */
+  animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .rank-grid > .rank-card-wrap:nth-child(1) {
   animation-delay: 0ms;
