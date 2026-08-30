@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787492097225,
+      "tag": "0000_slow_starfox",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787519676235,
+      "tag": "0001_strong_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787572800000,
+      "tag": "0002_targetreps_array",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787576400000,
+      "tag": "0003_targetsets_weight",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787596099141,
+      "tag": "0004_whole_makkari",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787608583058,
+      "tag": "0005_bizarre_ezekiel",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787649661826,
+      "tag": "0006_clear_meltdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788114961540,
+      "tag": "0007_funny_susan_delgado",
+      "breakpoints": true
+    }
+  ]
+}
