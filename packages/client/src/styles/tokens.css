@@ -1,0 +1,343 @@
+/**
+ * Design tokens ported verbatim from fitness-tracker-mockups-v2.html (plan 0.5).
+ * The mockup is the visual contract — do not re-derive this palette, only extend it.
+ */
+
+/* Self-hosted (OFL) — no CDN link, this is a PWA/Capacitor build that must work offline.
+   --font previously named a family that was never actually loaded anywhere; every screen
+   silently fell back to system-ui. These three faces are all the weights actually used. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0a0c14;
+  --surface: #141826;
+  --surface-2: #1c2233;
+  --surface-3: #28304a;
+  --line: rgba(255, 255, 255, 0.14);
+  --line-2: rgba(255, 255, 255, 0.2);
+  --text: #eef2fb;
+  --dim: #98a2c0;
+  /* ~4.6:1 on --surface-2 (was #616b8c, ~3.0:1 — failed WCAG AA). Text-only token now;
+     use --faint-deco below for non-text decoration where the darker value is still fine. */
+  --faint: #8b95b5;
+  --text-2: var(--dim);
+  /* decorative-only (hairlines, inactive chart gridlines) — never put text in this color */
+  --faint-deco: #616b8c;
+
+  --blue: #3b8cff;
+  --blue-hi: #5ba0ff;
+  --blue-lo: #1e5fd0;
+  --blue-ink: #04122e;
+  /* Foreground for text sitting on a --blue-lo fill (active chips/rows) — ~9:1 on --blue-lo.
+     --blue-hi was being used for this everywhere (~2.2:1, fails WCAG AA badly: both colors are
+     mid-brightness blues, so "brighter blue on blue" still reads as low-contrast blue-on-blue)
+     because --blue-hi already existed and looked directionally right at a glance. This is a
+     separate, deliberately near-white token — being "a brighter blue" was never actually enough. */
+  --on-blue-lo: #e6efff;
+  --fire: #ff7a1f;
+  --fire-hi: #ffa04d;
+  --violet: #8f6dff;
+  --violet-hi: #a98cff;
+  --red: #ff4757;
+  --red-lo: #a01722;
+  --green: #37d67a;
+  --pr: #ffd23f;
+
+  /* saturated tier fills — the reward, full-card like the mockup's rank arena */
+  --bronze-1: #3a2109;
+  --bronze-2: #8a4f22;
+  --bronze-3: #e08a3c;
+  --bronze-t: #ffd9ab;
+  --silver-1: #232a38;
+  --silver-2: #69748a;
+  --silver-3: #c7d1e4;
+  --silver-t: #f2f6ff;
+  --gold-1: #3a2a04;
+  --gold-2: #a7820f;
+  --gold-3: #ffd24a;
+  --gold-t: #fff2c2;
+  --plat-1: #0d2f33;
+  --plat-2: #1f8f9c;
+  --plat-3: #6ff0e6;
+  --plat-t: #d7fffb;
+  --diamond-1: #152449;
+  --diamond-2: #3b5fd0;
+  --diamond-3: #8fb4ff;
+  --diamond-t: #dbe7ff;
+
+  --pl-red: #e23b34;
+  --pl-blue: #2f6bd4;
+  --pl-yellow: #e8c21c;
+  --pl-green: #2fa84f;
+
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --sp1: 4px;
+  --sp2: 8px;
+  --sp3: 12px;
+  --sp4: 16px;
+  --sp5: 20px;
+  --sp6: 24px;
+  --sp8: 32px;
+  --shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.75), 0 3px 8px -3px rgba(0, 0, 0, 0.6);
+  --glow-blue: 0 0 0 1px rgba(59, 140, 255, 0.35), 0 8px 26px -6px rgba(59, 140, 255, 0.5);
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Scoreboard face for changing numerals (timer, weights, reps, LP, XP, tier labels) — same
+     family, heavier weight + tabular figures, so numbers read with intent instead of blending
+     into body copy. Pair with .tnum. */
+  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Page content-container widths — every page/tab used to pick its own bespoke max-width
+     (420/520/640/700/900/1100/1300px, eight different numbers for what are really four kinds
+     of content), so the app felt inconsistently wide from screen to screen. Four deliberate
+     tiers instead, chosen by content shape, reused everywhere that shape recurs:
+       narrow   — a single settings/reading column (Profil, the post-workout summary, Quellen)
+       standard — a single-column list/feed (Übungen library, Übersicht on mobile)
+       wide     — a card grid or a two-zone session layout (Ränge, Workout, Übersicht desktop)
+       xwide    — a wide two-column layout with a map/visual (Läufe)
+     Apply via `max-width: var(--content-w-*)` + `margin-inline: auto` on the page's own
+     top-level content wrapper — this only standardizes the *number*, not each page's existing
+     responsive/centering mechanism (flex vs grid, mobile-first vs desktop-only), which still
+     varies legitimately by layout. */
+  --content-w-narrow: 480px;
+  --content-w-standard: 720px;
+  --content-w-wide: 1100px;
+  --content-w-xwide: 1300px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tnum {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Small-caps section label ("TRAINIERTE MUSKELN", "GEWICHT", ...) — was locally redefined in
+   11 different files with three different letter-spacings (0.10/0.12/0.14em) and two different
+   colors (--faint/--dim), four of them missing text-transform entirely. One canonical rule;
+   --eyebrow-color lets a specific instance override just the color (e.g. the rank-up
+   celebration's fire-colored eyebrow) without redeclaring the whole rule. */
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--eyebrow-color, var(--faint));
+}
+
+/* Circular modal/sheet close button (✕) — was redefined at 30px in two sheet components and
+   32px in the routine wizard; standardized on the larger, more touch-friendly size. */
+.btn-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 15px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.btn-close:active {
+  transform: scale(0.9);
+}
+
+/* Primary/secondary action buttons — were locally redefined in 12 files with six different
+   padding/font-size combinations (drift, not intent). One canonical size each; a call site
+   that genuinely needs a different size adds a small modifier (e.g. .btn-primary.btn-lg)
+   instead of redeclaring the whole rule. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--blue-hi), var(--blue));
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  font-weight: 800;
+  font-size: 14px;
+  padding: 12px 20px;
+  text-decoration: none;
+  /* Every primary/secondary button in the app shares this one rule (that's the point of the
+     class), so this is the single highest-leverage motion fix available: press/hover feedback
+     here reaches every screen at once, not just the dashboard (feedback: "rest of the project
+     is still missing that liveliness"). */
+  transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-fast) var(--ease-out);
+}
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn-primary:disabled {
+  background: var(--surface-3);
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.btn-primary.btn-lg {
+  font-size: 15px;
+  padding: 14px 20px;
+}
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.btn-secondary:active {
+  transform: scale(0.97);
+  background: var(--surface-3);
+}
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  .btn-secondary:hover {
+    background: var(--surface-3);
+  }
+}
+.btn-block {
+  width: 100%;
+}
+
+/* hex tier badge (mockup .badge) */
+.badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+}
+/* Deliberately darker/flatter than .rank-card::after's 155deg b3->b1 gradient (which is what
+   sits directly behind this badge on the rank card) — using the same gradient at the same
+   angle made the badge visually disappear into the card. b1->b2 only, no bright b3 stop. */
+.badge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: linear-gradient(155deg, var(--b2), var(--b1) 80%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+/* The hex shape alone read as a bare gradient swatch with no icon at all — an empty span,
+   not a badge. Restores a per-tier glyph inside it (see .badge svg per-tier fill below —
+   all tiers use the same bright fill since the badge background is now deliberately dark). */
+.badge svg {
+  position: relative;
+  width: 52%;
+  height: 52%;
+  fill: var(--tt, #fff);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+.t-bronze {
+  --b1: var(--bronze-1);
+  --b2: var(--bronze-2);
+  --b3: var(--bronze-3);
+  --tt: var(--bronze-t);
+}
+.t-silver {
+  --b1: var(--silver-1);
+  --b2: var(--silver-2);
+  --b3: var(--silver-3);
+  --tt: var(--silver-t);
+}
+.t-gold {
+  --b1: var(--gold-1);
+  --b2: var(--gold-2);
+  --b3: var(--gold-3);
+  --tt: var(--gold-t);
+}
+.t-plat {
+  --b1: var(--plat-1);
+  --b2: var(--plat-2);
+  --b3: var(--plat-3);
+  --tt: var(--plat-t);
+}
+.t-diamond {
+  --b1: var(--diamond-1);
+  --b2: var(--diamond-2);
+  --b3: var(--diamond-3);
+  --tt: var(--diamond-t);
+}
+
+.rankbar {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.rankbar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  /* Bug fix: --b2/--b3 only exist under a .t-<tier> ancestor (set by the badge's own tier
+     class, e.g. RankProgress.vue's outer wrapper). Every XP/level bar (App.vue's nav chips,
+     FinishSequence's level bar and per-rankup mini-bars) has no such ancestor, so this gradient
+     was resolving to two undefined custom properties — an invalid `background`, which computes
+     to none. The bar's width was correct the whole time; the fill was just fully transparent
+     against the dark track. Fallbacks make every non-tiered bar render in the app's XP/level
+     accent instead of silently disappearing, while tier-context bars keep their metal gradient.
+     `--b2`/`--b3` (not the whole `background` shorthand) need the fallback, since var() only
+     supplies a per-property fallback, not a shorthand-level one. */
+  background: linear-gradient(90deg, var(--b2, var(--blue)), var(--b3, var(--blue-hi)));
+}
+
+/* muscle figure fills (mockup #figTemplate) */
+.mm-body {
+  fill: #2a3350;
+}
+.mm-mus {
+  fill: #414d72;
+}
+.mm-sec {
+  fill: #5f7fd6;
+}
+.mm-pri {
+  fill: var(--blue-hi);
+}

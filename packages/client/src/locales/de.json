@@ -1,0 +1,14 @@
+{
+  "nav": {
+    "overview": "Übersicht",
+    "workout": "Workout",
+    "ranks": "Ränge",
+    "exercises": "Übungen",
+    "runs": "Läufe",
+    "profile": "Profil"
+  },
+  "workout": {
+    "start": "Heutiges Workout starten",
+    "save": "Satz speichern"
+  }
+}

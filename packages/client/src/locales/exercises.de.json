@@ -1,0 +1,380 @@
+{
+  "exercise": {
+    "back-squat": {
+      "name": "Langhantel-Kniebeuge",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "bench-press": {
+      "name": "Bankdrücken",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "deadlift": {
+      "name": "Kreuzheben",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "overhead-press": {
+      "name": "Langhantel-Schulterdrücken",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "barbell-row": {
+      "name": "Langhantelrudern",
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
+    },
+    "pushup": {
+      "name": "Liegestütze",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "pullup": {
+      "name": "Klimmzug (Obergriff)",
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
+    },
+    "chinup": {
+      "name": "Klimmzug (Untergriff)",
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
+    },
+    "dip": {
+      "name": "Dips",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die Brust trägt die Bewegung."
+    },
+    "front-squat": {
+      "name": "Frontkniebeuge",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "goblet-squat": {
+      "name": "Goblet Squat",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "leg-press": {
+      "name": "Beinpresse",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "bulgarian-split-squat": {
+      "name": "Bulgarian Split Squat",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "walking-lunge": {
+      "name": "Ausfallschritt (gehend)",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "hack-squat": {
+      "name": "Hackenschmidt-Maschine",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "zercher-squat": {
+      "name": "Zercher-Kniebeuge",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "goblet-lunge": {
+      "name": "Goblet-Ausfallschritt",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "romanian-deadlift": {
+      "name": "Rumänisches Kreuzheben",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, die hintere Oberschenkelmuskulatur bewusst anspannen."
+    },
+    "sumo-deadlift": {
+      "name": "Sumo-Kreuzheben",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "trap-bar-deadlift": {
+      "name": "Trapstangen-Kreuzheben",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, den vorderen Oberschenkel bewusst anspannen."
+    },
+    "good-morning": {
+      "name": "Good Morning",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, die hintere Oberschenkelmuskulatur bewusst anspannen."
+    },
+    "single-leg-rdl": {
+      "name": "Einbeiniges RDL",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, die hintere Oberschenkelmuskulatur bewusst anspannen."
+    },
+    "hip-thrust": {
+      "name": "Hüftheben (Langhantel)",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "back-extension": {
+      "name": "Rückenstrecker",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "kettlebell-swing": {
+      "name": "Kettlebell Swing",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "farmers-carry": {
+      "name": "Farmers Walk",
+      "howto": "Rumpf stabil halten, aufrechte Haltung, gleichmäßige Schritte — den oberen Rücken stabilisiert."
+    },
+    "shrug": {
+      "name": "Shrugs",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den oberen Rücken bewusst anspannen — kein Schwung."
+    },
+    "leg-curl": {
+      "name": "Beinbeuger (Maschine)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die hintere Oberschenkelmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "incline-bench-press": {
+      "name": "Schrägbankdrücken",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "decline-bench-press": {
+      "name": "Negativbankdrücken",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "dumbbell-bench-press": {
+      "name": "Kurzhantel-Bankdrücken",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "dumbbell-incline-press": {
+      "name": "Kurzhantel-Schrägbankdrücken",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "close-grip-bench-press": {
+      "name": "Enges Bankdrücken",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — den Trizeps arbeitet."
+    },
+    "machine-chest-press": {
+      "name": "Brustpresse (Maschine)",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "cable-fly": {
+      "name": "Kabelzug-Fliegende",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Brust bewusst anspannen — kein Schwung."
+    },
+    "pec-deck": {
+      "name": "Butterfly (Maschine)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Brust bewusst anspannen — kein Schwung."
+    },
+    "dumbbell-pullover": {
+      "name": "Kurzhantel-Überzüge",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Brust bewusst anspannen — kein Schwung."
+    },
+    "tricep-pushdown": {
+      "name": "Trizepsdrücken (Kabel)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Trizeps bewusst anspannen — kein Schwung."
+    },
+    "overhead-tricep-extension": {
+      "name": "Trizepsstrecken über Kopf",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Trizeps bewusst anspannen — kein Schwung."
+    },
+    "skull-crusher": {
+      "name": "Skull Crusher",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Trizeps bewusst anspannen — kein Schwung."
+    },
+    "cable-crunch": {
+      "name": "Kabel-Crunch",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "diamond-pushup": {
+      "name": "Diamant-Liegestütze",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — den Trizeps arbeitet."
+    },
+    "close-grip-pushup": {
+      "name": "Enge Liegestütze",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — den Trizeps arbeitet."
+    },
+    "decline-pushup": {
+      "name": "Liegestütze (Füße erhöht)",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "incline-pushup": {
+      "name": "Liegestütze (Hände erhöht)",
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
+    },
+    "pike-pushup": {
+      "name": "Pike-Liegestütze",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "ab-wheel-rollout": {
+      "name": "Ab-Roller",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "dumbbell-shoulder-press": {
+      "name": "Kurzhantel-Schulterdrücken",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "arnold-press": {
+      "name": "Arnold Press",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "machine-shoulder-press": {
+      "name": "Schulterpresse (Maschine)",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "push-press": {
+      "name": "Push Press",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "landmine-press": {
+      "name": "Landmine Press",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die vordere Schulter trägt die Bewegung."
+    },
+    "lateral-raise": {
+      "name": "Seitheben",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die vordere Schulter bewusst anspannen — kein Schwung."
+    },
+    "barbell-front-raise": {
+      "name": "Langhantel-Vorheben",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die vordere Schulter bewusst anspannen — kein Schwung."
+    },
+    "rear-delt-fly": {
+      "name": "Reverse Butterfly",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die vordere Schulter bewusst anspannen — kein Schwung."
+    },
+    "upright-row": {
+      "name": "Aufrechtes Rudern",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den oberen Rücken bewusst anspannen — kein Schwung."
+    },
+    "barbell-curl": {
+      "name": "Bizepscurls (LH)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "dumbbell-curl": {
+      "name": "Bizepscurls (KH)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "hammer-curl": {
+      "name": "Hammer Curls",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "ez-bar-curl": {
+      "name": "SZ-Stangen-Curls",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "concentration-curl": {
+      "name": "Konzentrationscurls",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "preacher-curl": {
+      "name": "Scott-Curls",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "cable-curl": {
+      "name": "Kabel-Curls",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung."
+    },
+    "wrist-curl": {
+      "name": "Unterarmcurls",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Zielmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "reverse-wrist-curl": {
+      "name": "Unterarmcurls (Reverse)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Zielmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "dumbbell-row": {
+      "name": "Kurzhantelrudern",
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
+    },
+    "seated-cable-row": {
+      "name": "Rudern am Kabelzug (sitzend)",
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
+    },
+    "t-bar-row": {
+      "name": "T-Bar-Rudern",
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
+    },
+    "chest-supported-row": {
+      "name": "Rudern (brustgestützt)",
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
+    },
+    "inverted-row": {
+      "name": "Invertiertes Rudern",
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
+    },
+    "face-pull": {
+      "name": "Face Pull",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den oberen Rücken bewusst anspannen — kein Schwung."
+    },
+    "reverse-fly": {
+      "name": "Reverse Fly (Kabel)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die vordere Schulter bewusst anspannen — kein Schwung."
+    },
+    "lat-pulldown": {
+      "name": "Latzug",
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
+    },
+    "wide-grip-pullup": {
+      "name": "Klimmzug (weiter Griff)",
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
+    },
+    "neutral-grip-pullup": {
+      "name": "Klimmzug (neutraler Griff)",
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
+    },
+    "hanging-leg-raise": {
+      "name": "Hängendes Beinheben",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "ring-dip": {
+      "name": "Ring-Dips",
+      "howto": "Rumpf anspannen, Gewicht gerade nach oben führen, die Brust trägt die Bewegung."
+    },
+    "leg-extension": {
+      "name": "Beinstrecker",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den vorderen Oberschenkel bewusst anspannen — kein Schwung."
+    },
+    "calf-raise-standing": {
+      "name": "Wadenheben (stehend)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Waden bewusst anspannen — kein Schwung."
+    },
+    "calf-raise-seated": {
+      "name": "Wadenheben (sitzend)",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Waden bewusst anspannen — kein Schwung."
+    },
+    "hip-abduction-machine": {
+      "name": "Abduktoren-Maschine",
+      "howto": "Bewegung langsam und kontrolliert ausführen, das Gesäß bewusst anspannen — kein Schwung."
+    },
+    "hip-adduction-machine": {
+      "name": "Adduktoren-Maschine",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den vorderen Oberschenkel bewusst anspannen — kein Schwung."
+    },
+    "step-up": {
+      "name": "Step-up",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    },
+    "glute-bridge": {
+      "name": "Hüftheben (Boden)",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "crunch": {
+      "name": "Crunches",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "situp": {
+      "name": "Sit-ups",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "russian-twist": {
+      "name": "Russian Twist",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die seitliche Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "plank": {
+      "name": "Unterarmstütz",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "side-plank": {
+      "name": "Seitstütz",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die seitliche Bauchmuskulatur bewusst anspannen — kein Schwung."
+    },
+    "cable-pull-through": {
+      "name": "Kabelzug-Hüftstrecken",
+      "howto": "Bewegung aus der Hüfte, Rücken neutral halten, das Gesäß bewusst anspannen."
+    },
+    "dumbbell-fly": {
+      "name": "Kurzhantel-Fliegende",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die Brust bewusst anspannen — kein Schwung."
+    },
+    "cable-lateral-raise": {
+      "name": "Kabelzug-Seitheben",
+      "howto": "Bewegung langsam und kontrolliert ausführen, die vordere Schulter bewusst anspannen — kein Schwung."
+    },
+    "tricep-kickback": {
+      "name": "Trizeps-Kickback",
+      "howto": "Bewegung langsam und kontrolliert ausführen, den Trizeps bewusst anspannen — kein Schwung."
+    },
+    "reverse-lunge": {
+      "name": "Rückwärts-Ausfallschritt",
+      "howto": "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel."
+    }
+  }
+}

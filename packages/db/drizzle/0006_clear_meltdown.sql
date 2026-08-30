@@ -1,0 +1,1 @@
+ALTER TABLE `exercises` ADD `required_equipment` text;

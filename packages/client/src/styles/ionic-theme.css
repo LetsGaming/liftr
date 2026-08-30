@@ -1,0 +1,79 @@
+/**
+ * Maps tokens.css (the mockup-derived design system, still authoritative) onto Ionic's own
+ * CSS custom properties, rather than adopting Ionic's default light palette. Loaded after
+ * tokens.css in main.ts. Values are the same hex constants as tokens.css, duplicated (not
+ * var()-referenced) only where Ionic needs an explicit rgb triplet for its opacity mixins.
+ */
+:root {
+  --ion-background-color: var(--bg);
+  --ion-background-color-rgb: 10, 12, 20;
+  --ion-text-color: var(--text);
+  --ion-text-color-rgb: 238, 242, 251;
+
+  --ion-color-primary: var(--blue-hi);
+  --ion-color-primary-rgb: 91, 160, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: var(--blue);
+  --ion-color-primary-tint: var(--blue-hi);
+
+  --ion-color-danger: var(--red);
+  --ion-color-danger-rgb: 255, 71, 87;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+
+  --ion-color-success: var(--green);
+  --ion-color-success-rgb: 55, 214, 122;
+  --ion-color-success-contrast: #04122e;
+  --ion-color-success-contrast-rgb: 4, 18, 46;
+
+  --ion-color-medium: var(--dim);
+  --ion-color-medium-rgb: 152, 162, 192;
+
+  --ion-toolbar-background: var(--surface);
+  --ion-toolbar-border-color: var(--line);
+  --ion-item-background: var(--surface-2);
+  --ion-item-border-color: var(--line);
+  --ion-border-color: var(--line);
+  --ion-card-background: var(--surface-2);
+
+  --ion-tab-bar-background: var(--surface);
+  --ion-tab-bar-border-color: var(--line);
+  --ion-tab-bar-color: var(--dim);
+  --ion-tab-bar-color-selected: var(--text);
+
+  --ion-font-family: var(--font);
+}
+
+/* Ionic defaults to left-aligned titles in "md" mode (the default in a desktop/Android
+   Chrome context) — every screen's title sat at the left edge instead of centered.
+   text-align:center alone only centers the text *inside* ion-title's own box, and that box
+   still carries md-mode's default --padding-start (~20px) with no matching --padding-end —
+   an asymmetric box, so the centered text still sits visibly left of true-center. Zero both
+   paddings and let the title's box span the full toolbar width (there are no start/end
+   toolbar buttons on any screen) so the text centers against the real toolbar, not a
+   lopsided box within it. */
+ion-title {
+  text-align: center;
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 100%;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+/* Every routed page is an <IonPage>, which is position:absolute + inset:0 inside
+   .main-content — that fills the *entire* box and ignores .main-content's own padding
+   entirely (abs-positioned children aren't constrained by an ancestor's padding). So the
+   fixed mobile tab-bar (and, on mobile, the .mobile-status level/streak chips floating just
+   above it, see App.vue) was clipping the bottom of every page's actual scrollable content;
+   --padding-bottom is ion-content's own supported hook for reserving scroll-end clearance,
+   and is the only thing that actually reaches the real scroll container in its shadow DOM. */
+@media (max-width: 899px) {
+  /* Must out-specificity Ionic's own .ion-padding utility (class selector), which also sets
+     --padding-bottom (to 16px) — a bare `ion-content` element selector loses that fight. */
+  ion-content.ion-padding,
+  ion-content {
+    --padding-bottom: 112px;
+  }
+}
