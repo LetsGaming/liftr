@@ -339,9 +339,12 @@ const topRanks = computed(() =>
 }
 /* Staggered entrance (engagement rework W6) — the dashboard used to just appear fully-formed,
    which reads as static rather than responsive. Direct children only, so nested lists (recent
-   activity's individual rows) don't each re-trigger this on their own. */
+   activity's individual rows) don't each re-trigger this on their own. --ease-out, not
+   --ease-spring — this is routine page-load motion, not an earned moment (motion.css's own
+   convention: reserve the overshoot easing for things the user actually earned, or it
+   cheapens rank-up/PR celebrations that use the same curve). */
 .dashboard > * {
-  animation: pop-in var(--dur-base) var(--ease-spring) both;
+  animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .dashboard > *:nth-child(1) {
   animation-delay: 0ms;
