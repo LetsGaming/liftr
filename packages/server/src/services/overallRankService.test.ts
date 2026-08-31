@@ -13,9 +13,9 @@ beforeEach(() => {
 
 async function seedStandards(exerciseId: string, trust: "real" | "synthetic" = "real") {
   await db.insert(standards).values([
-    { exerciseId, sex: "male", metric: "load_ratio", tier: "bronze", division: 3, threshold: 0.5, trust },
-    { exerciseId, sex: "male", metric: "load_ratio", tier: "silver", division: 3, threshold: 1.1, trust },
-    { exerciseId, sex: "male", metric: "load_ratio", tier: "gold", division: 3, threshold: 2.2, trust },
+    { exerciseId, sex: "male", metric: "load_ratio", tier: "apprentice", division: 3, threshold: 0.5, trust },
+    { exerciseId, sex: "male", metric: "load_ratio", tier: "athlete", division: 3, threshold: 1.1, trust },
+    { exerciseId, sex: "male", metric: "load_ratio", tier: "advanced", division: 3, threshold: 2.2, trust },
   ]);
 }
 
@@ -44,7 +44,7 @@ describe("getOverallRank", () => {
   it("excludes a never-ranked exercise rather than dragging the aggregate to zero", async () => {
     const ranked = await insertTestExercise(db);
     await seedStandards(ranked.id);
-    await logSet(ranked.id, 90, 8); // clears the silver threshold at the 75kg fallback bodyweight
+    await logSet(ranked.id, 90, 8); // clears the athlete threshold at the 75kg fallback bodyweight
     await recomputeRankForExercise(db, ranked.id);
 
     // A second, never-logged exercise exists in the catalog but has no rank row at all.
@@ -52,22 +52,22 @@ describe("getOverallRank", () => {
 
     const result = await getOverallRank(db);
     expect(result.current).not.toBeNull();
-    expect(result.current!.tier).toBe("silver"); // reflects only the one ranked exercise, not diluted
+    expect(result.current!.tier).toBe("athlete"); // reflects only the one ranked exercise, not diluted
   });
 
   it("moves sensibly when a major exercise ranks up, without swinging wildly from one synthetic exercise", async () => {
     const major = await insertTestExercise(db);
     await seedStandards(major.id, "real");
-    await logSet(major.id, 20, 8); // weak: stays bronze
+    await logSet(major.id, 20, 8); // weak: stays apprentice
     await recomputeRankForExercise(db, major.id);
     const before = (await getOverallRank(db)).current!;
 
     const synthetic = await insertTestExercise(db);
     await seedStandards(synthetic.id, "synthetic");
-    await logSet(synthetic.id, 20, 8); // also weak/bronze, synthetic-trust
+    await logSet(synthetic.id, 20, 8); // also weak/apprentice, synthetic-trust
     await recomputeRankForExercise(db, synthetic.id);
 
-    // Now rank the major (real-trust) exercise up into silver.
+    // Now rank the major (real-trust) exercise up into athlete.
     await logSet(major.id, 90, 8);
     await recomputeRankForExercise(db, major.id);
     const after = (await getOverallRank(db)).current!;
@@ -76,7 +76,7 @@ describe("getOverallRank", () => {
     const afterPos = ordinal(after.tier as never, after.division as never) * 100 + after.lp;
     // A single major real-trust rank-up should move the aggregate meaningfully, not get
     // swamped by the still-weak half-weighted synthetic exercise. `major` alone moved a full
-    // 3 ordinal bands (bronze -> silver); the still-bronze, half-weighted synthetic entry pulls
+    // 3 ordinal bands (apprentice -> athlete); the still-apprentice, half-weighted synthetic entry pulls
     // the weighted average down, but by less than an equal-weight average would.
     expect(afterPos).toBeGreaterThan(beforePos);
     expect(afterPos - beforePos).toBeGreaterThan(50); // meaningfully more than a rounding blip
@@ -90,6 +90,6 @@ describe("getOverallRank", () => {
 
     const result = await getOverallRank(db);
     expect(result.peak).not.toBeNull();
-    expect(result.peak!.tier).toBe("silver");
+    expect(result.peak!.tier).toBe("athlete");
   });
 });
