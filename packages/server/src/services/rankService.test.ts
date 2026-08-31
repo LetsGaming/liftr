@@ -92,20 +92,21 @@ describe("recomputeRankForExercise", () => {
     expect(maleResult!.tier).toBe("apprentice"); // 1.01 is below the male athlete threshold of 5.0
 
     // Same logged history, switch the stored profile to female, recompute again. The *peak*
-    // still switches to athlete immediately (ratchetPeak just compares strength, no session
-    // concept involved) — but since this second recompute happens on the same day as the
-    // previous one (daysSinceLastTrained === 0), the *displayed current* band now goes through
-    // the buffed recovery-gain climb (rank engine v2) instead of snapping straight to the new
-    // peak, exactly like a genuine return-from-decay would. This is an accepted side effect of
-    // v2's gradual-climb design, not specific to sex-switching.
+    // switches to athlete immediately (ratchetPeak just compares strength, no session concept
+    // involved). The displayed *current* band also reflects it immediately here, not gradually:
+    // going into this recompute, `previousCurrentBand` (set by the male recompute above) already
+    // equals the old (male) peak exactly — the lifter was fully caught up, no decay backlog —
+    // so the buffed recovery-gain throttle correctly does not engage even though this is a
+    // same-day recompute; only a genuine backlog (current sitting below the OLD peak) should
+    // throttle the climb (see the dedicated decay/recovery tests above for that case).
     await writeJsonSetting(db, "profile", { sex: "female" });
     const femaleResult = await recomputeRankForExercise(db, ex.id);
     const femaleRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
-    expect(femaleRow!.peakTier).toBe("athlete"); // peak ratchets to the stronger female-derived rank immediately
-    expect(femaleResult!.tier).not.toBe("athlete"); // but displayed current only climbs gradually toward it
+    expect(femaleRow!.peakTier).toBe("athlete");
+    expect(femaleResult!.tier).toBe("athlete"); // reflected immediately: no backlog to throttle
     const maleCurrentPos = ordinal(maleResult!.tier as Tier, maleResult!.division) * 100 + maleResult!.lp;
     const femaleCurrentPos = ordinal(femaleResult!.tier as Tier, femaleResult!.division) * 100 + femaleResult!.lp;
-    expect(femaleCurrentPos).toBeGreaterThan(maleCurrentPos); // moved toward the new, stronger peak
+    expect(femaleCurrentPos).toBeGreaterThan(maleCurrentPos); // moved to the new, stronger peak
   });
 
   it("logs exactly one rank_events row per genuine tier/division change, not per set logged (W8)", async () => {
@@ -177,6 +178,14 @@ describe("recomputeRankForExercise", () => {
 
     expect(after!.peakTier).toBe("athlete");
     expect(after!.peakE1rm).toBeGreaterThan(before!.peakE1rm!);
+
+    // A same-day genuine PR must be reflected in the *displayed current* band immediately, not
+    // throttled through the buffed recovery-gain climb — that mechanic exists only for returning
+    // from a real decay backlog. Here `before` was fully caught up (current == old peak, no
+    // backlog), so the new peak this set just earned must show up right away, not gradually.
+    expect(after!.tier).toBe(after!.peakTier);
+    expect(after!.division).toBe(after!.peakDivision);
+    expect(after!.lp).toBe(after!.peakLp);
   });
 
   /** Standards with three athlete divisions modeled, so a peak can land above division III and
