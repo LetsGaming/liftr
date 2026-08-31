@@ -4,11 +4,22 @@
  * after sync, with guaranteed-identical results.
  */
 
-export const TIERS = ["bronze", "silver", "gold", "platinum", "diamond"] as const;
+export const TIERS = [
+  "initiate", "apprentice", "trainee", "athlete", "lifter",
+  "advanced", "elite", "expert", "apex",
+] as const;
 export type Tier = (typeof TIERS)[number];
 
-export const DIVISIONS = [3, 2, 1] as const; // III -> II -> I, ascending strength
-export type Division = (typeof DIVISIONS)[number];
+/** Divisions per tier — deliberately more at the bottom (frequent rank-ups early) and fewer at
+ *  the top (Apex has exactly 1: a single real milestone, not another grind). Within a tier of N
+ *  divisions, values run N (weakest, entry) down to 1 (strongest, closest to promotion) — same
+ *  "higher number = weaker" convention as the old fixed III/II/I, generalized to N divisions. */
+export const TIER_DIVISION_COUNT: Record<Tier, number> = {
+  initiate: 6, apprentice: 5, trainee: 5, athlete: 4, lifter: 4,
+  advanced: 3, elite: 3, expert: 2, apex: 1,
+};
+
+export type Division = number;
 
 export type TrustTier = "real" | "derived" | "synthetic";
 
@@ -33,13 +44,30 @@ export interface RankResult {
   nextTarget: { tier: Tier; division: Division; threshold: number } | null;
 }
 
-/**
- * Flatten (tier, division) into a single ascending-strength ordinal for comparison/iteration.
- * DIVISIONS is [3, 2, 1] (III -> II -> I), which is already weakest-to-strongest order, so the
- * division's array index *is* its offset within the tier.
- */
-export function ordinal(tier: Tier, division: Division): number {
-  return TIERS.indexOf(tier) * DIVISIONS.length + DIVISIONS.indexOf(division);
+function cumulativeDivisionsBefore(tier: Tier): number {
+  return TIERS.slice(0, TIERS.indexOf(tier)).reduce((sum, t) => sum + TIER_DIVISION_COUNT[t], 0);
+}
+
+/** Flatten (tier, division) into a single ascending-strength ordinal for comparison/iteration. */
+export function ordinal(tier: Tier, division: number): number {
+  return cumulativeDivisionsBefore(tier) + (TIER_DIVISION_COUNT[tier] - division);
+}
+
+export const MAX_ORDINAL = Object.values(TIER_DIVISION_COUNT).reduce((a, b) => a + b, 0) - 1;
+
+/** Inverse of `ordinal` — clamped to the valid range (an ordinal past `MAX_ORDINAL` returns
+ *  Apex's single division). Centralizes what `decay.ts` and `aggregate.ts` previously each
+ *  duplicated as their own `positionToBand`, since that fixed-length-array inversion no longer
+ *  works once tiers have different division counts. */
+export function ordinalToBand(ord: number): { tier: Tier; division: number } {
+  const clamped = Math.max(0, Math.min(MAX_ORDINAL, Math.round(ord)));
+  let remaining = clamped;
+  for (const tier of TIERS) {
+    const count = TIER_DIVISION_COUNT[tier];
+    if (remaining < count) return { tier, division: count - remaining };
+    remaining -= count;
+  }
+  return { tier: "apex", division: 1 };
 }
 
 /** Sort thresholds ascending by strength (weakest first). Exported for callers that need to
