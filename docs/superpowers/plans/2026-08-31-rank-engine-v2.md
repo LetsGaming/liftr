@@ -460,7 +460,7 @@ Expected: succeeds with no errors against the dev DB.
 
 - [ ] **Step 5: Verify existing DB-touching tests still pass**
 
-Run: `pnpm --filter @liftr/server test`
+Run: `pnpm test packages/server` (packages/server has no `test` script of its own — the root `vitest run` picks up the whole workspace; a path argument scopes it)
 Expected: PASS for every test file that doesn't reference tier names directly (most of
 `syncService.test.ts`, `workoutService.test.ts`, etc.) — tests that construct rank rows with old
 tier strings like `"bronze"` will fail here; that's expected and fixed in Task 7's test updates,
@@ -1140,7 +1140,7 @@ and any division-count-dependent numbers.
 
 - [ ] **Step 2: Run the updated test suite to confirm it's red only where expected**
 
-Run: `pnpm --filter @liftr/server test rankService.test.ts`
+Run: `pnpm test rankService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: the renamed-tier tests should now pass (or reveal genuine mismatches to fix); this step
 is a checkpoint, not the final green state — new recovery-gain/plausibility tests come next.
 
@@ -1191,7 +1191,7 @@ functions already have precise unit tests in Task 5/6 — this file's job is con
 
 - [ ] **Step 4: Run tests to verify the new ones fail**
 
-Run: `pnpm --filter @liftr/server test rankService.test.ts`
+Run: `pnpm test rankService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: FAIL — `recomputeRankForExercise` doesn't yet accept a 3rd parameter, and current-rank
 recovery still uses the old instant-decay-to-zero-days trick.
 
@@ -1290,7 +1290,7 @@ it's still used above for the passive-decay path).
 
 - [ ] **Step 7: Run tests, fix any remaining failures, then verify green**
 
-Run: `pnpm --filter @liftr/server test rankService.test.ts`
+Run: `pnpm test rankService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: PASS — all renamed-tier tests, all pre-existing decay/peak tests, and the 3 new tests
 from Step 3. If a pre-existing test's exact numeric expectation no longer holds because recovery
 now climbs gradually instead of snapping instantly (the decay-reversal test, `rankService.test.ts:
@@ -1367,7 +1367,7 @@ first and reuse their exact helper signatures rather than inventing new ones.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @liftr/server test syncService.test.ts`
+Run: `pnpm test syncService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: FAIL — `RankVerdict` has no `plausibilityReason` field yet, and `applyFinishWorkout`
 doesn't compute plausibility.
 
@@ -1484,12 +1484,12 @@ map) alongside the other new repository imports listed at the start of this step
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @liftr/server test syncService.test.ts`
+Run: `pnpm test syncService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: PASS.
 
 - [ ] **Step 6: Run the full server test suite and typecheck**
 
-Run: `pnpm --filter @liftr/server test && pnpm --filter @liftr/server run typecheck`
+Run: `pnpm test packages/server && pnpm --filter @liftr/server run typecheck` (packages/server has a `typecheck` script but no `test` script — tests run via the root-level `vitest run`, scoped with a path argument)
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
@@ -1678,7 +1678,7 @@ row read — no repository change needed for this specific read, confirmed in th
 
 - [ ] **Step 8: Run the full server test suite and typecheck**
 
-Run: `pnpm --filter @liftr/server test && pnpm --filter @liftr/server run typecheck`
+Run: `pnpm test packages/server && pnpm --filter @liftr/server run typecheck` (packages/server has a `typecheck` script but no `test` script — tests run via the root-level `vitest run`, scoped with a path argument)
 Expected: PASS.
 
 - [ ] **Step 9: Commit**
