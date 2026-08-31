@@ -51,7 +51,10 @@ function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"])
   for (let i = 0; i < TIERS.length; i++) {
     const tier = TIERS[i]!;
     const cur = byTier[tier];
-    const next = byTier[TIERS[i + 1]!] ?? cur * 1.15; // apex has no "next" anchor; extrapolate
+    // apex has no "next" anchor; this fallback only fires if TIER_DIVISION_COUNT.apex is ever
+    // raised above 1 (currently apex has exactly 1 division, so `d` never exceeds 0 and this
+    // extrapolated `span` doesn't feed any emitted threshold) — defensive, not load-bearing today.
+    const next = byTier[TIERS[i + 1]!] ?? cur * 1.15;
     const span = next - cur;
     const divisionCount = TIER_DIVISION_COUNT[tier];
     // division values run divisionCount (weakest) down to 1 (strongest) within the tier
@@ -76,7 +79,9 @@ function expandRepStandard(old5: [number, number, number, number, number]): Stan
   const ratios = interpolateNineTierAnchors(old5);
   return TIERS.map((tier) => ({
     tier,
-    division: 1,
+    // the anchor ratio is the tier's entry threshold (per expand()'s "cur" semantics), i.e. the
+    // weakest division for that tier — TIER_DIVISION_COUNT[tier], not the strongest (1).
+    division: TIER_DIVISION_COUNT[tier],
     threshold: Math.round(ratios[tier]),
     trust: "real" as const,
   }));
