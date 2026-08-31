@@ -26,6 +26,7 @@ export async function getXpSummary(db: LiftrDb): Promise<XpSummary> {
           reps: s.reps,
           tier: tierByExercise.get(s.exerciseId) ?? null,
           loggedAt: s.loggedAt.getTime(),
+          plausibilityMultiplier: s.plausibilityMultiplier ?? 1,
         })),
     ),
   );
