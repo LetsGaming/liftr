@@ -217,8 +217,22 @@ export async function recomputeRankForExercise(
   // exercise.
   const passivelyDecayedBand = computeCurrentBand(peak, daysSinceLastTrained);
 
+  // Only throttle today's climb through the buffed recovery-gain path when there was a genuine
+  // decay backlog going into *this* recompute — i.e. `previousCurrentBand` sat below the OLD
+  // peak (`storedPeak`, before this call's `ratchetPeak` above possibly advanced it). Comparing
+  // against `storedPeak` rather than the freshly-computed `peak` matters: a lifter who was fully
+  // caught up (current == old peak) and then hits a genuine new PR in this same session must see
+  // that PR reflected immediately — `previousCurrentBand` would sit far below the *new*, just-
+  // advanced `peak`, which would otherwise look identical to "returning from a real decay gap"
+  // and wrongly throttle a rank the lifter just legitimately earned.
+  const storedPeakPos = storedPeak ? ordinal(storedPeak.tier, storedPeak.division) * 100 + storedPeak.lp : null;
+  const hadDecayBacklog =
+    previousCurrentBand != null &&
+    storedPeakPos != null &&
+    ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp < storedPeakPos;
+
   let currentBand: { tier: typeof peak.tier; division: number; lp: number };
-  if (previousCurrentBand && daysSinceLastTrained === 0) {
+  if (hadDecayBacklog && previousCurrentBand && daysSinceLastTrained === 0) {
     const rawGainBand = applySessionRecoveryGain(peak, previousCurrentBand);
     const prevPos = ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp;
     const rawGainPos = ordinal(rawGainBand.tier, rawGainBand.division) * 100 + rawGainBand.lp;
