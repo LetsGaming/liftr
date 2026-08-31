@@ -266,19 +266,20 @@ async function logSet() {
         <template v-if="captionRows.length > 0">
           <div class="eyebrow">Rang-Hinweise</div>
           <div class="caption-list">
-            <RankProgress
-              v-for="c in captionRows"
-              :key="c.exerciseId"
-              variant="inline"
-              :tier="c.tier"
-              :division="c.division"
-              :lp="c.lp"
-              :next-target-weight-kg="c.nextTargetWeightKg"
-              :next-target-reps="c.nextTargetReps"
-              :trust="c.trust"
-              :recovery-gain-label="c.recoveryGainLabel"
-              :plausibility-note="c.plausibilityNote"
-            />
+            <div v-for="c in captionRows" :key="c.exerciseId" class="caption-item">
+              <b>{{ c.exerciseName }}</b>
+              <RankProgress
+                variant="inline"
+                :tier="c.tier"
+                :division="c.division"
+                :lp="c.lp"
+                :next-target-weight-kg="c.nextTargetWeightKg"
+                :next-target-reps="c.nextTargetReps"
+                :trust="c.trust"
+                :recovery-gain-label="c.recoveryGainLabel"
+                :plausibility-note="c.plausibilityNote"
+              />
+            </div>
           </div>
         </template>
 
@@ -824,6 +825,14 @@ async function logSet() {
   flex-direction: column;
   gap: var(--sp2);
   margin-bottom: var(--sp2);
+}
+.caption-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.caption-item b {
+  font-size: 12.5px;
 }
 .beat-panel {
   margin-top: var(--sp4);
