@@ -69,6 +69,7 @@ const {
   finishSequenceDone,
   sessionXp,
   sessionRankUps,
+  sessionCaptions,
   finishXpSnapshot,
   routineBeats,
   updatingRoutine,
@@ -79,6 +80,22 @@ const {
 } = useWorkoutFinish({ activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore: catalog }, sessionMuscles, exerciseName);
 
 const { finishedCanvas, sharingFinished, shareFinished, copyingFinished, copyFinished } = useWorkoutShareCard(finishedSummary, sessionRankUps);
+
+/** Rank engine v2 (task 10): sessionCaptions (from useWorkoutFinish) carries the honest
+ *  copy but not the badge/next-target data to render a RankProgress card — that lives on
+ *  ranksStore's row for the exercise (already refreshed by applyVerdict() in finishWorkout()).
+ *  Joined here rather than in the composable so ranksStore stays the single source of truth
+ *  for "what's this exercise's rank right now" — the same pattern RanksPage.vue and
+ *  ExerciseInfoPanel.vue already use. A caption whose exercise has no ranksStore row yet
+ *  (shouldn't happen — applyVerdict() runs for every touched exercise before this — but kept
+ *  defensive) is simply dropped rather than rendered with guessed data. */
+const captionRows = computed(() =>
+  sessionCaptions.value.flatMap((c) => {
+    const row = ranksStore.ranks.find((r) => r.exerciseId === c.exerciseId);
+    if (!row) return [];
+    return [{ ...c, tier: row.tier, division: row.division, lp: row.lp, nextTargetWeightKg: row.nextTargetWeightKg, nextTargetReps: row.nextTargetReps, trust: row.trust }];
+  }),
+);
 const { toast } = useToast();
 const canCopyShareImage = canCopyToClipboard();
 async function onCopyFinished() {
@@ -239,6 +256,31 @@ async function logSet() {
         </div>
         <div class="eyebrow">Trainierte Muskeln</div>
         <MuscleFigure :primary="finishedSummary.muscles.primary" :secondary="finishedSummary.muscles.secondary" />
+
+        <!-- Rank engine v2 (task 10): recovery-gain / plausibility captions for this session's
+             verdicts. Only rendered when there's actually something to say — a normal session
+             with no decay-recovery and no plausibility flag adds nothing here (sessionCaptions
+             is already filtered to non-empty captions in useWorkoutFinish.ts). Looks up each
+             exercise's current row in ranksStore (already refreshed by applyVerdict() during
+             finishWorkout()) for the badge/next-target data the raw verdict doesn't carry. -->
+        <template v-if="captionRows.length > 0">
+          <div class="eyebrow">Rang-Hinweise</div>
+          <div class="caption-list">
+            <RankProgress
+              v-for="c in captionRows"
+              :key="c.exerciseId"
+              variant="inline"
+              :tier="c.tier"
+              :division="c.division"
+              :lp="c.lp"
+              :next-target-weight-kg="c.nextTargetWeightKg"
+              :next-target-reps="c.nextTargetReps"
+              :trust="c.trust"
+              :recovery-gain-label="c.recoveryGainLabel"
+              :plausibility-note="c.plausibilityNote"
+            />
+          </div>
+        </template>
 
         <!-- Feedback: "if a user made changes to the routine while in the workout (more
              weight/reps than the default) it should ask to overwrite the routine." -->
@@ -776,6 +818,12 @@ async function logSet() {
 }
 .finished-summary .btn-primary {
   margin-top: var(--sp5);
+}
+.caption-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+  margin-bottom: var(--sp2);
 }
 .beat-panel {
   margin-top: var(--sp4);
