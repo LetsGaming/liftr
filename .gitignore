@@ -10,3 +10,5 @@ examples/
 coverage/
 .vite/
 *.tsbuildinfo
+.impeccable/hook.cache.json
+.impeccable/critique/

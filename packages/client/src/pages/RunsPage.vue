@@ -131,9 +131,16 @@ function formatDuration(s: number) {
       <button class="btn-primary" :disabled="!canSubmitManual" @click="submitManual">Speichern</button>
     </div>
 
-    <p v-if="runsStore.loaded && runsStore.runs.length === 0" style="color: var(--dim); margin-top: var(--sp4)">
-      Noch keine Läufe — importiere eine GPX- oder FIT-Datei oder trage einen Lauf manuell ein.
-    </p>
+    <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty">
+      <div class="eyebrow">Läufe</div>
+      <p>
+        Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
+        manuell nach — deine Daten bleiben lokal, kein Drittanbieter-Konto nötig.
+      </p>
+      <button class="btn-primary btn-block" :disabled="importing" @click="triggerImport">
+        {{ importing ? "Importiere…" : "GPX/FIT importieren" }}
+      </button>
+    </section>
 
     <div v-else class="layout">
       <div class="main-col">
@@ -210,6 +217,21 @@ function formatDuration(s: number) {
   color: var(--text);
   font-size: 13.5px;
 }
+.runs-empty {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: var(--sp5);
+  margin-top: var(--sp4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp4);
+}
+.runs-empty p {
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
 .layout {
   display: flex;
   flex-direction: column;
@@ -248,7 +270,10 @@ function formatDuration(s: number) {
   margin-bottom: var(--sp2);
   text-align: left;
   transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-base) var(--ease-out), background var(--dur-fast) var(--ease-out);
-  animation: pop-in var(--dur-base) var(--ease-spring) both;
+  /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
+     (rank-up, PR, level-up) per motion.css's own convention — a run-list row entrance isn't
+     one of those (see commit 8c0f158 for the same fix elsewhere). */
+  animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .run-row:active {
   transform: scale(0.98);

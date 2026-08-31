@@ -65,15 +65,30 @@ ion-title {
 /* Every routed page is an <IonPage>, which is position:absolute + inset:0 inside
    .main-content — that fills the *entire* box and ignores .main-content's own padding
    entirely (abs-positioned children aren't constrained by an ancestor's padding). So the
-   fixed mobile tab-bar (and, on mobile, the .mobile-status level/streak chips floating just
-   above it, see App.vue) was clipping the bottom of every page's actual scrollable content;
+   fixed mobile bottom chrome (.bottom-chrome in App.vue — the tab bar, plus the level/streak
+   status row now stacked directly above it as one solid block, see App.vue's header comment
+   on the P0 fix) was clipping the bottom of every page's actual scrollable content;
    --padding-bottom is ion-content's own supported hook for reserving scroll-end clearance,
-   and is the only thing that actually reaches the real scroll container in its shadow DOM. */
+   and is the only thing that actually reaches the real scroll container in its shadow DOM.
+
+   IMPORTANT — this only reserves clearance at the very *end* of a page's scroll. A live-
+   viewport audit (P0) found the status chip clipping real content well before scroll end too
+   (e.g. on `/`, the "Gesamtrang" stat tile was already clipped at scrollTop 0, the first
+   view, with much more content still below) — that overlap was fixed structurally in App.vue
+   (stacking the status row in normal flow inside .bottom-chrome instead of floating it
+   independently), not by this padding. This padding's only job is making sure the *last* bit
+   of scrollable content on a page can fully clear .bottom-chrome once the user scrolls there.
+
+   112px was measured too small: .bottom-chrome (tab bar + status row, both chips shown) now
+   renders ~122px tall at zero safe-area-inset-bottom. Bumped to a measured value with real
+   headroom, plus env(safe-area-inset-bottom) so notched devices — where the tab bar's own
+   bottom padding grows by that inset — get the matching extra clearance rather than losing
+   the last ~20-30px of every page behind the home-indicator area. */
 @media (max-width: 899px) {
   /* Must out-specificity Ionic's own .ion-padding utility (class selector), which also sets
      --padding-bottom (to 16px) — a bare `ion-content` element selector loses that fight. */
   ion-content.ion-padding,
   ion-content {
-    --padding-bottom: 112px;
+    --padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
   }
 }
