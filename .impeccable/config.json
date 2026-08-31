@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "var(--ease-spring)",
+        "files": [
+          "packages/client/src/App.vue"
+        ],
+        "createdAt": "2026-08-31T11:20:25.528Z",
+        "reason": "streak-pulse fires only on a genuine streak extension (earned moment, --dur-cele) — the sanctioned use case per motion.css's own documented convention, not routine UI"
+      }
+    ]
+  }
+}

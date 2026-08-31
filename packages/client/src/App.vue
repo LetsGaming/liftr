@@ -133,33 +133,55 @@ const navItems = [
         </RouterView>
       </main>
       <!-- level/streak chips live in .side-nav, which is hidden below 900px (plan 1.2) — without
-           this mobile-only duplicate, level and streak were completely invisible on phone. -->
-      <div v-if="(xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0)" class="mobile-status">
-        <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
-          <div class="mobile-level-row">
-            <b>Lv. {{ xp.level }}</b>
-            <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
+           this mobile-only duplicate, level and streak were completely invisible on phone.
+
+           .mobile-status and .tab-bar used to be two independently `position: fixed` elements,
+           the chip floating free-standing ~62px above the tab bar. A live-viewport audit (P0)
+           found the chip clipping real content (a stat tile on `/`, a rank card's exercise name,
+           profile action buttons, an exercises list row) — and not just at the *end* of a page's
+           scroll: on `/` it already clips the "Gesamtrang" tile at scrollTop 0, the very first
+           view, with hundreds more px of content still below. ion-content's --padding-bottom
+           (below in ionic-theme.css) only reserves clearance at the scroll *end*; it cannot
+           rescue content that scrolls into the chip's fixed viewport band mid-page — that's true
+           of any fixed overlay. On top of that, the chip's two pills floated with transparent
+           gaps around/between them (no backdrop on the container itself), so scrolled text
+           visibly poked through those gaps rather than disappearing behind one clean opaque
+           edge — the "cuts off ... mid-word" look. And the chip's own rendered bottom already
+           sank ~8.5px into the tab bar's top (two independently-positioned fixed elements with
+           only an assumed, unenforced gap between them).
+           Fix: stack both inside one `.bottom-chrome` flex column that's the *only* fixed
+           element, given its own solid backdrop. That makes the whole band a single continuous
+           opaque bar (no gaps content can peek through, no independent-offset drift), and lets
+           ion-content's padding-bottom target one measured, robust height instead of guessing
+           where a separately-fixed chip lands. -->
+      <div class="bottom-chrome">
+        <div v-if="(xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0)" class="mobile-status">
+          <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
+            <div class="mobile-level-row">
+              <b>Lv. {{ xp.level }}</b>
+              <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
+            </div>
+            <!-- .side-nav's chip has a progress bar (.rankbar); the mobile chip previously
+                 dropped it entirely — level was visible on phone but progress toward the next
+                 one wasn't. -->
+            <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ width: xp.progressPercent + '%' }" /></div>
           </div>
-          <!-- .side-nav's chip has a progress bar (.rankbar); the mobile chip previously
-               dropped it entirely — level was visible on phone but progress toward the next
-               one wasn't. -->
-          <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ width: xp.progressPercent + '%' }" /></div>
+          <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
         </div>
-        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
+        <nav class="tab-bar" aria-label="Hauptnavigation">
+          <RouterLink
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="tab-link"
+            :style="{ '--nav-color': item.color }"
+          >
+            <!-- eslint-disable-next-line vue/no-v-html -- static, hand-authored SVG paths only, never user input, see header comment -->
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="item.svg" />
+            {{ t(item.labelKey) }}
+          </RouterLink>
+        </nav>
       </div>
-      <nav class="tab-bar" aria-label="Hauptnavigation">
-        <RouterLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="tab-link"
-          :style="{ '--nav-color': item.color }"
-        >
-          <!-- eslint-disable-next-line vue/no-v-html -- static, hand-authored SVG paths only, never user input, see header comment -->
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="item.svg" />
-          {{ t(item.labelKey) }}
-        </RouterLink>
-      </nav>
     </div>
   </AuthGate>
 </template>
@@ -203,11 +225,10 @@ const navItems = [
   border-right: 1px solid var(--line);
   padding: var(--sp4) var(--sp3);
 }
+.bottom-chrome {
+  display: none;
+}
 .tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: space-around;
   background: var(--surface);
@@ -235,17 +256,20 @@ const navItems = [
   padding: 4px 3px;
   border-radius: var(--r-sm);
   font-weight: 700;
-  font-size: 10px;
+  /* Was 10px (9px below 380px) — a live audit measured every bottom-nav label below the 11px
+     readable-text floor on all 6 routes. Bumped both sizes; icons shrink instead below 380px
+     to keep 6 items fitting without wrapping/clipping (verified at 360px and 390px). */
+  font-size: 11.5px;
   white-space: nowrap;
 }
 /* 6 items now (was 5) — a bit more breathing room needed below 380px. */
 @media (max-width: 380px) {
   .tab-link {
-    font-size: 9px;
+    font-size: 10.5px;
   }
   .tab-link .nav-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 }
 .nav-icon {
@@ -319,16 +343,9 @@ const navItems = [
   margin-top: var(--sp2);
 }
 
-.mobile-status {
-  display: none;
-}
-
 @media (min-width: 900px) {
   .side-nav {
     display: flex;
-  }
-  .tab-bar {
-    display: none;
   }
   .main-content {
     padding-bottom: var(--sp6);
@@ -343,23 +360,33 @@ const navItems = [
        clearance fix for Ionic pages is ion-content's --padding-bottom in ionic-theme.css. */
     padding-bottom: 80px;
   }
+  /* Single fixed element for the whole bottom chrome (status row + tab bar stacked in one flex
+     column) — see the P0 fix comment above the template markup for why this replaced two
+     independently `position: fixed` pieces. Because .mobile-status is now laid out in normal
+     flow *inside* this column (not fixed/floating), it can never land on top of scrolled page
+     content: it always occupies exactly its own row, directly above the tab bar, with a solid
+     shared backdrop and zero gap between them. */
+  .bottom-chrome {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
   .mobile-status {
     display: flex;
     justify-content: center;
     gap: var(--sp2);
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 62px;
-    z-index: 1;
-    pointer-events: none;
+    padding: 8px var(--sp3) 6px;
   }
   .mobile-status .level-chip,
   .mobile-status .streak-chip {
-    pointer-events: auto;
     margin-top: 0;
     padding: 4px var(--sp3);
-    box-shadow: var(--shadow);
   }
   .mobile-status .level-chip b {
     display: inline;

@@ -299,10 +299,14 @@ async function logSet() {
             <button class="btn-primary rc-start" :disabled="starting" @click="startRoutine(routine)">
               {{ starting ? "…" : "▶ Start" }}
             </button>
-            <button class="rc-edit" @click="editRoutine(routine)">✎ Bearbeiten</button>
             <div class="rc-menu-wrap">
               <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)">⋮</button>
+              <!-- Folded in from a standalone "✎ Bearbeiten" button that used to sit next to
+                   Start at equal visual weight (design critique: 5 simultaneous affordances on
+                   the screen a returning user sees every session competed with the one action
+                   that matters — starting). Same editRoutine() call, just relocated. -->
               <div v-if="openMenuId === routine.id" class="rc-menu">
+                <button @click="editRoutine(routine); openMenuId = null">✎ Bearbeiten</button>
                 <button @click="duplicateRoutine(routine)">Duplizieren</button>
                 <button v-if="routine.mesocycle" @click="routineStore.endMesocycle(routine.id); openMenuId = null">
                   Mesozyklus beenden
@@ -326,9 +330,23 @@ async function logSet() {
           </div>
         </div>
       </div>
-      <p v-else style="color: var(--dim)">Noch keine Routine gespeichert.</p>
+      <!-- First-timer empty state (design critique P1): previously one gray sentence — the
+           least-designed screen for the highest-stakes moment, a first-timer's first decision,
+           before they can ever reach the rank system this app is built around. Styled after
+           ErholungszoneCard.vue's bordered-surface pattern (same .erholungszone-shaped card,
+           eyebrow, and primary CTA) so this gets the same visual investment as the app's best
+           empty/loading state instead of being an afterthought. -->
+      <div v-else class="routine-empty">
+        <div class="eyebrow routine-empty-eyebrow">Noch keine Routine</div>
+        <p class="routine-empty-copy">
+          Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist
+          der Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür
+          braucht es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten.
+        </p>
+        <button class="btn-primary btn-block routine-empty-cta" @click="showBuilder = true">+ Neue Routine</button>
+      </div>
 
-      <button class="btn-secondary" @click="showBuilder = true">+ Neue Routine</button>
+      <button v-if="routineStore.routines.length > 0" class="btn-secondary" @click="showBuilder = true">+ Neue Routine</button>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
 
       <button class="btn-primary btn-lg" :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
@@ -529,6 +547,29 @@ async function logSet() {
   gap: var(--sp4);
   align-items: flex-start;
 }
+/* Zero-routine empty state (design critique P1) — same bordered-surface treatment as
+   ErholungszoneCard.vue's .erholungszone so this gets equivalent visual weight, not a bare
+   sentence. Width-capped and self-contained like .finished-summary so it doesn't stretch
+   edge-to-edge on wide viewports. */
+.routine-empty {
+  width: 100%;
+  max-width: var(--content-w-narrow);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  padding: var(--sp5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp4);
+}
+.routine-empty-eyebrow {
+  --eyebrow-color: var(--blue-hi);
+}
+.routine-empty-copy {
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
 .routine-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -558,8 +599,10 @@ async function logSet() {
   position: relative;
   /* Entrance stagger + hover lift (feedback: the rest of the app was still missing the
      dashboard's liveliness) — this is the actual "choose a workout" screen, so it's worth as
-     much life as the dashboard itself. */
-  animation: pop-in var(--dur-base) var(--ease-spring) both;
+     much life as the dashboard itself. Uses --ease-out, not --ease-spring: the overshoot easing
+     is reserved for earned moments (rank-up, PR, level-up) per motion.css's own convention —
+     a routine list entrance isn't one of those (see commit 8c0f158 for the same fix elsewhere). */
+  animation: pop-in var(--dur-base) var(--ease-out) both;
   transition: box-shadow var(--dur-base) var(--ease-out);
 }
 .routine-grid > .routine-card:nth-child(1) {
@@ -648,15 +691,6 @@ async function logSet() {
   flex: 1;
   padding: 9px 10px;
   font-size: 13px;
-}
-.rc-edit {
-  padding: 9px 12px;
-  border-radius: var(--r-md);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 700;
 }
 .rc-menu-wrap {
   position: relative;
