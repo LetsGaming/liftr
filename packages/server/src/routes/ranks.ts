@@ -16,6 +16,10 @@ const rankResponse = z.object({
   trust: trustSchema,
   nextTargetWeightKg: z.number().nullable(),
   nextTargetReps: z.number().nullable(),
+  /** Peak snapshot (rank engine redesign R1/R2) — nullable only for rows never recomputed
+   *  since the R1 migration; a normal post-migration row always has all four set together. */
+  peakTier: tierSchema.nullable(),
+  peakDivision: z.number().nullable(),
 });
 
 /** GET /api/ranks — every exercise with a computed rank (plan Phase 2.2, mockup #p-raenge). */
@@ -35,6 +39,8 @@ export function registerRankRoutes(app: ZodFastifyInstance, db: AppDb) {
         trust: r.trust,
         nextTargetWeightKg: r.nextTargetWeightKg,
         nextTargetReps: r.nextTargetReps,
+        peakTier: r.peakTier,
+        peakDivision: r.peakDivision,
       }))
       .sort((a, b) => b.lp - a.lp);
   });

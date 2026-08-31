@@ -11,8 +11,10 @@ import {
   estimateE1rm,
   resolveRank,
   nextLoadTarget,
-  nextRepTarget,
+  nextTargetAtOrdinal,
+  ordinal,
   ratchetPeak,
+  computeCurrentBand,
   type StandardThreshold,
 } from "@liftr/shared";
 import { findLatestBodyweightLog } from "../repositories/bodyweightRepository.js";
@@ -123,19 +125,7 @@ export async function recomputeRankForExercise(db: LiftrDb, exerciseId: string):
 
   const rank = resolveRank(bestValue, thresholds);
 
-  const nextTargetWeightKg =
-    metric === "load_ratio" && rank.nextTarget
-      ? nextLoadTarget(rank.nextTarget.threshold, bodyweightKg, preferredReps).weightKg
-      : null;
-  const nextTargetReps =
-    metric === "load_ratio" && rank.nextTarget
-      ? nextLoadTarget(rank.nextTarget.threshold, bodyweightKg, preferredReps).reps
-      : metric === "reps"
-        ? nextRepTarget(thresholds, bestValue)
-        : null;
-
   const previousRank = await findRankByExerciseId(db, exerciseId);
-  const rankedUp = !previousRank || previousRank.tier !== rank.tier || previousRank.division !== rank.division;
 
   // Ratchet-only peak snapshot (rank engine redesign R1) — fixes the bodyweight-ratio
   // regression bug: peak is locked in at the moment it's achieved and never recomputed
@@ -162,23 +152,59 @@ export async function recomputeRankForExercise(db: LiftrDb, exerciseId: string):
     storedPeak,
   );
 
+  // A genuine rank-up (R2) is a *peak* advancing, not the displayed current band changing —
+  // decay softening or reversing current must never register as a rank-up, only a real new
+  // best. `rankedUp` was previously defined against the naive current value; redefining it
+  // against peak also fixes a latent bug decay would otherwise introduce: without this, a
+  // decay-reversal snap-back (current jumping from a softened band back up to an
+  // already-known peak) would have looked like a fresh rank-up and logged a spurious event.
+  const rankedUp = !storedPeak || storedPeak.tier !== peak.tier || storedPeak.division !== peak.division;
+
+  // Current-rank decay (rank engine redesign R2) — floor-protected soft decay from peak, based
+  // on days since this exercise was last trained (any logged set, not just the best one).
+  // Only real training reverses it: logging a new set resets `daysSinceLastTrained` to 0, so
+  // recompute (triggered by that same set) snaps current straight back to peak, not gradually.
+  const lastTrainedAtMs = loggedSets.reduce((max, s) => Math.max(max, s.loggedAt.getTime()), 0);
+  const daysSinceLastTrained = Math.floor((Date.now() - lastTrainedAtMs) / (24 * 60 * 60 * 1000));
+  const currentBand = computeCurrentBand(
+    { tier: peak.tier, division: peak.division, lp: peak.lp },
+    daysSinceLastTrained,
+  );
+
+  // Next-target predictions follow the *decayed* current band, not the freshly-resolved naive
+  // value — a softened display would otherwise show a next target the lifter has technically
+  // already cleared.
+  const currentOrdinal = ordinal(currentBand.tier, currentBand.division);
+  const decayedNextTarget = nextTargetAtOrdinal(thresholds, currentOrdinal);
+  const nextTargetWeightKg =
+    metric === "load_ratio" && decayedNextTarget
+      ? nextLoadTarget(decayedNextTarget.threshold, bodyweightKg, preferredReps).weightKg
+      : null;
+  const nextTargetReps =
+    metric === "load_ratio" && decayedNextTarget
+      ? nextLoadTarget(decayedNextTarget.threshold, bodyweightKg, preferredReps).reps
+      : metric === "reps"
+        ? (decayedNextTarget?.threshold ?? null)
+        : null;
+
   // Read-only history of this rank-up (engagement rework W8) — not a new reward mechanic, just
-  // a log of the event `rankedUp` above already detects. Fires exactly once per genuine
-  // tier/division change, never per set logged.
+  // a log of the event `rankedUp` above already detects. Fires exactly once per genuine peak
+  // tier/division change, never per set logged and never on a decay-only recompute (decay can
+  // only move `currentBand`, which `rankedUp` no longer depends on).
   if (rankedUp) {
     await insertRankEvent(db, {
       exerciseId,
-      tier: rank.tier,
-      division: rank.division,
+      tier: peak.tier,
+      division: peak.division,
       occurredAt: bestSet.loggedAt,
     });
   }
 
   await upsertRank(db, {
     exerciseId,
-    tier: rank.tier,
-    division: rank.division,
-    lp: rank.lp,
+    tier: currentBand.tier,
+    division: currentBand.division,
+    lp: currentBand.lp,
     e1rm: bestE1rm,
     trust: rank.trust,
     nextTargetWeightKg,
@@ -205,7 +231,14 @@ export async function recomputeRankForExercise(db: LiftrDb, exerciseId: string):
     newPr = { kind: prKind, value: bestE1rm };
   }
 
-  return { rankedUp, newPr, tier: rank.tier, division: rank.division, lp: rank.lp, prevLp: previousRank?.lp ?? 0 };
+  return {
+    rankedUp,
+    newPr,
+    tier: currentBand.tier,
+    division: currentBand.division,
+    lp: currentBand.lp,
+    prevLp: previousRank?.lp ?? 0,
+  };
 }
 
 export interface RankEventsByWeekday {

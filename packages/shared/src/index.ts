@@ -12,6 +12,7 @@ export * from "./equipment/requirements.js";
 export * from "./equipment/substitutes.js";
 export * from "./recovery/recovery.js";
 export * from "./routine-builder/recommend.js";
+export * from "./rank/decay.js";
 export * from "./rank/tiers.js";
 export * from "./rank/defaultStandards.js";
 export * from "./share/layout.js";
