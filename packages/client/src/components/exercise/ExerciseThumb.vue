@@ -23,7 +23,7 @@ const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === fal
 
 <template>
   <div class="exercise-thumb" :style="{ width: `${size}px`, height: `${size}px` }">
-    <img v-if="!failed && !knownMissing" :src="`${apiBase()}/images/${props.slug}/start.jpg`" alt="" @error="failed = true" />
+    <img v-if="!failed && !knownMissing" :src="`${apiBase()}/images/${props.slug}/start.jpg`" alt="" loading="lazy" @error="failed = true" />
     <ExerciseIcon v-else :equipment="equipment" :size="Math.round(size * 0.55)" />
   </div>
 </template>

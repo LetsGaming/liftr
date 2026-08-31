@@ -56,10 +56,13 @@
 }
 
 /* Any progress bar (rank LP, level XP, rest timer) — apply to the fill element itself so
-   width/--p changes animate instead of jumping. This one rule is what makes every bar in the
-   app feel alive; don't redeclare it locally. */
+   scale changes animate instead of jumping. This one rule is what makes every bar in the
+   app feel alive; don't redeclare it locally. Animates `transform: scaleX(...)`, not `width`
+   (audit finding: animating a layout property is a real layout-thrash pattern, however small
+   here) — the element itself is always full-width (tokens.css's `.rankbar > i`) and visually
+   scales from `transform-origin: left`. */
 .bar-fill {
-  transition: width var(--dur-base) var(--ease-out);
+  transition: transform var(--dur-base) var(--ease-out);
 }
 
 /* The "you earned this" stamp — overshoots past full size then settles. Reserved for genuinely

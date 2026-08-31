@@ -105,6 +105,13 @@
   --green: #37d67a;
   --pr: #ffd23f;
 
+  /* Dark text for set-kind badges (.k-warmup/.k-failure/.k-dropset) sitting on their own bright
+     fill (--fire/--red/--plat-3) — was copy-pasted three times (ArrangeStep.vue, SetKindPicker.vue,
+     WorkoutPage.vue); one set of tokens here instead. */
+  --k-warmup-text: #2a1000;
+  --k-failure-text: #2a0505;
+  --k-dropset-text: #04302e;
+
   /* saturated tier fills — the reward, full-card like the mockup's rank arena */
   --bronze-1: #3a2109;
   --bronze-2: #8a4f22;
@@ -203,13 +210,19 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--eyebrow-color, var(--faint));
+  /* At 200%-browser-zoom-equivalent widths (~195px) a long eyebrow like "ERHOLUNGSZONE" was
+     hard-wrapping mid-word with no soft-wrap opportunity (audit finding, WCAG 1.4.10 Reflow) —
+     let it break at a normal word/letter boundary instead of overflowing or splitting oddly. */
+  overflow-wrap: break-word;
 }
 
 /* Circular modal/sheet close button (✕) — was redefined at 30px in two sheet components and
-   32px in the routine wizard; standardized on the larger, more touch-friendly size. */
+   32px in the routine wizard; standardized on the larger, more touch-friendly size. Bumped again
+   32px -> 44px (audit: touch-target floor, WCAG 2.5.5) via padding so the glyph itself stays the
+   same visual size. */
 .btn-close {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -290,6 +303,15 @@ body {
     background: var(--surface-3);
   }
 }
+
+/* Global keyboard-focus ring (audit: no :focus-visible existed anywhere — the browser's default
+   outline computes to ~1:1 contrast against this dark palette, i.e. invisible, WCAG 1.4.11/2.4.7).
+   One rule at the base layer reaches every button/link/input/custom control in the app instead
+   of needing to be redeclared per component. */
+:focus-visible {
+  outline: 2px solid var(--blue-hi);
+  outline-offset: 2px;
+}
 .btn-block {
   width: 100%;
 }
@@ -363,8 +385,13 @@ body {
 }
 .rankbar > i {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: 999px;
+  /* Always full width; the fill animates via `transform: scaleX(...)` (motion.css's .bar-fill),
+     not `width`, to avoid animating a layout property (audit finding). transform-origin: left
+     so it grows from the track's start, matching how `width` used to visually behave. */
+  transform-origin: left;
   /* Bug fix: --b2/--b3 only exist under a .t-<tier> ancestor (set by the badge's own tier
      class, e.g. RankProgress.vue's outer wrapper). Every XP/level bar (App.vue's nav chips,
      FinishSequence's level bar and per-rankup mini-bars) has no such ancestor, so this gradient

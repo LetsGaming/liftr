@@ -87,7 +87,15 @@ watch(
 </script>
 
 <template>
-  <div class="finish-seq" @click="celebrate.skip()">
+  <div
+    class="finish-seq"
+    role="button"
+    tabindex="0"
+    aria-label="Überspringen"
+    @click="celebrate.skip()"
+    @keydown.enter="celebrate.skip()"
+    @keydown.space.prevent="celebrate.skip()"
+  >
     <!-- Beat 1: Rangaufstiege — omitted entirely when the session had none. -->
     <div v-if="celebrate.activeIndex.value === 0" class="beat pop-in">
       <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
@@ -100,7 +108,7 @@ watch(
             <b>{{ r.exerciseName }}</b>
             <span>{{ r.isPr ? "Neuer Rekord" : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
             <div class="rankbar">
-              <i class="bar-fill" :style="{ width: Math.round(r.lp) + '%' }" />
+              <i class="bar-fill" :style="{ transform: `scaleX(${Math.round(r.lp) / 100})` }" />
             </div>
           </div>
         </div>
@@ -131,7 +139,7 @@ watch(
       <div v-if="leveledUp" class="level-up stamp-in">LEVEL {{ levelAfter }}!</div>
       <div v-else class="level-line tnum">Lv. {{ levelAfter }}</div>
       <div class="rankbar level-bar">
-        <i class="bar-fill" :style="{ width: barPercent + '%' }" />
+        <i class="bar-fill" :style="{ transform: `scaleX(${barPercent / 100})` }" />
       </div>
     </div>
 

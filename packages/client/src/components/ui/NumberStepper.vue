@@ -95,8 +95,10 @@ const emit = defineEmits<{ adjust: [delta: 1 | -1] }>();
   padding: 4px;
 }
 .stepper.sm .ctrls button {
-  width: 32px;
-  height: 32px;
+  /* Bumped 32px -> 44px (audit: touch-target floor, WCAG 2.5.5) — only ever used two-up
+     (mesocycle-weeks +/-), so there's room without crowding. */
+  width: 44px;
+  height: 44px;
   border-radius: var(--r-sm);
   background: var(--surface);
   border: 1px solid var(--line);

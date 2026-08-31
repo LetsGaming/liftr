@@ -50,6 +50,29 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // The main entry chunk pulled in the full Ionic/Stencil runtime (~1MB) because it's
+        // imported eagerly in main.ts and never route-split. Route pages already lazy-split
+        // fine (see router.ts); this splits the framework/vendor code itself into its own
+        // cacheable chunk(s) so the app's own code doesn't ship one giant >500kB bundle.
+        manualChunks: (id) => {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("@ionic") || id.includes("ionicons")) return "ionic-vendor";
+          if (
+            id.includes("/vue/") ||
+            id.includes("/vue-router/") ||
+            id.includes("/pinia/") ||
+            id.includes("/@vue/")
+          ) {
+            return "vue-vendor";
+          }
+          return "vendor";
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       "/api": "http://localhost:3001",

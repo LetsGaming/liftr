@@ -5,6 +5,7 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref, watch } from "vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
+import StatTile from "../components/ui/StatTile.vue";
 import { useToast } from "../composables/useToast";
 import {
   importNewHealthConnectWorkouts,
@@ -230,15 +231,21 @@ async function exportData() {
     <p style="color: var(--dim)">Ein Nutzer · selbst gehostet.</p>
 
     <section class="card">
-      <h2>Körpergewicht</h2>
+      <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
       <p class="hint">Wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet.</p>
       <div class="bw-row">
-        <input v-model="weightInput" type="text" inputmode="decimal" placeholder="z.B. 72,5" />
+        <input
+          v-model="weightInput"
+          type="text"
+          inputmode="decimal"
+          placeholder="z.B. 72,5"
+          aria-label="Körpergewicht in Kilogramm"
+        />
         <span class="unit">kg</span>
         <button class="btn-primary" :disabled="!canSave || saving" @click="saveWeight">Speichern</button>
       </div>
       <p v-if="bodyweight.latest" class="current">
-        Aktuell: <b>{{ bodyweight.latest.weightKg }} kg</b> ({{ bodyweight.latest.date }})
+        Aktuell: <b class="tnum">{{ bodyweight.latest.weightKg }} kg</b> ({{ bodyweight.latest.date }})
       </p>
       <p v-else class="current" style="color: var(--faint)">
         Noch kein Eintrag — Rang-Berechnung nutzt vorläufig 75 kg.
@@ -247,7 +254,7 @@ async function exportData() {
     </section>
 
     <section class="card">
-      <h2>Trainingsprofil</h2>
+      <h2 class="eyebrow">Trainingsprofil</h2>
       <p class="hint">Bestimmt u.a. den Startpunkt für Gewichtsvorschläge im Routinen-Assistenten bei Übungen ohne eigene Trainingshistorie.</p>
       <div class="profile-field">
         <span class="profile-label">Geschlecht</span>
@@ -282,7 +289,7 @@ async function exportData() {
     </section>
 
     <section class="card">
-      <h2>Equipment</h2>
+      <h2 class="eyebrow">Equipment</h2>
       <p class="hint">Wird genutzt, um Übungsvorschläge auf das zu beschränken, was dir tatsächlich zur Verfügung steht (z.B. beim Training zuhause).</p>
       <span class="profile-label">Trainingsgerät</span>
       <div class="chip-row wrap">
@@ -314,7 +321,7 @@ async function exportData() {
     </section>
 
     <section v-if="ownedBarTypes.length > 0" class="card">
-      <h2>Scheiben &amp; Stange</h2>
+      <h2 class="eyebrow">Scheiben &amp; Stange</h2>
       <p class="hint">Macht die Scheiben-Anzeige beim Training exakt: nur was du wirklich hast, wird zum Beladen vorgeschlagen.</p>
       <span class="profile-label">Stangengewicht</span>
       <div class="plate-rows">
@@ -344,8 +351,12 @@ async function exportData() {
     </section>
 
     <section class="card">
-      <h2>XP &amp; Level</h2>
+      <h2 class="eyebrow">XP &amp; Level</h2>
       <p class="hint">Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden.</p>
+      <div v-if="xp.loaded" class="stat-row">
+        <StatTile :value="`Lv. ${xp.level}`" label="Level" />
+        <StatTile :value="xp.totalXp.toLocaleString('de-DE')" label="Gesamt-XP" />
+      </div>
       <div class="bw-row">
         <span style="flex: 1">{{ xp.showXp ? "Wird angezeigt" : "Ausgeblendet" }}</span>
         <button class="btn-primary" @click="xp.toggleShowXp()">
@@ -355,7 +366,7 @@ async function exportData() {
     </section>
 
     <section class="card">
-      <h2>API-Token</h2>
+      <h2 class="eyebrow">API-Token</h2>
       <p class="hint">Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist.</p>
       <div class="bw-row">
         <input v-model="tokenInput" type="password" placeholder="Token" />
@@ -364,7 +375,7 @@ async function exportData() {
     </section>
 
     <section v-if="isHealthConnectAvailable()" class="card">
-      <h2>Health Connect</h2>
+      <h2 class="eyebrow">Health Connect</h2>
       <p class="hint">
         Läufe, die du mit deiner Uhr aufgezeichnet hast, automatisch importieren — inklusive Route, sobald Health
         Connect sie liefert.
@@ -376,7 +387,7 @@ async function exportData() {
     </section>
 
     <section class="card">
-      <h2>Daten-Export</h2>
+      <h2 class="eyebrow">Daten-Export</h2>
       <p class="hint">Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr.</p>
       <button class="btn-primary" :disabled="exporting" @click="exportData">
         {{ exporting ? "Wird erstellt…" : "Backup herunterladen" }}
@@ -398,8 +409,10 @@ async function exportData() {
   padding: var(--sp4);
   margin-top: var(--sp4);
   /* Entrance stagger (feedback: the rest of the app was still missing the dashboard's
-     liveliness) — a single-column settings list, so a plain top-to-bottom cascade fits. */
-  animation: pop-in var(--dur-base) var(--ease-spring) both;
+     liveliness) — a single-column settings list, so a plain top-to-bottom cascade fits.
+     --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
+     (rank-up, PR, level-up) per motion.css's own convention (see commit 8c0f158). */
+  animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .card:nth-of-type(1) {
   animation-delay: 0ms;
@@ -422,9 +435,28 @@ async function exportData() {
     margin: 0 auto;
   }
 }
-.card h2 {
-  font-size: 15px;
-  margin-bottom: 4px;
+/* Design pass (audit: page read as "indistinguishable from any generic settings screen" —
+   every other page uses .eyebrow, tokens.css's canonical small-caps section label, for its
+   card/section headers; this page was the one holdout still using a bare <h2>). Headings stay
+   semantic <h2> elements (a11y: still real headings, screen readers still get section
+   structure) but are visually demoted to the app's eyebrow treatment, same as
+   ErholungszoneCard/RankDistributionDonut/RunCard — the label names the section, the controls
+   underneath carry the visual weight, not the heading. */
+.card .eyebrow {
+  display: block;
+  margin-bottom: var(--sp2);
+}
+/* Bodyweight directly feeds the rank engine (see .hint below it) — the one accent tying this
+   settings card back to the app's core mechanic, using the same blue the rank bar itself falls
+   back to (tokens.css's .rankbar fallback) rather than inventing a new hue. */
+.bw-eyebrow {
+  --eyebrow-color: var(--blue-hi);
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp2);
+  margin-bottom: var(--sp3);
 }
 .hint {
   font-size: 12px;

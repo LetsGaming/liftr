@@ -11,6 +11,51 @@
         ],
         "createdAt": "2026-08-31T11:20:25.528Z",
         "reason": "streak-pulse fires only on a genuine streak extension (earned moment, --dur-cele) — the sanctioned use case per motion.css's own documented convention, not routine UI"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "packages/client/src/components/exercise/ExerciseRail.vue"
+        ],
+        "createdAt": "2026-08-31T12:19:58.271Z",
+        "reason": "border-left marks .rail-item.grouped (superset membership), a functional state indicator not a decorative border — confirmed by audit"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "var(--ease-spring)",
+        "files": [
+          "packages/client/src/components/exercise/ExerciseRail.vue"
+        ],
+        "createdAt": "2026-08-31T12:19:58.351Z",
+        "reason": "checkmark for a set going in-progress -> done is an earned moment per motion.css's own convention — confirmed by audit"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "var(--ease-spring)",
+        "files": [
+          "packages/client/src/components/workout/RestTimer.vue"
+        ],
+        "createdAt": "2026-08-31T12:19:58.438Z",
+        "reason": "a completing rest timer is an earned moment per motion.css's own convention — confirmed by audit"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "packages/client/src/styles/motion.css"
+        ],
+        "createdAt": "2026-08-31T12:19:58.595Z",
+        "reason": "canonical definition site of --ease-spring/.pop-in/stamp-in themselves (motion.css is the single source of truth these tokens live in) — flagging the definition is expected, not a misuse; call sites are individually vetted"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "packages/client/src/components/ui/MuscleFigure.vue"
+        ],
+        "createdAt": "2026-08-31T12:20:20.212Z",
+        "reason": "detector matched a JS doc-comment describing the rendering approach, not real markup — the actual <img> tags all have valid dynamic :src bindings"
       }
     ]
   }

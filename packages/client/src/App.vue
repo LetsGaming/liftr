@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, RouterView } from "vue-router";
+import { RouterLink, RouterView, useRoute } from "vue-router";
 import AuthGate from "./components/ui/AuthGate.vue";
 import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
@@ -94,12 +94,30 @@ const navItems = [
     svg: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" stroke-linecap="round"/>',
   },
 ] as const;
+
+/**
+ * Accessibility audit (P2): every page has a visible <IonTitle>, but ion-title renders as a
+ * plain custom element with no heading role — screen-reader heading navigation never lands
+ * anywhere. navItems' labels already track each page's real title, so reuse them for a
+ * visually-hidden <h1> here rather than inventing per-page route-meta titles. Falls back to
+ * the app name for routes not in navItems (e.g. /attributions).
+ */
+const route = useRoute();
+const pageTitle = computed(() => {
+  const match = navItems.find((item) => item.to === route.path);
+  return match ? t(match.labelKey) : "Liftr";
+});
 </script>
 
 <template>
   <AuthGate>
     <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
     <ToastHost />
+    <!-- Accessibility audit (P2): a real <h1> heading landmark for screen-reader heading
+         navigation. Visually hidden — every page's <IonTitle> stays the only VISIBLE title;
+         this exists purely so assistive tech has a landing point. Lives once here (not per-page)
+         so it survives every route transition without duplication. -->
+    <h1 class="sr-only">{{ pageTitle }}</h1>
     <div class="app-shell">
       <!-- desktop sidebar / mobile tab bar: one route set, two layouts (plan 1.2) -->
       <nav class="side-nav" aria-label="Hauptnavigation">
@@ -116,7 +134,7 @@ const navItems = [
         </RouterLink>
         <div v-if="xp.showXp && xp.loaded" class="level-chip">
           <b>Lv. {{ xp.level }}</b>
-          <div class="rankbar"><i class="bar-fill" :style="{ width: xp.progressPercent + '%' }" /></div>
+          <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
           <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
         </div>
         <div v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
@@ -164,7 +182,7 @@ const navItems = [
             <!-- .side-nav's chip has a progress bar (.rankbar); the mobile chip previously
                  dropped it entirely — level was visible on phone but progress toward the next
                  one wasn't. -->
-            <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ width: xp.progressPercent + '%' }" /></div>
+            <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
           </div>
           <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
         </div>
@@ -187,6 +205,20 @@ const navItems = [
 </template>
 
 <style scoped>
+/* Accessibility audit (P2) — standard visually-hidden pattern: present and readable to
+   assistive tech (unlike display:none/visibility:hidden), invisible and takes no layout space
+   for sighted users. No existing sr-only utility was found elsewhere in the codebase's CSS. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -270,6 +302,31 @@ const navItems = [
   .tab-link .nav-icon {
     width: 18px;
     height: 18px;
+  }
+}
+/* Reflow audit (P1, WCAG 1.4.10): at extreme zoom-equivalent widths (measured 195px, the
+   standard 400% "reflow" test point derived from 390px @ 200%) six items no longer fit even at
+   the shrunk 380px sizing above — "Läufe" and "Profil" clipped off the right edge of this
+   `position: fixed` bar with no way to reach them (page-level scroll doesn't reach a fixed
+   element). Below 300px (well under any real layout — 360/390px devices never hit this), let the
+   bar scroll horizontally instead of clipping: `flex: none` stops items shrinking to 0 so they
+   stay tappable, `justify-content: flex-start` avoids space-around fighting the scroll, and the
+   scrollbar is hidden (still touch/wheel scrollable) so it doesn't eat into the already-tight
+   9px vertical padding. */
+@media (max-width: 300px) {
+  .tab-bar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-link {
+    flex: none;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }
 .nav-icon {

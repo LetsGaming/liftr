@@ -73,7 +73,7 @@ const verdict = computed(() => {
 .ez-pill {
   align-self: flex-start;
   background: linear-gradient(135deg, var(--fire-hi), var(--fire));
-  color: #2a1000;
+  color: var(--k-warmup-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;

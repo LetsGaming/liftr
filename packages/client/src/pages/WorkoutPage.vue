@@ -689,6 +689,7 @@ async function logSet() {
 }
 .rc-start {
   flex: 1;
+  min-height: 44px;
   padding: 9px 10px;
   font-size: 13px;
 }
@@ -697,8 +698,8 @@ async function logSet() {
   flex: none;
 }
 .rc-menu-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--r-md);
   background: var(--surface-3);
   border: 1px solid var(--line);
@@ -1072,7 +1073,7 @@ button.sn:active {
 }
 .set-rows .sn.k-warmup {
   background: var(--fire);
-  color: #2a1000;
+  color: var(--k-warmup-text);
 }
 .set-rows .sn.k-normal {
   background: var(--surface-3);
@@ -1080,11 +1081,11 @@ button.sn:active {
 }
 .set-rows .sn.k-failure {
   background: var(--red);
-  color: #2a0505;
+  color: var(--k-failure-text);
 }
 .set-rows .sn.k-dropset {
   background: var(--plat-3);
-  color: #04302e;
+  color: var(--k-dropset-text);
 }
 .exercise-done {
   color: var(--dim);
