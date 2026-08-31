@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { rankEvents, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { bodyweightLogs, ranks, rankEvents, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { writeJsonSetting } from "../repositories/settingsRepository.js";
 import { computeRankEventsByWeekday, getCurrentBodyweightKg, getUserSex, recomputeRankForExercise } from "./rankService.js";
 import { createTestDb, insertTestExercise } from "./testDb.js";
@@ -120,6 +120,48 @@ describe("recomputeRankForExercise", () => {
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(2);
     expect(rows[1]!.tier).toBe("silver");
+  });
+
+  it("peak (R1) never regresses when a later bodyweight increase alone would lower the naive ratio", async () => {
+    const ex = await insertTestExercise(db); // not bodyweight-relative: e1RM is a fixed absolute load
+    await seedStandards(ex.id);
+
+    // Bodyweight 75kg (fallback): 60kg x 8 -> e1rm ~76 -> ratio ~1.01 -> bronze/II.
+    // Bump the set weight so the ratio clears silver (>1.1) to exercise the peak-ratchet path.
+    await db.insert(bodyweightLogs).values({ date: "2026-01-01", weightKg: 75 });
+    await logSet(ex.id, 85, 8);
+    const first = await recomputeRankForExercise(db, ex.id);
+    expect(first!.rankedUp).toBe(true);
+    const firstRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(firstRow!.tier).toBe("silver");
+    expect(firstRow!.peakTier).toBe(firstRow!.tier);
+    expect(firstRow!.peakDivision).toBe(firstRow!.division);
+    const firstPeakOrdinal = `${firstRow!.peakTier}-${firstRow!.peakDivision}`;
+
+    // Bodyweight jumps up with no new strength gain and no new set: e1rm is unchanged (fixed
+    // absolute load), but the ratio (e1rm / bodyweight) naively drops. Peak must not regress.
+    await db.insert(bodyweightLogs).values({ date: "2026-02-01", weightKg: 130 });
+    const second = await recomputeRankForExercise(db, ex.id);
+    expect(second!.tier).not.toBe(firstRow!.tier); // sanity: the naive current rank *did* drop
+    const secondRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(`${secondRow!.peakTier}-${secondRow!.peakDivision}`).toBe(firstPeakOrdinal);
+    expect(secondRow!.peakLp).toBe(firstRow!.peakLp);
+    expect(secondRow!.peakE1rm).toBe(firstRow!.peakE1rm);
+  });
+
+  it("peak (R1) ratchets forward when a genuinely stronger set is logged", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8);
+    await recomputeRankForExercise(db, ex.id);
+    const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+
+    await logSet(ex.id, 90, 8); // clears the silver threshold
+    await recomputeRankForExercise(db, ex.id);
+    const after = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+
+    expect(after!.peakTier).toBe("silver");
+    expect(after!.peakE1rm).toBeGreaterThan(before!.peakE1rm!);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextLoadTarget, nextRepTarget, resolveRank, type StandardThreshold } from "./tiers.js";
+import { nextLoadTarget, nextRepTarget, ratchetPeak, resolveRank, type StandardThreshold } from "./tiers.js";
 import { epley } from "../math/e1rm.js";
 
 const loadThresholds: StandardThreshold[] = [
@@ -63,5 +63,44 @@ describe("nextRepTarget", () => {
   });
   it("returns null once past the top threshold", () => {
     expect(nextRepTarget(repThresholds, 20)).toBeNull();
+  });
+});
+
+describe("ratchetPeak", () => {
+  it("adopts current as peak when there is no stored peak yet", () => {
+    const peak = ratchetPeak({ tier: "bronze", division: 2, lp: 40, e1rm: 100 }, 1000, null);
+    expect(peak).toEqual({ tier: "bronze", division: 2, lp: 40, e1rm: 100, achievedAt: 1000 });
+  });
+
+  it("never regresses when a later bodyweight increase alone would lower the naive ratio", () => {
+    // Simulates: PR set at bodyweight 80kg reaches gold-III, then bodyweight climbs to 90kg
+    // with no strength change, so recomputing the ratio today against the same absolute e1RM
+    // would resolve to a *lower* band (silver-I). Peak must stay at gold-III.
+    const peakAfterPr = ratchetPeak({ tier: "gold", division: 3, lp: 20, e1rm: 120 }, 1000, null);
+    const peakAfterBodyweightIncrease = ratchetPeak(
+      { tier: "silver", division: 1, lp: 80, e1rm: 120 },
+      2000,
+      peakAfterPr,
+    );
+    expect(peakAfterBodyweightIncrease).toEqual(peakAfterPr);
+  });
+
+  it("ratchets forward when a genuinely stronger tier/division is reached", () => {
+    const first = ratchetPeak({ tier: "bronze", division: 3, lp: 10, e1rm: 50 }, 1000, null);
+    const stronger = ratchetPeak({ tier: "bronze", division: 1, lp: 5, e1rm: 70 }, 2000, first);
+    expect(stronger).toEqual({ tier: "bronze", division: 1, lp: 5, e1rm: 70, achievedAt: 2000 });
+  });
+
+  it("ratchets forward on a higher LP within the same tier/division", () => {
+    const first = ratchetPeak({ tier: "gold", division: 2, lp: 30, e1rm: 90 }, 1000, null);
+    const higherLp = ratchetPeak({ tier: "gold", division: 2, lp: 60, e1rm: 95 }, 2000, first);
+    expect(higherLp.lp).toBe(60);
+    expect(higherLp.achievedAt).toBe(2000);
+  });
+
+  it("does not regress on a lower LP within the same tier/division", () => {
+    const first = ratchetPeak({ tier: "gold", division: 2, lp: 60, e1rm: 95 }, 1000, null);
+    const lowerLp = ratchetPeak({ tier: "gold", division: 2, lp: 30, e1rm: 90 }, 2000, first);
+    expect(lowerLp).toEqual(first);
   });
 });
