@@ -50,6 +50,8 @@ const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
               :next-target-weight-kg="r.nextTargetWeightKg"
               :next-target-reps="r.nextTargetReps"
               :trust="r.trust"
+              :peak-tier="r.peakTier"
+              :peak-division="r.peakDivision"
             />
           </button>
           <div v-if="expanded.has(r.exerciseId)" class="chart-slot pop-in">

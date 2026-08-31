@@ -12,6 +12,10 @@ export interface RankRow {
   trust: "real" | "derived" | "synthetic";
   nextTargetWeightKg: number | null;
   nextTargetReps: number | null;
+  /** Peak snapshot (rank engine redesign R1/R2) — used to render the "decayed below peak"
+   *  caption; null only for rows never recomputed since the R1 migration. */
+  peakTier: string | null;
+  peakDivision: number | null;
 }
 
 export function getRanks(): Promise<RankRow[]> {

@@ -19,7 +19,7 @@ async function seedStandards(exerciseId: string, sex: "male" | "female" = "male"
   ]);
 }
 
-async function logSet(exerciseId: string, weightKg: number, reps: number) {
+async function logSet(exerciseId: string, weightKg: number, reps: number, loggedAt: Date = new Date()) {
   const [workout] = await db.insert(workouts).values({ clientId: `w-${Math.random()}`, startedAt: new Date(), pausedSeconds: 0 }).returning();
   const [we] = await db.insert(workoutExercises).values({ workoutId: workout!.id, exerciseId, orderIndex: 0 }).returning();
   await db.insert(sets).values({
@@ -29,7 +29,7 @@ async function logSet(exerciseId: string, weightKg: number, reps: number) {
     reps,
     kind: "normal",
     isWarmup: false,
-    loggedAt: new Date(),
+    loggedAt,
     clientId: `s-${Math.random()}`,
   });
 }
@@ -139,10 +139,13 @@ describe("recomputeRankForExercise", () => {
     const firstPeakOrdinal = `${firstRow!.peakTier}-${firstRow!.peakDivision}`;
 
     // Bodyweight jumps up with no new strength gain and no new set: e1rm is unchanged (fixed
-    // absolute load), but the ratio (e1rm / bodyweight) naively drops. Peak must not regress.
+    // absolute load), but the naive ratio (e1rm / bodyweight) would drop if recomputed fresh.
+    // Peak must not regress — and (once R2's floor-protected current band is wired in below)
+    // the *displayed* current rank doesn't regress either, since it's peak-derived and this
+    // recompute happens with zero days since last trained (no decay yet).
     await db.insert(bodyweightLogs).values({ date: "2026-02-01", weightKg: 130 });
     const second = await recomputeRankForExercise(db, ex.id);
-    expect(second!.tier).not.toBe(firstRow!.tier); // sanity: the naive current rank *did* drop
+    expect(second!.tier).toBe(firstRow!.tier); // fixed: no longer regresses
     const secondRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(`${secondRow!.peakTier}-${secondRow!.peakDivision}`).toBe(firstPeakOrdinal);
     expect(secondRow!.peakLp).toBe(firstRow!.peakLp);
@@ -162,6 +165,78 @@ describe("recomputeRankForExercise", () => {
 
     expect(after!.peakTier).toBe("silver");
     expect(after!.peakE1rm).toBeGreaterThan(before!.peakE1rm!);
+  });
+
+  /** Standards with three silver divisions modeled, so a peak can land above division III and
+   *  decay has somewhere real to soften to within the same tier. */
+  async function seedMultiDivisionStandards(exerciseId: string) {
+    await db.insert(standards).values([
+      { exerciseId, sex: "male", metric: "load_ratio", tier: "bronze", division: 3, threshold: 0.5, trust: "real" },
+      { exerciseId, sex: "male", metric: "load_ratio", tier: "silver", division: 3, threshold: 1.1, trust: "real" },
+      { exerciseId, sex: "male", metric: "load_ratio", tier: "silver", division: 2, threshold: 1.3, trust: "real" },
+      { exerciseId, sex: "male", metric: "load_ratio", tier: "silver", division: 1, threshold: 1.5, trust: "real" },
+    ]);
+  }
+
+  it("current rank (R2) decays below peak once the exercise hasn't been trained in a long time", async () => {
+    const ex = await insertTestExercise(db);
+    await seedMultiDivisionStandards(ex.id);
+
+    // 90kg x 8 at the 75kg fallback bodyweight -> ratio ~1.52 -> silver/I (top division).
+    // Log it 200 days ago (well past grace + window) so decay is fully in effect "today."
+    const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 90, 8, longAgo);
+    const result = await recomputeRankForExercise(db, ex.id);
+
+    const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(row!.peakTier).toBe("silver");
+    expect(row!.peakDivision).toBe(1); // peak itself is untouched by decay
+
+    // Displayed current is floored at division III / 0 LP of the peak's own tier — softened,
+    // but never a lower tier than peak.
+    expect(result!.tier).toBe("silver");
+    expect(result!.division).toBe(3);
+    expect(result!.lp).toBe(0);
+    expect(row!.tier).toBe("silver");
+    expect(row!.division).toBe(3);
+    expect(row!.lp).toBe(0);
+  });
+
+  it("current rank (R2) snaps straight back to peak, not gradually, the instant a new set is logged", async () => {
+    const ex = await insertTestExercise(db);
+    await seedMultiDivisionStandards(ex.id);
+
+    const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 90, 8, longAgo);
+    await recomputeRankForExercise(db, ex.id);
+    const decayed = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(decayed!.division).not.toBe(decayed!.peakDivision);
+
+    // A fresh set today (even a weak one) resets daysSinceLastTrained to 0 -> full snap-back.
+    await logSet(ex.id, 10, 5);
+    await recomputeRankForExercise(db, ex.id);
+    const snappedBack = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(snappedBack!.tier).toBe("silver");
+    expect(snappedBack!.division).toBe(snappedBack!.peakDivision);
+    expect(snappedBack!.lp).toBe(snappedBack!.peakLp);
+  });
+
+  it("a decay-only recompute never writes a rank_events row (decay is not a rank-up)", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+
+    const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 90, 8, longAgo);
+    await recomputeRankForExercise(db, ex.id); // first-ever computation: genuine rank-up, 1 row
+    let rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(1);
+
+    // Recompute again with no new set (simulating "time passed, decay applied on next
+    // recompute") — the current band moved, but peak did not, so no new event.
+    const result = await recomputeRankForExercise(db, ex.id);
+    expect(result!.rankedUp).toBe(false);
+    rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(1);
   });
 });
 

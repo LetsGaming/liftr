@@ -132,6 +132,26 @@ export function nextRepTarget(thresholds: StandardThreshold[], currentReps: numb
   return next ? next.threshold : null;
 }
 
+/**
+ * Find the next-target threshold, if any, strictly above a given ordinal position — mirrors
+ * `resolveRank`'s own current/next search but keyed on tier/division ordinal rather than raw
+ * metric value. Used by the rank-decay workstream (R2) to keep next-target predictions
+ * consistent with a *decayed* current band instead of the freshly-resolved naive value.
+ */
+export function nextTargetAtOrdinal(
+  thresholds: StandardThreshold[],
+  currentOrdinal: number,
+): { tier: Tier; division: Division; threshold: number } | null {
+  const sorted = sortedThresholds(thresholds);
+  let currentIdx = -1;
+  for (let i = 0; i < sorted.length; i++) {
+    if (ordinal(sorted[i]!.tier, sorted[i]!.division) <= currentOrdinal) currentIdx = i;
+    else break;
+  }
+  const next = sorted[currentIdx + 1] ?? null;
+  return next ? { tier: next.tier, division: next.division, threshold: next.threshold } : null;
+}
+
 /** Ratchet-only "best ever" snapshot (rank engine redesign R1). */
 export interface PeakSnapshot {
   tier: Tier;

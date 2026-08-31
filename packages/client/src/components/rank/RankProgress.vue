@@ -14,6 +14,7 @@
  * underlying data actually updates.
  */
 import { computed } from "vue";
+import { ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 
 const props = withDefaults(
@@ -27,9 +28,23 @@ const props = withDefaults(
     /** "card" — badge left, stacked text right (Ränge grid). "inline" — compact single row
      *  for the active-workout focus column, where vertical space is scarce. */
     variant?: "card" | "inline";
+    /** Peak snapshot (rank engine redesign R2) — when the displayed (possibly decayed) tier/
+     *  division sits below peak, a low-friction caption names it instead of silently showing a
+     *  lower number: never hide *why* the rank moved. Omit at call sites that don't have peak
+     *  data (e.g. the in-session focus column, which never decays mid-workout). */
+    peakTier?: string | null;
+    peakDivision?: number | null;
   }>(),
-  { nextTargetWeightKg: null, nextTargetReps: null, trust: "real", variant: "card" },
+  { nextTargetWeightKg: null, nextTargetReps: null, trust: "real", variant: "card", peakTier: null, peakDivision: null },
 );
+
+const decayCaption = computed(() => {
+  if (!props.peakTier || props.peakDivision == null) return null;
+  const currentOrdinal = ordinal(props.tier as Tier, props.division as Division);
+  const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
+  if (currentOrdinal >= peakOrdinal) return null;
+  return `Bestleistung: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision]}`;
+});
 
 const nextLabel = computed(() => {
   // Curiosity framing (engagement rework W8): both targets null means the top of the currently-
@@ -62,6 +77,7 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
         <i class="bar-fill" :style="{ width: lpClamped + '%' }" />
       </div>
       <div class="rp-next">{{ nextLabel }}</div>
+      <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
     </div>
   </div>
 </template>
@@ -113,6 +129,11 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-size: 11.5px;
   font-weight: 700;
   color: var(--dim);
+}
+.rp-decay {
+  font-size: 11px;
+  color: var(--dim);
+  opacity: 0.75;
 }
 
 /* card variant (Ränge grid) — larger badge, text can be white-on-gradient since the parent
