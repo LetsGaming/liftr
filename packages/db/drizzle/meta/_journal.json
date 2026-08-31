@@ -57,6 +57,13 @@
       "when": 1788114961540,
       "tag": "0007_funny_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788166548637,
+      "tag": "0008_sharp_blob",
+      "breakpoints": true
     }
   ]
 }

@@ -48,6 +48,12 @@ export interface RankUpsert {
   trust: (typeof ranks.$inferInsert)["trust"];
   nextTargetWeightKg: number | null;
   nextTargetReps: number | null;
+  /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — see tiers.ts's `ratchetPeak`. */
+  peakTier: (typeof ranks.$inferInsert)["peakTier"];
+  peakDivision: number;
+  peakLp: number;
+  peakE1rm: number;
+  peakAchievedAt: Date;
 }
 
 export function upsertRank(db: LiftrDb, values: RankUpsert) {

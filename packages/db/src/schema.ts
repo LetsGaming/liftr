@@ -230,6 +230,15 @@ export const ranks = sqliteTable("ranks", {
   nextTargetWeightKg: real("next_target_weight_kg"),
   nextTargetReps: integer("next_target_reps"),
   computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+  /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — locked in the moment it's
+   *  achieved and never recomputed retroactively (e.g. against today's bodyweight). Nullable:
+   *  existing rows are backfilled to `peak* = current *` on their first post-migration
+   *  recompute (see `recomputeRankForExercise`), not by the migration itself. */
+  peakTier: text("peak_tier", { enum: ["bronze", "silver", "gold", "platinum", "diamond"] }),
+  peakDivision: integer("peak_division"),
+  peakLp: real("peak_lp"),
+  peakE1rm: real("peak_e1rm"),
+  peakAchievedAt: integer("peak_achieved_at", { mode: "timestamp_ms" }),
 });
 
 export const prs = sqliteTable(

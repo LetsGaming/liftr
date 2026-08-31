@@ -7,7 +7,14 @@
  * rebuildable").
  */
 import type { LiftrDb } from "@liftr/db";
-import { estimateE1rm, resolveRank, nextLoadTarget, nextRepTarget, type StandardThreshold } from "@liftr/shared";
+import {
+  estimateE1rm,
+  resolveRank,
+  nextLoadTarget,
+  nextRepTarget,
+  ratchetPeak,
+  type StandardThreshold,
+} from "@liftr/shared";
 import { findLatestBodyweightLog } from "../repositories/bodyweightRepository.js";
 import {
   findBestPrByKind,
@@ -130,6 +137,31 @@ export async function recomputeRankForExercise(db: LiftrDb, exerciseId: string):
   const previousRank = await findRankByExerciseId(db, exerciseId);
   const rankedUp = !previousRank || previousRank.tier !== rank.tier || previousRank.division !== rank.division;
 
+  // Ratchet-only peak snapshot (rank engine redesign R1) — fixes the bodyweight-ratio
+  // regression bug: peak is locked in at the moment it's achieved and never recomputed
+  // retroactively against today's bodyweight, so a legitimate bodyweight increase alone can
+  // never erase a peak. `storedPeak` is null on the first recompute after the R1 migration (or
+  // for a brand-new exercise), which `ratchetPeak` treats as "current always becomes peak."
+  const storedPeak =
+    previousRank?.peakTier != null &&
+    previousRank.peakDivision != null &&
+    previousRank.peakLp != null &&
+    previousRank.peakE1rm != null &&
+    previousRank.peakAchievedAt != null
+      ? {
+          tier: previousRank.peakTier,
+          division: previousRank.peakDivision as 1 | 2 | 3,
+          lp: previousRank.peakLp,
+          e1rm: previousRank.peakE1rm,
+          achievedAt: previousRank.peakAchievedAt.getTime(),
+        }
+      : null;
+  const peak = ratchetPeak(
+    { tier: rank.tier, division: rank.division as 1 | 2 | 3, lp: rank.lp, e1rm: bestE1rm },
+    bestSet.loggedAt.getTime(),
+    storedPeak,
+  );
+
   // Read-only history of this rank-up (engagement rework W8) — not a new reward mechanic, just
   // a log of the event `rankedUp` above already detects. Fires exactly once per genuine
   // tier/division change, never per set logged.
@@ -151,6 +183,11 @@ export async function recomputeRankForExercise(db: LiftrDb, exerciseId: string):
     trust: rank.trust,
     nextTargetWeightKg,
     nextTargetReps,
+    peakTier: peak.tier,
+    peakDivision: peak.division,
+    peakLp: peak.lp,
+    peakE1rm: peak.e1rm,
+    peakAchievedAt: new Date(peak.achievedAt),
   });
 
   // PR detection: a new best e1RM (or, for rep-based exercises, a new best rep count) is a PR.

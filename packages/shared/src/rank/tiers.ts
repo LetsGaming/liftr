@@ -38,7 +38,7 @@ export interface RankResult {
  * DIVISIONS is [3, 2, 1] (III -> II -> I), which is already weakest-to-strongest order, so the
  * division's array index *is* its offset within the tier.
  */
-function ordinal(tier: Tier, division: Division): number {
+export function ordinal(tier: Tier, division: Division): number {
   return TIERS.indexOf(tier) * DIVISIONS.length + DIVISIONS.indexOf(division);
 }
 
@@ -130,4 +130,37 @@ export function nextRepTarget(thresholds: StandardThreshold[], currentReps: numb
   const sorted = sortedThresholds(thresholds);
   const next = sorted.find((t) => t.threshold > currentReps);
   return next ? next.threshold : null;
+}
+
+/** Ratchet-only "best ever" snapshot (rank engine redesign R1). */
+export interface PeakSnapshot {
+  tier: Tier;
+  division: Division;
+  lp: number;
+  e1rm: number;
+  achievedAt: number;
+}
+
+/**
+ * Compare a freshly-resolved rank against the stored peak and return whichever is stronger.
+ * Peak is a ratchet: it is never recomputed retroactively (e.g. against today's bodyweight),
+ * only compared-against and possibly replaced by a genuinely stronger result. `storedPeak`
+ * being `null` (first recompute after the R1 migration, or a brand-new exercise) always yields
+ * `current` as the peak.
+ */
+export function ratchetPeak(
+  current: { tier: Tier; division: Division; lp: number; e1rm: number },
+  achievedAt: number,
+  storedPeak: PeakSnapshot | null,
+): PeakSnapshot {
+  const currentOrdinal = ordinal(current.tier, current.division);
+  const isStronger =
+    !storedPeak ||
+    currentOrdinal > ordinal(storedPeak.tier, storedPeak.division) ||
+    (currentOrdinal === ordinal(storedPeak.tier, storedPeak.division) && current.lp > storedPeak.lp);
+
+  if (isStronger) {
+    return { tier: current.tier, division: current.division, lp: current.lp, e1rm: current.e1rm, achievedAt };
+  }
+  return storedPeak;
 }
