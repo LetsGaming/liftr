@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { recommendExerciseSets } from "./recommend.js";
 
 const loadRatioThresholds = [
-  { tier: "bronze" as const, division: 3 as const, threshold: 0.5, trust: "synthetic" as const },
-  { tier: "bronze" as const, division: 2 as const, threshold: 0.7, trust: "synthetic" as const },
+  { tier: "apprentice" as const, division: 3 as const, threshold: 0.5, trust: "synthetic" as const },
+  { tier: "apprentice" as const, division: 2 as const, threshold: 0.7, trust: "synthetic" as const },
 ];
 
 const repsThresholds = [
-  { tier: "bronze" as const, division: 3 as const, threshold: 10, trust: "synthetic" as const },
-  { tier: "bronze" as const, division: 2 as const, threshold: 20, trust: "synthetic" as const },
+  { tier: "apprentice" as const, division: 3 as const, threshold: 10, trust: "synthetic" as const },
+  { tier: "apprentice" as const, division: 2 as const, threshold: 20, trust: "synthetic" as const },
 ];
 
 describe("recommendExerciseSets", () => {
@@ -70,9 +70,9 @@ describe("recommendExerciseSets", () => {
 
   it("shifts the no-history entry point up the standards ladder by experience level", () => {
     const thresholds = [
-      { tier: "bronze" as const, division: 3 as const, threshold: 0.5, trust: "synthetic" as const },
-      { tier: "bronze" as const, division: 2 as const, threshold: 0.7, trust: "synthetic" as const },
-      { tier: "bronze" as const, division: 1 as const, threshold: 0.9, trust: "synthetic" as const },
+      { tier: "apprentice" as const, division: 3 as const, threshold: 0.5, trust: "synthetic" as const },
+      { tier: "apprentice" as const, division: 2 as const, threshold: 0.7, trust: "synthetic" as const },
+      { tier: "apprentice" as const, division: 1 as const, threshold: 0.9, trust: "synthetic" as const },
     ];
     const beginner = recommendExerciseSets({ isBodyweight: false, metric: "load_ratio", thresholds, bodyweightKg: 80, lastPerformed: null, experienceLevel: "beginner" });
     const advanced = recommendExerciseSets({ isBodyweight: false, metric: "load_ratio", thresholds, bodyweightKg: 80, lastPerformed: null, experienceLevel: "advanced" });

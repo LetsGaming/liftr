@@ -8,15 +8,14 @@ describe("computeOverallRank", () => {
   });
 
   it("excludes nothing implicitly — a single real-trust input is returned as-is", () => {
-    const input: RankInput[] = [{ tier: "gold", division: 2, lp: 40, trust: "real" }];
-    expect(computeOverallRank(input)).toEqual({ tier: "gold", division: 2, lp: 40 });
+    const input: RankInput[] = [{ tier: "advanced", division: 2, lp: 40, trust: "real" }];
+    expect(computeOverallRank(input)).toEqual({ tier: "advanced", division: 2, lp: 40 });
   });
 
   it("hand-computed example: two equal-trust exercises average their ordinal position", () => {
-    // bronze/III/0 (ordinal 0) and silver/III/0 (ordinal 3) at equal (real) weight -> midpoint
-    // position 150 -> bronze tier index 1 (silver) ... let's verify against ordinal() directly.
-    const a: RankInput = { tier: "bronze", division: 3, lp: 0, trust: "real" };
-    const b: RankInput = { tier: "silver", division: 3, lp: 0, trust: "real" };
+    // apprentice/3/0 and athlete/3/0 at equal (real) weight -> midpoint of their ordinal positions.
+    const a: RankInput = { tier: "apprentice", division: 3, lp: 0, trust: "real" };
+    const b: RankInput = { tier: "athlete", division: 3, lp: 0, trust: "real" };
     const result = computeOverallRank([a, b])!;
     const aPos = ordinal(a.tier, a.division) * 100 + a.lp;
     const bPos = ordinal(b.tier, b.division) * 100 + b.lp;
@@ -26,9 +25,9 @@ describe("computeOverallRank", () => {
   });
 
   it("weights synthetic-trust exercises at half strength, so they pull the average less", () => {
-    const strong: RankInput = { tier: "diamond", division: 1, lp: 100, trust: "real" };
-    const weakSynthetic: RankInput = { tier: "bronze", division: 3, lp: 0, trust: "synthetic" };
-    const weakReal: RankInput = { tier: "bronze", division: 3, lp: 0, trust: "real" };
+    const strong: RankInput = { tier: "apex", division: 1, lp: 100, trust: "real" };
+    const weakSynthetic: RankInput = { tier: "apprentice", division: 3, lp: 0, trust: "synthetic" };
+    const weakReal: RankInput = { tier: "apprentice", division: 3, lp: 0, trust: "real" };
 
     const withSynthetic = computeOverallRank([strong, weakSynthetic])!;
     const withEqualWeightReal = computeOverallRank([strong, weakReal])!;
@@ -45,14 +44,14 @@ describe("computeOverallRank", () => {
     // computeOverallRank has no concept of "unranked" itself — exclusion happens by the caller
     // simply not including such exercises in the input array. A single high-trust exercise
     // should reflect its own value, not be dragged toward zero by anything unranked.
-    const input: RankInput[] = [{ tier: "diamond", division: 1, lp: 100, trust: "real" }];
-    expect(computeOverallRank(input)).toEqual({ tier: "diamond", division: 1, lp: 100 });
+    const input: RankInput[] = [{ tier: "apex", division: 1, lp: 100, trust: "real" }];
+    expect(computeOverallRank(input)).toEqual({ tier: "apex", division: 1, lp: 100 });
   });
 });
 
 describe("computeOverallPeak", () => {
   it("aggregates the same way as computeOverallRank (independent input, shared math)", () => {
-    const input: RankInput[] = [{ tier: "platinum", division: 2, lp: 55, trust: "derived" }];
-    expect(computeOverallPeak(input)).toEqual({ tier: "platinum", division: 2, lp: 55 });
+    const input: RankInput[] = [{ tier: "expert", division: 2, lp: 55, trust: "derived" }];
+    expect(computeOverallPeak(input)).toEqual({ tier: "expert", division: 2, lp: 55 });
   });
 });
