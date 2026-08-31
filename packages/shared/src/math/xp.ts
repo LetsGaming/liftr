@@ -7,11 +7,15 @@
 import type { Tier } from "../rank/tiers.js";
 
 export const TIER_XP_MULTIPLIER: Record<Tier, number> = {
-  bronze: 1,
-  silver: 1.15,
-  gold: 1.3,
-  platinum: 1.5,
-  diamond: 1.75,
+  initiate: 0.9,
+  apprentice: 1,
+  trainee: 1.05,
+  athlete: 1.15,
+  lifter: 1.2,
+  advanced: 1.3,
+  elite: 1.4,
+  expert: 1.5,
+  apex: 1.75,
 };
 
 export const BODYWEIGHT_NOMINAL_LOAD_KG = 30;
@@ -30,10 +34,16 @@ export function repeatSetMultiplier(occurrence: number): number {
   return Math.max(REPEAT_XP_FLOOR_MULTIPLIER, 1 / (1 + REPEAT_XP_DECAY_STEP * (occurrence - 1)));
 }
 
-export function computeSetXp(weightKg: number | null, reps: number, tier: Tier | null, repeatOccurrence = 1): number {
+export function computeSetXp(
+  weightKg: number | null,
+  reps: number,
+  tier: Tier | null,
+  repeatOccurrence = 1,
+  plausibilityMultiplier = 1,
+): number {
   const load = weightKg ?? BODYWEIGHT_NOMINAL_LOAD_KG;
   const multiplier = tier ? TIER_XP_MULTIPLIER[tier] : 1;
-  return load * reps * multiplier * repeatSetMultiplier(repeatOccurrence);
+  return load * reps * multiplier * repeatSetMultiplier(repeatOccurrence) * plausibilityMultiplier;
 }
 
 export interface XpSetInput {
@@ -43,6 +53,8 @@ export interface XpSetInput {
   tier: Tier | null;
   /** epoch ms — determines occurrence order for the repeat-set decay above. */
   loggedAt: number;
+  /** Defaults to 1 (no discount) when omitted — most callers don't have a flagged workout. */
+  plausibilityMultiplier?: number;
 }
 
 /** Sums XP across a full set history, applying the repeat-set decay per exercise+weight+reps
@@ -57,7 +69,7 @@ export function computeTotalXp(sets: XpSetInput[]): number {
     const key = `${s.exerciseId}|${s.weightKg ?? "bw"}|${s.reps}`;
     const occurrence = (occurrenceByKey.get(key) ?? 0) + 1;
     occurrenceByKey.set(key, occurrence);
-    total += computeSetXp(s.weightKg, s.reps, s.tier, occurrence);
+    total += computeSetXp(s.weightKg, s.reps, s.tier, occurrence, s.plausibilityMultiplier ?? 1);
   }
   return total;
 }

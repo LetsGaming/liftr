@@ -3,11 +3,11 @@ import { computeLevel, computeSetXp, computeTotalXp, repeatSetMultiplier } from 
 
 describe("computeSetXp", () => {
   it("multiplies weight x reps x tier multiplier", () => {
-    expect(computeSetXp(100, 5, "gold")).toBeCloseTo(650, 5); // 100*5*1.3
+    expect(computeSetXp(100, 5, "advanced")).toBeCloseTo(650, 5); // 100*5*1.3
   });
 
   it("uses the nominal bodyweight load when weightKg is null", () => {
-    expect(computeSetXp(null, 10, "bronze")).toBe(300); // 30*10*1
+    expect(computeSetXp(null, 10, "apprentice")).toBe(300); // 30*10*1
   });
 
   it("defaults the multiplier to 1 when there's no rank yet", () => {
@@ -25,6 +25,16 @@ describe("computeSetXp", () => {
 
   it("never decays below the floor multiplier, however many repeats", () => {
     expect(computeSetXp(100, 5, null, 1000)).toBeCloseTo(250, 5); // 500 * 0.5 floor
+  });
+
+  it("discounts XP by the plausibility multiplier when given one", () => {
+    const full = computeSetXp(100, 5, "athlete", 1, 1);
+    const discounted = computeSetXp(100, 5, "athlete", 1, 0.5);
+    expect(discounted).toBeCloseTo(full * 0.5, 6);
+  });
+
+  it("defaults the plausibility multiplier to 1 (no discount) when omitted", () => {
+    expect(computeSetXp(100, 5, "athlete", 1)).toBeCloseTo(computeSetXp(100, 5, "athlete", 1, 1), 6);
   });
 });
 
@@ -64,6 +74,16 @@ describe("computeTotalXp", () => {
       { exerciseId: "squat", weightKg: 100, reps: 5, tier: null, loggedAt: 4 },
     ]);
     expect(total).toBeCloseTo(500 + 512.5 + 600 + 500, 5);
+  });
+
+  it("applies each set's own plausibilityMultiplier field", () => {
+    const total = computeTotalXp([
+      { exerciseId: "e", weightKg: 100, reps: 5, tier: "athlete", loggedAt: 1, plausibilityMultiplier: 0.5 },
+    ]);
+    const undiscounted = computeTotalXp([
+      { exerciseId: "e", weightKg: 100, reps: 5, tier: "athlete", loggedAt: 1 },
+    ]);
+    expect(total).toBeCloseTo(undiscounted * 0.5, 6);
   });
 });
 
