@@ -136,7 +136,7 @@ async function skip() {
           <button class="skip-btn" :disabled="saving" @click="skip">Später</button>
         </div>
         <div class="progress-track">
-          <div class="progress-fill" :style="{ width: `${progressPct}%` }" />
+          <div class="progress-fill" :style="{ transform: `scaleX(${progressPct / 100})` }" />
         </div>
       </header>
     </template>
@@ -196,10 +196,14 @@ async function skip() {
   overflow: hidden;
 }
 .progress-fill {
+  width: 100%;
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--blue), var(--blue-hi));
-  transition: width var(--dur-base) var(--ease-out);
+  /* transform, not width (audit finding: layout-property animation) — always full width,
+     scales from the track's start via transform-origin. */
+  transform-origin: left;
+  transition: transform var(--dur-base) var(--ease-out);
 }
 .wizard-body {
   flex: 1;

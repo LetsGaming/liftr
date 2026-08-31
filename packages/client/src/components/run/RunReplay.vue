@@ -196,10 +196,12 @@ function fmtPace(sPerKm: number | null): string {
   gap: var(--sp3);
 }
 .play-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--blue-hi), var(--blue));
+  /* Was --blue-hi/--blue with white text — the exact combination tokens.css:235-241 documents
+     as measured 2.3-2.7:1 (fails WCAG AA) and fixed for .btn-primary; same fix here. */
+  background: linear-gradient(135deg, var(--blue-lo), var(--blue-ink));
   color: #fff;
   font-size: 15px;
   flex: none;

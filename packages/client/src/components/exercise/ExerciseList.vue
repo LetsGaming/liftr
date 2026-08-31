@@ -90,14 +90,14 @@ function onCardClick(ex: CatalogExercise) {
 
 <template>
   <div class="exercise-list">
-    <input v-model="search" class="search-input" type="text" placeholder="Übung suchen…" />
+    <input v-model="search" class="search-input" type="text" placeholder="Übung suchen…" aria-label="Übung suchen" />
 
     <div class="filters">
-      <select v-model="equipmentFilter" class="filter-select">
+      <select v-model="equipmentFilter" class="filter-select" aria-label="Nach Gerät filtern">
         <option value="">Alle Geräte</option>
         <option v-for="eq in equipmentOptions" :key="eq" :value="eq">{{ eq }}</option>
       </select>
-      <select v-model="muscleFilter" class="filter-select">
+      <select v-model="muscleFilter" class="filter-select" aria-label="Nach Muskelgruppe filtern">
         <option value="">Alle Muskeln</option>
         <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ m }}</option>
       </select>
@@ -217,7 +217,10 @@ function onCardClick(ex: CatalogExercise) {
    the dashboard's liveliness) — capped at a handful of items so re-filtering a long list
    doesn't replay a huge cascade every keystroke. */
 .ex-grid > li {
-  animation: pop-in var(--dur-base) var(--ease-spring) both;
+  /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
+     (rank-up, PR, level-up) per motion.css's own convention — a list entrance isn't one of
+     those (see commit 8c0f158 for the same fix elsewhere). */
+  animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .ex-grid > li:nth-child(1) {
   animation-delay: 0ms;
@@ -262,6 +265,8 @@ function onCardClick(ex: CatalogExercise) {
   font-weight: 800;
   display: grid;
   place-items: center;
-  animation: pop-in var(--dur-fast) var(--ease-spring) both;
+  /* --ease-out, not --ease-spring: this is a plain tap-to-select checkmark, not an earned
+     moment (rank-up/PR/level-up) per motion.css's own convention. */
+  animation: pop-in var(--dur-fast) var(--ease-out) both;
 }
 </style>

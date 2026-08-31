@@ -59,7 +59,7 @@ function requestSuggestions() {
     </div>
 
     <div v-if="mode === 'manual'" class="continue-bar">
-      <button class="continue-btn" :disabled="count === 0" @click="emit('continue')">
+      <button class="btn-primary btn-lg btn-block" :disabled="count === 0" @click="emit('continue')">
         {{ count === 0 ? "Übungen auswählen" : `${count} ausgewählt · Weiter →` }}
       </button>
     </div>
@@ -78,20 +78,6 @@ function requestSuggestions() {
   bottom: 0;
   padding: var(--sp3) 0;
   background: linear-gradient(0deg, var(--bg) 60%, transparent);
-}
-.continue-btn {
-  width: 100%;
-  padding: 14px 20px;
-  border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--blue-hi), var(--blue));
-  color: #fff;
-  border: none;
-  font-weight: 800;
-  font-size: 15px;
-}
-.continue-btn:disabled {
-  background: var(--surface-3);
-  color: var(--faint);
 }
 .mode-toggle {
   display: flex;

@@ -311,7 +311,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
 }
 .kind-badge.k-warmup {
   background: var(--fire);
-  color: #2a1000;
+  color: var(--k-warmup-text);
   border-color: transparent;
 }
 .kind-badge.k-normal {
@@ -320,12 +320,12 @@ function kindOf(kind: SetKind | undefined): SetKind {
 }
 .kind-badge.k-failure {
   background: var(--red);
-  color: #2a0505;
+  color: var(--k-failure-text);
   border-color: transparent;
 }
 .kind-badge.k-dropset {
   background: var(--plat-3);
-  color: #04302e;
+  color: var(--k-dropset-text);
   border-color: transparent;
 }
 .set-row .steppers {

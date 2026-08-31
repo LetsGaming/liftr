@@ -74,7 +74,7 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
         <span class="rp-lp tnum">{{ lpClamped }} LP</span>
       </div>
       <div class="rankbar rp-bar">
-        <i class="bar-fill" :style="{ width: lpClamped + '%' }" />
+        <i class="bar-fill" :style="{ transform: `scaleX(${lpClamped / 100})` }" />
       </div>
       <div class="rp-next">{{ nextLabel }}</div>
       <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>

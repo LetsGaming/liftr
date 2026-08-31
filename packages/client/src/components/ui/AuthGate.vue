@@ -53,7 +53,13 @@ async function submit() {
     <div class="card">
       <h1>Liftr</h1>
       <p>Dieser Server ist mit einem Token gesichert.</p>
-      <input v-model="tokenInput" type="password" placeholder="Token" @keyup.enter="submit" />
+      <input
+        v-model="tokenInput"
+        type="password"
+        placeholder="Token"
+        aria-label="API-Token"
+        @keyup.enter="submit"
+      />
       <p v-if="error" class="error">{{ error }}</p>
       <button class="btn-primary btn-lg btn-block" :disabled="submitting || !tokenInput.trim()" @click="submit">
         {{ submitting ? "Prüfe…" : "Weiter" }}
@@ -75,7 +81,7 @@ async function submit() {
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--sp8);
-  width: 320px;
+  width: min(320px, 100% - 2 * var(--sp4));
   text-align: center;
 }
 .card h1 {

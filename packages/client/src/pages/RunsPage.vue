@@ -124,10 +124,10 @@ function formatDuration(s: number) {
     <p v-if="importError" class="error">{{ importError }}</p>
 
     <div v-if="showManualForm" class="manual-form pop-in">
-      <input v-model="manualName" type="text" placeholder="Name (optional)" />
-      <input v-model="manualDate" type="date" />
-      <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" />
-      <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" />
+      <input v-model="manualName" type="text" placeholder="Name (optional)" aria-label="Name des Laufs" />
+      <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
+      <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
+      <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
       <button class="btn-primary" :disabled="!canSubmitManual" @click="submitManual">Speichern</button>
     </div>
 

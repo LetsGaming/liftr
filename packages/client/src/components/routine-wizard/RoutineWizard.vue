@@ -335,7 +335,7 @@ function goToReview() {
         <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" aria-label="Schließen" @click="requestClose">
           {{ closeConfirm.isArmed() ? "Verwerfen?" : "✕" }}
         </button>
-        <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" />
+        <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" aria-label="Name der Routine" />
         <div class="steps">
           <span :class="{ active: step === 'pick' }">1 Wählen</span>
           <span :class="{ active: step === 'arrange' }">2 Anordnen</span>

@@ -79,7 +79,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
 }
 .k-warmup {
   background: var(--fire);
-  color: #2a1000;
+  color: var(--k-warmup-text);
 }
 .k-normal {
   background: var(--surface-3);
@@ -87,11 +87,11 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
 }
 .k-failure {
   background: var(--red);
-  color: #2a0505;
+  color: var(--k-failure-text);
 }
 .k-dropset {
   background: var(--plat-3);
-  color: #04302e;
+  color: var(--k-dropset-text);
 }
 .k-remove {
   background: transparent;
