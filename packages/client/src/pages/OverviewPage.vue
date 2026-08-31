@@ -31,6 +31,7 @@ import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
+import { useOverallRankStore } from "../stores/overallRankStore";
 import { useRanksStore } from "../stores/ranksStore";
 import { useReadinessStore } from "../stores/readinessStore";
 import { useRoutineStore } from "../stores/routineStore";
@@ -43,6 +44,7 @@ const streak = useStreakStore();
 const routineStore = useRoutineStore();
 const activeWorkout = useActiveWorkoutStore();
 const ranksStore = useRanksStore();
+const overallRank = useOverallRankStore();
 const bodyweight = useBodyweightStore();
 const catalog = useCatalogStore();
 const readiness = useReadinessStore();
@@ -60,6 +62,14 @@ onMounted(() => {
   void bodyweight.load();
   void catalog.load();
   void readiness.load();
+  void overallRank.load();
+});
+
+const overallRankLabel = computed(() => {
+  // Tier only, no division — "SILBER III" doesn't fit a quarter-width mobile stat tile without
+  // wrapping mid-word; the exact division is one tap away on the Ränge page.
+  if (!overallRank.loaded || !overallRank.current) return "—";
+  return TIER_LABEL_DE[overallRank.current.tier as RankTier];
 });
 
 /** Erholungszone's CTA reuses the exact same one-tap start the launchpad card already offers
@@ -212,6 +222,7 @@ const topRanks = computed(() =>
           <StatTile :value="streak.loaded ? streak.streak : '—'" label="🔥 Tage Serie" />
           <StatTile :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
           <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
+          <StatTile :value="overallRankLabel" label="Gesamt&shy;rang" />
         </section>
 
         <!-- 3. Progress tiles -->
@@ -409,7 +420,7 @@ const topRanks = computed(() =>
 }
 .status-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: var(--sp2);
 }
 .status-strip :deep(.stat-tile) {
@@ -417,6 +428,7 @@ const topRanks = computed(() =>
 }
 .status-strip :deep(.stat-tile b) {
   font-size: 20px;
+  white-space: nowrap;
 }
 
 .progress-tiles {
