@@ -1721,6 +1721,27 @@ wherever `newPr`/`rankedUp` are already surfaced from the same verdict object to
 existing call site's current props before adding the new one, to match its existing pattern
 rather than inventing a new one).
 
+At the same call site, also populate the `recoveryGainLabel` prop added in Step 1. No new server
+field is needed for this — `RankVerdict` already carries `lp` and `prevLp` (existing fields, used
+today for the in-session rank bar animation). A recovery gain is exactly the case where `lp` grew
+without a tier/division change: `!verdict.rankedUp && verdict.lp > verdict.prevLp`. Add:
+
+```ts
+const recoveryGainLabel =
+  !verdict.rankedUp && verdict.lp > verdict.prevLp
+    ? `+${Math.round(verdict.lp - verdict.prevLp)} LP (Rückkehr-Bonus)`
+    : null;
+```
+
+right alongside the `plausibilityNote` mapping, and pass it into the same `RankProgress` call
+site's `recoveryGainLabel` prop. Note this fires on *any* same-band LP increase, not only a
+post-decay recovery climb — a normal (non-decayed, non-buffed) training session where LP simply
+increases from logging a better set also satisfies `lp > prevLp` with no rank-up. This is an
+accepted simplification: a correct "was this specifically a buffed recovery gain, not just normal
+progress" signal would require the server to distinguish and return that explicitly, which no
+task in this plan adds. Flag this as a known simplification in the commit message rather than
+expanding scope to add a new server field for it.
+
 - [ ] **Step 3: Typecheck and manual mobile click-test**
 
 Run: `pnpm --filter @liftr/client run typecheck`
