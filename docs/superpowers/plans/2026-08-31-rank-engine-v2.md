@@ -612,11 +612,13 @@ git commit -m "feat(rank): update client tier branding for the 9-tier ladder"
 
 ---
 
-## Task 5: Buffed session-based recovery gain
+## Task 5: Buffed session-based recovery gain, plus fixing `aggregate.ts`'s Task-1 fallout
 
 **Files:**
 - Modify: `packages/shared/src/rank/decay.ts`
 - Test: `packages/shared/src/rank/decay.test.ts`
+- Modify: `packages/shared/src/rank/aggregate.ts`
+- Test: `packages/shared/src/rank/aggregate.test.ts`
 
 **Interfaces:**
 - Consumes: `TIER_DIVISION_COUNT`, `ordinal`, `ordinalToBand`, `Tier` from `./tiers.js` (Task 1).
@@ -624,6 +626,53 @@ git commit -m "feat(rank): update client tier branding for the 9-tier ladder"
   `RECOVERY_BASE_FRACTION_PER_SESSION: number`, `RECOVERY_MAX_BUFF: number`. Existing exports
   (`RANK_DECAY_GRACE_DAYS`, `RANK_DECAY_WINDOW_DAYS`, `RankBand`, `computeCurrentBand`) keep their
   existing signatures and behavior — the passive decay curve is unchanged, per the spec.
+  `aggregate.ts`'s existing exports (`computeOverallRank`, `computeOverallPeak`, `RankInput`,
+  `OverallRank`) keep their existing signatures — only their internal position math changes.
+
+**Ruling (plan-sequencing gap, discovered during Task 2):** `aggregate.ts` has the exact same
+`DIVISIONS`-dependent duplicated `bandPosition`/`positionToBand`/`MAX_ORDINAL` logic `decay.ts`
+had before this task — Task 1's own header comment for `ordinalToBand` even names both files as
+duplicating this inversion, but no task's file list originally included `aggregate.ts`. This is
+folded into Task 5 (not a new task) because the fix is mechanically identical to what this task
+already does for `decay.ts`.
+
+**Step 0 (added by the ruling above): fix `aggregate.ts` first, before the recovery-gain work.**
+
+Read `packages/shared/src/rank/aggregate.ts` in full. It currently imports `ordinal, TIERS,
+DIVISIONS, type Division, type Tier, type TrustTier` from `./tiers.js` (the `DIVISIONS` import no
+longer exists after Task 1) and defines its own local `MAX_ORDINAL`, `bandPosition`,
+`positionToBand` — identical in shape to what `decay.ts` had before this task. Replace:
+
+```ts
+import { ordinal, ordinalToBand, type Division, type Tier, type TrustTier } from "./tiers.js";
+```
+
+(drop `TIERS`/`DIVISIONS` from the import — neither is referenced anywhere else in this file once
+`MAX_ORDINAL`/`positionToBand` are removed; confirm by re-reading the rest of the file before
+deleting them from the import list). Delete the local `MAX_ORDINAL` constant, `bandPosition`, and
+`positionToBand` function definitions entirely. In `weightedAverageBand`, replace the
+`bandPosition(input)` call with `ordinal(input.tier, input.division) * 100 + input.lp` (the exact
+formula `bandPosition` computed — inlined since it's a one-line function with a single call site
+after this change, not worth keeping as a wrapper) and replace `positionToBand(weightedSum /
+totalWeight)` with `ordinalToBand((weightedSum / totalWeight) / 100)` (matching the `/ 100`
+convention `ordinalToBand`'s other callers use, per Task 5's own `decay.ts` rewrite below).
+
+Then read `packages/shared/src/rank/aggregate.test.ts` in full and update any old-tier-name
+literals (`"bronze"`, `"silver"`, etc.) to their 9-tier equivalents (`"bronze"` → `"apprentice"`,
+etc. — same mapping Task 7 uses for `rankService.test.ts`, since these are the 4 tiers that kept
+the old anchor ratios unchanged), preserving each test's original intent.
+
+Run `pnpm --filter @liftr/shared test aggregate.test.ts` — expect PASS, all pre-existing
+assertions (null on empty, single real-trust passthrough, two-equal-trust midpoint averaging,
+synthetic-trust half-weight, unranked-exclusion) still hold under the new tier names.
+
+**Also as part of this step:** `packages/shared/src/routine-builder/recommend.test.ts` has
+hardcoded `tier: "bronze"` fixture literals (Task-1 fallout — `"bronze"` is no longer a valid
+`Tier`). `recommend.ts` itself (the production file) has no hardcoded tier literal, only prose
+comments mentioning "bronze/division-III" — it's already tier-count-agnostic and needs no code
+change. Rename every `"bronze"` fixture literal in `recommend.test.ts` to `"apprentice"` (same
+tier, new name — `apprentice` kept the old bronze anchor ratio exactly per Task 2). Run `pnpm
+--filter @liftr/shared test recommend.test.ts` — expect PASS, unchanged assertions.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -786,8 +835,8 @@ produce the old snap-back UX. Confirm this test still passes as-is; do not modif
 - [ ] **Step 5: Commit**
 
 ```bash
-git add packages/shared/src/rank/decay.ts packages/shared/src/rank/decay.test.ts
-git commit -m "feat(rank): add buffed multi-session recovery gain, replacing instant snap-back"
+git add packages/shared/src/rank/decay.ts packages/shared/src/rank/decay.test.ts packages/shared/src/rank/aggregate.ts packages/shared/src/rank/aggregate.test.ts packages/shared/src/routine-builder/recommend.test.ts
+git commit -m "feat(rank): add buffed multi-session recovery gain; fix aggregate.ts for 9-tier ladder"
 ```
 
 ---
