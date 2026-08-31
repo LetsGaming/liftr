@@ -16,13 +16,17 @@ import { computed } from "vue";
 import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import { useRanksStore } from "../../stores/ranksStore";
 
-const TIER_ORDER: RankTier[] = ["bronze", "silver", "gold", "platinum", "diamond"];
+const TIER_ORDER: RankTier[] = ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"];
 const TIER_COLOR_VAR: Record<RankTier, string> = {
-  bronze: "var(--bronze-3)",
-  silver: "var(--silver-3)",
-  gold: "var(--gold-3)",
-  platinum: "var(--plat-3)",
-  diamond: "var(--diamond-3)",
+  initiate: "var(--initiate-3)",
+  apprentice: "var(--apprentice-3)",
+  trainee: "var(--trainee-3)",
+  athlete: "var(--athlete-3)",
+  lifter: "var(--lifter-3)",
+  advanced: "var(--advanced-3)",
+  elite: "var(--elite-3)",
+  expert: "var(--expert-3)",
+  apex: "var(--apex-3)",
 };
 
 const ranksStore = useRanksStore();

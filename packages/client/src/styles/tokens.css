@@ -113,26 +113,42 @@
   --k-dropset-text: #04302e;
 
   /* saturated tier fills — the reward, full-card like the mockup's rank arena */
-  --bronze-1: #3a2109;
-  --bronze-2: #8a4f22;
-  --bronze-3: #e08a3c;
-  --bronze-t: #ffd9ab;
-  --silver-1: #232a38;
-  --silver-2: #69748a;
-  --silver-3: #c7d1e4;
-  --silver-t: #f2f6ff;
-  --gold-1: #3a2a04;
-  --gold-2: #a7820f;
-  --gold-3: #ffd24a;
-  --gold-t: #fff2c2;
-  --plat-1: #0d2f33;
-  --plat-2: #1f8f9c;
-  --plat-3: #6ff0e6;
-  --plat-t: #d7fffb;
-  --diamond-1: #152449;
-  --diamond-2: #3b5fd0;
-  --diamond-3: #8fb4ff;
-  --diamond-t: #dbe7ff;
+  --initiate-1: #1a1a1a;
+  --initiate-2: #4a4a4a;
+  --initiate-3: #9a9a9a;
+  --initiate-t: #f0f0f0;
+  --apprentice-1: #3a2109;
+  --apprentice-2: #8a4f22;
+  --apprentice-3: #e08a3c;
+  --apprentice-t: #ffd9ab;
+  --trainee-1: #2a2508;
+  --trainee-2: #7a6a1f;
+  --trainee-3: #c9b23e;
+  --trainee-t: #f5edb8;
+  --athlete-1: #232a38;
+  --athlete-2: #69748a;
+  --athlete-3: #c7d1e4;
+  --athlete-t: #f2f6ff;
+  --lifter-1: #0f2e1f;
+  --lifter-2: #2d8058;
+  --lifter-3: #5fd6a0;
+  --lifter-t: #d4fbe9;
+  --advanced-1: #3a2a04;
+  --advanced-2: #a7820f;
+  --advanced-3: #ffd24a;
+  --advanced-t: #fff2c2;
+  --elite-1: #2f0d33;
+  --elite-2: #8a289c;
+  --elite-3: #d76ff0;
+  --elite-t: #f6d7ff;
+  --expert-1: #0d2f33;
+  --expert-2: #1f8f9c;
+  --expert-3: #6ff0e6;
+  --expert-t: #d7fffb;
+  --apex-1: #152449;
+  --apex-2: #3b5fd0;
+  --apex-3: #8fb4ff;
+  --apex-t: #dbe7ff;
 
   --pl-red: #e23b34;
   --pl-blue: #2f6bd4;
@@ -345,35 +361,59 @@ body {
   fill: var(--tt, #fff);
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
-.t-bronze {
-  --b1: var(--bronze-1);
-  --b2: var(--bronze-2);
-  --b3: var(--bronze-3);
-  --tt: var(--bronze-t);
+.t-initiate {
+  --b1: var(--initiate-1);
+  --b2: var(--initiate-2);
+  --b3: var(--initiate-3);
+  --tt: var(--initiate-t);
 }
-.t-silver {
-  --b1: var(--silver-1);
-  --b2: var(--silver-2);
-  --b3: var(--silver-3);
-  --tt: var(--silver-t);
+.t-apprentice {
+  --b1: var(--apprentice-1);
+  --b2: var(--apprentice-2);
+  --b3: var(--apprentice-3);
+  --tt: var(--apprentice-t);
 }
-.t-gold {
-  --b1: var(--gold-1);
-  --b2: var(--gold-2);
-  --b3: var(--gold-3);
-  --tt: var(--gold-t);
+.t-trainee {
+  --b1: var(--trainee-1);
+  --b2: var(--trainee-2);
+  --b3: var(--trainee-3);
+  --tt: var(--trainee-t);
 }
-.t-plat {
-  --b1: var(--plat-1);
-  --b2: var(--plat-2);
-  --b3: var(--plat-3);
-  --tt: var(--plat-t);
+.t-athlete {
+  --b1: var(--athlete-1);
+  --b2: var(--athlete-2);
+  --b3: var(--athlete-3);
+  --tt: var(--athlete-t);
 }
-.t-diamond {
-  --b1: var(--diamond-1);
-  --b2: var(--diamond-2);
-  --b3: var(--diamond-3);
-  --tt: var(--diamond-t);
+.t-lifter {
+  --b1: var(--lifter-1);
+  --b2: var(--lifter-2);
+  --b3: var(--lifter-3);
+  --tt: var(--lifter-t);
+}
+.t-advanced {
+  --b1: var(--advanced-1);
+  --b2: var(--advanced-2);
+  --b3: var(--advanced-3);
+  --tt: var(--advanced-t);
+}
+.t-elite {
+  --b1: var(--elite-1);
+  --b2: var(--elite-2);
+  --b3: var(--elite-3);
+  --tt: var(--elite-t);
+}
+.t-expert {
+  --b1: var(--expert-1);
+  --b2: var(--expert-2);
+  --b3: var(--expert-3);
+  --tt: var(--expert-t);
+}
+.t-apex {
+  --b1: var(--apex-1);
+  --b2: var(--apex-2);
+  --b3: var(--apex-3);
+  --tt: var(--apex-t);
 }
 
 .rankbar {
