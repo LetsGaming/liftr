@@ -327,6 +327,53 @@ describe("recomputeRankForExercise", () => {
     const result = await recomputeRankForExercise(db, ex.id, 0.5);
     expect(result).not.toBeNull(); // still recomputes, just discounted — never a no-op/error
   });
+
+  it("a flagged first-ever session (no prior peak) does not establish a peak at all", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    // No prior recompute for this exercise -> storedPeak is null. A badly flagged session (below
+    // PEAK_ELIGIBILITY_FLOOR) is exactly the case the plausibility ceiling check exists to catch
+    // (an absurd first-ever session) — but with no storedPeak, the improbable-jump check can't
+    // even fire, so the ceiling check is the only safeguard. Peak must stay unestablished rather
+    // than being seeded from this flagged data.
+    await logSet(ex.id, 400, 5); // huge, implausible for a brand-new exercise
+    const result = await recomputeRankForExercise(db, ex.id, 0.02); // below PEAK_ELIGIBILITY_FLOOR
+    expect(result).not.toBeNull();
+
+    const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(row!.peakTier).toBeNull();
+    expect(row!.peakDivision).toBeNull();
+    expect(row!.peakLp).toBeNull();
+    expect(row!.peakE1rm).toBeNull();
+    expect(row!.peakAchievedAt).toBeNull();
+    // With no peak, the displayed current band falls back to the plain freshly-resolved value.
+    expect(row!.tier).toBe(result!.tier);
+    expect(row!.division).toBe(result!.division);
+  });
+
+  it("a flagged first-ever session does not fire rankedUp or log a rank_events row", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 400, 5);
+    const result = await recomputeRankForExercise(db, ex.id, 0.02);
+    expect(result!.rankedUp).toBe(false);
+    const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("a normal (non-flagged) first-ever session is unaffected and still establishes peak", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8);
+    const result = await recomputeRankForExercise(db, ex.id); // default multiplier = 1, fully plausible
+    expect(result!.rankedUp).toBe(true);
+    const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(row!.peakTier).not.toBeNull();
+    expect(row!.peakTier).toBe(row!.tier);
+    expect(row!.peakDivision).toBe(row!.division);
+    const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(1);
+  });
 });
 
 describe("computeRankEventsByWeekday", () => {

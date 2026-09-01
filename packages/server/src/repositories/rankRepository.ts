@@ -48,12 +48,14 @@ export interface RankUpsert {
   trust: (typeof ranks.$inferInsert)["trust"];
   nextTargetWeightKg: number | null;
   nextTargetReps: number | null;
-  /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — see tiers.ts's `ratchetPeak`. */
+  /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — see tiers.ts's `ratchetPeak`.
+   *  Nullable: a badly-flagged first-ever recompute (no prior peak to compare against) does not
+   *  establish one — see rankService.ts's `peak` computation. */
   peakTier: (typeof ranks.$inferInsert)["peakTier"];
-  peakDivision: number;
-  peakLp: number;
-  peakE1rm: number;
-  peakAchievedAt: Date;
+  peakDivision: number | null;
+  peakLp: number | null;
+  peakE1rm: number | null;
+  peakAchievedAt: Date | null;
 }
 
 export function upsertRank(db: LiftrDb, values: RankUpsert) {
