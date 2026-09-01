@@ -289,7 +289,7 @@ rank-up history + distribution/calendar analytics), `6019128` (W9, Discover grid
 overshoot easing reserved for earned moments). Plan file:
 `~/.claude/plans/liftr-engagement-rework-w7-w9.md`.
 
-### 7.3 Round 3 (R1-R3) — 📋 planned, **not yet implemented**
+### 7.3 Round 3 (R1-R3) — ✅ done, committed
 A comparative study of seven competitive games' ranked systems (League of Legends, Rainbow
 Six Siege Ranked 3.0, Apex Legends, Deadlock, VALORANT, CS2 Competitive, CS2 Premier) was used
 to evaluate the rank engine itself. **Conclusion: almost none of it transfers** — every one of
@@ -298,20 +298,50 @@ relative scoring, demotion, placement matches, entry costs, smurf detection) tha
 in a single-player app with no opponents and no matches. What *does* transfer is general
 progression psychology: transparency over hidden math, boundary crossings feeling earned, and
 (the one genuinely new idea) a single account-level "how good a lifter am I overall" number,
-which Liftr currently lacks entirely (it only has independent per-exercise ladders).
+which Liftr previously lacked entirely (it only had independent per-exercise ladders).
 
-Planned work, not yet built:
-- **R1 — Peak Rank:** fixes the bodyweight-ratio bug (§4) by adding permanent, ratchet-only
-  peak columns to `ranks`, decoupled from any retroactive bodyweight recompute.
-- **R2 — Current Rank decay:** current (displayed) rank can soften with inactivity, but is
-  hard-floored at the bottom of the peak tier — never risks losing all progress, while still
-  giving inactivity a felt cost. Logging a new set snaps current rank back to peak instantly,
-  not via a second grind.
-- **R3 — Overall Lifter Rank:** an aggregate tier/number across trust-weighted anchor lifts,
-  shown as one more dashboard stat tile — no new page, no leaderboard.
+Shipped: **R1 — Peak Rank** (fixed the bodyweight-ratio bug via permanent, ratchet-only peak
+columns), **R2 — Current Rank decay** (floor-protected soft decay with instant snap-back on
+return — later superseded by the buffed multi-session climb-back in Round 4, §7.4), **R3 —
+Overall Lifter Rank** (trust-weighted aggregate stat tile). Commits `250f446`, `1de2b5e`,
+`7c881fc`.
 
-Plan file: `~/.claude/plans/liftr-rank-engine-redesign.md`. **This is the next work to pick
-up on this project.**
+### 7.4 Round 4 — Rank engine v2 (9-tier ladder, buffed recovery, plausibility gate) — ✅ done
+A further iteration on the R1-R3 rank engine, driven by three requests: more tiers with more
+divisions at the low end (so a new or returning lifter feels a rank-up more often, and the top
+tier is a single real milestone), a buffed multi-session climb-back instead of Round 3's instant
+decay snap-back, and a plausibility gate that discounts (never discards) XP/LP/peak for
+structurally implausible sessions (e.g. far too many sets logged in far too little time).
+
+- **9-tier ladder:** Bronze-through-Diamond replaced with Initiate → Apprentice → Trainee →
+  Athlete → Lifter → Advanced → Elite → Expert → Apex, framed around a believable fitness
+  journey rather than "power level" names. Divisions per tier taper from 6 (Initiate) to 1
+  (Apex) — 33 total bands, up from 15. `ordinal`/`ordinalToBand` in `tiers.ts` generalized to
+  variable per-tier division counts via a centralized cumulative-offset scheme.
+- **Standards recalibration:** the old 5 anchor ratios per exercise become 9 via
+  `interpolateNineTierAnchors` (geometric mean for interior tiers, self-consistent extrapolation
+  for the two new ends) — computed in code, not hand-typed, so the single tunable source stays
+  the original 5 numbers per exercise.
+- **Buffed recovery gain:** `applySessionRecoveryGain` replaces the old instant snap-to-peak.
+  Current rank climbs toward peak over ~4-5 real training sessions after a break, buffed up to
+  2.5x when maximally decayed, tapering to 1x (no buff) as it nears peak — but explicitly does
+  *not* throttle a genuine same-day PR with no prior decay backlog (a real bug found and fixed
+  during implementation: the throttle must compare against the *old* peak, not the freshly-
+  advanced one, or a lifter's just-earned PR would display behind schedule).
+- **Plausibility gate:** `computeWorkoutPlausibility` scores a finished workout on session pace,
+  improbable same-session jump vs. stored peak, and an absolute value ceiling — worst-of, not
+  averaged. A flagged workout is never discarded; XP/current-rank-recovery are discounted and
+  peak advancement is blocked below a floor, with an honest, specific note shown to the user
+  (never the exact thresholds).
+
+Spec: `docs/superpowers/specs/2026-08-31-rank-engine-v2-design.md`. Plan (11 tasks,
+subagent-driven execution): `docs/superpowers/plans/2026-08-31-rank-engine-v2.md`. All tasks
+independently reviewed (spec + quality gate per task); several real bugs were found in the
+plan's own literal example code during implementation and corrected rather than transcribed
+blindly — see the plan's task reports for detail. Full suite (212 tests), typecheck, and
+production build all clean; manually verified end-to-end via a real logged workout in a mobile
+viewport (9-tier badges, next-target predictions, distribution donut, XP/leveling all correct
+against freshly-ingested standards data).
 
 ---
 
@@ -319,10 +349,10 @@ up on this project.**
 
 - `~/.claude/plans/the-ui-works-and-buzzing-pony.md` — Round 1 (W1-W6) plan.
 - `~/.claude/plans/liftr-engagement-rework-w7-w9.md` — Round 2 (W7-W9) plan.
-- `~/.claude/plans/liftr-rank-engine-redesign.md` — Round 3 (R1-R3) plan, not yet built.
-- `liftr-engagement-and-rank-rework.md` (repo root) — narrative summary of all three rounds
-  written alongside this audit; this document (`liftr-audit.md`) is the broader, whole-project
-  reference, while that one is scoped specifically to the engagement/rank work.
+- `~/.claude/plans/liftr-rank-engine-redesign.md` — Round 3 (R1-R3) plan, shipped (§7.3).
+- `docs/superpowers/specs/2026-08-31-rank-engine-v2-design.md` /
+  `docs/superpowers/plans/2026-08-31-rank-engine-v2.md` — Round 4 (9-tier ladder, buffed
+  recovery, plausibility gate) spec + plan, shipped (§7.4).
 - `examples/walkthrough_bundle/` — gitignored, local-only video-walkthrough reference material
   used for Round 2; not redistributed, not part of tracked history.
 - `tools/catalog/curated.yaml` — the curated exercise catalog source data for ingestion.
