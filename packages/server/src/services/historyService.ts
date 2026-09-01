@@ -45,7 +45,10 @@ export async function getHistoryPage(db: LiftrDb, cursor: string | undefined, li
       const volumeKg = allSets.reduce((sum, s) => sum + (s.weightKg ?? 0) * s.reps, 0);
       const xp = allSets
         .filter((s) => !s.isWarmup)
-        .reduce((sum, s) => sum + computeSetXp(s.weightKg, s.reps, tierByExercise.get(s.exerciseId) ?? null), 0);
+        .reduce(
+          (sum, s) => sum + computeSetXp(s.weightKg, s.reps, tierByExercise.get(s.exerciseId) ?? null, 1, w.plausibilityMultiplier ?? 1),
+          0,
+        );
       return {
         kind: "workout",
         id: w.id,

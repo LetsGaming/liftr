@@ -17,7 +17,7 @@ export interface OverallRankResult {
 export async function getOverallRank(db: LiftrDb): Promise<OverallRankResult> {
   const rows = await findAllRanks(db);
 
-  const current = computeOverallRank(rows.map((r) => ({ tier: r.tier, division: r.division as 1 | 2 | 3, lp: r.lp, trust: r.trust })));
+  const current = computeOverallRank(rows.map((r) => ({ tier: r.tier, division: r.division, lp: r.lp, trust: r.trust })));
 
   // Peak aggregate only includes rows that actually have a peak snapshot (post-R1-migration
   // rows always do; excludes nothing else — same "exclude, don't zero" philosophy as current).
@@ -25,7 +25,7 @@ export async function getOverallRank(db: LiftrDb): Promise<OverallRankResult> {
     (r) => r.peakTier != null && r.peakDivision != null && r.peakLp != null,
   );
   const peak = computeOverallPeak(
-    peakRows.map((r) => ({ tier: r.peakTier!, division: r.peakDivision as 1 | 2 | 3, lp: r.peakLp!, trust: r.trust })),
+    peakRows.map((r) => ({ tier: r.peakTier!, division: r.peakDivision!, lp: r.peakLp!, trust: r.trust })),
   );
 
   return { current, peak };

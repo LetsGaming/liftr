@@ -51,3 +51,29 @@ export function bodyweightLoad(
 ): number {
   return bodyweightKg * leverageFactor + addedWeightKg;
 }
+
+/**
+ * Best e1RM-based load ratio (e1RM / bodyweight) across a set of logged sets, honoring
+ * bodyweight-relative leverage the same way rankService.ts's own per-set loop does. Extracted
+ * so a caller that only needs the single best ratio (not the whole tier-resolution machinery —
+ * e.g. syncService.ts's plausibility gate, which runs before the full recompute) doesn't have to
+ * duplicate the e1RM/bodyweight-leverage math and risk drifting from it. Only meaningful for
+ * `load_ratio`-metric exercises; a rep-based (`metric === "reps"`) exercise has no load-ratio
+ * concept at all (its `e1rm` field is actually a raw rep count) — callers must not call this for
+ * those, since there is nothing here that would flag it.
+ */
+export function bestLoadRatio(
+  sets: { weightKg: number | null; reps: number }[],
+  bodyweightKg: number,
+  bodyweightConfig: { isBodyweight: boolean; leverageFactor: number } | null,
+): number | null {
+  let best: number | null = null;
+  for (const s of sets) {
+    const load = bodyweightConfig?.isBodyweight
+      ? bodyweightLoad(bodyweightKg, bodyweightConfig.leverageFactor, s.weightKg ?? 0)
+      : (s.weightKg ?? 0);
+    const ratio = estimateE1rm(load, s.reps).e1rm / bodyweightKg;
+    if (best == null || ratio > best) best = ratio;
+  }
+  return best;
+}

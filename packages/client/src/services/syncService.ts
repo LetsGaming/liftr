@@ -11,7 +11,16 @@ export interface SyncResult {
   status: "created" | "already_synced" | "error";
   serverId?: string;
   error?: string;
-  ranks?: { exerciseId: string; rankedUp: boolean; newPr: { kind: string; value: number } | null; tier: string; division: number; lp: number; prevLp: number }[];
+  ranks?: {
+    exerciseId: string;
+    rankedUp: boolean;
+    newPr: { kind: string; value: number } | null;
+    tier: string;
+    division: number;
+    lp: number;
+    prevLp: number;
+    plausibilityReason: "pace" | "improbable_jump" | "exceeds_ceiling" | null;
+  }[];
 }
 
 /** POSTs one batch to /api/sync — chunking (BUG-01) happens in syncStore.ts's `flush()`, which

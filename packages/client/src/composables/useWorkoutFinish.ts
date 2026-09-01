@@ -28,6 +28,24 @@ export interface FinishedSummary {
  *  getDay()-indexed (0 = Sunday). */
 const DAY_ABBR = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
+/** Rank engine v2 (task 10): honest, threshold-free German copy for each plausibility-gate
+ *  reason a finish-workout verdict can carry. Never states the exact numbers that tripped it. */
+const PLAUSIBILITY_NOTE_DE: Record<string, string> = {
+  pace: "Diese Session wirkte ungewöhnlich schnell — Rang- und XP-Gewinn wurden reduziert.",
+  improbable_jump: "Dieser Sprung wirkte ungewöhnlich groß — Rang- und XP-Gewinn wurden reduziert.",
+  exceeds_ceiling: "Dieser Wert wirkte unrealistisch — Rang- und XP-Gewinn wurden reduziert.",
+};
+
+/** Rank engine v2 (task 10): a one-time post-workout caption for an exercise's rank card,
+ *  surfaced only when there's something worth saying (a same-band recovery-style LP gain, or a
+ *  plausibility-gate note). Purely presentational — nothing here is persisted. */
+export interface SessionCaption {
+  exerciseId: string;
+  exerciseName: string;
+  recoveryGainLabel: string | null;
+  plausibilityNote: string | null;
+}
+
 interface Stores {
   activeWorkoutStore: ReturnType<typeof useActiveWorkoutStore>;
   routineStore: ReturnType<typeof useRoutineStore>;
@@ -59,12 +77,17 @@ export function useWorkoutFinish(
    */
   const sessionXp = ref(0);
   const sessionRankUps = ref<RankUpSummary[]>([]);
+  /** Task 10: unlike sessionRankUps (filtered to rankedUp/newPr, for the celebration beat), this
+   *  covers every touched exercise's verdict — a same-band recovery LP gain or a plausibility
+   *  note is exactly the case that never trips rankedUp/newPr, so it needs its own list. */
+  const sessionCaptions = ref<SessionCaption[]>([]);
   watch(
     () => store.workoutId,
     (id, prev) => {
       if (id && id !== prev) {
         sessionXp.value = 0;
         sessionRankUps.value = [];
+        sessionCaptions.value = [];
       }
     },
   );
@@ -172,6 +195,23 @@ export function useWorkoutFinish(
       ranksStore.applyVerdict(r.exerciseId, { tier: r.tier, division: r.division, lp: r.lp });
     }
 
+    // Task 10: recovery-gain / plausibility captions for the post-finish summary panel. A
+    // recovery gain is exactly a same-band LP increase with no tier/division change — this is
+    // deliberately not restricted to "was this specifically a decay-recovery climb", since the
+    // server doesn't return that distinction; a normal (non-decayed) session that simply logs a
+    // better set and gains LP in the same band also satisfies this and will show the same label.
+    // Known, accepted simplification (rank-engine-v2 plan, task 10) rather than scope creep to
+    // add a new server field for it.
+    sessionCaptions.value = ranks
+      .map((r) => {
+        const recoveryGainLabel =
+          !r.rankedUp && r.lp > r.prevLp ? `+${Math.round(r.lp - r.prevLp)} LP (Rückkehr-Bonus)` : null;
+        const plausibilityNote = r.plausibilityReason ? (PLAUSIBILITY_NOTE_DE[r.plausibilityReason] ?? null) : null;
+        const ex = catalogStore.byId(r.exerciseId);
+        return { exerciseId: r.exerciseId, exerciseName: ex ? exerciseName(ex.slug) : "", recoveryGainLabel, plausibilityNote };
+      })
+      .filter((c) => c.recoveryGainLabel != null || c.plausibilityNote != null);
+
     finishedSummary.value = { routineName, durationLabel: `${Math.round(elapsedS / 60)} min`, volumeKg, setCount, muscles, exercises: exercisesSnapshot };
 
     // store.finish() already awaited the network round trip, so the streaks row and this
@@ -188,6 +228,7 @@ export function useWorkoutFinish(
     finishSequenceDone,
     sessionXp,
     sessionRankUps,
+    sessionCaptions,
     finishXpSnapshot,
     routineBeats,
     updatingRoutine,

@@ -34,8 +34,25 @@ const props = withDefaults(
      *  data (e.g. the in-session focus column, which never decays mid-workout). */
     peakTier?: string | null;
     peakDivision?: number | null;
+    /** Rank engine v2: set by the caller right after a workout that applied a buffed recovery
+     *  gain to this exercise (e.g. "+18 LP"). Purely a one-time celebratory caption, not
+     *  persisted — the caller (RanksPage.vue or the finish-sequence flow) is responsible for
+     *  only passing this immediately after the relevant recompute, not on every render. */
+    recoveryGainLabel?: string | null;
+    /** Rank engine v2: a short, honest note when this exercise's rank/XP gain from the most
+     *  recent session was reduced by the plausibility gate. Never shows exact thresholds. */
+    plausibilityNote?: string | null;
   }>(),
-  { nextTargetWeightKg: null, nextTargetReps: null, trust: "real", variant: "card", peakTier: null, peakDivision: null },
+  {
+    nextTargetWeightKg: null,
+    nextTargetReps: null,
+    trust: "real",
+    variant: "card",
+    peakTier: null,
+    peakDivision: null,
+    recoveryGainLabel: null,
+    plausibilityNote: null,
+  },
 );
 
 const decayCaption = computed(() => {
@@ -78,6 +95,8 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
       </div>
       <div class="rp-next">{{ nextLabel }}</div>
       <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
+      <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
+      <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
     </div>
   </div>
 </template>
@@ -134,6 +153,17 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-size: 11px;
   color: var(--dim);
   opacity: 0.75;
+}
+.rp-recovery {
+  font-size: 11px;
+  color: var(--blue-hi, var(--dim));
+  font-weight: 600;
+}
+.rp-plausibility {
+  font-size: 11px;
+  color: var(--dim);
+  opacity: 0.75;
+  font-style: italic;
 }
 
 /* card variant (Ränge grid) — larger badge, text can be white-on-gradient since the parent

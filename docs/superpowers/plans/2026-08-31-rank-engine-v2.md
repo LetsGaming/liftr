@@ -460,7 +460,7 @@ Expected: succeeds with no errors against the dev DB.
 
 - [ ] **Step 5: Verify existing DB-touching tests still pass**
 
-Run: `pnpm --filter @liftr/server test`
+Run: `pnpm test packages/server` (packages/server has no `test` script of its own — the root `vitest run` picks up the whole workspace; a path argument scopes it)
 Expected: PASS for every test file that doesn't reference tier names directly (most of
 `syncService.test.ts`, `workoutService.test.ts`, etc.) — tests that construct rank rows with old
 tier strings like `"bronze"` will fail here; that's expected and fixed in Task 7's test updates,
@@ -612,11 +612,13 @@ git commit -m "feat(rank): update client tier branding for the 9-tier ladder"
 
 ---
 
-## Task 5: Buffed session-based recovery gain
+## Task 5: Buffed session-based recovery gain, plus fixing `aggregate.ts`'s Task-1 fallout
 
 **Files:**
 - Modify: `packages/shared/src/rank/decay.ts`
 - Test: `packages/shared/src/rank/decay.test.ts`
+- Modify: `packages/shared/src/rank/aggregate.ts`
+- Test: `packages/shared/src/rank/aggregate.test.ts`
 
 **Interfaces:**
 - Consumes: `TIER_DIVISION_COUNT`, `ordinal`, `ordinalToBand`, `Tier` from `./tiers.js` (Task 1).
@@ -624,6 +626,53 @@ git commit -m "feat(rank): update client tier branding for the 9-tier ladder"
   `RECOVERY_BASE_FRACTION_PER_SESSION: number`, `RECOVERY_MAX_BUFF: number`. Existing exports
   (`RANK_DECAY_GRACE_DAYS`, `RANK_DECAY_WINDOW_DAYS`, `RankBand`, `computeCurrentBand`) keep their
   existing signatures and behavior — the passive decay curve is unchanged, per the spec.
+  `aggregate.ts`'s existing exports (`computeOverallRank`, `computeOverallPeak`, `RankInput`,
+  `OverallRank`) keep their existing signatures — only their internal position math changes.
+
+**Ruling (plan-sequencing gap, discovered during Task 2):** `aggregate.ts` has the exact same
+`DIVISIONS`-dependent duplicated `bandPosition`/`positionToBand`/`MAX_ORDINAL` logic `decay.ts`
+had before this task — Task 1's own header comment for `ordinalToBand` even names both files as
+duplicating this inversion, but no task's file list originally included `aggregate.ts`. This is
+folded into Task 5 (not a new task) because the fix is mechanically identical to what this task
+already does for `decay.ts`.
+
+**Step 0 (added by the ruling above): fix `aggregate.ts` first, before the recovery-gain work.**
+
+Read `packages/shared/src/rank/aggregate.ts` in full. It currently imports `ordinal, TIERS,
+DIVISIONS, type Division, type Tier, type TrustTier` from `./tiers.js` (the `DIVISIONS` import no
+longer exists after Task 1) and defines its own local `MAX_ORDINAL`, `bandPosition`,
+`positionToBand` — identical in shape to what `decay.ts` had before this task. Replace:
+
+```ts
+import { ordinal, ordinalToBand, type Division, type Tier, type TrustTier } from "./tiers.js";
+```
+
+(drop `TIERS`/`DIVISIONS` from the import — neither is referenced anywhere else in this file once
+`MAX_ORDINAL`/`positionToBand` are removed; confirm by re-reading the rest of the file before
+deleting them from the import list). Delete the local `MAX_ORDINAL` constant, `bandPosition`, and
+`positionToBand` function definitions entirely. In `weightedAverageBand`, replace the
+`bandPosition(input)` call with `ordinal(input.tier, input.division) * 100 + input.lp` (the exact
+formula `bandPosition` computed — inlined since it's a one-line function with a single call site
+after this change, not worth keeping as a wrapper) and replace `positionToBand(weightedSum /
+totalWeight)` with `ordinalToBand((weightedSum / totalWeight) / 100)` (matching the `/ 100`
+convention `ordinalToBand`'s other callers use, per Task 5's own `decay.ts` rewrite below).
+
+Then read `packages/shared/src/rank/aggregate.test.ts` in full and update any old-tier-name
+literals (`"bronze"`, `"silver"`, etc.) to their 9-tier equivalents (`"bronze"` → `"apprentice"`,
+etc. — same mapping Task 7 uses for `rankService.test.ts`, since these are the 4 tiers that kept
+the old anchor ratios unchanged), preserving each test's original intent.
+
+Run `pnpm --filter @liftr/shared test aggregate.test.ts` — expect PASS, all pre-existing
+assertions (null on empty, single real-trust passthrough, two-equal-trust midpoint averaging,
+synthetic-trust half-weight, unranked-exclusion) still hold under the new tier names.
+
+**Also as part of this step:** `packages/shared/src/routine-builder/recommend.test.ts` has
+hardcoded `tier: "bronze"` fixture literals (Task-1 fallout — `"bronze"` is no longer a valid
+`Tier`). `recommend.ts` itself (the production file) has no hardcoded tier literal, only prose
+comments mentioning "bronze/division-III" — it's already tier-count-agnostic and needs no code
+change. Rename every `"bronze"` fixture literal in `recommend.test.ts` to `"apprentice"` (same
+tier, new name — `apprentice` kept the old bronze anchor ratio exactly per Task 2). Run `pnpm
+--filter @liftr/shared test recommend.test.ts` — expect PASS, unchanged assertions.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -786,8 +835,8 @@ produce the old snap-back UX. Confirm this test still passes as-is; do not modif
 - [ ] **Step 5: Commit**
 
 ```bash
-git add packages/shared/src/rank/decay.ts packages/shared/src/rank/decay.test.ts
-git commit -m "feat(rank): add buffed multi-session recovery gain, replacing instant snap-back"
+git add packages/shared/src/rank/decay.ts packages/shared/src/rank/decay.test.ts packages/shared/src/rank/aggregate.ts packages/shared/src/rank/aggregate.test.ts packages/shared/src/routine-builder/recommend.test.ts
+git commit -m "feat(rank): add buffed multi-session recovery gain; fix aggregate.ts for 9-tier ladder"
 ```
 
 ---
@@ -1091,7 +1140,7 @@ and any division-count-dependent numbers.
 
 - [ ] **Step 2: Run the updated test suite to confirm it's red only where expected**
 
-Run: `pnpm --filter @liftr/server test rankService.test.ts`
+Run: `pnpm test rankService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: the renamed-tier tests should now pass (or reveal genuine mismatches to fix); this step
 is a checkpoint, not the final green state — new recovery-gain/plausibility tests come next.
 
@@ -1142,7 +1191,7 @@ functions already have precise unit tests in Task 5/6 — this file's job is con
 
 - [ ] **Step 4: Run tests to verify the new ones fail**
 
-Run: `pnpm --filter @liftr/server test rankService.test.ts`
+Run: `pnpm test rankService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: FAIL — `recomputeRankForExercise` doesn't yet accept a 3rd parameter, and current-rank
 recovery still uses the old instant-decay-to-zero-days trick.
 
@@ -1241,7 +1290,7 @@ it's still used above for the passive-decay path).
 
 - [ ] **Step 7: Run tests, fix any remaining failures, then verify green**
 
-Run: `pnpm --filter @liftr/server test rankService.test.ts`
+Run: `pnpm test rankService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: PASS — all renamed-tier tests, all pre-existing decay/peak tests, and the 3 new tests
 from Step 3. If a pre-existing test's exact numeric expectation no longer holds because recovery
 now climbs gradually instead of snapping instantly (the decay-reversal test, `rankService.test.ts:
@@ -1318,7 +1367,7 @@ first and reuse their exact helper signatures rather than inventing new ones.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @liftr/server test syncService.test.ts`
+Run: `pnpm test syncService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: FAIL — `RankVerdict` has no `plausibilityReason` field yet, and `applyFinishWorkout`
 doesn't compute plausibility.
 
@@ -1435,12 +1484,12 @@ map) alongside the other new repository imports listed at the start of this step
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @liftr/server test syncService.test.ts`
+Run: `pnpm test syncService.test.ts` (packages/server has no `test` script of its own — use the root-level `vitest run` with a file-name filter)
 Expected: PASS.
 
 - [ ] **Step 6: Run the full server test suite and typecheck**
 
-Run: `pnpm --filter @liftr/server test && pnpm --filter @liftr/server run typecheck`
+Run: `pnpm test packages/server && pnpm --filter @liftr/server run typecheck` (packages/server has a `typecheck` script but no `test` script — tests run via the root-level `vitest run`, scoped with a path argument)
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
@@ -1629,7 +1678,7 @@ row read — no repository change needed for this specific read, confirmed in th
 
 - [ ] **Step 8: Run the full server test suite and typecheck**
 
-Run: `pnpm --filter @liftr/server test && pnpm --filter @liftr/server run typecheck`
+Run: `pnpm test packages/server && pnpm --filter @liftr/server run typecheck` (packages/server has a `typecheck` script but no `test` script — tests run via the root-level `vitest run`, scoped with a path argument)
 Expected: PASS.
 
 - [ ] **Step 9: Commit**
@@ -1720,6 +1769,27 @@ call site's new `plausibilityNote` prop (the finish-sequence beat and/or `RanksP
 wherever `newPr`/`rankedUp` are already surfaced from the same verdict object today — read that
 existing call site's current props before adding the new one, to match its existing pattern
 rather than inventing a new one).
+
+At the same call site, also populate the `recoveryGainLabel` prop added in Step 1. No new server
+field is needed for this — `RankVerdict` already carries `lp` and `prevLp` (existing fields, used
+today for the in-session rank bar animation). A recovery gain is exactly the case where `lp` grew
+without a tier/division change: `!verdict.rankedUp && verdict.lp > verdict.prevLp`. Add:
+
+```ts
+const recoveryGainLabel =
+  !verdict.rankedUp && verdict.lp > verdict.prevLp
+    ? `+${Math.round(verdict.lp - verdict.prevLp)} LP (Rückkehr-Bonus)`
+    : null;
+```
+
+right alongside the `plausibilityNote` mapping, and pass it into the same `RankProgress` call
+site's `recoveryGainLabel` prop. Note this fires on *any* same-band LP increase, not only a
+post-decay recovery climb — a normal (non-decayed, non-buffed) training session where LP simply
+increases from logging a better set also satisfies `lp > prevLp` with no rank-up. This is an
+accepted simplification: a correct "was this specifically a buffed recovery gain, not just normal
+progress" signal would require the server to distinguish and return that explicitly, which no
+task in this plan adds. Flag this as a known simplification in the commit message rather than
+expanding scope to add a new server field for it.
 
 - [ ] **Step 3: Typecheck and manual mobile click-test**
 
