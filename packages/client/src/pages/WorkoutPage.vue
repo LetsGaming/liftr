@@ -1141,7 +1141,7 @@ button.sn:active {
   color: var(--k-failure-text);
 }
 .set-rows .sn.k-dropset {
-  background: var(--plat-3);
+  background: var(--expert-3);
   color: var(--k-dropset-text);
 }
 .exercise-done {
