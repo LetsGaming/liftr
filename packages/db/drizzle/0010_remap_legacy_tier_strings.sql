@@ -57,3 +57,27 @@ UPDATE `rank_events` SET `tier` = 'advanced' WHERE `tier` = 'gold';
 UPDATE `rank_events` SET `tier` = 'expert' WHERE `tier` = 'platinum';
 --> statement-breakpoint
 UPDATE `rank_events` SET `tier` = 'apex' WHERE `tier` = 'diamond';
+--> statement-breakpoint
+
+-- Division clamp. The old scheme was a fixed 3 divisions per tier; the new
+-- scheme is not (expert has 2, apex has 1). A legacy platinum-III row (or
+-- an apex row remapped from diamond-II/III) would otherwise land on a
+-- division that no longer exists for its tier — not a crash (ordinal() still
+-- returns a sane, monotone value), but an invalid, unrenderable band. Runs
+-- after the renames above so it can key off the new tier names.
+UPDATE `standards` SET `division` = 2 WHERE `tier` = 'expert' AND `division` > 2;
+--> statement-breakpoint
+UPDATE `standards` SET `division` = 1 WHERE `tier` = 'apex' AND `division` > 1;
+--> statement-breakpoint
+UPDATE `ranks` SET `division` = 2 WHERE `tier` = 'expert' AND `division` > 2;
+--> statement-breakpoint
+UPDATE `ranks` SET `division` = 1 WHERE `tier` = 'apex' AND `division` > 1;
+--> statement-breakpoint
+UPDATE `ranks` SET `peak_division` = 2 WHERE `peak_tier` = 'expert' AND `peak_division` > 2;
+--> statement-breakpoint
+UPDATE `ranks` SET `peak_division` = 1 WHERE `peak_tier` = 'apex' AND `peak_division` > 1;
+--> statement-breakpoint
+UPDATE `rank_events` SET `division` = 2 WHERE `tier` = 'expert' AND `division` > 2;
+--> statement-breakpoint
+UPDATE `rank_events` SET `division` = 1 WHERE `tier` = 'apex' AND `division` > 1;
+
