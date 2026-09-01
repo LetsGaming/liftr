@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" width="1200" height="340" role="img" aria-label="Liftr — log a set, watch your rank move">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0c14"/>
+      <stop offset="100%" stop-color="#141826"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#8fb4ff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8fb4ff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#8fb4ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="340" rx="20" fill="url(#bg)"/>
+
+  <!-- wordmark -->
+  <text x="60" y="140" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="86" letter-spacing="4" fill="url(#wordmark)">LIFTR</text>
+  <text x="64" y="182" font-family="'Segoe UI',Arial,sans-serif" font-weight="400" font-size="22" fill="#9aa4bf">log a set. watch your rank move.</text>
+
+  <!-- tier ladder -->
+  <g font-family="'Segoe UI',Arial,sans-serif" font-weight="700">
+    <!-- bronze -->
+    <g transform="translate(60,220)">
+      <circle cx="26" cy="26" r="26" fill="#3a2109"/>
+      <path transform="translate(14,14) scale(1)" d="M12 3l2 4 4 .5-3 3 .8 4L12 16l-3.8 2.5.8-4-3-3 4-.5z" fill="#e08a3c"/>
+      <text x="26" y="70" font-size="13" fill="#e08a3c" text-anchor="middle" letter-spacing="1">BRONZE</text>
+    </g>
+    <!-- silver -->
+    <g transform="translate(160,214)">
+      <circle cx="30" cy="30" r="30" fill="#232a38"/>
+      <path transform="translate(17,17) scale(1.1)" d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z" fill="#c7d1e4"/>
+      <text x="30" y="76" font-size="13" fill="#c7d1e4" text-anchor="middle" letter-spacing="1">SILVER</text>
+    </g>
+    <!-- gold -->
+    <g transform="translate(276,206)">
+      <circle cx="34" cy="34" r="34" fill="#3a2a04"/>
+      <path transform="translate(19,19) scale(1.25)" d="M12 2a4.5 4.5 0 110 9 4.5 4.5 0 010-9zM9.3 10.5L6 21l6-3.2 6 3.2-3.3-10.5" fill="#ffd24a"/>
+      <text x="34" y="84" font-size="13" fill="#ffd24a" text-anchor="middle" letter-spacing="1">GOLD</text>
+    </g>
+    <!-- platinum -->
+    <g transform="translate(410,198)">
+      <circle cx="38" cy="38" r="38" fill="#0d2f33"/>
+      <path transform="translate(21,21) scale(1.4)" d="M12 2 3 9l9 13 9-13z" fill="#6ff0e6"/>
+      <text x="38" y="92" font-size="13" fill="#6ff0e6" text-anchor="middle" letter-spacing="1">PLATINUM</text>
+    </g>
+    <!-- diamond -->
+    <g transform="translate(566,188)">
+      <circle cx="42" cy="42" r="66" fill="url(#glow)"/>
+      <circle cx="42" cy="42" r="42" fill="#152449"/>
+      <path transform="translate(23,23) scale(1.55)" d="M4 18h16l-1.2-8.5-3.8 3.8-3-6.3-3 6.3-3.8-3.8z" fill="#8fb4ff"/>
+      <text x="42" y="100" font-size="14" fill="#8fb4ff" text-anchor="middle" letter-spacing="1">DIAMOND</text>
+    </g>
+  </g>
+
+  <!-- overall-rank stat tile, right side -->
+  <g transform="translate(880,64)">
+    <rect width="260" height="150" rx="16" fill="#1c2233" stroke="#28304a"/>
+    <text x="22" y="36" font-size="13" fill="#7a86a8" letter-spacing="1">OVERALL RANK</text>
+    <text x="22" y="86" font-family="'Segoe UI',Arial,sans-serif" font-weight="800" font-size="34" fill="#ffd24a">GOLD II</text>
+    <text x="22" y="118" font-size="13" fill="#9aa4bf">Personal best: Platinum III</text>
+    <rect x="22" y="130" width="216" height="6" rx="3" fill="#28304a"/>
+    <rect x="22" y="130" width="146" height="6" rx="3" fill="#ffd24a"/>
+  </g>
+</svg>
