@@ -289,7 +289,7 @@ rank-up history + distribution/calendar analytics), `6019128` (W9, Discover grid
 overshoot easing reserved for earned moments). Plan file:
 `~/.claude/plans/liftr-engagement-rework-w7-w9.md`.
 
-### 7.3 Round 3 (R1-R3) — 📋 planned, **not yet implemented**
+### 7.3 Round 3 (R1-R3) — ✅ done, committed
 A comparative study of seven competitive games' ranked systems (League of Legends, Rainbow
 Six Siege Ranked 3.0, Apex Legends, Deadlock, VALORANT, CS2 Competitive, CS2 Premier) was used
 to evaluate the rank engine itself. **Conclusion: almost none of it transfers** — every one of
@@ -298,20 +298,33 @@ relative scoring, demotion, placement matches, entry costs, smurf detection) tha
 in a single-player app with no opponents and no matches. What *does* transfer is general
 progression psychology: transparency over hidden math, boundary crossings feeling earned, and
 (the one genuinely new idea) a single account-level "how good a lifter am I overall" number,
-which Liftr currently lacks entirely (it only has independent per-exercise ladders).
+which Liftr previously lacked entirely (it only had independent per-exercise ladders).
 
-Planned work, not yet built:
-- **R1 — Peak Rank:** fixes the bodyweight-ratio bug (§4) by adding permanent, ratchet-only
-  peak columns to `ranks`, decoupled from any retroactive bodyweight recompute.
-- **R2 — Current Rank decay:** current (displayed) rank can soften with inactivity, but is
-  hard-floored at the bottom of the peak tier — never risks losing all progress, while still
-  giving inactivity a felt cost. Logging a new set snaps current rank back to peak instantly,
-  not via a second grind.
-- **R3 — Overall Lifter Rank:** an aggregate tier/number across trust-weighted anchor lifts,
-  shown as one more dashboard stat tile — no new page, no leaderboard.
+Shipped:
+- **R1 — Peak Rank** (`250f446`): fixed the bodyweight-ratio bug (§4) by adding permanent,
+  ratchet-only peak columns (`peakTier`/`peakDivision`/`peakLp`/`peakE1rm`/`peakAchievedAt`) to
+  `ranks`, compared via a pure `ratchetPeak()` in `@liftr/shared` — decoupled from any
+  retroactive bodyweight recompute.
+- **R2 — Current Rank decay** (`1de2b5e`): current (displayed) rank softens with inactivity via
+  `computeCurrentBand()` (21-day grace, 60-day linear decay window), hard-floored at division
+  III / 0 LP of the peak's own tier — never risks losing all progress. Logging a new set snaps
+  current rank straight back to peak, not via a second grind. `RankProgress.vue` shows a
+  "Bestleistung: X" caption on `RanksPage.vue` so a softened rank never hides why it moved.
+- **R3 — Overall Lifter Rank** (`7c881fc`): a trust-weighted aggregate (real/derived full
+  weight, synthetic at 0.5×) across every ranked exercise's continuous tier/division/LP
+  position, computed on-demand (no new derived-cache table) via `GET /api/overall-rank` and
+  shown as a fourth "Gesamtrang" stat tile on the Übersicht dashboard — no new page, no
+  leaderboard.
 
-Plan file: `~/.claude/plans/liftr-rank-engine-redesign.md`. **This is the next work to pick
-up on this project.**
+All three phases verified: 179 tests passing, typecheck clean across all packages, migrations
+reviewed (additive columns only, no table redesign). Full technical detail, file:line reuse
+points, and verification checklists are preserved in git history at commit `45d6409`'s
+`liftr-engagement-and-rank-rework.md` (removed after R1-R3 shipped, since this section now
+supersedes it as the current-state summary).
+
+Two follow-up design-polish commits landed after R1-R3 and are unrelated to the rank engine:
+`7cbbdb7` (chrome-overlap/contrast/typography fixes from an `/impeccable` critique) and
+`7986494` (further technical-audit findings, P0-P3).
 
 ---
 
@@ -319,10 +332,7 @@ up on this project.**
 
 - `~/.claude/plans/the-ui-works-and-buzzing-pony.md` — Round 1 (W1-W6) plan.
 - `~/.claude/plans/liftr-engagement-rework-w7-w9.md` — Round 2 (W7-W9) plan.
-- `~/.claude/plans/liftr-rank-engine-redesign.md` — Round 3 (R1-R3) plan, not yet built.
-- `liftr-engagement-and-rank-rework.md` (repo root) — narrative summary of all three rounds
-  written alongside this audit; this document (`liftr-audit.md`) is the broader, whole-project
-  reference, while that one is scoped specifically to the engagement/rank work.
+- `~/.claude/plans/liftr-rank-engine-redesign.md` — Round 3 (R1-R3) plan, shipped (§7.3).
 - `examples/walkthrough_bundle/` — gitignored, local-only video-walkthrough reference material
   used for Round 2; not redistributed, not part of tracked history.
 - `tools/catalog/curated.yaml` — the curated exercise catalog source data for ingestion.
@@ -335,8 +345,8 @@ up on this project.**
    1-2 taps, get honest rank/PR feedback," ask whether it belongs here at all.
 2. **Never re-introduce multiplayer concepts** (accounts, social, leaderboards, hidden MMR,
    matchmaking) without an explicit, separate scope conversation — this has been evaluated
-   and rejected multiple times across this project's history, most recently and thoroughly
-   in Round 3 (§7.3).
+   and rejected multiple times across this project's history, most thoroughly during the
+   Round 3 rank-engine study (§7.3).
 3. **Reuse before building.** This codebase's plans consistently cite exact file:line reuse
    points rather than inventing parallel implementations — check `packages/shared` for
    existing pure math, check existing components (`RankProgress.vue`, `ProgressChart.vue`,
