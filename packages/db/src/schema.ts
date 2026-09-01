@@ -139,6 +139,12 @@ export const workouts = sqliteTable("workouts", {
   startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
   endedAt: integer("ended_at", { mode: "timestamp_ms" }),
   pausedSeconds: integer("paused_seconds").notNull().default(0),
+  /** Plausibility gate multiplier (rank engine v2) — computed once at finish-workout time from
+   *  session pace / improbable-jump / unrealistic-value checks (see @liftr/shared's
+   *  plausibility.ts). Null until the workout finishes (matches endedAt's own nullability);
+   *  application code treats a null/missing value as 1 (fully plausible) rather than using a SQL
+   *  default, since a workout with no endedAt has no plausibility verdict yet either. */
+  plausibilityMultiplier: real("plausibility_multiplier"),
   notes: text("notes"),
   clientId: text("client_id").notNull().unique(), // offline-sync idempotency key
 });
@@ -209,8 +215,8 @@ export const standards = sqliteTable(
       .references(() => exercises.id, { onDelete: "cascade" }),
     sex: text("sex", { enum: ["male", "female"] }).notNull().default("male"),
     metric: text("metric", { enum: ["load_ratio", "reps"] }).notNull(),
-    tier: text("tier", { enum: ["bronze", "silver", "gold", "platinum", "diamond"] }).notNull(),
-    division: integer("division").notNull(), // 3, 2, 1
+    tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
+    division: integer("division").notNull(), // N (weakest) down to 1 (strongest), N = TIER_DIVISION_COUNT[tier]
     threshold: real("threshold").notNull(),
     trust: text("trust", { enum: ["real", "derived", "synthetic"] }).notNull(),
   },
@@ -222,7 +228,7 @@ export const ranks = sqliteTable("ranks", {
   exerciseId: text("exercise_id")
     .primaryKey()
     .references(() => exercises.id, { onDelete: "cascade" }),
-  tier: text("tier", { enum: ["bronze", "silver", "gold", "platinum", "diamond"] }).notNull(),
+  tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
   division: integer("division").notNull(),
   lp: real("lp").notNull(),
   e1rm: real("e1rm").notNull(),
@@ -234,7 +240,7 @@ export const ranks = sqliteTable("ranks", {
    *  achieved and never recomputed retroactively (e.g. against today's bodyweight). Nullable:
    *  existing rows are backfilled to `peak* = current *` on their first post-migration
    *  recompute (see `recomputeRankForExercise`), not by the migration itself. */
-  peakTier: text("peak_tier", { enum: ["bronze", "silver", "gold", "platinum", "diamond"] }),
+  peakTier: text("peak_tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }),
   peakDivision: integer("peak_division"),
   peakLp: real("peak_lp"),
   peakE1rm: real("peak_e1rm"),
@@ -266,7 +272,7 @@ export const rankEvents = sqliteTable(
     exerciseId: text("exercise_id")
       .notNull()
       .references(() => exercises.id, { onDelete: "cascade" }),
-    tier: text("tier", { enum: ["bronze", "silver", "gold", "platinum", "diamond"] }).notNull(),
+    tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
   },

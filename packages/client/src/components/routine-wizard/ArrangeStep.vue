@@ -324,7 +324,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
   border-color: transparent;
 }
 .kind-badge.k-dropset {
-  background: var(--plat-3);
+  background: var(--expert-3);
   color: var(--k-dropset-text);
   border-color: transparent;
 }

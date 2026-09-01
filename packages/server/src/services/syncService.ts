@@ -1,17 +1,19 @@
-import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG } from "@liftr/shared";
+import { bestLoadRatio, computeWorkoutPlausibility, MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, type PlausibilityInput } from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { findSetByClientId, insertSet } from "../repositories/setRepository.js";
+import { findExerciseById, findRankByExerciseId, findStandardsForExercise } from "../repositories/rankRepository.js";
 import { creditStreak } from "../repositories/streakRepository.js";
 import {
   findTouchedExerciseIds,
   findWorkoutById,
+  findWorkoutWithExercisesAndSets,
   insertWorkout,
   insertWorkoutExercise,
   insertWorkoutExercises,
   findWorkoutExerciseById,
   patchWorkout,
 } from "../repositories/workoutRepository.js";
-import { recomputeRankForExercise } from "./rankService.js";
+import { getCurrentBodyweightKg, getUserSex, recomputeRankForExercise } from "./rankService.js";
 
 /**
  * The heart of offline (plan 1.1/1.3). The client queues mutations locally while offline, each
@@ -69,6 +71,9 @@ export interface RankVerdict {
   division: number;
   lp: number;
   prevLp: number;
+  /** Rank engine v2 — set when this workout's plausibility gate discounted the recompute that
+   *  produced this verdict, null when the workout was fully plausible. */
+  plausibilityReason: "pace" | "improbable_jump" | "exceeds_ceiling" | null;
 }
 
 export interface SyncResult {
@@ -145,15 +150,78 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   const dateStr = item.payload.endedAt.toISOString().slice(0, 10);
   await creditStreak(db, dateStr, "workout");
 
+  const touched = await findTouchedExerciseIds(db, item.payload.workoutId);
+
+  // Plausibility gate (rank engine v2): computed once per finished workout, before the
+  // per-exercise recompute loop, from the full set of sets just logged in this session. The
+  // jump/ceiling checks need a load-ratio value in the same units as `apexThreshold`/
+  // `storedPeakRatio` (both load-ratio = e1RM/bodyweight) — using raw weight-kg directly (ignoring
+  // reps entirely, and ignoring bodyweight+leverage for bodyweight exercises) would compare the
+  // wrong units. `sessionBestRatio` is computed via `bestLoadRatio` (shared/math/e1rm.ts), which
+  // mirrors rankService.ts's own per-set e1RM/bodyweight-leverage loop, so the two never drift.
+  // Note that `ranks.peakE1rm` is stored as a raw e1RM value (see rankService.ts's `bestE1rm`),
+  // not a ratio, so it must also be divided by bodyweight here before comparison.
+  const workoutWithSets = await findWorkoutWithExercisesAndSets(db, item.payload.workoutId);
+
+  let plausibility: { multiplier: number; reason: "pace" | "improbable_jump" | "exceeds_ceiling" | null } = {
+    multiplier: 1,
+    reason: null,
+  };
+  if (workoutWithSets) {
+    const allSets = workoutWithSets.workoutExercises.flatMap((we) => we.sets);
+    const effectiveDurationSeconds =
+      (item.payload.endedAt.getTime() - workoutWithSets.startedAt.getTime()) / 1000 - item.payload.pausedSeconds;
+    const bodyweightKg = await getCurrentBodyweightKg(db);
+    const sex = await getUserSex(db);
+
+    const exerciseInputs: PlausibilityInput["exercises"] = [];
+    for (const { exerciseId } of touched) {
+      const rank = await findRankByExerciseId(db, exerciseId);
+      const exerciseSets = workoutWithSets.workoutExercises
+        .filter((we) => we.exerciseId === exerciseId)
+        .flatMap((we) => we.sets)
+        .filter((s) => !s.isWarmup);
+      const standards = await findStandardsForExercise(db, exerciseId, sex);
+      const apexThreshold = standards.find((s) => s.tier === "apex")?.threshold ?? null;
+      // `metric === "reps"` exercises store a rep count in `peakE1rm`, not an e1RM — there is no
+      // load-ratio concept for them at all, so the jump/ceiling checks (which compare load
+      // ratios) don't apply; pass null rather than comparing unrelated quantities (a raw-weight
+      // ratio against a rep count), which was producing false "improbable jump" positives. The
+      // pace check is metric-agnostic and still runs regardless.
+      const metric = standards[0]?.metric;
+      let sessionBestRatio: number | null = null;
+      if (metric === "load_ratio") {
+        const exercise = await findExerciseById(db, exerciseId);
+        sessionBestRatio = bestLoadRatio(
+          exerciseSets,
+          bodyweightKg,
+          exercise ? { isBodyweight: exercise.isBodyweight, leverageFactor: exercise.bodyweightLeverage ?? 1 } : null,
+        );
+      }
+      exerciseInputs.push({
+        exerciseId,
+        sessionBestRatio,
+        storedPeakRatio: metric === "load_ratio" && rank?.peakE1rm != null ? rank.peakE1rm / bodyweightKg : null,
+        apexThreshold: metric === "load_ratio" ? apexThreshold : null,
+      });
+    }
+
+    plausibility = computeWorkoutPlausibility({
+      totalSetCount: allSets.filter((s) => !s.isWarmup).length,
+      effectiveDurationSeconds,
+      exercises: exerciseInputs,
+    });
+    await patchWorkout(db, item.payload.workoutId, { plausibilityMultiplier: plausibility.multiplier });
+  }
+
   // Rank/PR recompute now runs once per finished workout, not once per set: every exercise that
   // had a non-warmup set logged in this session gets recomputed exactly once here, and the
   // verdicts come back together so the client can build a single end-of-workout reward beat
   // instead of one popping mid-set.
-  const touched = await findTouchedExerciseIds(db, item.payload.workoutId);
   const ranks: RankVerdict[] = [];
   for (const { exerciseId } of touched) {
-    const result = await recomputeRankForExercise(db, exerciseId);
-    if (result) ranks.push({ exerciseId, ...result });
+    const result = await recomputeRankForExercise(db, exerciseId, plausibility.multiplier);
+    if (result) ranks.push({ exerciseId, ...result, plausibilityReason: plausibility.reason });
   }
 
   return { clientId: item.clientId, status: "created", serverId: item.payload.workoutId, ranks };

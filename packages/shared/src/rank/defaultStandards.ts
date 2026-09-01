@@ -4,7 +4,7 @@
  * questions. Tunable without code changes where possible — see OPL_POPULATION_SHIFT and the
  * per-exercise `ratio` in tools/catalog/curated.yaml for the derived/synthetic tiers.
  */
-import { DIVISIONS, TIERS, type StandardThreshold } from "./tiers.js";
+import { TIER_DIVISION_COUNT, TIERS, type StandardThreshold, type Tier } from "./tiers.js";
 
 /**
  * OpenPowerlifting is a competitive population and reads strong (audit §4). Shift percentile
@@ -13,88 +13,86 @@ import { DIVISIONS, TIERS, type StandardThreshold } from "./tiers.js";
  */
 export const OPL_POPULATION_SHIFT = 0.75;
 
-/** tier -> division -> ratio multiplier, expressed as load_ratio (e1RM / bodyweight). */
-type RatioTable = Record<(typeof TIERS)[number], number>;
+/**
+ * The old system had 5 hand-tuned anchor ratios (Bronze..Diamond); the new 9-tier ladder needs 9.
+ * Rather than hand-typing 9 new floats per exercise (error-prone, and this project's own
+ * precedent — OPL_POPULATION_SHIFT — is "one tunable constant, recalibrate here in code, not
+ * scattered data"), the 4 even tiers (Apprentice/Athlete/Advanced/Expert) keep the old 5 numbers
+ * exactly, the 3 interior new tiers (Trainee/Lifter/Elite) sit at the geometric mean of their
+ * neighbors, and the two ends (Initiate, Apex) extrapolate one step beyond their nearest anchor
+ * using that anchor's own ratio to its newly-interpolated neighbor — the same rule in both
+ * directions, so the curve is self-consistent rather than treating the two ends differently.
+ */
+export function interpolateNineTierAnchors(
+  old5: [number, number, number, number, number],
+): Record<Tier, number> {
+  const [bronze, silver, gold, platinum] = old5;
+  const trainee = Math.sqrt(bronze * silver);
+  const lifter = Math.sqrt(silver * gold);
+  const elite = Math.sqrt(gold * platinum);
+  const initiate = bronze * (bronze / trainee);
+  const apex = platinum * (platinum / elite);
+  return {
+    initiate,
+    apprentice: bronze,
+    trainee,
+    athlete: silver,
+    lifter,
+    advanced: gold,
+    elite,
+    expert: platinum,
+    apex,
+  };
+}
 
-function expand(slug: string, byTier: RatioTable, trust: StandardThreshold["trust"]): StandardThreshold[] {
-  // Each tier's ratio is treated as division III's threshold (the entry point); II and I step
-  // up linearly to the next tier's entry point, giving 3 evenly-spaced boundaries per tier.
-  const tiers = TIERS.map((t) => byTier[t]);
+/** Divide each tier's ratio span into TIER_DIVISION_COUNT[tier] evenly-spaced thresholds. */
+function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"]): StandardThreshold[] {
   const out: StandardThreshold[] = [];
   for (let i = 0; i < TIERS.length; i++) {
     const tier = TIERS[i]!;
-    const cur = tiers[i]!;
-    const next = tiers[i + 1] ?? cur * 1.2; // diamond has no "next" anchor; extrapolate
+    const cur = byTier[tier];
+    // apex has no "next" anchor; this fallback only fires if TIER_DIVISION_COUNT.apex is ever
+    // raised above 1 (currently apex has exactly 1 division, so `d` never exceeds 0 and this
+    // extrapolated `span` doesn't feed any emitted threshold) — defensive, not load-bearing today.
+    const next = byTier[TIERS[i + 1]!] ?? cur * 1.15;
     const span = next - cur;
-    // DIVISIONS is [3, 2, 1] (III -> II -> I), already weakest-to-strongest — iterate as-is so
-    // division III gets the tier's entry threshold and division I gets the highest (previously
-    // this reversed the array and inverted every tier's division ordering).
-    DIVISIONS.forEach((division, di) => {
-      out.push({ tier, division, threshold: cur + (span * di) / DIVISIONS.length, trust });
-    });
+    const divisionCount = TIER_DIVISION_COUNT[tier];
+    // division values run divisionCount (weakest) down to 1 (strongest) within the tier
+    for (let d = 0; d < divisionCount; d++) {
+      out.push({ tier, division: divisionCount - d, threshold: cur + (span * d) / divisionCount, trust });
+    }
   }
   return out;
 }
 
 /** Anchor lifts with real external standards (OPL, shifted; ExRx for OHP/row). Tier A. */
 export const ANCHOR_STANDARDS: Record<string, StandardThreshold[]> = {
-  "back-squat": expand(
-    "back-squat",
-    { bronze: 0.75, silver: 1.25, gold: 1.75, platinum: 2.25, diamond: 2.75 },
-    "real",
-  ),
-  "bench-press": expand(
-    "bench-press",
-    { bronze: 0.5, silver: 0.9, gold: 1.3, platinum: 1.75, diamond: 2.1 },
-    "real",
-  ),
-  deadlift: expand(
-    "deadlift",
-    { bronze: 1.0, silver: 1.5, gold: 2.1, platinum: 2.6, diamond: 3.1 },
-    "real",
-  ),
-  "overhead-press": expand(
-    "overhead-press",
-    { bronze: 0.35, silver: 0.55, gold: 0.8, platinum: 1.05, diamond: 1.3 },
-    "real",
-  ),
-  "barbell-row": expand(
-    "barbell-row",
-    { bronze: 0.5, silver: 0.8, gold: 1.1, platinum: 1.45, diamond: 1.75 },
-    "real",
-  ),
+  "back-squat": expand(interpolateNineTierAnchors([0.75, 1.25, 1.75, 2.25, 2.75]), "real"),
+  "bench-press": expand(interpolateNineTierAnchors([0.5, 0.9, 1.3, 1.75, 2.1]), "real"),
+  deadlift: expand(interpolateNineTierAnchors([1.0, 1.5, 2.1, 2.6, 3.1]), "real"),
+  "overhead-press": expand(interpolateNineTierAnchors([0.35, 0.55, 0.8, 1.05, 1.3]), "real"),
+  "barbell-row": expand(interpolateNineTierAnchors([0.5, 0.8, 1.1, 1.45, 1.75]), "real"),
 };
+
+/** Sibling to interpolateNineTierAnchors: flattens rep-based (single-division-per-tier) tables. */
+function expandRepStandard(old5: [number, number, number, number, number]): StandardThreshold[] {
+  const ratios = interpolateNineTierAnchors(old5);
+  return TIERS.map((tier) => ({
+    tier,
+    // the anchor ratio is the tier's entry threshold (per expand()'s "cur" semantics), i.e. the
+    // weakest division for that tier — TIER_DIVISION_COUNT[tier], not the strongest (1).
+    division: TIER_DIVISION_COUNT[tier],
+    threshold: Math.round(ratios[tier]),
+    trust: "real" as const,
+  }));
+}
 
 /** Rep-based (bodyweight, metric: 'reps') default norms — audit §7's explicit open question. */
 export const REP_STANDARDS: Record<string, StandardThreshold[]> = {
-  pushup: [
-    { tier: "bronze", division: 3, threshold: 5, trust: "real" },
-    { tier: "silver", division: 3, threshold: 15, trust: "real" },
-    { tier: "gold", division: 3, threshold: 30, trust: "real" },
-    { tier: "platinum", division: 3, threshold: 50, trust: "real" },
-    { tier: "diamond", division: 3, threshold: 75, trust: "real" },
-  ],
-  pullup: [
-    { tier: "bronze", division: 3, threshold: 1, trust: "real" },
-    { tier: "silver", division: 3, threshold: 5, trust: "real" },
-    { tier: "gold", division: 3, threshold: 10, trust: "real" },
-    { tier: "platinum", division: 3, threshold: 16, trust: "real" },
-    { tier: "diamond", division: 3, threshold: 22, trust: "real" },
-  ],
-  chinup: [
-    { tier: "bronze", division: 3, threshold: 1, trust: "real" },
-    { tier: "silver", division: 3, threshold: 6, trust: "real" },
-    { tier: "gold", division: 3, threshold: 12, trust: "real" },
-    { tier: "platinum", division: 3, threshold: 18, trust: "real" },
-    { tier: "diamond", division: 3, threshold: 25, trust: "real" },
-  ],
-  dip: [
-    { tier: "bronze", division: 3, threshold: 3, trust: "real" },
-    { tier: "silver", division: 3, threshold: 10, trust: "real" },
-    { tier: "gold", division: 3, threshold: 20, trust: "real" },
-    { tier: "platinum", division: 3, threshold: 32, trust: "real" },
-    { tier: "diamond", division: 3, threshold: 45, trust: "real" },
-  ],
+  pushup: expandRepStandard([5, 15, 30, 50, 75]),
+  pullup: expandRepStandard([1, 5, 10, 16, 22]),
+  chinup: expandRepStandard([1, 6, 12, 18, 25]),
+  dip: expandRepStandard([3, 10, 20, 32, 45]),
 };
 
 /**
