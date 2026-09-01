@@ -1,6 +1,9 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { standards, type LiftrDb } from "@liftr/db";
+import { computeTotalXp, type Tier } from "@liftr/shared";
+import { ranks, standards, workouts, type LiftrDb } from "@liftr/db";
 import { applySyncBatch, type SyncItem } from "./syncService.js";
+import { getXpSummary } from "./xpService.js";
 import { createTestDb, insertTestExercise } from "./testDb.js";
 
 /** Matches rankService.test.ts's own `seedStandards` helper — a minimal load_ratio standards
@@ -176,6 +179,55 @@ describe("applySyncBatch — finish_workout", () => {
     expect(result!.status).toBe("created");
     expect(result!.ranks?.length).toBeGreaterThan(0);
     expect(result!.ranks?.some((r) => r.plausibilityReason === "pace")).toBe(true);
+  });
+
+  it("persists workouts.plausibility_multiplier and getXpSummary reflects a discounted XP total end-to-end", async () => {
+    // Full-chain integration test (finding: only pure unit tests + verdict.plausibilityReason
+    // coverage existed before this) — finish a flagged workout, confirm the multiplier is
+    // actually persisted on the `workouts` row (not just returned in the verdict), then confirm
+    // getXpSummary actually returns a discounted total for those sets, not the full undiscounted
+    // amount a normal, unflagged session of the exact same sets would produce.
+    await seedStandards(db, exerciseId);
+    await applySyncBatch(db, [startWorkoutItem()]);
+    const startedAt = new Date("2026-01-01T10:00:00Z");
+    const setLoggedAts = Array.from({ length: 20 }, (_, i) => new Date(startedAt.getTime() + i * 3000));
+    const setItems: SyncItem[] = setLoggedAts.map((loggedAt, i) => logSetItemAt(loggedAt, `client-xp-set-${i}`));
+    await applySyncBatch(db, setItems);
+
+    const [result] = await applySyncBatch(db, [
+      {
+        clientId: "finish-xp-1",
+        type: "finish_workout",
+        payload: { workoutId: "workout-1", endedAt: new Date(startedAt.getTime() + 60_000), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+    expect(result!.status).toBe("created");
+    expect(result!.ranks?.some((r) => r.plausibilityReason === "pace")).toBe(true);
+
+    // 1. The multiplier is actually persisted on the workout row, not just returned in the verdict.
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
+    expect(workoutRow!.plausibilityMultiplier).not.toBeNull();
+    expect(workoutRow!.plausibilityMultiplier!).toBeLessThan(1);
+
+    // 2. getXpSummary's total for these sets is measurably lower than what an identical, fully
+    // plausible (multiplier 1) session of the same sets would produce — computed directly via
+    // the same computeTotalXp @liftr/shared uses internally, forcing plausibilityMultiplier to 1,
+    // as the "what an unflagged session would have earned" baseline.
+    const rankRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, exerciseId) });
+    const tier = (rankRow?.tier ?? null) as Tier | null;
+    const undiscountedXp = computeTotalXp(
+      setLoggedAts.map((loggedAt) => ({
+        exerciseId,
+        weightKg: 60,
+        reps: 8,
+        tier,
+        loggedAt: loggedAt.getTime(),
+        plausibilityMultiplier: 1,
+      })),
+    );
+
+    const summary = await getXpSummary(db);
+    expect(summary.totalXp).toBeLessThan(Math.round(undiscountedXp));
   });
 
   it("does not flag a normally-paced workout", async () => {
