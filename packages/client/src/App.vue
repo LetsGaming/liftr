@@ -72,7 +72,7 @@ const navItems = [
   {
     to: "/ranks",
     labelKey: "nav.ranks",
-    color: "var(--gold-3)",
+    color: "var(--advanced-3)",
     svg: '<path d="M12 2l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 20.2 6.8 18l1-5.8L3.6 8.1l5.8-.8z"/>',
   },
   {

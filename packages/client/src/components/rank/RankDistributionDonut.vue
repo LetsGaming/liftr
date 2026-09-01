@@ -7,10 +7,10 @@
  * single circle per segment rather than a `<path>` arc command, which is enough for a donut
  * (no partial-circle geometry needed) and keeps the math trivial.
  *
- * Colors come from the same `.t-<tier>` design tokens RanksPage.vue/RankProgress.vue already
- * use for tier fills (tokens.css) — read directly as CSS custom properties rather than through
- * the `.t-<tier>` class indirection, since that class is only defined as `.t-plat` (not
- * `.t-platinum`) in tokens.css and would silently fail to resolve for the platinum segment.
+ * Colors come from the same per-tier design tokens RanksPage.vue/RankProgress.vue already
+ * use for tier fills (tokens.css) — read directly as CSS custom properties (e.g. `--advanced-3`)
+ * rather than through the `.t-<tier>` class indirection, since this component needs to pick a
+ * single accent color per legend row without mounting a `.t-<tier>`-classed element for each one.
  */
 import { computed } from "vue";
 import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
@@ -107,7 +107,7 @@ const total = computed(() => ranksStore.ranks.length);
   gap: var(--sp3);
 }
 .rd-eyebrow {
-  --eyebrow-color: var(--gold-3);
+  --eyebrow-color: var(--advanced-3);
 }
 .rd-body {
   display: flex;

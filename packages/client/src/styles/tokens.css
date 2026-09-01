@@ -106,7 +106,7 @@
   --pr: #ffd23f;
 
   /* Dark text for set-kind badges (.k-warmup/.k-failure/.k-dropset) sitting on their own bright
-     fill (--fire/--red/--plat-3) — was copy-pasted three times (ArrangeStep.vue, SetKindPicker.vue,
+     fill (--fire/--red/--expert-3) — was copy-pasted three times (ArrangeStep.vue, SetKindPicker.vue,
      WorkoutPage.vue); one set of tokens here instead. */
   --k-warmup-text: #2a1000;
   --k-failure-text: #2a0505;

@@ -90,7 +90,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   color: var(--k-failure-text);
 }
 .k-dropset {
-  background: var(--plat-3);
+  background: var(--expert-3);
   color: var(--k-dropset-text);
 }
 .k-remove {
