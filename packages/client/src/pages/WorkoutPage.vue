@@ -32,7 +32,8 @@ import { useXpChip } from "../composables/useXpChip";
 import { haptics } from "../lib/haptics";
 import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
-import { computeSetXp, type Tier } from "@liftr/shared";
+import { TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { computeSetXp, TIERS, type Tier } from "@liftr/shared";
 import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
@@ -80,6 +81,17 @@ const {
 } = useWorkoutFinish({ activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore: catalog }, sessionMuscles, exerciseName);
 
 const { finishedCanvas, sharingFinished, shareFinished, copyingFinished, copyFinished } = useWorkoutShareCard(finishedSummary, sessionRankUps);
+
+/** Rework Phase 4 (critique finding: the post-sequence summary used to open straight into three
+ *  gray StatTiles — the emotional peak had no continuation, and the terminal frame was a data
+ *  table). Highest tier among this session's rank-ups, if any, so the summary can keep the
+ *  tier/level state as its first visual instead of duplicating FinishSequence's beats. */
+const topRankUp = computed(() => {
+  if (sessionRankUps.value.length === 0) return null;
+  return sessionRankUps.value.reduce((best, r) =>
+    TIERS.indexOf(r.tier as Tier) > TIERS.indexOf(best.tier as Tier) ? r : best,
+  );
+});
 
 /** Rank engine v2 (task 10): sessionCaptions (from useWorkoutFinish) carries the honest
  *  copy but not the badge/next-target data to render a RankProgress card — that lives on
@@ -249,11 +261,22 @@ async function logSet() {
       <template v-else>
         <div class="eyebrow">Workout abgeschlossen</div>
         <h2>{{ finishedSummary.routineName }}</h2>
-        <div class="stat-row">
-          <StatTile :value="finishedSummary.durationLabel" label="Dauer" />
-          <StatTile :value="`${Math.round(finishedSummary.volumeKg).toLocaleString('de-DE')} kg`" label="Volumen" />
-          <StatTile :value="finishedSummary.setCount" label="Sätze" />
+
+        <!-- Terminal frame (critique finding: used to exit straight into three gray StatTiles —
+             the emotional peak had no continuation). Holds the tier/level state FinishSequence's
+             last beat just showed, instead of cutting straight to a data table; duration/volume/
+             sets move below the fold, after muscles and rank hints. -->
+        <div class="reward-recap panel-reward" :class="topRankUp ? `t-${topRankUp.tier}` : ''">
+          <span v-if="topRankUp" class="badge recap-badge" :class="`t-${topRankUp.tier}`">
+            <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[topRankUp.tier as RankTier]" /></svg>
+          </span>
+          <div class="recap-body">
+            <b v-if="topRankUp">{{ TIER_LABEL_DE[topRankUp.tier as RankTier] }} erreicht</b>
+            <b v-else>Lv. {{ xpStore.level }}</b>
+            <span>+{{ sessionXp }} XP{{ sessionRankUps.length > 1 ? ` · ${sessionRankUps.length} Rangaufstiege` : "" }}</span>
+          </div>
         </div>
+
         <div class="eyebrow">Trainierte Muskeln</div>
         <MuscleFigure :primary="finishedSummary.muscles.primary" :secondary="finishedSummary.muscles.secondary" />
 
@@ -285,7 +308,7 @@ async function logSet() {
 
         <!-- Feedback: "if a user made changes to the routine while in the workout (more
              weight/reps than the default) it should ask to overwrite the routine." -->
-        <div v-if="routineBeats.length > 0" class="beat-panel">
+        <div v-if="routineBeats.length > 0" class="beat-panel panel">
           <p v-if="!routineUpdated">
             Du warst stärker als geplant: {{ routineBeats.length === 1 ? "1 Satz" : `${routineBeats.length} Sätze` }} über dem
             Routine-Ziel.
@@ -303,6 +326,13 @@ async function logSet() {
               {{ updatingRoutine ? "Wird gespeichert…" : "Routine aktualisieren" }}
             </button>
           </div>
+        </div>
+
+        <!-- Demoted below the fold (critique finding) — reference numbers, not the reward. -->
+        <div class="stat-row">
+          <StatTile :value="finishedSummary.durationLabel" label="Dauer" />
+          <StatTile :value="`${Math.round(finishedSummary.volumeKg).toLocaleString('de-DE')} kg`" label="Volumen" />
+          <StatTile :value="finishedSummary.setCount" label="Sätze" />
         </div>
 
         <button class="btn-primary btn-lg btn-block" :disabled="sharingFinished" @click="shareFinished">
@@ -398,7 +428,7 @@ async function logSet() {
     </div>
 
     <div v-else class="active-workout">
-      <div v-if="showStalePrompt" class="stale-banner">
+      <div v-if="showStalePrompt" class="stale-banner panel">
         <p>
           Dieses Workout läuft seit über {{ Math.floor(store.elapsedSeconds / 3600) }} Stunden. Läuft es noch, oder wurde
           vergessen, es zu beenden?
@@ -431,7 +461,7 @@ async function logSet() {
         <button class="add-ex-btn" @click="showAddExercise = !showAddExercise">
           {{ showAddExercise ? "Abbrechen" : "+ Übung hinzufügen" }}
         </button>
-        <div v-if="showAddExercise" class="add-ex-panel">
+        <div v-if="showAddExercise" class="add-ex-panel panel">
           <input v-model="addExerciseSearch" class="add-ex-search" type="text" placeholder="Übung suchen…" />
           <ul class="add-ex-list">
             <li v-for="ex in addExerciseCandidates" :key="ex.id">
@@ -455,8 +485,12 @@ async function logSet() {
             <h2>{{ store.currentExercise.name }}</h2>
           </div>
           <div class="focus-head-actions">
+            <!-- Was "Überspringen ⏭" — identical wording/weight to RestTimer's "Überspringen"
+                 button, meaning something much more consequential (skip the whole exercise, not
+                 the rest timer) with no visual distinction between the two (critique finding).
+                 "Übung" disambiguates without adding a control. -->
             <button v-if="store.exercises.length > 1" class="skip-btn" @click="store.skipCurrentExercise()">
-              Überspringen ⏭
+              Übung überspringen ⏭
             </button>
             <button class="info-btn" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)">ⓘ</button>
           </div>
@@ -820,6 +854,33 @@ async function logSet() {
 .finished-summary .btn-primary {
   margin-top: var(--sp5);
 }
+.reward-recap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp3);
+  padding: var(--sp4);
+  margin-bottom: var(--sp3);
+}
+.recap-badge {
+  width: 44px;
+  height: 50px;
+  flex: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+.recap-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recap-body b {
+  font-size: 17px;
+  color: var(--tt, var(--text));
+}
+.recap-body span {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pr);
+}
 .caption-list {
   display: flex;
   flex-direction: column;
@@ -834,12 +895,10 @@ async function logSet() {
 .caption-item b {
   font-size: 12.5px;
 }
+/* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
 .beat-panel {
   margin-top: var(--sp4);
   padding: var(--sp4);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line-2);
   display: flex;
   flex-direction: column;
   gap: var(--sp2);
@@ -875,14 +934,12 @@ async function logSet() {
   flex-direction: column;
   gap: var(--sp5);
 }
+/* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
 .stale-banner {
   display: flex;
   flex-direction: column;
   gap: var(--sp3);
   padding: var(--sp4);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line-2);
 }
 .stale-banner p {
   font-size: 13.5px;
@@ -938,9 +995,11 @@ async function logSet() {
   padding: 7px 10px;
   white-space: nowrap;
 }
+/* Was 30x30px, below the 44px touch-target floor .btn-close already meets (critique finding:
+   applied inconsistently). */
 .info-btn {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -956,14 +1015,12 @@ async function logSet() {
   border-radius: var(--r-md);
   padding: 8px 12px;
 }
+/* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
 .add-ex-panel {
   display: flex;
   flex-direction: column;
   gap: var(--sp2);
   padding: var(--sp3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
 }
 .add-ex-search {
   padding: 8px 12px;
@@ -1025,14 +1082,21 @@ async function logSet() {
 }
 /* Was --glow-blue on every instance — this is the ordinary CTA class (Quick Start, "Satz
    speichern", "Starten", routine save, …), so *every* screen had a glowing button, which
-   reads as "everything is emphasized" = nothing is. Flat saturated fill instead, matching how
-   Liftoff/wger/Strong keep their primary action flat and reserve any glow/motion for an
-   actually rare moment — the finish sequence's rank-up beat (FinishSequence.vue) keeps its glow. */
+   reads as "everything is emphasized" = nothing is. Flat saturated fill instead (.btn-primary,
+   tokens.css, itself bright now — the rework's whole point was that the *fill* should carry
+   the emphasis, not a glow bolted onto a dark one); glow/motion stays reserved for an actually
+   rare moment — the finish sequence's rank-up beat (FinishSequence.vue). */
 .log-set-wrap {
   position: relative;
 }
 .log-set-btn {
   margin: var(--sp3) 0;
+}
+/* The most-tapped button in the app gets a tier-tinted focus ring instead of the global default
+   (:focus-visible in tokens.css) — a small, cheap reminder of the user's tier on the one control
+   they touch every set. Falls back to the standard --blue-hi ring before the tier loads. */
+.log-set-btn:focus-visible {
+  outline-color: var(--tier-accent, var(--blue-hi));
 }
 .reps-hint {
   font-size: 11.5px;
@@ -1102,8 +1166,11 @@ async function logSet() {
   background: var(--surface-2);
   font-size: 13.5px;
 }
+/* Was `opacity: 0.75` — the only visible consequence of completing a set was that it faded
+   (critique finding: the reward inverts). A logged set now gets a faint green tint instead,
+   full opacity — done work reads as brighter, not dimmer. */
 .set-rows li.done {
-  opacity: 0.75;
+  background: color-mix(in srgb, var(--green) 14%, var(--surface-2));
 }
 .set-rows li.warmup:not(.done) {
   color: var(--dim);
@@ -1111,6 +1178,14 @@ async function logSet() {
 /* .sn is a <button> for an unlogged set (tap to open "Satzart auswählen") and a plain <span>
    once logged — border/font reset here so the button variant doesn't inherit native button
    chrome; color comes from the .k-* kind classes below, same palette as SetKindPicker.vue. */
+/* Was 22x22px — under the 44px touch-target floor .btn-close was already raised to meet
+   (critique finding: applied inconsistently). Only the interactive (unlogged) state needs the
+   floor; the logged state is a plain, non-interactive <span> and stays compact so the row
+   doesn't visually swell once every set is logged. */
+.set-rows button.sn {
+  width: 44px;
+  height: 44px;
+}
 .set-rows .sn {
   width: 22px;
   height: 22px;

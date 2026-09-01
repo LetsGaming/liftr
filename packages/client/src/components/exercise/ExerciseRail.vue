@@ -24,7 +24,7 @@ function workingReps(ex: ActiveExercise): number | null {
     >
       <span class="n">{{ ex.sets.every((s) => s.logged) ? "✓" : i + 1 }}</span>
       <span class="meta">
-        <b>{{ ex.name }}</b>
+        <b><span v-if="ex.supersetGroup != null" class="superset-dot" aria-hidden="true" />{{ ex.name }}</b>
         <span>
           {{ ex.sets.filter((s) => s.logged).length }} / {{ ex.sets.length }} Sätze
           <template v-if="workingReps(ex) !== null"> · {{ workingReps(ex) }} Wdh.</template>
@@ -76,8 +76,18 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item.done .meta b {
   color: var(--faint);
 }
-.rail-item.grouped {
-  border-left: 3px solid var(--blue-hi);
+/* Was `border-left: 3px solid var(--blue-hi)` — a full-height colored bar is the loudest
+   possible encoding of a quiet grouping fact (superset membership), and reads as a card-level
+   alert rather than a label (craft-floor: no colored border-left/right above 1px on list items).
+   A small inline dot next to the exercise name instead. */
+.superset-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue-hi);
+  margin-right: 6px;
+  vertical-align: middle;
 }
 .rail-item .n {
   width: 26px;

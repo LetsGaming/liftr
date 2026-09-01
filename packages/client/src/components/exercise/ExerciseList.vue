@@ -12,8 +12,8 @@
 import { canPerform, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, ref } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
-import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
-import { MUSCLE_SLUGS } from "../../lib/muscles";
+import { EQUIPMENT_LABEL_DE, equipmentRequirementLabelDe, type Equipment } from "../../lib/equipmentIcons";
+import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
 import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import ExerciseRow from "./ExerciseRow.vue";
@@ -86,6 +86,16 @@ function onCardClick(ex: CatalogExercise) {
   if (props.mode === "select") emit("toggle", ex);
   else emit("open", ex);
 }
+
+/** Was `{{ eq }}` (critique finding: raw English equipment slugs — "chest", "barbell" — rendered
+ *  directly into a German-language UI). EQUIPMENT_LABEL_DE already exists and is used elsewhere
+ *  (ExerciseInfoPanel, onboarding); this was simply never wired in here. `equipment` comes
+ *  untyped (`string | null`) off the API boundary, so this falls back to the raw slug rather
+ *  than throwing on an unrecognized value — a translation gap should degrade, not break. */
+function equipmentLabel(eq: string | null): string {
+  if (!eq) return "—";
+  return EQUIPMENT_LABEL_DE[eq as Equipment] ?? eq;
+}
 </script>
 
 <template>
@@ -95,11 +105,11 @@ function onCardClick(ex: CatalogExercise) {
     <div class="filters">
       <select v-model="equipmentFilter" class="filter-select" aria-label="Nach Gerät filtern">
         <option value="">Alle Geräte</option>
-        <option v-for="eq in equipmentOptions" :key="eq" :value="eq">{{ eq }}</option>
+        <option v-for="eq in equipmentOptions" :key="eq" :value="eq">{{ equipmentLabel(eq) }}</option>
       </select>
       <select v-model="muscleFilter" class="filter-select" aria-label="Nach Muskelgruppe filtern">
         <option value="">Alle Muskeln</option>
-        <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ m }}</option>
+        <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ MUSCLE_LABEL_DE[m] ?? m }}</option>
       </select>
     </div>
 
@@ -119,7 +129,7 @@ function onCardClick(ex: CatalogExercise) {
         <button class="ex-card" :class="{ selected: mode === 'select' && selectedIds.has(ex.id) }" @click="onCardClick(ex)">
           <ExerciseRow :slug="ex.slug" :equipment="ex.equipment ?? 'bodyweight'" :name="exerciseName(ex.slug)" :size="48">
             <template #meta>
-              <span class="equip">{{ ex.equipment }}</span>
+              <span class="equip">{{ equipmentLabel(ex.equipment) }}</span>
               <span v-if="!onlyDoableEquipment && hasEquipmentFilter && missingRequiredFor(ex).length > 0" class="missing-note">
                 fehlt: {{ missingRequiredFor(ex).map(equipmentRequirementLabelDe).join(", ") }}
               </span>

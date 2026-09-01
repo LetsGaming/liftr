@@ -46,6 +46,7 @@ const plates = computed(() => {
       unit="kg"
       :model-value="store.currentSet.weightKg"
       @adjust="(d) => store.adjustCurrentSet('weightKg', d)"
+      @set="(v) => store.setCurrentSetValue('weightKg', v)"
     >
       <button class="plates-toggle" @click="showPlates = !showPlates">
         {{ showPlates ? "Scheiben ausblenden" : "🏋 Scheiben anzeigen" }}
@@ -66,6 +67,7 @@ const plates = computed(() => {
       :model-value="store.currentSet.reps"
       :emphasize="store.currentSet.reps <= 0"
       @adjust="(d) => store.adjustCurrentSet('reps', d)"
+      @set="(v) => store.setCurrentSetValue('reps', v)"
     />
   </div>
 </template>

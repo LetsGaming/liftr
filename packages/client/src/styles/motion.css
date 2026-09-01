@@ -66,8 +66,7 @@
 }
 
 /* The "you earned this" stamp — overshoots past full size then settles. Reserved for genuinely
-   rare moments (RankUpCelebration's badge, FinishSequence's level-up); used anywhere routine it
-   would cheapen the effect. One definition, shared, so the two don't drift apart. */
+   rare moments (FinishSequence's level-up); used anywhere routine it would cheapen the effect. */
 @keyframes stamp-in {
   0% {
     opacity: 0;

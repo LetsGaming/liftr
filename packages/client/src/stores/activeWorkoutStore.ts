@@ -280,6 +280,24 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
+    /** Direct numeric entry (critique finding: ±1-per-tap-only made a 20kg->100kg change ~64
+     *  taps) — same clamps as adjustCurrentSet's delta path, so typing a value can never produce
+     *  a set the server would reject either. Reps rounds to a whole number; weight rounds to the
+     *  nearest step so an oddly-typed value (e.g. "83") doesn't silently ignore the app's own
+     *  plate-increment convention. */
+    setCurrentSetValue(field: "weightKg" | "reps", value: number) {
+      const set = this.currentSet;
+      if (!set || !Number.isFinite(value)) return;
+      if (field === "weightKg") {
+        if (set.weightKg == null) return;
+        const stepped = Math.round(value / WEIGHT_STEP_KG) * WEIGHT_STEP_KG;
+        set.weightKg = Math.min(MAX_PLAUSIBLE_WEIGHT_KG, Math.max(0, Math.round(stepped * 100) / 100));
+      } else {
+        set.reps = Math.min(MAX_PLAUSIBLE_REPS, Math.max(0, Math.round(value)));
+      }
+      persist(this.$state);
+    },
+
     /**
      * Reclassifies a set ("Satzart auswählen" — feedback: "not possible to set what kind of
      * set this is"). Scoped to sets that haven't been logged yet: a logged set is already
