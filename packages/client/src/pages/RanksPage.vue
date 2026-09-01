@@ -3,20 +3,34 @@
 // @liftr/shared's resolveRank/nextLoadTarget running server-side (see rankEngine.ts) and
 // cached into the `ranks` table. Never gated/paywalled (audit §3's explicit anti-pattern).
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import ProgressChart from "../components/rank/ProgressChart.vue";
 import RankDistributionDonut from "../components/rank/RankDistributionDonut.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
 import RankUpCalendar from "../components/rank/RankUpCalendar.vue";
+import TierLadder from "../components/rank/TierLadder.vue";
 import { useExerciseHistoryCache } from "../composables/useExerciseHistoryCache";
 import { useExerciseName } from "../composables/useExerciseName";
+import { useOverallRankStore } from "../stores/overallRankStore";
 import { useRanksStore } from "../stores/ranksStore";
 
 const ranksStore = useRanksStore();
-onMounted(() => ranksStore.load());
+const overallRank = useOverallRankStore();
+onMounted(() => {
+  void ranksStore.load();
+  void overallRank.load();
+});
 
 const { exerciseName } = useExerciseName();
 const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
+
+/** "LP" and the ≈ trust marker were never explained anywhere reachable on touch — the ≈'s only
+ *  explanation was a `title` attribute, which doesn't exist on touch, the app's entire platform
+ *  (critique finding). RankProgress's card variant already sits inside RanksPage's own
+ *  `.rank-card` <button>, so a second interactive element inside RankProgress itself would be a
+ *  nested <button> (invalid HTML/ARIA) — this disclosure lives once, here, at the top of the one
+ *  page every rank card is reached from, instead of duplicated per-card. */
+const showLpExplainer = ref(false);
 </script>
 
 <template>
@@ -27,9 +41,26 @@ const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-      <p style="color: var(--dim)">Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt</p>
+      <!-- Hero (rework Phase 3, critique finding: 36 tier tokens exist and reach exactly one
+           screen; nowhere could a user see their position on the whole 9-tier ladder, only an
+           isolated per-exercise band). Renders even with zero ranks yet — overallRank.current is
+           null pre-first-workout, and TierLadder's own fallback lights Initiate in that case. -->
+      <TierLadder
+        :current-tier="overallRank.current?.tier ?? null"
+        :current-division="overallRank.current?.division ?? null"
+      />
 
-      <p v-if="ranksStore.loaded && ranksStore.ranks.length === 0" style="color: var(--dim); margin-top: var(--sp4)">
+      <button type="button" class="page-note lp-explainer-toggle" :aria-expanded="showLpExplainer" @click="showLpExplainer = !showLpExplainer">
+        Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt
+        <span class="info-dot">ⓘ</span>
+      </button>
+      <p v-if="showLpExplainer" class="page-note lp-explainer pop-in">
+        <b class="tnum">LP</b> misst deinen Fortschritt innerhalb der aktuellen Stufe (0–100). Ein
+        <b>≈</b> markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests —
+        dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt.
+      </p>
+
+      <p v-if="ranksStore.loaded && ranksStore.ranks.length === 0" class="page-note" style="margin-top: var(--sp4)">
         Noch keine Ränge — logge ein paar Sätze, um deinen ersten Rang zu sehen.
       </p>
 
@@ -64,6 +95,31 @@ const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
 </template>
 
 <style scoped>
+.page-note {
+  color: var(--dim);
+}
+.lp-explainer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: inherit;
+  font-family: inherit;
+}
+.info-dot {
+  color: var(--blue-hi);
+  flex: none;
+}
+.lp-explainer {
+  margin-top: var(--sp2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.lp-explainer b {
+  color: var(--text);
+}
 .rank-analytics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

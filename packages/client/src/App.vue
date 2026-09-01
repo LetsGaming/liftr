@@ -5,6 +5,7 @@ import { RouterLink, RouterView, useRoute } from "vue-router";
 import AuthGate from "./components/ui/AuthGate.vue";
 import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
+import { useOverallRankStore } from "./stores/overallRankStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useStreakStore } from "./stores/streakStore";
 import { useXpStore } from "./stores/xpStore";
@@ -13,11 +14,23 @@ const { t } = useI18n();
 const streak = useStreakStore();
 const xp = useXpStore();
 const settingsStore = useSettingsStore();
+const overallRank = useOverallRankStore();
 onMounted(() => {
   void streak.load();
   void xp.load();
   void settingsStore.load();
+  void overallRank.load();
 });
+
+/** Rework Phase 2: the 9-tier ladder used to reach exactly one tab (RanksPage) — everywhere
+ *  else in the app had no idea what tier the user is. Setting the tier class at the shell lets
+ *  --tier-accent/--tier-deep (tokens.css) cascade down to the level bar, active nav indicator,
+ *  and log-set focus ring without each of them needing its own rank lookup. Falls back to no
+ *  class (tokens.css's own var() fallbacks take over) before the first load resolves or offline
+ *  with nothing cached. */
+const overallTierClass = computed(() =>
+  overallRank.current ? `t-${overallRank.current.tier}` : "",
+);
 
 /** Mount trigger and unmount trigger are deliberately different signals — see SheetModal.vue's
  *  header comment on why a modal must only ever unmount via its own `@close` (fired after
@@ -118,7 +131,28 @@ const pageTitle = computed(() => {
          this exists purely so assistive tech has a landing point. Lives once here (not per-page)
          so it survives every route transition without duplication. -->
     <h1 class="sr-only">{{ pageTitle }}</h1>
-    <div class="app-shell">
+    <div class="app-shell" :class="overallTierClass">
+      <!-- Persistent top HUD (rework Phase 4, deferred to its own pass — mobile only, hidden at
+           the >=900px breakpoint where .side-nav already shows the same level/streak chips in
+           the sidebar). Was floating at the *bottom* as .mobile-status, stacked directly above
+           the tab bar (see the long P0 comment further down explaining why that had to be one
+           solid fixed block, not two independently-positioned ones) — that placement buried the
+           app's only persistent identity signal in the thumb zone, competing with primary
+           navigation for the same ~150px band. Moved to the top for the same reason the P0 fix
+           existed: a *second* independently-fixed element here would risk the exact clipping bug
+           that comment documents, so this reuses the identical discipline (one fixed element,
+           one solid backdrop, matching space reserved via .main-content's margin-top below)
+           rather than inventing a new pattern. -->
+      <div v-if="(xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0)" class="top-hud">
+        <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
+          <div class="mobile-level-row">
+            <b>Lv. {{ xp.level }}</b>
+            <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
+          </div>
+          <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
+        </div>
+        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }} Tage</div>
+      </div>
       <!-- desktop sidebar / mobile tab bar: one route set, two layouts (plan 1.2) -->
       <nav class="side-nav" aria-label="Hauptnavigation">
         <RouterLink
@@ -150,42 +184,12 @@ const pageTitle = computed(() => {
           </Transition>
         </RouterView>
       </main>
-      <!-- level/streak chips live in .side-nav, which is hidden below 900px (plan 1.2) — without
-           this mobile-only duplicate, level and streak were completely invisible on phone.
-
-           .mobile-status and .tab-bar used to be two independently `position: fixed` elements,
-           the chip floating free-standing ~62px above the tab bar. A live-viewport audit (P0)
-           found the chip clipping real content (a stat tile on `/`, a rank card's exercise name,
-           profile action buttons, an exercises list row) — and not just at the *end* of a page's
-           scroll: on `/` it already clips the "Gesamtrang" tile at scrollTop 0, the very first
-           view, with hundreds more px of content still below. ion-content's --padding-bottom
-           (below in ionic-theme.css) only reserves clearance at the scroll *end*; it cannot
-           rescue content that scrolls into the chip's fixed viewport band mid-page — that's true
-           of any fixed overlay. On top of that, the chip's two pills floated with transparent
-           gaps around/between them (no backdrop on the container itself), so scrolled text
-           visibly poked through those gaps rather than disappearing behind one clean opaque
-           edge — the "cuts off ... mid-word" look. And the chip's own rendered bottom already
-           sank ~8.5px into the tab bar's top (two independently-positioned fixed elements with
-           only an assumed, unenforced gap between them).
-           Fix: stack both inside one `.bottom-chrome` flex column that's the *only* fixed
-           element, given its own solid backdrop. That makes the whole band a single continuous
-           opaque bar (no gaps content can peek through, no independent-offset drift), and lets
-           ion-content's padding-bottom target one measured, robust height instead of guessing
-           where a separately-fixed chip lands. -->
+      <!-- Now just the tab bar — the level/streak status row that used to stack above it moved
+           to .top-hud (see the comment up top explaining why, and preserving the same "one
+           fixed element, one solid backdrop" discipline the original P0 fix established). Kept
+           as its own fixed element (not folded into .top-hud) since it's still the primary
+           navigation surface, needed even when there's no XP/streak to show. -->
       <div class="bottom-chrome">
-        <div v-if="(xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0)" class="mobile-status">
-          <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
-            <div class="mobile-level-row">
-              <b>Lv. {{ xp.level }}</b>
-              <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
-            </div>
-            <!-- .side-nav's chip has a progress bar (.rankbar); the mobile chip previously
-                 dropped it entirely — level was visible on phone but progress toward the next
-                 one wasn't. -->
-            <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
-          </div>
-          <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
-        </div>
         <nav class="tab-bar" aria-label="Hauptnavigation">
           <RouterLink
             v-for="item in navItems"
@@ -260,6 +264,11 @@ const pageTitle = computed(() => {
 .bottom-chrome {
   display: none;
 }
+/* Mobile-only (>=900px shows the same level/streak chips in .side-nav instead) — hidden by
+   default, shown in the max-width:899px query below. */
+.top-hud {
+  display: none;
+}
 .tab-bar {
   display: flex;
   justify-content: space-around;
@@ -283,7 +292,10 @@ const pageTitle = computed(() => {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  color: var(--faint);
+  /* Was --faint — desktop's .nav-link rested at --dim for no stated reason, so the two nav
+     surfaces had different resting label colors (critique finding). --dim also has more
+     contrast, which matters more here since the label is smaller (11.5px vs 13.5px). */
+  color: var(--dim);
   text-decoration: none;
   padding: 4px 3px;
   border-radius: var(--r-sm);
@@ -329,10 +341,18 @@ const pageTitle = computed(() => {
     padding-right: 8px;
   }
 }
+/* Was uncolored (inherits --dim/--faint from .nav-link/.tab-link) until active — five of six nav
+   icons were flat gray at all times, and each item's --nav-color only ever appeared once you'd
+   already navigated there (critique finding: no recognition cue, pure recall). Icons now carry
+   their section color always, dimmed at rest and full-strength active, so all six are
+   identifiable at a glance instead of needing memorization. */
 .nav-icon {
   width: 20px;
   height: 20px;
   flex: none;
+  color: var(--nav-color);
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .tab-link .nav-icon {
   width: 23px;
@@ -342,12 +362,19 @@ const pageTitle = computed(() => {
 .tab-link.router-link-active {
   color: var(--text);
 }
+/* Tinted from the user's overall tier (--tier-accent, tokens.css) rather than flat --surface-2 —
+   the rank ladder used to reach exactly one tab; the active-tab background is now a standing,
+   app-wide reminder of it. Falls back to --blue-hi before the tier loads or offline with nothing
+   cached. */
 .nav-link.router-link-active {
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--tier-accent, var(--blue-hi)) 16%, var(--surface-2));
+}
+.tab-link.router-link-active {
+  box-shadow: inset 0 -2px 0 var(--tier-accent, var(--blue-hi));
 }
 .nav-link.router-link-active .nav-icon,
 .tab-link.router-link-active .nav-icon {
-  color: var(--nav-color);
+  opacity: 1;
 }
 .streak-chip {
   margin-top: auto;
@@ -409,6 +436,16 @@ const pageTitle = computed(() => {
   }
 }
 @media (max-width: 899px) {
+  /* --top-hud-h lives on .app-shell (the nearest ancestor .top-hud and .main-content actually
+     share) rather than on .top-hud itself — custom properties only inherit down the DOM tree,
+     and .top-hud/.main-content are siblings, not ancestor/descendant. Declaring it on .top-hud
+     "worked" in the sense that .top-hud could read its own property back, but .main-content's
+     var(--top-hud-h, 0px) always resolved to the 0px fallback, so .main-content never actually
+     moved — real content silently rendered underneath the fixed HUD. Caught by measuring the
+     live layout (getBoundingClientRect), not by reading the CSS. */
+  .app-shell {
+    --top-hud-h: calc(52px + env(safe-area-inset-top, 0px));
+  }
   .main-content {
     /* Note: every routed page renders an Ionic <IonPage>, which is position:absolute + inset:0
        — it fills .main-content's full border box and completely ignores this padding (abs-
@@ -416,13 +453,61 @@ const pageTitle = computed(() => {
        non-Ionic content directly inside .main-content, if any is ever added; the real bottom-
        clearance fix for Ionic pages is ion-content's --padding-bottom in ionic-theme.css. */
     padding-bottom: 80px;
+    /* Unlike padding, `margin-top` on the *positioned ancestor itself* does shift where an
+       inset:0 child's box starts — .main-content has `position: relative` above, so ion-page's
+       inset:0 is relative to *this* box, and moving this box down moves ion-page (header +
+       content, as one unit) down with it. This is how .top-hud (below) gets clearance without
+       needing to reach into every page's ion-content shadow DOM the way --padding-bottom does
+       for the tab bar. */
+    margin-top: var(--top-hud-h, 0px);
   }
-  /* Single fixed element for the whole bottom chrome (status row + tab bar stacked in one flex
-     column) — see the P0 fix comment above the template markup for why this replaced two
-     independently `position: fixed` pieces. Because .mobile-status is now laid out in normal
-     flow *inside* this column (not fixed/floating), it can never land on top of scrolled page
-     content: it always occupies exactly its own row, directly above the tab bar, with a solid
-     shared backdrop and zero gap between them. */
+  /* Persistent top HUD (rework Phase 4) — same one-fixed-element-with-a-solid-backdrop
+     discipline as .bottom-chrome below (see that block's comment): a floating, gap-having chip
+     here would risk the identical clipping bug the original P0 fix on .bottom-chrome had to
+     solve. */
+  .top-hud {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--sp2);
+    height: var(--top-hud-h);
+    padding: env(safe-area-inset-top, 0px) var(--sp3) 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .top-hud .level-chip,
+  .top-hud .streak-chip {
+    margin-top: 0;
+    padding: 4px var(--sp3);
+  }
+  .top-hud .level-chip b {
+    display: inline;
+    margin-bottom: 0;
+  }
+  .mobile-level-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .top-hud .level-chip .xp-amount {
+    display: inline;
+    margin-top: 0;
+  }
+  .mobile-bar {
+    width: 64px;
+    height: 5px;
+    margin-top: 3px;
+  }
+  .top-hud .level-chip + .streak-chip {
+    margin-top: 0;
+  }
+  /* Single fixed element for the tab bar — see the P0 fix comment above the template markup for
+     the history here (it used to also carry the status row now in .top-hud). */
   .bottom-chrome {
     display: flex;
     flex-direction: column;
@@ -433,38 +518,6 @@ const pageTitle = computed(() => {
     z-index: 1;
     background: var(--surface);
     box-shadow: var(--shadow);
-  }
-  .mobile-status {
-    display: flex;
-    justify-content: center;
-    gap: var(--sp2);
-    padding: 8px var(--sp3) 6px;
-  }
-  .mobile-status .level-chip,
-  .mobile-status .streak-chip {
-    margin-top: 0;
-    padding: 4px var(--sp3);
-  }
-  .mobile-status .level-chip b {
-    display: inline;
-    margin-bottom: 0;
-  }
-  .mobile-level-row {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
-  .mobile-status .level-chip .xp-amount {
-    display: inline;
-    margin-top: 0;
-  }
-  .mobile-bar {
-    width: 64px;
-    height: 5px;
-    margin-top: 3px;
-  }
-  .mobile-status .level-chip + .streak-chip {
-    margin-top: 0;
   }
 }
 </style>

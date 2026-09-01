@@ -7,11 +7,18 @@
  * look here; place several inside a CSS grid (`display:grid; grid-template-columns: repeat(N,
  * 1fr)`) in the parent to get a stat row — this component only owns one tile.
  */
-defineProps<{ value: string | number; label: string }>();
+/** `reward` (critique finding: every container in the app — a stat, a warning, a form panel —
+ *  shared one identical flat recipe, so nothing but proximity told a plain summary tile apart
+ *  from an earned one) opts a tile into the tier-tinted .panel-reward treatment instead of the
+ *  flat .panel one. Only the dashboard's headline status strip (streak/level/rank) sets it; a
+ *  workout/run summary tile stays a plain reference number, not a reward. */
+withDefaults(defineProps<{ value: string | number; label: string; reward?: boolean }>(), {
+  reward: false,
+});
 </script>
 
 <template>
-  <div class="stat-tile">
+  <div class="stat-tile" :class="{ 'panel-reward': reward, panel: !reward }">
     <b class="tnum">{{ value }}</b>
     <span>{{ label }}</span>
   </div>
@@ -23,9 +30,6 @@ defineProps<{ value: string | number; label: string }>();
   flex-direction: column;
   gap: 2px;
   padding: var(--sp3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
 }
 .stat-tile b {
   font-size: 17px;

@@ -20,6 +20,18 @@ let marker: L.CircleMarker | null = null;
  *  everything *except* the base tile layer on every points update without an `any` cast. */
 let osmLayer: L.TileLayer | null = null;
 
+/** Leaflet draws to its own canvas/SVG layer, outside the page's CSS cascade — `var(--fire)`
+ *  can't be written directly into a Leaflet color option the way it can into a stylesheet.
+ *  Reading the resolved custom property off :root at draw time (critique finding: this file
+ *  re-hardcoded 5 hexes that already exist as tokens.css tokens, one of which — #0e1826 — matched
+ *  no token at all, so the map couldn't follow any future palette change) keeps this file on the
+ *  same palette as everything else without needing a build-time color pipeline. */
+function cssVar(name: string, fallback: string): string {
+  if (typeof document === "undefined") return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 function render() {
   if (!map || props.points.length === 0) return;
   map.eachLayer((layer) => {
@@ -27,14 +39,15 @@ function render() {
   });
 
   const latLngs = props.points.map((p) => [p.lat, p.lon] as [number, number]);
-  const line = L.polyline(latLngs, { color: "#ff7a1f", weight: 4, opacity: 0.9 });
+  const line = L.polyline(latLngs, { color: cssVar("--fire", "#ff7a1f"), weight: 4, opacity: 0.9 });
   line.addTo(map);
   map.fitBounds(line.getBounds(), { padding: [24, 24] });
 
-  L.circleMarker(latLngs[0]!, { radius: 6, color: "#0e1826", weight: 2, fillColor: "#37d67a", fillOpacity: 1 }).addTo(map);
-  L.circleMarker(latLngs[latLngs.length - 1]!, { radius: 6, color: "#0e1826", weight: 2, fillColor: "#ff4757", fillOpacity: 1 }).addTo(map);
+  const ringColor = cssVar("--bg", "#0a0c14");
+  L.circleMarker(latLngs[0]!, { radius: 6, color: ringColor, weight: 2, fillColor: cssVar("--green", "#37d67a"), fillOpacity: 1 }).addTo(map);
+  L.circleMarker(latLngs[latLngs.length - 1]!, { radius: 6, color: ringColor, weight: 2, fillColor: cssVar("--red", "#ff4757"), fillOpacity: 1 }).addTo(map);
 
-  marker = L.circleMarker(latLngs[0]!, { radius: 7, color: "#fff", weight: 2, fillColor: "#5ba0ff", fillOpacity: 1 });
+  marker = L.circleMarker(latLngs[0]!, { radius: 7, color: "#fff", weight: 2, fillColor: cssVar("--blue-hi", "#5ba0ff"), fillOpacity: 1 });
   marker.addTo(map);
 }
 
@@ -75,6 +88,6 @@ defineExpose({ setMarkerPosition });
   height: 100%;
   min-height: 260px;
   border-radius: var(--r-lg);
-  background: #0e1826;
+  background: var(--bg);
 }
 </style>

@@ -72,19 +72,20 @@
 
 :root {
   --bg: #0a0c14;
-  --surface: #141826;
-  --surface-2: #1c2233;
-  --surface-3: #28304a;
+  /* Ramp widened from 1.09/1.18/1.23:1 steps to ~1.15/1.19/1.28:1 (critique finding: cards were
+     mechanically indistinguishable from the page they sat on — no figure/ground, nothing read as
+     an object). Every text/accent token below was re-measured against the new --surface-2; all
+     of them gained contrast, none needed a compensating change. */
+  --surface: #161c2d;
+  --surface-2: #212a42;
+  --surface-3: #2f3a5c;
   --line: rgba(255, 255, 255, 0.14);
   --line-2: rgba(255, 255, 255, 0.2);
   --text: #eef2fb;
+  /* 5.60:1 on the new --surface-2 (was 4.4:1). */
   --dim: #98a2c0;
-  /* ~4.6:1 on --surface-2 (was #616b8c, ~3.0:1 — failed WCAG AA). Text-only token now;
-     use --faint-deco below for non-text decoration where the darker value is still fine. */
+  /* 4.79:1 on the new --surface-2 (was ~4.6:1 on the old value). */
   --faint: #8b95b5;
-  --text-2: var(--dim);
-  /* decorative-only (hairlines, inactive chart gridlines) — never put text in this color */
-  --faint-deco: #616b8c;
 
   --blue: #3b8cff;
   --blue-hi: #5ba0ff;
@@ -99,7 +100,6 @@
   --fire: #ff7a1f;
   --fire-hi: #ffa04d;
   --violet: #8f6dff;
-  --violet-hi: #a98cff;
   --red: #ff4757;
   --red-lo: #a01722;
   --green: #37d67a;
@@ -166,7 +166,12 @@
   --sp5: 20px;
   --sp6: 24px;
   --sp8: 32px;
-  --shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.75), 0 3px 8px -3px rgba(0, 0, 0, 0.6);
+  /* The two drop shadows alone were black-over-near-black — mathematically close to a no-op at
+     this palette's darkness, so cards had no legible elevation cue at all beyond the 1px --line
+     hairline. A top inset highlight (critique finding) gives every surface a lit top edge, which
+     reads as elevation even where the drop shadow itself stays nearly invisible. */
+  --shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.75), 0 3px 8px -3px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --glow-blue: 0 0 0 1px rgba(59, 140, 255, 0.35), 0 8px 26px -6px rgba(59, 140, 255, 0.5);
   --font: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   /* Scoreboard face for changing numerals (timer, weights, reps, LP, XP, tier labels) — a
@@ -261,14 +266,18 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Was linear-gradient(135deg, var(--blue-hi), var(--blue)) with white text — measured
-     2.3-2.7:1 across routes, failing WCAG AA's 4.5:1 for normal text (both --blue-hi and
-     --blue are themselves too light for white text to ever clear 4.5:1 against them; see
-     --on-blue-lo's note above — that token is for blue text on --blue-lo, wrong shape for
-     this white-on-gradient button). --blue-lo -> --blue-ink instead: 5.8:1 at the lightest
-     stop (--blue-lo) and 18.6:1 at the darkest (--blue-ink), both against #fff. */
-  background: linear-gradient(135deg, var(--blue-lo), var(--blue-ink));
-  color: #fff;
+  /* Was linear-gradient(135deg, var(--blue-lo), var(--blue-ink)) with white text — that fixed
+     the original white-on-gradient contrast failure (2.3-2.7:1) by darkening the FILL until
+     white cleared it, down to --blue-ink (#04122e), whose relative luminance (0.0066) is lower
+     than --surface-3 itself. The result technically passed contrast and was still wrong: the
+     app's one primary action button read as darker than the card it sat on, on every screen
+     (critique finding — this class is the whole action layer, so the mistake shipped
+     everywhere at once). Inverting which side moves fixes both problems at once: keep the fill
+     bright, darken the INK instead. --blue-ink on --blue is 5.64:1, on --blue-hi 7.0:1— same
+     AA-passing shape, opposite direction, and the button now actually reads as the loudest
+     element on the screen instead of the dimmest. */
+  background: linear-gradient(160deg, var(--blue-hi), var(--blue));
+  color: var(--blue-ink);
   border: none;
   border-radius: var(--r-md);
   font-weight: 800;
@@ -332,6 +341,28 @@ body {
   width: 100%;
 }
 
+/* Two container recipes (critique finding: nine semantically different container types — a
+   stat, a reward, a warning, a form panel — all shared one identical --surface-2 + --line +
+   --r-lg recipe, so nothing but proximity told them apart). Utility surfaces (banners, add-item
+   panels, form cards) stay flat on .panel; anything that represents an earned/reward state
+   (rank cards, XP/level chips, rank-up rows) gets .panel-reward's tier-tinted treatment instead.
+   Both are additive over the plain --surface-2 recipe existing call sites already use, so this
+   is an opt-in upgrade, not a breaking rename. */
+.panel {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.panel-reward {
+  /* Falls back to the blue accent outside a .t-<tier> ancestor, same convention as .rankbar's
+     b2/b3 fallback below — a reward surface with no specific tier context still reads as
+     "reward," not as a plain panel. */
+  background: linear-gradient(165deg, var(--surface-3), var(--surface-2) 70%);
+  border: 1px solid var(--b2, var(--blue-lo));
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
 /* hex tier badge (mockup .badge) */
 .badge {
   position: relative;
@@ -340,15 +371,17 @@ body {
   flex: none;
   clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
 }
-/* Deliberately darker/flatter than .rank-card::after's 155deg b3->b1 gradient (which is what
-   sits directly behind this badge on the rank card) — using the same gradient at the same
-   angle made the badge visually disappear into the card. b1->b2 only, no bright b3 stop. */
+/* Was deliberately darker/flatter than .rank-card::after's gradient (b1->b2 only, no bright b3
+   stop) because the badge disappeared into the card at matching saturation. That fix quieted the
+   wrong element — the badge is the reward, the card is its frame. Now that .panel-reward exists
+   as a distinct (less saturated) card treatment, the badge can carry the full b1->b3 range and
+   read as the loudest thing on the card, the way the reference's metallic medals do. */
 .badge::before {
   content: "";
   position: absolute;
   inset: 0;
   clip-path: inherit;
-  background: linear-gradient(155deg, var(--b2), var(--b1) 80%);
+  background: linear-gradient(155deg, var(--b3), var(--b1) 65%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 /* The hex shape alone read as a bare gradient swatch with no icon at all — an empty span,
@@ -414,6 +447,20 @@ body {
   --b2: var(--apex-2);
   --b3: var(--apex-3);
   --tt: var(--apex-t);
+}
+
+/* Generic aliases for "whatever tier is in scope" (rework Phase 2 — the 9-tier ladder painted
+   on exactly one tab; --b1/--b2/--b3 already exist per-tier but nothing outside a rank card ever
+   set the .t-<tier> class, so nothing outside that one tab could reach them). App.vue sets the
+   user's overall tier class on .app-shell; these two names let call sites elsewhere in the app
+   (the mobile level bar, the active nav indicator, a focus ring) ask for "the user's tier color"
+   without needing to know which of the nine it is. CSS custom-property inheritance means a
+   closer, more specific .t-<tier> (e.g. a single exercise's own rank card) still wins over the
+   shell's — this only fills in where nothing nearer already set one. */
+.t-initiate, .t-apprentice, .t-trainee, .t-athlete, .t-lifter,
+.t-advanced, .t-elite, .t-expert, .t-apex {
+  --tier-accent: var(--b3);
+  --tier-deep: var(--b1);
 }
 
 .rankbar {

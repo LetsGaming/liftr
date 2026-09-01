@@ -21,6 +21,7 @@ import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
 import { TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
@@ -156,6 +157,14 @@ function weekLabel(i: number) {
   return weeksAgo === 0 ? "Diese Woche" : weeksAgo === 1 ? "Letzte Woche" : `Vor ${weeksAgo} Wochen`;
 }
 
+/** Rework Phase 3 (critique finding: first launch renders six simultaneous empty states — four
+ *  dashes, two "noch nicht genug Daten" — the first thing a gamified product shows is a wall of
+ *  dashes). Once there's real history, the loaded dashboard (status strip, progress tiles,
+ *  activity feed) is unchanged; before that, one first-run surface replaces all three: the
+ *  Erholungszone card and launchpad CTA (already the app's best material) plus the full tier
+ *  ladder as a single promise instead of eight negatives. */
+const isFirstRun = computed(() => history.loaded && history.items.length === 0);
+
 const topRanks = computed(() =>
   ranksStore.ranks
     .slice()
@@ -217,63 +226,72 @@ const topRanks = computed(() =>
           </template>
         </section>
 
-        <!-- 2. Status strip -->
-        <section class="status-strip">
-          <StatTile :value="streak.loaded ? streak.streak : '—'" label="🔥 Tage Serie" />
-          <StatTile :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
-          <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
-          <StatTile :value="overallRankLabel" label="Gesamt&shy;rang" />
+        <!-- First-run: one promise (the whole ladder, Initiate lit) instead of the loaded
+             dashboard's four stat dashes + two "noch nicht genug Daten" tiles at once. -->
+        <section v-if="isFirstRun" class="first-run-ladder panel">
+          <div class="eyebrow tile-head">Deine Rangleiter</div>
+          <TierLadder :current-tier="null" :current-division="null" />
         </section>
 
-        <!-- 3. Progress tiles -->
-        <section class="progress-tiles">
-          <div class="tile">
-            <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
-            <template v-if="weeklyVolume.some((v) => v > 0)">
-              <div class="volume-bars">
-                <button
-                  v-for="(v, i) in weeklyVolume"
-                  :key="i"
-                  type="button"
-                  class="volume-bar"
-                  :class="{ current: i === 7, selected: i === selectedWeekIndex }"
-                  :style="{ height: `${Math.max(4, (v / maxWeeklyVolume) * 100)}%` }"
-                  :title="`${weekLabel(i)}: ${Math.round(v).toLocaleString('de-DE')} kg`"
-                  :aria-label="`${weekLabel(i)}: ${Math.round(v).toLocaleString('de-DE')} kg`"
-                  @click="selectedWeekIndex = i"
-                  @mouseenter="selectedWeekIndex = i"
-                />
-              </div>
-              <div class="volume-caption">
-                <span>{{ weekLabel(selectedWeekIndex) }}</span>
-                <b class="tnum">{{ Math.round(weeklyVolume[selectedWeekIndex] ?? 0).toLocaleString("de-DE") }} kg</b>
-              </div>
-            </template>
-            <p v-else class="tile-empty">Noch nicht genug Daten.</p>
-          </div>
+        <template v-else>
+          <!-- 2. Status strip -->
+          <section class="status-strip">
+            <StatTile reward :value="streak.loaded ? streak.streak : '—'" label="🔥 Tage Serie" />
+            <StatTile reward :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
+            <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
+            <StatTile reward :value="overallRankLabel" label="Gesamt&shy;rang" />
+          </section>
 
-          <div class="tile">
-            <div class="eyebrow tile-head">Top Ränge</div>
-            <div v-if="topRanks.length > 0" class="top-ranks">
-              <div v-for="r in topRanks" :key="r.exerciseId" class="top-rank" :class="`t-${r.tier}`">
-                <span class="badge small" :class="`t-${r.tier}`">
-                  <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
-                </span>
-                <div class="tr-meta">
-                  <b>{{ exerciseName(r.slug) }}</b>
-                  <span>{{ TIER_LABEL_DE[r.tier as RankTier] }} · {{ Math.round(r.lp) }} LP</span>
+          <!-- 3. Progress tiles -->
+          <section class="progress-tiles">
+            <div class="tile">
+              <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
+              <template v-if="weeklyVolume.some((v) => v > 0)">
+                <div class="volume-bars">
+                  <button
+                    v-for="(v, i) in weeklyVolume"
+                    :key="i"
+                    type="button"
+                    class="volume-bar"
+                    :class="{ current: i === 7, selected: i === selectedWeekIndex }"
+                    :style="{ height: `${Math.max(4, (v / maxWeeklyVolume) * 100)}%` }"
+                    :title="`${weekLabel(i)}: ${Math.round(v).toLocaleString('de-DE')} kg`"
+                    :aria-label="`${weekLabel(i)}: ${Math.round(v).toLocaleString('de-DE')} kg`"
+                    @click="selectedWeekIndex = i"
+                    @mouseenter="selectedWeekIndex = i"
+                  />
+                </div>
+                <div class="volume-caption">
+                  <span>{{ weekLabel(selectedWeekIndex) }}</span>
+                  <b class="tnum">{{ Math.round(weeklyVolume[selectedWeekIndex] ?? 0).toLocaleString("de-DE") }} kg</b>
+                </div>
+              </template>
+              <p v-else class="tile-empty">Noch nicht genug Daten.</p>
+            </div>
+
+            <div class="tile">
+              <div class="eyebrow tile-head">Top Ränge</div>
+              <div v-if="topRanks.length > 0" class="top-ranks">
+                <div v-for="r in topRanks" :key="r.exerciseId" class="top-rank" :class="`t-${r.tier}`">
+                  <span class="badge small" :class="`t-${r.tier}`">
+                    <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
+                  </span>
+                  <div class="tr-meta">
+                    <b>{{ exerciseName(r.slug) }}</b>
+                    <span>{{ TIER_LABEL_DE[r.tier as RankTier] }} · {{ Math.round(r.lp) }} LP</span>
+                  </div>
                 </div>
               </div>
+              <p v-else class="tile-empty">Noch keine Ränge.</p>
             </div>
-            <p v-else class="tile-empty">Noch keine Ränge.</p>
-          </div>
 
-          <div class="tile">
-            <div class="eyebrow tile-head">Körpergewicht</div>
-            <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
-            <p v-else class="tile-empty">Noch nicht genug Daten.</p>
-          </div>
-        </section>
+            <div class="tile">
+              <div class="eyebrow tile-head">Körpergewicht</div>
+              <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
+              <p v-else class="tile-empty">Noch nicht genug Daten.</p>
+            </div>
+          </section>
+        </template>
 
         <!-- 4.5 Entdecken (engagement rework W9) — surfaces existing-but-buried features
              instead of leaving them only discoverable by digging through Profil/Ränge.
@@ -301,7 +319,7 @@ const topRanks = computed(() =>
         </section>
 
         <!-- 5. Recent activity -->
-        <section class="activity">
+        <section v-if="!isFirstRun" class="activity">
           <div class="eyebrow tile-head">Letzte Aktivität</div>
 
           <p v-if="history.error" class="tile-empty">Keine Verbindung — Verlauf konnte nicht geladen werden.</p>
@@ -417,6 +435,10 @@ const topRanks = computed(() =>
   font-size: 13px;
   color: var(--dim);
   margin-bottom: var(--sp3);
+}
+/* .panel (tokens.css) supplies background/border/radius. */
+.first-run-ladder {
+  padding: var(--sp4);
 }
 .status-strip {
   display: grid;

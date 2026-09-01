@@ -9,6 +9,7 @@
  * moment they were being thrown away.
  */
 import { computed, onMounted, ref, watch } from "vue";
+import { TIERS, type Tier } from "@liftr/shared";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
 import { haptics } from "../../lib/haptics";
@@ -45,6 +46,18 @@ const emit = defineEmits<{ done: [] }>();
 
 const celebrate = useCelebrate();
 const leveledUp = computed(() => props.levelAfter > props.levelBefore);
+
+/** Rework Phase 4 (critique finding: .finish-seq had no background, no color, no shadow — the
+ *  emotional climax of the app rendered as centered text on plain --bg). Highest tier among this
+ *  session's rank-ups stages the whole sequence's background; null (no rank-ups) falls back to
+ *  no tier class, and .finish-seq's own gradient falls back to the neutral surface ramp. */
+const topTierClass = computed(() => {
+  if (props.rankUps.length === 0) return "";
+  const top = props.rankUps.reduce((best, r) =>
+    TIERS.indexOf(r.tier as Tier) > TIERS.indexOf(best.tier as Tier) ? r : best,
+  );
+  return `t-${top.tier}`;
+});
 
 // Both roll-ups are driven by plain refs (not computeds derived straight from props): a
 // computed target that already equals its final value at mount never fires useCountUp's
@@ -87,11 +100,16 @@ watch(
 </script>
 
 <template>
+  <!-- celebrate.skip() only short-circuits the wait for the CURRENTLY active beat (see
+       useCelebrate.ts's run() loop) — a tap advances exactly one beat, it does not skip the
+       whole sequence. aria-label reflects that; do not rename this back to "Überspringen"
+       without re-reading useCelebrate.ts, the two read very differently to a screen reader. -->
   <div
     class="finish-seq"
+    :class="topTierClass"
     role="button"
     tabindex="0"
-    aria-label="Überspringen"
+    aria-label="Nächster Schritt"
     @click="celebrate.skip()"
     @keydown.enter="celebrate.skip()"
     @keydown.space.prevent="celebrate.skip()"
@@ -100,7 +118,7 @@ watch(
     <div v-if="celebrate.activeIndex.value === 0" class="beat pop-in">
       <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
       <div class="rankup-list">
-        <div v-for="(r, i) in rankUps" :key="i" class="rankup-row pop-in" :style="{ animationDelay: i * 90 + 'ms' }">
+        <div v-for="(r, i) in rankUps" :key="i" class="rankup-row panel-reward pop-in" :class="`t-${r.tier}`" :style="{ animationDelay: i * 90 + 'ms' }">
           <span class="badge" :class="`t-${r.tier}`">
             <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
           </span>
@@ -143,18 +161,28 @@ watch(
       </div>
     </div>
 
-    <p class="skip-hint">Tippen zum Überspringen</p>
+    <!-- Was "Tippen zum Überspringen" (tap to skip) — a tap only advances the current beat
+         (see the comment on the root element above), so "skip" overstated what happens on
+         beats 1-2 and was simply wrong copy for a 3-beat sequence a user might want to slow
+         down on, not escape. -->
+    <p class="skip-hint">Tippen für weiter →</p>
   </div>
 </template>
 
 <style scoped>
+/* Was no background/color/shadow at all — the emotional climax of the app rendered as centered
+   text on plain --bg (critique finding). Tier-gradient wash, scoped to the session's highest
+   rank-up (topTierClass); falls back to the neutral surface ramp when there were none this
+   session (e.g. a session with only XP, no rank-ups). */
 .finish-seq {
   min-height: 220px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: var(--sp3);
-  padding: var(--sp5) 0;
+  padding: var(--sp5) var(--sp4);
+  border-radius: var(--r-xl);
+  background: linear-gradient(180deg, var(--b1, var(--surface-2)) 0%, var(--bg) 85%);
 }
 .beat {
   display: flex;
@@ -172,20 +200,25 @@ watch(
   flex-direction: column;
   gap: var(--sp2);
 }
+/* Background/border come from .panel-reward (tokens.css) — was the same flat --surface-2 recipe
+   every other panel in the app used, on the one row that's actually showing you the reward. */
 .rankup-row {
   display: flex;
   align-items: center;
   gap: var(--sp3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: var(--sp3);
   text-align: left;
 }
+/* Was 32x36px — the most important reward in a rank-ladder product rendered as a 32px hexagon on
+   a gray row (critique finding). --glow-blue (tokens.css) is a box-shadow value and gets clipped
+   away by .badge's own clip-path if applied directly; drop-shadow follows the clipped hex shape
+   correctly instead, at the same blue/intensity. */
 .rankup-row .badge {
-  width: 32px;
-  height: 36px;
+  width: 56px;
+  height: 62px;
   flex: none;
+  filter: drop-shadow(0 0 10px rgba(59, 140, 255, 0.55)) drop-shadow(0 0 3px rgba(59, 140, 255, 0.4));
 }
 .rankup-meta {
   flex: 1;

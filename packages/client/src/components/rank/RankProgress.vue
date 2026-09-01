@@ -78,7 +78,7 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 </script>
 
 <template>
-  <div class="rank-progress" :class="[`t-${tier}`, variant]">
+  <div class="rank-progress" :class="[`t-${tier}`, variant, { 'panel-reward': variant === 'inline' }]">
     <span class="badge" :class="`t-${tier}`">
       <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[tier as RankTier]" /></svg>
     </span>
@@ -149,10 +149,13 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-weight: 700;
   color: var(--dim);
 }
+/* Was font-size:11px/--dim/opacity:0.75 — the faintest text on the card for the loudest event a
+   rank ladder can produce (critique finding). A rank loss is now the second-loudest thing on the
+   card after the tier name itself. */
 .rp-decay {
-  font-size: 11px;
-  color: var(--dim);
-  opacity: 0.75;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fire-hi);
 }
 .rp-recovery {
   font-size: 11px;
@@ -187,10 +190,10 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 
 /* inline variant (active-workout focus column, finish-sequence beat) — compact, sits on the
    app's normal dark surface rather than a tier gradient, so text uses the standard tokens
-   rather than --tt. */
+   rather than --tt. Uses .panel-reward (tokens.css), not the flat .panel recipe — this is the
+   one progress readout visible for most of a session, and it's showing the thing the whole app
+   is about (critique finding: it used to share its recipe with plain utility panels). */
 .rank-progress.inline {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--sp3) var(--sp4);
 }

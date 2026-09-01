@@ -24,7 +24,10 @@
 
   --ion-color-success: var(--green);
   --ion-color-success-rgb: 55, 214, 122;
-  --ion-color-success-contrast: #04122e;
+  /* Was a literal #04122e — an exact, undocumented duplicate of --blue-ink (critique finding:
+     hex drift). Same value, now traceable to its source instead of silently matching by
+     coincidence. */
+  --ion-color-success-contrast: var(--blue-ink);
   --ion-color-success-contrast-rgb: 4, 18, 46;
 
   --ion-color-medium: var(--dim);
@@ -79,16 +82,19 @@ ion-title {
    independently), not by this padding. This padding's only job is making sure the *last* bit
    of scrollable content on a page can fully clear .bottom-chrome once the user scrolls there.
 
-   112px was measured too small: .bottom-chrome (tab bar + status row, both chips shown) now
-   renders ~122px tall at zero safe-area-inset-bottom. Bumped to a measured value with real
-   headroom, plus env(safe-area-inset-bottom) so notched devices — where the tab bar's own
-   bottom padding grows by that inset — get the matching extra clearance rather than losing
-   the last ~20-30px of every page behind the home-indicator area. */
+   112px was measured too small: .bottom-chrome (tab bar + status row, both chips shown) then
+   rendered ~122px tall at zero safe-area-inset-bottom, so it was bumped to 150px with headroom.
+
+   Rework Phase 4 moved the status row to a new fixed .top-hud (App.vue) — .bottom-chrome is now
+   just the tab bar, measured (getBoundingClientRect, not guessed) at ~72.7px tall at zero
+   safe-area. 84px keeps the same ~15% headroom ratio the original 150px figure used over its
+   own measurement, plus env(safe-area-inset-bottom) for the same notched-device reason as
+   before. */
 @media (max-width: 899px) {
   /* Must out-specificity Ionic's own .ion-padding utility (class selector), which also sets
      --padding-bottom (to 16px) — a bare `ion-content` element selector loses that fight. */
   ion-content.ion-padding,
   ion-content {
-    --padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+    --padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 }
