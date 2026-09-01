@@ -1,7 +1,7 @@
-import { computeWorkoutPlausibility, MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, type PlausibilityInput } from "@liftr/shared";
+import { bestLoadRatio, computeWorkoutPlausibility, MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, type PlausibilityInput } from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { findSetByClientId, insertSet } from "../repositories/setRepository.js";
-import { findRankByExerciseId, findStandardsForExercise } from "../repositories/rankRepository.js";
+import { findExerciseById, findRankByExerciseId, findStandardsForExercise } from "../repositories/rankRepository.js";
 import { creditStreak } from "../repositories/streakRepository.js";
 import {
   findTouchedExerciseIds,
@@ -155,12 +155,12 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   // Plausibility gate (rank engine v2): computed once per finished workout, before the
   // per-exercise recompute loop, from the full set of sets just logged in this session. The
   // jump/ceiling checks need a load-ratio value in the same units as `apexThreshold`/
-  // `storedPeakRatio` (both load-ratio = e1RM/bodyweight) — using raw weight-kg directly would
-  // compare the wrong units, so this divides by current bodyweight via the same
-  // `getCurrentBodyweightKg` rankService.ts itself uses, without duplicating its full per-set
-  // e1RM loop (this is deliberately a coarse sanity gate, not a precise recompute). Note that
-  // `ranks.peakE1rm` is stored as a raw e1RM value (see rankService.ts's `bestE1rm`), not a
-  // ratio, so it must also be divided by bodyweight here before comparison.
+  // `storedPeakRatio` (both load-ratio = e1RM/bodyweight) — using raw weight-kg directly (ignoring
+  // reps entirely, and ignoring bodyweight+leverage for bodyweight exercises) would compare the
+  // wrong units. `sessionBestRatio` is computed via `bestLoadRatio` (shared/math/e1rm.ts), which
+  // mirrors rankService.ts's own per-set e1RM/bodyweight-leverage loop, so the two never drift.
+  // Note that `ranks.peakE1rm` is stored as a raw e1RM value (see rankService.ts's `bestE1rm`),
+  // not a ratio, so it must also be divided by bodyweight here before comparison.
   const workoutWithSets = await findWorkoutWithExercisesAndSets(db, item.payload.workoutId);
 
   let plausibility: { multiplier: number; reason: "pace" | "improbable_jump" | "exceeds_ceiling" | null } = {
@@ -181,15 +181,28 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
         .filter((we) => we.exerciseId === exerciseId)
         .flatMap((we) => we.sets)
         .filter((s) => !s.isWarmup);
-      const sessionBestWeight = exerciseSets.reduce((max, s) => Math.max(max, s.weightKg ?? 0), 0);
-      const sessionBestRatio = sessionBestWeight > 0 ? sessionBestWeight / bodyweightKg : null;
       const standards = await findStandardsForExercise(db, exerciseId, sex);
       const apexThreshold = standards.find((s) => s.tier === "apex")?.threshold ?? null;
+      // `metric === "reps"` exercises store a rep count in `peakE1rm`, not an e1RM — there is no
+      // load-ratio concept for them at all, so the jump/ceiling checks (which compare load
+      // ratios) don't apply; pass null rather than comparing unrelated quantities (a raw-weight
+      // ratio against a rep count), which was producing false "improbable jump" positives. The
+      // pace check is metric-agnostic and still runs regardless.
+      const metric = standards[0]?.metric;
+      let sessionBestRatio: number | null = null;
+      if (metric === "load_ratio") {
+        const exercise = await findExerciseById(db, exerciseId);
+        sessionBestRatio = bestLoadRatio(
+          exerciseSets,
+          bodyweightKg,
+          exercise ? { isBodyweight: exercise.isBodyweight, leverageFactor: exercise.bodyweightLeverage ?? 1 } : null,
+        );
+      }
       exerciseInputs.push({
         exerciseId,
         sessionBestRatio,
-        storedPeakRatio: rank?.peakE1rm != null ? rank.peakE1rm / bodyweightKg : null,
-        apexThreshold,
+        storedPeakRatio: metric === "load_ratio" && rank?.peakE1rm != null ? rank.peakE1rm / bodyweightKg : null,
+        apexThreshold: metric === "load_ratio" ? apexThreshold : null,
       });
     }
 
