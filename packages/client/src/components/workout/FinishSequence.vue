@@ -190,6 +190,13 @@ watch(
   align-items: center;
   text-align: center;
   gap: var(--sp3);
+  /* Motion audit (Phase 4 — 2026-09-02): each beat only ever mounts once per completed workout
+   *  (<1x/session by a wide margin, 0c's Q2), unlike the generic .pop-in class it inherits
+   *  duration from (motion.css, tuned for routine list entrances). This is the protected core
+   *  the audit says to invest in, not cut from — override to the earned-moment token so the
+   *  post-workout reveal gets the full --dur-cele budget instead of sharing --dur-base with
+   *  ordinary UI. --ease-spring was already correct (inherited from .pop-in). */
+  animation-duration: var(--dur-cele);
 }
 .beat-eyebrow {
   --eyebrow-color: var(--fire-hi);
@@ -209,6 +216,9 @@ watch(
   border-radius: var(--r-md);
   padding: var(--sp3);
   text-align: left;
+  /* Same reasoning as .beat above: a rank-up row is a rare, earned reveal (one per rank-up this
+   *  session, at most a handful), so it earns --dur-cele over the generic .pop-in's --dur-base. */
+  animation-duration: var(--dur-cele);
 }
 /* Was 32x36px — the most important reward in a rank-ladder product rendered as a 32px hexagon on
    a gray row (critique finding). --glow-blue (tokens.css) is a box-shadow value and gets clipped

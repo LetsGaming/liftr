@@ -223,30 +223,13 @@ function equipmentLabel(eq: string | null): string {
   background: var(--blue-lo);
   border-color: var(--blue);
 }
-/* Entrance stagger for the first screenful (feedback: the rest of the app was still missing
-   the dashboard's liveliness) — capped at a handful of items so re-filtering a long list
-   doesn't replay a huge cascade every keystroke. */
-.ex-grid > li {
-  /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
-     (rank-up, PR, level-up) per motion.css's own convention — a list entrance isn't one of
-     those (see commit 8c0f158 for the same fix elsewhere). */
-  animation: pop-in var(--dur-base) var(--ease-out) both;
-}
-.ex-grid > li:nth-child(1) {
-  animation-delay: 0ms;
-}
-.ex-grid > li:nth-child(2) {
-  animation-delay: 30ms;
-}
-.ex-grid > li:nth-child(3) {
-  animation-delay: 60ms;
-}
-.ex-grid > li:nth-child(4) {
-  animation-delay: 90ms;
-}
-.ex-grid > li:nth-child(n + 5) {
-  animation-delay: 120ms;
-}
+/* Entrance stagger removed (motion audit, Phase 4 — 2026-09-02). This list re-renders on every
+   keystroke in the search input above (`filtered` is a computed keyed off `search`), so the
+   stagger replayed for the first screenful on every character typed — the worst offender found
+   in the audit against 0c's Q2 ("how often per session"), well past the >10x/session cut
+   threshold the old capped-delay comment tried to soften rather than actually fix. Mount/filter-
+   driven, not event-driven (Q1), and a before/after screenshot of the filtered list shows
+   nothing the motion added (Q3). See engagement-audit-v3.md Phase 4. */
 .equip {
   font-size: 11px;
   color: var(--dim);
