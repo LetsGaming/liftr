@@ -353,100 +353,165 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
+/* 0a's single biggest-bang-for-CSS finding (engagement-audit-v3 Phase 1): a reward surface
+   should take the tier color as its WHOLE card background, not a border/accent on an otherwise
+   neutral --surface card — that's what was still reading as "dull" after the earlier lightness
+   fix (lightness was correct, but a tier color used only as a 1px border barely registers as
+   color at all). Falls back to the blue accent outside a .t-<tier> ancestor, same convention as
+   .rankbar's b2/b3 fallback above. Also drops the box-shadow: 0a's "no shadows anywhere" finding
+   — elevation here comes from the tier fill itself being brighter than the page, not a drop
+   shadow (which this palette already established reads as near-invisible at this darkness, see
+   --shadow's own comment above; the reward surface doesn't need the fake elevation cue a plain
+   --surface-2 panel does, because its own saturation already separates it from the page). */
 .panel-reward {
-  /* Falls back to the blue accent outside a .t-<tier> ancestor, same convention as .rankbar's
-     b2/b3 fallback below — a reward surface with no specific tier context still reads as
-     "reward," not as a plain panel. */
-  background: linear-gradient(165deg, var(--surface-3), var(--surface-2) 70%);
-  border: 1px solid var(--b2, var(--blue-lo));
+  background: linear-gradient(155deg, var(--b2, var(--blue)), var(--b1, var(--blue-ink)) 70%);
+  border: 1px solid var(--b3, var(--blue-hi));
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+/* Second, low-opacity diagonal sheen band across the whole card (0a) — a wide, soft echo of the
+   badge's own hard specular streak, at card scale instead of medal scale. Static, never sweeps
+   (0a: "chrome never animates... tier-card diagonal sheen is static, doesn't sweep"). */
+.panel-reward::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.08) 50%, transparent 65%);
+  pointer-events: none;
 }
 
-/* hex tier badge (mockup .badge) */
+/* hex tier badge (mockup .badge) — rebuilt per 0a's Liftoff medal deep-dive (engagement-audit-v3
+   Phase 1) as a layered "metal" stack instead of a flat hex + 2-stop gradient. Only two
+   pseudo-elements are available on this element without touching every call site's markup, so
+   the five conceptual layers 0a names are folded into three CSS layers:
+     ::after   — extrusion plate: a darker, larger hex offset further down than up, sitting
+                 furthest back (z-index -2). Reads as visible material thickness on the medal's
+                 bottom edges instead of the badge floating as a flat sticker.
+     ::before  — bevel rim: a larger hex sitting just behind the face (z-index -1) so its edges
+                 peek out as a ring. Its gradient direction is fixed opposite the face's (rim
+                 bright top-left, face bright top-centre/lower per tier) — 0a calls this
+                 mismatch "the single strongest metal cue."
+     .badge    — face + specular, as two background layers on the real element (multiple
+                 comma-separated backgrounds all clip to the element's own clip-path, so no third
+                 pseudo-element is needed): a hard ~35deg specular streak band on top of a
+                 per-tier-group 3-stop --face-grad underneath (see the t-<tier> blocks below for
+                 which shape: broad/soft, compressed/polished, non-monotonic gold, or
+                 hue-rotating iridescent — 2-stop gradients read flat regardless of hue, per 0a).
+   Pure CSS, no raster — holds the offline-PWA precache constraint. */
 .badge {
   position: relative;
   display: grid;
   place-items: center;
   flex: none;
   clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  background:
+    /* primary specular streak, upper-left third */
+    linear-gradient(35deg, transparent 28%, rgba(255, 255, 255, 0.55) 38% 42%, transparent 52%),
+    /* weaker parallel streak, lower-right */
+    linear-gradient(35deg, transparent 62%, rgba(255, 255, 255, 0.22) 70% 73%, transparent 80%),
+    var(--face-grad, linear-gradient(155deg, var(--b3, var(--blue-hi)), var(--b1, var(--blue-ink)) 65%));
 }
-/* Was deliberately darker/flatter than .rank-card::after's gradient (b1->b2 only, no bright b3
-   stop) because the badge disappeared into the card at matching saturation. That fix quieted the
-   wrong element — the badge is the reward, the card is its frame. Now that .panel-reward exists
-   as a distinct (less saturated) card treatment, the badge can carry the full b1->b3 range and
-   read as the loudest thing on the card, the way the reference's metallic medals do. */
 .badge::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -9%;
   clip-path: inherit;
-  background: linear-gradient(155deg, var(--b3), var(--b1) 65%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  z-index: -1;
+  /* Opposite direction from the face's own 155deg-ish gradients on purpose (see comment above). */
+  background: linear-gradient(-25deg, var(--b3, var(--blue-hi)) 0%, var(--b1, var(--blue-ink)) 70%);
+}
+.badge::after {
+  content: "";
+  position: absolute;
+  inset: -13% -13% -18% -13%;
+  clip-path: inherit;
+  z-index: -2;
+  background: var(--b1, var(--blue-ink));
 }
 /* The hex shape alone read as a bare gradient swatch with no icon at all — an empty span,
-   not a badge. Restores a per-tier glyph inside it (see .badge svg per-tier fill below —
-   all tiers use the same bright fill since the badge background is now deliberately dark). */
+   not a badge. Restores a per-tier glyph inside it. Fill is the tier's own --tt token, which is
+   already a lighter TINT of that tier's metal (not literal white) — 0a names an all-tiers-white
+   glyph as the main thing that was killing the material read; drop-shadow lifts it proud of the
+   face instead of letting it sit flush. */
 .badge svg {
   position: relative;
   width: 52%;
   height: 52%;
   fill: var(--tt, #fff);
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.45));
 }
+/* Per-tier --face-grad shapes, per 0a's medal deep-dive: not a uniform 2-3 stop recipe reused
+   across all nine tiers, but three distinct *shapes* grouped by how the reference material reads
+   at that tier band. Bronze-equivalent (initiate/apprentice/trainee): broad soft highlight, ~25%
+   luminance spread, matte. Silver-equivalent (athlete/lifter): compressed highlight band, ~70%
+   spread, polished. Gold (advanced): non-monotonic — dark, then bright, then a near-white peak,
+   then back down — the double-bright inflection 0a calls out as what separates gold from plain
+   yellow. Platin/diamant-equivalent (elite/expert/apex): the tier's --tt tint (already
+   hue-shifted, not literal white) interleaved with --b3 for a rotating-hue iridescent read
+   instead of only lightening. */
 .t-initiate {
   --b1: var(--initiate-1);
   --b2: var(--initiate-2);
   --b3: var(--initiate-3);
   --tt: var(--initiate-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 38%, var(--b3) 58%, var(--b2) 100%);
 }
 .t-apprentice {
   --b1: var(--apprentice-1);
   --b2: var(--apprentice-2);
   --b3: var(--apprentice-3);
   --tt: var(--apprentice-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 38%, var(--b3) 58%, var(--b2) 100%);
 }
 .t-trainee {
   --b1: var(--trainee-1);
   --b2: var(--trainee-2);
   --b3: var(--trainee-3);
   --tt: var(--trainee-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 38%, var(--b3) 58%, var(--b2) 100%);
 }
 .t-athlete {
   --b1: var(--athlete-1);
   --b2: var(--athlete-2);
   --b3: var(--athlete-3);
   --tt: var(--athlete-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b1) 32%, var(--b3) 48%, var(--b3) 54%, var(--b1) 68%, var(--b2) 100%);
 }
 .t-lifter {
   --b1: var(--lifter-1);
   --b2: var(--lifter-2);
   --b3: var(--lifter-3);
   --tt: var(--lifter-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b1) 32%, var(--b3) 48%, var(--b3) 54%, var(--b1) 68%, var(--b2) 100%);
 }
 .t-advanced {
   --b1: var(--advanced-1);
   --b2: var(--advanced-2);
   --b3: var(--advanced-3);
   --tt: var(--advanced-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--b3) 50%, var(--tt) 65%, var(--b2) 100%);
 }
 .t-elite {
   --b1: var(--elite-1);
   --b2: var(--elite-2);
   --b3: var(--elite-3);
   --tt: var(--elite-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--tt) 55%, var(--b3) 75%, var(--tt) 100%);
 }
 .t-expert {
   --b1: var(--expert-1);
   --b2: var(--expert-2);
   --b3: var(--expert-3);
   --tt: var(--expert-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--tt) 55%, var(--b3) 75%, var(--tt) 100%);
 }
 .t-apex {
   --b1: var(--apex-1);
   --b2: var(--apex-2);
   --b3: var(--apex-3);
   --tt: var(--apex-t);
+  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--tt) 55%, var(--b3) 75%, var(--tt) 100%);
 }
 
 /* Generic aliases for "whatever tier is in scope" (rework Phase 2 — the 9-tier ladder painted
