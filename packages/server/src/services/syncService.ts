@@ -184,10 +184,17 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
       const standards = await findStandardsForExercise(db, exerciseId, sex);
       const apexThreshold = standards.find((s) => s.tier === "apex")?.threshold ?? null;
       // `metric === "reps"` exercises store a rep count in `peakE1rm`, not an e1RM — there is no
-      // load-ratio concept for them at all, so the jump/ceiling checks (which compare load
-      // ratios) don't apply; pass null rather than comparing unrelated quantities (a raw-weight
-      // ratio against a rep count), which was producing false "improbable jump" positives. The
-      // pace check is metric-agnostic and still runs regardless.
+      // load-ratio concept for them, so they can't share the load-ratio math (`bestLoadRatio`)
+      // with `metric === "load_ratio"` exercises, and a prior version of this function passed
+      // null for all three fields here for that reason. But the jump/ceiling heuristics in
+      // plausibility.ts are unit-agnostic ratio comparisons — they only ever compare a session
+      // value against the *same exercise's own* stored peak / apex threshold, so a rep count
+      // compared against a rep-count peak and a rep-count apex threshold is just as valid an
+      // input as a load ratio compared against a load-ratio peak/threshold (engagement-audit-v3
+      // Phase 3: closes the gap where a rep-based exercise, e.g. pull-ups/push-ups, had zero
+      // jump/ceiling protection — a single suspiciously large rep count would sail through
+      // undetected as long as the rest of the session's pace looked normal). The pace check is
+      // metric-agnostic either way and always runs regardless.
       const metric = standards[0]?.metric;
       let sessionBestRatio: number | null = null;
       if (metric === "load_ratio") {
@@ -197,12 +204,22 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
           bodyweightKg,
           exercise ? { isBodyweight: exercise.isBodyweight, leverageFactor: exercise.bodyweightLeverage ?? 1 } : null,
         );
+      } else if (metric === "reps") {
+        sessionBestRatio = exerciseSets.length > 0 ? Math.max(...exerciseSets.map((s) => s.reps)) : null;
       }
+      const storedPeakRatio =
+        metric === "load_ratio"
+          ? rank?.peakE1rm != null
+            ? rank.peakE1rm / bodyweightKg
+            : null
+          : metric === "reps"
+            ? (rank?.peakE1rm ?? null) // rep count, not divided by bodyweight — see comment above
+            : null;
       exerciseInputs.push({
         exerciseId,
         sessionBestRatio,
-        storedPeakRatio: metric === "load_ratio" && rank?.peakE1rm != null ? rank.peakE1rm / bodyweightKg : null,
-        apexThreshold: metric === "load_ratio" ? apexThreshold : null,
+        storedPeakRatio,
+        apexThreshold: metric === "load_ratio" || metric === "reps" ? apexThreshold : null,
       });
     }
 

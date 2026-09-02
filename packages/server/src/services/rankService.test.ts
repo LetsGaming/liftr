@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { bodyweightLogs, ranks, rankEvents, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { bodyweightLogs, prs, ranks, rankEvents, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { ordinal, type Tier } from "@liftr/shared";
 import { writeJsonSetting } from "../repositories/settingsRepository.js";
 import { computeRankEventsByWeekday, getCurrentBodyweightKg, getUserSex, recomputeRankForExercise } from "./rankService.js";
@@ -318,6 +318,48 @@ describe("recomputeRankForExercise", () => {
     expect(rank!.peakE1rm).toBe(before!.peakE1rm);
     expect(rank!.peakTier).toBe(before!.peakTier);
     expect(rank!.peakDivision).toBe(before!.peakDivision);
+  });
+
+  it("a badly-flagged workout is hard-blocked from recording a PR at all (Phase 3 hard-block)", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8); // establishes a normal PR
+    await recomputeRankForExercise(db, ex.id);
+    const before = await db.query.prs.findFirst({ where: eq(prs.exerciseId, ex.id) });
+    expect(before).not.toBeUndefined();
+
+    await logSet(ex.id, 90, 8); // a genuinely higher e1RM, would otherwise be a new PR
+    const result = await recomputeRankForExercise(db, ex.id, 0.02); // far below PR_ELIGIBILITY_FLOOR
+    expect(result!.newPr).toBeNull();
+    const after = await db.query.prs.findFirst({
+      where: eq(prs.exerciseId, ex.id),
+      orderBy: desc(prs.value),
+    });
+    // no new PR row was written — the stored PR is still the original, lower value
+    expect(after!.value).toBe(before!.value);
+  });
+
+  it("a moderately-flagged workout (below PR floor, at/above peak floor) blocks the PR but still advances peak", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8);
+    await recomputeRankForExercise(db, ex.id);
+
+    await logSet(ex.id, 90, 8); // genuinely higher e1RM
+    // 0.4 sits between PEAK_ELIGIBILITY_FLOOR (0.3) and PR_ELIGIBILITY_FLOOR (0.5): peak-eligible,
+    // PR-ineligible — this is exactly the gap the stricter PR floor is meant to create.
+    const result = await recomputeRankForExercise(db, ex.id, 0.4);
+    expect(result!.newPr).toBeNull(); // PR blocked
+    const rank = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+    expect(rank!.peakTier).toBe("athlete"); // peak still advanced
+  });
+
+  it("a session exactly at PR_ELIGIBILITY_FLOOR is still eligible for a PR (boundary is inclusive)", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8);
+    const result = await recomputeRankForExercise(db, ex.id, 0.5); // == PR_ELIGIBILITY_FLOOR
+    expect(result!.newPr).not.toBeNull();
   });
 
   it("a flagged workout still contributes a heavily-discounted recovery gain", async () => {
