@@ -39,6 +39,7 @@ import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/a
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
 import { useRanksStore } from "../stores/ranksStore";
+import { useOverallRankStore } from "../stores/overallRankStore";
 import { useRoutineStore, type Routine } from "../stores/routineStore";
 import { useStreakStore } from "../stores/streakStore";
 import { useXpStore } from "../stores/xpStore";
@@ -49,6 +50,7 @@ const routineStore = useRoutineStore();
 const streakStore = useStreakStore();
 const ranksStore = useRanksStore();
 const xpStore = useXpStore();
+const overallRank = useOverallRankStore();
 const historyStore = useHistoryStore();
 const { starting, startRoutine, quickStart, exerciseName } = useStartRoutine();
 
@@ -79,9 +81,11 @@ const {
   updateRoutineWithBeats,
   streakDays,
   finishWorkout,
-} = useWorkoutFinish({ activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore: catalog }, sessionMuscles, exerciseName);
-
-const { finishedCanvas, sharingFinished, shareFinished, copyingFinished, copyFinished } = useWorkoutShareCard(finishedSummary, sessionRankUps);
+} = useWorkoutFinish(
+  { activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore: catalog, overallRankStore: overallRank },
+  sessionMuscles,
+  exerciseName,
+);
 
 /** Rework Phase 4 (critique finding: the post-sequence summary used to open straight into three
  *  gray StatTiles — the emotional peak had no continuation, and the terminal frame was a data
@@ -93,6 +97,19 @@ const topRankUp = computed(() => {
     TIERS.indexOf(r.tier as Tier) > TIERS.indexOf(best.tier as Tier) ? r : best,
   );
 });
+
+/** Share-card tier badge (Phase 5): the account's current overall rank + level, not a per-
+ *  exercise band — same overallRankStore/xpStore data App.vue's shell and OverviewPage.vue's
+ *  "Gesamtrang" tile already read, reused here rather than a third source of truth. */
+const shareTier = computed(() =>
+  overallRank.current ? { tier: overallRank.current.tier, division: overallRank.current.division, level: xpStore.level } : null,
+);
+const { finishedCanvas, sharingFinished, shareFinished, copyingFinished, copyFinished } = useWorkoutShareCard(
+  finishedSummary,
+  sessionRankUps,
+  shareTier,
+  topRankUp,
+);
 
 /** Rank engine v2 (task 10): sessionCaptions (from useWorkoutFinish) carries the honest
  *  copy but not the badge/next-target data to render a RankProgress card — that lives on
@@ -189,7 +206,7 @@ const supersetLabel = computed(() => {
 const showStalePrompt = ref(false);
 
 onMounted(async () => {
-  await Promise.all([catalog.load(), store.restore(), routineStore.load(), ranksStore.load(), historyStore.load()]);
+  await Promise.all([catalog.load(), store.restore(), routineStore.load(), ranksStore.load(), historyStore.load(), overallRank.load()]);
   showStalePrompt.value = store.isStale;
 });
 

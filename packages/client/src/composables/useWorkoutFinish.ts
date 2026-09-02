@@ -9,6 +9,7 @@ import { buildRoutineUpdate, findRoutineBeats, type RoutineBeat } from "./useRou
 import type { useActiveWorkoutStore, ActiveExercise } from "../stores/activeWorkoutStore";
 import type { useCatalogStore } from "../stores/catalogStore";
 import type { useHistoryStore } from "../stores/historyStore";
+import type { useOverallRankStore } from "../stores/overallRankStore";
 import type { useRanksStore } from "../stores/ranksStore";
 import type { useRoutineStore, Routine } from "../stores/routineStore";
 import type { useStreakStore } from "../stores/streakStore";
@@ -54,6 +55,10 @@ interface Stores {
   xpStore: ReturnType<typeof useXpStore>;
   historyStore: ReturnType<typeof useHistoryStore>;
   catalogStore: ReturnType<typeof useCatalogStore>;
+  /** Phase 5 (share-card redesign): the finish flow needs the *post*-session overall tier for
+   *  the share card's badge — a rank-up mid-session can move it, so it's reloaded alongside
+   *  streak/XP below rather than trusted from whatever it was at session start. */
+  overallRankStore: ReturnType<typeof useOverallRankStore>;
 }
 
 export function useWorkoutFinish(
@@ -61,7 +66,7 @@ export function useWorkoutFinish(
   sessionMuscles: ComputedRef<{ primary: string[]; secondary: string[] }>,
   exerciseName: (slug: string) => string,
 ) {
-  const { activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore } = stores;
+  const { activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore, overallRankStore } = stores;
 
   const finishedSummary = ref<FinishedSummary | null>(null);
   const finishSequenceDone = ref(false);
@@ -218,6 +223,7 @@ export function useWorkoutFinish(
     // session's XP are already reflected server-side — no more guessing with a timeout.
     void streakStore.load();
     void xpStore.load();
+    void overallRankStore.load();
 
     const routine = routineId ? routineStore.routines.find((r) => r.id === routineId) : null;
     if (routine?.mesocycle) await routineStore.advanceMesocycle(routine.id);

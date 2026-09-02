@@ -1,50 +1,373 @@
 /**
  * Draws a @liftr/shared WorkoutCardModel onto a <canvas> and shares/downloads it (plan §4.5,
  * "shareable workout & run cards"). The layout math (CARD_DIMENSIONS, renderExerciseLines,
- * wrapText, the >10-exercise compression rule) already existed in @liftr/shared, fully unit-
- * tested, and was never imported anywhere in the client — this module is the missing half:
- * the actual drawing + navigator.share() call the layout module's own header comment always
- * pointed at ("the actual drawing... lives in the client package").
+ * wrapText, the >10-exercise compression rule, and the Phase-5 sizing helpers below) already
+ * existed in @liftr/shared, fully unit-tested; this module is the missing half: the actual
+ * drawing + navigator.share() call the layout module's own header comment always pointed at
+ * ("the actual drawing... lives in the client package").
  *
  * Colors are hardcoded rather than read from tokens.css custom properties: canvas 2D drawing
  * happens off the DOM render path, and hardcoding a fixed small palette here is simpler and
  * more reliable than resolving CSS vars at draw time, at the cost of needing a manual update
- * if the brand palette in tokens.css ever changes materially.
+ * if the brand palette in tokens.css ever changes materially. Phase 5 (2026-09-02): re-synced
+ * every value below against the live tokens.css — the previous palette/font pair had drifted to
+ * pre-Phase-1 values and a font tokens.css had already removed app-wide. Updated again the same
+ * day once Phase 1's layered medal rebuild (extrusion plate, bevel rim, per-tier --face-grad,
+ * specular streaks) landed on master — drawTierBadge below now mirrors *that* CSS, not the flat
+ * 2-stop gradient it originally shipped against.
  */
-import { CARD_DIMENSIONS, renderExerciseLines, wrapText, type WorkoutCardModel } from "@liftr/shared";
+import {
+  CARD_DIMENSIONS,
+  chooseCardSize,
+  distributeFillGap,
+  exerciseGridRowCount,
+  renderExerciseLines,
+  wrapText,
+  type WorkoutCardModel,
+} from "@liftr/shared";
 import { apiBase } from "./api";
 import { MUSCLE_META } from "./muscles";
+import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "./tierIcons";
 
+/** tokens.css's live palette (post-Phase-1 ramp widen), not the pre-Phase-1 values this file had
+ *  drifted to. See this file's header comment for why these are hardcoded copies, not CSS-var
+ *  reads. */
 const COLORS = {
-  bg: "#0a0c14",
-  surface: "#1c2233",
-  surface2: "#28304a",
-  text: "#eef2fb",
-  dim: "#98a2c0",
-  blue: "#3b8cff",
-  blueHi: "#5ba0ff",
-  violetHi: "#a98cff",
-  fireHi: "#ffa04d",
-  gold: "#ffd24a",
+  bg: "#0a0c14", // --bg
+  surface: "#212a42", // --surface-2
+  surface2: "#2f3a5c", // --surface-3
+  text: "#eef2fb", // --text
+  dim: "#98a2c0", // --dim
+  blue: "#3b8cff", // --blue
+  blueHi: "#5ba0ff", // --blue-hi
+  violet: "#8f6dff", // --violet
+  fireHi: "#ffa04d", // --fire-hi
+  pr: "#ffd23f", // --pr — tokens.css's dedicated PR-accent token, not an invented "gold"
+  line: "rgba(255,255,255,0.14)", // --line
 };
 
 /**
  * Feedback: "the main stats should be single colored stats — not childish, but engaging to look
  * at." Each of the 4 stats gets one accent from the app's own restrained palette (tokens.css's
- * tier/brand hues) instead of uniform white — enough to give the row rhythm without turning into
- * a rainbow. Picked by what each number represents, not arbitrarily: Volumen is the headline
- * number (brand blue), PRs echoes the gold used everywhere else in the app for an achievement.
+ * tier/brand hues). Phase 5 redesigns *how* each stat is drawn (a full colored card, not just
+ * colored text — see drawStatCard below) but keeps this same per-stat accent assignment: Volumen
+ * is the headline number (brand blue), PRs echoes --pr, the token the rest of the app already
+ * uses for achievement moments.
  */
-const STAT_COLORS = [COLORS.violetHi, COLORS.blueHi, COLORS.fireHi, COLORS.gold];
+const STAT_COLORS = [COLORS.violet, COLORS.blueHi, COLORS.fireHi, COLORS.pr];
 
-function drawStat(ctx: CanvasRenderingContext2D, x: number, y: number, value: string, label: string, color: string) {
-  ctx.fillStyle = color;
-  ctx.font = "800 46px 'Plus Jakarta Sans', system-ui, sans-serif";
+/** Per-tier hex badge fill stops + glyph-tint, copied from tokens.css's --<tier>-1/2/3/t custom
+ *  properties (same rationale as COLORS above: canvas can't resolve CSS custom properties, and a
+ *  small hardcoded copy is simpler/more reliable than resolving them at draw time). Keys match
+ *  RankTier from lib/tierIcons.ts so the glyph paths and these fills never index out of sync. */
+const TIER_COLORS: Record<RankTier, { b1: string; b2: string; b3: string; tt: string }> = {
+  initiate: { b1: "#1a1a1a", b2: "#4a4a4a", b3: "#9a9a9a", tt: "#f0f0f0" },
+  apprentice: { b1: "#3a2109", b2: "#8a4f22", b3: "#e08a3c", tt: "#ffd9ab" },
+  trainee: { b1: "#2a2508", b2: "#7a6a1f", b3: "#c9b23e", tt: "#f5edb8" },
+  athlete: { b1: "#232a38", b2: "#69748a", b3: "#c7d1e4", tt: "#f2f6ff" },
+  lifter: { b1: "#0f2e1f", b2: "#2d8058", b3: "#5fd6a0", tt: "#d4fbe9" },
+  advanced: { b1: "#3a2a04", b2: "#a7820f", b3: "#ffd24a", tt: "#fff2c2" },
+  elite: { b1: "#2f0d33", b2: "#8a289c", b3: "#d76ff0", tt: "#f6d7ff" },
+  expert: { b1: "#0d2f33", b2: "#1f8f9c", b3: "#6ff0e6", tt: "#d7fffb" },
+  apex: { b1: "#152449", b2: "#3b5fd0", b3: "#8fb4ff", tt: "#dbe7ff" },
+};
+
+/** tokens.css removed "Plus Jakarta Sans" app-wide (design critique: an "overused font,
+ *  category-interchangeable with any other AI-generated UI") in favor of a two-face system —
+ *  Hanken Grotesk for body copy, Unbounded for display/numeral treatment (tier labels, .tnum
+ *  stat numbers, celebratory numbers). The share-card never got that update; every ctx.font call
+ *  now goes through one of these two helpers instead of repeating a font-family literal 7+ times
+ *  (the exact drift this phase is fixing). */
+const FONT_BODY = "'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+const FONT_DISPLAY = "'Unbounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+function font(weight: number, size: number, display = false): string {
+  return `${weight} ${size}px ${display ? FONT_DISPLAY : FONT_BODY}`;
+}
+
+/** Shrinks a font size in 2px steps until `text` fits `maxWidth`, floored at `min` — needed now
+ *  that numbers render inside narrow per-stat card insets instead of a full-width text row, so a
+ *  long value ("12.345 kg") can't just run off the edge the way free-floating text could. Leaves
+ *  ctx.font set to the size it settles on. */
+function fitFontSize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, base: number, min: number, weight: number, display: boolean): number {
+  let size = base;
+  while (size > min) {
+    ctx.font = font(weight, size, display);
+    if (ctx.measureText(text).width <= maxWidth) break;
+    size -= 2;
+  }
+  ctx.font = font(weight, size, display);
+  return size;
+}
+
+/** Manual rounded-rect path (not ctx.roundRect) — kept explicit rather than relying on a method
+ *  that's only reliably available on newer engines, since this draws inside a Capacitor WebView
+ *  as well as the browser. */
+function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+/**
+ * One headline stat as its own full, solid-colored rounded card — a small label pill near the
+ * top, a larger dark inset box below holding the value. Liftoff-inspired structure (Phase 5:
+ * "each headline stat is its own full, solid-colored rounded card... not colored text on a
+ * shared dark background"), Liftr's own palette (STAT_COLORS), not Liftoff's specific hues.
+ */
+function drawStatCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: string, label: string, accent: string): void {
+  roundRectPath(ctx, x, y, w, h, 22);
+  ctx.fillStyle = accent;
+  ctx.fill();
+
+  const padIn = 14;
+  const pillH = 25;
+  const pillY = y + padIn;
+  roundRectPath(ctx, x + padIn, pillY, w - padIn * 2, pillH, pillH / 2);
+  ctx.fillStyle = "rgba(6, 8, 14, 0.32)";
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  ctx.font = font(800, 11, false);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label.toUpperCase(), x + w / 2, pillY + pillH / 2 + 0.5);
+
+  const insetY = pillY + pillH + 10;
+  const insetX = x + padIn;
+  const insetW = w - padIn * 2;
+  const insetH = y + h - padIn - insetY;
+  roundRectPath(ctx, insetX, insetY, insetW, insetH, 16);
+  ctx.fillStyle = COLORS.bg;
+  ctx.fill();
+
+  ctx.fillStyle = COLORS.text;
+  fitFontSize(ctx, value, insetW - 16, 32, 19, 800, true);
+  ctx.fillText(value, insetX + insetW / 2, insetY + insetH / 2 + 1);
+
+  ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
-  ctx.fillText(value, x, y);
+}
+
+/**
+ * One exercise as its own bordered pill row inside the 2-column grid (Phase 5: "borrow the row
+ * treatment, not the content it holds" — Liftoff's rows show a bare set count, Liftr's own
+ * `renderExerciseLines` detail string is kept verbatim inside this new container, not regressed
+ * to a count). `detail` is pre-wrapped to at most 2 lines by the caller (measurement needs the
+ * real font, which only exists here in the draw step).
+ */
+function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, name: string, detailLines: string[]): void {
+  roundRectPath(ctx, x, y, w, h, 18);
+  ctx.fillStyle = COLORS.surface;
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = COLORS.line;
+  roundRectPath(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 18);
+  ctx.stroke();
+
+  const pad = 16;
+  const iconSize = 34;
+  const iconX = x + pad;
+  const iconY = y + pad;
+  roundRectPath(ctx, iconX, iconY, iconSize, iconSize, 10);
+  ctx.fillStyle = COLORS.surface2;
+  ctx.fill();
+  // Generic dumbbell glyph — one shared icon for every row (Phase 5 asks for "icon + name", not
+  // a full per-exercise icon set; Liftoff's own reference reuses one generic glyph too).
+  ctx.strokeStyle = COLORS.dim;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(iconX + 9, iconY + iconSize / 2);
+  ctx.lineTo(iconX + iconSize - 9, iconY + iconSize / 2);
+  ctx.stroke();
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(iconX + 8, iconY + iconSize / 2 - 6);
+  ctx.lineTo(iconX + 8, iconY + iconSize / 2 + 6);
+  ctx.moveTo(iconX + iconSize - 8, iconY + iconSize / 2 - 6);
+  ctx.lineTo(iconX + iconSize - 8, iconY + iconSize / 2 + 6);
+  ctx.stroke();
+
+  const textX = iconX + iconSize + 12;
+  const textW = x + w - pad - textX;
+  ctx.fillStyle = COLORS.text;
+  ctx.font = font(700, 21, false);
+  ctx.textBaseline = "middle";
+  let displayName = name;
+  while (ctx.measureText(displayName).width > textW && displayName.length > 1) {
+    displayName = displayName.slice(0, -1);
+  }
+  if (displayName !== name) displayName = `${displayName.slice(0, -1)}…`;
+  ctx.fillText(displayName, textX, iconY + iconSize / 2 + 1);
+  ctx.textBaseline = "alphabetic";
+
   ctx.fillStyle = COLORS.dim;
-  ctx.font = "600 20px 'Plus Jakarta Sans', system-ui, sans-serif";
-  ctx.fillText(label.toUpperCase(), x, y + 30);
+  ctx.font = font(600, 17, false);
+  let detailY = iconY + iconSize + 22;
+  for (const line of detailLines) {
+    ctx.fillText(line, x + pad, detailY);
+    detailY += 22;
+  }
+}
+
+/** Splits a detail string to at most 2 lines that fit `maxWidth` at the exercise-cell detail
+ *  font, truncating a still-too-long final line with an ellipsis rather than overflowing the
+ *  card (long set lists on a narrow half-width column). */
+function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  ctx.font = font(600, 17, false);
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (ctx.measureText(candidate).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+    if (lines.length === 2) break;
+  }
+  if (lines.length < 2 && current) lines.push(current);
+  const last = lines[lines.length - 1];
+  if (last && ctx.measureText(last).width > maxWidth) {
+    let truncated = last;
+    while (truncated.length > 1 && ctx.measureText(`${truncated}…`).width > maxWidth) {
+      truncated = truncated.slice(0, -1);
+    }
+    lines[lines.length - 1] = `${truncated}…`;
+  }
+  return lines;
+}
+
+/** Fractional hex vertices (same clip-path as tokens.css's `.badge`: `50% 0, 93% 25%, 93% 75%,
+ *  50% 100%, 7% 75%, 7% 25%`), resolved against an arbitrary box — used for the face itself and
+ *  for the two larger inflated hexes behind it (the bevel rim and extrusion plate both grow the
+ *  box via CSS `inset` before applying the same shape, so this takes a box rather than assuming
+ *  the badge's own square). */
+const HEX_FRACTIONS: [number, number][] = [[0.5, 0], [0.93, 0.25], [0.93, 0.75], [0.5, 1], [0.07, 0.75], [0.07, 0.25]];
+function hexPath(x: number, y: number, w: number, h: number): Path2D {
+  const p = new Path2D();
+  HEX_FRACTIONS.forEach(([fx, fy], i) => {
+    const px = x + fx! * w;
+    const py = y + fy! * h;
+    if (i === 0) p.moveTo(px, py);
+    else p.lineTo(px, py);
+  });
+  p.closePath();
+  return p;
+}
+
+/** Builds a canvas linear gradient matching a CSS `linear-gradient(<angleDeg>deg, ...)` over box
+ *  (x, y, w, h) — CSS angle 0deg points "to top", increasing clockwise, and sizes the gradient
+ *  line to the box's own projection onto that axis (the same formula the CSS spec uses), not an
+ *  arbitrary corner-to-corner guess — needed since every layer below is a direct port of an
+ *  actual tokens.css `linear-gradient(...)` value, not a redesign. */
+function cssAngleGradient(ctx: CanvasRenderingContext2D, angleDeg: number, x: number, y: number, w: number, h: number): CanvasGradient {
+  const rad = (angleDeg * Math.PI) / 180;
+  const dx = Math.sin(rad);
+  const dy = -Math.cos(rad);
+  const halfLen = (Math.abs(w * dx) + Math.abs(h * dy)) / 2;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  return ctx.createLinearGradient(cx - dx * halfLen, cy - dy * halfLen, cx + dx * halfLen, cy + dy * halfLen);
+}
+
+/** Per-tier `--face-grad` stop lists, ported verbatim from tokens.css's `.t-<tier>` blocks (all
+ *  at the same 155deg the CSS uses) — three shapes grouped the same way 0a's medal research
+ *  named them: bronze-equivalent (broad/soft), silver-equivalent (compressed/polished), gold
+ *  (non-monotonic double-bright), and iridescent (hue-rotating via each tier's own --tt tint). */
+type FaceKey = "b1" | "b2" | "b3" | "tt";
+const FACE_GRAD_STOPS: Record<RankTier, [number, FaceKey][]> = {
+  initiate: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
+  apprentice: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
+  trainee: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
+  athlete: [[0, "b1"], [0.32, "b1"], [0.48, "b3"], [0.54, "b3"], [0.68, "b1"], [1, "b2"]],
+  lifter: [[0, "b1"], [0.32, "b1"], [0.48, "b3"], [0.54, "b3"], [0.68, "b1"], [1, "b2"]],
+  advanced: [[0, "b1"], [0.3, "b2"], [0.5, "b3"], [0.65, "tt"], [1, "b2"]],
+  elite: [[0, "b1"], [0.3, "b2"], [0.55, "tt"], [0.75, "b3"], [1, "tt"]],
+  expert: [[0, "b1"], [0.3, "b2"], [0.55, "tt"], [0.75, "b3"], [1, "tt"]],
+  apex: [[0, "b1"], [0.3, "b2"], [0.55, "tt"], [0.75, "b3"], [1, "tt"]],
+};
+
+/**
+ * Redraws tokens.css's current layered `.badge` medal (Phase 1's 0a-informed rebuild, merged
+ * after this phase's branch point — re-read directly off `tokens.css` rather than the older flat
+ * 2-stop gradient this function originally mirrored) as canvas primitives, since `<canvas>` can't
+ * reuse the CSS. Same three conceptual layers tokens.css's own `.badge` comment describes,
+ * folded the same way: `::after` (extrusion plate, solid `b1`, offset further down than up —
+ * material thickness), `::before` (bevel rim, gradient running the *opposite* direction from the
+ * face — the strongest metal cue per 0a), then the face itself (per-tier `--face-grad` plus two
+ * hard 35deg specular streak bands on top). Drawn back-to-front, unclipped-to-clipped, matching
+ * the CSS z-index stacking (-2, -1, then the element).
+ */
+function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
+  const c = TIER_COLORS[tier];
+  const left = cx - size / 2;
+
+  // ::after — extrusion plate. CSS: inset -13% -13% -18% -13% (top/right/bottom/left), solid b1.
+  const exLeft = left - size * 0.13;
+  const exTop = topY - size * 0.13;
+  const exW = size + size * 0.26;
+  const exH = size + size * 0.13 + size * 0.18;
+  ctx.fillStyle = c.b1;
+  ctx.fill(hexPath(exLeft, exTop, exW, exH));
+
+  // ::before — bevel rim. CSS: inset -9% (all sides), linear-gradient(-25deg, b3 0%, b1 70%) —
+  // direction deliberately opposite the face's own ~155deg gradients.
+  const rmLeft = left - size * 0.09;
+  const rmTop = topY - size * 0.09;
+  const rmSize = size + size * 0.18;
+  const rimGrad = cssAngleGradient(ctx, -25, rmLeft, rmTop, rmSize, rmSize);
+  rimGrad.addColorStop(0, c.b3);
+  rimGrad.addColorStop(0.7, c.b1);
+  ctx.fillStyle = rimGrad;
+  ctx.fill(hexPath(rmLeft, rmTop, rmSize, rmSize));
+
+  // Face — per-tier --face-grad, clipped to the badge's own (unexpanded) hex, plus two hard
+  // specular streak bands painted on top (same stop positions as tokens.css's .badge background).
+  const face = hexPath(left, topY, size, size);
+  ctx.save();
+  ctx.clip(face);
+
+  const faceGrad = cssAngleGradient(ctx, 155, left, topY, size, size);
+  for (const [offset, key] of FACE_GRAD_STOPS[tier]) faceGrad.addColorStop(offset, c[key]);
+  ctx.fillStyle = faceGrad;
+  ctx.fillRect(left, topY, size, size);
+
+  const streak1 = cssAngleGradient(ctx, 35, left, topY, size, size);
+  streak1.addColorStop(0.28, "rgba(255,255,255,0)");
+  streak1.addColorStop(0.38, "rgba(255,255,255,0.55)");
+  streak1.addColorStop(0.42, "rgba(255,255,255,0.55)");
+  streak1.addColorStop(0.52, "rgba(255,255,255,0)");
+  ctx.fillStyle = streak1;
+  ctx.fillRect(left, topY, size, size);
+
+  const streak2 = cssAngleGradient(ctx, 35, left, topY, size, size);
+  streak2.addColorStop(0.62, "rgba(255,255,255,0)");
+  streak2.addColorStop(0.7, "rgba(255,255,255,0.22)");
+  streak2.addColorStop(0.73, "rgba(255,255,255,0.22)");
+  streak2.addColorStop(0.8, "rgba(255,255,255,0)");
+  ctx.fillStyle = streak2;
+  ctx.fillRect(left, topY, size, size);
+  ctx.restore();
+
+  // Glyph — the tier's own lighter --tt tint (never white, per 0a's material-read finding),
+  // drop-shadow lifts it proud of the face.
+  const glyph = new Path2D(TIER_BADGE_PATH[tier]);
+  ctx.save();
+  ctx.translate(cx - size * 0.26, topY + size * 0.26);
+  const s = (size * 0.52) / 24;
+  ctx.scale(s, s);
+  ctx.fillStyle = c.tt;
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 1;
+  ctx.shadowOffsetY = 1;
+  ctx.fill(glyph);
+  ctx.restore();
 }
 
 /** crossOrigin="anonymous" keeps the canvas untainted when apiBase() points at a different
@@ -117,8 +440,55 @@ async function drawMuscleFigures(
   return topY + figHeight;
 }
 
+const PAD = 64;
+const STAT_CARD_H = 176;
+const STAT_GAP = 20;
+const BADGE_SIZE = 128;
+const BADGE_SECTION_H = 210;
+// Extra height the badge section needs when a topRankUp caption line is drawn under the tier
+// label (Bug found by rendering a real card during Phase 5 verification: a fixed BADGE_SECTION_H
+// that never grew for the caption line let the muscle-figure header draw right through it).
+const BADGE_RANKUP_CAPTION_H = 46;
+const MUSCLE_FIG_H = 300;
+const MUSCLE_SECTION_H = 34 + 24 + MUSCLE_FIG_H + 40;
+const DIVIDER_GAP = 40;
+const EXERCISE_ROW_H = 118;
+const EXERCISE_ROW_GAP = 16;
+const EXERCISE_COL_GAP = 20;
+
 export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutCardModel): Promise<void> {
-  const { width, height } = CARD_DIMENSIONS.square;
+  // tokens.css's @font-face blocks are declared app-wide, but the browser only actually fetches
+  // a face once something on the page requests it — waiting here avoids the first share ever
+  // drawn in a session silently falling back to a system font (the exact class of drift this
+  // phase is fixing, just at font-*load* time instead of font-*name* time).
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // best-effort — worst case the first draw uses a fallback font, not a crash
+    }
+  }
+
+  const width = CARD_DIMENSIONS.square.width; // square and story share the same width; only height differs
+
+  // ---- Header: routine name + date. Real height depends on how many lines the name wraps to. ----
+  const nameLines = wrapText(model.routineName, 20).slice(0, 2);
+  const headerH = 98 + nameLines.length * 64 + 44 + 30;
+
+  const hasBadge = model.tier != null;
+  const hasMuscles = model.muscles.primary.length > 0 || model.muscles.secondary.length > 0;
+  const badgeSectionH = BADGE_SECTION_H + (model.topRankUp ? BADGE_RANKUP_CAPTION_H : 0);
+
+  // ---- Exercise grid: natural (uncapped) row count at this content, for the size decision. ----
+  const lines = renderExerciseLines(model.exercises);
+  const naturalRows = exerciseGridRowCount(lines.length);
+  const naturalExerciseH = naturalRows > 0 ? naturalRows * EXERCISE_ROW_H + (naturalRows - 1) * EXERCISE_ROW_GAP : 0;
+
+  const naturalTotal =
+    headerH + STAT_CARD_H + (hasBadge ? badgeSectionH : 0) + (hasMuscles ? MUSCLE_SECTION_H : 20) + DIVIDER_GAP + naturalExerciseH;
+
+  const { size, overflowsStory } = chooseCardSize(naturalTotal, PAD);
+  const { height } = CARD_DIMENSIONS[size];
   const scale = 2; // backing-store 2x for a crisp share image on high-DPI screens
   canvas.width = width * scale;
   canvas.height = height * scale;
@@ -128,6 +498,21 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   if (!ctx) return;
   ctx.scale(scale, scale);
 
+  // A short routine leaves real dead space in a fixed-size card (Phase 5, confirmed bug) —
+  // spread whatever's unused across the gaps between major sections instead of leaving it all
+  // silently at the bottom. `overflowsStory` (too many exercises even for the taller format)
+  // means there's no surplus to distribute; rows get capped by maxRows below instead.
+  const available = height - PAD * 2;
+  // header->stats, stats->(badge|muscles), badge->muscles (if a badge is drawn), and the gap
+  // right before the divider (drawn either way — with the muscle figure's own trailing margin,
+  // or as the bare pre-divider gap when there's no tier/muscle content at all). That last slot
+  // always exists: a card with *no* badge and *no* muscles (Phase 5's true worst case — nothing
+  // between the stat cards and the exercise list) still needs somewhere to put a large surplus,
+  // not just the 2 header/stat gaps, or a very short routine reverts to the exact dead-space bug
+  // this phase set out to fix.
+  const fillSlots = 2 + (hasBadge ? 1 : 0) + 1;
+  const fillGap = overflowsStory ? 0 : distributeFillGap(naturalTotal, available, fillSlots, 150);
+
   // background
   const bgGrad = ctx.createLinearGradient(0, 0, width, height);
   bgGrad.addColorStop(0, COLORS.bg);
@@ -135,104 +520,132 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // A soft glow in the corner — the flat two-stop gradient above read as "text on a background",
-  // not a reward. Same accent the app's own celebration/rank surfaces glow with (tokens.css's
-  // --glow-blue), just large and faint here since it's sitting behind a whole card, not a button.
   const glow = ctx.createRadialGradient(width * 0.82, height * 0.08, 0, width * 0.82, height * 0.08, width * 0.55);
   glow.addColorStop(0, "rgba(59, 140, 255, 0.22)");
   glow.addColorStop(1, "rgba(59, 140, 255, 0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, width, height);
 
-  const pad = 64;
+  const pad = PAD;
 
   // wordmark
   ctx.fillStyle = COLORS.blueHi;
-  ctx.font = "800 30px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = font(800, 30, true);
   ctx.textAlign = "left";
   ctx.fillText("LIFTR", pad, pad + 20);
 
-  // Routine name + date — line height only advances for lines the title actually uses (a short
-  // one-word routine name used to leave the same dead gap as a full two-line title before this;
-  // feedback: "a lot of wasted space due to the giant title and date"). Date sits directly under
-  // the real last line, tight margin, not a fixed offset assuming the worst case.
+  // Routine name + date
   ctx.fillStyle = COLORS.text;
-  ctx.font = "800 60px 'Plus Jakarta Sans', system-ui, sans-serif";
-  const nameLines = wrapText(model.routineName, 20).slice(0, 2);
+  ctx.font = font(800, 60, true);
   let y = pad + 98;
   for (const line of nameLines) {
     ctx.fillText(line, pad, y);
     y += 64;
   }
   ctx.fillStyle = COLORS.dim;
-  ctx.font = "600 24px 'Plus Jakarta Sans', system-ui, sans-serif";
+  ctx.font = font(600, 24, false);
   ctx.fillText(model.dateLabel, pad, y - 6);
   y += 44;
 
-  // stat row — see STAT_COLORS' header comment for why each one gets its own accent.
-  const statY = y + 56;
-  const statGap = (width - pad * 2) / 4;
+  y += fillGap;
+
+  // ---- Stat cards ----
+  const statCount = 4;
+  const statCardW = (width - pad * 2 - STAT_GAP * (statCount - 1)) / statCount;
   const stats: [string, string][] = [
     [model.durationLabel, "Dauer"],
     [`${Math.round(model.volumeKg).toLocaleString("de-DE")} kg`, "Volumen"],
     [String(model.setCount), "Sätze"],
     [String(model.prCount), "PRs"],
   ];
-  stats.forEach(([value, label], i) => drawStat(ctx, pad + statGap * i, statY, value, label, STAT_COLORS[i]!));
+  stats.forEach(([value, label], i) => {
+    const x = pad + i * (statCardW + STAT_GAP);
+    drawStatCard(ctx, x, y, statCardW, STAT_CARD_H, value!, label!, STAT_COLORS[i]!);
+  });
+  let cursorY = y + STAT_CARD_H + 30 + fillGap;
 
-  let cursorY = statY + 56;
+  // ---- Tier badge + (optionally) the session's highest rank-up — Phase 5: the card previously
+  // never showed rank at all despite the whole app being built around the ladder. ----
+  if (model.tier) {
+    const tier = model.tier.tier as RankTier;
+    const badgeCx = width / 2;
+    drawTierBadge(ctx, badgeCx, cursorY, BADGE_SIZE, tier);
 
-  // Trained-muscle figure — the card's visual centerpiece now that rank-ups (feedback: "should
-  // be stripped completely, the PRs stat already carries that info") no longer compete for the
-  // same vertical budget. Failure here (a slow/offline image load, an unexpected CORS wrinkle on
-  // a native build) degrades to the plain card that shipped before this existed, rather than
-  // breaking the share flow entirely — the figure is an enhancement, not a hard dependency.
-  if (model.muscles.primary.length > 0 || model.muscles.secondary.length > 0) {
+    let labelY = cursorY + BADGE_SIZE + 38;
+    ctx.textAlign = "center";
+    ctx.fillStyle = COLORS.text;
+    ctx.font = font(800, 26, true);
+    ctx.fillText(`${TIER_LABEL_DE[tier]} ${DIVISION_LABEL[model.tier.division] ?? ""}`.trim(), badgeCx, labelY);
+    labelY += 30;
+    ctx.fillStyle = COLORS.dim;
+    ctx.font = font(600, 20, false);
+    ctx.fillText(`Level ${model.tier.level}`, badgeCx, labelY);
+    labelY += 4;
+
+    if (model.topRankUp) {
+      labelY += 28;
+      ctx.fillStyle = COLORS.fireHi;
+      ctx.font = font(700, 19, false);
+      const headline = model.topRankUp.isPr
+        ? `${model.topRankUp.exerciseName}: neuer Rekord`
+        : `${model.topRankUp.exerciseName}: ${TIER_LABEL_DE[model.topRankUp.tier as RankTier]} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
+      ctx.fillText(headline, badgeCx, labelY);
+    }
+    ctx.textAlign = "left";
+    cursorY += badgeSectionH + fillGap;
+  }
+
+  // ---- Trained-muscle figure ----
+  if (hasMuscles) {
     try {
       cursorY += 34;
       ctx.fillStyle = COLORS.dim;
-      ctx.font = "800 20px 'Plus Jakarta Sans', system-ui, sans-serif";
+      ctx.font = font(800, 20, false);
       ctx.textAlign = "center";
       ctx.fillText("TRAINIERTE MUSKELN", width / 2, cursorY);
       ctx.textAlign = "left";
-      cursorY = await drawMuscleFigures(ctx, width / 2, cursorY + 24, 340, model.muscles.primary, model.muscles.secondary);
-      cursorY += 40;
+      cursorY = await drawMuscleFigures(ctx, width / 2, cursorY + 24, MUSCLE_FIG_H, model.muscles.primary, model.muscles.secondary);
+      cursorY += 40 + fillGap;
     } catch {
       // image load failed — carry on without the figure, see comment above
     }
   } else {
-    cursorY += 20;
+    cursorY += 20 + fillGap;
   }
 
   // divider
-  ctx.strokeStyle = "rgba(255,255,255,0.14)";
+  ctx.strokeStyle = COLORS.line;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad, cursorY);
   ctx.lineTo(width - pad, cursorY);
   ctx.stroke();
-  cursorY += 46;
+  cursorY += DIVIDER_GAP;
 
-  // exercise list (compresses past COMPRESS_EXERCISE_THRESHOLD via renderExerciseLines) — no
-  // longer sharing its row budget with a bottom-anchored rank-ups block, so it gets the rest of
-  // the card down to the bottom margin.
-  const lines = renderExerciseLines(model.exercises);
-  const maxRows = Math.max(1, Math.floor((height - pad - cursorY) / 44));
-  for (const line of lines.slice(0, maxRows)) {
-    ctx.fillStyle = COLORS.text;
-    ctx.font = "700 30px 'Plus Jakarta Sans', system-ui, sans-serif";
-    ctx.fillText(line.name, pad, cursorY);
-    ctx.fillStyle = COLORS.dim;
-    ctx.font = "600 24px 'Plus Jakarta Sans', system-ui, sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText(line.detail, width - pad, cursorY);
-    ctx.textAlign = "left";
-    cursorY += 44;
+  // ---- Exercise grid: 2 columns of bordered rows (Phase 5 — was a single-column plain list).
+  // Keeps renderExerciseLines' full per-set detail string, just in a different container. ----
+  const colW = (width - pad * 2 - EXERCISE_COL_GAP) / 2;
+  const remainingH = height - pad - cursorY;
+  const maxRows = overflowsStory ? Math.max(1, Math.floor((remainingH + EXERCISE_ROW_GAP) / (EXERCISE_ROW_H + EXERCISE_ROW_GAP))) : naturalRows;
+  const maxLines = Math.min(lines.length, maxRows * 2);
+
+  for (let i = 0; i < maxLines; i++) {
+    const line = lines[i]!;
+    const row = Math.floor(i / 2);
+    const col = i % 2;
+    const x = pad + col * (colW + EXERCISE_COL_GAP);
+    const rowY = cursorY + row * (EXERCISE_ROW_H + EXERCISE_ROW_GAP);
+    const detailLines = wrapDetail(ctx, line.detail, colW - 32);
+    drawExerciseCell(ctx, x, rowY, colW, EXERCISE_ROW_H, line.name, detailLines);
   }
-  if (lines.length > maxRows) {
+
+  const drawnRows = Math.ceil(maxLines / 2);
+  const overflowCount = lines.length - maxLines;
+  if (overflowCount > 0) {
+    const footerY = cursorY + drawnRows * (EXERCISE_ROW_H + EXERCISE_ROW_GAP) + 6;
     ctx.fillStyle = COLORS.dim;
-    ctx.font = "600 22px 'Plus Jakarta Sans', system-ui, sans-serif";
-    ctx.fillText(`+${lines.length - maxRows} weitere Übungen`, pad, cursorY);
+    ctx.font = font(600, 22, false);
+    ctx.fillText(`+${overflowCount} weitere Übungen`, pad, footerY);
   }
 }
 
