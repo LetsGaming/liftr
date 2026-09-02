@@ -8,6 +8,7 @@ export const useBodyweightStore = defineStore("bodyweight", {
   state: () => ({
     entries: [] as BodyweightEntry[],
     loaded: false,
+    error: false,
   }),
   getters: {
     latest: (state): BodyweightEntry | null => state.entries[0] ?? null,
@@ -17,8 +18,11 @@ export const useBodyweightStore = defineStore("bodyweight", {
       try {
         this.entries = await getBodyweightLogs();
         this.loaded = true;
+        this.error = false;
       } catch {
-        // offline with nothing cached — form still works, just shows no history
+        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
+        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        this.error = true;
       }
     },
     async log(weightKg: number) {

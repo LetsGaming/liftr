@@ -8,14 +8,18 @@ export const useRanksStore = defineStore("ranks", {
   state: () => ({
     ranks: [] as RankRow[],
     loaded: false,
+    error: false,
   }),
   actions: {
     async load() {
       try {
         this.ranks = await getRanks();
         this.loaded = true;
+        this.error = false;
       } catch {
-        // offline with nothing cached yet — page shows its empty state
+        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
+        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        this.error = true;
       }
     },
 

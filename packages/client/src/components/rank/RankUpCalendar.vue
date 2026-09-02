@@ -82,7 +82,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
   background: linear-gradient(160deg, var(--blue-hi), var(--blue));
 }
 .dl {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--faint);
 }
 .ruc-empty {

@@ -86,6 +86,7 @@ const totalVolumeKg = computed(() =>
   ),
 );
 const totalSets = computed(() => orderedExercises.value.reduce((sum, we) => sum + we.sets.filter((s) => !s.isWarmup).length, 0));
+const prCount = computed(() => orderedExercises.value.reduce((sum, we) => sum + we.sets.filter((s) => s.isPr).length, 0));
 
 const dateLabel = computed(() =>
   detail.value ? new Date(detail.value.startedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }) : "",
@@ -120,8 +121,7 @@ async function share() {
       durationLabel: durationLabel.value,
       volumeKg: totalVolumeKg.value,
       setCount: totalSets.value,
-      prCount: 0, // per-set PR flags aren't computed for history detail yet — a real ledger
-      // query, not this view's job; see plan §D's trim note.
+      prCount: prCount.value,
       exercises: orderedExercises.value.map((we) => ({
         name: exerciseName(we.exercise.slug),
         sets: we.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps, isWarmup: s.isWarmup })),
@@ -183,10 +183,11 @@ async function share() {
           <ExerciseRow visual="icon" :size="18" :slug="we.exercise.slug" :equipment="we.exercise.equipment" :name="exerciseName(we.exercise.slug)">
             <template #meta>
               <span class="tnum set-chips">
-                <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup }">
+                <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
                   <!-- reps×weight, matching shareCard.ts's same fix (feedback: "8x7,5kg" not "7,5x8"). -->
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ s.weightKg }}kg</template>
                   <template v-else>{{ s.reps }}</template>
+                  <span v-if="s.isPr" aria-hidden="true"> 🏆</span>
                 </span>
               </span>
             </template>
@@ -260,6 +261,10 @@ async function share() {
 }
 .set-chip.warmup {
   color: var(--faint);
+}
+.set-chip.pr {
+  color: var(--pr);
+  border: 1px solid var(--pr);
 }
 .btn-primary {
   margin-top: var(--sp5);

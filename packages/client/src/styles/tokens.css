@@ -137,14 +137,21 @@
   --advanced-2: #a7820f;
   --advanced-3: #ffd24a;
   --advanced-t: #fff2c2;
-  --elite-1: #2f0d33;
-  --elite-2: #8a289c;
-  --elite-3: #d76ff0;
-  --elite-t: #f6d7ff;
-  --expert-1: #0d2f33;
-  --expert-2: #1f8f9c;
-  --expert-3: #6ff0e6;
-  --expert-t: #d7fffb;
+  /* Colorize finding (round 2): the first retune shifted hue off-wheel but stayed saturated
+     enough (max-min RGB channel spread >=50) to still trip the detector's ai-color-palette rule
+     at both its --b2 and --b3 stops. Pulled chroma down further here — into the same restrained
+     range silver (--athlete/--lifter, chroma ~29) already sits at — rather than pushing hue any
+     further, since a muted, worn-metal/gem read fits this system's established material
+     language (bronze/silver are both deliberately restrained, not neon) better than chasing a
+     louder hue just to dodge a threshold. --tt also nudged down for margin (was 47, now ~31). */
+  --elite-1: #2a0f2e;
+  --elite-2: #785074;
+  --elite-3: #c8a0cc;
+  --elite-t: #f0dcf0;
+  --expert-1: #0d2b2c;
+  --expert-2: #416969;
+  --expert-3: #96c0ba;
+  --expert-t: #d6f5ec;
   --apex-1: #152449;
   --apex-2: #3b5fd0;
   --apex-3: #8fb4ff;
@@ -226,7 +233,7 @@ body {
    --eyebrow-color lets a specific instance override just the color (e.g. the rank-up
    celebration's fire-colored eyebrow) without redeclaring the whole rule. */
 .eyebrow {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;

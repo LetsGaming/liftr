@@ -61,11 +61,25 @@ const trendUp = computed(() => {
   const s = series.value;
   return s.length >= 2 && s[s.length - 1]!.value >= s[0]!.value;
 });
+
+/** Harden finding: unlike the donut chart (fully redundant with its own legend text), this
+ *  sparkline's trajectory is real information not shown anywhere else — `latest` below is only
+ *  the final point, not the shape of the trend. A screen-reader user got the number but not
+ *  whether it was climbing or falling. */
+const trendLabel = computed(() => {
+  const s = series.value;
+  if (s.length < 2) return null;
+  const first = Math.round(s[0]!.value);
+  const last = Math.round(s[s.length - 1]!.value);
+  const unit = props.isBodyweight ? "Wdh." : "kg e1RM";
+  const direction = last > first ? "Aufwärtstrend" : last < first ? "Abwärtstrend" : "Gleichbleibender Verlauf";
+  return `${direction}, von ${first} auf ${last} ${unit}`;
+});
 </script>
 
 <template>
   <div class="progress-chart">
-    <svg v-if="series.length >= 2" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" class="spark">
+    <svg v-if="series.length >= 2" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" class="spark" role="img" :aria-label="trendLabel!">
       <!-- A text-muted token must never be a chart stroke — --faint (even at its raised,
            AA-passing value) reads as "barely there" for data, which is wrong; a downward
            trend is still real data, just not the "good" color. Use --dim (readable, neutral)

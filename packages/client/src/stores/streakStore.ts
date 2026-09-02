@@ -7,6 +7,7 @@ export const useStreakStore = defineStore("streak", {
     streak: 0,
     tokensRemaining: 2,
     loaded: false,
+    error: false,
   }),
   actions: {
     async load() {
@@ -15,8 +16,11 @@ export const useStreakStore = defineStore("streak", {
         this.streak = r.streak;
         this.tokensRemaining = r.tokensRemaining;
         this.loaded = true;
+        this.error = false;
       } catch {
-        // offline — chip just shows nothing until back online, not worth caching for this
+        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
+        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        this.error = true;
       }
     },
   },

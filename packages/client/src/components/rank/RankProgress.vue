@@ -63,6 +63,18 @@ const decayCaption = computed(() => {
   return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision]}`;
 });
 
+/** Critique finding (clarify, P1): which trust level applies to *this* badge was locked behind
+ *  a `title` attribute — invisible on touch (the app's only platform) and to screen readers.
+ *  The page-level LP-explainer already teaches what "≈" means in general; this names the
+ *  specific case per card, as a normal visible caption alongside the existing decay/recovery/
+ *  plausibility lines below, instead of a second interactive element (which would nest inside
+ *  RanksPage's own <button class="rank-card">). */
+const trustLabel = computed(() => {
+  if (props.trust === "derived") return "Abgeleiteter Standard";
+  if (props.trust === "synthetic") return "Geschätzter Standard";
+  return null;
+});
+
 const nextLabel = computed(() => {
   // Curiosity framing (engagement rework W8): both targets null means the top of the currently-
   // modeled standards has been reached — "???" invites "what's next?" instead of flatly stating
@@ -80,13 +92,13 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 <template>
   <div class="rank-progress" :class="[`t-${tier}`, variant, { 'panel-reward': variant === 'inline' }]">
     <span class="badge" :class="`t-${tier}`">
-      <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[tier as RankTier]" /></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="TIER_BADGE_PATH[tier as RankTier]" /></svg>
     </span>
     <div class="rp-body">
       <div class="rp-head">
         <span class="rp-tier">
           {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
-          <span v-if="trust !== 'real'" class="trust-marker" :title="trust === 'derived' ? 'abgeleiteter Standard' : 'geschätzter Standard'">≈</span>
+          <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
         </span>
         <span class="rp-lp tnum">{{ lpClamped }} LP</span>
       </div>
@@ -94,6 +106,7 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
         <i class="bar-fill" :style="{ transform: `scaleX(${lpClamped / 100})` }" />
       </div>
       <div class="rp-next">{{ nextLabel }}</div>
+      <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
       <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
       <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
       <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
@@ -157,6 +170,10 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-weight: 700;
   color: var(--fire-hi);
 }
+.rp-trust {
+  font-size: 11px;
+  color: var(--dim);
+}
 .rp-recovery {
   font-size: 11px;
   color: var(--blue-hi, var(--dim));
@@ -181,7 +198,8 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 /* On the full-card tier gradient, --dim doesn't clear AA (audit P0-C) — match the original
    card's explicit light rgba text. */
 .rank-progress.card .rp-lp,
-.rank-progress.card .rp-next {
+.rank-progress.card .rp-next,
+.rank-progress.card .rp-trust {
   color: rgba(255, 255, 255, 0.85);
 }
 .rank-progress.card .trust-marker {

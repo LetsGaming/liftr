@@ -67,8 +67,8 @@ const TIER_COLORS: Record<RankTier, { b1: string; b2: string; b3: string; tt: st
   athlete: { b1: "#232a38", b2: "#69748a", b3: "#c7d1e4", tt: "#f2f6ff" },
   lifter: { b1: "#0f2e1f", b2: "#2d8058", b3: "#5fd6a0", tt: "#d4fbe9" },
   advanced: { b1: "#3a2a04", b2: "#a7820f", b3: "#ffd24a", tt: "#fff2c2" },
-  elite: { b1: "#2f0d33", b2: "#8a289c", b3: "#d76ff0", tt: "#f6d7ff" },
-  expert: { b1: "#0d2f33", b2: "#1f8f9c", b3: "#6ff0e6", tt: "#d7fffb" },
+  elite: { b1: "#2a0f2e", b2: "#785074", b3: "#c8a0cc", tt: "#f0dcf0" },
+  expert: { b1: "#0d2b2c", b2: "#416969", b3: "#96c0ba", tt: "#d6f5ec" },
   apex: { b1: "#152449", b2: "#3b5fd0", b3: "#8fb4ff", tt: "#dbe7ff" },
 };
 
@@ -307,6 +307,18 @@ const FACE_GRAD_STOPS: Record<RankTier, [number, FaceKey][]> = {
 function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
   const c = TIER_COLORS[tier];
   const left = cx - size / 2;
+  const midY = topY + size / 2;
+
+  // Tier-hued halo (critique finding, typeset P2): reads as a colored anchor before the hex
+  // shape itself resolves at thumbnail scale — the same trick the card's own background glow
+  // uses, centered here instead so the badge, not a stat card, wins the first glance. Uses the
+  // tier's brightest fill (b3) so the halo always matches the medal it surrounds.
+  const haloR = size * 1.6;
+  const halo = ctx.createRadialGradient(cx, midY, 0, cx, midY, haloR);
+  halo.addColorStop(0, `${c.b3}4d`); // ~30% alpha
+  halo.addColorStop(1, `${c.b3}00`);
+  ctx.fillStyle = halo;
+  ctx.fillRect(cx - haloR, midY - haloR, haloR * 2, haloR * 2);
 
   // ::after — extrusion plate. CSS: inset -13% -13% -18% -13% (top/right/bottom/left), solid b1.
   const exLeft = left - size * 0.13;
@@ -443,8 +455,16 @@ async function drawMuscleFigures(
 const PAD = 64;
 const STAT_CARD_H = 176;
 const STAT_GAP = 20;
-const BADGE_SIZE = 128;
-const BADGE_SECTION_H = 210;
+// Critique finding (typeset, P2): at realistic thumbnail scale, the blue Volumen stat card
+// out-competed the tier badge for first glance, even though the badge — this app's real
+// headline, per the design review's own "most premium element on the card" verdict — should
+// win that contest. Sized up from 128 (+31%) plus the tier-hued halo in drawTierBadge below;
+// BADGE_SECTION_H is derived from it rather than a second hand-tuned constant, so resizing the
+// badge again can't silently reintroduce the exact overlap bug this file's header already
+// documents once (a fixed section height that didn't grow with its own content).
+const BADGE_SIZE = 168;
+const BADGE_LABEL_GAP = 38; // badge bottom -> tier-name baseline
+const BADGE_SECTION_H = BADGE_SIZE + BADGE_LABEL_GAP + 30 + 4 + 14; // + level line + baseline margin
 // Extra height the badge section needs when a topRankUp caption line is drawn under the tier
 // label (Bug found by rendering a real card during Phase 5 verification: a fixed BADGE_SECTION_H
 // that never grew for the caption line let the muscle-figure header draw right through it).
@@ -571,7 +591,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
     const badgeCx = width / 2;
     drawTierBadge(ctx, badgeCx, cursorY, BADGE_SIZE, tier);
 
-    let labelY = cursorY + BADGE_SIZE + 38;
+    let labelY = cursorY + BADGE_SIZE + BADGE_LABEL_GAP;
     ctx.textAlign = "center";
     ctx.fillStyle = COLORS.text;
     ctx.font = font(800, 26, true);

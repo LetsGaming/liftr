@@ -3,12 +3,14 @@
 // @liftr/shared's resolveRank/nextLoadTarget running server-side (see rankEngine.ts) and
 // cached into the `ranks` table. Never gated/paywalled (audit §3's explicit anti-pattern).
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { onMounted, ref } from "vue";
+import { ordinal, type Tier } from "@liftr/shared";
+import { computed, onMounted } from "vue";
 import ProgressChart from "../components/rank/ProgressChart.vue";
 import RankDistributionDonut from "../components/rank/RankDistributionDonut.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
 import RankUpCalendar from "../components/rank/RankUpCalendar.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
+import InfoToggle from "../components/ui/InfoToggle.vue";
 import { useExerciseHistoryCache } from "../composables/useExerciseHistoryCache";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useOverallRankStore } from "../stores/overallRankStore";
@@ -24,13 +26,25 @@ onMounted(() => {
 const { exerciseName } = useExerciseName();
 const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
 
+/** Critique finding (layout, P3): a flat auto-fill grid with no sort left the exercise closest
+ *  to a rank-up buried wherever it happened to fall alphabetically/by-load-date. LP already *is*
+ *  "how close to the next rank-up" (0-100 within the current band, see rankService.ts), so
+ *  surfacing it as the default sort turns the grid from a wall of cards into "what to train
+ *  next" — no new UI chrome, no filter control, just the existing signal used as reading order.
+ *  Higher tier/division breaks ties so two exercises at the same LP don't shuffle on reload. */
+const sortedRanks = computed(() =>
+  ranksStore.ranks
+    .slice()
+    .sort((a, b) => b.lp - a.lp || ordinal(b.tier as Tier, b.division) - ordinal(a.tier as Tier, a.division)),
+);
+
 /** "LP" and the ≈ trust marker were never explained anywhere reachable on touch — the ≈'s only
  *  explanation was a `title` attribute, which doesn't exist on touch, the app's entire platform
  *  (critique finding). RankProgress's card variant already sits inside RanksPage's own
  *  `.rank-card` <button>, so a second interactive element inside RankProgress itself would be a
  *  nested <button> (invalid HTML/ARIA) — this disclosure lives once, here, at the top of the one
- *  page every rank card is reached from, instead of duplicated per-card. */
-const showLpExplainer = ref(false);
+ *  page every rank card is reached from, instead of duplicated per-card. Mechanics now shared
+ *  via InfoToggle.vue with OverviewPage's own jargon explainer (same critique, different screen). */
 </script>
 
 <template>
@@ -48,29 +62,48 @@ const showLpExplainer = ref(false);
       <TierLadder
         :current-tier="overallRank.current?.tier ?? null"
         :current-division="overallRank.current?.division ?? null"
+        :peak-tier="overallRank.peak?.tier ?? null"
+        :peak-division="overallRank.peak?.division ?? null"
       />
 
-      <button type="button" class="page-note lp-explainer-toggle" :aria-expanded="showLpExplainer" @click="showLpExplainer = !showLpExplainer">
-        Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt
-        <span class="info-dot">ⓘ</span>
-      </button>
-      <p v-if="showLpExplainer" class="page-note lp-explainer pop-in">
+      <InfoToggle label="Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt">
         <b class="tnum">LP</b> misst deinen Fortschritt innerhalb der aktuellen Stufe (0–100). Ein
         <b>≈</b> markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests —
         dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt.
+      </InfoToggle>
+
+      <!-- Critique finding (harden, P1): all four data sources loaded with no skeleton/spinner —
+           between mount and the /api/ranks response, this section was just empty space with
+           nothing telling a user whether it was loading, genuinely empty, or broken. Same
+           shimmer technique as ErholungszoneCard.vue's skeleton, sized to this section's real
+           analytics-row + card-grid shape instead of one flat placeholder. -->
+      <template v-if="!ranksStore.loaded && !ranksStore.error">
+        <div class="rank-analytics" aria-hidden="true">
+          <div class="rank-skel-tile"><div class="shimmer rank-skel-block" /></div>
+          <div class="rank-skel-tile"><div class="shimmer rank-skel-block" /></div>
+        </div>
+        <div class="rank-grid">
+          <div v-for="i in 4" :key="i" class="shimmer rank-skel-card" aria-hidden="true" />
+        </div>
+      </template>
+
+      <p v-else-if="ranksStore.error" class="page-note load-error" style="margin-top: var(--sp4)">
+        Ränge konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.
+        <button type="button" class="btn-secondary" @click="ranksStore.load()">Erneut versuchen</button>
       </p>
 
-      <p v-if="ranksStore.loaded && ranksStore.ranks.length === 0" class="page-note" style="margin-top: var(--sp4)">
-        Dein erster Rang entsteht, sobald du eine Übung geloggt hast.
-      </p>
+      <template v-else>
+        <p v-if="ranksStore.ranks.length === 0" class="page-note" style="margin-top: var(--sp4)">
+          Dein erster Rang entsteht, sobald du eine Übung geloggt hast.
+        </p>
 
-      <div v-else class="rank-analytics">
-        <RankDistributionDonut />
-        <RankUpCalendar />
-      </div>
+        <div v-else class="rank-analytics">
+          <RankDistributionDonut />
+          <RankUpCalendar />
+        </div>
 
-      <div v-if="!(ranksStore.loaded && ranksStore.ranks.length === 0)" class="rank-grid">
-        <div v-for="r in ranksStore.ranks" :key="r.exerciseId" class="rank-card-wrap">
+        <div v-if="ranksStore.ranks.length > 0" class="rank-grid">
+        <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap">
           <button class="rank-card" :class="`t-${r.tier}`" @click="toggleExpand(r.exerciseId)">
             <div class="en">{{ exerciseName(r.slug) }}</div>
             <RankProgress
@@ -89,7 +122,8 @@ const showLpExplainer = ref(false);
             <ProgressChart v-if="historyCache.has(r.exerciseId)" :sets="historyCache.get(r.exerciseId)!" :is-bodyweight="r.isBodyweight" />
           </div>
         </div>
-      </div>
+        </div>
+      </template>
     </IonContent>
   </IonPage>
 </template>
@@ -97,28 +131,6 @@ const showLpExplainer = ref(false);
 <style scoped>
 .page-note {
   color: var(--dim);
-}
-.lp-explainer-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  text-align: left;
-  background: none;
-  border: none;
-  font-size: inherit;
-  font-family: inherit;
-}
-.info-dot {
-  color: var(--blue-hi);
-  flex: none;
-}
-.lp-explainer {
-  margin-top: var(--sp2);
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-.lp-explainer b {
-  color: var(--text);
 }
 .rank-analytics {
   display: grid;
@@ -134,6 +146,43 @@ const showLpExplainer = ref(false);
   margin: var(--sp4) auto 0;
   max-width: var(--content-w-wide);
   align-items: start;
+}
+/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep, these give each piece the
+   real content's approximate size/shape/background (same technique as ErholungszoneCard.vue). */
+.rank-skel-tile {
+  padding: var(--sp4);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+}
+.rank-skel-block {
+  width: 100%;
+  height: 90px;
+  border-radius: var(--r-md);
+  background-color: var(--surface-3);
+}
+.rank-skel-card {
+  height: 128px;
+  border-radius: var(--r-lg);
+  background-color: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp3);
+  /* Audit finding: unlike OverviewPage's equivalent banner (bounded by .dashboard's own
+     max-width), this sits outside any width-constrained container — live-measured at 288
+     chars/line on a wide viewport. Capped to the same 60ch craft-floor measure as
+     InfoToggle.vue's .info-body, which had the identical bug. */
+  max-width: 60ch;
+}
+.load-error .btn-secondary {
+  padding: 8px 14px;
 }
 .rank-card-wrap {
   display: flex;
@@ -151,7 +200,7 @@ const showLpExplainer = ref(false);
   width: 100%;
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--line);
   text-align: left;
   position: relative;
   overflow: hidden;

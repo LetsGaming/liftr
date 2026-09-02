@@ -20,15 +20,19 @@ export const useXpStore = defineStore("xp", {
     xpForNextLevel: 100,
     progressPercent: 0,
     loaded: false,
+    error: false,
     showXp: getShowXp(),
   }),
   actions: {
     async load() {
       try {
         const res = await getXp();
-        this.$patch({ ...res, loaded: true });
+        this.$patch({ ...res, loaded: true, error: false });
       } catch {
-        // offline — chip just doesn't update this session
+        // Critique finding (harden, P0): a failed load used to leave `loaded` false forever
+        // with no signal distinguishing "still fetching" from "never going to arrive" — the
+        // caller (OverviewPage's stalled-load banner) reads `error` to tell the two apart.
+        this.error = true;
       }
     },
     toggleShowXp() {

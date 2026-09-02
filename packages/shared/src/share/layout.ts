@@ -104,7 +104,11 @@ export function renderExerciseLines(exercises: ExerciseCardEntry[]): RenderedExe
           // reps×weight, not weight×reps (feedback: share card showed "7,5×8" for 7.5kg × 8
           // reps — reps first is how every other set display in the app already reads it,
           // e.g. WorkoutPage.vue's set rows show "7,5 kg · 8 Wdh.").
-          return s.weightKg != null ? `${w}${s.reps}×${formatKg(s.weightKg)}kg` : `${w}${s.reps}`;
+          // Bodyweight sets (weightKg null) get an explicit "Wdh." suffix (critique finding,
+          // clarify): the bare number ("4  4  7") is legible only with the surrounding app's
+          // context, which a shared image doesn't have — an outside viewer had no way to read
+          // it as reps at all.
+          return s.weightKg != null ? `${w}${s.reps}×${formatKg(s.weightKg)}kg` : `${w}${s.reps} Wdh.`;
         })
         .join("  ");
       return { name: ex.name, detail };

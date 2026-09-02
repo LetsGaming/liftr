@@ -274,7 +274,7 @@ watch(
   background: linear-gradient(160deg, var(--fire-hi), var(--fire));
 }
 .dl {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--faint);
 }
 .streak-note {
