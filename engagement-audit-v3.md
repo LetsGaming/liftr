@@ -384,6 +384,16 @@ both `locales/de.json`/`locales/exercises.de.json` and inline template strings, 
 in this codebase (the i18n scaffolding is only partially adopted per `liftr-audit.md` §1: "i18n
 scaffolding, not translation").
 
+- [x] **Done (2026-09-02).** Applied via a writing-quality review pass over every 0d finding, not
+  a blind bulk-apply of the proposed column: each proposed text was checked against a house style
+  bar (cut fake significance, cut hedged/passive phrasing, no restating adjacent UI, preserve
+  exact factual meaning, fix real grammar errors) before shipping. Most proposals already cleared
+  the bar and shipped as-is; a handful were revised further — see the `Final` column added to the
+  0d findings table below for the ones that changed and why. The `exercises.de.json` fixes
+  (~10 misapplied-template + ~15 broken-grammar entries) were done per-exercise, not as a single
+  find-replace — each now reflects its own equipment/setup, not a copy-pasted muscle-group
+  template. Verified with `pnpm typecheck`, `pnpm test`, `pnpm lint` (see Verification section).
+
 ---
 
 ## Verification (every phase, not just at the end)
@@ -612,47 +622,49 @@ the individual fixes:
    verbatim to Liegestütze/pushups). This is the single largest concentration of "on the nose"
    text in the app and reads as machine-templated because it is.
 
-**Findings table** (file:line | current | proposed | reasoning) — apply only after review, not
-automatically:
+**Findings table** (file:line | current | proposed | reasoning | final) — apply only after
+review, not automatically. `Final` is blank wherever the proposed text shipped unchanged; filled
+in only where the Phase 6 writing-quality pass revised it further (see reasoning inline in that
+column for why).
 
-| File:line | Current | Proposed | Reasoning |
-|---|---|---|---|
-| `OverviewPage.vue:224` | Leg im Workout-Tab deine erste Routine an. | Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst. | Names a tab instead of what a routine is/why it matters |
-| `OverviewPage.vue:225` | Zum Workout-Tab → | Erste Routine anlegen → | Labels navigation, not the outcome |
-| `OverviewPage.vue:269` | Noch nicht genug Daten. | Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab. | Generic; doesn't say how much is "genug" |
-| `OverviewPage.vue:291` | Noch nicht genug Daten. | Zwei Einträge, und dein Gewichtsverlauf steht hier. | Same string reused verbatim on a different tile |
-| `OverviewPage.vue:285` | Noch keine Ränge. | Dein erster Rang entsteht, sobald du eine Übung geloggt hast. | Restates the header, no path forward |
-| `OverviewPage.vue:327` | Noch keine abgeschlossenen Workouts oder Läufe. | Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast. | Restates "Letzte Aktivität" + visible emptiness |
-| `OverviewPage.vue:325` | Keine Verbindung — Verlauf konnte nicht geladen werden. | Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert. | Doesn't say the offline-first guarantee, exactly when it matters |
-| `OverviewPage.vue:311` | Workouts, Sätze, Läufe & Körpergewicht als CSV in einer ZIP-Datei sichern | Deine Daten als CSV — lesbar auch ohne Liftr | Describes format, not the point (data ownership) |
-| `ProfilePage.vue:231` | Ein Nutzer · selbst gehostet. | Dein Server, dein Konto, deine Daten. | Flat architecture fact |
-| `ProfilePage.vue:235` | Wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet. | Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht. | Passive, mechanism-first |
-| `ProfilePage.vue:293` | Wird genutzt, um Übungsvorschläge auf das zu beschränken, was dir tatsächlich zur Verfügung steht. | Damit dir nur Übungen vorgeschlagen werden, die du hier auch machen kannst — sonst Alternativen. | Frames a benefit as a restriction |
-| `ProfilePage.vue:258` + `ExperienceStep.vue:17` | Bestimmt (u.a.) den Startpunkt für Gewichtsvorschläge bei Übungen ohne eigene Trainingshistorie. | Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast. | Data-model vocabulary, near-duplicate elsewhere |
-| `ProfilePage.vue:361` | Wird angezeigt / Ausgeblendet | XP erscheinen im Workout und auf der Übersicht. / XP bleiben verborgen. | Redundant with the adjacent button label |
-| `ProfilePage.vue:114/134/144` | Gespeichert | Körpergewicht/Profil/Equipment gespeichert. | Generic, interchangeable across 3 forms |
-| `ProfilePage.vue:186` | Berechtigung nicht vollständig erteilt. | Health Connect hat nicht alle Freigaben bekommen — bitte in den Health-Connect-Einstellungen nachtragen. | Bureaucratic passive, no next step |
-| `RanksPage.vue:64` + `ExerciseInfoPanel.vue:175` | Noch keine Ränge — logge ein paar Sätze, um deinen ersten Rang zu sehen. | Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast. | Vague ("ein paar Sätze"), duplicated verbatim in 2 places |
-| `RankProgress.vue:73-74` | nächster: 100 kg × 5 | Nächstes Ziel: 100 kg × 5 | Dangling lowercase adjective, no noun |
-| `RankProgress.vue:63` | Bestleistung: Gold II | Schon mal erreicht: Gold II | Flat data label at the moment rank was *lost* |
-| `FinishSequence.vue:149` | 3 Schutz-Token übrig | Deine Serie übersteht noch 3 Ruhetage. | Names internal mechanism mid-celebration |
-| `FinishSequence.vue:168` | Tippen für weiter → | Weiter tippen → | Grammatically broken, sits on the app's emotional climax |
-| `WorkoutPage.vue:262` | Workout abgeschlossen | Geschafft | Restates what the whole screen already communicates |
-| `WorkoutPage.vue:290` | Rang-Hinweise | Was sich verändert hat | System vocabulary for the session's actual outcomes |
-| `WorkoutPage.vue:426` | Quick Start (erste 4 Übungen, ohne Routine) | Ohne Routine loslegen · die ersten 4 Übungen | Parenthetical implementation note as a button label |
-| `WorkoutPage.vue:433-434` | …oder wurde vergessen, es zu beenden? | …oder hast du vergessen, es zu beenden? | Impersonal passive in an app that otherwise uses "du" |
-| `WorkoutPage.vue:553` | Wiederholungen eingeben, um den Satz zu speichern | Erst Wiederholungen, dann speichern. | Restates the disabled button directly below it |
-| `ErholungszoneCard.vue:33` | BEREIT ZUM TRAINING | (make conditional, or "DEIN STATUS") | Static pill stays green even when nothing's recovered |
-| `ErholungszoneCard.vue:24` | …vollständig erholt. Lass uns trainieren! | …vollständig erholt. | Duplicates the CTA button right below it |
-| `ErholungszoneCard.vue:20` | Fast alles ist noch erholt oder noch nicht trainiert — leg direkt los. | Nichts ist gerade belastet — du kannst frei wählen. | Leaks data-model uncertainty into user-facing copy |
-| `RankUpCalendar.vue:41` | Diese Woche noch keine Rangaufstiege. | Der erste Aufstieg dieser Woche steht noch aus. | Redundant with the eyebrow + visibly empty dot strip |
-| `ExerciseHistoryList.vue:47` | Noch keine Sätze für diese Übung protokolliert. | Diese Übung hast du noch nie geloggt. | "protokolliert" is bureaucratic; app says "loggen" elsewhere |
-| `ProgressChart.vue:75` | Noch nicht genug Daten für einen Verlauf. | Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve. | Third instance of the same interchangeable formula |
-| `ExerciseList.vue:125` | Keine Übungen gefunden. | Keine Übung passt zu diesen Filtern. | No escape hint, generic search-result phrasing |
-| `PickStep.vue:43` | Passende Übungen inkl. Satz-/Wiederholungs-/Gewichtsvorschlag werden anhand deiner bisherigen Trainingsdaten zusammengestellt. | Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast. | Slash-compound noun stack, passive voice |
-| `ArrangeStep.vue:143` | Gewicht nicht verfolgen | Ohne Gewicht loggen | "verfolgen" is tracking-app jargon |
-| `AuthGate.vue:65` | Weiter | Entsperren | Labels the wizard step, not unlocking the server |
-| `WorkoutDetail.vue:155` | Konnte nicht geladen werden. | Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server. | Subject-less passive, no cause, no next step |
-| `RunsPage.vue:11` vs `:35-36` | Same "kein Drittanbieter-Konto" claim, twice on one screen | Keep only the empty-state version | Duplicated 7 lines apart |
-| `locales/exercises.de.json` (~10 exercises) | Shared verbatim cue text across unrelated exercises (e.g. a barbell-press cue applied to Liegestütze) | Per-exercise cues | Templated-per-muscle-group, not per-exercise — largest single source of "on the nose" text |
-| `locales/exercises.de.json` (~15 exercises) | "— den oberen Rücken zieht." (broken accusative-on-intransitive-verb pattern) | "— du spürst es im oberen Rücken." | Grammatically broken German shipped repeatedly, reads as machine-templated |
+| File:line | Current | Proposed | Reasoning | Final (if changed) |
+|---|---|---|---|---|
+| `OverviewPage.vue:224` | Leg im Workout-Tab deine erste Routine an. | Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst. | Names a tab instead of what a routine is/why it matters | |
+| `OverviewPage.vue:225` | Zum Workout-Tab → | Erste Routine anlegen → | Labels navigation, not the outcome | |
+| `OverviewPage.vue:269` | Noch nicht genug Daten. | Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab. | Generic; doesn't say how much is "genug" | |
+| `OverviewPage.vue:291` | Noch nicht genug Daten. | Zwei Einträge, und dein Gewichtsverlauf steht hier. | Same string reused verbatim on a different tile | |
+| `OverviewPage.vue:285` | Noch keine Ränge. | Dein erster Rang entsteht, sobald du eine Übung geloggt hast. | Restates the header, no path forward | |
+| `OverviewPage.vue:327` | Noch keine abgeschlossenen Workouts oder Läufe. | Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast. | Restates "Letzte Aktivität" + visible emptiness | |
+| `OverviewPage.vue:325` | Keine Verbindung — Verlauf konnte nicht geladen werden. | Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert. | Doesn't say the offline-first guarantee, exactly when it matters | |
+| `OverviewPage.vue:311` | Workouts, Sätze, Läufe & Körpergewicht als CSV in einer ZIP-Datei sichern | Deine Daten als CSV — lesbar auch ohne Liftr | Describes format, not the point (data ownership) | Workouts, Sätze, Läufe & Körpergewicht als CSV in einer ZIP-Datei — lesbar auch ohne Liftr. Proposed text dropped what's actually in the export, which is real information for a backup feature (rule 5); kept the specifics and added the point, matching the phrasing `ProfilePage.vue:391`'s own export card already uses for the identical feature — the two descriptions of the same export now read as one voice, not two. |
+| `ProfilePage.vue:231` | Ein Nutzer · selbst gehostet. | Dein Server, dein Konto, deine Daten. | Flat architecture fact | |
+| `ProfilePage.vue:235` | Wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet. | Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht. | Passive, mechanism-first | |
+| `ProfilePage.vue:293` | Wird genutzt, um Übungsvorschläge auf das zu beschränken, was dir tatsächlich zur Verfügung steht. | Damit dir nur Übungen vorgeschlagen werden, die du hier auch machen kannst — sonst Alternativen. | Frames a benefit as a restriction | Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause). The proposal's trailing "— sonst Alternativen" was a dangling, ambiguous fragment (rule 2); dropped it and named what "hier" meant ("mit deinem Equipment") since the pronoun had no clear referent on its own. |
+| `ProfilePage.vue:258` + `ExperienceStep.vue:17` | Bestimmt (u.a.) den Startpunkt für Gewichtsvorschläge bei Übungen ohne eigene Trainingshistorie. | Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast. | Data-model vocabulary, near-duplicate elsewhere | ProfilePage.vue kept the proposed text with "im Routinen-Assistenten" added back in (that hint sits on the Trainingsprofil card, one step removed from where weights actually get suggested, so naming where matters); ExperienceStep.vue (the onboarding step itself) uses the proposal verbatim, since there "im Routinen-Assistenten" would be premature — the wizard doesn't exist yet in that flow. |
+| `ProfilePage.vue:361` | Wird angezeigt / Ausgeblendet | XP erscheinen im Workout und auf der Übersicht. / XP bleiben verborgen. | Redundant with the adjacent button label | |
+| `ProfilePage.vue:114/134/144` | Gespeichert | Körpergewicht/Profil/Equipment gespeichert. | Generic, interchangeable across 3 forms | The proposed field names didn't match what each toast actually follows: line 114 is `saveGymCard` (Scheiben & Stange), 134 is `saveProfileCard` (Trainingsprofil), 144 is `saveEquipmentCard` (Equipment) — bodyweight has no toast at all. Shipped as "Scheiben & Stange gespeichert." / "Trainingsprofil gespeichert." / "Equipment gespeichert." respectively, matching the real card each button saves (rule 5 — the toast has to say what actually happened). |
+| `ProfilePage.vue:186` | Berechtigung nicht vollständig erteilt. | Health Connect hat nicht alle Freigaben bekommen — bitte in den Health-Connect-Einstellungen nachtragen. | Bureaucratic passive, no next step | |
+| `RanksPage.vue:64` + `ExerciseInfoPanel.vue:175` | Noch keine Ränge — logge ein paar Sätze, um deinen ersten Rang zu sehen. | Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast. | Vague ("ein paar Sätze"), duplicated verbatim in 2 places | The proposal's "diese Übung" only fits `ExerciseInfoPanel.vue` (a single-exercise panel) — `RanksPage.vue:64` is the *aggregate* empty state across all exercises, where "diese Übung" has no referent. Shipped the proposal as-is on ExerciseInfoPanel.vue; RanksPage.vue got "Dein erster Rang entsteht, sobald du eine Übung geloggt hast." instead (same wording already used for `OverviewPage.vue:285`'s identical aggregate case, for one consistent voice across the app's three "no ranks yet" surfaces). |
+| `RankProgress.vue:73-74` | nächster: 100 kg × 5 | Nächstes Ziel: 100 kg × 5 | Dangling lowercase adjective, no noun | Also applied to the third occurrence at line 71 (`"nächster: ???"` → `"Nächstes Ziel: ???"`), not flagged in the table but the identical bug in the same computed property — leaving it would have shipped two of three call sites fixed and one not. |
+| `RankProgress.vue:63` | Bestleistung: Gold II | Schon mal erreicht: Gold II | Flat data label at the moment rank was *lost* | |
+| `FinishSequence.vue:149` | 3 Schutz-Token übrig | Deine Serie übersteht noch 3 Ruhetage. | Names internal mechanism mid-celebration | |
+| `FinishSequence.vue:168` | Tippen für weiter → | Weiter tippen → | Grammatically broken, sits on the app's emotional climax | |
+| `WorkoutPage.vue:262` | Workout abgeschlossen | Geschafft | Restates what the whole screen already communicates | |
+| `WorkoutPage.vue:290` | Rang-Hinweise | Was sich verändert hat | System vocabulary for the session's actual outcomes | |
+| `WorkoutPage.vue:426` | Quick Start (erste 4 Übungen, ohne Routine) | Ohne Routine loslegen · die ersten 4 Übungen | Parenthetical implementation note as a button label | |
+| `WorkoutPage.vue:433-434` | …oder wurde vergessen, es zu beenden? | …oder hast du vergessen, es zu beenden? | Impersonal passive in an app that otherwise uses "du" | |
+| `WorkoutPage.vue:553` | Wiederholungen eingeben, um den Satz zu speichern | Erst Wiederholungen, dann speichern. | Restates the disabled button directly below it | |
+| `ErholungszoneCard.vue:33` | BEREIT ZUM TRAINING | (make conditional, or "DEIN STATUS") | Static pill stays green even when nothing's recovered | DEIN STATUS. Took the simpler of the two suggested options rather than adding conditional branching logic — Phase 6 is a copy pass, not a behavior change, and a neutral eyebrow-style label is accurate regardless of what the verdict line below it says, so no logic needed changing. |
+| `ErholungszoneCard.vue:24` | …vollständig erholt. Lass uns trainieren! | …vollständig erholt. | Duplicates the CTA button right below it | |
+| `ErholungszoneCard.vue:20` | Fast alles ist noch erholt oder noch nicht trainiert — leg direkt los. | Nichts ist gerade belastet — du kannst frei wählen. | Leaks data-model uncertainty into user-facing copy | Keine Muskelgruppe ist gerade eindeutig erholt — leg trotzdem los, wo du willst. Traced `recoveredSlugs` (readinessStore.ts) — this branch fires whenever *no* tracked muscle is at readiness ≥0.85, which includes the case where the user just trained everything and most muscles are genuinely fatigued. The proposed "Nichts ist gerade belastet" would be factually false in exactly that case (rule 5 bars softening/genericizing a fact); the shipped text is accurate in every case this branch can actually fire in, including the one the proposal got wrong. |
+| `RankUpCalendar.vue:41` | Diese Woche noch keine Rangaufstiege. | Der erste Aufstieg dieser Woche steht noch aus. | Redundant with the eyebrow + visibly empty dot strip | |
+| `ExerciseHistoryList.vue:47` | Noch keine Sätze für diese Übung protokolliert. | Diese Übung hast du noch nie geloggt. | "protokolliert" is bureaucratic; app says "loggen" elsewhere | |
+| `ProgressChart.vue:75` | Noch nicht genug Daten für einen Verlauf. | Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve. | Third instance of the same interchangeable formula | |
+| `ExerciseList.vue:125` | Keine Übungen gefunden. | Keine Übung passt zu diesen Filtern. | No escape hint, generic search-result phrasing | |
+| `PickStep.vue:43` | Passende Übungen inkl. Satz-/Wiederholungs-/Gewichtsvorschlag werden anhand deiner bisherigen Trainingsdaten zusammengestellt. | Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast. | Slash-compound noun stack, passive voice | |
+| `ArrangeStep.vue:143` | Gewicht nicht verfolgen | Ohne Gewicht loggen | "verfolgen" is tracking-app jargon | |
+| `AuthGate.vue:65` | Weiter | Entsperren | Labels the wizard step, not unlocking the server | |
+| `WorkoutDetail.vue:155` | Konnte nicht geladen werden. | Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server. | Subject-less passive, no cause, no next step | |
+| `RunsPage.vue:11` vs `:35-36` | Same "kein Drittanbieter-Konto" claim, twice on one screen | Keep only the empty-state version | Duplicated 7 lines apart | Kept the header (line 113) and trimmed the clause from the empty-state paragraph (line 138) instead — the opposite of the proposal. The header renders on every visit regardless of run count, so it already covers the claim; the empty-state message only renders in addition to it (when `runs.length === 0`), making *it* the redundant copy, not the header. Removing the header would have deleted the reassurance for users who already have runs (the more common long-term state), which the proposal's phrasing didn't account for. |
+| `locales/exercises.de.json` (~10 exercises) | Shared verbatim cue text across unrelated exercises (e.g. a barbell-press cue applied to Liegestütze) | Per-exercise cues | Templated-per-muscle-group, not per-exercise — largest single source of "on the nose" text | Identified the exact group: `bench-press`, `pushup`, `incline-bench-press`, `decline-bench-press`, `dumbbell-bench-press`, `dumbbell-incline-press`, `machine-chest-press`, `decline-pushup`, `incline-pushup` (9 exercises) all shared byte-identical `howto` text built around a barbell-bench cue. Rewrote each individually — bar vs. dumbbell vs. machine vs. bodyweight setup, incline/decline emphasis called out where it's mechanically real — instead of a single replacement string fanned back out to all nine. |
+| `locales/exercises.de.json` (~15 exercises) | "— den oberen Rücken zieht." (broken accusative-on-intransitive-verb pattern) | "— du spürst es im oberen Rücken." | Grammatically broken German shipped repeatedly, reads as machine-templated | Found all 15 by pattern-matching every "— den …" fragment in the file (exactly matches the ~15 estimate): 6 rowing exercises ("— den oberen Rücken zieht.": `barbell-row`, `dumbbell-row`, `seated-cable-row`, `t-bar-row`, `chest-supported-row`, `inverted-row`), 5 vertical pulls ("— den seitlichen Rücken übernimmt.": `pullup`, `chinup`, `lat-pulldown`, `wide-grip-pullup`, `neutral-grip-pullup`), 1 carry (`farmers-carry`, "— den oberen Rücken stabilisiert."), and 3 triceps exercises with a second, distinct grammar bug — accusative object on the intransitive verb "arbeitet" ("— den Trizeps arbeitet."): `close-grip-bench-press`, `diamond-pushup`, `close-grip-pushup`, fixed to a nominative subject ("der Trizeps übernimmt den Hauptteil der Arbeit."). Each of the 15 got its own setup detail (grip, equipment, body position) rather than the single proposed sentence copy-pasted 15 times — the proposal's fix was directionally right (add a subject, cut the broken accusative) but was only ever meant as one representative example, not a literal replacement for all 15. |

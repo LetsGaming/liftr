@@ -228,8 +228,8 @@ const topRanks = computed(() =>
           </template>
           <template v-else>
             <div class="eyebrow lp-eyebrow">Noch keine Routine</div>
-            <p class="lp-hint">Leg im Workout-Tab deine erste Routine an.</p>
-            <router-link to="/workout" class="btn-secondary btn-block">Zum Workout-Tab →</router-link>
+            <p class="lp-hint">Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst.</p>
+            <router-link to="/workout" class="btn-secondary btn-block">Erste Routine anlegen →</router-link>
           </template>
         </section>
 
@@ -273,7 +273,7 @@ const topRanks = computed(() =>
                   <b class="tnum">{{ Math.round(weeklyVolume[selectedWeekIndex] ?? 0).toLocaleString("de-DE") }} kg</b>
                 </div>
               </template>
-              <p v-else class="tile-empty">Noch nicht genug Daten.</p>
+              <p v-else class="tile-empty">Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab.</p>
             </div>
 
             <div class="tile">
@@ -289,13 +289,13 @@ const topRanks = computed(() =>
                   </div>
                 </div>
               </div>
-              <p v-else class="tile-empty">Noch keine Ränge.</p>
+              <p v-else class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</p>
             </div>
 
             <div class="tile">
               <div class="eyebrow tile-head">Körpergewicht</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
-              <p v-else class="tile-empty">Noch nicht genug Daten.</p>
+              <p v-else class="tile-empty">Zwei Einträge, und dein Gewichtsverlauf steht hier.</p>
             </div>
           </section>
         </template>
@@ -315,7 +315,7 @@ const topRanks = computed(() =>
             <router-link to="/profile" class="tile discover-tile">
               <div class="discover-icon">📦</div>
               <b>Daten-Export</b>
-              <p class="tile-empty">Workouts, Sätze, Läufe &amp; Körpergewicht als CSV in einer ZIP-Datei sichern</p>
+              <p class="tile-empty">Workouts, Sätze, Läufe &amp; Körpergewicht als CSV in einer ZIP-Datei — lesbar auch ohne Liftr</p>
             </router-link>
             <router-link to="/ranks" class="tile discover-tile">
               <div class="discover-icon">🏆</div>
@@ -329,9 +329,9 @@ const topRanks = computed(() =>
         <section v-if="!isFirstRun" class="activity">
           <div class="eyebrow tile-head">Letzte Aktivität</div>
 
-          <p v-if="history.error" class="tile-empty">Keine Verbindung — Verlauf konnte nicht geladen werden.</p>
+          <p v-if="history.error" class="tile-empty">Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert.</p>
           <p v-else-if="history.loaded && history.items.length === 0" class="tile-empty">
-            Noch keine abgeschlossenen Workouts oder Läufe.
+            Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast.
           </p>
 
           <ul v-else class="feed">

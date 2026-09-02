@@ -111,7 +111,7 @@ async function saveGymCard() {
     const plates = [...plateCounts.value.entries()].filter(([, count]) => count > 0).map(([weightKg, count]) => ({ weightKg, count }));
     const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
     await settingsStore.saveGymSetup({ barWeights, plates });
-    toast("Gespeichert");
+    toast("Scheiben & Stange gespeichert.");
   } finally {
     gymSaving.value = false;
   }
@@ -131,7 +131,7 @@ async function saveProfileCard() {
       ...(experienceLevel.value ? { experienceLevel: experienceLevel.value } : {}),
       workoutsPerWeek: workoutsPerWeek.value,
     });
-    toast("Gespeichert");
+    toast("Trainingsprofil gespeichert.");
   } finally {
     profileSaving.value = false;
   }
@@ -141,7 +141,7 @@ async function saveEquipmentCard() {
   equipmentSaving.value = true;
   try {
     await settingsStore.saveEquipment([...equipment.value]);
-    toast("Gespeichert");
+    toast("Equipment gespeichert.");
   } finally {
     equipmentSaving.value = false;
   }
@@ -183,7 +183,7 @@ async function connectHealthConnect() {
   try {
     const granted = await requestHealthConnectPermissions();
     if (!granted) {
-      healthConnectStatus.value = "Berechtigung nicht vollständig erteilt.";
+      healthConnectStatus.value = "Health Connect hat nicht alle Freigaben bekommen — bitte in den Health-Connect-Einstellungen nachtragen.";
       return;
     }
     const count = await importNewHealthConnectWorkouts();
@@ -228,11 +228,11 @@ async function exportData() {
     </IonHeader>
     <IonContent class="ion-padding">
     <div class="profile-content">
-    <p style="color: var(--dim)">Ein Nutzer · selbst gehostet.</p>
+    <p style="color: var(--dim)">Dein Server, dein Konto, deine Daten.</p>
 
     <section class="card">
       <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
-      <p class="hint">Wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet.</p>
+      <p class="hint">Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht.</p>
       <div class="bw-row">
         <input
           v-model="weightInput"
@@ -255,7 +255,7 @@ async function exportData() {
 
     <section class="card">
       <h2 class="eyebrow">Trainingsprofil</h2>
-      <p class="hint">Bestimmt u.a. den Startpunkt für Gewichtsvorschläge im Routinen-Assistenten bei Übungen ohne eigene Trainingshistorie.</p>
+      <p class="hint">Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast.</p>
       <div class="profile-field">
         <span class="profile-label">Geschlecht</span>
         <div class="chip-row">
@@ -290,7 +290,7 @@ async function exportData() {
 
     <section class="card">
       <h2 class="eyebrow">Equipment</h2>
-      <p class="hint">Wird genutzt, um Übungsvorschläge auf das zu beschränken, was dir tatsächlich zur Verfügung steht (z.B. beim Training zuhause).</p>
+      <p class="hint">Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause).</p>
       <span class="profile-label">Trainingsgerät</span>
       <div class="chip-row wrap">
         <button
@@ -358,7 +358,7 @@ async function exportData() {
         <StatTile :value="xp.totalXp.toLocaleString('de-DE')" label="Gesamt-XP" />
       </div>
       <div class="bw-row">
-        <span style="flex: 1">{{ xp.showXp ? "Wird angezeigt" : "Ausgeblendet" }}</span>
+        <span style="flex: 1">{{ xp.showXp ? "XP erscheinen im Workout und auf der Übersicht." : "XP bleiben verborgen." }}</span>
         <button class="btn-primary" @click="xp.toggleShowXp()">
           {{ xp.showXp ? "Ausblenden" : "Anzeigen" }}
         </button>

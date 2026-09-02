@@ -152,7 +152,7 @@ async function share() {
     @close="emit('close')"
   >
     <p v-if="loading" class="hint">Lädt…</p>
-    <p v-else-if="!detail" class="hint">Konnte nicht geladen werden.</p>
+    <p v-else-if="!detail" class="hint">Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server.</p>
 
     <template v-else>
       <div class="date-line tnum">{{ dateLabel }}</div>

@@ -17,11 +17,11 @@ const emit = defineEmits<{ start: [] }>();
 const topRecovered = computed(() => props.recoveredSlugs.slice(0, 3).map((s) => MUSCLE_LABEL_DE[s] ?? s));
 
 const verdict = computed(() => {
-  if (topRecovered.value.length === 0) return "Fast alles ist noch erholt oder noch nicht trainiert — leg direkt los.";
+  if (topRecovered.value.length === 0) return "Keine Muskelgruppe ist gerade eindeutig erholt — leg trotzdem los, wo du willst.";
   const names = topRecovered.value.length === 1
     ? topRecovered.value[0]
     : `${topRecovered.value.slice(0, -1).join(", ")} und ${topRecovered.value[topRecovered.value.length - 1]}`;
-  return `${names} ${topRecovered.value.length === 1 ? "ist" : "sind"} vollständig erholt. Lass uns trainieren!`;
+  return `${names} ${topRecovered.value.length === 1 ? "ist" : "sind"} vollständig erholt.`;
 });
 </script>
 
@@ -30,7 +30,7 @@ const verdict = computed(() => {
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
     <div class="ez-status">
-      <span class="ez-pill">BEREIT ZUM TRAINING</span>
+      <span class="ez-pill">DEIN STATUS</span>
       <p>{{ verdict }}</p>
       <button class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>

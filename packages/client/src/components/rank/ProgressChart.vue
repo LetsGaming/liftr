@@ -72,7 +72,7 @@ const trendUp = computed(() => {
            instead of the accent when the trend isn't up. -->
       <polyline :points="points" fill="none" :stroke="trendUp ? 'var(--green)' : 'var(--dim)'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
-    <p v-else class="empty">Noch nicht genug Daten für einen Verlauf.</p>
+    <p v-else class="empty">Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve.</p>
     <div v-if="latest != null" class="latest tnum">
       {{ isBodyweight ? `${Math.round(latest)} Wdh.` : `${Math.round(latest)} kg e1RM` }}
     </div>

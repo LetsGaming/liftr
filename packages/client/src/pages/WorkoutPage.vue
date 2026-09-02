@@ -264,7 +264,7 @@ async function logSet() {
         @done="finishSequenceDone = true"
       />
       <template v-else>
-        <div class="eyebrow">Workout abgeschlossen</div>
+        <div class="eyebrow">Geschafft</div>
         <h2>{{ finishedSummary.routineName }}</h2>
 
         <!-- Terminal frame (critique finding: used to exit straight into three gray StatTiles —
@@ -292,7 +292,7 @@ async function logSet() {
              exercise's current row in ranksStore (already refreshed by applyVerdict() during
              finishWorkout()) for the badge/next-target data the raw verdict doesn't carry. -->
         <template v-if="captionRows.length > 0">
-          <div class="eyebrow">Rang-Hinweise</div>
+          <div class="eyebrow">Was sich verändert hat</div>
           <div class="caption-list">
             <div v-for="c in captionRows" :key="c.exerciseId" class="caption-item">
               <b>{{ c.exerciseName }}</b>
@@ -428,14 +428,14 @@ async function logSet() {
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
 
       <button class="btn-primary btn-lg" :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
-        {{ starting ? "Wird gestartet…" : "Quick Start (erste 4 Übungen, ohne Routine)" }}
+        {{ starting ? "Wird gestartet…" : "Ohne Routine loslegen · die ersten 4 Übungen" }}
       </button>
     </div>
 
     <div v-else class="active-workout">
       <div v-if="showStalePrompt" class="stale-banner panel">
         <p>
-          Dieses Workout läuft seit über {{ Math.floor(store.elapsedSeconds / 3600) }} Stunden. Läuft es noch, oder wurde
+          Dieses Workout läuft seit über {{ Math.floor(store.elapsedSeconds / 3600) }} Stunden. Läuft es noch, oder hast du
           vergessen, es zu beenden?
         </p>
         <div class="stale-actions">
@@ -555,7 +555,7 @@ async function logSet() {
                  disappearing as reps go from 0 pushes the rest timer / set list up and down
                  (feedback: fix layout shift during a workout, this is exactly that pattern). -->
             <p class="reps-hint" :class="{ 'reps-hint-hidden': store.currentSet.reps > 0 }">
-              Wiederholungen eingeben, um den Satz zu speichern
+              Erst Wiederholungen, dann speichern.
             </p>
           </template>
           <p v-else class="exercise-done">Übung erledigt ✓</p>
