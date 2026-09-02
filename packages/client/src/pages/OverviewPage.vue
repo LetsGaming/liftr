@@ -373,30 +373,13 @@ const topRanks = computed(() =>
   max-width: var(--content-w-standard);
   margin: var(--sp4) auto 0;
 }
-/* Staggered entrance (engagement rework W6) — the dashboard used to just appear fully-formed,
-   which reads as static rather than responsive. Direct children only, so nested lists (recent
-   activity's individual rows) don't each re-trigger this on their own. --ease-out, not
-   --ease-spring — this is routine page-load motion, not an earned moment (motion.css's own
-   convention: reserve the overshoot easing for things the user actually earned, or it
-   cheapens rank-up/PR celebrations that use the same curve). */
-.dashboard > * {
-  animation: pop-in var(--dur-base) var(--ease-out) both;
-}
-.dashboard > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-.dashboard > *:nth-child(2) {
-  animation-delay: 40ms;
-}
-.dashboard > *:nth-child(3) {
-  animation-delay: 80ms;
-}
-.dashboard > *:nth-child(4) {
-  animation-delay: 120ms;
-}
-.dashboard > *:nth-child(n + 5) {
-  animation-delay: 160ms;
-}
+/* Staggered entrance removed (motion audit, Phase 4 — 2026-09-02). Fired on every mount, i.e.
+   every navigation to this tab: fails the decision framework's Q1 (mount-driven, not
+   event-driven) and Q2 (an ambient tab you can revisit many times a session, not a <1x/session
+   earned moment). A before/after screenshot shows nothing the static layout doesn't already
+   convey (Q3), so per 0c's checklist this was decoration — cut entirely (0c's stated alternative,
+   opacity-only at --dur-fast, was passed over since even that residual motion has no state
+   change to communicate here) rather than retuned. See engagement-audit-v3.md Phase 4. */
 @media (min-width: 900px) {
   .dashboard {
     max-width: var(--content-w-wide);
