@@ -20,6 +20,7 @@ import SetKindPicker from "../components/workout/SetKindPicker.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import NumberStepper from "../components/ui/NumberStepper.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
+import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useAddExerciseToSession } from "../composables/useAddExerciseToSession";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useMesocycleControls } from "../composables/useMesocycleControls";
@@ -236,6 +237,10 @@ async function logSet() {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
+    <!-- Hidden once a session is active (engagement-audit-v3 Phase 4 priority: mid-workout is the
+         protected/focused zone — a Workout/Läufe toggle is only relevant before a session starts,
+         and it competes with the focus-col layout for top-of-screen space while logging sets. -->
+    <WorkoutRunsSwitcher v-if="!store.isActive" active="workout" />
     <div class="workout-page">
     <!-- Post-finish summary (feedback gap: "Workout beenden" used to just dump you back on
          the routine list with zero recap). Snapshot taken in finishWorkout() before store.finish()

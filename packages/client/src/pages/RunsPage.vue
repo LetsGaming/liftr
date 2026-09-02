@@ -5,6 +5,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 import { computed, onMounted, ref } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
@@ -108,6 +109,7 @@ function formatDuration(s: number) {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
+    <WorkoutRunsSwitcher active="runs" />
     <div class="pagehead">
       <div>
         <p style="color: var(--dim)">Als Datei importiert · deine Daten, kein Drittanbieter-Konto</p>

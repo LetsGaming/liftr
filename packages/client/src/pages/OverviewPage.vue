@@ -24,7 +24,7 @@ import StatTile from "../components/ui/StatTile.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
-import { TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useStartRoutine } from "../composables/useStartRoutine";
@@ -67,10 +67,17 @@ onMounted(() => {
 });
 
 const overallRankLabel = computed(() => {
-  // Tier only, no division — "SILBER III" doesn't fit a quarter-width mobile stat tile without
-  // wrapping mid-word; the exact division is one tap away on the Ränge page.
+  // Phase 2 fix (engagement-audit-v3): used to drop the division ("SILBER III" -> "SILBER")
+  // because the full label didn't fit a quarter-width mobile stat tile. That was a truncation
+  // workaround, not a real fix — the division is real information (RankProgress.vue shows it
+  // everywhere else) and dropping it silently made this tile the one place in the app that lies
+  // by omission about the user's actual rank. The real fix was structural (.status-strip below:
+  // 2x2 grid + wrapping value text), so the full label can come back here.
   if (!overallRank.loaded || !overallRank.current) return "—";
-  return TIER_LABEL_DE[overallRank.current.tier as RankTier];
+  const { tier, division } = overallRank.current;
+  const label = TIER_LABEL_DE[tier as RankTier];
+  const div = DIVISION_LABEL[division];
+  return div ? `${label} ${div}` : label;
 });
 
 /** Erholungszone's CTA reuses the exact same one-tap start the launchpad card already offers
@@ -440,17 +447,36 @@ const topRanks = computed(() =>
 .first-run-ladder {
   padding: var(--sp4);
 }
+/* Phase 2 fix (engagement-audit-v3): was a single 4-across row (grid-template-columns:
+   repeat(auto-fit, minmax(80px, 1fr))) with the value forced to font-size:20px + white-space:
+   nowrap — at a quarter-width ~90px mobile tile that guaranteed overflow for any tier label
+   longer than a couple of characters (measured live at 390px: "FORTGESCHRITTEN" via
+   overallRankLabel, TIER_LABEL_DE's longest entry, clipped hard past the tile edge). The prior
+   fix for this was to truncate the label itself (dropping the division number) — a workaround
+   that only bought headroom for shorter tier names, not the long ones. Real fix is structural:
+   2x2 on mobile (each tile gets ~2x the width a 4-across row gave it) widening back to 4-across
+   only once there's room (>=560px, comfortably past every phone width this app targets), plus
+   letting the value wrap onto a second line at a smaller, responsive size instead of forcing one
+   line that either fits or clips. */
 .status-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--sp2);
 }
 .status-strip :deep(.stat-tile) {
   text-align: center;
 }
 .status-strip :deep(.stat-tile b) {
-  font-size: 20px;
-  white-space: nowrap;
+  font-size: clamp(14px, 4.2vw, 20px);
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.15;
+}
+@media (min-width: 560px) {
+  .status-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .progress-tiles {

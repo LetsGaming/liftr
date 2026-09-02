@@ -95,12 +95,6 @@ const navItems = [
     svg: '<path d="M6 4v16M18 4v16M6 12h12"/><circle cx="6" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="6" cy="16" r="1.4" fill="currentColor" stroke="none"/>',
   },
   {
-    to: "/runs",
-    labelKey: "nav.runs",
-    color: "var(--fire)",
-    svg: '<circle cx="14" cy="5" r="1.6"/><path d="M8 9l3.5-1.2L14 10l3 1M6.5 21l3-5.5 3 1 1.2 4.5M11.5 13.5L9 18"/>',
-  },
-  {
     to: "/profile",
     labelKey: "nav.profile",
     color: "var(--violet)",
@@ -118,7 +112,12 @@ const navItems = [
 const route = useRoute();
 const pageTitle = computed(() => {
   const match = navItems.find((item) => item.to === route.path);
-  return match ? t(match.labelKey) : "Liftr";
+  if (match) return t(match.labelKey);
+  // Phase 2 (engagement-audit-v3): /runs dropped out of navItems when Läufe merged into the
+  // Workout tab (see the in-page switcher on WorkoutPage.vue/RunsPage.vue), but the route itself
+  // is unchanged and still needs a real heading here, not the "Liftr" fallback.
+  if (route.path === "/runs") return t("nav.runs");
+  return "Liftr";
 });
 </script>
 
@@ -274,7 +273,11 @@ const pageTitle = computed(() => {
   justify-content: space-around;
   background: var(--surface);
   border-top: 1px solid var(--line);
-  padding: 9px 2px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  /* Vertical padding moved onto .tab-link itself (was here) so an active tab's fill block can
+     reach the bar's full height edge-to-edge (0a's active-tab redesign, see .tab-link.router-
+     link-active below) — .tab-bar only keeps the safe-area clearance, which sits below the
+     visible bar and has nothing to fill anyway. */
+  padding: 0 2px env(safe-area-inset-bottom, 0px);
 }
 .nav-link {
   display: flex;
@@ -297,7 +300,7 @@ const pageTitle = computed(() => {
      contrast, which matters more here since the label is smaller (11.5px vs 13.5px). */
   color: var(--dim);
   text-decoration: none;
-  padding: 4px 3px;
+  padding: 9px 3px 12px;
   border-radius: var(--r-sm);
   font-weight: 700;
   /* Was 10px (9px below 380px) — a live audit measured every bottom-nav label below the 11px
@@ -341,40 +344,38 @@ const pageTitle = computed(() => {
     padding-right: 8px;
   }
 }
-/* Was uncolored (inherits --dim/--faint from .nav-link/.tab-link) until active — five of six nav
-   icons were flat gray at all times, and each item's --nav-color only ever appeared once you'd
-   already navigated there (critique finding: no recognition cue, pure recall). Icons now carry
-   their section color always, dimmed at rest and full-strength active, so all six are
-   identifiable at a glance instead of needing memorization. */
+/* 0a's Liftoff tab-bar finding (engagement-audit-v3 Phase 1, resolved decision — see the
+   doc's "Decisions already made" #... section): icons stay full-colour ALWAYS, at rest and
+   active alike. The prior session's dimmed-at-rest/full-on-active treatment (opacity 0.55->1)
+   is gone; recognisability now comes from the icon's own permanent section color, and "active"
+   is signalled by the surrounding block instead of the icon changing at all. */
 .nav-icon {
   width: 20px;
   height: 20px;
   flex: none;
   color: var(--nav-color);
-  opacity: 0.55;
-  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .tab-link .nav-icon {
   width: 23px;
   height: 23px;
 }
+/* Active-tab treatment, redesigned per 0a (replacing the prior session's color-mix tinted
+   background on desktop and 2px inset bottom underline on mobile — both read as "cheap" per the
+   user's own critique). Liftoff's actual pattern, matched here exactly rather than tweaked:
+   a filled rectangular block covering the WHOLE tab cell (mobile: the full tab-bar height too,
+   via .tab-bar's default flex `align-items: stretch` making .tab-link already fill that height —
+   no extra sizing needed) at one surface-lightness step up, a 2px accent rule across the block's
+   TOP edge only, and the label going grey -> white. Square corners (border-radius: 0 overrides
+   the resting .nav-link/.tab-link radius), no pill, no glow, no scale, no icon recolor. */
+.nav-link.router-link-active,
+.tab-link.router-link-active {
+  background: var(--surface-2);
+  border-radius: 0;
+  box-shadow: inset 0 2px 0 var(--tier-accent, var(--blue-hi));
+}
 .nav-link.router-link-active,
 .tab-link.router-link-active {
   color: var(--text);
-}
-/* Tinted from the user's overall tier (--tier-accent, tokens.css) rather than flat --surface-2 —
-   the rank ladder used to reach exactly one tab; the active-tab background is now a standing,
-   app-wide reminder of it. Falls back to --blue-hi before the tier loads or offline with nothing
-   cached. */
-.nav-link.router-link-active {
-  background: color-mix(in srgb, var(--tier-accent, var(--blue-hi)) 16%, var(--surface-2));
-}
-.tab-link.router-link-active {
-  box-shadow: inset 0 -2px 0 var(--tier-accent, var(--blue-hi));
-}
-.nav-link.router-link-active .nav-icon,
-.tab-link.router-link-active .nav-icon {
-  opacity: 1;
 }
 .streak-chip {
   margin-top: auto;
@@ -465,6 +466,13 @@ const pageTitle = computed(() => {
      discipline as .bottom-chrome below (see that block's comment): a floating, gap-having chip
      here would risk the identical clipping bug the original P0 fix on .bottom-chrome had to
      solve. */
+  /* engagement-audit-v3 Phase 1 decision (kept, not re-litigated): 0a found Liftoff's own HUD
+     has no bar surface at all (blends into the page). Not adopted here — a borderless HUD was
+     never actually re-verified against real scrolled content at this element's z-index/position,
+     and this is exactly the class of bug the original P0 bottom-chrome fix (see the template's
+     header comment above) caught once already: a fixed overlay with gaps lets scrolled content
+     show through. Kept solid pending that live getBoundingClientRect() check, which this pass
+     didn't get to — see the Phase 1 verification report. */
   .top-hud {
     display: flex;
     justify-content: center;
