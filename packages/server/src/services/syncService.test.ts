@@ -162,7 +162,7 @@ describe("applySyncBatch — finish_workout", () => {
     const startedAt = new Date("2026-01-01T10:00:00Z");
     // 20 sets crammed into the ~60-second window between startedAt and endedAt below — no human
     // logs 20 sets a minute apart, so this should trip the pace heuristic (severity maxes out at
-    // or below 4s/set; here it's 3s/set).
+    // or below PACE_MAX_SEVERITY_THRESHOLD_S = 6s/set; here it's 3s/set).
     const setItems: SyncItem[] = Array.from({ length: 20 }, (_, i) =>
       logSetItemAt(new Date(startedAt.getTime() + i * 3000), `client-pace-set-${i}`),
     );
@@ -234,7 +234,7 @@ describe("applySyncBatch — finish_workout", () => {
     await seedStandards(db, exerciseId);
     await applySyncBatch(db, [startWorkoutItem()]);
     const startedAt = new Date("2026-01-01T10:00:00Z");
-    // 5 sets spread across 30 minutes — a realistic pace (well above the 12s/set fine threshold).
+    // 5 sets spread across 30 minutes — a realistic pace (well above the 15s/set fine threshold).
     const setItems: SyncItem[] = Array.from({ length: 5 }, (_, i) =>
       logSetItemAt(new Date(startedAt.getTime() + i * 6 * 60_000), `client-normal-set-${i}`),
     );
@@ -319,7 +319,7 @@ describe("applySyncBatch — finish_workout", () => {
     expect(result!.ranks?.some((r) => r.plausibilityReason === "improbable_jump")).toBe(true);
   });
 
-  it("does not false-positive improbable_jump for a metric===\"reps\" exercise (peakE1rm there is a rep count, not a ratio)", async () => {
+  it("compares rep counts (not weightKg) for a metric===\"reps\" exercise, so an unrelated weightKg value doesn't false-positive a jump", async () => {
     const repsExerciseId = (await insertTestExercise(db, { slug: "reps-exercise" })).id;
     await db.insert(standards).values([
       { exerciseId: repsExerciseId, sex: "male", metric: "reps", tier: "apprentice", division: 3, threshold: 5, trust: "real" },
@@ -351,10 +351,12 @@ describe("applySyncBatch — finish_workout", () => {
     ]);
 
     // Session 2's set happens to carry a large `weightKg` value even though this exercise is
-    // reps-metric. Under the pre-fix bug, sessionBestRatio would have been built from that raw
-    // weight (100 / 75kg bodyweight ~= 1.33) and compared against peakE1rm/bodyweight (8 / 75 ~=
-    // 0.107) as if both were load ratios — a huge, spurious "jump". The fix skips the jump/
-    // ceiling checks entirely for a metric === "reps" exercise.
+    // reps-metric. An older version of this check would have built `sessionBestRatio` from that
+    // raw weight (100 / 75kg bodyweight ~= 1.33) and compared it against peakE1rm/bodyweight
+    // (8 / 75 ~= 0.107) as if both were load ratios — a huge, spurious "jump". The engagement-
+    // audit-v3 Phase 3 fix instead compares rep count directly (session-best reps vs. stored-peak
+    // reps), ignoring `weightKg` for a reps-metric exercise entirely — same rep count (8) both
+    // sessions here, so this correctly reports no jump even with a wildly different weightKg.
     await applySyncBatch(db, [
       {
         clientId: "start-reps-2",
@@ -379,6 +381,71 @@ describe("applySyncBatch — finish_workout", () => {
 
     expect(result!.status).toBe("created");
     expect(result!.ranks?.every((r) => r.plausibilityReason == null)).toBe(true);
+  });
+
+  it("flags improbable_jump for a metric===\"reps\" exercise on an implausible rep-count spike (Phase 3 gap fix)", async () => {
+    // Before engagement-audit-v3 Phase 3, every reps-metric exercise (pull-ups, push-ups, etc.)
+    // was passed null sessionBestRatio/storedPeakRatio/apexThreshold, so the jump/ceiling
+    // heuristics never ran for it at all — a single suspiciously large rep count would sail
+    // through undetected as long as the rest of the session's pace looked normal. This test
+    // exercises the fix: rep counts are compared the same way load ratios are for a load_ratio
+    // exercise.
+    const repsExerciseId = (await insertTestExercise(db, { slug: "reps-jump-exercise" })).id;
+    await db.insert(standards).values([
+      { exerciseId: repsExerciseId, sex: "male", metric: "reps", tier: "apprentice", division: 3, threshold: 5, trust: "real" },
+      { exerciseId: repsExerciseId, sex: "male", metric: "reps", tier: "athlete", division: 3, threshold: 15, trust: "real" },
+      { exerciseId: repsExerciseId, sex: "male", metric: "reps", tier: "apex", division: 1, threshold: 40, trust: "real" },
+    ]);
+
+    // Session 1 establishes a peak of 8 reps.
+    await applySyncBatch(db, [
+      {
+        clientId: "start-repjump-1",
+        type: "start_workout",
+        payload: { id: "workout-repjump-1", startedAt: new Date("2026-01-01T10:00:00Z"), exercises: [{ id: "we-repjump-1", exerciseId: repsExerciseId, orderIndex: 0 }] },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "set-repjump-1",
+        type: "log_set",
+        payload: { workoutExerciseId: "we-repjump-1", setIndex: 0, weightKg: null, reps: 8, kind: "normal", loggedAt: new Date("2026-01-01T10:05:00Z") },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "finish-repjump-1",
+        type: "finish_workout",
+        payload: { workoutId: "workout-repjump-1", endedAt: new Date("2026-01-01T10:06:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+
+    // Session 2: a single set at 25 reps — a >200% jump over the 8-rep stored peak, with an
+    // otherwise unremarkable single-set session (no pace red flag).
+    await applySyncBatch(db, [
+      {
+        clientId: "start-repjump-2",
+        type: "start_workout",
+        payload: { id: "workout-repjump-2", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-repjump-2", exerciseId: repsExerciseId, orderIndex: 0 }] },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "set-repjump-2",
+        type: "log_set",
+        payload: { workoutExerciseId: "we-repjump-2", setIndex: 0, weightKg: null, reps: 25, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
+      } as SyncItem,
+    ]);
+    const [result] = await applySyncBatch(db, [
+      {
+        clientId: "finish-repjump-2",
+        type: "finish_workout",
+        payload: { workoutId: "workout-repjump-2", endedAt: new Date("2026-01-02T10:06:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+
+    expect(result!.status).toBe("created");
+    expect(result!.ranks?.some((r) => r.plausibilityReason === "improbable_jump")).toBe(true);
   });
 });
 
