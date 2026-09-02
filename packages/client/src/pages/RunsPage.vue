@@ -137,7 +137,7 @@ function formatDuration(s: number) {
       <div class="eyebrow">Läufe</div>
       <p>
         Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
-        manuell nach — deine Daten bleiben lokal, kein Drittanbieter-Konto nötig.
+        manuell nach.
       </p>
       <button class="btn-primary btn-block" :disabled="importing" @click="triggerImport">
         {{ importing ? "Importiere…" : "GPX/FIT importieren" }}

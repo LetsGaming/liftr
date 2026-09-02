@@ -40,7 +40,7 @@ function requestSuggestions() {
     <ExerciseList v-if="mode === 'manual'" mode="select" :selected-ids="selectedIds" @toggle="emit('toggle', $event.id)" />
 
     <div v-else class="muscle-suggest">
-      <p class="hint">Welche Muskelgruppen willst du trainieren? Passende Übungen inkl. Satz-/Wiederholungs-/Gewichtsvorschlag werden anhand deiner bisherigen Trainingsdaten zusammengestellt.</p>
+      <p class="hint">Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast.</p>
       <MuscleFigure class="muscle-preview" :primary="pickedMusclesArray" :size="120" />
       <div class="muscle-chips">
         <button

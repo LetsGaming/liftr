@@ -38,7 +38,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
         <span class="dl">{{ d.label }}</span>
       </div>
     </div>
-    <p v-if="total === 0" class="ruc-empty">Diese Woche noch keine Rangaufstiege.</p>
+    <p v-if="total === 0" class="ruc-empty">Der erste Aufstieg dieser Woche steht noch aus.</p>
   </div>
 </template>
 
