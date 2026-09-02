@@ -290,22 +290,82 @@ since Phase 1 of *this* audit may add new motion): route-fade cross-fade (`App.v
 load, `stamp-in` on level-up (`FinishSequence.vue`), the two-layer blue glow on rank-up badges
 added this session, `RestTimer`'s `@property` conic sweep, shimmer loading skeletons.
 
-- [ ] Apply 0c's decision framework to every animation in the inventory above: keep as-is /
-  retune (duration, easing, or trigger condition) / cut entirely.
-- [ ] **Priority explicitly set by the user:** the mid-workout and post-workout animations are
+- [x] Apply 0c's decision framework to every animation in the inventory above: keep as-is /
+  retune (duration, easing, or trigger condition) / cut entirely. *(2026-09-02)* Ran the full
+  8-point checklist against every item: `App.vue`'s route-fade (opacity-only, `--dur-fast`,
+  interruptible transition) — **kept unmodified**, already correctly tuned. `streak-pulse` —
+  **kept unmodified**, genuinely event-driven (streak growth, <1x/session), one-shot flag not a
+  persistent binding. `RestTimer.vue`'s `.ring-done` conic sweep — **kept unmodified**, the
+  template case 0c named. Shimmer skeletons (`motion.css`) — **kept unmodified**, already has its
+  own reduced-motion branch and only animates `background-position`. `stamp-in` on level-up
+  (`FinishSequence.vue`) — **kept**, genuinely rare. The two-layer blue glow on rank-up badges —
+  confirmed **static** (a `filter: drop-shadow` pair, no `@keyframes`), nothing to audit. Three
+  ambient staggers **cut entirely** (not just retuned) per the checklist's Q1/Q2 failures:
+  `OverviewPage.vue`'s `.dashboard` stagger, `RanksPage.vue`'s `.rank-grid` stagger, and
+  `ExerciseList.vue`'s `.ex-grid` stagger — the last one was actually the worst offender found,
+  since it replayed on every keystroke in the exercise search box (far past the >10x/session cut
+  threshold), not just on mount like the other two.
+- [x] **Priority explicitly set by the user:** the mid-workout and post-workout animations are
   the ones that most directly reward the user (a logged set, a rest-timer completion, the
   `FinishSequence` beats) — these are where investment should concentrate, not where cuts should
   land. Treat them as the protected core to strengthen (informed by 0a/0c), while ambient/
-  routine motion (page-load entrances, tab switches) is the pool to cut from.
-- [ ] Specific complaint to resolve: the staggered `pop-in` entrance on every Übersicht/Ränge
+  routine motion (page-load entrances, tab switches) is the pool to cut from. *(2026-09-02)*
+  Protected core strengthened, not weakened: `FinishSequence.vue`'s `.beat` and `.rankup-row`
+  (each <1x/session, well inside 0c's earned-moment budget) were riding the generic `.pop-in`
+  class's `--dur-base` (220ms, tuned for routine list entrances) purely by inheritance — retuned
+  to `--dur-cele` (700ms) so the post-workout reveal gets the full earned-moment budget instead
+  of sharing a duration with ordinary UI. Two real bugs fixed in the protected core itself (see
+  below): `WorkoutPage.vue`'s set-row pop-in (was replaying on unrelated re-renders) and
+  `useXpChip.ts`'s reduced-motion gap. Ambient motion is what got cut (see above); nothing
+  mid/post-workout was cut.
+- [x] Specific complaint to resolve: the staggered `pop-in` entrance on every Übersicht/Ränge
   page load fires on *every navigation*, not an earned moment — likely reads as the "wasted
   time" the user means. Strong candidate for cutting or reducing to near-zero duration; confirm
   against 0c's framework rather than cutting on instinct alone. This is exactly the kind of
   ambient motion the priority note above says to cut from, in contrast to mid/post-workout
-  motion which should be strengthened, not touched by this cut.
-- [ ] Re-verify motion.css's own stated convention still holds after changes: `--dur-cele`/
+  motion which should be strengthened, not touched by this cut. *(2026-09-02)* Cut entirely
+  (0c's stated alternative — opacity-only at `--dur-fast` — was considered and passed over: even
+  that residual motion has no state change to communicate on a page load). Live-verified with
+  Playwright at 390×844: `.dashboard > *`'s and `.rank-card-wrap`'s computed `animationName` is
+  `none` after navigating to Übersicht/Ränge.
+- [x] Re-verify motion.css's own stated convention still holds after changes: `--dur-cele`/
   `--ease-spring` reserved for genuinely earned moments only — don't let Phase 1's new medal
-  animations or Phase 3's stricter gates quietly violate this.
+  animations or Phase 3's stricter gates quietly violate this. *(2026-09-02)* Holds. Phase 1's
+  `.panel-reward::after` sheen (tokens.css) is confirmed static by its own code comment ("Static,
+  never sweeps") — no `@keyframes`, no `animation` property at all. The only new `--dur-cele`
+  usage added this phase (`FinishSequence.vue`'s `.beat`/`.rankup-row`, above) is itself a
+  genuinely-earned, <1x/session moment, so the convention is reinforced, not diluted.
+
+**Two specific bugs fixed** (both named in 0c's sanity check, both live-verified with Playwright
+against a disposable copy of `data/liftr.db`, not just read from source):
+- `WorkoutPage.vue`'s set-row `:class="{ 'pop-in': s.logged }"` was bound to durable state
+  (`s.logged`), failing 0c's Q1/Q4 — any unrelated re-render of the set list could replay the
+  entrance, and `@keyframes` stutters if that happens while sets are being logged in quick
+  succession. Replaced with a one-shot `justLoggedIndex` ref, set in `logSet()` and cleared 260ms
+  later, so `pop-in` only ever applies to the row that *just* logged. Verified live: logged a set,
+  confirmed the row got `pop-in`, confirmed it cleared after the timeout, then logged a second set
+  and confirmed the *first* row's class stayed plain (`done`) while only the newly-logged row
+  picked up `pop-in` — the replay bug is gone.
+- `useXpChip.ts`'s `CHIP_LIFETIME_MS = 1600` (a hardcoded ms literal, not a `--dur-*` token) had
+  no `prefers-reduced-motion` branch, even though the CSS side (`WorkoutPage.vue`'s `.xp-chip`
+  media query) does. Added `CHIP_LIFETIME_MS_REDUCED = 900` and a `matchMedia` check in
+  `trigger()`. Verified live with Playwright's `reducedMotion: "reduce"` context option: chip
+  lifetime measured ~1644ms with no preference, ~981ms (poll granularity, target 900ms) with
+  reduced motion set — the JS timer now actually tracks the CSS override instead of leaving a
+  reduced-motion user staring at a static chip for the full animated duration.
+
+Verification run: `pnpm typecheck`/`test` (225 tests, up from 218 after merging master's Phase
+1/2/3/6 work mid-task)/`lint` all clean (one pre-existing unrelated warning in
+`decay.test.ts`). Design detector (`detect.mjs --no-config --json packages/client/src`) returned
+exactly the documented baseline (6 bounce-easing false positives + 1 `MuscleFigure.vue:12`
+detector bug) both before and after — no new findings. Live-verified via Playwright's bundled
+Chromium at 390×844 against a disposable copy of `data/liftr.db` (deleted after use, servers
+stopped): dashboard/ranks stagger removal, the WorkoutPage one-shot fix, and the xp-chip
+reduced-motion timing, all as described above.
+
+Note: mid-task, master (Phase 1/2/3/6 of this same audit) was merged in via `git merge master`
+— a clean fast-forward plus a clean `git stash pop` of this phase's WIP, no conflicts. All
+findings above were re-verified against the post-merge code (not just the pre-merge state).
 
 ---
 

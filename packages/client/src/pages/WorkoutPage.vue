@@ -60,6 +60,17 @@ const restTrigger = ref(0);
  *  per set and per exercise"). */
 const restSeconds = ref(90);
 
+/** Motion audit fix (Phase 4): the set-row entrance used to be `:class="{ 'pop-in': s.logged }"`,
+ *  bound directly to the durable `s.logged` flag. That fails the one-shot-trigger check — any
+ *  unrelated re-render of the set list (e.g. reordering, a sibling set changing) re-evaluates the
+ *  binding, and since the class was already present it doesn't restart the animation *unless* the
+ *  whole `<li>` gets torn down and remounted (Vue's `:key="s.index"` diffing can do exactly that
+ *  when items shift), which visibly stutters given sets can be logged in quick succession. Track
+ *  the index that *just* logged instead, so pop-in only ever applies for one short window right
+ *  after the event, then clears itself — later re-renders of the same row see `justLoggedIndex ===
+ *  null` and never re-add the class. */
+const justLoggedIndex = ref<number | null>(null);
+
 /**
  * Session-aggregate muscle map (plan Phase 3.1): union of every muscle trained across the
  * whole workout, primary winning over secondary if an exercise disagrees with another. Needed
@@ -241,6 +252,12 @@ async function logSet() {
     const amount = Math.round(computeSetXp(weightKg, reps, tier));
     sessionXp.value += amount;
     triggerXpChip(amount);
+    // One-shot pop-in trigger (motion audit fix) — see justLoggedIndex's declaration. 260ms
+    // gives --dur-base's 220ms animation a little headroom to finish before the class clears.
+    justLoggedIndex.value = set.index;
+    setTimeout(() => {
+      if (justLoggedIndex.value === set.index) justLoggedIndex.value = null;
+    }, 260);
   }
   if (wasLastUnloggedSet) void haptics.bump();
 }
@@ -582,7 +599,7 @@ async function logSet() {
         <RestTimer :trigger="restTrigger" :seconds="restSeconds" />
 
         <ul class="set-rows tnum">
-          <li v-for="s in store.currentExercise.sets" :key="s.index" :class="{ done: s.logged, warmup: s.isWarmup, 'pop-in': s.logged }">
+          <li v-for="s in store.currentExercise.sets" :key="s.index" :class="{ done: s.logged, warmup: s.isWarmup, 'pop-in': justLoggedIndex === s.index }">
             <!-- Tapping the badge opens "Satzart auswählen" (feedback: set kind must be
                  settable) — only while the set is still unlogged; a logged set's kind is
                  locked (see activeWorkoutStore.ts's setSetKind()), so the badge stops being a

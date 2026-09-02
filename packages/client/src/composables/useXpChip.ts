@@ -9,6 +9,19 @@ import { ref } from "vue";
  *  stays mounted for the whole float-and-fade instead of getting yanked mid-animation. */
 const CHIP_LIFETIME_MS = 1600;
 
+/** Motion audit fix (Phase 4): the 1600ms literal above bypasses motion.css's token collapse
+ *  (it isn't a --dur-* var), which is exactly why WorkoutPage.vue's own
+ *  `@media (prefers-reduced-motion: reduce)` block has to override `.xp-chip` explicitly —
+ *  under that override the chip renders statically at full opacity instead of floating. This
+ *  JS-side timer had no matching branch, so a reduced-motion user still sat looking at a static
+ *  "+N XP" chip for the full float-and-fade duration meant for the animated version. Shorter,
+ *  fixed lifetime for the static case — still long enough to read the number. */
+const CHIP_LIFETIME_MS_REDUCED = 900;
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export function useXpChip() {
   const xpChip = ref<{ key: number; amount: number } | null>(null);
   let seq = 0;
@@ -17,9 +30,10 @@ export function useXpChip() {
     seq += 1;
     const key = seq;
     xpChip.value = { key, amount };
+    const lifetime = prefersReducedMotion() ? CHIP_LIFETIME_MS_REDUCED : CHIP_LIFETIME_MS;
     setTimeout(() => {
       if (xpChip.value?.key === key) xpChip.value = null;
-    }, CHIP_LIFETIME_MS);
+    }, lifetime);
   }
 
   return { xpChip, trigger };

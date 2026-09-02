@@ -138,25 +138,11 @@ const showLpExplainer = ref(false);
 .rank-card-wrap {
   display: flex;
   flex-direction: column;
-  /* Entrance stagger (matches the dashboard's — feedback: the rest of the app was still
-     missing that liveliness). nth-child on the wrapper, not the button, so the chart slot
-     that appears on expand doesn't itself replay this. --ease-out, not --ease-spring — this
-     is routine page-load motion, not an earned moment (motion.css's own convention: reserve
-     the overshoot easing for things the user actually earned, or it cheapens rank-up/PR
-     celebrations that use the same curve). */
-  animation: pop-in var(--dur-base) var(--ease-out) both;
-}
-.rank-grid > .rank-card-wrap:nth-child(1) {
-  animation-delay: 0ms;
-}
-.rank-grid > .rank-card-wrap:nth-child(2) {
-  animation-delay: 40ms;
-}
-.rank-grid > .rank-card-wrap:nth-child(3) {
-  animation-delay: 80ms;
-}
-.rank-grid > .rank-card-wrap:nth-child(n + 4) {
-  animation-delay: 120ms;
+  /* Entrance stagger removed (motion audit, Phase 4 — 2026-09-02): matched the dashboard's, so
+     it inherited the same fate — mount-driven on every visit to Ränge, not event-driven (0c's
+     Q1), and a before/after screenshot shows nothing the static grid doesn't already convey
+     (Q3). See OverviewPage.vue's .dashboard for the fuller rationale; engagement-audit-v3.md
+     Phase 4. */
 }
 .rank-card {
   display: flex;
