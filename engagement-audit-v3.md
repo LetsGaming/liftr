@@ -40,6 +40,16 @@ diverging.
    examples themselves. `WorkoutPage.vue`'s routine-explainer copy was called the best writing
    in the app in the prior critique; use it as the tone benchmark, not a generic "friendlier"
    pass.
+5. **Tab bar active state (resolves 0a conflict #1):** adopt Liftoff's pattern. Nav icons stay
+   full-color always (not desaturated-at-rest); the active tab is signaled by a filled block
+   spanning the whole tab cell + full bar height, a 2px accent rule across the block's top edge,
+   and the label going grey→white. Replaces the prior session's colored-at-rest/full-on-active
+   approach.
+6. **Top HUD background (resolves 0a conflict #2):** keep the solid `--surface` backdrop on
+   `.top-hud` for now — do not adopt Liftoff's borderless HUD sight-unseen. Phase 1 must verify
+   against real scroll content whether dropping the backdrop reintroduces the "content visible
+   through gaps" bug the original bottom-chrome P0 fix solved, and only switch to borderless if
+   that check passes clean.
 
 **Ethical constraint (applies to every phase, especially Phase 0):** engagement mechanisms
 adopted from research must not be manipulative. Liftr has no accounts and no payments, so
@@ -56,7 +66,7 @@ Four independent research tracks. Dispatch as parallel subagents; each produces 
 finding appended to this file's "Research Findings" section (create it) before any
 implementation phase that depends on it starts.
 
-- [ ] **0a. Liftoff deep-dive.** Read every frame in `examples/walkthrough_bundle/frames/`,
+- [x] **0a. Liftoff deep-dive.** Read every frame in `examples/walkthrough_bundle/frames/`,
   the filmstrips (animation timing), `overview.jpg` (contact sheet, scan first), and the loose
   screenshots in `examples/` and `examples/mid-workout/`. Extract *implementable* design tokens,
   not just adjectives: the exact layering that makes the medals read as metallic (specular
@@ -68,18 +78,18 @@ implementation phase that depends on it starts.
   weight. Also flag anything in Liftoff that stays *rejected* per the prior critique (coin
   currency, second scrolling tab row, floating promo tooltip, rainbow-gradient borders) so a
   fresh research pass doesn't accidentally reintroduce them.
-- [ ] **0b. Competitive engagement research.** Strong, Hevy, Fitbod (direct workout-logger
+- [x] **0b. Competitive engagement research.** Strong, Hevy, Fitbod (direct workout-logger
   competitors) plus at least one gamified habit app outside fitness (Duolingo, Zombies Run,
   Habitica) for retention mechanisms that transfer. For each mechanism found, classify it
   explicitly: **ethical and worth adopting** (e.g. visible progress, honest streak protection,
   variable-timing rewards tied to real achievement) vs. **dark pattern to name and reject**
   (fake scarcity, guilt notifications, engagement-optimized-over-honesty rank inflation). The
   rejection list matters as much as the adoption list.
-- [ ] **0c. Motion/animation research.** When does animation earn its runtime vs. waste it —
+- [x] **0c. Motion/animation research.** When does animation earn its runtime vs. waste it —
   use the `emil-design-eng` skill's philosophy plus general motion-design references (Material
   Motion, Apple HIG motion) as source material. Deliverable: a decision framework (a short
   checklist) to apply per-animation in Phase 4, not a redesign of any specific animation yet.
-- [ ] **0d. Copy audit.** Read `packages/client/src/locales/de.json`,
+- [x] **0d. Copy audit.** Read `packages/client/src/locales/de.json`,
   `packages/client/src/locales/exercises.de.json`, and inline template strings across
   `packages/client/src/pages/*.vue` and `packages/client/src/components/**/*.vue`. Flag lines
   that read as too literal/robotic ("on the nose") and propose an alternative for each,
