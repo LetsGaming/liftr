@@ -44,7 +44,7 @@ const groups = computed<DayGroup[]>(() => {
 
 <template>
   <div class="history-list">
-    <p v-if="groups.length === 0" class="empty">Noch keine Sätze für diese Übung protokolliert.</p>
+    <p v-if="groups.length === 0" class="empty">Diese Übung hast du noch nie geloggt.</p>
     <div v-for="g in groups" :key="g.day" class="day-group">
       <div class="day-label">{{ g.dateLabel }}</div>
       <ul class="set-rows">

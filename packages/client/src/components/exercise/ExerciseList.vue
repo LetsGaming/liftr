@@ -122,7 +122,7 @@ function equipmentLabel(eq: string | null): string {
       {{ onlyDoableEquipment ? "✓ Nur machbare Übungen" : "Nur machbare Übungen" }}
     </button>
 
-    <p v-if="catalog.loaded && filtered.length === 0" class="empty">Keine Übungen gefunden.</p>
+    <p v-if="catalog.loaded && filtered.length === 0" class="empty">Keine Übung passt zu diesen Filtern.</p>
 
     <ul class="ex-grid">
       <li v-for="ex in filtered" :key="ex.id">

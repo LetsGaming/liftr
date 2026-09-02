@@ -172,7 +172,7 @@ function missingBadge(req: TieredRequirement): string | null {
         :trust="rankRow.trust"
       />
       <p v-else-if="ranksStore.loaded" class="hint">
-        Noch kein Rang für diese Übung — logge ein paar Sätze, um deinen ersten Rang zu sehen.
+        Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast.
       </p>
       <p v-else class="hint">Lädt…</p>
     </div>

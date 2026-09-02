@@ -146,7 +146,7 @@ watch(
           <span class="dl">{{ d.label }}</span>
         </div>
       </div>
-      <p v-if="tokensRemaining > 0" class="streak-note">{{ tokensRemaining }} Schutz-Token übrig</p>
+      <p v-if="tokensRemaining > 0" class="streak-note">Deine Serie übersteht noch {{ tokensRemaining }} Ruhetage.</p>
     </div>
 
     <!-- Beat 3: Fortschritt — session XP rolls up into the level bar; a level-up gets the
@@ -165,7 +165,7 @@ watch(
          (see the comment on the root element above), so "skip" overstated what happens on
          beats 1-2 and was simply wrong copy for a 3-beat sequence a user might want to slow
          down on, not escape. -->
-    <p class="skip-hint">Tippen für weiter →</p>
+    <p class="skip-hint">Weiter tippen →</p>
   </div>
 </template>
 

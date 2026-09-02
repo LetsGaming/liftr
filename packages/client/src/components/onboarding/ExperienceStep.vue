@@ -14,7 +14,7 @@ const options: { value: ExperienceLevel; label: string; hint: string }[] = [
 <template>
   <div class="step">
     <h2>Trainingserfahrung</h2>
-    <p class="step-hint">Bestimmt den Startpunkt für Gewichtsvorschläge bei Übungen ohne eigene Trainingshistorie.</p>
+    <p class="step-hint">Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast.</p>
 
     <div class="option-list">
       <button
