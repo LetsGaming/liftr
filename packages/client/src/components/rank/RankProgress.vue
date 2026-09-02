@@ -60,7 +60,7 @@ const decayCaption = computed(() => {
   const currentOrdinal = ordinal(props.tier as Tier, props.division as Division);
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
-  return `Bestleistung: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision]}`;
+  return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision]}`;
 });
 
 const nextLabel = computed(() => {
@@ -68,10 +68,10 @@ const nextLabel = computed(() => {
   // modeled standards has been reached — "???" invites "what's next?" instead of flatly stating
   // there's nothing left, which reads as a dead end. Only this genuinely-exhausted case changes;
   // a real next target still renders normally below.
-  if (props.nextTargetReps == null) return "nächster: ???";
+  if (props.nextTargetReps == null) return "Nächstes Ziel: ???";
   return props.nextTargetWeightKg != null
-    ? `nächster: ${props.nextTargetWeightKg} kg × ${props.nextTargetReps}`
-    : `nächster: ${props.nextTargetReps} Wdh.`;
+    ? `Nächstes Ziel: ${props.nextTargetWeightKg} kg × ${props.nextTargetReps}`
+    : `Nächstes Ziel: ${props.nextTargetReps} Wdh.`;
 });
 
 const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))));

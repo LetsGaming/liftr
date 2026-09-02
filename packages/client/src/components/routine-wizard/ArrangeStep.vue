@@ -140,7 +140,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
               {{ catalog.byId(exerciseId)?.isBodyweight ? "+ Zusatzgewicht" : "+ Gewicht" }}
             </button>
             <button v-else class="weight-toggle-btn" @click="emit('toggleWeightTracking', exerciseId)">
-              {{ catalog.byId(exerciseId)?.isBodyweight ? "Zusatzgewicht entfernen" : "Gewicht nicht verfolgen" }}
+              {{ catalog.byId(exerciseId)?.isBodyweight ? "Zusatzgewicht entfernen" : "Ohne Gewicht loggen" }}
             </button>
           </div>
         </div>

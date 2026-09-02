@@ -62,7 +62,7 @@ async function submit() {
       />
       <p v-if="error" class="error">{{ error }}</p>
       <button class="btn-primary btn-lg btn-block" :disabled="submitting || !tokenInput.trim()" @click="submit">
-        {{ submitting ? "Prüfe…" : "Weiter" }}
+        {{ submitting ? "Prüfe…" : "Entsperren" }}
       </button>
     </div>
   </div>

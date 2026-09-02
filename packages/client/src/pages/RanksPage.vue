@@ -61,7 +61,7 @@ const showLpExplainer = ref(false);
       </p>
 
       <p v-if="ranksStore.loaded && ranksStore.ranks.length === 0" class="page-note" style="margin-top: var(--sp4)">
-        Noch keine Ränge — logge ein paar Sätze, um deinen ersten Rang zu sehen.
+        Dein erster Rang entsteht, sobald du eine Übung geloggt hast.
       </p>
 
       <div v-else class="rank-analytics">
