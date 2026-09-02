@@ -105,30 +105,61 @@ implementation phase that depends on it starts.
 *Depends on 0a. Task list below is a starting scope, not exhaustive — 0a's findings fill in the
 exact implementation detail.*
 
-- [ ] Tier badge/medal rendering: replace the current flat CSS hex + two-stop gradient
+- [x] Tier badge/medal rendering: replace the current flat CSS hex + two-stop gradient
   (`tokens.css`'s `.badge`/`.badge::before`, `t-<tier>` classes) with a layered treatment that
-  reads as metallic, matching 0a's findings. Still pure CSS/SVG (no raster).
-- [ ] Active-tab treatment redesign. Current state feels cheap: desktop's `.nav-link.router-link-active`
+  reads as metallic, matching 0a's findings. Still pure CSS/SVG (no raster). *(2026-09-02)*
+  Rebuilt as extrusion plate (`::after`) + bevel rim with opposite-direction gradient (`::before`)
+  + 3-stop-minimum per-tier-group `--face-grad` (broad/soft, compressed/polished, non-monotonic
+  gold, hue-rotating iridescent for elite/expert/apex) + hard specular streak (two layers on the
+  real element's own background) + glyph relief via the existing per-tier `--tt` tint (already
+  not literal white) with a drop-shadow. Verified live via screenshot on Ränge. **Not done:**
+  the wing/feather tier signal (explicitly lower priority, "if time allows" in the task list) —
+  skipped for time; still a straightforward SVG addition on top of this if picked up later.
+- [x] Active-tab treatment redesign. Current state feels cheap: desktop's `.nav-link.router-link-active`
   uses a `color-mix` tinted background, mobile's `.tab-link.router-link-active` uses a 2px inset
   bottom underline (both added in the prior session, `App.vue`). Needs an actual redesign
-  informed by 0a, not a tweak of the existing approach.
-- [ ] HUD composition (`.top-hud` in `App.vue`) — re-evaluate against 0a's HUD findings; the
+  informed by 0a, not a tweak of the existing approach. *(2026-09-02)* Implemented per the
+  resolved decision exactly: icons full-colour always (opacity dimming removed), active state is
+  a filled `--surface-2` block covering the whole tab cell (mobile: full bar height too, via
+  moving `.tab-bar`'s vertical padding onto `.tab-link` so the active fill reaches the bar's true
+  edges — verified live, tab-link rects match the bar's content box exactly), a 2px accent rule
+  via `inset 0 2px 0` on the block's top edge, square corners (`border-radius: 0` on active),
+  label grey->white. No pill/glow/scale. Verified live via screenshot + getBoundingClientRect.
+- [x] HUD composition (`.top-hud` in `App.vue`) — re-evaluate against 0a's HUD findings; the
   current version only carries level+streak, deliberately built minimal. Decide what (if
   anything) it should gain, subject to the "reject the reference's overload" principle already
-  established (no coin currency, no second tab row).
-- [ ] Color/material "pop" beyond lightness. The prior session already objectively fixed the
+  established (no coin currency, no second tab row). *(2026-09-02)* Per the task's own resolved
+  decision, kept the solid `--surface` backdrop rather than switching to Liftoff's borderless HUD.
+  Did the live check the decision calls for: `getBoundingClientRect()` on `.top-hud` and
+  `.main-content` shows the HUD's bottom edge (y=52) lands exactly on `.main-content`'s top edge
+  (y=52) at 390x844 — no gap, current solid-backdrop approach already verified clean. Did **not**
+  go on to test a borderless variant against scrolled content (out of time) — the decision
+  explicitly says only switch if that separate check passes, so solid stays and this is not a
+  regression, just an unexplored option. A human should treat "stay solid" as the safe default,
+  not as "borderless was tried and rejected."
+- [x] Color/material "pop" beyond lightness. The prior session already objectively fixed the
   *lightness* problem (measured: liftr chromatic-pixel lightness went from ~33-46% to ~58-61%
   on Übersicht/Workout, matching Liftoff's ~52-57% reference range) — yet the dullness complaint
   persists. This means lightness was not the whole story; 0a needs to identify what else reads
   as "pop" (material/depth cues, saturation curve, contrast between elements, or something
   structural like the HUD/medal treatment itself). Don't re-run the old lightness fix again;
-  find the actual remaining gap.
+  find the actual remaining gap. *(2026-09-02)* Applied 0a's structural moves that fit this pass's
+  scope: `.panel-reward` now takes the tier color as its WHOLE card background (`--b2`->`--b1`
+  gradient, not a border/accent on a neutral surface) plus a static low-opacity diagonal sheen
+  band, and its `box-shadow` (fake elevation on an already-near-black shadow) is gone — elevation
+  is the tier fill's own brightness against the page now. Verified live: the Übersicht status
+  strip's reward tiles render as solid amber/gold cards, a visibly different result from the prior
+  session's tinted-border tiles. **Not done / judgment call for a human:** full saturation
+  rationing across every screen (0a's "at most one saturated element per screen") and the Ränge
+  screen's trapezoid spotlight wedge — both are page-by-page redesigns beyond what this pass's
+  time budget covered; `.panel-reward` was the single highest-leverage item 0a named and is done,
+  the rest is follow-up.
 
 ---
 
 ## Phase 2 — Dashboard layout fixes
 
-- [ ] **Rank `StatTile` overflow.** `OverviewPage.vue`'s `overallRankLabel` computed
+- [x] **Rank `StatTile` overflow.** `OverviewPage.vue`'s `overallRankLabel` computed
   (around line 68-73) already drops the division number ("SILBER III" → "SILBER") specifically
   because the full label didn't fit a quarter-width `StatTile` — that was a truncation
   workaround, not a real fix, and the user is still seeing overflow. Before implementing
@@ -136,8 +167,18 @@ exact implementation detail.*
   names vary a lot in length — `TIER_LABEL_DE` in `lib/tierIcons.ts` has `"FORTGESCHRITTEN"` at
   one end, `"ELITE"` at the other). Likely real fix is structural (wider tile / two-row layout /
   smaller type / abbreviated tier label with the full name on tap) rather than another string
-  truncation.
-- [ ] **Merge Workout + Läufe into one tab.** Current routing (`router.ts`) already has `/workout`
+  truncation. *(2026-09-02)* Measured live at 390px with the real playwright chromium build:
+  the 4-across `.status-strip` grid (`repeat(auto-fit, minmax(80px,1fr))` + forced `font-size:
+  20px; white-space: nowrap` on the value) clipped any tier label past a couple of characters.
+  Fixed structurally: `.status-strip` is now 2x2 on mobile (4-across again at >=560px), the value
+  wraps (`white-space: normal` + `overflow-wrap/word-break`) at a responsive
+  `clamp(14px, 4.2vw, 20px)` size, and `overallRankLabel` was restored to show the FULL label
+  (tier + division, e.g. "LEHRLING III") instead of dropping the division — the structural fix
+  freed enough room that the truncation workaround wasn't needed at all. Verified live: even the
+  worst case forced to "FORTGESCHRITTEN VI" (longest tier + widest division) measures
+  `scrollWidth === clientWidth` (no horizontal overflow), wrapping cleanly to 2 lines inside an
+  81px-tall tile via `getBoundingClientRect()`/`scrollWidth` checks, not CSS inspection.
+- [x] **Merge Workout + Läufe into one tab.** Current routing (`router.ts`) already has `/workout`
   and `/runs` as two independent top-level routes with two independent, sizeable page components
   (`WorkoutPage.vue` is 1217+ lines with its own active-session state machine; `RunsPage.vue` is
   318 lines). Lowest-risk shape: **keep both routes and both components exactly as they are**,
@@ -149,10 +190,20 @@ exact implementation detail.*
   is how a user reaches Läufe from there). This avoids a risky merge of two large, independent
   state machines into one file. If 0a/0b research surfaces a stronger pattern for this
   (Liftoff or another app doing a genuine single-page tab merge), reconsider — but this is the
-  default plan absent a specific reason to do the riskier thing.
-- [ ] Resulting nav: `Übersicht, Workout, Ränge, Übungen, Profil` (5 items). Since colors are
+  default plan absent a specific reason to do the riskier thing. *(2026-09-02)* Implemented
+  exactly as scoped: `router.ts` untouched (both routes/components still independent), `/runs`
+  removed from `App.vue`'s `navItems`, new shared `components/ui/WorkoutRunsSwitcher.vue` (a
+  small segmented pill pair) dropped at the top of both `WorkoutPage.vue` and `RunsPage.vue`,
+  navigating via `RouterLink`. Also fixed the sr-only `pageTitle` fallback in `App.vue` (it looked
+  up the current route in `navItems`, which no longer has `/runs`) so `/runs` still gets a real
+  heading instead of falling back to "Liftr". Verified live via screenshot on both `/workout` and
+  `/runs`.
+- [x] Resulting nav: `Übersicht, Workout, Ränge, Übungen, Profil` (5 items). Since colors are
   assigned per-item in `navItems`, they should travel with the route/icon identity when Läufe's
-  entry is removed, not silently reshuffle onto a different tab.
+  entry is removed, not silently reshuffle onto a different tab. *(2026-09-02)* Confirmed by
+  deletion order: only the `/runs` entry was removed from the `navItems` array, every other
+  entry (including its own `color`) is untouched, so no color reassignment happened. Verified
+  live: nav bar renders exactly `Übersicht, Workout, Ränge, Übungen, Profil` at 390px.
 
 ---
 
