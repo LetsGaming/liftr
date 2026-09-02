@@ -16,6 +16,7 @@ import { useExerciseName } from "../../composables/useExerciseName";
 import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../../lib/shareCard";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useHistoryStore, type WorkoutDetail } from "../../stores/historyStore";
+import { useOverallRankStore } from "../../stores/overallRankStore";
 import { useRanksStore } from "../../stores/ranksStore";
 import { useXpStore } from "../../stores/xpStore";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
@@ -30,6 +31,7 @@ const history = useHistoryStore();
 const catalog = useCatalogStore();
 const ranksStore = useRanksStore();
 const xpStore = useXpStore();
+const overallRank = useOverallRankStore();
 const { exerciseName } = useExerciseName();
 
 const loading = ref(true);
@@ -62,6 +64,7 @@ const deleteConfirm = useConfirmTap(async () => {
 onMounted(async () => {
   detail.value = await history.loadWorkout(props.workoutId);
   loading.value = false;
+  void overallRank.load();
 });
 
 const orderedExercises = computed(() =>
@@ -124,6 +127,13 @@ async function share() {
         sets: we.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps, isWarmup: s.isWarmup })),
       })),
       muscles: muscles.value,
+      // Phase 5: shows the account's *current* overall tier, not a reconstruction of what it was
+      // back when this specific past workout happened (that would need a historical snapshot
+      // this view doesn't have) — same documented-simplification convention as prCount above.
+      tier: overallRank.current ? { tier: overallRank.current.tier, division: overallRank.current.division, level: xpStore.level } : null,
+      // No "session's highest rank-up" concept for a past workout viewed later — that's a
+      // finish-flow-only idea (see useWorkoutShareCard.ts).
+      topRankUp: null,
     };
     await drawWorkoutCard(shareCanvas.value, model);
     const blob = await canvasToBlob(shareCanvas.value);

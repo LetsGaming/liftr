@@ -361,20 +361,31 @@ worth explicitly avoiding:
   space-efficiency fix (below) still stands regardless of layout inspiration.
 
 Scope:
-- [ ] Sync fonts (Hanken Grotesk/Unbounded) and colors with the live palette (including
-  whatever Phase 1 lands on, not just the current Phase-1-from-last-session values — check
-  order of operations, this phase should run *after* Phase 1 settles the palette).
-- [ ] Redesign the stat row as individual colored cards (icon/label pill + dark value box per
-  stat), per the Liftoff-inspired structure above, using Liftr's own palette.
-- [ ] Redesign the exercise list as a 2-column grid of bordered rows (Liftoff-inspired
-  container), while keeping Liftr's existing per-set detail string inside each row — do not
-  collapse it to a bare set count.
-- [ ] Evaluate wiring up the already-defined `"story"` (9:16) format for the share flow instead
-  of leaving it dead code, or at minimum make the square format's content fill its space
-  properly regardless of routine length — this is a Liftr-specific fix Liftoff's own card does
-  *not* solve (see "do not repeat this flaw" above), not something research needs to justify.
-- [ ] Add the tier badge (and ideally the session's highest rank-up, mirroring what
-  `FinishSequence.vue`'s terminal frame now shows in-app) as a real visual element on the card.
+- [x] Sync fonts (Hanken Grotesk/Unbounded) and colors with the live palette (2026-09-02,
+  updated again same day after merging Phase 1). Order-of-operations note, corrected: this
+  branch was first implemented before Phase 1's layered medal treatment landed in `tokens.css`,
+  so `drawTierBadge` initially mirrored the old flat 2-stop `.badge` gradient. After merging
+  master (which carries Phase 1), `drawTierBadge` was rewritten against the *current* `.badge`/
+  `::before`/`::after`/`--face-grad` rules — extrusion plate, bevel rim (opposite-direction
+  gradient), per-tier-group `--face-grad` (bronze/silver/gold/iridescent shapes), two specular
+  streak bands, and `--tt`-tinted glyph — read directly off `tokens.css` on master, not guessed.
+- [x] Redesign the stat row as individual colored cards (icon/label pill + dark value box per
+  stat), per the Liftoff-inspired structure above, using Liftr's own palette (`drawStatCard` in
+  `packages/client/src/lib/shareCard.ts`).
+- [x] Redesign the exercise list as a 2-column grid of bordered rows (Liftoff-inspired
+  container), while keeping Liftr's existing per-set detail string inside each row (`drawExerciseCell`).
+- [x] Wired up `"story"` for real use rather than leaving it dead: `chooseCardSize` (new,
+  `packages/shared/src/share/layout.ts`) measures the card's actual draw-time content height and
+  picks square vs. story per-render — in practice, most real sessions (tier badge + muscle figure
+  + a few exercises) now render as story, since that content no longer fits square once drawn
+  properly; square is still selected for genuinely short content (few/no exercises, no
+  badge/muscles). Additionally implemented `distributeFillGap` so unused vertical space (a short
+  routine, or square's leftover room) is spread across the gaps between major sections instead of
+  left as one dead block at the bottom.
+- [x] Added the tier badge (`drawTierBadge`, canvas-primitive hex redraw of the live `.badge`
+  CSS) plus, when the session had one, its single highest rank-up as a one-line caption — mirrors
+  `FinishSequence.vue`'s/`WorkoutPage.vue`'s existing `topRankUp` reduction, not a repeat of the
+  full rank-up list (kept out per earlier feedback: "the rankups should be stripped completely").
 
 ---
 
