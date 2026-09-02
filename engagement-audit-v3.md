@@ -158,27 +158,65 @@ all** — `rankService.ts` lines ~308-321 insert a new PR purely from
 `bestE1rm > existingPr.value`, with no plausibility check whatsoever. This is the exact gap the
 user identified.
 
-- [ ] **Hard-block PRs on implausible workouts.** Gate the PR-insertion block
-  (`rankService.ts` ~308-321) behind plausibility, reusing `PEAK_ELIGIBILITY_FLOOR` (or a
-  stricter PR-specific floor — judgment call, err stricter per the user's explicit ask) so a
-  badly-flagged session cannot produce a PR record at all, not just a discounted one.
-- [ ] **Stricter XP/LP soft-discount.** Current thresholds in `plausibility.ts`:
-  `PACE_FINE_THRESHOLD_S = 12`, `PACE_MAX_SEVERITY_THRESHOLD_S = 4`,
-  `JUMP_FINE_THRESHOLD = 0.4`, `JUMP_MAX_SEVERITY_THRESHOLD = 1.0`, `CEILING_MULTIPLE = 1.5`,
-  `PLAUSIBILITY_FLOOR = 0.05`. Tighten these — exact new values are a judgment call requiring
-  real workout-pace data or careful reasoning, not a blind guess; document the reasoning next to
-  whatever values land here, the existing code already does this well (follow that convention).
-  Risk to explicitly guard against: too strict punishes real breakthrough sessions — a
-  genuinely fast, genuinely real PR session (short rest, good day) must not get crushed by the
-  same heuristic that catches a fabricated one.
-- [ ] **New heuristic candidate: implausible single-set sessions.** Check whether the existing
-  pace/jump/ceiling heuristics already catch "one suspiciously heavy set, otherwise realistic
-  pace" or whether that's a gap needing a fourth heuristic.
-- [ ] **Multi-user-forward review** (review only, not implementation): confirm
-  `plausibility.ts`'s inputs and `rankService.ts`'s storage are already strictly scoped per-user
-  in the schema (check `packages/db/src/schema.ts`) so this logic doesn't implicitly assume a
-  single global trusted actor. If a gap is found, note it here for a future multi-user phase —
-  do not fix it now, that's out of scope (see below).
+- [x] **Hard-block PRs on implausible workouts.** (2026-09-02) Added `PR_ELIGIBILITY_FLOOR = 0.5`
+  in `rankService.ts` (next to `PEAK_ELIGIBILITY_FLOOR = 0.3`) — deliberately stricter than the
+  peak floor, since a PR is a permanent, individually-displayed claim, not a continuously
+  re-derivable value the way `peak`/`currentBand` are. The PR-insertion block (`~308-321`) is now
+  gated on `prEligible` in addition to `bestE1rm > existingPr.value`; a badly-flagged session
+  writes no PR row at all. With the tightened plausibility.ts thresholds below, 0.5 blocks a PR on
+  roughly: a same-session e1RM jump beyond ~58% over stored peak, a whole-session pace at/under
+  ~10.5s/set, or the hard value ceiling outright. A normal ~40-55% single-session breakthrough
+  stays PR-eligible. See inline comments in `rankService.ts` for the exact derivation.
+- [x] **Stricter XP/LP soft-discount.** (2026-09-02) `plausibility.ts` thresholds tightened,
+  each exported and documented inline with reasoning:
+  - `PACE_FINE_THRESHOLD_S`: 12 → 15, `PACE_MAX_SEVERITY_THRESHOLD_S`: 4 → 6. Lowest-risk of the
+    three to tighten — a genuine heavy PR attempt needs real rest between sets, so pace is nearly
+    orthogonal to whether a *specific set* is a real breakthrough.
+  - `JUMP_FINE_THRESHOLD`: left at 0.4 (unchanged) — this is the heuristic most likely to catch a
+    genuine breakthrough, so the point where *any* discount starts had to stay generous, per the
+    explicit risk this checklist item calls out. `JUMP_MAX_SEVERITY_THRESHOLD`: 1.0 → 0.75 —
+    tightens where the ramp reaches full severity (same-session jumps ≳75%, which are far more
+    often a unit-entry mistake than real single-session progress) without moving the point where
+    discounting begins.
+  - `CEILING_MULTIPLE`: 1.5 → 1.3 — the Apex threshold already represents the top of the modeled
+    population; 1.5x left real headroom for an outright-implausible value to read as merely
+    discounted.
+  - `PLAUSIBILITY_FLOOR`: left at 0.05 (unchanged) — this is the "never fully zero XP/LP" design
+    floor, not a detection threshold; "zero credit" for a badly-flagged session is now handled by
+    the PR hard-block and (pre-existing) peak-eligibility gate instead, per the hybrid decision.
+  - New tests in `plausibility.test.ts` explicitly assert a mid-range (~50%) breakthrough jump
+    stays well above the floor, guarding the "don't crush a real PR session" risk.
+- [x] **New heuristic candidate: implausible single-set sessions.** (2026-09-02) Investigated —
+  the existing jump/ceiling heuristics are unit-agnostic ratio comparisons (session value vs.
+  same-exercise stored peak / apex threshold), so they already catch a single implausible set
+  regardless of the rest of the session's pace, for any `load_ratio` exercise. The real gap was in
+  the *caller*: `syncService.ts` was passing `null` for `sessionBestRatio`/`storedPeakRatio`/
+  `apexThreshold` for every `metric === "reps"` exercise (pull-ups, push-ups, etc.) — a previously
+  intentional fix for comparing mismatched units, but it over-corrected into skipping jump/ceiling
+  protection for that whole exercise class. Fixed by wiring session-best-reps / stored-peak-reps /
+  apex-reps-threshold through the same two heuristics (they're dimensionless ratio checks, so rep
+  counts work identically to load ratios) instead of adding a duplicate fourth heuristic function.
+  See the reasoning block at the top of `plausibility.ts` and the new tests in
+  `syncService.test.ts` ("flags improbable_jump for a metric===\"reps\" exercise on an implausible
+  rep-count spike").
+- [x] **Multi-user-forward review** (2026-09-02, review only — not implemented, see finding below).
+
+**Multi-user-forward review finding (2026-09-02):** a real gap exists, and it's schema-wide, not
+specific to `plausibility.ts`/`rankService.ts`. Checked `packages/db/src/schema.ts` directly:
+there is no `user_id`/owner column anywhere in the schema. `ranks` and `prs` (the two tables this
+phase's logic writes to) are keyed *only* by `exerciseId` — `ranks.exerciseId` is literally the
+primary key — so a rank/PR is a property of "this exercise, globally," not "this exercise, for
+this user." `workouts`, `bodyweightLogs`, `streaks`, and `settings` (the single global
+key-value table `getCurrentBodyweightKg`/`getUserSex` both read from) carry the same assumption:
+one lifter, one bodyweight history, one profile, full stop. Concretely, none of this phase's new
+gates (`PR_ELIGIBILITY_FLOOR`, `PEAK_ELIGIBILITY_FLOOR`) or their inputs (`storedPeakRatio` read
+from `ranks`, `apexThreshold` read from `standards`) are scoped to an actor at all — they're
+scoped to an exercise, full stop, so under a future multi-user schema every user would silently
+share the same peak/PR/rank state per exercise unless every one of these tables gains an owner
+column and every query in `rankRepository.ts`/`rankService.ts`/`syncService.ts` gains a matching
+filter. This wasn't specific to the anti-cheat logic this phase touched — it's the whole schema —
+so per the "explicitly out of scope" section below, it is not fixed here; recorded for whichever
+future phase actually builds multi-user support.
 
 ---
 

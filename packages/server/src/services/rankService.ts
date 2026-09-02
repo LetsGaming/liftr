@@ -176,6 +176,23 @@ export async function recomputeRankForExercise(
   const PEAK_ELIGIBILITY_FLOOR = 0.3;
   const peakEligible = plausibilityMultiplier >= PEAK_ELIGIBILITY_FLOOR;
 
+  // PR hard-block (engagement-audit-v3 Phase 3, decision 1): stricter than peak eligibility on
+  // purpose. A PR is the single highest-trust, highest-stakes artifact this system produces — it
+  // is a permanent, individually-displayed claim ("you hit X on this exact date"), not a
+  // continuously-recomputable derived value the way `peak`/`currentBand` are. Peak eligibility is
+  // deliberately forgiving (0.3 — only the most badly flagged sessions lose it) because most
+  // flagged sessions should still discount rather than block; a PR gets zero credit at a much
+  // milder degree of flagging instead of a discount, per the hybrid decision. With the tightened
+  // plausibility.ts thresholds above, PR_ELIGIBILITY_FLOOR = 0.5 works out to roughly: a
+  // same-session e1RM jump beyond ~58% over the stored peak, a whole-session pace at/under
+  // ~10.5s/set, or (the ceiling check is a hard 0/1, not a gradient) exceeding the value ceiling
+  // at all, which always zeroes PR eligibility outright. That leaves a normal
+  // ~40-55% single-session breakthrough — the exact "short rest, good day" case the audit calls
+  // out to protect — still eligible for a PR, while a session flagged enough to already be
+  // trending toward the peak-eligibility floor loses PR credit well before it gets there.
+  const PR_ELIGIBILITY_FLOOR = 0.5;
+  const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
+
   // `peak` is `null` only when a session is badly flagged AND there is no `storedPeak` yet (a
   // brand-new exercise's very first recompute). That combination must NOT establish a peak from
   // this session — the improbable-jump check can't even fire without a prior peak to compare
@@ -305,11 +322,15 @@ export async function recomputeRankForExercise(
     peakAchievedAt: peak ? new Date(peak.achievedAt) : null,
   });
 
-  // PR detection: a new best e1RM (or, for rep-based exercises, a new best rep count) is a PR.
+  // PR detection: a new best e1RM (or, for rep-based exercises, a new best rep count) is a PR —
+  // but only when this session clears PR_ELIGIBILITY_FLOOR above. A badly-flagged session cannot
+  // produce a PR record at all, not merely a discounted one: `bestE1rm` itself is never
+  // discounted (unlike XP/LP), so without this gate a fabricated or mis-entered set would still
+  // write a permanent PR row even while its XP/LP contribution was heavily reduced.
   const prKind = metric === "reps" ? "reps" : "e1rm";
   const existingPr = await findBestPrByKind(db, exerciseId, prKind);
   let newPr: RecomputeResult["newPr"] = null;
-  if (!existingPr || bestE1rm > existingPr.value) {
+  if (prEligible && (!existingPr || bestE1rm > existingPr.value)) {
     await insertPr(db, {
       exerciseId,
       kind: prKind,
