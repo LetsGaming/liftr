@@ -64,7 +64,18 @@ export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.get("/api/workouts/:id", { schema: { params: workoutIdParams } }, async (req) => {
     const workout = await findWorkoutWithExercisesAndSets(db, req.params.id);
     if (!workout) throw new NotFoundError();
-    return workout;
+    // Collapse the joined `prs` rows (fetched only to detect existence) into a boolean per set,
+    // matching the isPr flag FinishSequence.vue already shows for the live finish flow — the
+    // history detail view and share card previously hardcoded this to false/0 (per-set PR flags
+    // "aren't computed for history detail yet"), which broadcast a false "0 PRs" on shares of
+    // workouts that did contain one.
+    return {
+      ...workout,
+      workoutExercises: workout.workoutExercises.map((we) => ({
+        ...we,
+        sets: we.sets.map(({ prs, ...set }) => ({ ...set, isPr: prs.length > 0 })),
+      })),
+    };
   });
 
   // DELETE /api/workouts/:id — see services/workoutService.ts for the cascade+recompute this triggers.

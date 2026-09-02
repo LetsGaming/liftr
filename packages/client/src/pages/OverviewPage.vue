@@ -20,6 +20,7 @@ import { computed, onMounted, ref } from "vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
+import InfoToggle from "../components/ui/InfoToggle.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
@@ -179,6 +180,34 @@ const topRanks = computed(() =>
     .slice(0, 3),
 );
 
+/** Critique finding (harden, P0): a failed store load used to leave its tile showing "—"
+ *  forever, indistinguishable from "still fetching" — on a flaky connection, any subset of the
+ *  status strip could go silently blank with zero indication anything was wrong. Each store now
+ *  tracks its own `error` (see xpStore.ts's load()); this surfaces it as one page-level banner
+ *  instead of restyling every individual tile into a three-state (loading/empty/failed) widget. */
+const hasLoadError = computed(
+  () =>
+    streak.error ||
+    xp.error ||
+    overallRank.error ||
+    ranksStore.error ||
+    bodyweight.error ||
+    readiness.error ||
+    routineStore.error ||
+    history.error,
+);
+
+function retryFailed() {
+  if (streak.error) void streak.load();
+  if (xp.error) void xp.load();
+  if (overallRank.error) void overallRank.load();
+  if (ranksStore.error) void ranksStore.load();
+  if (bodyweight.error) void bodyweight.load();
+  if (readiness.error) void readiness.load();
+  if (routineStore.error) void routineStore.load();
+  if (history.error) void history.load();
+}
+
 </script>
 
 <template>
@@ -194,6 +223,11 @@ const topRanks = computed(() =>
       </IonRefresher>
 
       <div class="dashboard">
+        <div v-if="hasLoadError" class="load-error-banner">
+          <span>Einige Daten konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.</span>
+          <button type="button" class="btn-secondary" @click="retryFailed">Erneut versuchen</button>
+        </div>
+
         <!-- 0. Erholungszone — a reason to open the app on a rest day (engagement rework W5) -->
         <ErholungszoneCard :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
 
@@ -225,6 +259,11 @@ const topRanks = computed(() =>
             <button class="btn-primary btn-block" :disabled="starting" @click="startRoutine(suggestedRoutine)">
               {{ starting ? "Wird gestartet…" : "▶ Starten" }}
             </button>
+            <!-- Critique finding (clarify, P2): suggestedRoutine is a stand-in for "last used"
+                 (no lastUsedAt tracking exists yet — real fix needs a migration, out of scope
+                 here), and the primary CTA started it with zero way to override. This is the
+                 escape hatch: only shown when there's actually something else to switch to. -->
+            <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">Andere Routine wählen →</router-link>
           </template>
           <template v-else>
             <div class="eyebrow lp-eyebrow">Noch keine Routine</div>
@@ -248,6 +287,20 @@ const topRanks = computed(() =>
             <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
             <StatTile reward :value="overallRankLabel" label="Gesamt&shy;rang" />
           </section>
+
+          <!-- Critique finding (clarify, P1): "LP", "Gesamtrang" and division labels ("SILBER
+               III") appeared with no in-context explanation, and the only onboarding hook fires
+               once at mount — once dismissed, a first-timer had no path back to "what do these
+               numbers mean." Same always-reachable mechanism as RanksPage.vue's own LP/trust
+               explainer (InfoToggle.vue), not a second one-off tooltip. -->
+          <div class="rank-terms">
+            <InfoToggle label="Was bedeutet mein Rang?">
+              <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
+              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III“ bis „I“), die bis zur
+              nächsten Beförderung runterzählen; <b class="tnum">LP</b> misst deinen Fortschritt
+              innerhalb der aktuellen Division (0–100).
+            </InfoToggle>
+          </div>
 
           <!-- 3. Progress tiles -->
           <section class="progress-tiles">
@@ -425,6 +478,31 @@ const topRanks = computed(() =>
   font-size: 13px;
   color: var(--dim);
   margin-bottom: var(--sp3);
+}
+/* Same "loud but not destructive" tone as RankProgress.vue's decay caption (--fire-hi) — a
+   failed load is a real problem worth noticing, not a --red-level (delete-btn) emergency. */
+.load-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp3);
+  padding: var(--sp3) var(--sp4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--fire-hi);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+.load-error-banner .btn-secondary {
+  flex: none;
+  padding: 8px 14px;
+}
+.lp-swap {
+  display: block;
+  text-align: center;
+  margin-top: var(--sp3);
+  font-size: 12.5px;
+  color: var(--dim);
 }
 /* .panel (tokens.css) supplies background/border/radius. */
 .first-run-ladder {

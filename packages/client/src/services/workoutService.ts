@@ -7,6 +7,8 @@ export interface WorkoutSetDetail {
   reps: number;
   isWarmup: boolean;
   loggedAt: string | null;
+  /** True when this set produced a personal record — see GET /api/workouts/:id. */
+  isPr: boolean;
 }
 
 export interface WorkoutDetailExercise {

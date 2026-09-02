@@ -7,6 +7,7 @@ export const useOverallRankStore = defineStore("overallRank", {
     current: null as OverallRankBand | null,
     peak: null as OverallRankBand | null,
     loaded: false,
+    error: false,
   }),
   actions: {
     async load() {
@@ -15,8 +16,11 @@ export const useOverallRankStore = defineStore("overallRank", {
         this.current = result.current;
         this.peak = result.peak;
         this.loaded = true;
+        this.error = false;
       } catch {
-        // offline with nothing cached yet — dashboard tile falls back to its own "—" state
+        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
+        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        this.error = true;
       }
     },
   },

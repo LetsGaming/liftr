@@ -13,6 +13,7 @@ export const useReadinessStore = defineStore("readiness", {
   state: () => ({
     rows: [] as MuscleLastTrained[],
     loaded: false,
+    error: false,
   }),
   getters: {
     /** slug -> 0..1 readiness, recomputed against the current time on every access. `birthYear`
@@ -41,8 +42,11 @@ export const useReadinessStore = defineStore("readiness", {
       try {
         this.rows = await getReadiness();
         this.loaded = true;
+        this.error = false;
       } catch {
-        // offline with nothing cached — the hero just doesn't render yet
+        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
+        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        this.error = true;
       }
     },
   },

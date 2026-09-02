@@ -68,7 +68,10 @@ const total = computed(() => ranksStore.ranks.length);
     <div class="eyebrow rd-eyebrow">Rangverteilung</div>
     <div class="rd-body">
       <svg viewBox="0 0 100 100" class="rd-svg">
-        <circle cx="50" cy="50" :r="RADIUS" fill="none" stroke="var(--surface-3)" stroke-width="14" />
+        <!-- Arcs are aria-hidden: fully redundant with .rd-legend's own per-tier counts below,
+           which already carry this data as real text (harden finding). The total/label <text>
+           nodes just below stay in the accessible tree — they're not duplicated elsewhere. -->
+        <circle cx="50" cy="50" :r="RADIUS" fill="none" stroke="var(--surface-3)" stroke-width="14" aria-hidden="true" />
         <circle
           v-for="s in segments"
           :key="s.tier"
@@ -81,6 +84,7 @@ const total = computed(() => ranksStore.ranks.length);
           :stroke-dasharray="s.dasharray"
           :stroke-dashoffset="s.dashoffset"
           transform="rotate(-90 50 50)"
+          aria-hidden="true"
         />
         <text x="50" y="47" text-anchor="middle" class="rd-total tnum">{{ total }}</text>
         <text x="50" y="62" text-anchor="middle" class="rd-total-label">Übungen</text>

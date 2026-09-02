@@ -26,6 +26,15 @@ describe("renderExerciseLines", () => {
     expect(renderExerciseLines(exercises)[0]!.detail).toContain("W");
   });
 
+  it("suffixes bare rep counts with 'Wdh.' for uncompressed bodyweight sets", () => {
+    const exercises: ExerciseCardEntry[] = [
+      { name: "Liegestütze", sets: [{ weightKg: null, reps: 4, isWarmup: false }, { weightKg: null, reps: 7, isWarmup: false }] },
+    ];
+    const detail = renderExerciseLines(exercises)[0]!.detail;
+    expect(detail).toContain("4 Wdh.");
+    expect(detail).toContain("7 Wdh.");
+  });
+
   it("compresses to a range summary once the exercise count exceeds the threshold", () => {
     const exercises: ExerciseCardEntry[] = Array.from({ length: 11 }, (_, i) => ({
       name: `Exercise ${i}`,

@@ -373,11 +373,12 @@ export const workoutExercisesRelations = relations(workoutExercises, ({ one, man
   sets: many(sets),
 }));
 
-export const setsRelations = relations(sets, ({ one }) => ({
+export const setsRelations = relations(sets, ({ one, many }) => ({
   workoutExercise: one(workoutExercises, {
     fields: [sets.workoutExerciseId],
     references: [workoutExercises.id],
   }),
+  prs: many(prs),
 }));
 
 export const runsRelations = relations(runs, ({ many }) => ({
@@ -394,4 +395,5 @@ export const ranksRelations = relations(ranks, ({ one }) => ({
 
 export const prsRelations = relations(prs, ({ one }) => ({
   exercise: one(exercises, { fields: [prs.exerciseId], references: [exercises.id] }),
+  set: one(sets, { fields: [prs.setId], references: [sets.id] }),
 }));

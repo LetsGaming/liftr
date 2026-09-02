@@ -25,14 +25,18 @@ export const useRoutineStore = defineStore("routine", {
   state: () => ({
     routines: [] as Routine[],
     loaded: false,
+    error: false,
   }),
   actions: {
     async load() {
       try {
         this.routines = await getRoutines();
         this.loaded = true;
+        this.error = false;
       } catch {
-        // offline with no cache — routine list stays empty; quick-start remains available
+        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
+        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        this.error = true;
       }
     },
 

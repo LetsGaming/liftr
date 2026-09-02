@@ -13,10 +13,16 @@ export function findWorkoutWithExercises(db: LiftrDb, id: string) {
   return db.query.workouts.findFirst({ where: eq(workouts.id, id), with: { workoutExercises: true } });
 }
 
+/** `prs` is joined per-set (columns trimmed to just `id`) purely to derive a boolean isPr flag
+ *  in the route handler — see routes/workouts.ts. Not exposed as a full PR ledger here. */
 export function findWorkoutWithExercisesAndSets(db: LiftrDb, id: string) {
   return db.query.workouts.findFirst({
     where: eq(workouts.id, id),
-    with: { workoutExercises: { with: { exercise: true, sets: true } } },
+    with: {
+      workoutExercises: {
+        with: { exercise: true, sets: { with: { prs: { columns: { id: true } } } } },
+      },
+    },
   });
 }
 

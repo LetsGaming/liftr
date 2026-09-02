@@ -76,7 +76,7 @@ Install it to your phone's home screen from the browser's "Add to Home Screen" p
 
 </details>
 
-See `liftr-audit.md` for the full architecture reference, environment variables, and development workflow if you're working on the codebase itself.
+See `audit/finished/liftr-audit.md` for the full architecture reference, environment variables, and development workflow if you're working on the codebase itself.
 
 ## Stack
 
