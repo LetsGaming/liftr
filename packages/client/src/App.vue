@@ -140,9 +140,17 @@ const pageTitle = computed(() => {
            app's only persistent identity signal in the thumb zone, competing with primary
            navigation for the same ~150px band. Moved to the top for the same reason the P0 fix
            existed: a *second* independently-fixed element here would risk the exact clipping bug
-           that comment documents, so this reuses the identical discipline (one fixed element,
-           one solid backdrop, matching space reserved via .main-content's margin-top below)
-           rather than inventing a new pattern. -->
+           that comment documents, so this still reserves clearance via .main-content's
+           margin-top below, the same discipline as .bottom-chrome. It does NOT carry a solid
+           backdrop, though (engagement-audit-v3.md Phase 1/0a) — every routed page renders as an
+           Ionic <IonPage>, whose <ion-content> scrolls in its own internal shadow-DOM container
+           clipped well below this bar (measured live: ion-content's box starts ~108px down at
+           this breakpoint, this bar ends at 52px), not via document/window scroll. There is no
+           code path in this app where scrolled page content can render into the 0-52px band, so
+           the "content visible through the gap" risk the original .bottom-chrome P0 fix solved
+           doesn't apply here — verified with Playwright (scroll + elementFromPoint hit-testing
+           at the HUD's midline on Übersicht/Workout/Ränge, before and after scrolling) before
+           dropping the backdrop, matching Liftoff's own borderless HUD. -->
       <div v-if="(xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0)" class="top-hud">
         <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
           <div class="mobile-level-row">
@@ -461,10 +469,13 @@ const pageTitle = computed(() => {
        for the tab bar. */
     margin-top: var(--top-hud-h, 0px);
   }
-  /* Persistent top HUD (rework Phase 4) — same one-fixed-element-with-a-solid-backdrop
-     discipline as .bottom-chrome below (see that block's comment): a floating, gap-having chip
-     here would risk the identical clipping bug the original P0 fix on .bottom-chrome had to
-     solve. */
+  /* Persistent top HUD (rework Phase 4) — reserves fixed clearance via .main-content's
+     margin-top the same way .bottom-chrome reserves its own space below, so nothing renders
+     underneath it at rest. Deliberately borderless (no background/box-shadow): unlike
+     .bottom-chrome, this bar sits above content that only ever scrolls inside each page's own
+     clipped <ion-content> container (see the template comment above), never past this bar's own
+     box — verified live with Playwright before removing the backdrop, matching Liftoff's HUD,
+     which blends into the page background the same way. */
   .top-hud {
     display: flex;
     justify-content: center;
@@ -477,8 +488,6 @@ const pageTitle = computed(() => {
     left: 0;
     right: 0;
     z-index: 1;
-    background: var(--surface);
-    box-shadow: var(--shadow);
   }
   .top-hud .level-chip,
   .top-hud .streak-chip {
