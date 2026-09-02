@@ -105,7 +105,9 @@ exact implementation detail.*
 - [ ] HUD composition (`.top-hud` in `App.vue`) — re-evaluate against 0a's HUD findings; the
   current version only carries level+streak, deliberately built minimal. Decide what (if
   anything) it should gain, subject to the "reject the reference's overload" principle already
-  established (no coin currency, no second tab row).
+  established (no coin currency, no second tab row). *Solid backdrop sub-question resolved
+  2026-09-02 — see 0a's "Top HUD background" conflict note below: removed, verified safe via
+  live Playwright scroll testing. Still open: what content the HUD carries beyond level+streak.*
 - [ ] Color/material "pop" beyond lightness. The prior session already objectively fixed the
   *lightness* problem (measured: liftr chromatic-pixel lightness went from ~33-46% to ~58-61%
   on Übersicht/Workout, matching Liftoff's ~52-57% reference range) — yet the dullness complaint
@@ -477,10 +479,25 @@ teaser placeholders (same upsell family).
   icons full-colour *always* and signals active via a filled block + top rule instead. Pick one
   — 0a's finding is the more direct "specific visual language" match per the team's stated
   direction.
-- Top HUD background: prior session gave `.top-hud` a solid `--surface` backdrop; Liftoff's HUD
-  has no bar surface at all, blending into the page. Needs a decision, not an assumption either
-  way — a borderless HUD may reintroduce exactly the "content visible through gaps" bug the
-  original bottom-chrome P0 fix solved, so verify against real scroll content before adopting.
+- Top HUD background: **resolved 2026-09-02, adopted borderless.** Prior session gave `.top-hud`
+  a solid `--surface` backdrop out of caution that a borderless bar would reintroduce the
+  "content visible through gaps" bug the original `.bottom-chrome` P0 fix had to solve. Verified
+  live instead of assuming: ran `packages/server` against a throwaway copy of `data/liftr.db`
+  and `packages/client`'s dev server, drove Playwright's bundled Chromium (not system Chrome,
+  which isn't installed) at 390×844 against Übersicht (`/`), Workout (`/workout`), and Ränge
+  (`/ranks`), and checked both `getBoundingClientRect()` and `document.elementFromPoint()`
+  hit-testing across the HUD's midline before and after scrolling each page's content. Result:
+  the risk doesn't apply to this app's structure — every routed page renders as an Ionic
+  `<IonPage>`, and `<ion-content>` scrolls inside its own clipped shadow-DOM container that sits
+  well below the HUD (measured: `<ion-content>`'s box starts at ~108px at this viewport, the HUD
+  ends at 52px); `document.documentElement.scrollHeight` never exceeds `window.innerHeight`
+  because the outer document itself never scrolls. There is no code path where scrolled content
+  can render into the HUD's 0-52px band, unlike `.bottom-chrome`'s original bug (which was a
+  missing-clearance issue at rest, not a scroll-clipping one). `.top-hud` now has no
+  `background`/`box-shadow` — see the CSS comment above `.top-hud` in `App.vue` for the current
+  reasoning and the template comment above the HUD's markup for the fuller writeup. Confirmed
+  clean via screenshots on all three routes, `pnpm typecheck`/`pnpm lint` pass, and the
+  `mobile-viewport-check` skill.
 
 ### 0d — Copy tone audit (2026-09-01)
 
