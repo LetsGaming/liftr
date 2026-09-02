@@ -45,7 +45,9 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 <style scoped>
 .rankup-calendar {
   background: var(--surface);
-  border: 1px solid var(--line);
+  /* engagement-audit-v4 Phase 2B critique fix: see RankDistributionDonut.vue's identical
+     comment — analytics card, not a reward, so only the border picks up tier flavor. */
+  border: 1px solid var(--tier-accent, var(--line));
   border-radius: var(--r-xl);
   padding: var(--sp5);
   display: flex;
@@ -79,7 +81,11 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
   color: var(--on-blue-lo);
 }
 .dot.active {
-  background: linear-gradient(160deg, var(--blue-hi), var(--blue));
+  /* engagement-audit-v4 Phase 2B critique fix: was a flat --blue-hi/--blue gradient regardless
+     of tier — a rank-up is a tier event, so the dot should carry the tier's own accent. Keeps
+     --blue as the base stop rather than --tier-deep (b1 tones run near-black at low tiers,
+     which would read as a muddy dot at 32px) — only the bright stop picks up tier flavor. */
+  background: linear-gradient(160deg, var(--tier-accent, var(--blue-hi)), var(--blue));
 }
 .dl {
   font-size: 11px;

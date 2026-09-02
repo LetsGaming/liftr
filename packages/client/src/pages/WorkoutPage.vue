@@ -711,7 +711,12 @@ async function logSet() {
   padding: var(--sp4);
   border-radius: var(--r-lg);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  /* engagement-audit-v4 Phase 2 (routine-card shape pass): tier-accent border, same fallback
+     idiom as RankDistributionDonut.vue/RankUpCalendar.vue/RestTimer.vue — ties the
+     highest-frequency screen in the app to the rank spine without misrepresenting an unranked
+     routine as an earned moment (no .panel-reward gradient, no muscle-derived color — routines
+     aren't ranked, so a uniform tier accent is the honest signal here, not a competing one). */
+  border: 1px solid var(--tier-accent, var(--line));
   position: relative;
   /* Entrance stagger + hover lift (feedback: the rest of the app was still missing the
      dashboard's liveliness) — this is the actual "choose a workout" screen, so it's worth as

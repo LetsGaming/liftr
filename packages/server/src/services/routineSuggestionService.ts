@@ -75,6 +75,16 @@ export interface SuggestedExercise {
   exerciseId: string;
   slug: string;
   targetSets: { reps: number; weightKg: number | null }[];
+  /** Muscle-guided suggestions only: which requested muscle slug produced this pick. Absent for
+   *  recommendForChosenExercises (manual picks, Quick Start) — there's no "requested muscle" to
+   *  attribute those to. Engagement-audit-v4 Phase 1: surfaces the muscle→exercise mapping the
+   *  suggester already computes internally so the wizard's Review step can show real coverage
+   *  instead of discarding this and leaving the user to guess. */
+  matchedMuscleSlug?: string;
+  /** True when this pick replaced a preferred candidate the user couldn't perform with their
+   *  owned equipment (see findSubstitute below) — surfaced so Review can flag it instead of
+   *  silently presenting a swapped-in exercise as if it were the first choice. */
+  isSubstitute?: boolean;
 }
 
 /** POST /api/routines/suggest's logic — muscle groups in, a draft exercise list + recommended
@@ -114,8 +124,11 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
   const restrictingEquipment = ownedEquipment && ownedEquipment.length > 0 ? ownedEquipment : null;
 
   // A Set naturally de-dupes an exercise primary to two requested muscles — it only needs to
-  // survive being picked once, from whichever muscle iterates over it first.
+  // survive being picked once, from whichever muscle iterates over it first. pickMeta tracks the
+  // same two facts per exercise (which muscle earned it a slot, whether it's a substitute) so
+  // they survive into the returned SuggestedExercise instead of being computed and discarded.
   const chosenExerciseIds = new Set<string>();
+  const pickMeta = new Map<string, { muscleSlug: string; isSubstitute: boolean }>();
   for (const muscleSlug of input.muscleSlugs) {
     const candidates = byMuscle.get(muscleSlug) ?? [];
     // Prefer catalog (non-custom) exercises — a real sets/reps/weight recommendation from a
@@ -130,6 +143,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
       const requirements = parseRequiredEquipment(c.exercise.requiredEquipment);
       if (!restrictingEquipment || canPerform(requirements, restrictingEquipment)) {
         chosenExerciseIds.add(c.exercise.id);
+        pickMeta.set(c.exercise.id, { muscleSlug, isSubstitute: false });
         addedForMuscle++;
         continue;
       }
@@ -141,13 +155,14 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
       );
       if (substitute) {
         chosenExerciseIds.add(substitute.exerciseId);
+        pickMeta.set(substitute.exerciseId, { muscleSlug, isSubstitute: true });
         addedForMuscle++;
       }
       // else: no usable substitute for this candidate — dropped, same as before this feature.
     }
   }
 
-  return recommendForExercises(db, [...chosenExerciseIds], experienceLevel);
+  return recommendForExercises(db, [...chosenExerciseIds], experienceLevel, pickMeta);
 }
 
 /**
@@ -156,7 +171,12 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
  * already chosen by the user, manually or via Quick Start) — one recommendation engine, not two
  * that could drift, per the module doc's "presets can never drift out of sync" principle.
  */
-async function recommendForExercises(db: LiftrDb, exerciseIds: string[], experienceLevel: ExperienceLevel): Promise<SuggestedExercise[]> {
+async function recommendForExercises(
+  db: LiftrDb,
+  exerciseIds: string[],
+  experienceLevel: ExperienceLevel,
+  pickMeta?: Map<string, { muscleSlug: string; isSubstitute: boolean }>,
+): Promise<SuggestedExercise[]> {
   const chosenExercises = await findExercisesByIds(db, exerciseIds);
   const [bodyweightKg, sex] = await Promise.all([getCurrentBodyweightKg(db), getUserSex(db)]);
 
@@ -175,7 +195,13 @@ async function recommendForExercises(db: LiftrDb, exerciseIds: string[], experie
       experienceLevel,
     });
 
-    result.push({ exerciseId: exercise.id, slug: exercise.slug, targetSets });
+    const meta = pickMeta?.get(exercise.id);
+    result.push({
+      exerciseId: exercise.id,
+      slug: exercise.slug,
+      targetSets,
+      ...(meta ? { matchedMuscleSlug: meta.muscleSlug, isSubstitute: meta.isSubstitute } : {}),
+    });
   }
 
   return result;

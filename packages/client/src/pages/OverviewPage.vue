@@ -282,8 +282,8 @@ function retryFailed() {
         <template v-else>
           <!-- 2. Status strip -->
           <section class="status-strip">
-            <StatTile reward :value="streak.loaded ? streak.streak : '—'" label="🔥 Tage Serie" />
-            <StatTile reward :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
+            <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'" label="🔥 Tage Serie" />
+            <StatTile accent="blue" :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
             <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
             <StatTile reward :value="overallRankLabel" label="Gesamt&shy;rang" />
           </section>
