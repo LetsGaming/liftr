@@ -103,7 +103,13 @@ const total = computed(() => ranksStore.ranks.length);
 <style scoped>
 .rank-donut {
   background: var(--surface);
-  border: 1px solid var(--line);
+  /* engagement-audit-v4 Phase 2B critique fix: was a flat --line border — this is an analytics
+     card, not a reward, so it keeps the plain --surface fill rather than .panel-reward's full
+     tier gradient, but a bare neutral border sitting two scrolls above the reference-quality
+     .rank-card grid (RanksPage.vue) read as more generic than it needed to. --tier-accent falls
+     back to --line for a brand-new account with no overall rank yet (App.vue's overallTierClass
+     is "" until then, so --tier-accent is genuinely unset). */
+  border: 1px solid var(--tier-accent, var(--line));
   border-radius: var(--r-xl);
   padding: var(--sp5);
   display: flex;

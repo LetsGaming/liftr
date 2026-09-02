@@ -232,6 +232,46 @@ component-level tweaks.
 **This phase needs a scoped critique pass before implementation**, same reasoning as Phase 1 —
 this document sets direction and priority, not the specific screens/pixels.
 
+### Phase 2A critique results (2026-09-02) and what's scheduled now vs. tracked for later
+
+The scoped critique pass ran across Übersicht/Workout/Ränge and confirmed the root cause:
+`.panel-reward` with no per-item `.t-<tier>` ancestor silently falls back to whichever tier is on
+`.app-shell`, so any card using it without its own tier scope renders the single ambient tier
+instead of its own. `TierLadder.vue` and RanksPage's `.rank-card` grid are the reference
+implementation and need no further work.
+
+**Approved for immediate implementation (Phase 2B, this round):**
+1. **[P1]** Streak/Level/Rank tiles on Übersicht are visually indistinguishable (all render the
+   same bronze) — a category error, not just "generic," since the audit requires rank to stay
+   legible as *the* spine, distinct from streak/XP. Fix: give Streak and Level their own accent
+   (`--fire-hi`/`--blue-hi`, already used elsewhere for exactly these) instead of `.panel-reward`'s
+   tier fallback; reserve the tier tint for the Gesamtrang tile only. Files: `OverviewPage.vue`
+   (StatTile usage), `StatTile.vue`.
+2. **[P2]** `RankDistributionDonut.vue` and `RankUpCalendar.vue` shell on plain `--surface`/`--line`
+   directly beside the reference-quality rank-card grid two scrolls down. Fix: route the shell
+   border and the calendar's dots through `--tier-accent` instead of `--blue-hi`.
+3. **[P3]** `RestTimer.vue`'s conic progress ring hardcodes `--blue-hi` instead of tier. Bundle into
+   the same pass as #2.
+
+**Implemented (2026-09-03), closing out Phase 2:**
+- Items 1-3 above shipped as described: `StatTile.vue` gained an `accent="fire"|"blue"` prop so
+  Streak/Level no longer borrow the rank tier's color; `RankDistributionDonut.vue`/
+  `RankUpCalendar.vue`/`RestTimer.vue` all route through `var(--tier-accent, ...)` with the same
+  fallback idiom as the nav indicator.
+- **[P1] Workout tab's `.routine-card` grid** (`WorkoutPage.vue:707-714`) got its own shape pass
+  first (a routine has no tier of its own the way an exercise does — `Routine`/`RoutineExercise`
+  carry no color/tier/primary-muscle field, only a `mesocycle` state and exercise list, confirmed
+  via `routineService.ts`/`routineStore.ts`). Decision: a muscle-derived color was rejected —
+  routines aren't ranked, so coloring by trained muscle would invent a second, tier-unrelated color
+  language the audit explicitly says not to add. Shipped instead: the same `var(--tier-accent,
+  var(--line))` border-only treatment as the analytics shells above — no `.panel-reward` gradient,
+  since an unranked routine isn't an earned moment. This ties the highest-frequency screen in the
+  app to the rank spine honestly, without implying routines outrank each other.
+
+All four items verified: `pnpm -r typecheck` clean, `/impeccable` detector `[]` on every touched
+file, no motion budget touched (`--ease-spring`/`--dur-cele` untouched, per constraint). Phase 2 is
+complete — nothing tracked as outstanding from this round.
+
 ---
 
 ## 6. Research findings valued against the interview (kept / deferred / rejected)

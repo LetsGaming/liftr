@@ -108,7 +108,10 @@ function formatSeconds(s: number): string {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: conic-gradient(var(--blue-hi) var(--p, 0%), var(--surface-3) 0);
+  /* engagement-audit-v4 Phase 2B critique fix: was a flat --blue-hi regardless of tier — same
+     var(--tier-accent, var(--blue-hi)) fallback convention as App.vue's nav indicator and
+     log-set focus ring, so the ring picks up the user's rank tier where one is in scope. */
+  background: conic-gradient(var(--tier-accent, var(--blue-hi)) var(--p, 0%), var(--surface-3) 0);
   flex: none;
   transition: --p var(--dur-base) linear;
 }

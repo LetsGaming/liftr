@@ -1,17 +1,29 @@
 <script setup lang="ts">
-/** Step 3 — quick summary + save. Name stays editable via the wizard's persistent header field. */
+/** Step 3 — quick summary + save, plus (engagement-audit-v4 Phase 1) three additive glance-checks
+ *  that make this worth actually looking at instead of a rubber-stamp: does the routine cover the
+ *  muscles you asked for, did the generator swap in a substitute because you lack equipment, and
+ *  does one exercise carry a lopsided share of the routine's sets. None of them block Save — they
+ *  inform, they don't gate (audit's explicit "no compliance-theater" constraint). Name stays
+ *  editable via the wizard's persistent header field. */
+import { computed, toRef } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
+import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import type { DraftExercise } from "./RoutineWizard.vue";
 
-defineProps<{
+const props = defineProps<{
   name: string;
   entries: [string, DraftExercise][];
   totalSets: number;
   saving: boolean;
   canSave: boolean;
   isEditing: boolean;
+  /** Muscle slugs the user asked "Übungen vorschlagen" for — empty for a fully manual routine,
+   *  which skips the coverage check entirely (nothing to compare the routine against). */
+  requestedMuscleSlugs: string[];
+  /** Keyed by exerciseId; absent for manually-picked exercises. */
+  suggestionMeta: Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean }>;
 }>();
 const emit = defineEmits<{ back: []; save: [] }>();
 
@@ -21,6 +33,13 @@ const { exerciseName } = useExerciseName();
 function setSummary(cfg: DraftExercise): string {
   return cfg.sets.map((s) => (s.weightKg !== null ? `${s.weightKg}×${s.reps}` : `${s.reps}`)).join(" / ");
 }
+
+const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
+  toRef(props, "entries"),
+  toRef(props, "requestedMuscleSlugs"),
+  props.suggestionMeta,
+);
+const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", partial: "indirekt", missing: "fehlt" };
 </script>
 
 <template>
@@ -28,6 +47,15 @@ function setSummary(cfg: DraftExercise): string {
     <div class="summary">
       <b>{{ name || "Unbenannte Routine" }}</b>
       <span>{{ entries.length }} {{ entries.length === 1 ? "Übung" : "Übungen" }} · {{ totalSets }} Sätze</span>
+    </div>
+
+    <div v-if="coverage" class="coverage">
+      <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">Muskelabdeckung</span>
+      <div class="coverage-chips">
+        <span v-for="c in coverage" :key="c.slug" class="coverage-chip" :class="`cov-${c.state}`">
+          {{ c.label }} · {{ COVERAGE_LABEL[c.state] }}
+        </span>
+      </div>
     </div>
 
     <ul class="ex-summary">
@@ -43,6 +71,12 @@ function setSummary(cfg: DraftExercise): string {
             <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
           </template>
         </ExerciseRow>
+        <p v-if="isSubstitute(exerciseId)" class="ex-note">
+          Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast.
+        </p>
+        <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
+          Deutlich mehr Sätze als der Rest der Routine — passt das so?
+        </p>
       </li>
     </ul>
 
@@ -77,6 +111,37 @@ function setSummary(cfg: DraftExercise): string {
   font-size: 12.5px;
   color: var(--dim);
 }
+.coverage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+}
+.coverage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp2);
+}
+.coverage-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--dim);
+}
+.coverage-chip.cov-covered {
+  border-color: var(--green);
+  color: var(--text);
+}
+.coverage-chip.cov-partial {
+  border-color: var(--line-2);
+  color: var(--dim);
+}
+.coverage-chip.cov-missing {
+  border-color: var(--fire);
+  color: var(--fire-hi);
+}
 .ex-summary {
   list-style: none;
   display: flex;
@@ -96,6 +161,12 @@ function setSummary(cfg: DraftExercise): string {
   color: var(--dim);
   font-size: 12px;
   flex: none;
+}
+.ex-note {
+  margin-top: 4px;
+  padding-left: 4px;
+  font-size: 11.5px;
+  color: var(--dim);
 }
 .actions {
   display: flex;

@@ -52,6 +52,12 @@ export interface SuggestedExercise {
   exerciseId: string;
   slug: string;
   targetSets: SetTarget[];
+  /** Muscle-guided suggestions only — which requested muscle slug produced this pick. Mirrors
+   *  server's routineSuggestionService.ts SuggestedExercise; see that file for how it's derived. */
+  matchedMuscleSlug?: string;
+  /** True when the suggester swapped in this exercise because the preferred pick needed
+   *  equipment the user doesn't own (see @liftr/shared's findSubstitute). */
+  isSubstitute?: boolean;
 }
 
 export interface RoutineExerciseInput {

@@ -4,18 +4,22 @@
  *  on past experience and a selection of muscle groups" — by picking target muscle groups and
  *  letting the server suggest a fitting exercise list with recommended sets/reps/weight. Both
  *  paths land in the same place: the wizard's `selected` draft, reviewable/editable on the next
- *  step, never saved directly from here. */
+ *  step, never saved directly from here.
+ *
+ *  `mode` used to be an internal toggle here — engagement-audit-v4 Phase 1 moved that choice up
+ *  to PathChooser.vue's step-0 screen, so by the time this component renders the choice is
+ *  already made (the "+ Übung hinzufügen" re-entry from Arrange always forces "manual" — adding
+ *  one more exercise mid-build is never a re-run of the muscle-group suggester). */
 import { computed, ref } from "vue";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
 import ExerciseList from "../exercise/ExerciseList.vue";
 import MuscleFigure from "../ui/MuscleFigure.vue";
 
-const props = withDefaults(defineProps<{ selectedIds: Set<string>; suggesting?: boolean }>(), { suggesting: false });
+const props = withDefaults(defineProps<{ selectedIds: Set<string>; suggesting?: boolean; mode: "manual" | "muscles" }>(), { suggesting: false });
 const emit = defineEmits<{ toggle: [exerciseId: string]; continue: []; suggest: [muscleSlugs: string[]] }>();
 
 const count = computed(() => props.selectedIds.size);
 
-const mode = ref<"manual" | "muscles">("manual");
 const pickedMuscles = ref<Set<string>>(new Set());
 const pickedMusclesArray = computed(() => [...pickedMuscles.value]);
 
@@ -32,11 +36,6 @@ function requestSuggestions() {
 
 <template>
   <div class="pick-step">
-    <div class="mode-toggle">
-      <button :class="{ active: mode === 'manual' }" @click="mode = 'manual'">Manuell wählen</button>
-      <button :class="{ active: mode === 'muscles' }" @click="mode = 'muscles'">Nach Muskelgruppe</button>
-    </div>
-
     <ExerciseList v-if="mode === 'manual'" mode="select" :selected-ids="selectedIds" @toggle="emit('toggle', $event.id)" />
 
     <div v-else class="muscle-suggest">
@@ -78,28 +77,6 @@ function requestSuggestions() {
   bottom: 0;
   padding: var(--sp3) 0;
   background: linear-gradient(0deg, var(--bg) 60%, transparent);
-}
-.mode-toggle {
-  display: flex;
-  gap: var(--sp2);
-  background: var(--surface-2);
-  border-radius: var(--r-md);
-  padding: 4px;
-}
-.mode-toggle button {
-  flex: 1;
-  padding: 10px;
-  border-radius: var(--r-sm);
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-size: 13px;
-  font-weight: 700;
-}
-.mode-toggle button.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow);
 }
 .muscle-suggest {
   display: flex;

@@ -19,6 +19,8 @@ import { useCatalogStore } from "../../stores/catalogStore";
 import { recommendExercises } from "../../services/routineService";
 import { useRoutineStore, type Routine, type RoutineExerciseInput, type SetTarget } from "../../stores/routineStore";
 import ArrangeStep from "./ArrangeStep.vue";
+import FastPathStep from "./FastPathStep.vue";
+import PathChooser from "./PathChooser.vue";
 import PickStep from "./PickStep.vue";
 import ReviewStep from "./ReviewStep.vue";
 
@@ -43,9 +45,29 @@ export interface DraftExercise {
 
 const name = ref("");
 const selected = reactive(new Map<string, DraftExercise>());
-const step = ref<"pick" | "arrange" | "review">("pick");
+/** "choose" only ever appears in create mode, before any exercise is picked — see hydrateFrom. */
+const step = ref<"choose" | "pick" | "arrange" | "review">("pick");
 const saving = ref(false);
 const suggesting = ref(false);
+/** Which PickStep sub-screen to show once "pick" is reached — set by PathChooser's step-0
+ *  choice, or forced to "manual" whenever Pick is re-entered mid-build (see goToPick). */
+const pickMode = ref<"manual" | "muscles">("manual");
+/** Set by FastPathStep's "Alle Details anpassen" escape hatch — once a user asks for the full
+ *  flow, respect that for the rest of this create/edit session even if the routine still looks
+ *  simple, rather than snapping back to the condensed screen mid-edit. */
+const fastPathOverride = ref(false);
+
+/** Engagement-audit-v4 Phase 1: the rationale behind a muscle-guided pick — which requested
+ *  muscle earned it a slot, whether it replaced a preferred exercise the user can't perform with
+ *  their equipment — kept alongside the draft so ReviewStep can show it instead of the server
+ *  computing it and this component throwing it away (the pre-Phase-1 behavior). Absent for
+ *  manually-picked exercises; keyed by exerciseId, not nested in DraftExercise, so the manual
+ *  path's type stays untouched. */
+const suggestionMeta = reactive<Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean }>>({});
+/** Every muscle slug the user has asked "Übungen vorschlagen" for this session, across possibly
+ *  multiple visits to the muscle-picker (e.g. via "+ Übung hinzufügen") — ReviewStep compares the
+ *  final routine's actual muscle coverage against this to flag anything requested but not landed. */
+const requestedMuscleSlugs = ref<string[]>([]);
 
 /** Feature: "quickly create new routines based on past experience and a selection of muscle
  *  groups" — PickStep's muscle-group mode hands back the picked slugs; the server's
@@ -64,8 +86,14 @@ async function applySuggestions(muscleSlugs: string[]) {
         restBetweenSetsSeconds: DEFAULT_REST_SECONDS,
         restAfterExerciseSeconds: DEFAULT_REST_SECONDS,
       });
+      if (s.matchedMuscleSlug) {
+        suggestionMeta[s.exerciseId] = { matchedMuscleSlug: s.matchedMuscleSlug, isSubstitute: s.isSubstitute ?? false };
+      }
     }
-    if (suggestions.length > 0) step.value = "arrange";
+    if (suggestions.length > 0) {
+      requestedMuscleSlugs.value = [...new Set([...requestedMuscleSlugs.value, ...muscleSlugs])];
+      step.value = "arrange";
+    }
   } finally {
     suggesting.value = false;
   }
@@ -73,9 +101,16 @@ async function applySuggestions(muscleSlugs: string[]) {
 
 function hydrateFrom(routine: Routine | null | undefined) {
   selected.clear();
+  // Suggestion rationale never survives a save (routineExercises carries no muscle/substitution
+  // fields) and never applies to a routine being edited — re-suggesting inside an edit session
+  // starts this bookkeeping fresh rather than mixing it with a prior create-session's state.
+  for (const key of Object.keys(suggestionMeta)) delete suggestionMeta[key];
+  requestedMuscleSlugs.value = [];
+  pickMode.value = "manual";
+  fastPathOverride.value = false;
   if (!routine) {
     name.value = "";
-    step.value = "pick";
+    step.value = "choose";
     return;
   }
   name.value = routine.name;
@@ -237,6 +272,7 @@ function toggleLink(exerciseId: string) {
 
 function removeExercise(exerciseId: string) {
   selected.delete(exerciseId);
+  delete suggestionMeta[exerciseId];
 }
 
 /**
@@ -263,6 +299,39 @@ const supersetGroups = computed<(number | null)[]>(() => {
 const totalSets = computed(() => selectedOrder.value.reduce((sum, [, cfg]) => sum + cfg.sets.length, 0));
 
 const canSave = computed(() => name.value.trim().length > 0 && selected.size > 0);
+
+/**
+ * Engagement-audit-v4 Phase 1 fast path: simple enough (few exercises, nothing customized, no
+ * supersets) that Arrange+Review can collapse into one condensed screen (FastPathStep.vue)
+ * instead of the full multi-step flow. Re-evaluated live as the draft changes, so adding a set or
+ * linking a superset drops a routine out of the fast path automatically — the escape hatch
+ * (fastPathOverride) exists for the opposite direction, staying in the full flow on request even
+ * while the draft still looks simple.
+ */
+const FAST_PATH_MAX_EXERCISES = 4;
+const DEFAULT_SET_COUNT = 3;
+/**
+ * Deliberately structural, not content-based: this must NOT reuse isUntouchedDefault's
+ * reps===8 check. Both the manual pick's background upgrade (upgradeToRecommendedDefaults) and
+ * the muscle-guided suggester fill in a real recommended weight/rep target almost immediately —
+ * a routine with those real numbers is exactly the simple case this path exists for, not a
+ * "customized" one. What actually signals hands-on customization, per the shape brief, is adding
+ * a set, linking a superset, or changing rest — set *count*, not set *content*.
+ */
+function isUntouchedForFastPath(cfg: DraftExercise): boolean {
+  return (
+    cfg.sets.length === DEFAULT_SET_COUNT &&
+    cfg.restBetweenSetsSeconds === DEFAULT_REST_SECONDS &&
+    cfg.restAfterExerciseSeconds === DEFAULT_REST_SECONDS &&
+    cfg.sets.every((s) => !s.kind)
+  );
+}
+const isFastPathEligible = computed(() => {
+  const entries = selectedOrder.value;
+  if (entries.length === 0 || entries.length > FAST_PATH_MAX_EXERCISES) return false;
+  return entries.every(([, cfg]) => !cfg.linkNext && isUntouchedForFastPath(cfg));
+});
+const showFastPath = computed(() => isFastPathEligible.value && !fastPathOverride.value);
 
 const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
@@ -307,7 +376,16 @@ function requestClose() {
   closeConfirm.trigger();
 }
 
+/** PathChooser's step-0 choice — the only place `pickMode` is set to "muscles". */
+function choosePath(mode: "manual" | "muscles") {
+  pickMode.value = mode;
+  step.value = "pick";
+}
+/** Re-entry into Pick mid-build (ArrangeStep's/FastPathStep's "+ Übung hinzufügen") always means
+ *  "add one more exercise by hand" — never a re-run of the muscle-group suggester, so this skips
+ *  PathChooser entirely rather than asking the question again. */
 function goToPick() {
+  pickMode.value = "manual";
   step.value = "pick";
 }
 function goToArrange() {
@@ -315,6 +393,9 @@ function goToArrange() {
 }
 function goToReview() {
   step.value = "review";
+}
+function useFullArrange() {
+  fastPathOverride.value = true;
 }
 </script>
 
@@ -337,20 +418,37 @@ function goToReview() {
         </button>
         <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" aria-label="Name der Routine" />
         <div class="steps">
-          <span :class="{ active: step === 'pick' }">1 Wählen</span>
+          <span :class="{ active: step === 'choose' || step === 'pick' }">1 Wählen</span>
           <span :class="{ active: step === 'arrange' }">2 Anordnen</span>
           <span :class="{ active: step === 'review' }">3 Fertig</span>
         </div>
       </header>
     </template>
 
+    <PathChooser v-if="step === 'choose'" @choose="choosePath" />
     <PickStep
-      v-if="step === 'pick'"
+      v-else-if="step === 'pick'"
       :selected-ids="selectedIds"
       :suggesting="suggesting"
+      :mode="pickMode"
       @toggle="toggleSelect"
       @continue="goToArrange"
       @suggest="applySuggestions"
+    />
+    <FastPathStep
+      v-else-if="step === 'arrange' && showFastPath"
+      :name="name"
+      :entries="selectedOrder"
+      :saving="saving"
+      :can-save="canSave"
+      :is-editing="isEditing"
+      :requested-muscle-slugs="requestedMuscleSlugs"
+      :suggestion-meta="suggestionMeta"
+      @move="moveExercise"
+      @remove-exercise="removeExercise"
+      @add-exercise="goToPick"
+      @customize="useFullArrange"
+      @save="save"
     />
     <ArrangeStep
       v-else-if="step === 'arrange'"
@@ -377,6 +475,8 @@ function goToReview() {
       :saving="saving"
       :can-save="canSave"
       :is-editing="isEditing"
+      :requested-muscle-slugs="requestedMuscleSlugs"
+      :suggestion-meta="suggestionMeta"
       @back="goToArrange"
       @save="save"
     />
