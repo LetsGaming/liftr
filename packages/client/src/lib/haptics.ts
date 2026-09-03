@@ -9,6 +9,15 @@
  *   bump()    — an exercise was completed
  *   success() — a PR, rank-up, or workout finish
  */
+
+/**
+ * Foundation plan contract (2026-09-03): this is the app's ONLY haptic vocabulary. Every later
+ * workstream's animated moment (Workstream A's set-logged/exercise-advance motion, Workstream
+ * B's Finish Sequence beats and rank-up stamp) must map onto one of these three calls — no
+ * workstream may introduce a fourth tier or call @capacitor/haptics directly. If a moment doesn't
+ * clearly fit tap/bump/success, it does not get a haptic, per plan-c-new-ui-rebuild.md §2's
+ * restraint stance (a gamification layer does not require constant physical feedback).
+ */
 import { Capacitor } from "@capacitor/core";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 
