@@ -44,7 +44,7 @@ function formatDate(iso: string): string {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-      <p style="color: var(--dim)">Deine besten Sätze pro Übung — automatisch erfasst, nie verpasst.</p>
+      <p style="color: var(--dim)">Deine Rekord-Historie — jeder neue Bestwert automatisch erfasst.</p>
 
       <template v-if="!prStore.loaded && !prStore.error">
         <div v-for="i in 4" :key="i" class="shimmer pr-skel-row" aria-hidden="true" />

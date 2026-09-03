@@ -236,7 +236,7 @@ async function exportData() {
     <div class="profile-content">
     <p style="color: var(--dim)">Dein Server, dein Konto, deine Daten.</p>
 
-    <h1 class="group-header">Trainingsprofil</h1>
+    <h2 class="group-header">Trainingsprofil</h2>
 
     <section class="card">
       <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
@@ -358,7 +358,7 @@ async function exportData() {
       </button>
     </section>
 
-    <h1 class="group-header">Fortschritt</h1>
+    <h2 class="group-header">Fortschritt</h2>
 
     <section class="card">
       <h2 class="eyebrow">XP &amp; Level</h2>
@@ -375,7 +375,7 @@ async function exportData() {
       </div>
     </section>
 
-    <h1 class="group-header">Daten &amp; Server</h1>
+    <h2 class="group-header">Daten &amp; Server</h2>
 
     <section class="card card--quiet">
       <h2 class="eyebrow">Darstellung</h2>
@@ -437,7 +437,7 @@ async function exportData() {
       <p v-if="exportError" class="current" style="color: var(--red)">{{ exportError }}</p>
     </section>
 
-    <h1 class="group-header">Über</h1>
+    <h2 class="group-header">Über</h2>
 
     <RouterLink to="/attributions" class="attributions-link">Quellen &amp; Lizenzen →</RouterLink>
     </div>
@@ -652,5 +652,8 @@ async function exportData() {
 .card--quiet {
   opacity: 0.92;
   background: var(--surface);
+}
+[data-theme="light"] .card--quiet {
+  background: var(--surface-3);
 }
 </style>
