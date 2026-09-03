@@ -7,9 +7,11 @@ import RunReplay from "../components/run/RunReplay.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
+import { useToast } from "../composables/useToast";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
+const { toast } = useToast();
 const selectedRun = ref<RunDetail | null>(null);
 const deleting = ref(false);
 
@@ -57,6 +59,7 @@ async function onFileChosen(e: Event) {
   try {
     const run = await runsStore.importFile(file);
     await selectRun(run.id);
+    toast("Lauf importiert.");
   } catch (err) {
     importError.value = (err as Error).message;
   } finally {
@@ -88,6 +91,7 @@ async function submitManual() {
     manualDistanceKm.value = "";
     manualMinutes.value = "";
     if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
+    toast("Lauf gespeichert.");
   } catch (err) {
     manualError.value = (err as Error).message;
   }
