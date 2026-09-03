@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * Übersicht (feedback: "dashboard is basically useless, no clear use case"). Was a flat,
  * non-interactive, reverse-chron feed of every row titled "Workout". Rebuilt per the decided
@@ -364,7 +364,7 @@ function retryFailed() {
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
-<router-link to="/ranks" class="tile discover-tile">
+            <router-link to="/ranks" class="tile discover-tile">
               <div class="discover-icon">🏆</div>
               <b>Rang-Analyse</b>
               <p class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</p>
@@ -694,3 +694,4 @@ function retryFailed() {
   color: var(--blue-hi);
 }
 </style>
+
