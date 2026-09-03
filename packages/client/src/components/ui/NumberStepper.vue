@@ -235,9 +235,10 @@ function commitEdit() {
 }
 .stepper.sm .ctrls button {
   /* Bumped 32px -> 44px (audit: touch-target floor, WCAG 2.5.5) — only ever used two-up
-     (mesocycle-weeks +/-), so there's room without crowding. */
-  width: 44px;
-  height: 44px;
+     (mesocycle-weeks +/-), so there's room without crowding. Now reads --touch-target-min
+     (Foundation Task 1, 2026-09-03 plan) instead of the bare literal. */
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   border-radius: var(--r-sm);
   background: var(--surface);
   border: 1px solid var(--line);
