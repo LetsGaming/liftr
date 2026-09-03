@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * Übersicht (feedback: "dashboard is basically useless, no clear use case"). Was a flat,
  * non-interactive, reverse-chron feed of every row titled "Workout". Rebuilt per the decided
@@ -553,6 +553,9 @@ function retryFailed() {
   border: 1px solid var(--nebula-1);
   background: var(--surface-3);
 }
+[data-theme="light"] .tile--priority {
+  border-color: var(--nebula-ink);
+}
 .tile-head {
   --eyebrow-color: var(--dim);
   margin-bottom: var(--sp3);
@@ -702,4 +705,3 @@ function retryFailed() {
   color: var(--blue-hi);
 }
 </style>
-

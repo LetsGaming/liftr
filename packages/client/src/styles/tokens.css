@@ -167,7 +167,7 @@
      which answers a different question (which of 9 tiers) than Nebula does (is this interactive
      or just-earned). See audit/nebula-design-philosophy.md §2 for the full reasoning. */
   --nebula-1: #2f9fe0;
-  --nebula-m: #7c5cff;
+  --nebula-m: #8a6dff;
   --nebula-2: #d63aff;
   --nebula-grad: linear-gradient(120deg, var(--nebula-1), var(--nebula-m), var(--nebula-2));
   --nebula-grad-cta: linear-gradient(135deg, var(--nebula-1), var(--nebula-m), var(--nebula-2));
@@ -419,6 +419,16 @@ body {
   border-radius: var(--r-lg);
   position: relative;
   overflow: hidden;
+}
+/* Always-dark fill regardless of theme (tier colors and the Nebula fallback ink are both
+   dark) — text inside must stay light-on-dark even when the page itself is in light mode.
+   Overriding these three custom properties locally means every descendant that reads
+   var(--text)/var(--dim)/var(--faint) inherits the right value automatically. */
+.panel-reward {
+  --text: #eef2fb;
+  --dim: #b8c2e0;
+  --faint: #98a2c0;
+  color: var(--text);
 }
 /* Second, low-opacity diagonal sheen band across the whole card (0a) — a wide, soft echo of the
    badge's own hard specular streak, at card scale instead of medal scale. Static, never sweeps
