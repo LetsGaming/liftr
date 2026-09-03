@@ -115,11 +115,14 @@ watch(
 
 /** Rework Phase 4 (critique finding: the post-sequence summary used to open straight into three
  *  gray StatTiles — the emotional peak had no continuation, and the terminal frame was a data
- *  table). Highest tier among this session's rank-ups, if any, so the summary can keep the
- *  tier/level state as its first visual instead of duplicating FinishSequence's beats. */
+ *  table). Highest tier among this session's *genuine* rank-ups, if any, so the summary can keep
+ *  the tier/level state as its first visual instead of duplicating FinishSequence's beats. A
+ *  discounted-only session (workstream B task 2 — Global Constraint: a discounted session must
+ *  never look genuine) falls back to no badge at all, matching FinishSequence's topTierClass. */
 const topRankUp = computed(() => {
-  if (sessionRankUps.value.length === 0) return null;
-  return sessionRankUps.value.reduce((best, r) =>
+  const genuine = sessionRankUps.value.filter((r) => !r.plausibilityNote);
+  if (genuine.length === 0) return null;
+  return genuine.reduce((best, r) =>
     TIERS.indexOf(r.tier as Tier) > TIERS.indexOf(best.tier as Tier) ? r : best,
   );
 });
