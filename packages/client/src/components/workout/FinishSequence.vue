@@ -119,8 +119,10 @@ watch(
       <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
       <div class="rankup-list">
         <div v-for="(r, i) in rankUps" :key="i" class="rankup-row panel-reward pop-in" :class="`t-${r.tier}`" :style="{ animationDelay: i * 90 + 'ms' }">
-          <span class="badge" :class="`t-${r.tier}`">
-            <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
+          <span class="badge-ring">
+            <span class="badge" :class="`t-${r.tier}`">
+              <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
+            </span>
           </span>
           <div class="rankup-meta">
             <b>{{ r.exerciseName }}</b>
@@ -229,6 +231,20 @@ watch(
   height: 62px;
   flex: none;
   filter: drop-shadow(0 0 10px rgba(59, 140, 255, 0.55)) drop-shadow(0 0 3px rgba(59, 140, 255, 0.4));
+}
+/* Nebula ring (nebula-and-workplan-rework task 8) — this rank-up beat (Beat 1, activeIndex===0)
+   is the one place in the app a rank-up is actually celebrated; the ring wraps only this
+   render site's .badge instances, not RankProgress.vue's shared card (Ränge grid, in-session
+   focus column, post-sequence plausibility/recovery captions) or TierLadder.vue's resting-state
+   ladder. Structurally absent (not just hidden) outside this v-for — there is no boolean toggle
+   guarding it that a plausibility-discounted or same-band-recovery session could also satisfy. */
+.badge-ring {
+  display: inline-block;
+  flex: none;
+  padding: 3px;
+  border-radius: 2px;
+  background: var(--nebula-grad);
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
 }
 .rankup-meta {
   flex: 1;
