@@ -8,7 +8,7 @@
  * No new currencies: rank/streak/XP all already existed, this only makes them felt at the one
  * moment they were being thrown away.
  */
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { TIERS, type Tier } from "@liftr/shared";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
@@ -73,9 +73,47 @@ const xpRollTarget = ref(0);
 const { value: xpDisplay } = useCountUp(xpRollTarget, 700);
 const barPercentTarget = ref(0);
 const { value: barPercent } = useCountUp(barPercentTarget, 700);
+
+/** LP bar animation for Beat 1 (Global Constraint: "the LP bar must animate literally from
+ *  prevLp to lp, not jump"). useCountUp's Ref<number> API assumes one static target per call,
+ *  which doesn't fit a v-for of independently-valued rows — this is a small array variant of
+ *  the same ease-out-cubic curve instead of reusing useCountUp as-is. */
+function prefersReducedMotionLocal(): boolean {
+  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+const rankUpBarDisplay = ref<number[]>([]);
+let rankUpBarFrame: number | null = null;
+
+function animateRankUpBars() {
+  if (rankUpBarFrame != null) cancelAnimationFrame(rankUpBarFrame);
+  const rows = props.rankUps;
+  const to = rows.map((r) => Math.max(0, Math.min(100, Math.round(r.lp))));
+  if (prefersReducedMotionLocal() || rows.length === 0) {
+    rankUpBarDisplay.value = to;
+    return;
+  }
+  const from = rows.map((r) => Math.max(0, Math.min(100, Math.round(r.prevLp))));
+  rankUpBarDisplay.value = [...from];
+  const start = performance.now();
+  const durationMs = 700;
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / durationMs);
+    const eased = 1 - Math.pow(1 - t, 3); // matches useCountUp.ts's ease-out-cubic
+    rankUpBarDisplay.value = from.map((f, i) => f + (to[i]! - f) * eased);
+    if (t < 1) {
+      rankUpBarFrame = requestAnimationFrame(step);
+    } else {
+      rankUpBarDisplay.value = to;
+      rankUpBarFrame = null;
+    }
+  };
+  rankUpBarFrame = requestAnimationFrame(step);
+}
+
 watch(
   () => celebrate.activeIndex.value,
   (i) => {
+    if (i === 0) animateRankUpBars();
     if (i === 2) {
       xpDisplay.value = 0;
       barPercent.value = leveledUp.value ? 0 : props.progressBefore;
@@ -102,6 +140,10 @@ watch(
     if (wasRunning && !running) emit("done");
   },
 );
+
+onBeforeUnmount(() => {
+  if (rankUpBarFrame != null) cancelAnimationFrame(rankUpBarFrame);
+});
 </script>
 
 <template>
@@ -140,7 +182,7 @@ watch(
             <span>{{ r.isPr ? "Neuer Rekord" : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
             <span v-if="r.plausibilityNote" class="plausibility-note">{{ r.plausibilityNote }}</span>
             <div class="rankbar">
-              <i class="bar-fill" :style="{ transform: `scaleX(${Math.round(r.lp) / 100})` }" />
+              <i class="bar-fill" :style="{ transform: `scaleX(${(rankUpBarDisplay[i] ?? r.prevLp) / 100})` }" />
             </div>
           </div>
         </div>
