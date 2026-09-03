@@ -348,7 +348,13 @@ function retryFailed() {
             <div class="tile">
               <div class="eyebrow tile-head">Körpergewicht</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
-              <p v-else class="tile-empty">Zwei Einträge, und dein Gewichtsverlauf steht hier.</p>
+              <!-- Audit fix (workplan-v1 §1.10b): stated a threshold ("two entries") but never
+                   the action or where to take it — unlike the Läufe empty state's actionable
+                   pattern this now matches. -->
+              <p v-else class="tile-empty">
+                Trag dein Körpergewicht in Profil ein — nach zwei Einträgen siehst du hier den
+                Verlauf.
+              </p>
             </div>
           </section>
         </template>

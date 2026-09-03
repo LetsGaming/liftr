@@ -84,7 +84,11 @@ export function recommendExerciseSets(input: ExerciseRecommendationInput): SetTa
     const entry = entryThreshold(input.thresholds, input.experienceLevel ?? "beginner");
     if (entry) {
       if (input.metric === "reps") {
-        return repeat({ reps: entry.threshold, weightKg: null }, setCount);
+        // entry.threshold can be fractional for a derived/synthetic exercise (deriveStandards()
+        // multiplies an anchor's integer threshold by a ratio like 0.25) — reps must be an
+        // integer both because a fractional rep count is meaningless and because the server's
+        // create/update routine schema rejects non-integer reps outright.
+        return repeat({ reps: Math.max(1, Math.round(entry.threshold)), weightKg: null }, setCount);
       }
       const target = nextLoadTarget(entry.threshold, input.bodyweightKg, GENERIC_FALLBACK_REPS);
       // load_ratio target already accounts for bodyweight-leverage exercises via the caller's

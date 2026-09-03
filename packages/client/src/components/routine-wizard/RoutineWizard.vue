@@ -15,6 +15,7 @@ import type { SetKind } from "@liftr/shared";
 import { computed, reactive, ref, watch } from "vue";
 import SheetModal from "../ui/SheetModal.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
+import { useToast } from "../../composables/useToast";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { recommendExercises } from "../../services/routineService";
 import { useRoutineStore, type Routine, type RoutineExerciseInput, type SetTarget } from "../../stores/routineStore";
@@ -29,6 +30,7 @@ const emit = defineEmits<{ created: [] }>();
 
 const routineStore = useRoutineStore();
 const catalog = useCatalogStore();
+const { toast } = useToast();
 
 /** RestTimer.vue's own built-in fallback when a routine doesn't override it — kept in sync
  *  manually since RestTimer's default lives in its own props declaration, not an export. */
@@ -342,15 +344,27 @@ async function save() {
     const exercises: RoutineExerciseInput[] = selectedOrder.value.map(([exerciseId, cfg], i) => ({
       exerciseId,
       orderIndex: i,
-      targetSets: cfg.sets,
+      // reps rounded defensively here too (belt-and-suspenders alongside the fix in
+      // recommend.ts): the server's schema requires an integer, and this is the single choke
+      // point every save path — manual, suggested, or edited — funnels through before POST/PATCH.
+      targetSets: cfg.sets.map((s) => ({ ...s, reps: Math.max(1, Math.round(s.reps)) })),
       supersetGroup: supersetGroups.value[i] ?? null,
       restBetweenSetsSeconds: cfg.restBetweenSetsSeconds,
       restAfterExerciseSeconds: cfg.restAfterExerciseSeconds,
     }));
-    if (props.routine) {
-      await routineStore.update(props.routine.id, { name: name.value.trim(), exercises });
-    } else {
-      await routineStore.create(name.value.trim(), exercises);
+    try {
+      if (props.routine) {
+        await routineStore.update(props.routine.id, { name: name.value.trim(), exercises });
+      } else {
+        await routineStore.create(name.value.trim(), exercises);
+      }
+    } catch {
+      // Save can genuinely fail (e.g. a suggested exercise substitution produced an
+      // out-of-contract value the server rejects) — without this, the rejection was an
+      // unhandled promise rejection and the sheet just sat there looking unresponsive with
+      // zero feedback (audit: silent save-path failure on the muscle-guided suggestion flow).
+      toast("Speichern fehlgeschlagen — bitte erneut versuchen.");
+      return;
     }
     // Closes via sheetRef.dismiss(), not emit("created") directly (feedback: "editing/creating
     // a workout currently does not work" — a hard crash). See SheetModal.vue's header comment:
@@ -417,10 +431,16 @@ function useFullArrange() {
           {{ closeConfirm.isArmed() ? "Verwerfen?" : "✕" }}
         </button>
         <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" aria-label="Name der Routine" />
+        <!-- Audit fix (workplan-v1 §1.9c): FastPathStep's save goes straight to save(), never
+             reaching ReviewStep — the indicator used to promise "3 Fertig" unconditionally and
+             then not show it on this path. showFastPath already tracks whether the current
+             selection is small/untouched enough to take that path (and flips live if the user
+             taps "customize"), so gating step 3's label on it keeps the indicator honest in both
+             directions rather than adding a step back to a flow built to remove one. -->
         <div class="steps">
           <span :class="{ active: step === 'choose' || step === 'pick' }">1 Wählen</span>
-          <span :class="{ active: step === 'arrange' }">2 Anordnen</span>
-          <span :class="{ active: step === 'review' }">3 Fertig</span>
+          <span :class="{ active: step === 'arrange' }">2 {{ showFastPath ? "Fertig" : "Anordnen" }}</span>
+          <span v-if="!showFastPath" :class="{ active: step === 'review' }">3 Fertig</span>
         </div>
       </header>
     </template>

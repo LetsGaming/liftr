@@ -13,6 +13,9 @@ const status = ref<"checking" | "ok" | "needs-token" | "offline">("checking");
 const tokenInput = ref("");
 const submitting = ref(false);
 const error = ref<string | null>(null);
+/** Audit fix (workplan-v1 §1.9a): same reasoning as ProfilePage.vue's token field — a bearer
+ *  token to verify before submitting, not a login credential worth blanket-masking. */
+const tokenVisible = ref(false);
 
 async function check() {
   status.value = "checking";
@@ -52,14 +55,27 @@ async function submit() {
   <div v-if="status === 'needs-token'" class="gate">
     <div class="card">
       <h1>Liftr</h1>
-      <p>Dieser Server ist mit einem Token gesichert.</p>
-      <input
-        v-model="tokenInput"
-        type="password"
-        placeholder="Token"
-        aria-label="API-Token"
-        @keyup.enter="submit"
-      />
+      <p>
+        Dieser Server ist mit einem Token gesichert. Derselbe Wert lässt sich später jederzeit
+        unter Profil &amp; Einstellungen ändern, ohne diesen Bildschirm erneut auszulösen.
+      </p>
+      <div class="token-row">
+        <input
+          v-model="tokenInput"
+          :type="tokenVisible ? 'text' : 'password'"
+          placeholder="Token"
+          aria-label="API-Token"
+          @keyup.enter="submit"
+        />
+        <button
+          type="button"
+          class="btn-secondary"
+          :aria-label="tokenVisible ? 'Token verbergen' : 'Token anzeigen'"
+          @click="tokenVisible = !tokenVisible"
+        >
+          {{ tokenVisible ? "🙈" : "👁" }}
+        </button>
+      </div>
       <p v-if="error" class="error">{{ error }}</p>
       <button class="btn-primary btn-lg btn-block" :disabled="submitting || !tokenInput.trim()" @click="submit">
         {{ submitting ? "Prüfe…" : "Entsperren" }}
@@ -93,15 +109,20 @@ async function submit() {
   font-size: 13px;
   margin-bottom: var(--sp4);
 }
-.card input {
-  width: 100%;
+.token-row {
+  display: flex;
+  gap: var(--sp2);
+  margin-bottom: var(--sp3);
+}
+.token-row input {
+  flex: 1;
+  min-width: 0;
   padding: 12px 14px;
   border-radius: var(--r-md);
   background: var(--surface-3);
   border: 1px solid var(--line);
   color: var(--text);
   font-size: 14px;
-  margin-bottom: var(--sp3);
 }
 .error {
   color: var(--red);

@@ -113,6 +113,7 @@ function commitEdit() {
       inputmode="decimal"
       class="num-input tnum"
       autofocus
+      @focus="($event.target as HTMLInputElement).select()"
       @input="editValue = ($event.target as HTMLInputElement).value"
       @blur="commitEdit"
       @keydown.enter="commitEdit"

@@ -5,6 +5,8 @@ import { RouterLink, RouterView, useRoute } from "vue-router";
 import AuthGate from "./components/ui/AuthGate.vue";
 import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
+import { showingFinishRecap } from "./composables/useWorkoutChrome";
+import { useActiveWorkoutStore } from "./stores/activeWorkoutStore";
 import { useOverallRankStore } from "./stores/overallRankStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useStreakStore } from "./stores/streakStore";
@@ -15,6 +17,7 @@ const streak = useStreakStore();
 const xp = useXpStore();
 const settingsStore = useSettingsStore();
 const overallRank = useOverallRankStore();
+const activeWorkout = useActiveWorkoutStore();
 onMounted(() => {
   void streak.load();
   void xp.load();
@@ -119,6 +122,19 @@ const pageTitle = computed(() => {
   if (route.path === "/runs") return t("nav.runs");
   return "Liftr";
 });
+
+/**
+ * Audit fix (workplan-v1 §1.4/§1.5, fixed together since both gate the same condition): the
+ * top-hud level/streak chips used to render unconditionally everywhere. §1.4 — they duplicated
+ * the same Lv./XP number FinishSequence's own "Fortschritt" beat shows, with no visual link
+ * between the two. §1.5 — they also competed for space on the active-logging screen, the app's
+ * lowest-density-tolerance surface. Scoped to the Workout tab only; every other screen keeps the
+ * chips exactly as before — the "ambient reminder" effect they buy is only being traded away
+ * where a real cost was found, not everywhere.
+ */
+const hideTopHud = computed(
+  () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
+);
 </script>
 
 <template>
@@ -150,7 +166,7 @@ const pageTitle = computed(() => {
            doesn't apply here — verified with Playwright (scroll + elementFromPoint hit-testing
            at the HUD's midline on Übersicht/Workout/Ränge, before and after scrolling) before
            dropping the backdrop, matching Liftoff's own borderless HUD. -->
-      <div v-if="(xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0)" class="top-hud">
+      <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
         <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
           <div class="mobile-level-row">
             <b>Lv. {{ xp.level }}</b>
