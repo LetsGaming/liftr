@@ -21,6 +21,10 @@ const KIND_LABEL: Record<string, string> = {
 
 const sorted = computed(() => prStore.prs.slice().sort((a, b) => b.achievedAt.localeCompare(a.achievedAt)));
 
+function isRecentlyAchieved(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
+}
+
 function formatValue(kind: string, value: number): string {
   if (kind === "reps") return `${Math.round(value)} Wdh.`;
   if (kind === "volume") return `${Math.round(value).toLocaleString("de-DE")} kg`;
@@ -56,7 +60,12 @@ function formatDate(iso: string): string {
       </p>
 
       <ul v-else class="pr-list">
-        <li v-for="pr in sorted" :key="pr.id" class="panel pr-row">
+        <li
+          v-for="pr in sorted"
+          :key="pr.id"
+          class="panel pr-row"
+          :class="{ 'panel-reward panel-reward--nebula': isRecentlyAchieved(pr.achievedAt) }"
+        >
           <div class="pr-row-main">
             <b>{{ exerciseName(pr.exerciseSlug) }}</b>
             <span class="pr-kind">{{ KIND_LABEL[pr.kind] }}</span>
