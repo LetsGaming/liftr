@@ -35,6 +35,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
     <div class="streak-strip">
       <div v-for="d in days" :key="d.weekday" class="streak-day">
         <span class="dot" :class="{ active: d.count > 0 }">{{ d.count > 0 ? d.count : "" }}</span>
+        <span v-if="d.count > 0" class="nebula-dot" aria-hidden="true" />
         <span class="dl">{{ d.label }}</span>
       </div>
     </div>
@@ -86,6 +87,17 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
      --blue as the base stop rather than --tier-deep (b1 tones run near-black at low tiers,
      which would read as a muddy dot at 32px) — only the bright stop picks up tier flavor. */
   background: linear-gradient(160deg, var(--tier-accent, var(--blue-hi)), var(--blue));
+}
+/* Nebula dot (nebula-and-workplan-rework task 9) — a small accent marking which weekdays had at
+   least one rank-up this week; only present in the DOM for days with count > 0 (v-if above), not
+   just visually hidden. A real element (not .dot::after) since .dot is itself a grid/
+   place-items container for the count number — a pseudo-element there would become a second
+   grid item and fight the number for placement instead of sitting below it. */
+.nebula-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--nebula-grad);
 }
 .dl {
   font-size: 11px;
