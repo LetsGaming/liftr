@@ -78,6 +78,13 @@
       "when": 1788255420001,
       "tag": "0010_remap_legacy_tier_strings",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1788475784157,
+      "tag": "0011_petite_betty_ross",
+      "breakpoints": true
     }
   ]
 }
