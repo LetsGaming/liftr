@@ -232,9 +232,9 @@
   --line: rgba(20, 16, 32, 0.1);
   --line-2: rgba(20, 16, 32, 0.16);
   --text: #14121c;
-  /* 6.1:1 on --surface-2 (#f4f2f9) */
+  /* 5.50:1 on --surface-2 (#f4f2f9) */
   --dim: #635f78;
-  /* 5.4:1 on --surface-2 */
+  /* 5.23:1 on --surface-2 */
   --faint: #6c6178;
   --shadow: 0 8px 20px -14px rgba(15, 15, 25, 0.18);
   --nebula-ink: #6b3fd6;
