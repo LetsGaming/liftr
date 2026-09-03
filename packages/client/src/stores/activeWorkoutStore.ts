@@ -36,6 +36,8 @@ export interface ActiveSet {
   clientId: string | null;
   prevWeightKg: number | null; // "last time" reference for this exact set index
   prevReps: number | null;
+  rpe: number | null;
+  notes: string | null;
 }
 
 export interface ActiveExercise {
@@ -172,6 +174,10 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
         for (const ex of saved.exercises) {
           for (const s of ex.sets) {
             if (!s.kind) s.kind = s.isWarmup ? "warmup" : "normal";
+            // Same reasoning for rpe/notes (Task 1) — a session persisted before these fields
+            // existed loads back with them undefined, which would crash the RPE chip's render.
+            if (s.rpe === undefined) s.rpe = null;
+            if (s.notes === undefined) s.notes = null;
           }
           // Same backfill for a workout persisted before restBetweenSetsSeconds/
           // restAfterExerciseSeconds existed — they'd otherwise load back as undefined and
@@ -239,6 +245,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
                 clientId: null,
                 prevWeightKg: input.lastTime?.[i]?.weightKg ?? null,
                 prevReps: input.lastTime?.[i]?.reps ?? null,
+                rpe: null,
+                notes: null,
               };
             }),
           };
@@ -297,6 +305,26 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       }
       persist(this.$state);
     },
+
+    /** RPE capture (Task 4's UI writes here) — off the primary logging path per Global
+     *  Constraint 4: no sync enqueue here, the value rides along in `logCurrentSet()`'s own
+     *  `log_set` payload once the set is actually logged, same as weightKg/reps. */
+    setCurrentSetRpe(rpe: number | null) {
+      const set = this.currentSet;
+      if (!set) return;
+      set.rpe = rpe;
+      persist(this.$state);
+    },
+
+    /** Set-level notes capture (Task 5's UI writes here) — same fire-and-forget-free timing as
+     *  setCurrentSetRpe above. */
+    setCurrentSetNotes(notes: string | null) {
+      const set = this.currentSet;
+      if (!set) return;
+      set.notes = notes;
+      persist(this.$state);
+    },
+
 
     /**
      * Reclassifies a set ("Satzart auswählen" — feedback: "not possible to set what kind of
@@ -363,7 +391,9 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           setIndex: set.index,
           weightKg: set.weightKg,
           reps: set.reps,
+          rpe: set.rpe,
           kind: set.kind,
+          notes: set.notes,
           loggedAt: new Date(set.loggedAt).toISOString(),
         },
       });
@@ -425,6 +455,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
         clientId: null,
         prevWeightKg: null,
         prevReps: null,
+        rpe: null,
+        notes: null,
       }));
       ex.sets = [...warmupSets, ...ex.sets].map((s, i) => ({ ...s, index: i }));
       persist(this.$state);
@@ -476,6 +508,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
             clientId: null,
             prevWeightKg: input.lastTime?.[i]?.weightKg ?? null,
             prevReps: input.lastTime?.[i]?.reps ?? null,
+            rpe: null,
+            notes: null,
           };
         }),
       };
