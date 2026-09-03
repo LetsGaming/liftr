@@ -315,6 +315,7 @@ const hideTopHud = computed(
   border-radius: var(--r-sm);
   font-weight: 600;
   font-size: 13.5px;
+  min-height: var(--touch-target-min);
 }
 .tab-link {
   display: flex;
@@ -334,6 +335,7 @@ const hideTopHud = computed(
      to keep 6 items fitting without wrapping/clipping (verified at 360px and 390px). */
   font-size: 11.5px;
   white-space: nowrap;
+  min-height: var(--touch-target-min);
 }
 /* 6 items now (was 5) — a bit more breathing room needed below 380px. */
 @media (max-width: 380px) {
@@ -482,6 +484,14 @@ const hideTopHud = computed(
      live layout (getBoundingClientRect), not by reading the CSS. */
   .app-shell {
     --top-hud-h: calc(52px + env(safe-area-inset-top, 0px));
+    /* Foundation Task 2 (2026-09-03 plan) — Task 4's ThumbZoneAction sticky variant needs to
+       know how much space the fixed .bottom-chrome tab bar reserves at the bottom of the
+       viewport, the same way .main-content already needs --top-hud-h for the top. Measured
+       content height is ~55-61px depending on the <380px icon/font shrink breakpoint (9px+
+       icon(18-23px)+3px gap+label line(~13-14px)+12px, see .tab-link above) — 64px is a
+       deliberate small margin over the tallest measured case, not a re-measurement per
+       breakpoint, since ThumbZoneAction only needs "enough clearance," not pixel-exact clearance. */
+    --bottom-chrome-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   .main-content {
     /* Note: every routed page renders an Ionic <IonPage>, which is position:absolute + inset:0
