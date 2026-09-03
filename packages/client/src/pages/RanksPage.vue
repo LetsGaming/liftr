@@ -67,6 +67,10 @@ const sortedRanks = computed(() =>
         :peak-division="overallRank.peak?.division ?? null"
       />
 
+      <router-link to="/records" class="btn-secondary" style="display: inline-flex; margin-top: var(--sp3)">
+        🏆 Rekorde ansehen
+      </router-link>
+
       <InfoToggle label="Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt">
         <b class="tnum">LP</b> {{ LP_EXPLAINER }}. Ein
         <b>≈</b> markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests —
