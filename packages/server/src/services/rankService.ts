@@ -18,6 +18,7 @@ import {
   computeCurrentBand,
   applySessionRecoveryGain,
   type StandardThreshold,
+  type PlausibilityReason,
 } from "@liftr/shared";
 import { findLatestBodyweightLog } from "../repositories/bodyweightRepository.js";
 import {
@@ -96,6 +97,7 @@ export async function recomputeRankForExercise(
   db: LiftrDb,
   exerciseId: string,
   plausibilityMultiplier = 1,
+  plausibilityReason: PlausibilityReason | null = null,
 ): Promise<RecomputeResult | null> {
   const exercise = await findExerciseById(db, exerciseId);
   if (!exercise) return null;
@@ -303,6 +305,7 @@ export async function recomputeRankForExercise(
       tier: peak.tier,
       division: peak.division,
       occurredAt: bestSet.loggedAt,
+      plausibilityReason,
     });
   }
 
@@ -357,6 +360,11 @@ export interface RankEventsByWeekday {
    *  has to remap between the two. */
   weekday: number;
   count: number;
+  /** Count of this weekday's rank-ups whose originating workout was plausibility-flagged
+   *  (workstream B task 1) — lets the client mute a day's dot when every rank-up logged that
+   *  day was discounted, without omitting the day's existence outright the way dropping it from
+   *  `count` entirely would. */
+  flaggedCount: number;
 }
 
 /**
@@ -370,8 +378,11 @@ export async function computeRankEventsByWeekday(db: LiftrDb, days = 7): Promise
   const rows = await findRankEventsSince(db, since);
 
   const counts = new Array<number>(7).fill(0);
+  const flagged = new Array<number>(7).fill(0);
   for (const r of rows) {
-    counts[r.occurredAt.getDay()]!++;
+    const weekday = r.occurredAt.getDay();
+    counts[weekday]!++;
+    if (r.plausibilityReason != null) flagged[weekday]!++;
   }
-  return counts.map((count, weekday) => ({ weekday, count }));
+  return counts.map((count, weekday) => ({ weekday, count, flaggedCount: flagged[weekday]! }));
 }
