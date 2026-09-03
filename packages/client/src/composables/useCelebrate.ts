@@ -5,6 +5,14 @@
  * early tap to skip." Respects prefers-reduced-motion by collapsing every wait to effectively
  * zero (the content still renders, in order, just without the held pause).
  */
+
+/**
+ * Haptic wiring is the CALLER's responsibility, not this composable's — this file stays
+ * UI/feedback-agnostic. The existing pattern (components/workout/FinishSequence.vue: a `watch`
+ * on `activeIndex` that fires `haptics.success()` only when `leveledUp` is true) is the reference
+ * implementation later workstreams should copy: watch `activeIndex`, branch on which beat it is
+ * and what that beat's data actually contains, call the matching lib/haptics.ts tier from there.
+ */
 import { ref } from "vue";
 
 function prefersReducedMotion(): boolean {
