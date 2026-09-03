@@ -295,10 +295,10 @@ function retryFailed() {
                numbers mean." Same always-reachable mechanism as RanksPage.vue's own LP/trust
                explainer (InfoToggle.vue), not a second one-off tooltip. -->
           <div class="rank-terms">
-            <InfoToggle label=”Was bedeutet mein Rang?”>
+            <InfoToggle label="Was bedeutet mein Rang?">
               <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
-              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III” bis „I”), die bis zur
-              nächsten Beförderung runterzählen; <b class=”tnum”>LP</b> {{ LP_EXPLAINER }}.
+              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III" bis „I"), die bis zur
+              nächsten Beförderung runterzählen; <b class="tnum">LP</b> {{ LP_EXPLAINER }}.
             </InfoToggle>
           </div>
 
