@@ -256,7 +256,7 @@ async function exportData() {
         Aktuell: <b class="tnum">{{ bodyweight.latest.weightKg }} kg</b> ({{ bodyweight.latest.date }})
       </p>
       <p v-else class="current" style="color: var(--faint)">
-        Noch kein Eintrag — Rang-Berechnung nutzt vorläufig 75 kg.
+        Trag dein Gewicht oben ein — bis dahin nutzt die Rang-Berechnung vorläufig 75 kg.
       </p>
       <BodyweightTrend v-if="bodyweight.entries.length > 1" :entries="bodyweight.entries" />
     </section>
