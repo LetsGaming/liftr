@@ -603,7 +603,7 @@ body {
      accent instead of silently disappearing, while tier-context bars keep their metal gradient.
      `--b2`/`--b3` (not the whole `background` shorthand) need the fallback, since var() only
      supplies a per-property fallback, not a shorthand-level one. */
-  background: linear-gradient(90deg, var(--b2, var(--blue)), var(--b3, var(--blue-hi)));
+  background: linear-gradient(90deg, var(--b2, var(--nebula-1)), var(--b3, var(--nebula-2)));
 }
 
 /* muscle figure fills (mockup #figTemplate) */
