@@ -12,6 +12,7 @@ import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
 import FinishSequence from "../components/workout/FinishSequence.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
+import NoteCapture from "../components/workout/NoteCapture.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
 import RestTimer from "../components/workout/RestTimer.vue";
 import RoutineWizard from "../components/routine-wizard/RoutineWizard.vue";
@@ -205,6 +206,22 @@ const kindPickerFor = ref<{ workoutExerciseId: string; setIndex: number } | null
  *  writes straight off `store.currentSet.rpe` (no local copy to go stale) so it automatically
  *  reads as unset again once the set logs and the store's `currentSet` advances to the next one. */
 const showRpeCapture = ref(false);
+
+/** Notes capture (Task 5) — one sheet, two targets: 'set' writes store.currentSet.notes (same
+ *  per-set, off-the-primary-path timing as RPE, rides along in the next logCurrentSet() call),
+ *  'workout' writes store.workoutNotes (session-level, sent in finish()'s payload per Task 2).
+ *  A single ref instead of two separate open-flags since only one of these sheets is ever open
+ *  at a time and they share one component. */
+const noteCaptureTarget = ref<"set" | "workout" | null>(null);
+const noteCaptureTitle = computed(() => (noteCaptureTarget.value === "workout" ? "Workout-Notiz" : "Notiz zum Satz"));
+const noteCaptureValue = computed(() =>
+  noteCaptureTarget.value === "workout" ? store.workoutNotes : (store.currentSet?.notes ?? null),
+);
+function saveNoteCapture(value: string | null) {
+  if (noteCaptureTarget.value === "workout") store.setWorkoutNotes(value);
+  else store.setCurrentSetNotes(value);
+  noteCaptureTarget.value = null;
+}
 
 /** Defensive fallback to "normal" — activeWorkoutStore.restore() backfills `kind` on load for
  *  sets persisted before this field existed, but this is cheap insurance against the same class
@@ -549,6 +566,14 @@ async function logSet() {
           </ul>
         </div>
 
+        <!-- Workout-level notes (Task 5) — session-scoped, so it belongs with the other
+             session-level controls (add-exercise, cancel) rather than the per-set focus column.
+             Reads/writes store.workoutNotes via setWorkoutNotes(); rides along in finish()'s
+             existing sync payload (Task 2), never a separate network call and never required. -->
+        <button class="add-ex-btn note-pill" @click="noteCaptureTarget = 'workout'">
+          {{ store.workoutNotes ? `Workout-Notiz: ${store.workoutNotes}` : "+ Workout-Notiz" }}
+        </button>
+
         <button class="cancel-btn" :class="{ confirming: cancelConfirm.isArmed() }" @click="cancelConfirm.trigger()">
           {{ cancelConfirm.isArmed() ? "Wirklich abbrechen?" : "Workout abbrechen" }}
         </button>
@@ -622,6 +647,9 @@ async function logSet() {
         <div v-if="store.currentSet" class="set-meta-row">
           <button class="meta-pill" @click="showRpeCapture = true">
             {{ store.currentSet.rpe != null ? `RPE ${store.currentSet.rpe}` : "RPE" }}
+          </button>
+          <button class="meta-pill note-pill" @click="noteCaptureTarget = 'set'">
+            {{ store.currentSet.notes ? `Notiz: ${store.currentSet.notes}` : "Notiz" }}
           </button>
         </div>
 
@@ -703,6 +731,14 @@ async function logSet() {
             showRpeCapture = false;
           }
         "
+      />
+
+      <NoteCapture
+        v-if="noteCaptureTarget"
+        :title="noteCaptureTitle"
+        :model-value="noteCaptureValue"
+        @close="noteCaptureTarget = null"
+        @save="saveNoteCapture"
       />
 
       <div v-if="!(store.currentExercise && !store.allSetsLogged)" class="workout-complete">
@@ -1208,6 +1244,12 @@ async function logSet() {
   border-radius: var(--r-md);
   padding: 8px 12px;
   max-width: 100%;
+}
+.note-pill {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
 }
 /* Was --glow-blue on every instance — this is the ordinary CTA class (Quick Start, "Satz
    speichern", "Starten", routine save, …), so *every* screen had a glowing button, which
