@@ -297,7 +297,7 @@ function retryFailed() {
           <div class="rank-terms">
             <InfoToggle label="Was bedeutet mein Rang?">
               <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
-              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III" bis „I"), die bis zur
+              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III“ bis „I“), die bis zur
               nächsten Beförderung runterzählen; <b class="tnum">LP</b> {{ LP_EXPLAINER }}.
             </InfoToggle>
           </div>
