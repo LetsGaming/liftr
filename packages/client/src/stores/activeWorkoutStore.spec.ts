@@ -60,6 +60,7 @@ function seedOneSetExercise(store: ReturnType<typeof useActiveWorkoutStore>) {
     totalPausedMs: 0,
     currentExerciseIndex: 0,
     exercises: [exercise],
+    workoutNotes: null,
   });
 }
 
@@ -109,5 +110,41 @@ describe("activeWorkoutStore — rpe/notes plumbing (Task 1)", () => {
     expect(enqueueMock).toHaveBeenCalledTimes(1);
     const call = enqueueMock.mock.calls[0]![0];
     expect(call.payload).toMatchObject({ rpe: null, notes: null });
+  });
+});
+
+describe("activeWorkoutStore — workout-level notes (Task 2)", () => {
+  it("setWorkoutNotes writes workoutNotes", () => {
+    const store = useActiveWorkoutStore();
+    seedOneSetExercise(store);
+
+    store.setWorkoutNotes("leg day, felt strong");
+
+    expect(store.workoutNotes).toBe("leg day, felt strong");
+  });
+
+  it("finish() includes notes in the enqueueAndAwaitFlush payload when workoutNotes is set", async () => {
+    const store = useActiveWorkoutStore();
+    seedOneSetExercise(store);
+    store.setWorkoutNotes("leg day, felt strong");
+    enqueueAndAwaitFlushMock.mockResolvedValue({ ranks: [] });
+
+    await store.finish();
+
+    expect(enqueueAndAwaitFlushMock).toHaveBeenCalledTimes(1);
+    const call = enqueueAndAwaitFlushMock.mock.calls[0]![0];
+    expect(call.type).toBe("finish_workout");
+    expect(call.payload).toMatchObject({ notes: "leg day, felt strong" });
+  });
+
+  it("finish() sends null notes when workoutNotes was never set", async () => {
+    const store = useActiveWorkoutStore();
+    seedOneSetExercise(store);
+    enqueueAndAwaitFlushMock.mockResolvedValue({ ranks: [] });
+
+    await store.finish();
+
+    const call = enqueueAndAwaitFlushMock.mock.calls[0]![0];
+    expect(call.payload).toMatchObject({ notes: null });
   });
 });

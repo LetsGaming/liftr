@@ -64,6 +64,10 @@ interface ActiveWorkoutState {
   totalPausedMs: number;
   currentExerciseIndex: number;
   exercises: ActiveExercise[];
+  /** Free-text notes for the whole session (Task 2) — rides along in `finish()`'s
+   *  `enqueueAndAwaitFlush` payload, the same offline-safe path as everything else in this
+   *  loop, rather than a second online-only PATCH call after finish. */
+  workoutNotes: string | null;
 }
 
 export interface StartSetTarget {
@@ -109,6 +113,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     totalPausedMs: 0,
     currentExerciseIndex: 0,
     exercises: [],
+    workoutNotes: null,
   }),
 
   getters: {
@@ -185,6 +190,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           if (ex.restBetweenSetsSeconds == null) ex.restBetweenSetsSeconds = DEFAULT_REST_SECONDS;
           if (ex.restAfterExerciseSeconds == null) ex.restAfterExerciseSeconds = DEFAULT_REST_SECONDS;
         }
+        // Workout-level notes (Task 2) — same undefined-backfill reasoning as above.
+        if (saved.workoutNotes === undefined) saved.workoutNotes = null;
         this.$patch(saved);
       }
     },
@@ -325,6 +332,13 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
+    /** Workout-level notes (Task 5's UI writes here) — captured during the session, sent as
+     *  part of `finish()`'s existing `enqueueAndAwaitFlush` payload (Task 2), not a separate
+     *  network call. */
+    setWorkoutNotes(notes: string | null) {
+      this.workoutNotes = notes;
+      persist(this.$state);
+    },
 
     /**
      * Reclassifies a set ("Satzart auswählen" — feedback: "not possible to set what kind of
@@ -583,7 +597,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       const result = await sync.enqueueAndAwaitFlush({
         clientId: crypto.randomUUID(),
         type: "finish_workout",
-        payload: { workoutId, endedAt: new Date().toISOString(), pausedSeconds },
+        payload: { workoutId, endedAt: new Date().toISOString(), pausedSeconds, notes: this.workoutNotes },
       });
 
       await clearActiveWorkout();

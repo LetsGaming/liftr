@@ -52,7 +52,7 @@ export interface LogSetItem {
 export interface FinishWorkoutItem {
   clientId: string;
   type: "finish_workout";
-  payload: { workoutId: string; endedAt: Date; pausedSeconds: number };
+  payload: { workoutId: string; endedAt: Date; pausedSeconds: number; notes?: string | null };
 }
 
 export interface AddExerciseItem {
@@ -143,7 +143,11 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   const existing = await findWorkoutById(db, item.payload.workoutId);
   if (existing?.endedAt) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
 
-  await patchWorkout(db, item.payload.workoutId, { endedAt: item.payload.endedAt, pausedSeconds: item.payload.pausedSeconds });
+  await patchWorkout(db, item.payload.workoutId, {
+    endedAt: item.payload.endedAt,
+    pausedSeconds: item.payload.pausedSeconds,
+    notes: item.payload.notes ?? null,
+  });
 
   // Streak credit (plan §2.4) — the day the workout finished counts, which is what matters for
   // "did you train today", not when the sync happened to reach the server.
