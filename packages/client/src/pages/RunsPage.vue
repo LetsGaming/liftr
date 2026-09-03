@@ -27,6 +27,7 @@ const deleteConfirm = useConfirmTap(async () => {
 });
 const importing = ref(false);
 const importError = ref<string | null>(null);
+const manualError = ref<string | null>(null);
 const showManualForm = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -74,17 +75,22 @@ async function submitManual() {
   if (!canSubmitManual.value) return;
   const km = Number(manualDistanceKm.value.replace(",", "."));
   const min = Number(manualMinutes.value.replace(",", "."));
-  await runsStore.logManual({
-    name: manualName.value || null,
-    startedAt: new Date(manualDate.value + "T12:00:00").toISOString(),
-    distanceM: km * 1000,
-    durationS: min * 60,
-  });
-  showManualForm.value = false;
-  manualName.value = "";
-  manualDistanceKm.value = "";
-  manualMinutes.value = "";
-  if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
+  try {
+    await runsStore.logManual({
+      name: manualName.value || null,
+      startedAt: new Date(manualDate.value + "T12:00:00").toISOString(),
+      distanceM: km * 1000,
+      durationS: min * 60,
+    });
+    manualError.value = null;
+    showManualForm.value = false;
+    manualName.value = "";
+    manualDistanceKm.value = "";
+    manualMinutes.value = "";
+    if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
+  } catch (err) {
+    manualError.value = (err as Error).message;
+  }
 }
 
 function formatDate(iso: string) {
@@ -131,6 +137,7 @@ function formatDuration(s: number) {
       <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
       <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
       <button class="btn-primary" :disabled="!canSubmitManual" @click="submitManual">Speichern</button>
+      <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 
     <!-- Audit fix (found while implementing workplan-v1 §1.10a, not previously tracked as its
