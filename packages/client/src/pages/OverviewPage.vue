@@ -27,6 +27,7 @@ import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
+import { LP_EXPLAINER } from "../copy/rankCopy";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
@@ -294,11 +295,10 @@ function retryFailed() {
                numbers mean." Same always-reachable mechanism as RanksPage.vue's own LP/trust
                explainer (InfoToggle.vue), not a second one-off tooltip. -->
           <div class="rank-terms">
-            <InfoToggle label="Was bedeutet mein Rang?">
+            <InfoToggle label=”Was bedeutet mein Rang?”>
               <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
-              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III“ bis „I“), die bis zur
-              nächsten Beförderung runterzählen; <b class="tnum">LP</b> misst deinen Fortschritt
-              innerhalb der aktuellen Division (0–100).
+              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III” bis „I”), die bis zur
+              nächsten Beförderung runterzählen; <b class=”tnum”>LP</b> {{ LP_EXPLAINER }}.
             </InfoToggle>
           </div>
 
@@ -364,12 +364,7 @@ function retryFailed() {
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
-            <router-link to="/profile" class="tile discover-tile">
-              <div class="discover-icon">📦</div>
-              <b>Daten-Export</b>
-              <p class="tile-empty">Workouts, Sätze, Läufe &amp; Körpergewicht als CSV in einer ZIP-Datei — lesbar auch ohne Liftr</p>
-            </router-link>
-            <router-link to="/ranks" class="tile discover-tile">
+<router-link to="/ranks" class="tile discover-tile">
               <div class="discover-icon">🏆</div>
               <b>Rang-Analyse</b>
               <p class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</p>
