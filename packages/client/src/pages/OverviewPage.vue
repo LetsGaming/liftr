@@ -23,6 +23,7 @@ import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
+import RankUpCalendar from "../components/rank/RankUpCalendar.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
@@ -230,10 +231,13 @@ function retryFailed() {
         </div>
 
         <!-- 0. Erholungszone — a reason to open the app on a rest day (engagement rework W5) -->
-        <ErholungszoneCard :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
+        <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
+
+        <!-- Rangaufstiege diese Woche — weekly rank-up nudge (engagement rework W8) -->
+        <RankUpCalendar class="tile--priority" />
 
         <!-- 1. Launchpad -->
-        <section class="launchpad">
+        <section class="launchpad tile--priority">
           <template v-if="activeWorkout.isActive">
             <div class="eyebrow lp-eyebrow">Weiter machen</div>
             <div class="lp-row">
@@ -442,6 +446,14 @@ function retryFailed() {
   background: linear-gradient(155deg, var(--surface-3), var(--surface-2));
   border: 1px solid var(--line-2);
 }
+.launchpad.tile--priority {
+  border: 1px solid var(--nebula-1);
+  background: var(--surface-3);
+}
+.rankup-calendar.tile--priority {
+  border-color: var(--nebula-1);
+  background: var(--surface-3);
+}
 .lp-eyebrow {
   --eyebrow-color: var(--blue-hi);
   margin-bottom: var(--sp2);
@@ -544,6 +556,10 @@ function retryFailed() {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
+}
+.tile--priority {
+  border: 1px solid var(--nebula-1);
+  background: var(--surface-3);
 }
 .tile-head {
   --eyebrow-color: var(--dim);
