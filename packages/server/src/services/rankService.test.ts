@@ -416,6 +416,24 @@ describe("recomputeRankForExercise", () => {
     const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
   });
+
+  it("stores the plausibility reason on the rank_events row for a moderately-flagged rank-up", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8);
+    await recomputeRankForExercise(db, ex.id);
+
+    await logSet(ex.id, 90, 8); // genuinely higher e1RM -> a real peak advance
+    // 0.4 is peak-eligible (>= PEAK_ELIGIBILITY_FLOOR 0.3) so this still fires rankedUp, but it
+    // carries a reason — exactly the gap this task closes.
+    const result = await recomputeRankForExercise(db, ex.id, 0.4, "improbable_jump");
+    expect(result!.rankedUp).toBe(true);
+
+    const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(2); // the clean first rank-up + this flagged one
+    expect(rows.some((r) => r.plausibilityReason === "improbable_jump")).toBe(true);
+    expect(rows.some((r) => r.plausibilityReason === null)).toBe(true);
+  });
 });
 
 describe("computeRankEventsByWeekday", () => {
@@ -437,6 +455,24 @@ describe("computeRankEventsByWeekday", () => {
     const total = result.reduce((sum, r) => sum + r.count, 0);
     expect(total).toBe(1);
     expect(result.find((r) => r.weekday === todayWeekday)!.count).toBe(1);
+  });
+
+  it("splits today's rank-ups into total vs. flagged counts", async () => {
+    const ex = await insertTestExercise(db);
+    await seedStandards(ex.id);
+    await logSet(ex.id, 60, 8);
+    await recomputeRankForExercise(db, ex.id); // clean rank-up #1
+
+    const ex2 = await insertTestExercise(db);
+    await seedStandards(ex2.id);
+    await logSet(ex2.id, 60, 8);
+    await recomputeRankForExercise(db, ex2.id, 0.4, "pace"); // flagged rank-up #2
+
+    const result = await computeRankEventsByWeekday(db);
+    const todayWeekday = new Date().getDay();
+    const today = result.find((r) => r.weekday === todayWeekday)!;
+    expect(today.count).toBe(2);
+    expect(today.flaggedCount).toBe(1);
   });
 });
 
