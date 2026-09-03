@@ -22,6 +22,11 @@ export interface RankUpSummary {
   isPr: boolean;
   lp: number;
   prevLp: number;
+  /** Rank engine v2 gap fix (workstream B task 2): set when this exercise's rank-up came from a
+   *  plausibility-flagged session — never states exact numbers (same PLAUSIBILITY_NOTE_DE copy
+   *  useWorkoutFinish.ts's sessionCaptions already uses). Global constraint: a flagged rank-up
+   *  must never render identically to a genuine one — see the template below. */
+  plausibilityNote: string | null;
 }
 export interface StreakDay {
   label: string;
@@ -49,13 +54,13 @@ const leveledUp = computed(() => props.levelAfter > props.levelBefore);
 
 /** Rework Phase 4 (critique finding: .finish-seq had no background, no color, no shadow — the
  *  emotional climax of the app rendered as centered text on plain --bg). Highest tier among this
- *  session's rank-ups stages the whole sequence's background; null (no rank-ups) falls back to
- *  no tier class, and .finish-seq's own gradient falls back to the neutral surface ramp. */
+ *  session's *genuine* rank-ups stages the whole sequence's background; a discounted-only session
+ *  (workstream B task 2 — Global Constraint: a discounted session must never look genuine) falls
+ *  back to the same neutral surface ramp as a session with no rank-ups at all. */
 const topTierClass = computed(() => {
-  if (props.rankUps.length === 0) return "";
-  const top = props.rankUps.reduce((best, r) =>
-    TIERS.indexOf(r.tier as Tier) > TIERS.indexOf(best.tier as Tier) ? r : best,
-  );
+  const genuine = props.rankUps.filter((r) => !r.plausibilityNote);
+  if (genuine.length === 0) return "";
+  const top = genuine.reduce((best, r) => (TIERS.indexOf(r.tier as Tier) > TIERS.indexOf(best.tier as Tier) ? r : best));
   return `t-${top.tier}`;
 });
 
@@ -118,8 +123,14 @@ watch(
     <div v-if="celebrate.activeIndex.value === 0" class="beat pop-in">
       <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
       <div class="rankup-list">
-        <div v-for="(r, i) in rankUps" :key="i" class="rankup-row panel-reward pop-in" :class="`t-${r.tier}`" :style="{ animationDelay: i * 90 + 'ms' }">
-          <span class="badge-ring">
+        <div
+          v-for="(r, i) in rankUps"
+          :key="i"
+          class="rankup-row panel-reward pop-in"
+          :class="[`t-${r.tier}`, { discounted: r.plausibilityNote }]"
+          :style="{ animationDelay: i * 90 + 'ms' }"
+        >
+          <span :class="r.plausibilityNote ? 'badge-ring-muted' : 'badge-ring'">
             <span class="badge" :class="`t-${r.tier}`">
               <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
             </span>
@@ -127,6 +138,7 @@ watch(
           <div class="rankup-meta">
             <b>{{ r.exerciseName }}</b>
             <span>{{ r.isPr ? "Neuer Rekord" : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
+            <span v-if="r.plausibilityNote" class="plausibility-note">{{ r.plausibilityNote }}</span>
             <div class="rankbar">
               <i class="bar-fill" :style="{ transform: `scaleX(${Math.round(r.lp) / 100})` }" />
             </div>
@@ -245,6 +257,30 @@ watch(
   border-radius: 2px;
   background: var(--nebula-grad);
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+/* Muted counterpart to .badge-ring (workstream B task 2 — Global Constraint: a plausibility-
+   discounted session must never be visually indistinguishable from a genuine rank-up). Flat
+   --surface-3 instead of the Nebula brand gradient — deliberately the one place in this beat
+   that does NOT get the gradient treatment. */
+.badge-ring-muted {
+  display: inline-block;
+  flex: none;
+  padding: 3px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+/* Discounted row: desaturated + slightly dimmed, so it reads as "happened, but muted" rather
+   than a full celebration — paired with .badge-ring-muted above and the plausibility-note line
+   below. */
+.rankup-row.discounted {
+  filter: grayscale(0.55);
+  opacity: 0.85;
+}
+.plausibility-note {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--dim);
 }
 .rankup-meta {
   flex: 1;

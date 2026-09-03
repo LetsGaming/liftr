@@ -191,6 +191,7 @@ export function useWorkoutFinish(
           isPr: r.newPr != null,
           lp: r.lp,
           prevLp: r.prevLp,
+          plausibilityNote: r.plausibilityReason ? (PLAUSIBILITY_NOTE_DE[r.plausibilityReason] ?? null) : null,
         };
       });
     // Every touched exercise's rank is refreshed here too (not just the ones that ranked up), so
