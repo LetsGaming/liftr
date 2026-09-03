@@ -418,35 +418,34 @@ can settle with more evidence.
 
 ---
 
-## 5a. Phase 4a — `engagement-audit-v5` carry-forward (Overview/Ranks/Profile duplication + grouping) — new, added 2026-09-03
+## 5a. Phase 4a — `engagement-audit-v5` carry-forward (Overview/Ranks/Profile duplication + grouping) — ✅ closed 2026-09-03
 
 `audit/engagement-audit-v5.md` is a later, independent audit round (five cold agents testing the
 *live* app, not a source-blind derivation) that postdates this workplan's original Plan A/B/C
 synthesis. Its Phase 1 (the two correctness bugs) is the same bugs as this document's §1.2/§1.3 —
-already closed, confirmed above. Its remaining phases are genuinely new scope this workplan hadn't
-covered, small and current-UI-track (explicitly *not* a redesign, per its own §6), and fit here
-alongside §3/§5 rather than under Track R:
+already closed, confirmed above.
 
-- **Cut duplication** — Overview's "Top Ränge" tile is a verified-live, full re-render of what
-  Ranks already shows in detail (`OverviewPage.vue` line 333, `topRanks` computed) — **not yet cut**
-  as of 2026-09-03. Same for the Overview "Daten-Export" shortcut duplicating Profile's own export
-  feature, and two independently-worded LP explainer strings. See `engagement-audit-v5.md` Phase 2
-  for exact scope; this is a subtraction/link-instead-of-reimplement pass, not new UI.
-- **Profile domain grouping** — `ProfilePage.vue` is confirmed still a flat sequence of `.card`
-  sections (Körpergewicht, Trainingsprofil, Equipment, Scheiben & Stange, XP & Level, API-Token,
-  Health Connect, Daten-Export), each with its own small `.eyebrow` label but **no higher-level
-  domain headers** (Trainingsprofil / Fortschritt / Daten & Server / Über) grouping them — verified
-  not present as of 2026-09-03. See `engagement-audit-v5.md` Phase 3.
-- **Overview priority surfacing** — give existing action-relevant cards (resume workout, rank-up
-  pending, recovery status) visual priority over neutral stat tiles; reframe the empty
-  "Rangaufstiege diese Woche" state to encouraging/actionable tone. Not independently re-verified
-  this pass. See `engagement-audit-v5.md` Phase 4.
+**All three remaining Phase 2-4 items shipped 2026-09-03** as Tasks 11-14 of
+`docs/superpowers/plans/2026-09-03-nebula-and-workplan-rework.md` (merged to master):
+- **Cut duplication** — Overview's "Top Ränge" tile simplified to a single teaser line; the
+  duplicate Overview "Daten-Export" entry point removed (Profile stays the one instance); the two
+  independently-worded LP explainer strings unified into one canonical `LP_EXPLAINER` constant
+  (`packages/client/src/copy/rankCopy.ts`), consumed by both `OverviewPage.vue` and `RanksPage.vue`.
+- **Profile domain grouping** — four group headers added (Trainingsprofil / Fortschritt / Daten &
+  Server / Über), each existing card correctly grouped exactly once, `.card--quiet` visual tier
+  applied to the Daten & Server group.
+- **Overview priority surfacing** — `ErholungszoneCard` and the launchpad section both got a
+  `.tile--priority` treatment (Nebula-bordered, theme-aware); the "Rangaufstiege diese Woche"
+  reframe was corrected mid-implementation to attach to `RankUpCalendar.vue`'s own empty-state copy
+  (the only place that text actually renders) rather than a new Overview card, after the plan's
+  premise that such a card already existed on Overview turned out not to match current source — see
+  that plan's ledger for the full correction.
 
-**Sequencing:** independent of Track R and of Phase 1's PR ledger (§2) — can ship any time, small
-enough to batch with whichever of §3/§5's remaining verification work lands next. `engagement-
-audit-v5.md`'s own §5 (explicitly out of scope this round: the Workout/Läufe tab "merge" question,
-icon confusability, the `/runs` nav-orphaned route, a missing Finish-screen "Fertig" CTA) carries
-forward unchanged — not re-opened by this update.
+**Sequencing note preserved for history:** this was independent of Track R and shipped ahead of it,
+exactly as planned. `engagement-audit-v5.md`'s own §5 (explicitly out of scope: the Workout/Läufe
+tab "merge" question, icon confusability, the `/runs` nav-orphaned route, a missing Finish-screen
+"Fertig" CTA) still carries forward unchanged — not reopened, and workstream E's plan (see "Track R
+is now orchestrated," above) explicitly excludes the `/runs` item again for the same reason.
 
 ---
 
@@ -493,6 +492,52 @@ Everything else in Plan C (§1's evidence synthesis, §3's six phases, §4's mig
 out-of-scope list, §6's open questions except Q1 — see below) stands as written and does not need
 re-litigating to resume.
 
+### Track R is now orchestrated and planned in full — 2026-09-03
+
+Following the Nebula token/color layer's merge (see the "Resolved 2026-09-03" note under §0), Track
+R's actual remaining scope was mapped and planned in full:
+`docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` sequences Plan C's six phases into
+Foundation (Wave 0, blocking) plus five fully parallel Wave-1 workstreams (confirmed zero shared
+`.vue` files between them, one sequencing exception noted below), each with its own complete,
+bite-sized implementation plan written by an independent planning pass against the real current
+codebase — not re-derived from Plan C's original (source-blind) assumptions:
+
+- `docs/superpowers/plans/2026-09-03-foundation-primitives.md` — 7 tasks. Most of Phase 0 was
+  already shipped (Nebula tokens, five-zone nav shell with its 195px fallback, `useCountUp`/
+  `useCelebrate`, the three-tier haptic vocabulary) — this plan only builds what's genuinely missing:
+  `TruncatingLabel`, `ThumbZoneAction`, `DensityScope`/`useDensityMode`, a consolidated touch-target
+  token.
+- `docs/superpowers/plans/2026-09-03-workstream-a-today-train.md` — 12 tasks. Real gap found beyond
+  Plan C's original scope: workout-level notes have no offline sync path at all (only an online-only
+  `PATCH`) — the plan extends the offline payload rather than adding a second network call.
+- `docs/superpowers/plans/2026-09-03-workstream-b-finish-progress.md` — 7 tasks. Two findings beyond
+  what was expected: (1) the parked plausibility-gating bug (`rankedUp || newPr` not checking
+  `plausibilityReason`) is deeper than a client filter — `rank_events` has no plausibility column at
+  all, so this needs a real (small, nullable-column) schema migration; (2) the Finish Sequence's LP
+  bar has **zero animation today** — a static `scaleX`, no `prevLp` reference — Global Constraint 2
+  from the Nebula design docs is currently violated outright, not just imperfectly met.
+- `docs/superpowers/plans/2026-09-03-workstream-c-plan-routines.md` — 9 tasks. Most wizard/mesocycle
+  scope already shipped; real gaps are substitution copy not naming the actual missing equipment, no
+  drag-reorder on the routine list despite `useDragReorder` existing, and an unused
+  `POST /api/exercises` route. **Found a boundary issue**: the routine-list UI physically lives in
+  `WorkoutPage.vue` (Workstream A's file) — resolved in the orchestration doc as the one non-parallel
+  Wave-1 task, sequenced rather than concurrent.
+- `docs/superpowers/plans/2026-09-03-workstream-d-profile-auth.md` — 6 tasks (5 verify-only, 1 build).
+  Phase 4 is almost entirely already shipped, including the auth/401 entry point Plan C's own open
+  question 3 couldn't verify — now confirmed directly against `packages/server/src/auth.ts`. One real
+  gap: bodyweight empty-state copy states the fallback but never names the action.
+- `docs/superpowers/plans/2026-09-03-workstream-e-runs.md` — 4 tasks. Nearly all of Phase 5 already
+  shipped, including the duplicate-import-button fix Plan C and `engagement-audit-v5.md` both
+  flagged. Remaining gaps are small: manual-entry error handling, success toasts, one empty-state
+  copy addition.
+
+None of these six plans have been executed yet — this is the planning layer, ready for
+subagent-driven execution per the orchestration doc's §4 sequencing (Foundation first, solo; the
+five Wave-1 workstreams in parallel once Foundation merges). No legacy-compatibility or
+data-migration-safety work is needed anywhere in these plans — Liftr is pre-v1 with zero
+deployments, so schema changes (e.g. Workstream B's nullable column) are ordinary hygiene, not
+migration ceremony.
+
 ---
 
 ## Consolidated open questions (deduplicated from Plan A §4, Plan B §4, Plan C §6, and this document)
@@ -509,16 +554,17 @@ is traceable; only genuinely open items need action.
 2. ~~**Segmented-control color convention** (§1.8)~~ — **resolved and shipped**, confirmed in source
    (see §1.8 and the Track R feed-in list above). No longer open, in either track.
 3. **Anti-farming copy reception** (§3.1) — still open, needs a real-user check, not just a rewrite.
-4. **`standards.trust` visual state** (§3.2) — likely already closed (see §3.2's 2026-09-03 status
-   check above); needs a quick visual confirmation, not a fresh build.
-5. **RPE/notes exact interaction shape** (§4) — still open. Confirmed not yet built in source
-   (2026-09-03: no RPE-related component found under `pages/`/`components/` outside onboarding/about
-   copy). 1–10 scale vs. RPE-decimal picker; inline vs. modal notes — no existing pattern to anchor
-   the choice; real product-design work, not a research gap.
-6. **Overall Lifter Rank prominence** (§5) — likely already closed (see §5's 2026-09-03 status check
-   above: `overallRank` has multi-screen presence); exact prominence/placement not independently
-   confirmed as "right," but the plumbing-and-first-surface work described in Plan A Phase 4 appears
-   done.
+4. ~~**`standards.trust` visual state** (§3.2)~~ — **resolved.** Workstream B's plan
+   (2026-09-03, see "Track R is now orchestrated" above) confirmed by reading the actual render code
+   (not just grep) that trust legibility is genuinely already implemented — scoped as verify-only in
+   that plan, no rebuild task written. No longer open.
+5. **RPE/notes exact interaction shape** (§4) — still open, but no longer un-scoped: Workstream A's
+   plan (`docs/superpowers/plans/2026-09-03-workstream-a-today-train.md`) makes a default choice
+   (1-10 row for RPE, sheet+textarea for notes) and flags it explicitly for human confirmation before
+   execution, rather than leaving the shape entirely undecided.
+6. ~~**Overall Lifter Rank prominence** (§5)~~ — **resolved.** Workstream B's plan confirmed by
+   direct code read that Overall Rank placement is genuinely already implemented and adequate — no
+   rebuild task written. No longer open.
 7. ~~**Auth/token enforcement behavior**~~ — **resolved.** `AuthGate.vue`'s own comments confirm the
    401 path is live and observable (health check on boot, blocking prompt only on actual 401, no
    token configured in dev = never shows) — this *is* the dedicated unauthenticated-state screen Plan
@@ -529,12 +575,15 @@ is traceable; only genuinely open items need action.
 9. **Missing-photo catalog gap** (Plan B §4.4) — still open per §1.10's already-recorded 2026-09-03
    decision (defer full-catalog illustration; source real photos/closer placeholders for the 11 gaps
    in the meantime) — a resourcing decision, not a design one, and not re-scoped by this update.
-10. **Streak/XP mechanics framing** (§0's "Decided" note, "Underlying mechanics") — still open, new
-    this update's cross-check surfaced it as unresolved by the Nebula documents (which are visual/
-    token work, not mechanics work — see the "Resolved 2026-09-03" note under §0). Needed before
-    Track R's Phase 2 (Finish & Progress) begins.
-11. **`engagement-audit-v5` Phases 2–4** (§5a, new) — Overview/Ranks/Profile duplication cut, Profile
-    domain-header grouping, and Overview priority surfacing are all confirmed still open in source as
-    of 2026-09-03. Small, current-UI-track, no design ambiguity — these are scoped, not "open
-    questions" in the same sense as the others, but listed here since they're the largest block of
-    verified-still-open work this update found.
+10. **Streak/XP mechanics framing** (§0's "Decided" note, "Underlying mechanics") — still open.
+    Workstream B's plan (`docs/superpowers/plans/2026-09-03-workstream-b-finish-progress.md`) scopes
+    this as a design-then-build two-step rather than inventing mechanics blind — its last task is
+    explicitly a brainstorm/design-pass trigger, not implementation. Still needs that design pass
+    before Workstream B's mechanics task can be executed.
+11. ~~**`engagement-audit-v5` Phases 2–4**~~ (§5a) — **resolved and shipped 2026-09-03.** No longer
+    open; see §5a above for what shipped.
+12. **Six-workstream Track R execution plans exist but are unexecuted** (new, 2026-09-03) — see "Track
+    R is now orchestrated" under Track R, above. `docs/superpowers/plans/2026-09-03-full-rebuild-
+    orchestration.md` plus its six workstream plans are ready for subagent-driven execution; none of
+    the six have been implemented yet. This is now the actual state of Track R, not "Plan C, ready to
+    resume" — the phases have been re-planned against current source, not just carried forward.
