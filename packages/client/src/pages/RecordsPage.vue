@@ -72,6 +72,19 @@ function formatDate(iso: string): string {
 </template>
 
 <style scoped>
+.page-note {
+  color: var(--dim);
+}
+.load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp3);
+  max-width: 60ch;
+}
+.load-error .btn-secondary {
+  padding: 8px 14px;
+}
 .pr-list {
   list-style: none;
   display: flex;
