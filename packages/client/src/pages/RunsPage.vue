@@ -8,6 +8,7 @@ import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useToast } from "../composables/useToast";
+import { isHealthConnectAvailable } from "../health/healthConnect";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
@@ -156,6 +157,10 @@ function formatDuration(s: number) {
       <p>
         Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
         manuell nach — oben rechts.
+      </p>
+      <p v-if="isHealthConnectAvailable()">
+        Läufe mit Route werden auf Android automatisch über Health Connect importiert, sobald du das in deinem Profil
+        einmalig verbindest.
       </p>
     </section>
 
