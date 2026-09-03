@@ -18,12 +18,20 @@ const store = useRankEventsStore();
 onMounted(() => store.load());
 
 const days = computed(() => {
-  const byWeekday = new Map(store.byWeekday.map((d) => [d.weekday, d.count]));
-  return MO_SO_ORDER.map((weekday) => ({
-    weekday,
-    label: DAY_ABBR[weekday]!,
-    count: byWeekday.get(weekday) ?? 0,
-  }));
+  const byWeekday = new Map(store.byWeekday.map((d) => [d.weekday, d]));
+  return MO_SO_ORDER.map((weekday) => {
+    const row = byWeekday.get(weekday);
+    const count = row?.count ?? 0;
+    const flaggedCount = row?.flaggedCount ?? 0;
+    return {
+      weekday,
+      label: DAY_ABBR[weekday]!,
+      count,
+      /** Workstream B task 3: a day where every logged rank-up was plausibility-flagged should
+       *  not render identically to a day with a genuine one (Global Constraint). */
+      hasGenuine: count > flaggedCount,
+    };
+  });
 });
 
 const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
@@ -34,8 +42,8 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
     <div class="eyebrow ruc-eyebrow">Rangaufstiege diese Woche</div>
     <div class="streak-strip">
       <div v-for="d in days" :key="d.weekday" class="streak-day">
-        <span class="dot" :class="{ active: d.count > 0 }">{{ d.count > 0 ? d.count : "" }}</span>
-        <span v-if="d.count > 0" class="nebula-dot" aria-hidden="true" />
+        <span class="dot" :class="{ active: d.hasGenuine, flagged: d.count > 0 && !d.hasGenuine }">{{ d.count > 0 ? d.count : "" }}</span>
+        <span v-if="d.hasGenuine" class="nebula-dot" aria-hidden="true" />
         <span class="dl">{{ d.label }}</span>
       </div>
     </div>
@@ -98,6 +106,14 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
   height: 6px;
   border-radius: 50%;
   background: var(--nebula-grad);
+}
+/* Workstream B task 3 (Global Constraint: a flagged rank-up must never look genuine) — a day
+   where every rank-up was plausibility-flagged gets a flat, unlit dot instead of the tier
+   gradient .dot.active uses; the count still shows (the day isn't hidden), just not celebrated.
+   No .nebula-dot accent for this state either (see the template's v-if="d.hasGenuine" above). */
+.dot.flagged {
+  background: var(--surface-3);
+  opacity: 0.7;
 }
 .dl {
   font-size: 11px;
