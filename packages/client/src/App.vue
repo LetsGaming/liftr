@@ -397,7 +397,7 @@ const hideTopHud = computed(
 .tab-link.router-link-active {
   background: var(--surface-2);
   border-radius: 0;
-  box-shadow: inset 0 2px 0 var(--tier-accent, var(--blue-hi));
+  box-shadow: inset 0 2px 0 var(--tier-accent, var(--nebula-1));
 }
 .nav-link.router-link-active,
 .tab-link.router-link-active {
