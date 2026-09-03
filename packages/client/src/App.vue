@@ -169,6 +169,7 @@ const hideTopHud = computed(
       <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
         <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
           <div class="mobile-level-row">
+            <span class="level-dot" aria-hidden="true"></span>
             <b>Lv. {{ xp.level }}</b>
             <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
           </div>
@@ -190,6 +191,7 @@ const hideTopHud = computed(
           {{ t(item.labelKey) }}
         </RouterLink>
         <div v-if="xp.showXp && xp.loaded" class="level-chip">
+          <span class="level-dot" aria-hidden="true"></span>
           <b>Lv. {{ xp.level }}</b>
           <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
           <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
@@ -414,6 +416,7 @@ const hideTopHud = computed(
    regardless of whether it just changed or has looked the same for a week. */
 .streak-pulse {
   animation: streak-pulse var(--dur-cele) var(--ease-spring);
+  box-shadow: 0 0 0 1px var(--nebula-glow), 0 8px 20px -8px var(--nebula-glow-strong);
 }
 @keyframes streak-pulse {
   0% {
@@ -437,6 +440,15 @@ const hideTopHud = computed(
 .level-chip b {
   display: block;
   margin-bottom: 4px;
+}
+.level-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--nebula-grad);
+  margin-right: 4px;
+  vertical-align: middle;
 }
 .level-chip .rankbar {
   height: 6px;
