@@ -25,7 +25,7 @@ import StatTile from "../components/ui/StatTile.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useStartRoutine } from "../composables/useStartRoutine";
@@ -330,18 +330,11 @@ function retryFailed() {
             </div>
 
             <div class="tile">
-              <div class="eyebrow tile-head">Top Ränge</div>
-              <div v-if="topRanks.length > 0" class="top-ranks">
-                <div v-for="r in topRanks" :key="r.exerciseId" class="top-rank" :class="`t-${r.tier}`">
-                  <span class="badge small" :class="`t-${r.tier}`">
-                    <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
-                  </span>
-                  <div class="tr-meta">
-                    <b>{{ exerciseName(r.slug) }}</b>
-                    <span>{{ TIER_LABEL_DE[r.tier as RankTier] }} · {{ Math.round(r.lp) }} LP</span>
-                  </div>
-                </div>
-              </div>
+              <div class="eyebrow tile-head">Nächster Rang</div>
+              <p v-if="topRanks.length > 0" class="tile-empty">
+                <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> bis zum nächsten Rang in
+                <b>{{ exerciseName(topRanks[0]!.slug) }}</b>
+              </p>
               <p v-else class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</p>
             </div>
 
