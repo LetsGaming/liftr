@@ -17,9 +17,11 @@ import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE, SUPPOR
 import { fetchExportZip } from "../services/exportService";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useSettingsStore, type ExperienceLevel } from "../stores/settingsStore";
+import { useThemeStore } from "../stores/themeStore";
 import { useXpStore } from "../stores/xpStore";
 
 const bodyweight = useBodyweightStore();
+const theme = useThemeStore();
 const xp = useXpStore();
 const { toast } = useToast();
 const weightInput = ref("");
@@ -366,6 +368,14 @@ async function exportData() {
         <button class="btn-primary" @click="xp.toggleShowXp()">
           {{ xp.showXp ? "Ausblenden" : "Anzeigen" }}
         </button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="eyebrow">Darstellung</h2>
+      <div class="chip-row">
+        <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">Dunkel</button>
+        <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">Hell</button>
       </div>
     </section>
 
