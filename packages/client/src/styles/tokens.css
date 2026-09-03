@@ -318,8 +318,8 @@ body {
      bright, darken the INK instead. --blue-ink on --blue is 5.64:1, on --blue-hi 7.0:1— same
      AA-passing shape, opposite direction, and the button now actually reads as the loudest
      element on the screen instead of the dimmest. */
-  background: linear-gradient(160deg, var(--blue-hi), var(--blue));
-  color: var(--blue-ink);
+  background: var(--nebula-grad-cta);
+  color: var(--nebula-ink-on-fill);
   border: none;
   border-radius: var(--r-md);
   font-weight: 800;
