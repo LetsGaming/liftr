@@ -217,6 +217,51 @@
   --content-w-standard: 720px;
   --content-w-wide: 1100px;
   --content-w-xwide: 1300px;
+
+  /* Foundation Task 1 (2026-09-03 plan) — was hardcoded as the literal `44px` in four places
+     (.btn-close, .btn-primary's min-height, .btn-secondary's min-height, NumberStepper's
+     .stepper.sm ctrls button) with no shared token, despite every one of those comments citing
+     the exact same audit finding (WCAG 2.5.5 / Apple HIG 44pt touch-target floor). One token,
+     four call sites updated below and in NumberStepper.vue/App.vue, so the floor can never again
+     silently drift between components the way lens-3 originally found it had (§2.3). */
+  --touch-target-min: 44px;
+
+  /* Density-mode scaffold (Plan C §3 Phase 0; lens-2 §4's three named density levels — Train
+     lowest-density/largest-targets, Plan form-dense, Progress read-dense). Defined here as bare
+     custom properties so ANY component can read var(--density-gap) etc. even before a
+     DensityScope ancestor sets a mode (falls through to these :root defaults, the "progress"
+     values — the middle ground). components/ui/DensityScope.vue (Task 5) is what actually flips
+     these by setting [data-density] on a wrapper; this block only defines what the three modes
+     ARE. Later workstreams choose per-screen whether to wrap in DensityScope at all — a screen
+     that never does just gets these defaults uniformly, which is a safe no-op, not a broken
+     state. */
+  --density-gap: var(--sp3);
+  --density-touch-min: var(--touch-target-min);
+  --density-text-scale: 1;
+}
+
+/* Density-mode overrides (Task 5's DensityScope sets one of these three on a wrapper's
+   data-density attribute). Train: the sacred ~30x/session logging loop gets the loosest gap and
+   the largest touch targets of any surface in the app — bigger than the floor, not just at it.
+   Plan: form-dense screens (routine builder, mesocycle setup) tighten the gap and drop text size
+   slightly to fit more form rows per screen without dropping below the touch-target floor itself
+   (--density-touch-min still equals --touch-target-min here, never less). Progress: read-dense
+   screens (Ränge, PR ledger) match the :root default exactly — named explicitly anyway so a
+   screen can opt in on purpose rather than relying on the fallback by accident. */
+[data-density="train"] {
+  --density-gap: var(--sp5);
+  --density-touch-min: 56px;
+  --density-text-scale: 1.08;
+}
+[data-density="plan"] {
+  --density-gap: var(--sp2);
+  --density-touch-min: var(--touch-target-min);
+  --density-text-scale: 0.94;
+}
+[data-density="progress"] {
+  --density-gap: var(--sp3);
+  --density-touch-min: var(--touch-target-min);
+  --density-text-scale: 1;
 }
 
 /* Light theme (nebula-design-framework.md §2). Applied by themeStore setting
@@ -284,8 +329,8 @@ body {
    32px -> 44px (audit: touch-target floor, WCAG 2.5.5) via padding so the glyph itself stays the
    same visual size. */
 .btn-close {
-  width: 44px;
-  height: 44px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   border-radius: 50%;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -329,7 +374,7 @@ body {
      ~40px; same fix already applied to .btn-close/.wr-pill/NumberStepper's sm buttons, closing
      the gap for this class too. This is the app's global primary-button rule, so one line here
      reaches every call site at once. */
-  min-height: 44px;
+  min-height: var(--touch-target-min);
   text-decoration: none;
   /* Every primary/secondary button in the app shares this one rule (that's the point of the
      class), so this is the single highest-leverage motion fix available: press/hover feedback
@@ -356,7 +401,7 @@ body {
   padding: 10px 16px;
   /* min-height (audit: touch-target floor, WCAG 2.5.5 / Apple HIG 44pt) — see .btn-primary's
      identical fix above; padding alone landed ~37-38px. */
-  min-height: 44px;
+  min-height: var(--touch-target-min);
   border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--line-2);
