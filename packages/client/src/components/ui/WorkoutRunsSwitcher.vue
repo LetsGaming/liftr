@@ -15,10 +15,10 @@ defineProps<{ active: "workout" | "runs" }>();
 
 <template>
   <nav class="wr-switcher" aria-label="Workout oder Läufe">
-    <RouterLink to="/workout" class="wr-pill" :class="{ 'wr-active': active === 'workout' }" style="--wr-color: var(--blue)">
+    <RouterLink to="/workout" class="wr-pill" :class="{ 'wr-active': active === 'workout' }">
       Workout
     </RouterLink>
-    <RouterLink to="/runs" class="wr-pill" :class="{ 'wr-active': active === 'runs' }" style="--wr-color: var(--fire)">
+    <RouterLink to="/runs" class="wr-pill" :class="{ 'wr-active': active === 'runs' }">
       Läufe
     </RouterLink>
   </nav>
@@ -36,6 +36,14 @@ defineProps<{ active: "workout" | "runs" }>();
 }
 .wr-pill {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* min-height (audit: touch-target floor, WCAG 2.5.5 / Apple HIG 44pt) — was ~38px via padding
+     alone, below the 44px floor the app already holds itself to elsewhere (.btn-close, the "Mehr"
+     kebab). Kept as min-height, not a fixed height, so the pill still grows for larger text
+     settings instead of clipping. */
+  min-height: 44px;
   text-align: center;
   padding: 8px 10px;
   border-radius: var(--r-sm);
@@ -46,7 +54,11 @@ defineProps<{ active: "workout" | "runs" }>();
   transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .wr-active {
-  background: var(--wr-color);
+  /* Standardized to one fixed "active" color (audit decision, workplan-v1 §1.8) — previously
+     borrowed --blue when Workout was selected and --fire when Läufe was selected, i.e. this one
+     component's "active" state used two different meanings of "selected" depending on which
+     destination was picked. --blue is the app's already-established primary/interactive accent. */
+  background: var(--blue);
   color: var(--bg);
 }
 </style>

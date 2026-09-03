@@ -147,6 +147,10 @@ async function saveEquipmentCard() {
   }
 }
 const tokenInput = ref(getToken());
+/** Audit fix (workplan-v1 §1.9a): this is a locally-generated bearer token the user must
+ *  verify before saving, not a login credential shared across services — masking it with no way
+ *  to reveal actively prevented confirming what was typed. Defaults masked. */
+const tokenVisible = ref(false);
 
 onMounted(() => {
   void bodyweight.load();
@@ -367,9 +371,31 @@ async function exportData() {
 
     <section class="card">
       <h2 class="eyebrow">API-Token</h2>
-      <p class="hint">Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist.</p>
-      <div class="bw-row">
-        <input v-model="tokenInput" type="password" placeholder="Token" />
+      <p class="hint">
+        Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist — derselbe Wert, nach dem beim
+        Start auch der Entsperren-Bildschirm fragt, falls der Server einen Token verlangt.
+      </p>
+      <!-- Fixed to viewport width during the §1.9a implementation's live check: .bw-row's
+           2-item layout (input + one button) doesn't fit 3 items (input + reveal toggle + save)
+           at 390px — the row overflowed its card, clipping "Speichern" off-screen. wrap lets the
+           buttons flow to their own line instead of forcing three items into one row on narrow
+           viewports; the bodyweight row above (still 2 items) is unaffected since 2 items never
+           needs to wrap at this width. -->
+      <div class="bw-row token-row">
+        <input
+          v-model="tokenInput"
+          :type="tokenVisible ? 'text' : 'password'"
+          placeholder="Token"
+          aria-label="API-Token"
+        />
+        <button
+          type="button"
+          class="btn-secondary"
+          :aria-label="tokenVisible ? 'Token verbergen' : 'Token anzeigen'"
+          @click="tokenVisible = !tokenVisible"
+        >
+          {{ tokenVisible ? "🙈" : "👁" }}
+        </button>
         <button class="btn-primary" @click="saveToken">Speichern</button>
       </div>
     </section>
@@ -470,12 +496,21 @@ async function exportData() {
 }
 .bw-row input {
   flex: 1;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: var(--r-md);
   background: var(--surface-3);
   border: 1px solid var(--line);
   color: var(--text);
   font-size: 14px;
+}
+/* Token row has 3 items (input + reveal toggle + save) instead of the base 2 — wraps to a
+   second line on narrow viewports instead of overflowing the card. */
+.token-row {
+  flex-wrap: wrap;
+}
+.token-row input {
+  flex-basis: 100%;
 }
 .unit {
   color: var(--faint);

@@ -133,15 +133,19 @@ function formatDuration(s: number) {
       <button class="btn-primary" :disabled="!canSubmitManual" @click="submitManual">Speichern</button>
     </div>
 
+    <!-- Audit fix (found while implementing workplan-v1 §1.10a, not previously tracked as its
+         own item — lens-3 §2.2 High flagged two identically-labeled "GPX/FIT importieren"
+         buttons on screen at once here; that finding was listed as in-scope in plan-b's own
+         evidence table but never got a phase write-up, so it never made it into this workplan
+         either). The .pagehead button above is the only one that's always present (it's the sole
+         import entry point once runs exist), so it — not this one — is the button to keep;
+         duplicating it here only when the list happens to be empty was the actual redundancy. -->
     <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty">
       <div class="eyebrow">Läufe</div>
       <p>
         Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
-        manuell nach.
+        manuell nach — oben rechts.
       </p>
-      <button class="btn-primary btn-block" :disabled="importing" @click="triggerImport">
-        {{ importing ? "Importiere…" : "GPX/FIT importieren" }}
-      </button>
     </section>
 
     <div v-else class="layout">
@@ -227,7 +231,11 @@ function formatDuration(s: number) {
   margin-top: var(--sp4);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--sp4);
+  /* Audit fix (workplan-v1 §1.10a): was a short card pinned right below .pagehead with a large
+     empty scroll area below it. Same reasoning as WorkoutPage.vue's .not-started fix. */
+  min-height: 40vh;
 }
 .runs-empty p {
   color: var(--dim);

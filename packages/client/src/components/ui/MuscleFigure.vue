@@ -114,13 +114,30 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
 .fig {
   position: relative;
   width: var(--fig-w, 96px);
-  aspect-ratio: 200 / 362;
+  /* Audit fix (workplan-v1 §1.6): was 200/362, the OVERLAY assets' own native ratio — but the
+     body-outline SVGs (front-body.svg/back-body.svg) are natively 200x369, ~1.9% taller. These
+     are <img> tags, not inlined SVG, so with the default object-fit:fill (below), that mismatch
+     stretched the body outline non-uniformly to fit a box sized for the overlays, distorting
+     its path geometry (visible as a stray dark artifact at the chest, muscle-4's more
+     geometrically complex region — same bug on every screen using this component, just only
+     visible where the geometry made it obvious). Using the BODY's own ratio as the shared box
+     — the outline is the thing every overlay must align to, not the reverse — fixes this at the
+     root cause. */
+  aspect-ratio: 200 / 369;
 }
 .fig img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  /* Was implicitly `fill` (the CSS default) — non-uniform stretch to the box regardless of an
+     image's own aspect ratio, which is what produced the distortion above. `contain` scales
+     each image uniformly instead; the body outline (now matching the box exactly) is unaffected,
+     and the handful of overlay assets whose own crop is shorter than 369 (muscles 1-4, both
+     main/secondary variants — main-* also apply to the >=369-tall overlays, which already
+     matched closely enough that this changes nothing visible for them) get a small uniform
+     letterbox instead of a stretch-induced glitch. */
+  object-fit: contain;
 }
 .fig .overlay {
   pointer-events: none;

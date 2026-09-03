@@ -28,7 +28,12 @@ defineEmits<{ choose: [mode: "manual" | "muscles"] }>();
 .path-chooser {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: var(--sp3);
+  /* Audit fix (workplan-v1 §1.10a): the two choice cards were pinned at the top of the sheet
+     with a tall empty area below on most viewports. Same reasoning as WorkoutPage.vue's
+     .not-started fix. */
+  min-height: 50vh;
 }
 .path-card {
   display: flex;

@@ -1,0 +1,382 @@
+# Liftr — Development Workplan v1
+
+## Provenance
+
+This document merges three independent research passes (`audit/research/lens-1-liftoff-comparison.md`,
+`lens-2-blind-system-design.md`, `lens-3-design-critique.md`) and three phase-driven plans built from
+them (`audit/plan-a-engagement-gamification.md`, `plan-b-ui-standards-fix.md`,
+`plan-c-new-ui-rebuild.md`) into a single, sequenced workplan. It does not re-derive any finding —
+every item below cites the plan/lens section it comes from. What this document adds beyond the three
+source plans:
+
+1. **A single execution order**, since the three plans were written independently and don't sequence
+   against each other.
+2. **Resolution of the tensions the cross-plan synthesis surfaced** (duplicate coverage, one real
+   factual conflict, one stale finding, one silently-pre-decided question) — each resolution is
+   marked as a judgment call made here, not a re-confirmed research finding.
+3. **One explicit strategic fork** (continue fixing/extending the current UI vs. adopt Plan C's full
+   rebuild) that the source research repeatedly and correctly declined to resolve on its own, because
+   it's a product/resourcing decision, not a research question.
+
+Nothing here overrides the source plans' own detail (exact file/line citations, verification methods,
+effort estimates) — treat this as the sequencing and decision layer sitting on top of them.
+
+---
+
+## 0. The fork this document does not resolve for you
+
+Plan A and Plan B assume Liftr's current implementation is being fixed and extended in place. Plan C
+assumes it's being replaced. Both are legitimate readings of the same evidence, and the three plans
+correctly declined to pick one:
+
+**Evidence for continuing to fix/extend the current build:**
+- `audit/research/ux-flow-audit-v5.md`'s own verdict, from *live* testing (5 independent agents doing
+  real tasks against the running app), is explicit: "The organization is right, mostly... nobody
+  needs a rearchitecture of tabs." This is stronger, fresher evidence for IA soundness than Plan C's
+  blind derivation, which never had the chance to reject the current IA because it never saw it.
+- Plan B's own findings show most current defects are cheap, isolated, and now precisely located
+  (file+line) — not systemic rot. Several turned out to already be fixed or not real (see §2 below).
+- Lower cost, lower risk, ships incrementally, no coordinated-cutover risk (Plan C §4 itself flags
+  Phase 1/Today-Train as requiring an atomic cutover specifically *because* a rebuild can't be
+  migrated screen-by-screen for the active-session state machine).
+
+**Evidence for the full rebuild:**
+- Plan C's Phase 0 foundation would prevent whole classes of bugs Plan B found from recurring by
+  construction (a hard 44px token instead of a per-component judgment call; a `TruncatingLabel`
+  primitive instead of a text-wrap bug waiting to happen on the next long exercise name).
+- `audit/finished/engagement-audit-v4.md`'s product-owner interview records a standing, not-yet-
+  addressed "boring/no USP" complaint (§5, "light work eventually, not now") — fix-in-place work does
+  not touch this; only a genuine visual/motion reinvention (Plan C §2) does.
+- Plan C's engagement/motion foundation is more coherent from day one than retrofitting the same
+  primitives onto existing markup piecemeal.
+
+**Call made here, not by the research:** ship §1 below (universal correctness fixes) regardless of
+which path is chosen — every item in it is needed either way, and several are prerequisites for
+*either* the engagement additions or a rebuild foundation. Defer the rebuild-vs-iterate decision to
+after §1–§3 ship, informed by whether the cheap wins (PR ledger, standards fixes) actually move the
+needle enough that a full rebuild isn't the only way to address the "boring" complaint. Track R at the
+end of this document holds Plan C's phases ready to resume if that's the direction chosen later —
+nothing about doing §1–§3 first forecloses it.
+
+### Decided 2026-09-03: rebuild (Track R), via structured interview with the product owner
+
+§1 (universal correctness fixes) is complete and verified (typecheck, full test suite, lint, live
+browser testing across five screens). Rather than waiting on §2–§4 to inform the fork per the original
+"defer" call above, the product owner chose to resolve it now, via interview. Recorded answers:
+
+- **Motivation**: the app "feels boring / lacks identity" *and* "accumulated inconsistency" — both
+  drivers named explicitly, not just one.
+- **Capacity**: "willing to commit to a big push" — ruled out the "steady small increments" default
+  that would have favored continuing to iterate.
+- **Cutover risk** (Track R's Phase 1/Today-Train requires an atomic, no-partial-migration release
+  per §4 below): accepted as "fine with it."
+- **Phase 1–4 on the current UI** (Personal Records ledger, reward legibility, etc., §2–§5 below):
+  ship regardless, in parallel — their backend work (e.g. the new `/api/prs` route) carries forward
+  unchanged into a rebuilt UI, so this isn't wasted effort either way.
+- **Visual direction — overrides Plan C §2 as written.** Plan C's own proposed direction was "quiet,
+  utility-first, minimal motion," grounded in lens-1's finding that even Liftoff keeps its
+  micro-motion restrained. Told this, the product owner chose **bolder**, specifically: stronger
+  color/identity, more expressive illustration, and bolder typography/layout — not motion-heavy
+  ceremony beyond what the evidence already supports for rare/earned moments. **Plan C §2's design
+  direction needs revision before Phase 0 execution begins** — this is now open work, not settled.
+- **Underlying mechanics — also open, narrower than "everything."** The rank/tier system itself
+  (9-tier ladder, peak/current split, decay-with-recovery) was *not* flagged — keep as-is. What *is*
+  open: streak/XP framing (not just its copy/visuals — the actual system), and appetite for
+  genuinely new mechanics beyond what Plan A already scoped. This is broader than Track R's original
+  premise (§3 below assumed the existing engagement model was being ported as-is) and needs its own
+  design pass, not just a UI reskin of Plan A's Phase 3.
+- **Immediate next step, chosen by the product owner over greenlighting Phase 0 directly**: a
+  visual-direction exploration (concrete comps/directions) before committing engineering time to
+  Track R's actual Phase 0 build — see the exploration artifacts once produced, referenced here once
+  they exist.
+
+**What this changes about Track R below, going forward:** the phase structure, evidence citations,
+and screen inventory in Plan C (§3 of the source document, summarized in Track R below) still hold —
+they're IA/data-model-driven, not visual-style-driven, so a bolder aesthetic doesn't invalidate them.
+What needs redoing before Phase 0 starts: §2's design-direction statement (restrained → bold, per
+above) and a fresh look at the streak/XP portion of §3.2's Progress screen and §6's engagement model,
+since those were scoped assuming the current mechanics port over unchanged.
+
+---
+
+## 1. Phase 0 — Universal correctness fixes (do regardless of §0's outcome)
+
+Everything here is a bug or a defensible standards fix, independent of the rebuild-vs-iterate
+question. Ordered by severity per Plan B, with items Plan A/C also independently flagged marked as
+such (higher confidence).
+
+### 1.1 Verify the 195px nav-overflow fix is actually deployed
+Plan B Phase 0 found this **already fixed in current source** — the Critical finding from lens-3
+(§2.1) was stale (deploy/cache drift between test session and current commit), not a live bug. Action
+here is verification only, not re-implementation: load a fresh (non-cached) build at 195px/320px and
+confirm. *Do not re-implement* — risk of a second, conflicting rule.
+
+**Note for Track R:** Plan C's Phase 0 still specs a nav-overflow-safe primitive from first build,
+unaware this was already fixed live. That's correct practice for a rebuild (handle it by construction
+regardless) — just don't read Plan C's citation as evidence the bug is still live in production. It
+isn't.
+
+### 1.2 Silent routine-save failure on fractional reps (Plan B Phase 1a)
+Flagship muscle-guided routine creation dead-ends silently on first real use (fractional rep target →
+server 400 → unhandled promise rejection → button just resets). Three-part fix: round the threshold
+at the source (`deriveStandards`), add a client-side integer guard, add the missing `.catch` with a
+toast. Effort M. This is the single highest-priority item in the whole workplan — it silently breaks
+the app's own flagship feature.
+
+### 1.3 NumberStepper digit-concatenation bug (Plan B Phase 1b)
+Direct-entry input doesn't select-on-focus, so typing over a stale value concatenates digits instead
+of replacing them — a data-integrity risk on the single most-repeated interaction in the app
+(~30x/session per lens-2 §2.6). One-line fix (`@focus` → `.select()`). Effort S.
+
+### 1.4 Deduplicate the finish-screen XP/level display — **triple-confirmed**
+Plan A (Phase 0), Plan B (§3.2, with exact `App.vue`/`FinishSequence.vue` targets), and Plan C
+(Phase 2, designed against explicitly) all independently flagged this. Highest-confidence finding in
+the whole exercise. Fix: hide/dim the top-hud level chip while the Finish Sequence's Fortschritt beat
+is showing (route-aware conditional on `.top-hud`, per Plan B §3.2). Effort S.
+
+### 1.5 Resolved: persistent top-HUD chrome during active set-logging
+**Cross-plan tension, resolved here.** Plan A left this explicitly open (hiding it loses the ambient
+"reminder" effect the header buys, and no lens took a side). Plan B committed to a concrete fix (hide
+during active logging, same conditional as §1.4). Plan C's design direction gestures at "minimal
+always-on chrome" without operationalizing it for Train specifically.
+
+**Call made here:** implement Plan B's fix. Reasoning: it's the same route-aware conditional as §1.4
+(build once, apply to both), it's cheap (M, mostly because of the sub-state judgment call, not
+mechanism), and it's reversible if the ambient-reminder loss turns out to matter — there's no
+one-way-door risk. Ship §1.4 and §1.5 in the same PR since they touch the same component and
+condition, per Plan B's own note.
+
+### 1.6 Muscle-diagram rendering glitch (Plan B §3.1 — only Plan B found this)
+Root-caused by Plan B: `front-body.svg` and its overlay assets disagree on native dimensions
+(~2% mismatch), showing as a stray dark path at the chest (geometrically complex region — why only
+that muscle shows it).
+
+**Fix — corrected at implementation time (2026-09-03):** Plan B's proposed mechanism (missing
+`viewBox` on the asset SVGs) turned out not to be what's actually happening once implemented:
+`MuscleFigure.vue` renders these as `<img>` tags, not inlined SVG, so a referenced file's own
+`viewBox` has no effect on `<img>`-level sizing — the default `object-fit: fill` stretches whatever
+loads into the CSS box regardless. Confirmed dimensions: `front-body.svg` 200×369, `back-body.svg`
+200×369.03, overlays split into two clusters — muscles 1–4 at 200×362, muscles 5–15 already ~369.
+Real root cause: `MuscleFigure.vue`'s `.fig` was sized to `aspect-ratio: 200/362` (the *overlays'*
+ratio) while the outline is natively 200×369. Fixed with two CSS lines in that one component —
+`.fig` now uses `aspect-ratio: 200/369` (every overlay aligns to the outline, not the reverse) and
+`.fig img` gets `object-fit: contain` (uniform scale/letterbox instead of non-uniform stretch). No
+asset files or ingest pipeline touched. Effort dropped from M to S. Full pixel-perfect anatomical
+registration between outline and overlay crops isn't verified by this (would need visual
+inspection per muscle), but the specific stretch-distortion artifact lens-3 found is eliminated by
+construction.
+
+**Note for Track R:** if the rebuild reuses these SVG assets rather than re-exporting them, it
+inherits this bug — Plan C never saw it (source-blind by design, parallel-run with Plan B). Fix this
+at the asset level regardless of §0's outcome so it can't leak into either path.
+
+### 1.7 Touch-target floor sweep (Plan B Phase 2, reinforced by Plan C's Phase 0 token)
+`.btn-primary`/`.btn-secondary`/`.wr-pill` measure 38–40px against the 44px floor the app already
+uses correctly elsewhere. Single `min-height: 44px` addition reaches every instance (global classes).
+Effort S to implement, M to verify (broad surface — full visual regression pass required since these
+are shared classes). Plan C independently bakes the same 44px floor into its Phase 0 tokens as a
+non-negotiable primitive, so this work is not wasted even if §0 later resolves toward Track R.
+
+### 1.8 Decided: standardize segmented-control accent color to neutral
+**Cross-plan conflict, decided by product owner 2026-09-03 — overrides this document's original
+"keep current" recommendation.** Lens-3 flagged the Workout/Läufe toggle's blue-vs-orange "active"
+color as inconsistent. Plan B, reading actual source, found the current behavior is a **deliberate,
+documented convention** (`App.vue`'s own comment: each destination keeps its section color), not a
+bug — meaning this is a real product choice, not a citable violation. Plan C, built blind to source,
+independently committed to "one accent per semantic meaning, never reused for both" in its own token
+system without knowing the current behavior was intentional.
+
+**Decision:** standardize on one neutral "active" color for the Workout/Läufe segmented control,
+regardless of which section is selected — i.e. Plan C's token rule, not the status-quo convention.
+This is now a real UI change, not a no-op: `WorkoutRunsSwitcher.vue`'s `--wr-color` binding
+(currently `var(--blue)` for Workout / `var(--fire)` for Läufe, per Plan B §3.5b) needs a single fixed
+active-state color instead of switching per section. **Scope note:** this decision applies to this one
+component (the segmented control) as flagged by lens-3 — it does not itself mandate removing
+color-travels-with-destination elsewhere in the app (e.g. tab-bar icons), which was never in question.
+If broader color-system consolidation is wanted, that's a separate decision.
+
+### 1.9 Remaining Medium items (Plan B §3.3–§3.6, S effort each, independent, batchable)
+- Token field reveal/hide toggle — **both** `ProfilePage.vue` and `AuthGate.vue` (Plan B's own
+  additional finding: lens-3 only saw the Profile instance since its session was already
+  authenticated).
+- "▶ Starten" vs "▶ Start" — standardize on the German conjugated form at both call sites.
+- Wizard step-indicator promising step 3 on the fast path, which structurally never shows it — fix by
+  relabeling to 2 steps when the fast path is active (not by routing through Review, which would
+  re-add friction to a flow deliberately built to remove it — Plan B cites `engagement-audit-v4`'s
+  explicit warning against this; Plan C's Phase 3 spec independently lands on the same "relabel"
+  answer). **Convergent, no conflict.**
+- Token settable from two disconnected surfaces (Profile field + AuthGate) — link them with shared
+  copy rather than consolidating into one (a user may need to update the token post-setup without
+  re-triggering the boot gate).
+
+### 1.10 Low-severity batch (Plan B Phase 4, S–M each)
+- Bottom-anchor primary CTAs on Workout-tab list, Läufe empty state, wizard step 1 (currently stranded
+  in the top half of an 844px viewport, away from thumb reach).
+- Bodyweight empty-state copy — name the concrete action, matching the Läufe empty state's pattern.
+- **Missing-photo treatment for the 11 catalog gaps — decided by product owner 2026-09-03, revised
+  from Plan B's original scope.** Preference order: (1) a Liftoff-style illustrated icon per exercise,
+  (2) source a real photo where illustration isn't feasible, (3) a closer-matching generic placeholder
+  only where neither is possible.
+
+  **Scope flag, not yet resolved:** lens-1 documents that Liftoff uses flat, saturated cartoon
+  "sticker" icons for exercises/food/objects as one of two illustration systems it runs *universally*
+  (lens-1 §2A) — the evidence does not show Liftoff using photos-with-icon-fallback the way Liftr does;
+  it appears Liftoff simply never uses photos for this purpose. Matching that approach for real means
+  a custom-illustrated icon for the **entire exercise catalog** (~94 exercises per lens-2 §2.1), not
+  just the 11 currently-missing-photo gaps — a content/asset-creation project closer in scale to
+  Track R's visual-identity work than a Phase 0 patch. Recommend treating "illustrate the whole
+  catalog" as its own scoped initiative (commission/create ~94 icons, decide art direction) rather
+  than folding it into this sprint, and using tiers 2–3 above (real photo, then closer placeholder) as
+  the actual Phase 0 fix for the 11 gaps in the meantime. Needs explicit confirmation before starting
+  since it changes the item from "S effort, UI-only" to a much larger scope if pursued in full now.
+
+  **Confirmed 2026-09-03:** defer full-catalog illustration as its own separate initiative. Phase 0's
+  actual scope for this item is tiers 2–3 only: source real photos for the 11 gaps where feasible,
+  closer-matching generic placeholder as the last resort.
+
+**Phase 0 total:** ~14 independent, mostly-small items. None blocks any other phase in this document.
+Recommended as one sprint's worth of work before anything in §2 ships, since §2's PR ledger and
+reward-legibility work builds on top of an already-clean finish sequence (Plan A's own sequencing
+note: "building the PR ledger... on top of an already-confusing reward screen compounds the
+confusion").
+
+---
+
+## 2. Phase 1 — Personal Records ledger — **triple-evidenced, highest-leverage new feature**
+
+Plan A (Phase 1) and Plan C (Phase 2) both independently rank this as the single best-value addition
+available: a `prs` table the server's own code comment calls "an internal append-only log the app
+never displays," fully computed on every workout finish, confirmed live (no route reads it back).
+
+- **New backend:** `GET /api/prs` (or per-exercise), following the existing thin-route pattern used
+  by `rankEvents.ts`/`overallRank.ts`. Additive only — no schema change, no new computation.
+- **New client:** a Progress-area screen, one row per exercise×kind (e1rm/weight/reps/volume), date +
+  link to the originating set/workout. Honest empty state ("no records yet"), not a fake locked/teaser
+  state.
+- **Entry point:** the existing finish-sequence PR beat should link into this ledger instead of being
+  a one-off acknowledgment with no permanent home.
+
+**Effort:** M (one new route, one new store, one new screen — not pure-UI, but small and additive).
+**Sequencing:** after Phase 0 (§1.4's dedup fix should land first so the new ledger isn't linked from
+an already-confusing finish screen). No dependency on the rebuild-vs-iterate decision — this is
+additive read access regardless of which UI shell hosts it.
+
+---
+
+## 3. Phase 2 — Reward-signal legibility
+
+Two independent, low-risk items that make an already-sound reward system (per both Plan A §1 and Plan
+C §1's convergent read of the code) legible rather than adding new mechanics.
+
+### 3.1 Reframe the anti-farming message as a trust signal (Plan A Phase 2)
+Copy-only change. The underlying plausibility gate is real, evidenced, and — per the product owner's
+own v4 interview line against streak-gaming — should be kept exactly as-is; only the wording is in
+question (does "session reduced" read as protective or accusatory?). **Genuine open question, not a
+settled fix** — Plan A itself flags that neither lens evaluated the copy's actual reception. Treat as
+a candidate for a small user check before committing to new wording, not a blind rewrite.
+
+### 3.2 Make `standards.trust` visually legible (Plan A Phase 5)
+The `real`/`derived`/`synthetic` distinction already reaches the client (`ranks.ts`'s response
+includes `trust`) and is already down-weighted in the aggregate math, but Plan A flags this as its
+**weakest-evidence phase** — neither lens-2 (presentational code out of scope) nor this pass could
+confirm whether any `.vue` page already renders the distinction. **Action: check current `.vue` files
+first** before scoping further work — the gap may be smaller than a full new treatment, or already
+closed.
+
+**Sequencing:** independent of everything else; low risk either way.
+
+---
+
+## 4. Phase 3 — Experimental: RPE and notes surfacing
+
+Plan A's own framing: "this plan's most speculative phase," resting on an inference (data exists →
+worth surfacing) rather than a demonstrated engagement gap. Plan C independently designed the same UI
+placement (optional, off the primary logging path, no blocking) without access to Plan A's explicit
+hedging — worth noting both plans converged on caution/optionality even though only one stated the
+epistemic humility explicitly.
+
+- RPE: lightweight, optional control on the active-set screen. Must not add a required tap to the
+  30x/session logging loop.
+- Notes: free-text, per-set or per-workout, read back on History detail.
+- **No backend work required** — both fields already round-trip through the existing sync payload.
+
+**Success criterion, stated honestly:** ship as a dismissible, low-cost experiment and treat adoption
+(or lack of it) as the actual test, not a completion checkbox. Zero adoption is a valid outcome, not a
+phase failure.
+
+**Sequencing:** after Phase 0's legibility fixes are validated as low-risk (RPE sits on the
+highest-frequency, lowest-density-tolerance screen in the app — any addition here needs its own
+density review before merging, per lens-2's own rule).
+
+---
+
+## 5. Phase 4 — Overall Lifter Rank promotion
+
+Plan A (Phase 4): give the one account-level aggregate stat a persistent, prominent placement (e.g. a
+profile hero) rather than requiring navigation to see it. Route/service/aggregation math already
+exist and are already wired — this is a placement change, not new plumbing. Effort S.
+
+**Open, not resolved here:** how much prominence — Plan A itself flags a genuine tension between
+lens-2's "natural profile headline" framing and a Strava-sourced design principle (cited in the older
+competitor research) that cautions against collapsing multiple parallel motivation signals into one
+number. This is a taste call for whoever implements it, not something this document or its sources
+can settle with more evidence.
+
+---
+
+## 6. Explicitly out of scope for §1–§5 (all three source plans agree)
+
+- **Any social/multi-user feature** (leaderboards, friends, public profiles, percentile comparison) —
+  structurally unbuildable on the current single-bearer-token, no-accounts backend without a
+  different product. Not deferred — out of scope entirely, per Plan A §3 and Plan C §5.
+- **Masked/near-miss reward targets, currency/cosmetics economy, chrome-hiding celebration
+  interstitials, gated onboarding quests** — each individually evidenced against by the product
+  owner's own stated line on manipulative patterns (Plan A §3).
+- **Full IA rework** — `ux-flow-audit-v5`'s live-tested verdict stands; not reopened by this document.
+- **Everything lens-3's own "Holds up" section verified as already passing** — untouched by design.
+
+---
+
+## Track R — Full rebuild (Plan C), held ready if §0's fork resolves toward it
+
+If, after §1–§4 ship, the "boring/no USP" complaint from `engagement-audit-v4` is still live and cheap
+wins weren't enough, Plan C's six-phase rebuild (`audit/plan-c-new-ui-rebuild.md`) is ready to resume
+without new research — it's already fully phased (Foundation → Today/Train → Finish & Progress → Plan
+→ Profile/Auth → Runs) with citations, complexity estimates, and an explicit migration strategy
+(incremental for Phases 2–5, coordinated cutover required for Phase 1's active-session state machine).
+
+**Before resuming it, two things from this document need to feed back in that Plan C didn't have:**
+1. **§1.8's color-convention finding.** Plan C's Phase 0 token decision ("one accent per semantic
+   meaning, never reused for both") was made blind to the fact that the current app's
+   color-travels-with-destination pattern is deliberate and documented, not drift. Re-decide this
+   token rule with that knowledge before building Phase 0's tokens, rather than inheriting Plan C's
+   uninformed default.
+2. **§1.6's muscle-diagram asset fix.** If Track R reuses the existing SVG assets, apply the
+   `viewBox` fix first — otherwise the rebuild inherits a bug it never had the chance to find.
+
+Everything else in Plan C (§1's evidence synthesis, §2's design direction, §3's six phases, §4's
+migration strategy, §5's out-of-scope list, §6's open questions) stands as written and does not need
+re-litigating to resume.
+
+---
+
+## Consolidated open questions (deduplicated from Plan A §4, Plan B §4, Plan C §6, and this document)
+
+1. **Rebuild vs. iterate** (§0) — the central fork. Recommend deciding after §1–§4 ship, not before.
+2. **Segmented-control color convention** (§1.8) — resolved *for now* (keep current), but flagged for
+   re-decision if Track R proceeds, since Plan C's default silently reverses it.
+3. **Anti-farming copy reception** (§3.1) — needs a real-user check, not just a rewrite.
+4. **`standards.trust` visual state** (§3.2) — check current `.vue` files before scoping; may already
+   be partially built.
+5. **RPE/notes exact interaction shape** (§4) — 1–10 scale vs. RPE-decimal picker; inline vs. modal
+   notes. No existing pattern to anchor the choice; real product-design work, not a research gap.
+6. **Overall Lifter Rank prominence** (§5) — how much visual weight is appropriate, genuinely
+   undecided by any source document.
+7. **Auth/token enforcement behavior** (Plan B §3.6, Plan C Phase 4) — neither lens-3 nor this pass
+   could verify the live 401/rejected-token flow end-to-end (test instance didn't enforce the token).
+   Needs a direct check of `requireAuth`'s actual behavior before Track R's dedicated unauthenticated-
+   state screen is built.
+8. **Share-card palette vs. app palette** (Plan B §4.1) — a self-consistent but app-independent color
+   set; product-identity call, not a standards violation.
+9. **Missing-photo catalog gap** (Plan B §4.4) — real photos (content work) vs. a permanent, closer
+   placeholder — a resourcing decision, not a design one.

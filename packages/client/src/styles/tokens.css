@@ -290,6 +290,11 @@ body {
   font-weight: 800;
   font-size: 14px;
   padding: 12px 20px;
+  /* min-height (audit: touch-target floor, WCAG 2.5.5 / Apple HIG 44pt) — padding alone landed
+     ~40px; same fix already applied to .btn-close/.wr-pill/NumberStepper's sm buttons, closing
+     the gap for this class too. This is the app's global primary-button rule, so one line here
+     reaches every call site at once. */
+  min-height: 44px;
   text-decoration: none;
   /* Every primary/secondary button in the app shares this one rule (that's the point of the
      class), so this is the single highest-leverage motion fix available: press/hover feedback
@@ -314,6 +319,9 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px 16px;
+  /* min-height (audit: touch-target floor, WCAG 2.5.5 / Apple HIG 44pt) — see .btn-primary's
+     identical fix above; padding alone landed ~37-38px. */
+  min-height: 44px;
   border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--line-2);

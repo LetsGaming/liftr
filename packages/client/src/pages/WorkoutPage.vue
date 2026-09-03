@@ -6,7 +6,7 @@
  * it's still useful to exercise the loop on a fresh install before you've built anything.
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
 import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
@@ -27,6 +27,7 @@ import { useMesocycleControls } from "../composables/useMesocycleControls";
 import { useRoutineManagement } from "../composables/useRoutineManagement";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { useWorkoutFinish } from "../composables/useWorkoutFinish";
+import { showingFinishRecap } from "../composables/useWorkoutChrome";
 import { useWorkoutShareCard } from "../composables/useWorkoutShareCard";
 import { useToast } from "../composables/useToast";
 import { useXpChip } from "../composables/useXpChip";
@@ -96,6 +97,20 @@ const {
   { activeWorkoutStore: store, routineStore, streakStore, ranksStore, xpStore, historyStore, catalogStore: catalog, overallRankStore: overallRank },
   sessionMuscles,
   exerciseName,
+);
+
+/** Audit fix (workplan-v1 §1.4): keeps App.vue's top-hud in sync with the recap being shown here,
+ *  so it can hide its own level/XP chip while FinishSequence's Fortschritt beat displays the same
+ *  number — see useWorkoutChrome.ts for why this isn't just activeWorkoutStore state. */
+watch(
+  finishedSummary,
+  (v) => {
+    showingFinishRecap.value = v != null;
+  },
+  // immediate: resyncs the module singleton to this fresh mount's (always-null) initial value —
+  // guards against a stale `true` surviving if the user left mid-recap via the tab bar instead of
+  // tapping "Fertig" (which is the only other place finishedSummary gets cleared).
+  { immediate: true },
 );
 
 /** Rework Phase 4 (critique finding: the post-sequence summary used to open straight into three
@@ -409,7 +424,7 @@ async function logSet() {
 
           <div class="rc-actions">
             <button class="btn-primary rc-start" :disabled="starting" @click="startRoutine(routine)">
-              {{ starting ? "…" : "▶ Start" }}
+              {{ starting ? "…" : "▶ Starten" }}
             </button>
             <div class="rc-menu-wrap">
               <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)">⋮</button>
@@ -662,6 +677,13 @@ async function logSet() {
   flex-direction: column;
   gap: var(--sp4);
   align-items: flex-start;
+  /* Audit fix (workplan-v1 §1.10a): with few/no routines, this content was a short island
+     pinned at the top of the scroll area, leaving primary CTAs (Starten / + Neue Routine)
+     stranded well above the thumb-reachable lower half of the screen. min-height + centering
+     pulls a short list toward mid-screen instead; a long routine list simply exceeds this
+     min-height and scrolls exactly as before — no change for that case. */
+  min-height: 55vh;
+  justify-content: center;
 }
 /* Zero-routine empty state (design critique P1) — same bordered-surface treatment as
    ErholungszoneCard.vue's .erholungszone so this gets equivalent visual weight, not a bare

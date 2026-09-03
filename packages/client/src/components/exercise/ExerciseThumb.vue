@@ -33,7 +33,13 @@ const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === fal
   flex: none;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--surface-3);
+  /* Audit fix (workplan-v1 §1.10c): a flat single-tone fill read as a visibly different "this
+     one's missing" treatment next to the photo rows around it. Real photos for these 11
+     catalog gaps aren't sourceable in this pass (needs actual photography/licensing, tracked as
+     open content work — see workplan-v1 §1.10c); this softens the fallback with the same
+     radial-highlight tonal variation a photo thumbnail naturally has, so the gap reads as a
+     quieter, more deliberate icon slot rather than a stark placeholder. */
+  background: radial-gradient(circle at 35% 30%, var(--surface-2), var(--surface-3) 70%);
   display: grid;
   place-items: center;
   color: var(--dim);
