@@ -60,6 +60,11 @@ const restTrigger = ref(0);
  *  store.logCurrentSet() decided (between-set vs after-exercise, feedback: "adjust the pause,
  *  per set and per exercise"). */
 const restSeconds = ref(90);
+/** Task 3 (rest-state distinctness): which of the three rest states logCurrentSet() just
+ *  produced — 'between-sets'/'after-exercise' for a real rest duration, 'superset-continue' for
+ *  the mid-superset round-robin case where logCurrentSet() returns null (round not yet complete,
+ *  no rest). RestTimer.vue renders all three distinctly instead of just "running vs not". */
+const restKind = ref<"between-sets" | "after-exercise" | "superset-continue">("between-sets");
 
 /** Motion audit fix (Phase 4): the set-row entrance used to be `:class="{ 'pop-in': s.logged }"`,
  *  bound directly to the durable `s.logged` flag. That fails the one-shot-trigger check — any
@@ -262,6 +267,13 @@ async function logSet() {
   const restDuration = await store.logCurrentSet();
   if (restDuration != null) {
     restSeconds.value = restDuration;
+    restKind.value = wasLastUnloggedSet ? "after-exercise" : "between-sets";
+    restTrigger.value += 1;
+  } else {
+    // Mid-superset round-robin: the round hasn't wrapped yet, so there's genuinely no rest to
+    // run. Still bump the trigger so RestTimer.vue can render its distinct "no rest" state
+    // instead of silently doing nothing (Task 3 — three distinct rest states).
+    restKind.value = "superset-continue";
     restTrigger.value += 1;
   }
 
@@ -614,7 +626,7 @@ async function logSet() {
           <span v-if="xpChip" :key="xpChip.key" class="xp-chip tnum pop-in">+{{ xpChip.amount }} XP</span>
         </div>
 
-        <RestTimer :trigger="restTrigger" :seconds="restSeconds" />
+        <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
 
         <ul class="set-rows tnum">
           <li v-for="s in store.currentExercise.sets" :key="s.index" :class="{ done: s.logged, warmup: s.isWarmup, 'pop-in': justLoggedIndex === s.index }">
