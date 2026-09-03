@@ -162,6 +162,20 @@
   --pl-yellow: #e8c21c;
   --pl-green: #2fa84f;
 
+  /* Nebula — the app's brand-identity gradient (nebula-design-framework.md §1). Chrome, CTAs,
+     streak/level accents, focus states ONLY — never the 9-tier .badge/.t-<tier> system above,
+     which answers a different question (which of 9 tiers) than Nebula does (is this interactive
+     or just-earned). See audit/nebula-design-philosophy.md §2 for the full reasoning. */
+  --nebula-1: #2f9fe0;
+  --nebula-m: #7c5cff;
+  --nebula-2: #d63aff;
+  --nebula-grad: linear-gradient(120deg, var(--nebula-1), var(--nebula-m), var(--nebula-2));
+  --nebula-grad-cta: linear-gradient(135deg, var(--nebula-1), var(--nebula-m), var(--nebula-2));
+  --nebula-ink: #6b3fd6;
+  --nebula-ink-on-fill: #1a0f2e;
+  --nebula-glow: rgba(124, 92, 255, 0.4);
+  --nebula-glow-strong: rgba(214, 58, 255, 0.55);
+
   --r-sm: 10px;
   --r-md: 16px;
   --r-lg: 22px;
@@ -203,6 +217,27 @@
   --content-w-standard: 720px;
   --content-w-wide: 1100px;
   --content-w-xwide: 1300px;
+}
+
+/* Light theme (nebula-design-framework.md §2). Applied by themeStore setting
+   document.documentElement.dataset.theme = "light" before first paint. Liftr ships dark-first —
+   this is a user setting (Profile), not inferred from OS preference; see the framework doc §2.1
+   for why. Every existing color-bearing token is re-specified here, not just the new ones, so
+   nothing silently falls through to a dark value on a light ground. */
+:root[data-theme="light"] {
+  --bg: #f6f4fb;
+  --surface: #ffffff;
+  --surface-2: #f4f2f9;
+  --surface-3: #ece7f7;
+  --line: rgba(20, 16, 32, 0.1);
+  --line-2: rgba(20, 16, 32, 0.16);
+  --text: #14121c;
+  /* 6.1:1 on --surface-2 (#f4f2f9) */
+  --dim: #635f78;
+  /* 5.4:1 on --surface-2 */
+  --faint: #6c6178;
+  --shadow: 0 8px 20px -14px rgba(15, 15, 25, 0.18);
+  --nebula-ink: #6b3fd6;
 }
 
 *,
