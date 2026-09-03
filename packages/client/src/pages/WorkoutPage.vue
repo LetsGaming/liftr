@@ -15,6 +15,7 @@ import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
 import RestTimer from "../components/workout/RestTimer.vue";
 import RoutineWizard from "../components/routine-wizard/RoutineWizard.vue";
+import RpeCapture from "../components/workout/RpeCapture.vue";
 import SetEntry from "../components/workout/SetEntry.vue";
 import SetKindPicker from "../components/workout/SetKindPicker.vue";
 import StatTile from "../components/ui/StatTile.vue";
@@ -198,6 +199,12 @@ function openInfo(exerciseId: string) {
 
 /** "Satzart auswählen" (feedback: set kind must be settable) — which set's picker is open. */
 const kindPickerFor = ref<{ workoutExerciseId: string; setIndex: number } | null>(null);
+
+/** RPE capture (Task 4) — off the primary logging path, per Global Constraint 4: this only
+ *  toggles a sheet's visibility, never touches `Satz speichern`'s disabled condition. Reads/
+ *  writes straight off `store.currentSet.rpe` (no local copy to go stale) so it automatically
+ *  reads as unset again once the set logs and the store's `currentSet` advances to the next one. */
+const showRpeCapture = ref(false);
 
 /** Defensive fallback to "normal" — activeWorkoutStore.restore() backfills `kind` on load for
  *  sets persisted before this field existed, but this is cheap insurance against the same class
@@ -606,6 +613,18 @@ async function logSet() {
 
         <SetEntry />
 
+        <!-- RPE/notes (Tasks 4-5) — secondary, off the primary logging path (Global Constraint 4):
+             same row-family as .warmup-btn/.add-ex-btn, deliberately not inline with the weight/
+             reps steppers and not competing with "Satz speichern". Only shown while there's a
+             current set to attach them to (mirrors SetEntry's own v-if scope). Reads straight off
+             store.currentSet, so both reset to their unset label on their own once a set logs and
+             the store's currentSet advances — no local caching to go stale. -->
+        <div v-if="store.currentSet" class="set-meta-row">
+          <button class="meta-pill" @click="showRpeCapture = true">
+            {{ store.currentSet.rpe != null ? `RPE ${store.currentSet.rpe}` : "RPE" }}
+          </button>
+        </div>
+
         <div class="log-set-wrap">
           <template v-if="store.currentSet">
             <!-- Reps start at 0 (activeWorkoutStore.ts) so the button stays disabled until the
@@ -670,6 +689,18 @@ async function logSet() {
           (kind) => {
             store.setSetKind(kindPickerFor!.workoutExerciseId, kindPickerFor!.setIndex, kind);
             kindPickerFor = null;
+          }
+        "
+      />
+
+      <RpeCapture
+        v-if="showRpeCapture"
+        :current-rpe="store.currentSet?.rpe ?? null"
+        @close="showRpeCapture = false"
+        @pick="
+          (rpe) => {
+            store.setCurrentSetRpe(rpe);
+            showRpeCapture = false;
           }
         "
       />
@@ -1160,6 +1191,23 @@ async function logSet() {
   padding: 8px 12px;
   margin-bottom: var(--sp3);
   align-self: flex-start;
+}
+/* RPE/notes (Tasks 4-5) — same row-family as .warmup-btn/.add-ex-btn: small, --surface-2,
+   --dim text, non-.btn-primary, deliberately not inline with the weight/reps steppers and not
+   competing with "Satz speichern" (Global Constraint 4). */
+.set-meta-row {
+  display: flex;
+  gap: var(--sp2);
+  margin-bottom: var(--sp3);
+}
+.meta-pill {
+  font-size: 12px;
+  color: var(--dim);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  max-width: 100%;
 }
 /* Was --glow-blue on every instance — this is the ordinary CTA class (Quick Start, "Satz
    speichern", "Starten", routine save, …), so *every* screen had a glowing button, which
