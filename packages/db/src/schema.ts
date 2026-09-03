@@ -275,6 +275,15 @@ export const rankEvents = sqliteTable(
     tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
+    /** Rank engine v2 gap fix (workstream B, task 1): null when the workout that produced this
+     *  rank-up was fully plausible, otherwise the same reason plausibility.ts attached to that
+     *  workout. Lets the weekday aggregation (rankService.ts's computeRankEventsByWeekday) and
+     *  RankUpCalendar.vue mute a flagged-but-still-peak-eligible rank-up's dot instead of
+     *  rendering it identically to a genuine one — `ranks`/`rankedUp` itself was already gated
+     *  by PEAK_ELIGIBILITY_FLOOR (0.3), which is looser than plausibility.ts's own floor (0.05)
+     *  and reason-setting threshold (any detected severity at all), so a moderately-flagged
+     *  session can genuinely advance peak and still deserve a muted dot, not an omitted one. */
+    plausibilityReason: text("plausibility_reason", { enum: ["pace", "improbable_jump", "exceeds_ceiling"] }),
   },
   (t) => [index("rank_events_exercise_idx").on(t.exerciseId)],
 );

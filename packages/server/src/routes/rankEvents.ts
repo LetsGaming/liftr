@@ -13,6 +13,7 @@ const rankEventsResponse = z.array(
   z.object({
     weekday: z.number().int().min(0).max(6),
     count: z.number().int().min(0),
+    flaggedCount: z.number().int().min(0),
   }),
 );
 

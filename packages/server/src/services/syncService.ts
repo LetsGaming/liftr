@@ -237,7 +237,7 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   // instead of one popping mid-set.
   const ranks: RankVerdict[] = [];
   for (const { exerciseId } of touched) {
-    const result = await recomputeRankForExercise(db, exerciseId, plausibility.multiplier);
+    const result = await recomputeRankForExercise(db, exerciseId, plausibility.multiplier, plausibility.reason);
     if (result) ranks.push({ exerciseId, ...result, plausibilityReason: plausibility.reason });
   }
 

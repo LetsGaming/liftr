@@ -82,8 +82,12 @@ export function insertRankEvent(db: LiftrDb, values: typeof rankEvents.$inferIns
   return db.insert(rankEvents).values(values);
 }
 
-/** Raw rank-up timestamps within the window — the weekday reduction happens in the service
- *  layer (readinessService.ts's "repository fetches, service reduces" split). */
+/** Raw rank-up timestamps (+ plausibility flag) within the window — the weekday reduction
+ *  happens in the service layer (readinessService.ts's "repository fetches, service reduces"
+ *  split). */
 export function findRankEventsSince(db: LiftrDb, since: Date) {
-  return db.select({ occurredAt: rankEvents.occurredAt }).from(rankEvents).where(gte(rankEvents.occurredAt, since));
+  return db
+    .select({ occurredAt: rankEvents.occurredAt, plausibilityReason: rankEvents.plausibilityReason })
+    .from(rankEvents)
+    .where(gte(rankEvents.occurredAt, since));
 }
