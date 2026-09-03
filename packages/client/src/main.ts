@@ -4,6 +4,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { i18n } from "./i18n";
 import { router } from "./router";
+import { getStoredTheme } from "./stores/themeStore";
 import { useSyncStore } from "./stores/syncStore";
 
 // Ionic's structural/typography CSS only — deliberately not its color/palette CSS, since
@@ -17,6 +18,8 @@ import "@ionic/vue/css/padding.css";
 import "./styles/tokens.css";
 import "./styles/motion.css";
 import "./styles/ionic-theme.css";
+
+document.documentElement.dataset.theme = getStoredTheme();
 
 const app = createApp(App);
 const pinia = createPinia();

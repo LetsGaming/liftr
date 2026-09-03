@@ -25,8 +25,9 @@ import StatTile from "../components/ui/StatTile.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
+import { LP_EXPLAINER } from "../copy/rankCopy";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
@@ -229,10 +230,10 @@ function retryFailed() {
         </div>
 
         <!-- 0. Erholungszone — a reason to open the app on a rest day (engagement rework W5) -->
-        <ErholungszoneCard :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
+        <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
 
         <!-- 1. Launchpad -->
-        <section class="launchpad">
+        <section class="launchpad tile--priority">
           <template v-if="activeWorkout.isActive">
             <div class="eyebrow lp-eyebrow">Weiter machen</div>
             <div class="lp-row">
@@ -297,8 +298,7 @@ function retryFailed() {
             <InfoToggle label="Was bedeutet mein Rang?">
               <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
               zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III“ bis „I“), die bis zur
-              nächsten Beförderung runterzählen; <b class="tnum">LP</b> misst deinen Fortschritt
-              innerhalb der aktuellen Division (0–100).
+              nächsten Beförderung runterzählen; <b class="tnum">LP</b> {{ LP_EXPLAINER }}.
             </InfoToggle>
           </div>
 
@@ -330,18 +330,11 @@ function retryFailed() {
             </div>
 
             <div class="tile">
-              <div class="eyebrow tile-head">Top Ränge</div>
-              <div v-if="topRanks.length > 0" class="top-ranks">
-                <div v-for="r in topRanks" :key="r.exerciseId" class="top-rank" :class="`t-${r.tier}`">
-                  <span class="badge small" :class="`t-${r.tier}`">
-                    <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
-                  </span>
-                  <div class="tr-meta">
-                    <b>{{ exerciseName(r.slug) }}</b>
-                    <span>{{ TIER_LABEL_DE[r.tier as RankTier] }} · {{ Math.round(r.lp) }} LP</span>
-                  </div>
-                </div>
-              </div>
+              <div class="eyebrow tile-head">Nächster Rang</div>
+              <p v-if="topRanks.length > 0" class="tile-empty">
+                <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> bis zum nächsten Rang in
+                <b>{{ exerciseName(topRanks[0]!.slug) }}</b>
+              </p>
               <p v-else class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</p>
             </div>
 
@@ -371,11 +364,6 @@ function retryFailed() {
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
-            <router-link to="/profile" class="tile discover-tile">
-              <div class="discover-icon">📦</div>
-              <b>Daten-Export</b>
-              <p class="tile-empty">Workouts, Sätze, Läufe &amp; Körpergewicht als CSV in einer ZIP-Datei — lesbar auch ohne Liftr</p>
-            </router-link>
             <router-link to="/ranks" class="tile discover-tile">
               <div class="discover-icon">🏆</div>
               <b>Rang-Analyse</b>
@@ -453,6 +441,10 @@ function retryFailed() {
   border-radius: var(--r-xl);
   background: linear-gradient(155deg, var(--surface-3), var(--surface-2));
   border: 1px solid var(--line-2);
+}
+.launchpad.tile--priority {
+  border: 1px solid var(--nebula-1);
+  background: var(--surface-3);
 }
 .lp-eyebrow {
   --eyebrow-color: var(--blue-hi);
@@ -556,6 +548,13 @@ function retryFailed() {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
+}
+.tile--priority {
+  border: 1px solid var(--nebula-1);
+  background: var(--surface-3);
+}
+[data-theme="light"] .tile--priority {
+  border-color: var(--nebula-ink);
 }
 .tile-head {
   --eyebrow-color: var(--dim);

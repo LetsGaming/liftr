@@ -16,6 +16,7 @@ import { registerExportRoutes } from "./routes/export.js";
 import { registerHistoryRoutes } from "./routes/history.js";
 import { registerMesocycleRoutes } from "./routes/mesocycles.js";
 import { registerOverallRankRoutes } from "./routes/overallRank.js";
+import { registerPrRoutes } from "./routes/prs.js";
 import { registerRankEventsRoutes } from "./routes/rankEvents.js";
 import { registerRankRoutes } from "./routes/ranks.js";
 import { registerReadinessRoutes } from "./routes/readiness.js";
@@ -94,6 +95,7 @@ export async function buildApp() {
   registerRankRoutes(app, db);
   registerRankEventsRoutes(app, db);
   registerOverallRankRoutes(app, db);
+  registerPrRoutes(app, db);
   registerReadinessRoutes(app, db);
   registerBodyweightRoutes(app, db);
   registerStreakRoutes(app, db);
