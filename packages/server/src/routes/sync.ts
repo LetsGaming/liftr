@@ -43,6 +43,10 @@ const finishWorkoutPayload = z.object({
   workoutId: z.string(),
   endedAt: z.coerce.date(),
   pausedSeconds: z.number().int().min(0).default(0),
+  // Workout-level notes (feedback gap: the offline finish_workout payload had no notes field
+  // at all, unlike log_set — see activeWorkoutStore.ts's finish()). Rides the same offline-safe
+  // outbox path rather than a second online-only PATCH call bolted onto the finish flow.
+  notes: z.string().nullable().optional(),
 });
 
 /**

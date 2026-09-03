@@ -129,6 +129,39 @@ describe("applySyncBatch — finish_workout", () => {
     expect(result!.ranks).toEqual([]);
   });
 
+  it("persists workout-level notes sent in the finish_workout payload (Task 2)", async () => {
+    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, [
+      {
+        clientId: "client-finish-notes-1",
+        type: "finish_workout",
+        payload: {
+          workoutId: "workout-1",
+          endedAt: new Date("2026-01-01T11:00:00Z"),
+          pausedSeconds: 0,
+          notes: "leg day, felt strong",
+        },
+      } as SyncItem,
+    ]);
+
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
+    expect(workoutRow!.notes).toBe("leg day, felt strong");
+  });
+
+  it("stores notes as null when the finish_workout payload omits it", async () => {
+    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, [
+      {
+        clientId: "client-finish-notes-2",
+        type: "finish_workout",
+        payload: { workoutId: "workout-1", endedAt: new Date("2026-01-01T11:00:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
+    expect(workoutRow!.notes).toBeNull();
+  });
+
   it("is idempotent — finishing an already-finished workout returns already_synced", async () => {
     await applySyncBatch(db, [startWorkoutItem()]);
     const finishItem: SyncItem = {

@@ -65,7 +65,7 @@ export async function insertWorkoutExercise(db: LiftrDb, values: Required<NewWor
 export function patchWorkout(
   db: LiftrDb,
   id: string,
-  patch: { endedAt?: Date; pausedSeconds?: number; notes?: string; plausibilityMultiplier?: number },
+  patch: { endedAt?: Date; pausedSeconds?: number; notes?: string | null; plausibilityMultiplier?: number },
 ) {
   return db.update(workouts).set(patch).where(eq(workouts.id, id));
 }
