@@ -121,10 +121,16 @@ preference beats default), applied to the actual app shell:
 }
 ```
 
-No `@media (prefers-color-scheme)` block is added at this layer — Liftr is an authenticated,
-single-user app with a Profile screen, not a marketing page rendered inside an unknown host; theme
-is a user setting (§2.2), not inferred from OS preference on every load. This deliberately departs
-from the Artifact three-state pattern for that reason.
+**Corrected post-launch:** the *default* for a first-time visitor (no stored preference yet) does
+follow OS preference via `window.matchMedia("(prefers-color-scheme: light)")`, read once in
+`themeStore.ts`'s `getStoredTheme()` — a user opening the app for the first time reasonably expects
+it to match their system, same as any other well-behaved app. This is a plain JS `matchMedia` read,
+not a CSS `@media (prefers-color-scheme)` block — no CSS was added at this layer, since `main.ts`
+already always sets `data-theme` explicitly on boot (§2.2) and `tokens.css`'s existing
+`:root`/`:root[data-theme="light"]` pair already covers both outcomes. Once a user explicitly
+toggles the theme (§2.2), that choice is written to `localStorage` and permanently overrides system
+preference from then on — theme is still a persisted user setting, it just now has a sensible
+system-matching default instead of an unconditional dark one.
 
 ### 2.2 Theme selection
 
