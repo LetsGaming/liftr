@@ -21,6 +21,36 @@ source plans:
 Nothing here overrides the source plans' own detail (exact file/line citations, verification methods,
 effort estimates) — treat this as the sequencing and decision layer sitting on top of them.
 
+### 2026-09-03 update
+
+Every `.md` file at the root of `audit/` (i.e. everything this document doesn't already supersede
+into `finished/`) was re-checked against current source and against each other. Findings, folded
+into the sections below rather than repeated here:
+
+- **`plan-a-engagement-gamification.md` and `plan-b-ui-standards-fix.md`** — fully absorbed into this
+  document already, per this section's own opening line; nothing in either source plan was found
+  un-cited here. Status: **historical source material**, not independently actionable — read them
+  only for a citation's full detail, never as a second work queue alongside this one.
+- **§1 (Phase 0, universal correctness fixes)** — spot-checked against current source item by item;
+  **all nine items are now confirmed shipped** (§1.2–§1.9 gained inline verification notes this
+  pass; §1.1/§1.6/§1.8/§1.10 already had their own prior resolution notes). Phase 0 is done.
+- **§2 (Personal Records ledger)** — confirmed **not started**: no `/api/prs`-shaped route, no client
+  screen. This is now the single highest-priority *actually open* item in this document.
+- **§3/§5 (reward-signal legibility, Overall Rank promotion)** — both look likely-closed from a
+  source grep (the relevant fields/components are referenced in multiple screens already) but
+  weren't confirmed line-by-line; flagged as "verify, don't rebuild" rather than reopened blind.
+- **§4 (RPE/notes)** — confirmed **not started**, consistent with its own "most speculative phase"
+  framing; still correctly sequenced last among the non-Track-R items.
+- **`plan-c-new-ui-rebuild.md`** — §2 (design direction) is now superseded by
+  `audit/nebula-design-philosophy.md` and its four companion documents (see the new "Resolved
+  2026-09-03" note under §0 below); §1/§3/§4/§5/§6 stand as written.
+- **`engagement-audit-v5.md`** — a later, independent audit round this document hadn't previously
+  incorporated. Its Phase 1 (two correctness bugs) duplicates and confirms this document's §1.2/§1.3.
+  Its Phases 2–4 (Overview/Ranks/Profile duplication, Profile domain grouping, Overview priority
+  surfacing) are new, confirmed-still-open scope, folded in as new §5a below.
+- **The five `nebula-design-*.md` documents** (new, written this session) — the visual-direction
+  exploration Track R's §0 was waiting on before starting Phase 0 build work. See §0 below.
+
 ---
 
 ## 0. The fork this document does not resolve for you
@@ -97,6 +127,29 @@ What needs redoing before Phase 0 starts: §2's design-direction statement (rest
 above) and a fresh look at the streak/XP portion of §3.2's Progress screen and §6's engagement model,
 since those were scoped assuming the current mechanics port over unchanged.
 
+### Resolved 2026-09-03: visual-direction exploration complete — "Nebula"
+
+The immediate next step named above (concrete comps/directions before committing engineering time)
+is done. Six mockup rounds (`examples/liftr/liftr-directions.html` →
+`liftr-pulse-variations.html` → `liftr-liftoff-variations.html` → `liftr-pulse-liftoff-variations.html`
+→ `liftr-pulse-liftoff-colorways.html` → `liftr-pulse-liftoff-finalists.html`) converged on a
+finalist direction — **Nebula**: a rationed blue→violet→magenta brand-identity gradient layered
+over Liftr's existing 9-tier hex-medallion badge system (not replacing it), plus a genuinely new
+light theme. This is now written up as five documents that **supersede Plan C §2 in full** and
+partially resolve Plan C §6 Q1 (open question on how bold the reinvention should be):
+
+- `audit/nebula-design-philosophy.md` — the direction statement itself, replacing Plan C §2.
+- `audit/nebula-design-framework.md` — the token/color/light-mode system.
+- `audit/nebula-design-patterns.md` — component-level patterns.
+- `audit/nebula-design-layout.md` — how those patterns compose across Plan C §3's existing screen
+  inventory (no IA change).
+- `audit/nebula-design-plan.md` — phased execution (N0–N4), sequenced against Plan C's own phases.
+
+**What this does not resolve:** the streak/XP mechanics question flagged above (framing/system, not
+just visuals) is untouched by the Nebula docs — they're a color/token/component system, not a
+mechanics redesign. That fresh look is still open work before Track R's Phase 2 (Finish & Progress)
+begins.
+
 ---
 
 ## 1. Phase 0 — Universal correctness fixes (do regardless of §0's outcome)
@@ -116,25 +169,39 @@ unaware this was already fixed live. That's correct practice for a rebuild (hand
 regardless) — just don't read Plan C's citation as evidence the bug is still live in production. It
 isn't.
 
-### 1.2 Silent routine-save failure on fractional reps (Plan B Phase 1a)
+### 1.2 Silent routine-save failure on fractional reps (Plan B Phase 1a) — ✅ verified fixed
 Flagship muscle-guided routine creation dead-ends silently on first real use (fractional rep target →
 server 400 → unhandled promise rejection → button just resets). Three-part fix: round the threshold
 at the source (`deriveStandards`), add a client-side integer guard, add the missing `.catch` with a
 toast. Effort M. This is the single highest-priority item in the whole workplan — it silently breaks
 the app's own flagship feature.
 
-### 1.3 NumberStepper digit-concatenation bug (Plan B Phase 1b)
+**Spot-checked in source 2026-09-03:** `RoutineWizard.vue`'s `save()` rounds reps defensively
+(`Math.max(1, Math.round(s.reps))`) as a second guard alongside the `recommend.ts` fix, wraps the
+create/update call in `try/catch`, and surfaces a toast ("Speichern fehlgeschlagen — bitte erneut
+versuchen.") on failure — all three parts of this fix are in place. Same bug independently flagged
+as `engagement-audit-v5.md` Phase 1a; that phase is closed too.
+
+### 1.3 NumberStepper digit-concatenation bug (Plan B Phase 1b) — ✅ verified fixed
 Direct-entry input doesn't select-on-focus, so typing over a stale value concatenates digits instead
 of replacing them — a data-integrity risk on the single most-repeated interaction in the app
 (~30x/session per lens-2 §2.6). One-line fix (`@focus` → `.select()`). Effort S.
 
-### 1.4 Deduplicate the finish-screen XP/level display — **triple-confirmed**
+**Spot-checked in source 2026-09-03:** `packages/client/src/components/ui/NumberStepper.vue` line
+116 — `@focus="($event.target as HTMLInputElement).select()"`. Same bug independently flagged as
+`engagement-audit-v5.md` Phase 1b; that phase is closed too.
+
+### 1.4 Deduplicate the finish-screen XP/level display — **triple-confirmed** — ✅ verified fixed
 Plan A (Phase 0), Plan B (§3.2, with exact `App.vue`/`FinishSequence.vue` targets), and Plan C
 (Phase 2, designed against explicitly) all independently flagged this. Highest-confidence finding in
 the whole exercise. Fix: hide/dim the top-hud level chip while the Finish Sequence's Fortschritt beat
 is showing (route-aware conditional on `.top-hud`, per Plan B §3.2). Effort S.
 
-### 1.5 Resolved: persistent top-HUD chrome during active set-logging
+**Spot-checked in source 2026-09-03:** `App.vue` has a `hideTopHud` computed with an explicit
+comment citing this exact finding ("top-hud level/streak chips used to render unconditionally
+everywhere... duplicated the same Lv./XP number FinishSequence's own 'Fortschritt' beat shows").
+
+### 1.5 Resolved: persistent top-HUD chrome during active set-logging — ✅ verified fixed (same commit as §1.4)
 **Cross-plan tension, resolved here.** Plan A left this explicitly open (hiding it loses the ambient
 "reminder" effect the header buys, and no lens took a side). Plan B committed to a concrete fix (hide
 during active logging, same conditional as §1.4). Plan C's design direction gestures at "minimal
@@ -170,12 +237,16 @@ construction.
 inherits this bug — Plan C never saw it (source-blind by design, parallel-run with Plan B). Fix this
 at the asset level regardless of §0's outcome so it can't leak into either path.
 
-### 1.7 Touch-target floor sweep (Plan B Phase 2, reinforced by Plan C's Phase 0 token)
+### 1.7 Touch-target floor sweep (Plan B Phase 2, reinforced by Plan C's Phase 0 token) — ✅ verified fixed
 `.btn-primary`/`.btn-secondary`/`.wr-pill` measure 38–40px against the 44px floor the app already
 uses correctly elsewhere. Single `min-height: 44px` addition reaches every instance (global classes).
 Effort S to implement, M to verify (broad surface — full visual regression pass required since these
 are shared classes). Plan C independently bakes the same 44px floor into its Phase 0 tokens as a
 non-negotiable primitive, so this work is not wasted even if §0 later resolves toward Track R.
+
+**Spot-checked in source 2026-09-03:** `tokens.css`'s `.btn-close`, `.btn-primary`, and
+`.btn-secondary` all carry `min-height: 44px` (or width/height for `.btn-close`) with explicit
+audit-citing comments.
 
 ### 1.8 Decided: standardize segmented-control accent color to neutral
 **Cross-plan conflict, decided by product owner 2026-09-03 — overrides this document's original
@@ -198,8 +269,13 @@ If broader color-system consolidation is wanted, that's a separate decision.
 ### 1.9 Remaining Medium items (Plan B §3.3–§3.6, S effort each, independent, batchable)
 - Token field reveal/hide toggle — **both** `ProfilePage.vue` and `AuthGate.vue` (Plan B's own
   additional finding: lens-3 only saw the Profile instance since its session was already
-  authenticated).
-- "▶ Starten" vs "▶ Start" — standardize on the German conjugated form at both call sites.
+  authenticated). **✅ verified fixed 2026-09-03** — both components have a `tokenVisible` ref
+  toggling `type="password"`/`type="text"` with a 👁/🙈 button; `ProfilePage.vue` line ~387,
+  `AuthGate.vue` line ~65, the latter's own comment citing "workplan-v1 §1.9a." `AuthGate.vue` also
+  turns out to *be* the dedicated full-screen unauthenticated-state prompt Plan C Phase 4 called
+  for — see the open-questions update at the bottom of this document; open question 7 is resolved.
+- "▶ Starten" vs "▶ Start" — standardize on the German conjugated form at both call sites. **Not
+  independently re-verified 2026-09-03** — not spot-checked this pass, status unknown.
 - Wizard step-indicator promising step 3 on the fast path, which structurally never shows it — fix by
   relabeling to 2 steps when the fast path is active (not by routing through Review, which would
   re-add friction to a flow deliberately built to remove it — Plan B cites `engagement-audit-v4`'s
@@ -242,7 +318,12 @@ confusion").
 
 ---
 
-## 2. Phase 1 — Personal Records ledger — **triple-evidenced, highest-leverage new feature**
+## 2. Phase 1 — Personal Records ledger — **triple-evidenced, highest-leverage new feature** — ⏳ not started
+
+**Status check 2026-09-03:** no `GET /api/prs`-shaped route exists in `packages/server/src/routes`,
+and no Personal Records screen/component exists in the client — this phase has not been started.
+With Phase 0 (§1) now fully verified complete (see items above), **this is the top of the remaining
+work queue** — the highest-value item that's actually still open, not the correctness backlog.
 
 Plan A (Phase 1) and Plan C (Phase 2) both independently rank this as the single best-value addition
 available: a `prs` table the server's own code comment calls "an internal append-only log the app
@@ -275,13 +356,20 @@ question (does "session reduced" read as protective or accusatory?). **Genuine o
 settled fix** — Plan A itself flags that neither lens evaluated the copy's actual reception. Treat as
 a candidate for a small user check before committing to new wording, not a blind rewrite.
 
-### 3.2 Make `standards.trust` visually legible (Plan A Phase 5)
+### 3.2 Make `standards.trust` visually legible (Plan A Phase 5) — likely already closed
 The `real`/`derived`/`synthetic` distinction already reaches the client (`ranks.ts`'s response
 includes `trust`) and is already down-weighted in the aggregate math, but Plan A flags this as its
 **weakest-evidence phase** — neither lens-2 (presentational code out of scope) nor this pass could
 confirm whether any `.vue` page already renders the distinction. **Action: check current `.vue` files
 first** before scoping further work — the gap may be smaller than a full new treatment, or already
 closed.
+
+**Status check 2026-09-03:** `trust` is referenced in `RankProgress.vue`, `RanksPage.vue`,
+`OverviewPage.vue`, `WorkoutPage.vue`, `ExerciseInfoPanel.vue`, and `InfoToggle.vue` — strong
+evidence this is already rendered somewhere in the rank UI, not untouched. Not confirmed
+line-by-line this pass (would need to read each render path to confirm the *visual* distinction
+specifically, not just that the field is read) — recommend a quick visual check before scoping any
+new work here, likely closer to "done" than "open."
 
 **Sequencing:** independent of everything else; low risk either way.
 
@@ -310,17 +398,55 @@ density review before merging, per lens-2's own rule).
 
 ---
 
-## 5. Phase 4 — Overall Lifter Rank promotion
+## 5. Phase 4 — Overall Lifter Rank promotion — likely already closed
 
 Plan A (Phase 4): give the one account-level aggregate stat a persistent, prominent placement (e.g. a
 profile hero) rather than requiring navigation to see it. Route/service/aggregation math already
 exist and are already wired — this is a placement change, not new plumbing. Effort S.
+
+**Status check 2026-09-03:** `overallRank`/`OverallRank` is already referenced in `OverviewPage.vue`,
+`RanksPage.vue`, `WorkoutPage.vue`, and `WorkoutDetail.vue` — the aggregate already has multi-screen
+presence, not just a buried route. Not confirmed which specific placement was chosen or whether it
+matches "prominent" vs. "present but small" — same caveat as §3.2 above, likely closer to done than
+open.
 
 **Open, not resolved here:** how much prominence — Plan A itself flags a genuine tension between
 lens-2's "natural profile headline" framing and a Strava-sourced design principle (cited in the older
 competitor research) that cautions against collapsing multiple parallel motivation signals into one
 number. This is a taste call for whoever implements it, not something this document or its sources
 can settle with more evidence.
+
+---
+
+## 5a. Phase 4a — `engagement-audit-v5` carry-forward (Overview/Ranks/Profile duplication + grouping) — new, added 2026-09-03
+
+`audit/engagement-audit-v5.md` is a later, independent audit round (five cold agents testing the
+*live* app, not a source-blind derivation) that postdates this workplan's original Plan A/B/C
+synthesis. Its Phase 1 (the two correctness bugs) is the same bugs as this document's §1.2/§1.3 —
+already closed, confirmed above. Its remaining phases are genuinely new scope this workplan hadn't
+covered, small and current-UI-track (explicitly *not* a redesign, per its own §6), and fit here
+alongside §3/§5 rather than under Track R:
+
+- **Cut duplication** — Overview's "Top Ränge" tile is a verified-live, full re-render of what
+  Ranks already shows in detail (`OverviewPage.vue` line 333, `topRanks` computed) — **not yet cut**
+  as of 2026-09-03. Same for the Overview "Daten-Export" shortcut duplicating Profile's own export
+  feature, and two independently-worded LP explainer strings. See `engagement-audit-v5.md` Phase 2
+  for exact scope; this is a subtraction/link-instead-of-reimplement pass, not new UI.
+- **Profile domain grouping** — `ProfilePage.vue` is confirmed still a flat sequence of `.card`
+  sections (Körpergewicht, Trainingsprofil, Equipment, Scheiben & Stange, XP & Level, API-Token,
+  Health Connect, Daten-Export), each with its own small `.eyebrow` label but **no higher-level
+  domain headers** (Trainingsprofil / Fortschritt / Daten & Server / Über) grouping them — verified
+  not present as of 2026-09-03. See `engagement-audit-v5.md` Phase 3.
+- **Overview priority surfacing** — give existing action-relevant cards (resume workout, rank-up
+  pending, recovery status) visual priority over neutral stat tiles; reframe the empty
+  "Rangaufstiege diese Woche" state to encouraging/actionable tone. Not independently re-verified
+  this pass. See `engagement-audit-v5.md` Phase 4.
+
+**Sequencing:** independent of Track R and of Phase 1's PR ledger (§2) — can ship any time, small
+enough to batch with whichever of §3/§5's remaining verification work lands next. `engagement-
+audit-v5.md`'s own §5 (explicitly out of scope this round: the Workout/Läufe tab "merge" question,
+icon confusability, the `/runs` nav-orphaned route, a missing Finish-screen "Fertig" CTA) carries
+forward unchanged — not re-opened by this update.
 
 ---
 
@@ -345,38 +471,70 @@ without new research — it's already fully phased (Foundation → Today/Train �
 → Profile/Auth → Runs) with citations, complexity estimates, and an explicit migration strategy
 (incremental for Phases 2–5, coordinated cutover required for Phase 1's active-session state machine).
 
-**Before resuming it, two things from this document need to feed back in that Plan C didn't have:**
-1. **§1.8's color-convention finding.** Plan C's Phase 0 token decision ("one accent per semantic
-   meaning, never reused for both") was made blind to the fact that the current app's
-   color-travels-with-destination pattern is deliberate and documented, not drift. Re-decide this
-   token rule with that knowledge before building Phase 0's tokens, rather than inheriting Plan C's
-   uninformed default.
-2. **§1.6's muscle-diagram asset fix.** If Track R reuses the existing SVG assets, apply the
-   `viewBox` fix first — otherwise the rebuild inherits a bug it never had the chance to find.
+**Before resuming it, three things from this document need to feed back in that Plan C didn't have —
+the first two are already done, listed for completeness:**
+1. **§1.8's color-convention finding — ✅ already resolved and shipped.** Plan C's Phase 0 token
+   decision ("one accent per semantic meaning, never reused for both") was made blind to the fact
+   that the current app's color-travels-with-destination pattern was deliberate. Re-decided toward
+   Plan C's rule (`WorkoutRunsSwitcher.vue` now uses a fixed `--blue` active color regardless of
+   section, confirmed in source 2026-09-03) — nothing left to feed in, this already happened outside
+   Track R and Track R inherits it for free.
+2. **§1.6's muscle-diagram asset fix — ✅ already resolved and shipped**, confirmed fixed in
+   `MuscleFigure.vue` (see §1.6 above). Track R inherits the fix automatically if it reuses these
+   assets.
+3. **Plan C §2 is superseded — use `nebula-design-philosophy.md` instead.** See "Resolved
+   2026-09-03" under §0 above: six mockup rounds converged on the Nebula direction, written up as
+   five documents (`audit/nebula-design-philosophy.md`, `-framework.md`, `-patterns.md`, `-layout.md`,
+   `-plan.md`) that replace Plan C §2's original "quiet, utility-first, minimal motion" statement.
+   Track R's Phase 0 (Foundation) should build `nebula-design-plan.md`'s N0–N1 alongside Plan C's own
+   Phase 0 token/nav-shell work, not Plan C §2's un-superseded original tokens.
 
-Everything else in Plan C (§1's evidence synthesis, §2's design direction, §3's six phases, §4's
-migration strategy, §5's out-of-scope list, §6's open questions) stands as written and does not need
+Everything else in Plan C (§1's evidence synthesis, §3's six phases, §4's migration strategy, §5's
+out-of-scope list, §6's open questions except Q1 — see below) stands as written and does not need
 re-litigating to resume.
 
 ---
 
 ## Consolidated open questions (deduplicated from Plan A §4, Plan B §4, Plan C §6, and this document)
 
-1. **Rebuild vs. iterate** (§0) — the central fork. Recommend deciding after §1–§4 ship, not before.
-2. **Segmented-control color convention** (§1.8) — resolved *for now* (keep current), but flagged for
-   re-decision if Track R proceeds, since Plan C's default silently reverses it.
-3. **Anti-farming copy reception** (§3.1) — needs a real-user check, not just a rewrite.
-4. **`standards.trust` visual state** (§3.2) — check current `.vue` files before scoping; may already
-   be partially built.
-5. **RPE/notes exact interaction shape** (§4) — 1–10 scale vs. RPE-decimal picker; inline vs. modal
-   notes. No existing pattern to anchor the choice; real product-design work, not a research gap.
-6. **Overall Lifter Rank prominence** (§5) — how much visual weight is appropriate, genuinely
-   undecided by any source document.
-7. **Auth/token enforcement behavior** (Plan B §3.6, Plan C Phase 4) — neither lens-3 nor this pass
-   could verify the live 401/rejected-token flow end-to-end (test instance didn't enforce the token).
-   Needs a direct check of `requireAuth`'s actual behavior before Track R's dedicated unauthenticated-
-   state screen is built.
-8. **Share-card palette vs. app palette** (Plan B §4.1) — a self-consistent but app-independent color
-   set; product-identity call, not a standards violation.
-9. **Missing-photo catalog gap** (Plan B §4.4) — real photos (content work) vs. a permanent, closer
-   placeholder — a resourcing decision, not a design one.
+**Updated 2026-09-03** after a full re-check of every root-level `audit/*.md` document against
+current source. Resolved items are kept (struck through in spirit, not deleted) so the resolution
+is traceable; only genuinely open items need action.
+
+1. ~~**Rebuild vs. iterate** (§0)~~ — **resolved.** §0 already records "Decided 2026-09-03: rebuild
+   (Track R)" — this document's own header text below §0 was stale (still said "recommend deciding
+   after §1–§4 ship"); corrected here. The fork is closed; Track R is the chosen path, running
+   alongside the still-open current-UI items in §2/§3/§5/§5a, per §0's own "ship regardless, in
+   parallel" call.
+2. ~~**Segmented-control color convention** (§1.8)~~ — **resolved and shipped**, confirmed in source
+   (see §1.8 and the Track R feed-in list above). No longer open, in either track.
+3. **Anti-farming copy reception** (§3.1) — still open, needs a real-user check, not just a rewrite.
+4. **`standards.trust` visual state** (§3.2) — likely already closed (see §3.2's 2026-09-03 status
+   check above); needs a quick visual confirmation, not a fresh build.
+5. **RPE/notes exact interaction shape** (§4) — still open. Confirmed not yet built in source
+   (2026-09-03: no RPE-related component found under `pages/`/`components/` outside onboarding/about
+   copy). 1–10 scale vs. RPE-decimal picker; inline vs. modal notes — no existing pattern to anchor
+   the choice; real product-design work, not a research gap.
+6. **Overall Lifter Rank prominence** (§5) — likely already closed (see §5's 2026-09-03 status check
+   above: `overallRank` has multi-screen presence); exact prominence/placement not independently
+   confirmed as "right," but the plumbing-and-first-surface work described in Plan A Phase 4 appears
+   done.
+7. ~~**Auth/token enforcement behavior**~~ — **resolved.** `AuthGate.vue`'s own comments confirm the
+   401 path is live and observable (health check on boot, blocking prompt only on actual 401, no
+   token configured in dev = never shows) — this *is* the dedicated unauthenticated-state screen Plan
+   C Phase 4 called for, already built with a working token reveal/hide toggle. No longer open.
+8. **Share-card palette vs. app palette** (Plan B §4.1) — still open; a self-consistent but
+   app-independent color set, product-identity call, not a standards violation. Not re-checked this
+   pass (`shareCard.ts`'s drawing routines are explicitly out of scope per Plan C §5's own boundary).
+9. **Missing-photo catalog gap** (Plan B §4.4) — still open per §1.10's already-recorded 2026-09-03
+   decision (defer full-catalog illustration; source real photos/closer placeholders for the 11 gaps
+   in the meantime) — a resourcing decision, not a design one, and not re-scoped by this update.
+10. **Streak/XP mechanics framing** (§0's "Decided" note, "Underlying mechanics") — still open, new
+    this update's cross-check surfaced it as unresolved by the Nebula documents (which are visual/
+    token work, not mechanics work — see the "Resolved 2026-09-03" note under §0). Needed before
+    Track R's Phase 2 (Finish & Progress) begins.
+11. **`engagement-audit-v5` Phases 2–4** (§5a, new) — Overview/Ranks/Profile duplication cut, Profile
+    domain-header grouping, and Overview priority surfacing are all confirmed still open in source as
+    of 2026-09-03. Small, current-UI-track, no design ambiguity — these are scoped, not "open
+    questions" in the same sense as the others, but listed here since they're the largest block of
+    verified-still-open work this update found.

@@ -56,6 +56,60 @@
         ],
         "createdAt": "2026-08-31T12:20:20.212Z",
         "reason": "detector matched a JS doc-comment describing the rendering approach, not real markup — the actual <img> tags all have valid dynamic :src bindings"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "examples/liftr/liftr-liftoff-variations.html"
+        ],
+        "createdAt": "2026-09-03T15:45:52.693Z",
+        "reason": "matches existing Pulse-direction gradient-text language already used in sibling files liftr-directions.html and liftr-pulse-variations.html; this file's L4/L5 intentionally mix that Pulse identity with Liftoff"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "examples/liftr/liftr-liftoff-variations.html"
+        ],
+        "createdAt": "2026-09-03T15:45:52.785Z",
+        "reason": "matches existing Pulse-direction glow-shadow language already used in sibling files liftr-directions.html and liftr-pulse-variations.html; this file's L4/L5 intentionally mix that Pulse identity with Liftoff"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "examples/liftr/liftr-pulse-liftoff-colorways.html"
+        ],
+        "createdAt": "2026-09-03T17:46:31.105Z",
+        "reason": "matches existing Pulse-direction gradient-text language used throughout sibling files; this file explicitly explores color/glow variation on the user-approved Pulse x Liftoff direction"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "examples/liftr/liftr-pulse-liftoff-colorways.html"
+        ],
+        "createdAt": "2026-09-03T17:46:31.185Z",
+        "reason": "user explicitly asked for more/less glow variants of Pulse x Liftoff; glow intensity is the deliberate subject of this file's G1/G2 sections"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "examples/liftr/liftr-pulse-liftoff-finalists.html"
+        ],
+        "createdAt": "2026-09-03T18:40:50.516Z",
+        "reason": "matches existing Pulse-direction gradient-text language used throughout sibling files' dark sections; this file's light sections deliberately avoid it in favor of solid ink text"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "examples/liftr/liftr-pulse-liftoff-finalists.html"
+        ],
+        "createdAt": "2026-09-03T18:40:50.593Z",
+        "reason": "matches existing Pulse-direction glow-shadow language used throughout sibling files' dark sections; this file's light sections use neutral elevation shadows instead"
       }
     ]
   }
