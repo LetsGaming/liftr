@@ -431,6 +431,14 @@ body {
   pointer-events: none;
 }
 
+/* A PR-ledger row that isn't tier-anchored (nebula-design-patterns.md §5) — same fallback
+   pattern as .rankbar's --b2/--b3 fallback above, falling back to Nebula instead of blue when
+   no tier context exists. */
+.panel-reward.panel-reward--nebula {
+  background: linear-gradient(155deg, var(--b2, var(--nebula-m)), var(--b1, var(--nebula-ink-on-fill)) 70%);
+  border: 1px solid var(--b3, var(--nebula-1));
+}
+
 /* hex tier badge (mockup .badge) — rebuilt per 0a's Liftoff medal deep-dive (engagement-audit-v3
    Phase 1) as a layered "metal" stack instead of a flat hex + 2-stop gradient. Only two
    pseudo-elements are available on this element without touching every call site's markup, so
