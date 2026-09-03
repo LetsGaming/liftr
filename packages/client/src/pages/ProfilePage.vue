@@ -17,9 +17,11 @@ import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE, SUPPOR
 import { fetchExportZip } from "../services/exportService";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useSettingsStore, type ExperienceLevel } from "../stores/settingsStore";
+import { useThemeStore } from "../stores/themeStore";
 import { useXpStore } from "../stores/xpStore";
 
 const bodyweight = useBodyweightStore();
+const theme = useThemeStore();
 const xp = useXpStore();
 const { toast } = useToast();
 const weightInput = ref("");
@@ -234,6 +236,8 @@ async function exportData() {
     <div class="profile-content">
     <p style="color: var(--dim)">Dein Server, dein Konto, deine Daten.</p>
 
+    <h2 class="group-header">Trainingsprofil</h2>
+
     <section class="card">
       <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
       <p class="hint">Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht.</p>
@@ -354,6 +358,8 @@ async function exportData() {
       </button>
     </section>
 
+    <h2 class="group-header">Fortschritt</h2>
+
     <section class="card">
       <h2 class="eyebrow">XP &amp; Level</h2>
       <p class="hint">Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden.</p>
@@ -369,7 +375,17 @@ async function exportData() {
       </div>
     </section>
 
-    <section class="card">
+    <h2 class="group-header">Daten &amp; Server</h2>
+
+    <section class="card card--quiet">
+      <h2 class="eyebrow">Darstellung</h2>
+      <div class="chip-row">
+        <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">Dunkel</button>
+        <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">Hell</button>
+      </div>
+    </section>
+
+    <section class="card card--quiet">
       <h2 class="eyebrow">API-Token</h2>
       <p class="hint">
         Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist — derselbe Wert, nach dem beim
@@ -400,7 +416,7 @@ async function exportData() {
       </div>
     </section>
 
-    <section v-if="isHealthConnectAvailable()" class="card">
+    <section v-if="isHealthConnectAvailable()" class="card card--quiet">
       <h2 class="eyebrow">Health Connect</h2>
       <p class="hint">
         Läufe, die du mit deiner Uhr aufgezeichnet hast, automatisch importieren — inklusive Route, sobald Health
@@ -412,7 +428,7 @@ async function exportData() {
       <p v-if="healthConnectStatus" class="current">{{ healthConnectStatus }}</p>
     </section>
 
-    <section class="card">
+    <section class="card card--quiet">
       <h2 class="eyebrow">Daten-Export</h2>
       <p class="hint">Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr.</p>
       <button class="btn-primary" :disabled="exporting" @click="exportData">
@@ -420,6 +436,8 @@ async function exportData() {
       </button>
       <p v-if="exportError" class="current" style="color: var(--red)">{{ exportError }}</p>
     </section>
+
+    <h2 class="group-header">Über</h2>
 
     <RouterLink to="/attributions" class="attributions-link">Quellen &amp; Lizenzen →</RouterLink>
     </div>
@@ -619,5 +637,23 @@ async function exportData() {
 }
 .attributions-link:hover {
   color: var(--text);
+}
+.group-header {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: var(--sp6) 0 0;
+}
+.group-header:first-of-type {
+  margin-top: var(--sp2);
+}
+.card--quiet {
+  opacity: 0.92;
+  background: var(--surface);
+}
+[data-theme="light"] .card--quiet {
+  background: var(--surface-3);
 }
 </style>

@@ -11,6 +11,7 @@ export const router = createRouter({
     { path: "/", name: "overview", component: () => import("./pages/OverviewPage.vue") },
     { path: "/workout", name: "workout", component: () => import("./pages/WorkoutPage.vue") },
     { path: "/ranks", name: "ranks", component: () => import("./pages/RanksPage.vue") },
+    { path: "/records", name: "records", component: () => import("./pages/RecordsPage.vue") },
     { path: "/exercises", name: "exercises", component: () => import("./pages/ExercisesPage.vue") },
     { path: "/runs", name: "runs", component: () => import("./pages/RunsPage.vue") },
     { path: "/profile", name: "profile", component: () => import("./pages/ProfilePage.vue") },

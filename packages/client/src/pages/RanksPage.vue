@@ -5,6 +5,7 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { ordinal, type Tier } from "@liftr/shared";
 import { computed, onMounted } from "vue";
+import { LP_EXPLAINER } from "../copy/rankCopy";
 import ProgressChart from "../components/rank/ProgressChart.vue";
 import RankDistributionDonut from "../components/rank/RankDistributionDonut.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
@@ -66,8 +67,12 @@ const sortedRanks = computed(() =>
         :peak-division="overallRank.peak?.division ?? null"
       />
 
+      <router-link to="/records" class="btn-secondary" style="display: inline-flex; margin-top: var(--sp3)">
+        🏆 Rekorde ansehen
+      </router-link>
+
       <InfoToggle label="Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt">
-        <b class="tnum">LP</b> misst deinen Fortschritt innerhalb der aktuellen Stufe (0–100). Ein
+        <b class="tnum">LP</b> {{ LP_EXPLAINER }}. Ein
         <b>≈</b> markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests —
         dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt.
       </InfoToggle>
