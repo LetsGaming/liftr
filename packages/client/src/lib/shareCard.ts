@@ -15,6 +15,14 @@
  * day once Phase 1's layered medal rebuild (extrusion plate, bevel rim, per-tier --face-grad,
  * specular streaks) landed on master — drawTierBadge below now mirrors *that* CSS, not the flat
  * 2-stop gradient it originally shipped against.
+ *
+ * 2026-09-04: adopted "Nebula Halo" (audit/share-card-design-variations.md variation 1) — the
+ * background glow, wordmark fill, and two of four stat accents now use the app's Nebula brand
+ * gradient instead of plain blue, closing workplan-v1 open question 8. Combined with a product
+ * decision to demote the tier medal: it moves from a centered, ~254px-tall section in the main
+ * content flow to a small top-right corner stamp (closer in spirit to that doc's variation 8),
+ * so "rank and level" read as a badge, not the headline — the vertical space that freed up goes
+ * to the trained-muscle figures and the exercise grid, both drawn larger than before.
  */
 import {
   CARD_DIMENSIONS,
@@ -44,17 +52,23 @@ const COLORS = {
   fireHi: "#ffa04d", // --fire-hi
   pr: "#ffd23f", // --pr — tokens.css's dedicated PR-accent token, not an invented "gold"
   line: "rgba(255,255,255,0.14)", // --line
+  // Nebula brand gradient (tokens.css --nebula-1/-m/-2) — "Nebula Halo" variation, 2026-09-04.
+  nebula1: "#2f9fe0",
+  nebulaM: "#8a6dff",
+  nebula2: "#d63aff",
 };
 
 /**
  * Feedback: "the main stats should be single colored stats — not childish, but engaging to look
  * at." Each of the 4 stats gets one accent from the app's own restrained palette (tokens.css's
  * tier/brand hues). Phase 5 redesigns *how* each stat is drawn (a full colored card, not just
- * colored text — see drawStatCard below) but keeps this same per-stat accent assignment: Volumen
- * is the headline number (brand blue), PRs echoes --pr, the token the rest of the app already
- * uses for achievement moments.
+ * colored text — see drawStatCard below) but keeps this same per-stat accent assignment: PRs
+ * echoes --pr, the token the rest of the app already uses for achievement moments. 2026-09-04
+ * ("Nebula Halo"): Dauer and Volumen move from --violet/--blue-hi to the Nebula gradient's own
+ * two end stops (--nebula-m/--nebula-1), so the card's headline color story matches the app's
+ * brand identity instead of a plain blue that predates it.
  */
-const STAT_COLORS = [COLORS.violet, COLORS.blueHi, COLORS.fireHi, COLORS.pr];
+const STAT_COLORS = [COLORS.nebulaM, COLORS.nebula1, COLORS.fireHi, COLORS.pr];
 
 /** Per-tier hex badge fill stops + glyph-tint, copied from tokens.css's --<tier>-1/2/3/t custom
  *  properties (same rationale as COLORS above: canvas can't resolve CSS custom properties, and a
@@ -168,33 +182,33 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   roundRectPath(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 18);
   ctx.stroke();
 
-  const pad = 16;
-  const iconSize = 34;
+  const pad = 18; // was 16 — grown alongside EXERCISE_ROW_H, see that constant's comment
+  const iconSize = 42; // was 34
   const iconX = x + pad;
   const iconY = y + pad;
-  roundRectPath(ctx, iconX, iconY, iconSize, iconSize, 10);
+  roundRectPath(ctx, iconX, iconY, iconSize, iconSize, 12);
   ctx.fillStyle = COLORS.surface2;
   ctx.fill();
   // Generic dumbbell glyph — one shared icon for every row (Phase 5 asks for "icon + name", not
   // a full per-exercise icon set; Liftoff's own reference reuses one generic glyph too).
   ctx.strokeStyle = COLORS.dim;
-  ctx.lineWidth = 2.4;
+  ctx.lineWidth = 2.8;
   ctx.beginPath();
-  ctx.moveTo(iconX + 9, iconY + iconSize / 2);
-  ctx.lineTo(iconX + iconSize - 9, iconY + iconSize / 2);
+  ctx.moveTo(iconX + 11, iconY + iconSize / 2);
+  ctx.lineTo(iconX + iconSize - 11, iconY + iconSize / 2);
   ctx.stroke();
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 6;
   ctx.beginPath();
-  ctx.moveTo(iconX + 8, iconY + iconSize / 2 - 6);
-  ctx.lineTo(iconX + 8, iconY + iconSize / 2 + 6);
-  ctx.moveTo(iconX + iconSize - 8, iconY + iconSize / 2 - 6);
-  ctx.lineTo(iconX + iconSize - 8, iconY + iconSize / 2 + 6);
+  ctx.moveTo(iconX + 10, iconY + iconSize / 2 - 7);
+  ctx.lineTo(iconX + 10, iconY + iconSize / 2 + 7);
+  ctx.moveTo(iconX + iconSize - 10, iconY + iconSize / 2 - 7);
+  ctx.lineTo(iconX + iconSize - 10, iconY + iconSize / 2 + 7);
   ctx.stroke();
 
-  const textX = iconX + iconSize + 12;
+  const textX = iconX + iconSize + 14;
   const textW = x + w - pad - textX;
   ctx.fillStyle = COLORS.text;
-  ctx.font = font(700, 21, false);
+  ctx.font = font(700, 23, false); // was 21
   ctx.textBaseline = "middle";
   let displayName = name;
   while (ctx.measureText(displayName).width > textW && displayName.length > 1) {
@@ -205,19 +219,20 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   ctx.textBaseline = "alphabetic";
 
   ctx.fillStyle = COLORS.dim;
-  ctx.font = font(600, 17, false);
-  let detailY = iconY + iconSize + 22;
+  ctx.font = font(600, 18, false); // was 17
+  let detailY = iconY + iconSize + 26; // was +22 — a bit more breathing room in the taller row
   for (const line of detailLines) {
     ctx.fillText(line, x + pad, detailY);
-    detailY += 22;
+    detailY += 24; // was 22
   }
 }
 
 /** Splits a detail string to at most 2 lines that fit `maxWidth` at the exercise-cell detail
  *  font, truncating a still-too-long final line with an ellipsis rather than overflowing the
- *  card (long set lists on a narrow half-width column). */
+ *  card (long set lists on a narrow half-width column). Font size must match drawExerciseCell's
+ *  own detail-line font exactly — this measures the wrap, that one renders it. */
 function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  ctx.font = font(600, 17, false);
+  ctx.font = font(600, 18, false); // was 17 — keep in sync with drawExerciseCell above
   const words = text.split(/\s+/);
   const lines: string[] = [];
   let current = "";
@@ -382,6 +397,52 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
   ctx.restore();
 }
 
+/**
+ * 2026-09-04: the tier medal + "Tier Division" / "Level N" / rank-up caption, demoted from the
+ * card's centered headline section to a small top-right corner stamp — "less in the foreground"
+ * than a 168px medal with its own 254-300px section, without hiding rank/level entirely (the
+ * medal's own material — halo, bevel, face gradient, specular streaks — is still drawn in full at
+ * `size`, just smaller). Drawn independently of the header/stats/muscles/exercise cursorY flow:
+ * its position is fixed relative to the top-right corner, so it can never push later sections
+ * down the way the old in-flow badge section did. Returns nothing — callers don't need its
+ * bottom edge, since nothing else in the layout is positioned relative to it anymore.
+ */
+function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: number, size: number, model: WorkoutCardModel): void {
+  if (!model.tier) return;
+  const tier = model.tier.tier as RankTier;
+  const badgeCx = width - pad - size / 2;
+  const badgeTopY = pad;
+  drawTierBadge(ctx, badgeCx, badgeTopY, size, tier);
+
+  let labelY = badgeTopY + size + 22;
+  ctx.textAlign = "center";
+  ctx.fillStyle = COLORS.text;
+  ctx.font = font(800, 19, true); // was 26 in the old centered headline treatment
+  ctx.fillText(`${TIER_LABEL_DE[tier]} ${DIVISION_LABEL[model.tier.division] ?? ""}`.trim(), badgeCx, labelY);
+  labelY += 22;
+  ctx.fillStyle = COLORS.dim;
+  ctx.font = font(600, 15, false); // was 20
+  ctx.fillText(`Level ${model.tier.level}`, badgeCx, labelY);
+
+  if (model.topRankUp) {
+    labelY += 22;
+    ctx.fillStyle = COLORS.fireHi;
+    ctx.font = font(700, 14, false); // was 19 — compact corner stack, not a headline
+    const headline = model.topRankUp.isPr
+      ? `${model.topRankUp.exerciseName}: neuer Rekord`
+      : `${model.topRankUp.exerciseName}: ${TIER_LABEL_DE[model.topRankUp.tier as RankTier]} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
+    // The corner column is narrow (roughly `size` wide) — a long exercise name would run past it,
+    // unlike the old centered treatment which had the full card width to work with.
+    let displayHeadline = headline;
+    while (ctx.measureText(displayHeadline).width > size * 1.9 && displayHeadline.length > 1) {
+      displayHeadline = displayHeadline.slice(0, -1);
+    }
+    if (displayHeadline !== headline) displayHeadline = `${displayHeadline.slice(0, -1)}…`;
+    ctx.fillText(displayHeadline, badgeCx, labelY);
+  }
+  ctx.textAlign = "left";
+}
+
 /** crossOrigin="anonymous" keeps the canvas untainted when apiBase() points at a different
  *  origin than the page (a Capacitor WebView talking to a LAN server, see lib/api.ts) — without
  *  it, a cross-origin image draws fine but toBlob() throws afterward. Same-origin loads (the
@@ -455,24 +516,18 @@ async function drawMuscleFigures(
 const PAD = 64;
 const STAT_CARD_H = 176;
 const STAT_GAP = 20;
-// Critique finding (typeset, P2): at realistic thumbnail scale, the blue Volumen stat card
-// out-competed the tier badge for first glance, even though the badge — this app's real
-// headline, per the design review's own "most premium element on the card" verdict — should
-// win that contest. Sized up from 128 (+31%) plus the tier-hued halo in drawTierBadge below;
-// BADGE_SECTION_H is derived from it rather than a second hand-tuned constant, so resizing the
-// badge again can't silently reintroduce the exact overlap bug this file's header already
-// documents once (a fixed section height that didn't grow with its own content).
-const BADGE_SIZE = 168;
-const BADGE_LABEL_GAP = 38; // badge bottom -> tier-name baseline
-const BADGE_SECTION_H = BADGE_SIZE + BADGE_LABEL_GAP + 30 + 4 + 14; // + level line + baseline margin
-// Extra height the badge section needs when a topRankUp caption line is drawn under the tier
-// label (Bug found by rendering a real card during Phase 5 verification: a fixed BADGE_SECTION_H
-// that never grew for the caption line let the muscle-figure header draw right through it).
-const BADGE_RANKUP_CAPTION_H = 46;
-const MUSCLE_FIG_H = 300;
+// 2026-09-04 ("less in the foreground"): the medal moved out of the main content flow entirely,
+// into a small top-right corner stamp drawn independently of the header/stats/muscles/exercise
+// cursor (see drawCornerBadge below) — so it no longer needs a reserved section height, a fill
+// slot, or a rank-up-caption growth allowance the way the old centered ~254-300px badge section
+// did. The vertical space that freed up was handed to MUSCLE_FIG_H and EXERCISE_ROW_H below,
+// per the product decision: "the gained space should be filled with a size adjustment for the
+// trained muscle groups, as well as the exercises."
+const CORNER_BADGE_SIZE = 110;
+const MUSCLE_FIG_H = 360; // was 300
 const MUSCLE_SECTION_H = 34 + 24 + MUSCLE_FIG_H + 40;
 const DIVIDER_GAP = 40;
-const EXERCISE_ROW_H = 118;
+const EXERCISE_ROW_H = 136; // was 118
 const EXERCISE_ROW_GAP = 16;
 const EXERCISE_COL_GAP = 20;
 
@@ -491,21 +546,21 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
 
   const width = CARD_DIMENSIONS.square.width; // square and story share the same width; only height differs
 
-  // ---- Header: routine name + date. Real height depends on how many lines the name wraps to. ----
-  const nameLines = wrapText(model.routineName, 20).slice(0, 2);
-  const headerH = 98 + nameLines.length * 64 + 44 + 30;
-
   const hasBadge = model.tier != null;
   const hasMuscles = model.muscles.primary.length > 0 || model.muscles.secondary.length > 0;
-  const badgeSectionH = BADGE_SECTION_H + (model.topRankUp ? BADGE_RANKUP_CAPTION_H : 0);
+
+  // ---- Header: routine name + date. Real height depends on how many lines the name wraps to.
+  // Wrap width is narrower when a tier badge is present (17 vs. 20 chars) — the corner badge now
+  // occupies the top-right, and the routine name/date must not run under it. ----
+  const nameLines = wrapText(model.routineName, hasBadge ? 17 : 20).slice(0, 2);
+  const headerH = 98 + nameLines.length * 64 + 44 + 30;
 
   // ---- Exercise grid: natural (uncapped) row count at this content, for the size decision. ----
   const lines = renderExerciseLines(model.exercises);
   const naturalRows = exerciseGridRowCount(lines.length);
   const naturalExerciseH = naturalRows > 0 ? naturalRows * EXERCISE_ROW_H + (naturalRows - 1) * EXERCISE_ROW_GAP : 0;
 
-  const naturalTotal =
-    headerH + STAT_CARD_H + (hasBadge ? badgeSectionH : 0) + (hasMuscles ? MUSCLE_SECTION_H : 20) + DIVIDER_GAP + naturalExerciseH;
+  const naturalTotal = headerH + STAT_CARD_H + (hasMuscles ? MUSCLE_SECTION_H : 20) + DIVIDER_GAP + naturalExerciseH;
 
   const { size, overflowsStory } = chooseCardSize(naturalTotal, PAD);
   const { height } = CARD_DIMENSIONS[size];
@@ -523,36 +578,53 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   // silently at the bottom. `overflowsStory` (too many exercises even for the taller format)
   // means there's no surplus to distribute; rows get capped by maxRows below instead.
   const available = height - PAD * 2;
-  // header->stats, stats->(badge|muscles), badge->muscles (if a badge is drawn), and the gap
-  // right before the divider (drawn either way — with the muscle figure's own trailing margin,
-  // or as the bare pre-divider gap when there's no tier/muscle content at all). That last slot
-  // always exists: a card with *no* badge and *no* muscles (Phase 5's true worst case — nothing
-  // between the stat cards and the exercise list) still needs somewhere to put a large surplus,
-  // not just the 2 header/stat gaps, or a very short routine reverts to the exact dead-space bug
-  // this phase set out to fix.
-  const fillSlots = 2 + (hasBadge ? 1 : 0) + 1;
+  // header->stats, stats->muscles, and the gap right before the divider (drawn either way — with
+  // the muscle figure's own trailing margin, or as the bare pre-divider gap when there's no
+  // muscle content at all). The old badge-adjacent slot is gone: the corner badge (drawn below)
+  // no longer sits in this flow at all, so it doesn't get or need a fill slot of its own. That
+  // last slot always exists: a card with no muscle content (nothing between the stat cards and
+  // the exercise list) still needs somewhere to put a large surplus, not just the header/stat
+  // gap, or a very short routine reverts to the exact dead-space bug this phase set out to fix.
+  const fillSlots = 3;
   const fillGap = overflowsStory ? 0 : distributeFillGap(naturalTotal, available, fillSlots, 150);
 
-  // background
+  // background — "Nebula Halo" (audit/share-card-design-variations.md variation 1): a two-lobe
+  // wash using the brand gradient's own two end stops, replacing the old single plain-blue glow.
   const bgGrad = ctx.createLinearGradient(0, 0, width, height);
   bgGrad.addColorStop(0, COLORS.bg);
   bgGrad.addColorStop(1, COLORS.surface);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  const glow = ctx.createRadialGradient(width * 0.82, height * 0.08, 0, width * 0.82, height * 0.08, width * 0.55);
-  glow.addColorStop(0, "rgba(59, 140, 255, 0.22)");
-  glow.addColorStop(1, "rgba(59, 140, 255, 0)");
-  ctx.fillStyle = glow;
+  const glow1 = ctx.createRadialGradient(width * 0.82, height * 0.08, 0, width * 0.82, height * 0.08, width * 0.55);
+  glow1.addColorStop(0, "rgba(47, 159, 224, 0.20)"); // --nebula-1
+  glow1.addColorStop(1, "rgba(47, 159, 224, 0)");
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, width, height);
+
+  const glow2 = ctx.createRadialGradient(width * 0.18, height * 0.04, 0, width * 0.18, height * 0.04, width * 0.4);
+  glow2.addColorStop(0, "rgba(214, 58, 255, 0.16)"); // --nebula-2
+  glow2.addColorStop(1, "rgba(214, 58, 255, 0)");
+  ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, width, height);
 
   const pad = PAD;
 
-  // wordmark
-  ctx.fillStyle = COLORS.blueHi;
+  // wordmark — gradient-filled with the Nebula brand gradient across its own text box (matching
+  // --nebula-grad's 120deg exactly), replacing the old solid --blue-hi fill.
   ctx.font = font(800, 30, true);
+  const wordmarkW = ctx.measureText("LIFTR").width;
+  const wordmarkGrad = cssAngleGradient(ctx, 120, pad, pad - 22, wordmarkW, 30);
+  wordmarkGrad.addColorStop(0, COLORS.nebula1);
+  wordmarkGrad.addColorStop(0.5, COLORS.nebulaM);
+  wordmarkGrad.addColorStop(1, COLORS.nebula2);
+  ctx.fillStyle = wordmarkGrad;
   ctx.textAlign = "left";
   ctx.fillText("LIFTR", pad, pad + 20);
+
+  // Corner tier badge — drawn right after the wordmark, independent of the header/stats/muscles/
+  // exercise cursorY flow (see drawCornerBadge's own comment for why).
+  if (hasBadge) drawCornerBadge(ctx, width, pad, CORNER_BADGE_SIZE, model);
 
   // Routine name + date
   ctx.fillStyle = COLORS.text;
@@ -583,37 +655,6 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
     drawStatCard(ctx, x, y, statCardW, STAT_CARD_H, value!, label!, STAT_COLORS[i]!);
   });
   let cursorY = y + STAT_CARD_H + 30 + fillGap;
-
-  // ---- Tier badge + (optionally) the session's highest rank-up — Phase 5: the card previously
-  // never showed rank at all despite the whole app being built around the ladder. ----
-  if (model.tier) {
-    const tier = model.tier.tier as RankTier;
-    const badgeCx = width / 2;
-    drawTierBadge(ctx, badgeCx, cursorY, BADGE_SIZE, tier);
-
-    let labelY = cursorY + BADGE_SIZE + BADGE_LABEL_GAP;
-    ctx.textAlign = "center";
-    ctx.fillStyle = COLORS.text;
-    ctx.font = font(800, 26, true);
-    ctx.fillText(`${TIER_LABEL_DE[tier]} ${DIVISION_LABEL[model.tier.division] ?? ""}`.trim(), badgeCx, labelY);
-    labelY += 30;
-    ctx.fillStyle = COLORS.dim;
-    ctx.font = font(600, 20, false);
-    ctx.fillText(`Level ${model.tier.level}`, badgeCx, labelY);
-    labelY += 4;
-
-    if (model.topRankUp) {
-      labelY += 28;
-      ctx.fillStyle = COLORS.fireHi;
-      ctx.font = font(700, 19, false);
-      const headline = model.topRankUp.isPr
-        ? `${model.topRankUp.exerciseName}: neuer Rekord`
-        : `${model.topRankUp.exerciseName}: ${TIER_LABEL_DE[model.topRankUp.tier as RankTier]} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
-      ctx.fillText(headline, badgeCx, labelY);
-    }
-    ctx.textAlign = "left";
-    cursorY += badgeSectionH + fillGap;
-  }
 
   // ---- Trained-muscle figure ----
   if (hasMuscles) {
