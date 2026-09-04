@@ -121,6 +121,10 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
   height: 100%;
   display: grid;
   place-items: center;
+  /* Matches ExerciseThumb.vue's already-shipped fallback (audit fix, workplan-v1 §1.10c) —
+     same tonal radial-highlight treatment instead of a flat single-tone break, applied here to
+     the ExerciseInfoPanel detail view's static fallback, which still had the old flat look. */
+  background: radial-gradient(circle at 35% 30%, var(--surface-2), var(--surface-3) 70%);
   color: var(--faint);
   font-size: 11px;
 }
