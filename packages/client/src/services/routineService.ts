@@ -84,8 +84,12 @@ export function deleteRoutine(id: string): Promise<void> {
   return api.del(`/api/routines/${id}`);
 }
 
-/** `exercises` replaces the full list; omit it to only rename. */
-export function updateRoutine(id: string, payload: { name?: string; exercises?: RoutineExerciseInput[] }): Promise<void> {
+/** `exercises` replaces the full list; omit it to only rename. `orderIndex` repositions the
+ *  routine within the routine list (drag-to-reorder, plan C §3 Phase 3). */
+export function updateRoutine(
+  id: string,
+  payload: { name?: string; exercises?: RoutineExerciseInput[]; orderIndex?: number },
+): Promise<void> {
   return api.patch(`/api/routines/${id}`, payload);
 }
 
