@@ -1,10 +1,23 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { computeTotalXp, type Tier } from "@liftr/shared";
-import { ranks, standards, workouts, type LiftrDb } from "@liftr/db";
+import { computeConsistencyBonus, computeTotalXp, computeVarietyBonus, type Tier } from "@liftr/shared";
+import { exerciseMuscles, muscles, ranks, standards, workouts, type LiftrDb } from "@liftr/db";
 import { applySyncBatch, type SyncItem } from "./syncService.js";
 import { getXpSummary } from "./xpService.js";
 import { createTestDb, insertTestExercise } from "./testDb.js";
+
+/** Inserts a muscle row (or reuses one by slug) and links it as a primary-role muscle of the given
+ *  exercise — the minimal fixture the variety-bonus tests need, since `insertTestExercise` alone
+ *  doesn't seed any `exercise_muscles` rows. */
+async function linkPrimaryMuscle(db: LiftrDb, exerciseId: string, slug: string) {
+  const [muscle] = await db
+    .insert(muscles)
+    .values({ slug, svgRegionKey: slug })
+    .onConflictDoNothing()
+    .returning();
+  const muscleId = muscle?.id ?? (await db.query.muscles.findFirst({ where: eq(muscles.slug, slug) }))!.id;
+  await db.insert(exerciseMuscles).values({ exerciseId, muscleId, role: "primary" });
+}
 
 /** Matches rankService.test.ts's own `seedStandards` helper — a minimal load_ratio standards
  *  ladder so `recomputeRankForExercise` (called internally by finish_workout) actually produces
@@ -479,6 +492,114 @@ describe("applySyncBatch — finish_workout", () => {
 
     expect(result!.status).toBe("created");
     expect(result!.ranks?.some((r) => r.plausibilityReason === "improbable_jump")).toBe(true);
+  });
+});
+
+describe("applySyncBatch — finish_workout consistency/variety bonuses", () => {
+  function startItem(id: string, exId: string, startedAt: Date, clientId: string): SyncItem {
+    return {
+      clientId,
+      type: "start_workout",
+      payload: { id, startedAt, exercises: [{ id: `${id}-we`, exerciseId: exId, orderIndex: 0 }] },
+    } as SyncItem;
+  }
+
+  function setItem(workoutExerciseId: string, loggedAt: Date, clientId: string): SyncItem {
+    return {
+      clientId,
+      type: "log_set",
+      payload: { workoutExerciseId, setIndex: 0, weightKg: 60, reps: 8, kind: "normal", loggedAt },
+    } as SyncItem;
+  }
+
+  function finishItem(workoutId: string, endedAt: Date, clientId: string): SyncItem {
+    return { clientId, type: "finish_workout", payload: { workoutId, endedAt, pausedSeconds: 0 } } as SyncItem;
+  }
+
+  it("a first-ever session gets the full variety bonus (all its own muscles are 'new') and a non-zero consistency bonus", async () => {
+    await linkPrimaryMuscle(db, exerciseId, "shoulders");
+    const day1 = new Date("2026-01-01T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
+    const [result] = await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+
+    expect(result!.status).toBe("created");
+    expect(result!.newMuscleSlugs).toEqual(["shoulders"]);
+    expect(result!.varietyBonusXp).toBe(computeVarietyBonus(1));
+    expect(result!.consistencyBonusXp).toBe(computeConsistencyBonus(1));
+    expect(result!.consistencyBonusXp).toBeGreaterThan(0);
+  });
+
+  it("a session whose muscles fully overlap the immediately-preceding session scores 0 variety, without affecting its own consistency bonus", async () => {
+    await linkPrimaryMuscle(db, exerciseId, "shoulders");
+    const day1 = new Date("2026-01-01T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
+    await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+
+    const day2 = new Date("2026-01-02T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-2", exerciseId, day2, "s2")]);
+    await applySyncBatch(db, [setItem("workout-2-we", day2, "set2")]);
+    const [result] = await applySyncBatch(db, [finishItem("workout-2", new Date("2026-01-02T11:00:00Z"), "f2")]);
+
+    expect(result!.status).toBe("created");
+    expect(result!.newMuscleSlugs).toEqual([]);
+    expect(result!.varietyBonusXp).toBe(computeVarietyBonus(0));
+    expect(result!.varietyBonusXp).toBe(0);
+    // Additive-only: the second session's own consistency bonus (now streakDays=2) is unaffected
+    // by scoring 0 on variety — it's strictly larger than day 1's, never penalized.
+    expect(result!.consistencyBonusXp).toBe(computeConsistencyBonus(2));
+    expect(result!.consistencyBonusXp!).toBeGreaterThan(computeConsistencyBonus(1));
+  });
+
+  it("a session training a genuinely new muscle gets a proportional variety bonus and names the muscle", async () => {
+    const otherExerciseId = (await insertTestExercise(db, { slug: "other-exercise" })).id;
+    await linkPrimaryMuscle(db, exerciseId, "shoulders");
+    await linkPrimaryMuscle(db, otherExerciseId, "chest");
+
+    const day1 = new Date("2026-01-01T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
+    await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+
+    const day2 = new Date("2026-01-02T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-2", otherExerciseId, day2, "s2")]);
+    await applySyncBatch(db, [setItem("workout-2-we", day2, "set2")]);
+    const [result] = await applySyncBatch(db, [finishItem("workout-2", new Date("2026-01-02T11:00:00Z"), "f2")]);
+
+    expect(result!.status).toBe("created");
+    expect(result!.newMuscleSlugs).toEqual(["chest"]);
+    expect(result!.varietyBonusXp).toBe(computeVarietyBonus(1));
+  });
+
+  it("persists consistencyBonusXp and varietyBonusXp on the workouts row, not just in the returned result", async () => {
+    await linkPrimaryMuscle(db, exerciseId, "shoulders");
+    const day1 = new Date("2026-01-01T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
+    const [result] = await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
+    expect(workoutRow!.consistencyBonusXp).toBe(result!.consistencyBonusXp);
+    expect(workoutRow!.varietyBonusXp).toBe(result!.varietyBonusXp);
+    expect(workoutRow!.consistencyBonusXp).not.toBeNull();
+    expect(workoutRow!.varietyBonusXp).not.toBeNull();
+  });
+
+  it("a workout with zero logged sets finishes without throwing and produces zero bonuses", async () => {
+    const day1 = new Date("2026-01-01T10:00:00Z");
+    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
+    // No log_set items at all.
+    const [result] = await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+
+    expect(result!.status).toBe("created");
+    expect(result!.newMuscleSlugs).toEqual([]);
+    expect(result!.varietyBonusXp).toBe(0);
+    // Consistency bonus is still earned for showing up, even with zero sets logged.
+    expect(result!.consistencyBonusXp).toBe(computeConsistencyBonus(1));
+
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
+    expect(workoutRow!.varietyBonusXp).toBe(0);
   });
 });
 

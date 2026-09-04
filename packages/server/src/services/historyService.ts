@@ -43,12 +43,18 @@ export async function getHistoryPage(db: LiftrDb, cursor: string | undefined, li
       const exerciseCount = w.workoutExercises.length;
       const allSets = w.workoutExercises.flatMap((we) => we.sets.map((s) => ({ ...s, exerciseId: we.exerciseId })));
       const volumeKg = allSets.reduce((sum, s) => sum + (s.weightKg ?? 0) * s.reps, 0);
-      const xp = allSets
+      const perSetXp = allSets
         .filter((s) => !s.isWarmup)
         .reduce(
           (sum, s) => sum + computeSetXp(s.weightKg, s.reps, tierByExercise.get(s.exerciseId) ?? null, 1, w.plausibilityMultiplier ?? 1),
           0,
         );
+      // Must match what the Finish Sequence showed for this exact session (xpService's
+      // getXpSummary sums the same three terms across all workouts) — otherwise a past workout's
+      // history-feed XP figure silently disagrees with what the user was actually shown at finish
+      // time. These two columns are frozen at finish-workout time (syncService); null for a
+      // workout that finished before this feature existed, read as 0 here.
+      const xp = perSetXp + (w.consistencyBonusXp ?? 0) + (w.varietyBonusXp ?? 0);
       return {
         kind: "workout",
         id: w.id,
