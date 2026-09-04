@@ -208,7 +208,7 @@ be sequenced/coordinated rather than assumed conflict-free.
 
 **Step 4 — update and reorganize the audits.** After Wave 1 lands: move
 `plan-c-new-ui-rebuild.md` to `audit/finished/` (its phases are now implemented, not just planned)
-alongside a new short closure note; update `workplan-v1.md`'s Track R section and consolidated
+alongside a new short closure note; update `workplan-v1.md`'s Liftr section and consolidated
 open-questions list to reflect what shipped; do **not** delete any audit document — every one stays
 as historical reference, per explicit instruction. `nebula-design-*.md` stay at `audit/` root since
 they're still the live design-system reference, not phase-tracking documents.
