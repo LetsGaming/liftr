@@ -462,13 +462,17 @@ is now orchestrated," above) explicitly excludes the `/runs` item again for the 
 
 ---
 
-## Track R — Full rebuild (Plan C), held ready if §0's fork resolves toward it
+## Track R — Full rebuild (Plan C) — decided, executed, and merged
 
-If, after §1–§4 ship, the "boring/no USP" complaint from `engagement-audit-v4` is still live and cheap
-wins weren't enough, Plan C's six-phase rebuild (`audit/plan-c-new-ui-rebuild.md`) is ready to resume
-without new research — it's already fully phased (Foundation → Today/Train → Finish & Progress → Plan
-→ Profile/Auth → Runs) with citations, complexity estimates, and an explicit migration strategy
-(incremental for Phases 2–5, coordinated cutover required for Phase 1's active-session state machine).
+This section's header text is preserved from before §0's fork was decided ("held ready if...");
+kept for history rather than rewritten, since §0 already records the actual decision ("Decided
+2026-09-03: rebuild") and this section's own later updates record execution through to merge.
+Plan C's six-phase rebuild (moved to `audit/finished/plan-c-new-ui-rebuild.md` once implemented —
+see its closure note for the full picture) was fully phased (Foundation → Today/Train → Finish &
+Progress → Plan → Profile/Auth → Runs) with citations, complexity estimates, and an explicit
+migration strategy (incremental for Phases 2–5, coordinated cutover required for Phase 1's
+active-session state machine) — all of which held through actual execution with no re-litigation
+needed, per the "Track R Wave 1 — executed and merged" note below.
 
 **Before resuming it, three things from this document need to feed back in that Plan C didn't have —
 the first two are already done, listed for completeness:**
@@ -538,6 +542,38 @@ data-migration-safety work is needed anywhere in these plans — Liftr is pre-v1
 deployments, so schema changes (e.g. Workstream B's nullable column) are ordinary hygiene, not
 migration ceremony.
 
+### Track R Wave 1 — executed and merged, 2026-09-04
+
+All six plans above have now been implemented via subagent-driven development (fresh implementer
++ independent reviewer per task, plus a final whole-branch review per workstream) and merged to
+master — Foundation first, solo, then the five Wave-1 workstreams sequentially (not literally
+parallel worktrees run concurrently, due to a controller/tooling constraint discovered mid-session
+where a subagent's filesystem access followed the controller's live worktree binding rather than
+staying pinned to its dispatch-time worktree; each workstream was still built, reviewed, and merged
+independently in its own isolated worktree, one at a time). Commit range `9daef8e..f7f2256`
+(39 commits). Full closure note and per-workstream summary: `audit/finished/plan-c-new-ui-rebuild.md`.
+
+**What each workstream's final review caught beyond its own per-task reviews** (the reason a
+whole-branch pass matters even after every task passed its own review):
+- Workstream A: a double-tap race that could kill a live rest timer, and a `SheetModal` unmount
+  pattern that reproduced a documented crash class in two new components.
+- Workstream C: a CSS animation fill-mode collision that made the workstream's own drag-reorder
+  feature invisible, an invalid movement-pattern value that would have silently broken equipment-
+  substitution matching for every custom isolation exercise, and unmangled-umlaut slug generation
+  that would have permanently corrupted German exercise names with no edit path.
+- Workstream B: a sibling copy of the plausibility-gating bug in `WorkoutPage.vue`'s recap panel/
+  share-card, outside the task's originally-declared file scope.
+
+**What did not get executed, and why:** Workstream B's Task 7 (streak/XP mechanics design pass)
+was deliberately skipped — it requires an actual product-owner brainstorm about new game mechanics,
+which is not something to fabricate autonomously on the product owner's behalf. See open question 10
+below; still open. Separately, every workstream's manual/visual verification steps were done via
+static code tracing rather than a live dev server or device (none was available this session) — a
+real device/browser pass is still owed before this ships to real users, and is not optional
+polish: the static traces are exactly what missed the drag-reorder animation bug above, which only
+surfaced in the final whole-branch review's closer trace, not the original task implementation or
+its first-pass review.
+
 ---
 
 ## Consolidated open questions (deduplicated from Plan A §4, Plan B §4, Plan C §6, and this document)
@@ -558,10 +594,11 @@ is traceable; only genuinely open items need action.
    (2026-09-03, see "Track R is now orchestrated" above) confirmed by reading the actual render code
    (not just grep) that trust legibility is genuinely already implemented — scoped as verify-only in
    that plan, no rebuild task written. No longer open.
-5. **RPE/notes exact interaction shape** (§4) — still open, but no longer un-scoped: Workstream A's
-   plan (`docs/superpowers/plans/2026-09-03-workstream-a-today-train.md`) makes a default choice
-   (1-10 row for RPE, sheet+textarea for notes) and flags it explicitly for human confirmation before
-   execution, rather than leaving the shape entirely undecided.
+5. ~~**RPE/notes exact interaction shape** (§4)~~ — **resolved and shipped 2026-09-04.** Workstream
+   A implemented its own default choice (1-10 tappable row for RPE via `RpeCapture.vue`, sheet+
+   textarea for notes via `NoteCapture.vue`, both off the primary logging path, neither adding a
+   required tap to `Satz speichern`). No longer open — a real-user reaction to the specific shape
+   chosen is a product-taste follow-up, not a plumbing gap.
 6. ~~**Overall Lifter Rank prominence** (§5)~~ — **resolved.** Workstream B's plan confirmed by
    direct code read that Overall Rank placement is genuinely already implemented and adequate — no
    rebuild task written. No longer open.
@@ -575,15 +612,24 @@ is traceable; only genuinely open items need action.
 9. **Missing-photo catalog gap** (Plan B §4.4) — still open per §1.10's already-recorded 2026-09-03
    decision (defer full-catalog illustration; source real photos/closer placeholders for the 11 gaps
    in the meantime) — a resourcing decision, not a design one, and not re-scoped by this update.
-10. **Streak/XP mechanics framing** (§0's "Decided" note, "Underlying mechanics") — still open.
-    Workstream B's plan (`docs/superpowers/plans/2026-09-03-workstream-b-finish-progress.md`) scopes
-    this as a design-then-build two-step rather than inventing mechanics blind — its last task is
-    explicitly a brainstorm/design-pass trigger, not implementation. Still needs that design pass
-    before Workstream B's mechanics task can be executed.
+10. **Streak/XP mechanics framing** (§0's "Decided" note, "Underlying mechanics") — still open, and
+    now the only Track R Wave 1 deliverable not executed (see "Track R Wave 1 — executed and merged,
+    2026-09-04" above — deliberately skipped, not deprioritized). Workstream B's plan
+    (`docs/superpowers/plans/2026-09-03-workstream-b-finish-progress.md`) scopes this as a
+    design-then-build two-step rather than inventing mechanics blind — its last task is explicitly a
+    brainstorm/design-pass trigger, not implementation. Still needs that design pass before a real
+    implementation task can be written for it.
 11. ~~**`engagement-audit-v5` Phases 2–4**~~ (§5a) — **resolved and shipped 2026-09-03.** No longer
     open; see §5a above for what shipped.
-12. **Six-workstream Track R execution plans exist but are unexecuted** (new, 2026-09-03) — see "Track
-    R is now orchestrated" under Track R, above. `docs/superpowers/plans/2026-09-03-full-rebuild-
-    orchestration.md` plus its six workstream plans are ready for subagent-driven execution; none of
-    the six have been implemented yet. This is now the actual state of Track R, not "Plan C, ready to
-    resume" — the phases have been re-planned against current source, not just carried forward.
+12. ~~**Six-workstream Track R execution plans exist but are unexecuted**~~ (2026-09-03) — **resolved
+    and shipped 2026-09-04.** All six plans (Foundation + Workstreams A-E) are implemented, reviewed,
+    and merged to master — see "Track R Wave 1 — executed and merged" under Track R, above, and the
+    closure note in `audit/finished/plan-c-new-ui-rebuild.md`. No longer open.
+13. **Live device/browser verification pass** (new, 2026-09-04) — every workstream's manual/visual
+    verification step was done via static code tracing instead of a live dev server or real device,
+    since none was available during implementation. Not a formality: the final whole-branch reviews
+    caught real bugs a live check would also have caught (a CSS animation collision that made
+    Workstream C's drag-reorder feature invisible, a `SyncIndicator` placement that visually
+    overlapped a tappable control in Workstream A) precisely because the first-pass static reviews
+    missed them. Still open — needs an actual device/browser pass across all five workstreams'
+    changed screens before this ships to real users.
