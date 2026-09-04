@@ -44,3 +44,21 @@ export async function getExerciseHistory(exerciseId: string): Promise<ExerciseHi
   const { sets } = await api.get<{ sets: ExerciseHistorySet[] }>(`/api/exercises/${exerciseId}/history`);
   return sets;
 }
+
+export interface CreateExerciseInput {
+  slug: string;
+  nameKey: string;
+  equipment?: string;
+  movementPattern: string;
+  isBodyweight: boolean;
+  muscleSlugs?: { slug: string; role: "primary" | "secondary" }[];
+}
+
+/** POST /api/exercises — custom user-added exercise. Server always returns isCustom: true; the
+ *  response shape is the same row `insertCustomExercise` returns, not the full `CatalogExercise`
+ *  join shape (no `muscles`/`requiredEquipment`/`hasImage` computed fields) — callers should
+ *  re-fetch the catalog (catalogStore.load()) rather than splice this response directly into a
+ *  CatalogExercise[] list. */
+export function createExercise(input: CreateExerciseInput): Promise<{ id: string; slug: string }> {
+  return api.post<{ id: string; slug: string }>("/api/exercises", input);
+}
