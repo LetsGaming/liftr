@@ -93,6 +93,9 @@ const {
   sessionXp,
   sessionRankUps,
   sessionCaptions,
+  consistencyBonusXp,
+  varietyBonusXp,
+  newMuscleSlugs,
   finishXpSnapshot,
   routineBeats,
   updatingRoutine,
@@ -126,6 +129,12 @@ watch(
  *  the tier/level state as its first visual instead of duplicating FinishSequence's beats. A
  *  discounted-only session (workstream B task 2 — Global Constraint: a discounted session must
  *  never look genuine) falls back to no badge at all, matching FinishSequence's topTierClass. */
+/** Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md):
+ *  the post-Finish-Sequence recap chip below must show the *full* session total, not just the
+ *  client-accumulated per-set sessionXp — the two session-level bonuses (consistency, variety)
+ *  are computed server-side once at finish time and arrive via useWorkoutFinish alongside it. */
+const sessionXpTotal = computed(() => sessionXp.value + consistencyBonusXp.value + varietyBonusXp.value);
+
 const topRankUp = computed(() => {
   const genuine = sessionRankUps.value.filter((r) => !r.plausibilityNote);
   if (genuine.length === 0) return null;
@@ -328,6 +337,9 @@ async function logSet() {
         :streak-days="streakDays"
         :tokens-remaining="streakStore.tokensRemaining"
         :session-xp="sessionXp"
+        :consistency-bonus-xp="consistencyBonusXp"
+        :variety-bonus-xp="varietyBonusXp"
+        :new-muscle-slugs="newMuscleSlugs"
         :level-before="finishXpSnapshot?.levelBefore ?? 0"
         :progress-before="finishXpSnapshot?.progressBefore ?? 0"
         :level-after="xpStore.level"
@@ -349,7 +361,7 @@ async function logSet() {
           <div class="recap-body">
             <b v-if="topRankUp">{{ TIER_LABEL_DE[topRankUp.tier as RankTier] }} erreicht</b>
             <b v-else>Lv. {{ xpStore.level }}</b>
-            <span>+{{ sessionXp }} XP{{ sessionRankUps.length > 1 ? ` · ${sessionRankUps.length} Rangaufstiege` : "" }}</span>
+            <span>+{{ sessionXpTotal }} XP{{ sessionRankUps.length > 1 ? ` · ${sessionRankUps.length} Rangaufstiege` : "" }}</span>
           </div>
         </div>
 
