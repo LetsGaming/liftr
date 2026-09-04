@@ -149,8 +149,14 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-size: 11.5px;
   color: var(--dim);
 }
+/* This is text (the "≈" trust marker), always sitting on a dark tier fill (the .card variant's
+   parent .rank-card gradient, or the .inline variant's .panel-reward) — light-mode bug fix:
+   was a hardcoded rgba(255,255,255,0.6) with no theme awareness. --dim is now pinned to a
+   light-on-dark value by both of those ancestors (RanksPage.vue's .rank-card,
+   tokens.css's .panel-reward), so a plain token reference tracks the fix automatically instead
+   of duplicating an untracked literal. */
 .trust-marker {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--dim);
   font-weight: 600;
   margin-left: 2px;
 }
@@ -195,15 +201,19 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 .rank-progress.card .rp-tier {
   font-size: 12px;
 }
-/* On the full-card tier gradient, --dim doesn't clear AA (audit P0-C) — match the original
-   card's explicit light rgba text. */
+/* This is text, sitting on the .card variant's parent tier-gradient card. On the full-card tier
+   gradient, --dim doesn't clear AA (audit P0-C), so this intentionally uses the brighter --text
+   token instead of --dim. Light-mode bug fix: was a hardcoded rgba(255,255,255,0.85) with no
+   theme awareness — RanksPage.vue's .rank-card now locally pins --text to a light-on-dark value
+   (mirroring tokens.css's .panel-reward), so a plain token reference tracks that fix
+   automatically instead of duplicating an untracked literal. */
 .rank-progress.card .rp-lp,
 .rank-progress.card .rp-next,
 .rank-progress.card .rp-trust {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text);
 }
 .rank-progress.card .trust-marker {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--dim);
 }
 
 /* inline variant (active-workout focus column, finish-sequence beat) — compact, sits on the

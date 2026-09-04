@@ -2,13 +2,14 @@
 // Läufe (plan Phase 4 / mockup #p-laeufe): GPX import, route map, and run replay built on the
 // stored run_points array — the whole point of keeping the full trackpoint array (audit §5).
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useToast } from "../composables/useToast";
 import { isHealthConnectAvailable } from "../health/healthConnect";
+import { validateManualEntry } from "../lib/runValidation";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
@@ -69,14 +70,12 @@ async function onFileChosen(e: Event) {
   }
 }
 
-const canSubmitManual = computed(() => {
-  const km = Number(manualDistanceKm.value.replace(",", "."));
-  const min = Number(manualMinutes.value.replace(",", "."));
-  return km > 0 && min > 0;
-});
-
 async function submitManual() {
-  if (!canSubmitManual.value) return;
+  const validationError = validateManualEntry(manualDistanceKm.value, manualMinutes.value, manualDate.value);
+  if (validationError) {
+    manualError.value = validationError;
+    return;
+  }
   const km = Number(manualDistanceKm.value.replace(",", "."));
   const min = Number(manualMinutes.value.replace(",", "."));
   try {
@@ -94,6 +93,9 @@ async function submitManual() {
     if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
     toast("Lauf gespeichert.");
   } catch (err) {
+    // Genuine server/network failure only — client-side validation is handled above and never
+    // reaches here (validateManualEntry() also guards the new Date(...) call above from ever
+    // throwing on a bad manualDate, so this catch only sees real request failures).
     manualError.value = (err as Error).message;
   }
 }
@@ -141,7 +143,7 @@ function formatDuration(s: number) {
       <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
       <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
       <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
-      <button class="btn-primary" :disabled="!canSubmitManual" @click="submitManual">Speichern</button>
+      <button class="btn-primary" @click="submitManual">Speichern</button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 

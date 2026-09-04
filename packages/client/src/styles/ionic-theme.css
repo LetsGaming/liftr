@@ -4,6 +4,15 @@
  * tokens.css in main.ts. Values are the same hex constants as tokens.css, duplicated (not
  * var()-referenced) only where Ionic needs an explicit rgb triplet for its opacity mixins.
  */
+/* Bug fix: the three `--ion-*-rgb` triplets below (background, text, medium) are Ionic's own
+   opacity-mixin inputs — Ionic needs a literal comma-separated rgb() triplet, not a var()-wrapped
+   hex, so unlike everything else in this file they can't just reference tokens.css's tokens and
+   inherit theme-switching for free. Written here as DARK values only, with no
+   `[data-theme="light"]` counterpart anywhere in this file, they silently stayed dark-mode RGB
+   even after the user switched to light mode — any Ionic internals that read them (mixed with an
+   alpha, e.g. ripple/overlay effects) kept compositing against the dark palette. Fixed by adding
+   the light-mode block at the end of this file with the corresponding light hex values from
+   tokens.css's `:root[data-theme="light"]` converted to RGB. */
 :root {
   --ion-background-color: var(--bg);
   --ion-background-color-rgb: 10, 12, 20;
@@ -46,6 +55,19 @@
   --ion-tab-bar-color-selected: var(--text);
 
   --ion-font-family: var(--font);
+}
+
+/* Light-mode counterparts for the three rgb() triplets above (--ion-background-color-rgb,
+   --ion-text-color-rgb, --ion-color-medium-rgb) — converted from tokens.css's
+   `:root[data-theme="light"]` --bg/--text/--dim hex values. See the bug-fix comment on the
+   :root block above for why these can't just be var()-referenced. */
+:root[data-theme="light"] {
+  /* --bg: #f6f4fb */
+  --ion-background-color-rgb: 246, 244, 251;
+  /* --text: #14121c */
+  --ion-text-color-rgb: 20, 18, 28;
+  /* --dim: #635f78 */
+  --ion-color-medium-rgb: 99, 95, 120;
 }
 
 /* Ionic defaults to left-aligned titles in "md" mode (the default in a desktop/Android

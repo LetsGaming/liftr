@@ -4,7 +4,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { i18n } from "./i18n";
 import { router } from "./router";
-import { getStoredTheme } from "./stores/themeStore";
+import { applyTheme, getStoredTheme } from "./stores/themeStore";
 import { useSyncStore } from "./stores/syncStore";
 
 // Ionic's structural/typography CSS only — deliberately not its color/palette CSS, since
@@ -19,7 +19,10 @@ import "./styles/tokens.css";
 import "./styles/motion.css";
 import "./styles/ionic-theme.css";
 
-document.documentElement.dataset.theme = getStoredTheme();
+// Sets both `data-theme` and the theme-color meta tag (see themeStore.ts's applyTheme) before
+// first paint, so boot-time theme resolution (OS preference or a stored user choice) is reflected
+// in the browser/OS chrome color from the very first frame, not just on a later explicit toggle.
+applyTheme(getStoredTheme());
 
 const app = createApp(App);
 const pinia = createPinia();

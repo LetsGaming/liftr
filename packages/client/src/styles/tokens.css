@@ -225,50 +225,23 @@
      four call sites updated below and in NumberStepper.vue/App.vue, so the floor can never again
      silently drift between components the way lens-3 originally found it had (§2.3). */
   --touch-target-min: 44px;
-
-  /* Density-mode scaffold (Plan C §3 Phase 0; lens-2 §4's three named density levels — Train
-     lowest-density/largest-targets, Plan form-dense, Progress read-dense). Defined here as bare
-     custom properties so ANY component can read var(--density-gap) etc. even before a
-     DensityScope ancestor sets a mode (falls through to these :root defaults, the "progress"
-     values — the middle ground). components/ui/DensityScope.vue (Task 5) is what actually flips
-     these by setting [data-density] on a wrapper; this block only defines what the three modes
-     ARE. Later workstreams choose per-screen whether to wrap in DensityScope at all — a screen
-     that never does just gets these defaults uniformly, which is a safe no-op, not a broken
-     state. */
-  --density-gap: var(--sp3);
-  --density-touch-min: var(--touch-target-min);
-  --density-text-scale: 1;
 }
 
-/* Density-mode overrides (Task 5's DensityScope sets one of these three on a wrapper's
-   data-density attribute). Train: the sacred ~30x/session logging loop gets the loosest gap and
-   the largest touch targets of any surface in the app — bigger than the floor, not just at it.
-   Plan: form-dense screens (routine builder, mesocycle setup) tighten the gap and drop text size
-   slightly to fit more form rows per screen without dropping below the touch-target floor itself
-   (--density-touch-min still equals --touch-target-min here, never less). Progress: read-dense
-   screens (Ränge, PR ledger) match the :root default exactly — named explicitly anyway so a
-   screen can opt in on purpose rather than relying on the fallback by accident. */
-[data-density="train"] {
-  --density-gap: var(--sp5);
-  --density-touch-min: 56px;
-  --density-text-scale: 1.08;
-}
-[data-density="plan"] {
-  --density-gap: var(--sp2);
-  --density-touch-min: var(--touch-target-min);
-  --density-text-scale: 0.94;
-}
-[data-density="progress"] {
-  --density-gap: var(--sp3);
-  --density-touch-min: var(--touch-target-min);
-  --density-text-scale: 1;
-}
+/* Light theme (nebula-design-system.md §6). Applied by themeStore setting
+   document.documentElement.dataset.theme = "light" before first paint (OS preference on first
+   launch, then whatever the user explicitly picks in Profile → Darstellung from then on).
 
-/* Light theme (nebula-design-framework.md §2). Applied by themeStore setting
-   document.documentElement.dataset.theme = "light" before first paint. Liftr ships dark-first —
-   this is a user setting (Profile), not inferred from OS preference; see the framework doc §2.1
-   for why. Every existing color-bearing token is re-specified here, not just the new ones, so
-   nothing silently falls through to a dark value on a light ground. */
+   This block redefines only the ~11 neutral chrome tokens above (--bg, --surface, --surface-2,
+   --surface-3, --line, --line-2, --text, --dim, --faint, --shadow) plus --nebula-ink. It
+   deliberately does NOT redefine two whole token families, which stay theme-invariant on
+   purpose, not by omission:
+     - the 36 tier tokens (--initiate-1..-t through --apex-1..-t): the 9-tier badge/rank system
+       is always-dark-fill by design in both themes (nebula-design-system.md §1/§6) — these are
+       reward surfaces meant to read as a fixed "medal", not chrome that follows the page theme.
+     - --nebula-1/--nebula-m/--nebula-2 (and the gradients built from them): Nebula's CTA/reward
+       gradient is likewise a fixed brand fill, not a theme-following neutral.
+   Components that sit on top of those always-dark fills (e.g. .panel-reward, .rank-card) locally
+   re-pin --text/--dim/--faint to light-on-dark values instead — see .panel-reward below. */
 :root[data-theme="light"] {
   --bg: #f6f4fb;
   --surface: #ffffff;
