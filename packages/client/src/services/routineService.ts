@@ -58,6 +58,9 @@ export interface SuggestedExercise {
   /** True when the suggester swapped in this exercise because the preferred pick needed
    *  equipment the user doesn't own (see @liftr/shared's findSubstitute). */
   isSubstitute?: boolean;
+  /** Present only when isSubstitute is true — raw equipment item slugs (e.g. "barbell") the
+   *  originally preferred exercise needed. Mirrors the server interface 1:1. */
+  missingEquipment?: string[];
 }
 
 export interface RoutineExerciseInput {

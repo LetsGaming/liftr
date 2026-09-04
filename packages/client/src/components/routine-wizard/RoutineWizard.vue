@@ -65,7 +65,7 @@ const fastPathOverride = ref(false);
  *  computing it and this component throwing it away (the pre-Phase-1 behavior). Absent for
  *  manually-picked exercises; keyed by exerciseId, not nested in DraftExercise, so the manual
  *  path's type stays untouched. */
-const suggestionMeta = reactive<Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean }>>({});
+const suggestionMeta = reactive<Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean; missingEquipment?: string[] }>>({});
 /** Every muscle slug the user has asked "Übungen vorschlagen" for this session, across possibly
  *  multiple visits to the muscle-picker (e.g. via "+ Übung hinzufügen") — ReviewStep compares the
  *  final routine's actual muscle coverage against this to flag anything requested but not landed. */
@@ -89,7 +89,7 @@ async function applySuggestions(muscleSlugs: string[]) {
         restAfterExerciseSeconds: DEFAULT_REST_SECONDS,
       });
       if (s.matchedMuscleSlug) {
-        suggestionMeta[s.exerciseId] = { matchedMuscleSlug: s.matchedMuscleSlug, isSubstitute: s.isSubstitute ?? false };
+        suggestionMeta[s.exerciseId] = { matchedMuscleSlug: s.matchedMuscleSlug, isSubstitute: s.isSubstitute ?? false, missingEquipment: s.missingEquipment };
       }
     }
     if (suggestions.length > 0) {
