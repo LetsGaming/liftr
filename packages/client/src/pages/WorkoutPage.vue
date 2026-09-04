@@ -21,6 +21,7 @@ import SetEntry from "../components/workout/SetEntry.vue";
 import SetKindPicker from "../components/workout/SetKindPicker.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import NumberStepper from "../components/ui/NumberStepper.vue";
+import SyncIndicator from "../components/ui/SyncIndicator.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useAddExerciseToSession } from "../composables/useAddExerciseToSession";
@@ -533,6 +534,14 @@ async function logSet() {
       </div>
 
       <aside class="rail-col">
+        <!-- Task 10: non-modal pendingCount/flushing indicator. No existing consumer of
+             syncStore.ts's pendingCount/flushing was found anywhere in the codebase (grepped
+             before building this) — a small corner dot/badge here, not a banner/toast, so it
+             never competes with the focus column's logging surface (Global constraint on
+             density) or blocks/covers tappable content. Not folded into App.vue's top-hud:
+             that chrome only renders xp/streak chips and defines no slot for this, and touching
+             App.vue is outside this workstream's file boundary per the orchestration plan. -->
+        <SyncIndicator />
         <WorkoutClock />
         <div class="progress">
           <span>{{ store.progressLabel }}</span>
@@ -1091,6 +1100,13 @@ async function logSet() {
   display: flex;
   flex-direction: column;
   gap: var(--sp5);
+}
+/* Anchors SyncIndicator.vue's absolute corner placement (Task 10) to the rail column itself at
+   every viewport width — .rail-col only gets its own dedicated flex/width rules inside the
+   >=900px media query below, but the aside element exists in the DOM at every width, so this
+   rule stays unconditional rather than living inside that block. */
+.rail-col {
+  position: relative;
 }
 /* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
 .stale-banner {
