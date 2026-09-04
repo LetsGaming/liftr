@@ -62,6 +62,47 @@ describe("suggestExercisesForMuscles", () => {
     expect(result?.isSubstitute).toBe(true);
   });
 
+  it("names the specific missing equipment that caused a substitution", async () => {
+    const chest = await insertMuscle("chest");
+    const barbellBench = await insertTestExercise(db, {
+      slug: "barbell-bench-press",
+      movementPattern: "push",
+      requiredEquipment: JSON.stringify([{ item: "barbell", tier: "required" }]),
+    });
+    const pushup = await insertTestExercise(db, {
+      slug: "push-up",
+      movementPattern: "push",
+      isBodyweight: true,
+      requiredEquipment: JSON.stringify([]),
+    });
+    await tagPrimary(barbellBench.id, chest.id);
+    await tagPrimary(pushup.id, chest.id);
+
+    const [result] = await suggestExercisesForMuscles(db, {
+      muscleSlugs: ["chest"],
+      exercisesPerMuscle: 1,
+      ownedEquipment: ["dumbbell"],
+    });
+
+    expect(result?.isSubstitute).toBe(true);
+    expect(result?.missingEquipment).toEqual(["barbell"]);
+  });
+
+  it("omits missingEquipment for a non-substitute pick", async () => {
+    const chest = await insertMuscle("chest");
+    const bench = await insertTestExercise(db, { slug: "bench-press", movementPattern: "push" });
+    await tagPrimary(bench.id, chest.id);
+
+    const [result] = await suggestExercisesForMuscles(db, {
+      muscleSlugs: ["chest"],
+      exercisesPerMuscle: 1,
+      ownedEquipment: [],
+    });
+
+    expect(result?.isSubstitute).toBe(false);
+    expect(result?.missingEquipment).toBeUndefined();
+  });
+
   it("drops a candidate with no usable substitute instead of guessing", async () => {
     const chest = await insertMuscle("chest");
     const barbellBench = await insertTestExercise(db, {

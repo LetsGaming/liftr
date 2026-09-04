@@ -11,6 +11,7 @@
 import {
   canPerform,
   findSubstitute,
+  missingByTier,
   recommendExerciseSets,
   type ExperienceLevel,
   type RankMetric,
@@ -85,6 +86,10 @@ export interface SuggestedExercise {
    *  owned equipment (see findSubstitute below) — surfaced so Review can flag it instead of
    *  silently presenting a swapped-in exercise as if it were the first choice. */
   isSubstitute?: boolean;
+  /** Present only when isSubstitute is true — the equipment item(s) the originally preferred
+   *  candidate needed but the owned-equipment list didn't cover, so the client can say "swapped
+   *  because you don't own X" and actually name X instead of a generic sentence. */
+  missingEquipment?: string[];
 }
 
 /** POST /api/routines/suggest's logic — muscle groups in, a draft exercise list + recommended
@@ -128,7 +133,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
   // same two facts per exercise (which muscle earned it a slot, whether it's a substitute) so
   // they survive into the returned SuggestedExercise instead of being computed and discarded.
   const chosenExerciseIds = new Set<string>();
-  const pickMeta = new Map<string, { muscleSlug: string; isSubstitute: boolean }>();
+  const pickMeta = new Map<string, { muscleSlug: string; isSubstitute: boolean; missingEquipment?: string[] }>();
   for (const muscleSlug of input.muscleSlugs) {
     const candidates = byMuscle.get(muscleSlug) ?? [];
     // Prefer catalog (non-custom) exercises — a real sets/reps/weight recommendation from a
@@ -155,7 +160,11 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
       );
       if (substitute) {
         chosenExerciseIds.add(substitute.exerciseId);
-        pickMeta.set(substitute.exerciseId, { muscleSlug, isSubstitute: true });
+        pickMeta.set(substitute.exerciseId, {
+          muscleSlug,
+          isSubstitute: true,
+          missingEquipment: missingByTier(requirements, restrictingEquipment).required,
+        });
         addedForMuscle++;
       }
       // else: no usable substitute for this candidate — dropped, same as before this feature.
@@ -175,7 +184,7 @@ async function recommendForExercises(
   db: LiftrDb,
   exerciseIds: string[],
   experienceLevel: ExperienceLevel,
-  pickMeta?: Map<string, { muscleSlug: string; isSubstitute: boolean }>,
+  pickMeta?: Map<string, { muscleSlug: string; isSubstitute: boolean; missingEquipment?: string[] }>,
 ): Promise<SuggestedExercise[]> {
   const chosenExercises = await findExercisesByIds(db, exerciseIds);
   const [bodyweightKg, sex] = await Promise.all([getCurrentBodyweightKg(db), getUserSex(db)]);
@@ -200,7 +209,7 @@ async function recommendForExercises(
       exerciseId: exercise.id,
       slug: exercise.slug,
       targetSets,
-      ...(meta ? { matchedMuscleSlug: meta.muscleSlug, isSubstitute: meta.isSubstitute } : {}),
+      ...(meta ? { matchedMuscleSlug: meta.muscleSlug, isSubstitute: meta.isSubstitute, missingEquipment: meta.missingEquipment } : {}),
     });
   }
 
