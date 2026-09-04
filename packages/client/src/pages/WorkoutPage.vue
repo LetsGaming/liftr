@@ -219,9 +219,12 @@ const noteCaptureValue = computed(() =>
   noteCaptureTarget.value === "workout" ? store.workoutNotes : (store.currentSet?.notes ?? null),
 );
 function saveNoteCapture(value: string | null) {
+  // NoteCapture.vue dismisses its own sheet (sheetRef.dismiss()) before/alongside emitting
+  // "save" — that dismiss's @did-dismiss fires @close above, which is what actually nulls
+  // noteCaptureTarget. Don't also toggle it here: unmounting NoteCapture out from under Ionic's
+  // own async dismiss teardown is exactly the crash SheetModal.vue's header comment documents.
   if (noteCaptureTarget.value === "workout") store.setWorkoutNotes(value);
   else store.setCurrentSetNotes(value);
-  noteCaptureTarget.value = null;
 }
 
 /** Defensive fallback to "normal" — activeWorkoutStore.restore() backfills `kind` on load for
@@ -294,10 +297,15 @@ async function logSet() {
     restSeconds.value = restDuration;
     restKind.value = wasLastUnloggedSet ? "after-exercise" : "between-sets";
     restTrigger.value += 1;
-  } else {
+  } else if (set && reps > 0) {
     // Mid-superset round-robin: the round hasn't wrapped yet, so there's genuinely no rest to
     // run. Still bump the trigger so RestTimer.vue can render its distinct "no rest" state
     // instead of silently doing nothing (Task 3 — three distinct rest states).
+    //
+    // Guarded on set && reps > 0 (snapshotted *before* the await above) so a double-tap that
+    // lands on logCurrentSet()'s other null-return cases — no current set, or its belt-and-
+    // braces reps<=0 guard — can't masquerade as this case and stomp a real rest state that the
+    // first tap just set.
     restKind.value = "superset-continue";
     restTrigger.value += 1;
   }
@@ -758,12 +766,7 @@ async function logSet() {
         v-if="showRpeCapture"
         :current-rpe="store.currentSet?.rpe ?? null"
         @close="showRpeCapture = false"
-        @pick="
-          (rpe) => {
-            store.setCurrentSetRpe(rpe);
-            showRpeCapture = false;
-          }
-        "
+        @pick="store.setCurrentSetRpe($event)"
       />
 
       <NoteCapture

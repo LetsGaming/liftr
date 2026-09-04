@@ -94,7 +94,7 @@ function formatSeconds(s: number): string {
   <div v-if="restKind === 'superset-continue'" class="rest-timer rest-timer-continue">
     <div class="meta">
       <b>Weiter im Superset</b>
-      <span>kein Pause</span>
+      <span>keine Pause</span>
     </div>
   </div>
   <div v-else class="rest-timer">
