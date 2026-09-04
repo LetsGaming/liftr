@@ -13,6 +13,7 @@ import { TIERS, type Tier } from "@liftr/shared";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
 import { haptics } from "../../lib/haptics";
+import { MUSCLE_LABEL_DE } from "../../lib/muscles";
 import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 
 export interface RankUpSummary {
@@ -39,6 +40,17 @@ const props = defineProps<{
   streakDays: StreakDay[];
   tokensRemaining: number;
   sessionXp: number;
+  /** Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md,
+   *  §4): the three XP sources must render as independently-visible, independently-animated
+   *  lines rather than one pre-summed total — this is the actual fix for "there is no message
+   *  behind that number," not polish. */
+  consistencyBonusXp: number;
+  varietyBonusXp: number;
+  /** Muscle slugs newly trained this session vs. the previous finished session — empty when
+   *  varietyBonusXp is 0 (this session's muscles fully overlapped the last one; additive-only,
+   *  "no topping this time" per the spec — the variety line is suppressed entirely in that case,
+   *  see the template below, rather than showing a "+0 XP" that would read as a judgment). */
+  newMuscleSlugs: string[];
   levelBefore: number;
   levelAfter: number;
   /** 0-100, the level bar's fill *before* this session's XP was added. */
@@ -64,15 +76,31 @@ const topTierClass = computed(() => {
   return `t-${top.tier}`;
 });
 
-// Both roll-ups are driven by plain refs (not computeds derived straight from props): a
-// computed target that already equals its final value at mount never fires useCountUp's
-// `watch(target, ...)` (nothing changes), so it would render the final number instantly with
-// no animation at all. Instead both start at 0/before and only get retargeted to their real
-// value once beat 3 actually activates — that retarget is what triggers the roll-up.
-const xpRollTarget = ref(0);
-const { value: xpDisplay } = useCountUp(xpRollTarget, 700);
+// All four roll-ups (three XP lines + the level bar) are driven by plain refs, not computeds
+// derived straight from props: a computed target that already equals its final value at mount
+// never fires useCountUp's `watch(target, ...)` (nothing changes), so it would render the final
+// number instantly with no animation at all. Instead all four start at 0/before and only get
+// retargeted to their real value once beat 3 actually activates — that retarget is what
+// triggers the roll-up. The three XP lines (§4 of the streak/XP redesign spec) must stay
+// independently visible, so each gets its own target/display pair rather than one summed value.
+const setXpRollTarget = ref(0);
+const { value: setXpDisplay } = useCountUp(setXpRollTarget, 700);
+const consistencyXpRollTarget = ref(0);
+const { value: consistencyXpDisplay } = useCountUp(consistencyXpRollTarget, 700);
+const varietyXpRollTarget = ref(0);
+const { value: varietyXpDisplay } = useCountUp(varietyXpRollTarget, 700);
 const barPercentTarget = ref(0);
 const { value: barPercent } = useCountUp(barPercentTarget, 700);
+
+/** §4's example line names the newly-trained muscle(s) rather than just a count — reuses the
+ *  same MUSCLE_LABEL_DE lookup RanksPage.vue/ErholungszoneCard.vue use for muscle display names,
+ *  rather than inventing a second one. Plain German list join ("X", "X und Y", "X, Y und Z"). */
+const varietyMuscleLabel = computed(() => {
+  const names = props.newMuscleSlugs.map((slug) => MUSCLE_LABEL_DE[slug] ?? slug);
+  if (names.length === 0) return "";
+  if (names.length === 1) return names[0]!;
+  return `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}`;
+});
 
 /** LP bar animation for Beat 1 (Global Constraint: "the LP bar must animate literally from
  *  prevLp to lp, not jump"). useCountUp's Ref<number> API assumes one static target per call,
@@ -115,10 +143,14 @@ watch(
   (i) => {
     if (i === 0) animateRankUpBars();
     if (i === 2) {
-      xpDisplay.value = 0;
+      setXpDisplay.value = 0;
+      consistencyXpDisplay.value = 0;
+      varietyXpDisplay.value = 0;
       barPercent.value = leveledUp.value ? 0 : props.progressBefore;
       requestAnimationFrame(() => {
-        xpRollTarget.value = props.sessionXp;
+        setXpRollTarget.value = props.sessionXp;
+        consistencyXpRollTarget.value = props.consistencyBonusXp;
+        varietyXpRollTarget.value = props.varietyBonusXp;
         barPercentTarget.value = props.progressAfter;
       });
       if (leveledUp.value) void haptics.success();
@@ -206,10 +238,25 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Beat 3: Fortschritt — session XP rolls up into the level bar; a level-up gets the
-         shared stamp-in treatment (motion.css) instead of a plain number change. -->
+         shared stamp-in treatment (motion.css) instead of a plain number change.
+         Streak/XP mechanics redesign §4: the three XP sources render as separate, independently
+         animated lines rather than one pre-summed total — "there is no message behind that
+         number" was the original complaint, so the breakdown IS the fix, not polish. The
+         variety line is omitted entirely (not shown as "+0 XP") when this session's muscles
+         fully overlapped the previous one — a visible zero would read as a judgment, which
+         directly contradicts the spec's "never punish specialization" goal. -->
     <div v-else-if="celebrate.activeIndex.value === 2" class="beat pop-in">
       <div class="eyebrow beat-eyebrow">Fortschritt</div>
-      <div class="xp-line tnum">+{{ Math.round(xpDisplay) }} XP</div>
+      <div class="xp-breakdown">
+        <div class="xp-line tnum">+{{ Math.round(setXpDisplay) }} XP <span class="xp-label">(Sätze)</span></div>
+        <div class="xp-line xp-line-bonus tnum">
+          +{{ Math.round(consistencyXpDisplay) }} XP <span class="xp-label">({{ streak }} {{ streak === 1 ? "Tag" : "Tage" }} Serie)</span>
+        </div>
+        <div v-if="varietyBonusXp > 0" class="xp-line xp-line-bonus tnum">
+          +{{ Math.round(varietyXpDisplay) }} XP
+          <span class="xp-label">({{ varietyMuscleLabel }} zum ersten Mal seit letztem Training)</span>
+        </div>
+      </div>
       <div v-if="leveledUp" class="level-up stamp-in">LEVEL {{ levelAfter }}!</div>
       <div v-else class="level-line tnum">Lv. {{ levelAfter }}</div>
       <div class="rankbar level-bar">
@@ -375,11 +422,28 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--dim);
 }
+.xp-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
 .xp-line {
   font-size: 34px;
   font-weight: 800;
   font-family: var(--font-display);
   color: var(--pr);
+}
+/* Consistency/variety bonus lines (streak/XP redesign §4) sit visually under the per-set line —
+   still their own named, animated line each, just not shouting as loud as the first number. */
+.xp-line-bonus {
+  font-size: 18px;
+}
+.xp-label {
+  font-family: var(--font-body, inherit);
+  font-weight: 500;
+  font-size: 0.55em;
+  color: var(--dim);
 }
 .level-line {
   font-size: 16px;
