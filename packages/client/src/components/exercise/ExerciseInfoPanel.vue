@@ -115,7 +115,7 @@ function missingBadge(req: TieredRequirement): string | null {
   >
     <template #header>
       <div class="sheet-head">
-        <b>{{ exerciseName(exercise.slug) }}</b>
+        <b>{{ exerciseName(exercise.slug, exercise.name) }}</b>
         <button class="btn-close" aria-label="Schließen" @click="emit('close')">✕</button>
       </div>
       <div class="tab-strip" role="tablist">

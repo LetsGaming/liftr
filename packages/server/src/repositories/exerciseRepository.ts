@@ -10,7 +10,7 @@ export function findAllExercisesWithMuscles(db: LiftrDb) {
 
 export interface CustomExerciseInput {
   slug: string;
-  nameKey: string;
+  name: string;
   equipment?: string;
   movementPattern: string;
   isBodyweight: boolean;

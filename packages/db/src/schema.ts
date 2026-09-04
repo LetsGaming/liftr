@@ -32,8 +32,13 @@ export const muscles = sqliteTable("muscles", {
 export const exercises = sqliteTable("exercises", {
   id: id(),
   slug: text("slug").notNull().unique(),
-  /** i18n key, not literal text — audit §2.8 (i18n scaffolding from day one). */
-  nameKey: text("name_key").notNull(),
+  /** Literal display name — set only for custom (user-created) exercises. Null for catalog
+   *  exercises, which resolve their name via i18n lookup keyed on `slug`
+   *  (`packages/client/src/composables/useExerciseName.ts`: locales/exercises.de.json's
+   *  `exercise.${slug}.name`, falling back to the raw slug if even that's missing). Replaces the
+   *  former `nameKey` column, which was dead data end-to-end — no display code ever read it, for
+   *  either custom or catalog exercises; resolution always went through `slug`. */
+  name: text("name"),
   equipment: text("equipment"),
   /** JSON-encoded EquipmentRequirement[] (@liftr/shared) — the full physical requirement list
    *  (e.g. bench-press: barbell + plates + bench), distinct from `equipment` above which is

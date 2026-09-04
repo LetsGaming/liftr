@@ -124,7 +124,9 @@ export async function ingestCatalog(db: LiftrDb, catalogPath: string, equipmentS
 
     const values = {
       slug: entry.slug,
-      nameKey: `exercise.${entry.slug}.name`, // i18n key, not literal text (audit §2.8)
+      // No `name` set for catalog exercises — the client resolves their display name via i18n,
+      // keyed on `slug` (packages/client/src/composables/useExerciseName.ts). `name` is populated
+      // only for custom (user-created) exercises, which have no i18n entry of their own.
       equipment: resolvedEquipment,
       requiredEquipment: JSON.stringify(requiredEquipment),
       movementPattern: entry.movementPattern,

@@ -123,7 +123,7 @@ async function share() {
       setCount: totalSets.value,
       prCount: prCount.value,
       exercises: orderedExercises.value.map((we) => ({
-        name: exerciseName(we.exercise.slug),
+        name: exerciseName(we.exercise.slug, we.exercise.name),
         sets: we.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps, isWarmup: s.isWarmup })),
       })),
       muscles: muscles.value,
@@ -180,7 +180,7 @@ async function share() {
       <div class="eyebrow section-eyebrow">Übungen</div>
       <ul class="ex-list">
         <li v-for="we in orderedExercises" :key="we.id">
-          <ExerciseRow visual="icon" :size="18" :slug="we.exercise.slug" :equipment="we.exercise.equipment" :name="exerciseName(we.exercise.slug)">
+          <ExerciseRow visual="icon" :size="18" :slug="we.exercise.slug" :equipment="we.exercise.equipment" :name="exerciseName(we.exercise.slug, we.exercise.name)">
             <template #meta>
               <span class="tnum set-chips">
                 <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">

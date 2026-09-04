@@ -12,6 +12,7 @@ const prListResponse = z.array(
     id: z.string(),
     exerciseId: z.string(),
     exerciseSlug: z.string(),
+    exerciseName: z.string().nullable(),
     kind: z.enum(["e1rm", "weight", "reps", "volume"]),
     value: z.number(),
     achievedAt: z.string(),

@@ -6,7 +6,9 @@ import { api } from "../lib/api";
 export interface CatalogExercise {
   id: string;
   slug: string;
-  nameKey: string;
+  /** Literal display name — set for custom exercises, null for catalog exercises (which resolve
+   *  their name via i18n on `slug` instead; see useExerciseName.ts). */
+  name: string | null;
   equipment: string | null;
   /** Full physical requirement list (@liftr/shared's TieredRequirement[]) — e.g. bench-press:
    *  barbell/plates/bench all "required", distinct from `equipment` above (just the icon-driving
@@ -47,7 +49,7 @@ export async function getExerciseHistory(exerciseId: string): Promise<ExerciseHi
 
 export interface CreateExerciseInput {
   slug: string;
-  nameKey: string;
+  name: string;
   equipment?: string;
   movementPattern: string;
   isBodyweight: boolean;

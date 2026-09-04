@@ -12,6 +12,9 @@ export interface PrListItem {
   id: string;
   exerciseId: string;
   exerciseSlug: string;
+  /** Literal display name — set for custom exercises. Null for catalog exercises (resolved
+   *  client-side via i18n on `exerciseSlug`). */
+  exerciseName: string | null;
   kind: "e1rm" | "weight" | "reps" | "volume";
   value: number;
   achievedAt: string;
@@ -24,6 +27,7 @@ export async function getPrs(db: LiftrDb): Promise<PrListItem[]> {
       id: prs.id,
       exerciseId: prs.exerciseId,
       exerciseSlug: exercises.slug,
+      exerciseName: exercises.name,
       kind: prs.kind,
       value: prs.value,
       achievedAt: prs.achievedAt,

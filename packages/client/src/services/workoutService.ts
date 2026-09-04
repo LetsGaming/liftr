@@ -15,7 +15,7 @@ export interface WorkoutDetailExercise {
   id: string;
   exerciseId: string;
   orderIndex: number;
-  exercise: { id: string; slug: string; isBodyweight: boolean; equipment: string };
+  exercise: { id: string; slug: string; name: string | null; isBodyweight: boolean; equipment: string };
   sets: WorkoutSetDetail[];
 }
 

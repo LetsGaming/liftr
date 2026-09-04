@@ -14,7 +14,6 @@ export async function insertTestExercise(db: LiftrDb, overrides: Partial<typeof 
     .insert(exercises)
     .values({
       slug: overrides.slug ?? `test-exercise-${Math.random().toString(36).slice(2, 8)}`,
-      nameKey: "exercise.test.name",
       movementPattern: "push",
       isBodyweight: false,
       ...overrides,

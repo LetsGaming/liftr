@@ -3,10 +3,12 @@
  * Feature: add-custom-exercise (Plan C §3 Phase 3 — "add-custom-exercise form"). POST
  * /api/exercises already existed server-side with zero client consumer; this is that consumer's
  * first build. A slug is derived from the typed display name (lowercased, non-alphanumeric runs
- * collapsed to single hyphens) since the catalog has no separate "display name" field — a custom
- * exercise with no i18n entry falls back to rendering its raw slug (useExerciseName.ts's own
- * documented fallback), so this is the same behavior every custom exercise already gets, not a
- * new gap this form introduces.
+ * collapsed to single hyphens) — used only as the exercise's stable identifier/lookup key. The
+ * typed `displayName` itself is sent as `name` and persisted verbatim (WS2 fix): earlier versions
+ * of this form sent the slug as `nameKey` instead, and since no display code ever actually read
+ * `nameKey`, every custom exercise rendered its raw slug everywhere in the app. That's fixed now
+ * — the exercises table has a real `name` column and `useExerciseName.ts` prefers it over the
+ * i18n/slug fallback that catalog exercises still use.
  *
  * EXERCISE_SLUG_PATTERN is exported from @liftr/shared (packages/shared/src/catalog/slug.ts, via
  * the package's `export *` index) and already used the same way server-side in
@@ -58,9 +60,9 @@ const MOVEMENT_PATTERNS: { value: string; label: string }[] = [
 
 /* Final-review finding: German umlauts/ß have no transliteration step before the
    non-alphanumeric collapse below, so e.g. "Bankdrücken" became "bankdr-cken" and "Übung" became
-   "bung". Since a custom exercise has no i18n entry, useExerciseName() falls back to rendering
-   this raw slug — it becomes the exercise's permanent display name everywhere in the app with no
-   edit path, so mangled umlaut-collapse isn't just a cosmetic slug issue. */
+   "bung". The slug is only the lookup key now (the typed name itself is sent verbatim as `name`,
+   see save() below) but it's still permanent with no edit path, so a mangled slug is still worth
+   avoiding on its own — this keeps that transliteration step. */
 function transliterateGerman(s: string): string {
   return s
     .replace(/ä/gi, (m) => (m === "Ä" ? "Ae" : "ae"))
@@ -104,7 +106,7 @@ async function save() {
     ];
     await createExercise({
       slug: slug.value,
-      nameKey: slug.value,
+      name: displayName.value.trim(),
       equipment: equipment.value || undefined,
       movementPattern: movementPattern.value,
       isBodyweight: isBodyweight.value,

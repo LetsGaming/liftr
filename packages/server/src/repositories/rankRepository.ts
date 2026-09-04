@@ -1,7 +1,7 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { exercises, prs, rankEvents, ranks, sets, standards, workoutExercises, type LiftrDb } from "@liftr/db";
 
-/** Every computed rank, joined with its exercise (for display fields like slug/nameKey). */
+/** Every computed rank, joined with its exercise (for display fields like slug/name). */
 export function findAllRanksWithExercise(db: LiftrDb) {
   return db.query.ranks.findMany({ with: { exercise: true } });
 }
