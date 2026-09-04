@@ -9,6 +9,7 @@ import { computed, toRef } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
+import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import type { DraftExercise } from "./RoutineWizard.vue";
 
@@ -23,7 +24,7 @@ const props = defineProps<{
    *  which skips the coverage check entirely (nothing to compare the routine against). */
   requestedMuscleSlugs: string[];
   /** Keyed by exerciseId; absent for manually-picked exercises. */
-  suggestionMeta: Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean }>;
+  suggestionMeta: Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean; missingEquipment?: string[] }>;
 }>();
 const emit = defineEmits<{ back: []; save: [] }>();
 
@@ -32,6 +33,18 @@ const { exerciseName } = useExerciseName();
 
 function setSummary(cfg: DraftExercise): string {
   return cfg.sets.map((s) => (s.weightKg !== null ? `${s.weightKg}×${s.reps}` : `${s.reps}`)).join(" / ");
+}
+
+/** "swapped because you don't own X" (Global Constraint) — names the actual equipment instead of
+ *  a generic sentence. Falls back to the old generic copy only if the server didn't send a
+ *  missing-equipment list (e.g. an older cached suggestion response). */
+function substituteReason(exerciseId: string): string {
+  const missing = props.suggestionMeta[exerciseId]?.missingEquipment;
+  if (!missing || missing.length === 0) {
+    return "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast.";
+  }
+  const names = missing.map((m) => equipmentRequirementLabelDe(m as Parameters<typeof equipmentRequirementLabelDe>[0]));
+  return `Ersetzt: bevorzugte Variante braucht ${names.join(", ")}, das du nicht hast.`;
 }
 
 const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
@@ -71,9 +84,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
             <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
           </template>
         </ExerciseRow>
-        <p v-if="isSubstitute(exerciseId)" class="ex-note">
-          Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast.
-        </p>
+        <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
           Deutlich mehr Sätze als der Rest der Routine — passt das so?
         </p>
