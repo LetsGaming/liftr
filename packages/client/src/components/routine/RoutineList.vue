@@ -18,12 +18,14 @@ import { useRoutineManagement } from "../../composables/useRoutineManagement";
 import { useStartRoutine } from "../../composables/useStartRoutine";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 import { useDragReorder } from "../../composables/useDragReorder";
+import { useToast } from "../../composables/useToast";
 import { aggregateMuscles } from "../../lib/muscles";
 import { computed, onBeforeUnmount, ref } from "vue";
 
 const catalog = useCatalogStore();
 const routineStore = useRoutineStore();
 const store = useActiveWorkoutStore();
+const { toast } = useToast();
 const { starting, startRoutine, quickStart, exerciseName } = useStartRoutine();
 
 const { openMenuId, editingRoutine, showBuilder, deleteConfirm, toggleMenu, editRoutine, duplicateRoutine, onRoutineCreated } =
@@ -53,7 +55,14 @@ const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => 
   const ids = routineStore.routines.map((r) => r.id);
   const [moved] = ids.splice(from, 1);
   ids.splice(to, 0, moved!);
-  void routineStore.reorder(ids);
+  /* Final-review finding (5a): reorder()'s own `await this.load()` never runs if the
+     Promise.all of PATCH requests inside it rejects, so a failed request used to leave the UI
+     silently disagreeing with the server with no user feedback at all. Surface the failure and
+     force a resync from the server so the list can't stay stale. */
+  routineStore.reorder(ids).catch(() => {
+    toast("Sortierung konnte nicht gespeichert werden.");
+    void routineStore.load();
+  });
 });
 
 function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) {
@@ -258,7 +267,16 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
      much life as the dashboard itself. Uses --ease-out, not --ease-spring: the overshoot easing
      is reserved for earned moments (rank-up, PR, level-up) per motion.css's own convention —
      a routine list entrance isn't one of those (see commit 8c0f158 for the same fix elsewhere). */
-  animation: pop-in var(--dur-base) var(--ease-out) both;
+  /* Fill-mode `backwards`, not `both` (final-review finding): a CSS animation's fill state
+     takes precedence over the cascade, including inline `style` attributes, for as long as it
+     applies. `both` would keep applying pop-in's `to { transform: scale(1) }` forever after the
+     animation ends, permanently overriding useDragReorder's inline `transform: translateY(...)`
+     on this same element and making drag-reorder visually inert. `backwards` only fills the
+     *pre-start* state (opacity:0, scale:0.9) during the stagger delay above — once the animation
+     ends it applies nothing, so the element falls through to its own inline/cascade styles
+     exactly like the un-animated default (pop-in's `to` state is opacity:1/scale(1), i.e. no
+     lasting visual change either way, so this is safe). */
+  animation: pop-in var(--dur-base) var(--ease-out) backwards;
   transition:
     box-shadow var(--dur-base) var(--ease-out),
     transform 180ms ease;
@@ -301,12 +319,20 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
 }
 .rc-head {
   display: flex;
-  align-items: baseline;
+  /* Final-review finding: was `baseline`, which sat the 44px-tall drag handle's box awkwardly
+     against the single-line routine name instead of vertically centering the two. `center`
+     reads correctly whether or not the handle/meso-badge are present. */
+  align-items: center;
   justify-content: space-between;
   gap: var(--sp2);
 }
 .rc-head b {
   font-size: 15.5px;
+  /* Final-review finding: with the drag handle as a new first child and no mesocycle badge
+     (the common case), `space-between` had only two children to split apart, pushing the name
+     flush to the right edge instead of keeping it next to the handle. flex:1 makes the name
+     claim the remaining space so trailing content (badge, or nothing) sits at the end instead. */
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;

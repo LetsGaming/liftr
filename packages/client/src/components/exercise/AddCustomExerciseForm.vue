@@ -16,7 +16,7 @@
  * pattern check only meaningfully rejects an edge case (e.g. an all-symbol name collapsing to an
  * empty or malformed slug); the server's own 400 response remains the final authority either way.
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { EXERCISE_SLUG_PATTERN } from "@liftr/shared";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
@@ -30,7 +30,7 @@ const catalog = useCatalogStore();
 const displayName = ref("");
 const equipment = ref<string>("");
 const isBodyweight = ref(false);
-const movementPattern = ref("isolation");
+const movementPattern = ref("squat");
 const primaryMuscle = ref("");
 const secondaryMuscles = ref<Set<string>>(new Set());
 const saving = ref(false);
@@ -44,12 +44,33 @@ const MOVEMENT_PATTERNS: { value: string; label: string }[] = [
   { value: "pull-horizontal", label: "Ziehen, horizontal" },
   { value: "pull-vertical", label: "Ziehen, vertikal" },
   { value: "carry", label: "Tragen" },
-  { value: "isolation", label: "Isolation" },
+  /* Final-review finding: the catalog's real movement-pattern vocabulary for isolation work is
+     these six muscle-group-qualified values (tools/catalog/curated.yaml), never a bare
+     "isolation" — that value matched zero catalog exercises, permanently excluding every custom
+     isolation exercise from findSubstitute's identical-movement-pattern matching. */
+  { value: "isolation-arms", label: "Isolation (Arme)" },
+  { value: "isolation-core", label: "Isolation (Rumpf)" },
+  { value: "isolation-shoulders", label: "Isolation (Schultern)" },
+  { value: "isolation-legs", label: "Isolation (Beine)" },
+  { value: "isolation-chest", label: "Isolation (Brust)" },
+  { value: "isolation-back", label: "Isolation (Rücken)" },
 ];
 
+/* Final-review finding: German umlauts/ß have no transliteration step before the
+   non-alphanumeric collapse below, so e.g. "Bankdrücken" became "bankdr-cken" and "Übung" became
+   "bung". Since a custom exercise has no i18n entry, useExerciseName() falls back to rendering
+   this raw slug — it becomes the exercise's permanent display name everywhere in the app with no
+   edit path, so mangled umlaut-collapse isn't just a cosmetic slug issue. */
+function transliterateGerman(s: string): string {
+  return s
+    .replace(/ä/gi, (m) => (m === "Ä" ? "Ae" : "ae"))
+    .replace(/ö/gi, (m) => (m === "Ö" ? "Oe" : "oe"))
+    .replace(/ü/gi, (m) => (m === "Ü" ? "Ue" : "ue"))
+    .replace(/ß/g, "ss");
+}
+
 const slug = computed(() =>
-  displayName.value
-    .trim()
+  transliterateGerman(displayName.value.trim())
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, ""),
@@ -58,6 +79,14 @@ const slug = computed(() =>
 const canSave = computed(
   () => slug.value.length > 0 && EXERCISE_SLUG_PATTERN.test(slug.value) && primaryMuscle.value !== "" && !saving.value,
 );
+
+/* Final-review finding (5b): equipment wasn't cleared when isBodyweight was checked, so a user
+   who picked e.g. "Langhantel" and then checked "Eigengewichtsübung" afterward would submit
+   equipment: "barbell" alongside isBodyweight: true — a bodyweight exercise with stale barbell
+   requirements. "" is the existing "no equipment" sentinel (the select's own default option). */
+watch(isBodyweight, (bodyweight) => {
+  if (bodyweight) equipment.value = "";
+});
 
 function toggleSecondary(slugValue: string) {
   if (secondaryMuscles.value.has(slugValue)) secondaryMuscles.value.delete(slugValue);
