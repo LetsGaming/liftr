@@ -9,6 +9,12 @@
  * Free-text needs a text area, which doesn't fit SheetModal's smallest heights well — taller
  * sheet than RpeCapture.vue's, same fixed-percentage convention as SetKindPicker.vue rather than
  * content-driven sizing.
+ *
+ * Saving closes this sheet via sheetRef.dismiss(), not by having the caller flip its own v-if
+ * straight away — see SheetModal.vue's header comment for why that crashes ("Cannot read
+ * properties of null (reading 'insertBefore')"). The caller's own state teardown (its
+ * `noteCaptureTarget = null`) happens off `@close`, which only fires after Ionic's real dismiss
+ * animation/teardown finishes.
  */
 import { ref } from "vue";
 import SheetModal from "../ui/SheetModal.vue";
@@ -17,15 +23,17 @@ const props = defineProps<{ title: string; modelValue: string | null }>();
 const emit = defineEmits<{ save: [value: string | null]; close: [] }>();
 
 const draft = ref(props.modelValue ?? "");
+const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
 function onSave() {
   const trimmed = draft.value.trim();
   emit("save", trimmed.length > 0 ? trimmed : null);
+  sheetRef.value?.dismiss();
 }
 </script>
 
 <template>
-  <SheetModal :title="props.title" height="50%" @close="emit('close')">
+  <SheetModal ref="sheetRef" :title="props.title" height="50%" @close="emit('close')">
     <textarea v-model="draft" class="note-textarea" rows="6" placeholder="Notiz…" />
     <button class="btn-primary btn-block note-save" @click="onSave">Speichern</button>
   </SheetModal>
