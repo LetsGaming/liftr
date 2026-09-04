@@ -76,6 +76,13 @@ const topTierClass = computed(() => {
   return `t-${top.tier}`;
 });
 
+/** Gap fix: Beat 1 (Rangaufstiege) celebrates any PR set this session (`r.isPr` below) but had
+ *  zero permanent link into RecordsPage.vue — a one-off in-session acknowledgment with nowhere
+ *  to go afterward. Only shown when this session actually set a PR (RanksPage.vue's own
+ *  "Rekorde ansehen" link has no such gate since that page isn't session-scoped); no dead link
+ *  on a session with none. */
+const hasPr = computed(() => props.rankUps.some((r) => r.isPr));
+
 // All four roll-ups (three XP lines + the level bar) are driven by plain refs, not computeds
 // derived straight from props: a computed target that already equals its final value at mount
 // never fires useCountUp's `watch(target, ...)` (nothing changes), so it would render the final
@@ -219,6 +226,24 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+      <!-- Gap fix: RecordsPage.vue link, copied from RanksPage.vue's own "Rekorde ansehen" link
+           (same to/class/style) rather than inventing a new visual treatment. Gated on hasPr so
+           it never appears on a session with rank-ups but no PR. @click.stop keeps this tap from
+           also bubbling to the root's celebrate.skip() handler — router-link already does the
+           only thing this tap should do, which is leave. The workout itself is already
+           saved/synced by this point (finishedSummary/finishSequenceDone come from
+           useWorkoutFinish, computed before this component ever mounts), so navigating away
+           mid-sequence — which unmounts WorkoutPage and this component with it — loses nothing;
+           there's no explicit close/done step to run first. -->
+      <router-link
+        v-if="hasPr"
+        to="/records"
+        class="btn-secondary"
+        style="display: inline-flex; margin-top: var(--sp3)"
+        @click.stop
+      >
+        🏆 Rekorde ansehen
+      </router-link>
     </div>
 
     <!-- Beat 2: Serie — the 7-day dot strip, plain days vs. active-with-flame. A day is marked
