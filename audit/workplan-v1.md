@@ -59,6 +59,21 @@ Condensed to one line each with a pointer to the evidence; full history lives in
   gradient — confirmed shipped AND confirmed live/rendered correctly on Overview, Workout, and
   Profile in both themes. `audit/nebula-design-plan.md`, `audit/verify/round2-design-agent-1.md`
   through `-3.md`.
+- **§3.6's gym-setup 500 (WS1, 2026-09-04)** — was one bad legacy-shaped row in the dev DB, not a
+  code bug; reset directly (`GET /api/settings/gym` returns 200, confirmed live in a fresh boot
+  console with zero errors).
+- **§3.1's custom-exercise display-name bug (WS2, 2026-09-04)** — the dead `nameKey` column
+  (never read by any display code, for custom *or* catalog exercises) is gone, replaced by a real
+  `name` column populated for custom exercises. `useExerciseName()` now checks it first via an
+  optional second parameter, threaded through the ~9 call sites that have the exercise object in
+  hand. Verified live end-to-end: created a custom exercise with an umlaut name
+  ("Überkopfdrücken WS2 Live-Test"), confirmed it renders correctly in the list and round-trips
+  byte-for-byte through the raw `GET /api/exercises` response; catalog exercises still resolve
+  their i18n names unaffected. 261/261 tests, clean typecheck across all 5 packages, clean lint.
+  Merged to master.
+- **§3.10's share-card palette (2026-09-04)** — see §3.10 below for the full decision; Nebula Halo
+  palette adopted, tier medal demoted to a top-right corner stamp, freed space handed to the
+  muscle figures and exercise grid. Verified live across three scenarios, no overlap.
 
 ---
 
@@ -84,17 +99,6 @@ routed at `/records`, linked from `RanksPage.vue`. Confirmed live: real PR data 
 ---
 
 ## 3. Open items
-
-### 3.1 Custom exercise creation loses the display name (new, high severity)
-
-Creating a custom exercise with any name (confirmed with umlauts, likely affects all names) saves
-successfully — slug transliteration works, no crash — but **the exercise then has no display name
-anywhere**: the list tile, the detail sheet, and the raw `GET /api/exercises` response all show/
-return only the machine slug (e.g. "ueberkopfdruecken-test"), never what the user typed. This is
-worse than the previously-fixed "umlaut corruption" bug (that fix only addressed the slug itself,
-not the missing name field). Root cause not yet traced — needs investigation in
-`packages/server/src/repositories/exerciseRepository.ts` and/or the client's exercise-name
-resolution path. `audit/verify/round2-agent-4.md`.
 
 ### 3.2 Manual run-entry client-side validation doesn't actually surface errors
 
@@ -136,8 +140,6 @@ Phase N2, `audit/verify/round2-agent-3.md`.
 
 ### 3.6 Minor live-only defects found, not yet triaged for priority
 
-- `GET /api/settings/gym` returns HTTP 500 on every page load (app degrades silently, doesn't block
-  rendering). `audit/verify/round2-agent-3.md`.
 - Recurring Vue warning on every Overview mount: `ErholungszoneCard` receives non-props attributes
   it can't inherit (fragment root component). Cosmetic — the `tile--priority` class still applies
   one level up. `audit/verify/round2-agent-5.md`.
@@ -168,13 +170,20 @@ direction: source real photos where feasible, closer-matching placeholder otherw
 custom illustration explicitly deferred as its own separate initiative (out of scope for now). See
 `audit/missing-photo-sourcing-research.md` for sourcing research.
 
-### 3.10 Share-card palette vs. app palette — open product-identity call
+### 3.10 Share-card palette vs. app palette — resolved 2026-09-04
 
-`shareCard.ts`'s stat-card accents (violet, gold/`--pr`) aren't drawn from the app's own semantic
-color system (blue=primary, orange=streak/status). Self-consistent as its own artifact; whether a
-shareable image is allowed a distinct identity from the app itself is an open call, not a citable
-violation. See `audit/share-card-design-variations.md` for concrete redesign options already
-explored.
+Decided: **Variation 1 ("Nebula Halo")** from `audit/share-card-design-variations.md`, with one
+product adjustment beyond that document's own text — the tier medal, "Tier Division", "Level N",
+and the rank-up caption move out of the card's centered main-content flow into a small top-right
+corner stamp (`drawCornerBadge` in `packages/client/src/lib/shareCard.ts`, ~110px vs. the old
+168px, "less in the foreground"). The vertical space that freed up went to
+`MUSCLE_FIG_H` (300→360) and `EXERCISE_ROW_H` (118→136), per direction: "the gained space should
+be filled with a size adjustment for the trained muscle groups, as well as the exercises."
+Background glow, wordmark, and two of four stat-card accents now use the Nebula brand gradient
+(`--nebula-1/-m/-2`) in place of the old plain-blue values, closing this open question in favor of
+brand-consistent, not app-independent. Verified live: normal case, no-badge case, and a long-name +
+long-rank-up-caption stress case all render cleanly with no overlap. 261/261 tests, clean
+typecheck, clean lint.
 
 ---
 
