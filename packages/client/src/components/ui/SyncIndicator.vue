@@ -38,16 +38,20 @@ const state = computed<"idle" | "queued" | "syncing">(() => {
 
 <style scoped>
 /* Deliberately tiny — a corner dot/badge, never a banner. pointer-events: none so it can never
-   intercept a tap even if a future layout tweak overlaps it with something tappable. */
+   intercept a tap even if a future layout tweak overlaps it with something tappable.
+   In normal flow (not absolutely positioned) so it can never be laid on top of a sibling by
+   construction: it was originally `position: absolute; top/right: var(--sp2)` anchored to
+   `.rail-col`, but `.rail-col` has no padding, so that claimed corner was the exact same corner
+   WorkoutClock.vue's own pause/resume `.icon-btn` occupies — the indicator visually covered a
+   real, frequently-used tappable control (Task 10 fix-round finding). Rendering it as its own
+   full-width row above WorkoutClock, right-aligned via `justify-content: flex-end`, keeps it
+   small/unobtrusive/corner-aligned while guaranteeing its box never overlaps a sibling's box. */
 .sync-indicator {
-  position: absolute;
-  top: var(--sp2);
-  right: var(--sp2);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  margin-bottom: var(--sp2);
   pointer-events: none;
-  z-index: 1;
 }
 .sync-dot {
   width: 8px;

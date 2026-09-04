@@ -540,7 +540,14 @@ async function logSet() {
              never competes with the focus column's logging surface (Global constraint on
              density) or blocks/covers tappable content. Not folded into App.vue's top-hud:
              that chrome only renders xp/streak chips and defines no slot for this, and touching
-             App.vue is outside this workstream's file boundary per the orchestration plan. -->
+             App.vue is outside this workstream's file boundary per the orchestration plan.
+             Rendered in normal flow (right-aligned via its own `justify-content: flex-end`,
+             see SyncIndicator.vue), NOT absolutely positioned over `.rail-col`: an earlier
+             version pinned it to `.rail-col`'s top-right corner, which — since `.rail-col` has
+             no padding — is the exact same corner WorkoutClock.vue's pause/resume `.icon-btn`
+             occupies, so the indicator visually covered that tappable button (fix-round
+             finding). Placing it as its own row directly above WorkoutClock guarantees no
+             overlap by construction. -->
         <SyncIndicator />
         <WorkoutClock />
         <div class="progress">
@@ -1100,13 +1107,6 @@ async function logSet() {
   display: flex;
   flex-direction: column;
   gap: var(--sp5);
-}
-/* Anchors SyncIndicator.vue's absolute corner placement (Task 10) to the rail column itself at
-   every viewport width — .rail-col only gets its own dedicated flex/width rules inside the
-   >=900px media query below, but the aside element exists in the DOM at every width, so this
-   rule stays unconditional rather than living inside that block. */
-.rail-col {
-  position: relative;
 }
 /* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
 .stale-banner {
