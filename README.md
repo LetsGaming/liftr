@@ -23,7 +23,7 @@ Liftr is a self-hosted strength and running tracker built on a simple bet: most 
 
 Open the app mid-workout, not before it. Start a routine and the set you're about to do is already on screen, last time's weight and reps sitting right next to the input, so you never have to think "what did I lift last week." Log it in one or two taps. That's the whole interaction the app is built around, and nothing gets added on top of it that would slow that down.
 
-Every lift has a rank — Bronze through Diamond, with divisions inside each tier, based on real strength standards where they exist (bodyweight-relative lifts, barbell classics) and honest estimates where they don't. When an estimate is doing the guessing, the app marks it with a small `≈` instead of pretending to a precision it doesn't have.
+Every lift has a rank — nine tiers from Initiate to Apex, with divisions inside each tier (more divisions at the bottom for frequent early rank-ups, down to a single division at Apex — one real milestone, not another grind), based on real strength standards where they exist (bodyweight-relative lifts, barbell classics) and honest estimates where they don't. When an estimate is doing the guessing, the app marks it with a small `≈` instead of pretending to a precision it doesn't have.
 
 Once you hit a rank, it's locked in as your peak. The app won't quietly take it back from you, even if your bodyweight shifts or an old standard turns out to have been miscalibrated. Your *current* rank is a separate number: it softens a little if you stop training a lift for a few weeks — three weeks off costs you a division, not the whole tier — and it snaps straight back the moment you log one real set. No re-climbing, no second grind, just a reason to come back.
 

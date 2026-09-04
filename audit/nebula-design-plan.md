@@ -1,13 +1,27 @@
 # Nebula — Design Plan
 
-Phased execution plan turning `nebula-design-philosophy.md` / `-framework.md` / `-patterns.md` /
-`-layout.md` into shipped code. This is scoped as an amendment layered onto
-`audit/plan-c-new-ui-rebuild.md`'s existing phase structure (§3), not a parallel rebuild — every
-phase below maps onto a Plan C phase, adds Nebula-specific work items to it, and inherits Plan C's
-evidence, complexity ratings, and success criteria except where explicitly extended. Where this
-plan's scope is smaller than a full Plan C phase (most of it — see §0), that's because Liftr's
-existing token/component system already carries most of the Liftoff-inspired language the mockup
-rounds were exploring (`nebula-design-philosophy.md` §2).
+**Status as of 2026-09-04, per two independent verification passes** (`audit/verify/agent-6.md`,
+`audit/verify/round2-design-agent-1.md`/`-2.md`/`-3.md`, `audit/verify/ROUND2-SUMMARY.md`):
+**Phases N0-N3 are shipped in code.** N0 (tokens/theme) and N1 (chrome/CTA) are confirmed working
+live, not just in source. N2 (medallion ring/Finish Sequence) exists in code and is correctly
+scoped, but its live rendering during an actual rank-up beat has not yet been visually confirmed —
+that is the top remaining verification item, not a build item. N3 (PR ledger paint) exists in code,
+not independently re-verified live. **N4 (verification sweep) has not been run**, and one real bug
+blocks part of it: light mode does not visually apply to Ranks-page surfaces despite resolving
+correctly in CSS (`nebula-design-system.md` §6). See `workplan-v1.md` for this as a tracked open
+item. This plan document is kept as the historical phase breakdown and dependency map; the
+normative spec now lives in `nebula-design-system.md` and `nebula-design-components.md` (this
+document's own tokens/patterns/layout content was consolidated into those two files and this file's
+description of them below is retained only where it adds phasing/sequencing detail not repeated
+there).
+
+Phased execution plan turning `nebula-design-system.md` / `nebula-design-components.md` into
+shipped code. This was scoped as an amendment layered onto `audit/plan-c-new-ui-rebuild.md`'s
+phase structure (§3, historical — Plan C itself is superseded, see `audit/finished/plan-c-new-ui-rebuild.md`),
+not a parallel rebuild — every phase below maps onto a Plan C phase and adds Nebula-specific work
+items to it. Where this plan's scope is smaller than a full Plan C phase (most of it — see §0),
+that's because Liftr's existing token/component system already carried most of the
+Liftoff-inspired language the mockup rounds were exploring (`nebula-design-system.md` §1).
 
 ---
 
@@ -27,7 +41,7 @@ already specifies — this plan does not re-scope any of that functional work, o
 
 ---
 
-## Phase N0 — Token & theme foundation
+## Phase N0 — Token & theme foundation ✅ Shipped, confirmed live
 
 **Goal:** ship `--nebula-*` tokens and light-mode infrastructure before any component migrates to
 them, so no later phase has to retrofit theme-awareness into something already shipped without it.
@@ -44,7 +58,7 @@ them, so no later phase has to retrofit theme-awareness into something already s
   wrong theme is a regression, not a cosmetic nit), local-storage persistence.
 - Add the theme toggle control to Profile (layout §5) — UI only; wiring is the store above.
 
-**Evidence:** `nebula-design-framework.md` §2 (full light-mode spec), `liftr-pulse-liftoff-
+**Evidence:** `nebula-design-system.md` §2 (full light-mode spec), `liftr-pulse-liftoff-
 finalists.html` (the light-mode content rules this codifies: gradient reserved for filled surfaces,
 solid ink for text, neutral shadow not colored glow).
 
@@ -62,7 +76,7 @@ text/UI) for every text-on-surface pairing in both themes.
 
 ---
 
-## Phase N1 — Chrome & CTA migration
+## Phase N1 — Chrome & CTA migration ✅ Shipped, confirmed live
 
 **Goal:** apply Nebula to the always-visible, high-frequency chrome — HUD and primary buttons —
 since these are the surfaces every other phase's screens inherit from, and getting the
@@ -76,7 +90,7 @@ glow-rationing rule right here (framework §5) sets the precedent every later ph
 - Non-tiered `.rankbar` fallback migration (pattern §4).
 - Nav active-indicator fallback migration (layout §0).
 
-**Evidence:** `nebula-design-patterns.md` §1/§3/§4; `nebula-design-framework.md` §5 (glow rule,
+**Evidence:** `nebula-design-components.md` §1/§3/§4; `nebula-design-system.md` §5 (glow rule,
 must be implemented correctly here since Phase N1 is where it's first exercised in real code, via
 the existing `streakJustExtended` trigger in `App.vue`).
 
@@ -94,7 +108,7 @@ verifiably absent at rest (a screenshot taken outside that window shows no glow)
 
 ---
 
-## Phase N2 — Rank medallion ring & Finish Sequence
+## Phase N2 — Rank medallion ring & Finish Sequence 🟡 Shipped in code, ring/glow render not yet confirmed live
 
 **Goal:** ship the one markup-level change (the Nebula ring) and wire the earned-vs-discounted
 distinction into the Finish Sequence, since this is where the glow-rationing rule has the highest
@@ -113,7 +127,7 @@ contradict `lens-2` §4 rule 5's honesty principle.
   wrong.
 - Ranks page "Rangaufstiege" weekday-strip dot treatment (layout §3).
 
-**Evidence:** `nebula-design-layout.md` §3; `nebula-design-philosophy.md` §3 (the plausibility-
+**Evidence:** `nebula-design-components.md` §3; `nebula-design-system.md` §3 (the plausibility-
 discount hard rule this phase is the concrete test of).
 
 **Complexity:** M — the negative-path verification is real design/QA work, not just a CSS add.
@@ -130,7 +144,7 @@ behavior).
 
 ---
 
-## Phase N3 — Reward surfaces (PR ledger, panels)
+## Phase N3 — Reward surfaces (PR ledger, panels) 🟡 Shipped in code, not independently re-verified live
 
 **Goal:** apply `.panel-reward--nebula` to the new Personal Records screen as it ships under Plan C
 §3 Phase 2, and confirm the fallback-tier interaction (pattern §5) doesn't accidentally leak Nebula
@@ -143,7 +157,7 @@ styling onto tier-anchored reward panels.
   table already carries an achieved-date column (`lens-2` §2.5) — confirm no new backend field is
   needed before scoping this as a pure-frontend work item.
 
-**Evidence:** `nebula-design-layout.md` §3 (Personal Records treatment); Plan C §3 Phase 2's own PR
+**Evidence:** `nebula-design-components.md` §3 (Personal Records treatment); Plan C §3 Phase 2's own PR
 screen spec, which this phase's work is additive to.
 
 **Complexity:** S, contingent on Plan C's Personal Records screen existing first (this phase adds
@@ -159,13 +173,13 @@ its base structure.
 
 ---
 
-## Phase N4 — Verification sweep
+## Phase N4 — Verification sweep ⬜ Not run — blocked in part by the light-mode rendering bug (nebula-design-system.md §6)
 
-**Goal:** close the loop on `nebula-design-layout.md` §7's cross-cutting rule — confirm no screen
+**Goal:** close the loop on `nebula-design-components.md` §7's cross-cutting rule — confirm no screen
 ended up with more than one always-on gradient surface, and no screen missed its intended one.
 
 **Work items:**
-- Screen-by-screen audit against `nebula-design-layout.md` §1-6, confirming each screen's Nebula
+- Screen-by-screen audit against `nebula-design-components.md` §1-6, confirming each screen's Nebula
   touchpoints match spec (exactly one resting `.btn-primary`, transient-only everything else).
 - Re-run the mobile-viewport check (per this repo's existing `mobile-viewport-check` skill
   convention) across both themes, not just dark — this is the first time that check needs to cover
@@ -174,7 +188,7 @@ ended up with more than one always-on gradient surface, and no screen missed its
   component-level color choice made in isolation in Phase N1-N3 could still fail contrast in
   combination with a screen-level background it wasn't tested against).
 
-**Evidence:** `nebula-design-layout.md` §7.
+**Evidence:** `nebula-design-components.md` §7.
 
 **Complexity:** S — this is a checklist pass, not new feature work.
 
@@ -200,7 +214,7 @@ Plan C's own phases 1, 3, 4, 5 (Train's functional rebuild, Plan/routines, Profi
 **not blocked on any Nebula phase** — they can proceed on their existing Plan C timeline, picking up
 N1's chrome tokens automatically once N1 ships (since `.btn-primary` etc. are shared, centralized
 classes), with no separate Nebula-specific work required inside those phases beyond what
-`nebula-design-layout.md` §2/§4/§5/§6 already calls out inline.
+`nebula-design-components.md` §2/§4/§5/§6 already calls out inline.
 
 ---
 
@@ -210,7 +224,7 @@ Inherits `plan-c-new-ui-rebuild.md` §5 in full (no social/multi-user features, 
 surfacing, no `demoStartImage` population, no notification infra, no share-card renderer redesign).
 Additionally out of scope for this plan specifically:
 - **Changing the 9-tier badge system's own colors.** Explicitly ruled out in
-  `nebula-design-philosophy.md` §2 — not a deferred item, a rejected one.
+  `nebula-design-system.md` §2 — not a deferred item, a rejected one.
 - **A second brand color/gradient.** One identity gradient, everywhere it's used. Adding a
   situational second gradient (e.g. a distinct "streak" color separate from "rank-up") was
   considered and rejected — it would recreate exactly the "inconsistent color semantics for active

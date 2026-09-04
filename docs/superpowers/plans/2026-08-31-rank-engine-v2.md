@@ -1,5 +1,7 @@
 # Rank Engine v2 Implementation Plan
 
+**STATUS: SHIPPED** — fully implemented and tested; independently re-verified against live code on 2026-09-04 (`audit/verify/agent-5.md`: 260/260 tests, clean typecheck/build, all 11 tasks confirmed in source). One gap this plan itself never accounted for: migration 0009 widened the tier-enum columns but did not remap pre-existing rows still holding old 5-tier strings (`bronze`/`silver`/etc.), which would have silently broken `ordinal()` lookups on any pre-existing rank data — this was caught and fixed by an out-of-plan follow-up migration `packages/db/drizzle/0010_remap_legacy_tier_strings.sql`. Lesson for future schema-changing plans: an enum-widening migration step must explicitly address pre-existing rows, not just new ones.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the 5-tier Bronze-Diamond rank ladder with a 9-tier ladder (variable divisions

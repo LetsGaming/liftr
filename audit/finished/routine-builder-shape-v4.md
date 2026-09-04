@@ -1,7 +1,20 @@
 # Routine Builder — Shape Brief (engagement-audit-v4 Phase 1)
 
+**Status (2026-09-04): implemented and live-verified.** The framing below ("No code yet — this is
+the confirmed design brief") described this document's state before Phase 1B was built; it is now
+stale. The full implementation — `PathChooser.vue` (step-0 mode chooser), `FastPathStep.vue` (the
+≤4-exercise fast path), `useRoutineReviewChecks.ts` (all three glance-checks: muscle coverage,
+equipment-substitution naming, lopsided-distribution warning), and the widened
+`routineSuggestionService.ts` payload — exists in code and was independently confirmed working
+end-to-end via live browser interaction (not just source-reading): the mode chooser rendered
+first, the fast path correctly collapsed for a 4-exercise routine, all three glance-checks fired
+correctly on deliberately-engineered test cases, and drag-to-reorder persisted through a real save.
+See `audit/verify/agent-2.md` and `audit/verify/round2-agent-4.md` for full detail. This brief is
+kept below as the original design rationale — read it as "why the implementation looks the way it
+does," not as a still-open proposal.
+
 Discovery/shape pass for the routine-creation trust gap named in `audit/finished/engagement-audit-v4.md`
-Phase 1. No code yet — this is the confirmed design brief that Phase 1B implements against.
+Phase 1.
 
 ## 1. Job and audience
 

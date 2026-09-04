@@ -1,5 +1,11 @@
 # Lens 1: Liftoff vs. Liftr — Design Philosophy Comparison
 
+**Status: historical input research — superseded by ratified decisions.** Findings here fed
+directly into `audit/nebula-design-system.md` and `audit/finished/plan-c-new-ui-rebuild.md` (both
+cite specific sections of this document by name as their evidence trail). Kept intact, unedited, so
+those citations resolve — do not delete without first updating every citing document. Not an open
+work item; nothing here is awaiting action.
+
 This is an independent research pass. It was produced cold, without reading any prior audit conclusions in `audit/`. All claims below are either (a) directly observed with a cited source, (b) sourced to a named external reference with a link, or (c) explicitly labelled as judgement, in which case the design principle it rests on is named. Where evidence is insufficient, this is stated explicitly rather than guessed at.
 
 Liftoff is treated here as one competitor product under study, not as a standard to imitate. Liftr is treated as another artifact under study, not as "our app" — neither is assumed correct because it currently exists.

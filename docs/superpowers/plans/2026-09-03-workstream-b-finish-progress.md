@@ -1,5 +1,7 @@
 # Workstream B: Finish, Progress & Mechanics Implementation Plan
 
+**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 — plausibility-reason threading, Finish Sequence muted badge rings, RankUpCalendar flagged-dot logic, and the LP-bar animation all confirmed working live, including a forced-implausible session that was correctly caught and visually flagged (`audit/verify/agent-8.md`, `audit/verify/round2-agent-3.md`). **Task 7 (streak/XP mechanics redesign) is correctly still deferred** — confirmed NOT implemented: `packages/shared/src/math/xp.ts` still uses the pre-redesign, weight-fabricable formula, and no `consistencyBonusXp`/`varietyBonusXp` code exists anywhere in the repo (`audit/verify/agent-8.md`). Do not mark Task 7 done; see `docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md` for the spec waiting to be planned.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Fix a real, already-shipped plausibility-gating bug in the rank-up celebration path, finish the Finish Sequence's LP-bar animation and three-way visual distinction (genuine rank-up / same-band recovery / plausibility-discounted), verify (not rebuild) two areas prior review flagged as likely-already-done, and scope — but not implement — the open streak/XP mechanics question.
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Vue 3 (`<script setup>`, Composition API) + Ionic on the client; Fastify + Zod + Drizzle/SQLite on the server; `@liftr/shared` for pure math/typing shared by both; Vitest for server tests (this codebase has no client-side `.test.ts` files — client verification here is manual, per existing convention, using the `mobile-viewport-check` skill).
 
-**Spec:** `docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` §3.2 (this workstream's scope and priority order); `audit/plan-c-new-ui-rebuild.md` §3 Phase 2 (original Finish Sequence & Progress spec); `audit/workplan-v1.md` §0's "Underlying mechanics — also open" note and consolidated open question 10 (streak/XP framing); `audit/nebula-design-layout.md` §3 (already-shipped Nebula additions this plan builds on top of, not around).
+**Spec:** `docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` §3.2 (this workstream's scope and priority order); `audit/plan-c-new-ui-rebuild.md` §3 Phase 2 (original Finish Sequence & Progress spec); `audit/workplan-v1.md` §0's "Underlying mechanics — also open" note and consolidated open question 10 (streak/XP framing); `audit/nebula-design-components.md` §3 (already-shipped Nebula additions this plan builds on top of, not around).
 
 ## Global Constraints
 
@@ -649,7 +651,7 @@ Replace the placeholder `scaleX` from Task 2 Step 3 in the Beat 1 template:
 
 - [ ] **Step 4: Verify the PR beat's link into `/records` still holds**
 
-This is a confirmation step, not new work (`audit/nebula-design-layout.md` §3 and the source-read above already establish `RanksPage.vue:70-72` has the `🏆 Rekorde ansehen` link). Read `packages/client/src/pages/RanksPage.vue:70-72` again after this task's edits and confirm the link is untouched — this task's file (`FinishSequence.vue`) doesn't reach `/records` itself, so there is nothing to change here; this step exists only to catch an accidental regression if Task 2/3/4's edits somehow touched routing (they don't).
+This is a confirmation step, not new work (`audit/nebula-design-components.md` §3 and the source-read above already establish `RanksPage.vue:70-72` has the `🏆 Rekorde ansehen` link). Read `packages/client/src/pages/RanksPage.vue:70-72` again after this task's edits and confirm the link is untouched — this task's file (`FinishSequence.vue`) doesn't reach `/records` itself, so there is nothing to change here; this step exists only to catch an accidental regression if Task 2/3/4's edits somehow touched routing (they don't).
 
 - [ ] **Step 5: Manual verification**
 

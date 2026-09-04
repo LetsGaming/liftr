@@ -1,5 +1,7 @@
 # Rank Engine v2 — 9-tier ladder, buffed climb-back, plausibility gate
 
+**STATUS: SHIPPED**, implemented per `docs/superpowers/plans/2026-08-31-rank-engine-v2.md` (itself STATUS: SHIPPED). **Correction (2026-09-04):** §3.2's plausibility threshold numbers below are stale — they describe the values as first specified, not as shipped. The shipped `packages/shared/src/rank/plausibility.ts` was later tightened by an "engagement-audit-v3" pass: pace fine/max is **15s/6s** per set (not 12s/4s), jump max-severity is **75%** (not 100%), and the ceiling multiple is **1.3x** (not 1.5x). The mechanic and worst-of combination rule described below are still accurate; only these three numbers are superseded. (Evidence: `audit/verify/agent-5.md`.)
+
 **Status:** approved design, ready for implementation planning.
 **Supersedes:** the 5-tier Bronze-Diamond system shipped in R1-R3 (`liftr-audit.md` §7.3).
 

@@ -5,8 +5,15 @@
 This plan's phases are now **implemented, reviewed, and merged to master**, moved here from
 `audit/` root per `docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` §4 Step 4.
 Its §2 (design direction) had already been superseded before implementation began by the
-five `audit/nebula-design-*.md` documents (see `workplan-v1.md` §0's "Resolved 2026-09-03"
-note) — §1/§3/§4/§5/§6 stood as written and were executed against directly.
+Nebula design documents (see `workplan-v1.md` §0's "Resolved 2026-09-03" note) — §1/§3/§4/§5/§6
+stood as written and were executed against directly.
+>
+> **Note (2026-09-04 doc cleanup):** the Nebula design documents referenced above are now
+> `audit/nebula-design-system.md` and `audit/nebula-design-components.md` (consolidated from an
+> earlier five-file set — `nebula-design-philosophy/framework/layout/patterns.md` — which was
+> merged and deleted). `uiux-engagement-research.md`, cited later in this document, was also
+> deleted as fully-superseded input research; its findings are already absorbed into the decisions
+> recorded here.
 
 Execution ran as Foundation (Wave 0, solo) followed by five parallel Wave-1 workstreams, each
 via subagent-driven development (fresh implementer + independent reviewer per task, plus a
@@ -15,7 +22,22 @@ final whole-branch review per workstream). All six landed on master; commit rang
 
 - **Foundation** (`docs/superpowers/plans/2026-09-03-foundation-primitives.md`) — touch-target/
   density tokens, `TruncatingLabel`, `ThumbZoneAction`, `DensityScope`, nav-shell hardening,
-  motion/haptic contract documentation.
+  motion/haptic contract documentation. **Correction (2026-09-04, live-verified in
+  `audit/verify/agent-3.md` and `audit/verify/round2-agent-1.md`):** `ThumbZoneAction` and
+  `DensityScope`/`useDensityMode` were built exactly as specced but were **never adopted
+  anywhere** — a DOM query across all six major live screens found zero usages of either.
+  They exist in code as dead, unreachable primitives, not as foundations later phases build
+  on. `TruncatingLabel` is adopted in exactly one place (`ExerciseRow.vue`, the routine
+  reorder list) — the claim below that it closes lens-3's text-wrap bug "at the primitive
+  level so it cannot recur" does **not** hold: `RanksPage.vue`'s exercise names and
+  `WorkoutPage.vue`'s active-exercise heading both still mid-word-break live, confirmed by
+  direct visual reproduction. Adopting these three primitives on the remaining screens is
+  real, still-open follow-up work — see `workplan-v1.md`. Separately, §3.0's five-zone
+  Today/Train/Progress/Plan/Profile nav IA (below) was never built at all; the flat 5-tab
+  nav that shipped instead (Overview/Workout/Ranks/Exercises/Profile, confirmed live) is now
+  the **accepted, ground-truth shipped shape** per `audit/nebula-design-components.md`'s
+  "Navigation shell" section — this is not an open gap to close, it superseded the original
+  spec.
 - **Workstream A — Today/Train** (`2026-09-03-workstream-a-today-train.md`) — RPE/notes
   capture (Phase 1's "zero client consumer" gap, closed), RestTimer's three-state rendering,
   mobile jump-to-exercise rail, non-modal sync indicator. Atomic-cutover requirement satisfied
@@ -215,7 +237,9 @@ color-role, or touch-target decisions.
   addressing lens-3's inconsistent-active-color finding, §2.3), spacing scale, and a hard
   44×44px minimum touch-target token applied uniformly (addressing lens-3's inconsistent
   38px-vs-44px finding, §2.3).
-- **Navigation shell**: the five-zone bottom-tab IA from lens-2 §3.1 (Today / Train /
+- **Navigation shell** *(superseded — see the Closure note at the top of this document: this
+  five-zone IA was never built; the shipped flat 5-tab nav is the accepted ground truth
+  instead)*: the five-zone bottom-tab IA from lens-2 §3.1 (Today / Train /
   Progress / Plan / Profile), with Train appearing only while `isActive` is true (a
   state-conditional nav item per lens-2 §3.1) and redirecting to Today otherwise. Built
   with an explicit narrow-viewport fallback (horizontal scroll-snap or icon-only collapse

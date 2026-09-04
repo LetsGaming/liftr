@@ -1,5 +1,7 @@
 # Workstream E: Runs — Implementation Plan
 
+**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 — the duplicate-import-button fix, success toasts, and Health-Connect-mention gating all confirmed working live (`audit/verify/agent-7.md`, `audit/verify/round2-agent-6.md`). **Correction:** the "manual-entry save gets try/catch + inline error feedback" task does NOT work as originally verified — live testing found the Save button stays `disabled` on invalid/blank client-side input, so the inline `.error` UI this task built is only reachable via a genuine server-side rejection, never via bad client input as a user would naturally trigger it (`audit/verify/round2-agent-6.md`). The code path exists and works when reached; it's just not reachable the way "invalid data" naturally implies.
+
 ## Goal
 
 Close out Plan C's Phase 5 (Runs) for Liftr's UI rebuild. Unlike the other Wave-1 workstreams,

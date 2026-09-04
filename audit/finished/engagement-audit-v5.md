@@ -1,5 +1,16 @@
 # Liftr — UX Flow & Organization Audit v5
 
+**Status: ✅ Closed — all four phases shipped and independently verified.** Moved here from
+`audit/engagement-audit-v5.md` (2026-09-04); it was left in the active-work directory after
+completion and never re-labeled. Verification evidence: Phase 1a (routine-save silent-failure fix),
+1b (NumberStepper select-on-focus), Phase 2 (Overview/Ranks/Profile duplication cut), Phase 3
+(Profile domain-header split), and Phase 4 (Overview priority-tile surfacing) are all confirmed
+`VERIFIED COMPLETE` against live source in `audit/verify/agent-1.md` (round 1, static) — the exact
+fixes described below (`RoutineWizard.vue` reps rounding + try/catch + toast, `NumberStepper.vue`
+`.select()` on focus, single `Daten-Export` entry point, `ProfilePage.vue`'s four group headers,
+`.tile--priority` on Overview's action cards) all exist in current code. No open work remains from
+this document; treat it as historical record, not an active punch list.
+
 ## Method (read this before the findings)
 
 Where v4 used a product-owner interview as its valuation lens, this round used **five independent

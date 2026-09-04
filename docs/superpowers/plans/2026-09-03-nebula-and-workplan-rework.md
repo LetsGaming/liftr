@@ -1,5 +1,7 @@
 # Nebula & Workplan Rework Implementation Plan
 
+**STATUS: PARTIALLY SUPERSEDED.** This document's non-Nebula phases (Personal Records ledger, Profile domain grouping, Overview priority tiles) are confirmed shipped and accurate (`audit/verify/agent-6.md`) — no correction needed there. **Its Nebula-related phases (2-8) are superseded as an authority**: this session ran a live rendered-screenshot design-fidelity audit against the actual chosen mockups (`audit/verify/round2-design-agent-1.md`/`-2.md`/`-3.md`, `audit/verify/ROUND2-SUMMARY.md`) and produced a corrected, normative ground-truth spec at `audit/nebula-design-system.md` and `audit/nebula-design-components.md` (which also supersede the old `nebula-design-philosophy/framework/layout/patterns.md`, deleted in that rewrite). Where this document's Nebula claims (tier-badge coloring, background tint, glow usage, adoption scope) conflict with the new ground truth, **the new ground truth wins** — do not treat this document as authoritative for Nebula going forward; read the two files above instead.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship every currently-open item from `audit/workplan-v1.md`'s 2026-09-03 status sweep — the
@@ -20,7 +22,7 @@ convention, not a gap introduced by this plan).
 
 **Spec:**
 - `audit/workplan-v1.md` (source of truth for what's open vs. done, updated 2026-09-03)
-- `audit/nebula-design-philosophy.md`, `-framework.md`, `-patterns.md`, `-layout.md`, `-plan.md`
+- `audit/nebula-design-system.md`, `-framework.md`, `-patterns.md`, `-layout.md`, `-plan.md`
   (the Nebula visual system this plan's Phases 3–5 implement)
 - `audit/engagement-audit-v5.md` (source of Phases 6–8's scope)
 
@@ -33,12 +35,12 @@ convention, not a gap introduced by this plan).
   urgency/scarcity copy (`engagement-audit-v5.md` §1.1–§1.2, `lens-1` comparison table — still binding
   everywhere in this plan, including the new PR screen and every Nebula-touched surface).
 - Nebula's gradient (`--nebula-1/-m/-2`) is chrome/CTA/streak/focus **only** — never applied to the
-  existing 9-tier `.badge`/`.t-<tier>` metal-gradient system itself (`nebula-design-philosophy.md`
+  existing 9-tier `.badge`/`.t-<tier>` metal-gradient system itself (`nebula-design-system.md`
   §2). Every Nebula CSS task below respects this; if a task's diff would touch a `.t-<tier>` rule,
   that's a bug in the task, not a valid implementation choice.
 - Nebula glow (`--nebula-glow`/`--nebula-glow-strong`) fires only during an existing `success`-tier
   motion event (`.streak-pulse`, `useCelebrate`'s rank-up beat) and never as a resting/ambient state
-  (`nebula-design-framework.md` §5). A plausibility-discounted session must never reach glow/ring code
+  (`nebula-design-system.md` §5). A plausibility-discounted session must never reach glow/ring code
   — this is structural (the ring only mounts inside the rank-up beat's own branch), not a runtime flag.
 - Every text/surface color addition (Phase 3's `:root[data-theme="light"]` block especially) must be
   checked for ≥4.5:1 contrast (body text) / ≥3:1 (large text, UI components) against the surface it
@@ -356,7 +358,7 @@ export const usePrStore = defineStore("prs", {
 ```vue
 <!-- packages/client/src/pages/RecordsPage.vue -->
 <script setup lang="ts">
-// Personal Records ledger (workplan-v1 §2 / nebula-design-layout.md §3). Reads `prs`, a table the
+// Personal Records ledger (workplan-v1 §2 / nebula-design-components.md §3). Reads `prs`, a table the
 // server already fully populates on every workout finish and, until this page, never displayed.
 // Honest empty state, no locked/teaser treatment (engagement-audit-v5.md §1.2's boundary).
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
@@ -532,10 +534,10 @@ Add immediately after the existing `--pl-red`/`--pl-blue`/`--pl-yellow`/`--pl-gr
 the `--r-sm` spacing tokens begin), inside the existing `:root { ... }`:
 
 ```css
-  /* Nebula — the app's brand-identity gradient (nebula-design-framework.md §1). Chrome, CTAs,
+  /* Nebula — the app's brand-identity gradient (nebula-design-system.md §1). Chrome, CTAs,
      streak/level accents, focus states ONLY — never the 9-tier .badge/.t-<tier> system above,
      which answers a different question (which of 9 tiers) than Nebula does (is this interactive
-     or just-earned). See audit/nebula-design-philosophy.md §2 for the full reasoning. */
+     or just-earned). See audit/nebula-design-system.md §2 for the full reasoning. */
   --nebula-1: #2f9fe0;
   --nebula-m: #7c5cff;
   --nebula-2: #d63aff;
@@ -552,7 +554,7 @@ the `--r-sm` spacing tokens begin), inside the existing `:root { ... }`:
 Add immediately after the closing `}` of the dark `:root { ... }` block:
 
 ```css
-/* Light theme (nebula-design-framework.md §2). Applied by themeStore setting
+/* Light theme (nebula-design-system.md §2). Applied by themeStore setting
    document.documentElement.dataset.theme = "light" before first paint. Liftr ships dark-first —
    this is a user setting (Profile), not inferred from OS preference; see the framework doc §2.1
    for why. Every existing color-bearing token is re-specified here, not just the new ones, so
@@ -579,7 +581,7 @@ Add immediately after the closing `}` of the dark `:root { ... }` block:
 
 Run: `grep -n "prefers-color-scheme" packages/client/src/styles/*.css`
 Expected: no matches (confirms this plan deliberately doesn't add an OS-preference media query, per
-`nebula-design-framework.md` §2.1's reasoning — theme is a user setting, applied via `data-theme`).
+`nebula-design-system.md` §2.1's reasoning — theme is a user setting, applied via `data-theme`).
 
 - [ ] **Step 4: Typecheck (CSS has no typecheck, but confirm the client build still compiles)**
 
@@ -612,7 +614,7 @@ git commit -m "feat(client): add Nebula gradient tokens and light-mode palette"
 
 ```ts
 // packages/client/src/stores/themeStore.ts
-/** Theme preference (nebula-design-framework.md §2.2), applied via <html data-theme="...">.
+/** Theme preference (nebula-design-system.md §2.2), applied via <html data-theme="...">.
  *  Purely a client-side rendering preference — not synced to the server, same reasoning as
  *  xpStore.ts's showXp flag: this needs to be readable before the app has even authenticated. */
 import { defineStore } from "pinia";
@@ -726,7 +728,7 @@ to:
 
 Leave every other property in the rule (`border-radius`, `min-height`, `transition`, the
 `:active`/`:disabled`/`:hover` blocks below it) untouched — this is a fill/ink swap only, per
-`nebula-design-patterns.md` §3.
+`nebula-design-components.md` §3.
 
 - [ ] **Step 2: Contrast-check the new ink against the gradient's darkest stop**
 
@@ -734,7 +736,7 @@ Leave every other property in the rule (`border-radius`, `min-height`, `transiti
 contrast-risk stop is actually the endpoints, not the middle) — verify with a contrast calculator
 (e.g. WebAIM) that `#1a0f2e` on `#2f9fe0` clears 4.5:1. If it doesn't, darken `--nebula-1` slightly
 (not the ink — the ink token is reused elsewhere) until it does, and update
-`nebula-design-framework.md` §1.1 to match.
+`nebula-design-system.md` §1.1 to match.
 
 - [ ] **Step 3: Manual verification**
 
@@ -842,7 +844,7 @@ Run: `grep -n "tier-accent" packages/client/src/App.vue`
 
 Update its fallback chain from `var(--tier-accent, var(--blue-hi))` (or whatever the exact current
 fallback is) to `var(--tier-accent, var(--nebula-1))` — read the exact surrounding rule first
-(`nebula-design-layout.md` §0 describes the intent: nav chrome outside any tier context falls back
+(`nebula-design-components.md` §0 describes the intent: nav chrome outside any tier context falls back
 to Nebula, not plain blue).
 
 - [ ] **Step 3: Manual verification**
@@ -905,7 +907,7 @@ Constraints).
 
 Read the surrounding component logic for the conditional branch that renders a discounted-session
 vs. a rank-up beat (per `lens-2` §5's existing three-way split, referenced in
-`nebula-design-layout.md` §3). Confirm `.badge-ring` only appears inside the rank-up branch's own
+`nebula-design-components.md` §3). Confirm `.badge-ring` only appears inside the rank-up branch's own
 template block, not behind a boolean prop/class toggle that a discounted session could also satisfy.
 If the current component structure makes this ambiguous, restructure the `v-if`/`v-else-if` chain so
 the ring is physically absent from the DOM (not just visually hidden) in every non-rank-up branch.
@@ -982,7 +984,7 @@ phase is paint on an already-built screen, not new structure.
 Add immediately after the existing `.panel-reward::after` rule in `tokens.css`:
 
 ```css
-/* A PR-ledger row that isn't tier-anchored (nebula-design-patterns.md §5) — same fallback
+/* A PR-ledger row that isn't tier-anchored (nebula-design-components.md §5) — same fallback
    pattern as .rankbar's --b2/--b3 fallback above, falling back to Nebula instead of blue when
    no tier context exists. */
 .panel-reward.panel-reward--nebula {
@@ -1304,7 +1306,7 @@ For each of Overview, Train, Ranks, Records, Plan/Wizard, Profile, Runs: confirm
 `.btn-primary` per screen carries the Nebula gradient, and every other Nebula appearance
 (HUD dot, streak glow, badge ring, weekday-strip dot, PR reward treatment) is either static/small
 (border accents, dots) or strictly transient (tied to `.streak-pulse`/the rank-up beat), per
-`nebula-design-layout.md` §7.
+`nebula-design-components.md` §7.
 
 - [ ] **Step 2: Full contrast re-audit, both themes**
 

@@ -1,5 +1,7 @@
 # Foundation Primitives Implementation Plan
 
+**STATUS: SHIPPED** (primitives exist and are correctly built; independently confirmed live on 2026-09-04, `audit/verify/agent-6.md`, `audit/verify/round2-agent-1.md`). **Adoption caveat:** `ThumbZoneAction` and `DensityScope`/`useDensityMode` — two of the primitives this plan built — have **zero live consumers anywhere in the app** (confirmed via DOM query across all 6 major screens in round 2). This is not a failure of this plan (its scope was building the primitive, not adopting it screen-by-screen), but nothing should assume these are in active use. `TruncatingLabel` has exactly one real consumer (`ExerciseRow.vue`) and is NOT applied on `RanksPage.vue` or `WorkoutPage.vue`'s active-exercise heading, both of which still exhibit the mid-word text-break bug this primitive was built to eliminate "at the primitive level so it cannot recur." See `audit/workplan-v1.md` for this tracked as an open adoption gap.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the remaining, genuinely-open gaps in Liftr's design-token/nav-shell/layout-primitive/motion-primitive foundation so Workstreams A–E can build every later screen on a shared, load-bearing set of primitives without re-litigating touch-target, truncation, thumb-zone, density, or haptic-tier decisions.
@@ -8,7 +10,7 @@
 
 **Tech Stack:** Vue 3 `<script setup lang="ts">` SFCs, plain CSS custom properties (no animation/CSS-in-JS library — this is an offline-first PWA, bundle weight matters), Pinia (unrelated to this plan directly), `@capacitor/haptics` (already wired), vue-tsc for typechecking.
 
-**Spec:** `audit/plan-c-new-ui-rebuild.md` §3 Phase 0, `audit/nebula-design-framework.md`, `docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` §3.0
+**Spec:** `audit/plan-c-new-ui-rebuild.md` §3 Phase 0, `audit/nebula-design-system.md`, `docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` §3.0
 
 ## Global Constraints
 
