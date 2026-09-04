@@ -123,7 +123,7 @@ section — it would be a scope change, not a security fix.
 
 ## 3. Data model
 
-17 tables (`packages/db/src/schema.ts`), grouped by concern:
+18 tables (`packages/db/src/schema.ts`), grouped by concern:
 
 **Catalog:** `muscles`, `exercises` (with `movementPattern`, `isBodyweight`,
 `bodyweightLeverage` for load-ratio math, `requiredEquipment` JSON, wger `sourceAttribution`),
@@ -153,7 +153,8 @@ explicitly in the schema's header comment as a hard rule).
 
 **Motivation/settings:** `streaks` (date+kind unique index, a `protectionUsed` flag so a
 protected miss is distinguishable from a real gap), `settings` (JSON-encoded key/value —
-profile, owned equipment, etc. live here rather than as dedicated columns).
+profile, owned equipment, etc. live here rather than as dedicated columns), `bodyweight_logs`
+(timestamped bodyweight entries backing the EMA trend line on Profile — see §5).
 
 **Every derived/cache table must be reconstructible from raw data via `pnpm recompute`.**
 This is a standing invariant, not a suggestion — if a change makes `ranks`, `prs`, or streak
@@ -245,8 +246,13 @@ problems a single-user app doesn't have.
 ## 6. Testing, CI, and dev workflow
 
 - **Tests:** Vitest, run via `pnpm test` from the repo root (executes across every package
-  with a `test` script). As of this audit: 19 test files, 154 tests, all in `@liftr/shared`
-  and `@liftr/server` (pure math + service-layer logic — no client component tests exist).
+  with a `test` script). At this audit's original writing (2026-08-31): 19 test files, 154
+  tests, all in `@liftr/shared` and `@liftr/server`, no client tests. That snapshot is stale —
+  as of 2026-09-04 (confirmed by independently re-running `pnpm test` in two separate
+  verification passes, `audit/verify/agent-2.md` and `audit/verify/round2-*.md`), the suite is
+  **260 tests across 28 files**, and `packages/client/src/stores/activeWorkoutStore.spec.ts`
+  now exists — the "no client tests" claim no longer holds even at the store-test level (no
+  component-level Vue tests exist yet, that part is still accurate).
 - **Typecheck:** `pnpm typecheck` (root) runs `tsc`/`vue-tsc --noEmit` across all packages;
   each package also has its own `run typecheck` script for scoped checks.
 - **Lint:** ESLint 9 flat config (`eslint.config.js`) covering the whole workspace including

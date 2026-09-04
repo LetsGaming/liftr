@@ -1,5 +1,7 @@
 # Workstream C: Plan/Routines Implementation Plan
 
+**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 for every task except one — PathChooser, fast path, review glance-checks, equipment-substitution copy, and drag-to-reorder were all confirmed via real interaction (drag gestures, form submissions), not just static reading (`audit/verify/agent-8.md`, `audit/verify/round2-agent-4.md`). **Correction — Tasks 8-9 (custom exercise creation) are PARTIALLY REGRESSED, not done:** live testing found that creating a custom exercise with an umlaut name (e.g. "Überkopfdrücken Test") saves successfully with correct slug transliteration (the bug this task set out to fix), but the exercise then **displays the raw slug as its name everywhere** — list tile, detail sheet, and the `GET /api/exercises` response, which has no display-name field at all, only `slug`/`nameKey`. This is a worse user-facing bug than the one fixed (every custom exercise loses its human-readable name, not just ones with umlauts) and was invisible to this task's original test-only verification (`audit/verify/round2-agent-4.md`). Needs a follow-up fix — tracked in `audit/workplan-v1.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the real remaining gaps in Liftr's "planning-desk" surfaces (routine list, routine

@@ -1,5 +1,7 @@
 # Full Rebuild Orchestration Plan
 
+**STATUS: ALL WORKSTREAMS SHIPPED — historical coordination record.** Written when Workstreams A-E and Foundation were still future work; all are now independently confirmed shipped and, for most, live-tested (`audit/verify/agent-6.md`, `agent-7.md`, `agent-8.md`, and the `round2-*.md` live-browser reports). Nothing in this document is an open dependency anymore — it's kept for the record of how the parallel-workstream split and file-boundary rules were reasoned about, not as an active tracker.
+
 **Not an implementation plan itself** — this is the coordination layer above six workstream
 implementation plans (listed in §3), each written separately so they can be authored and executed
 independently. Read this first to understand sequencing and parallel-safety; read the workstream
@@ -27,10 +29,11 @@ no merge risk between them.
 
 - `audit/plan-c-new-ui-rebuild.md` — the six-phase structure, evidence, complexity ratings, and
   migration strategy this orchestration plan sequences. Its §2 (design direction) is superseded by
-  `audit/nebula-design-philosophy.md` et al. (already implemented); §1/§3/§4/§5/§6 stand as written.
-- `audit/nebula-design-philosophy.md` / `-framework.md` / `-patterns.md` / `-layout.md` / `-plan.md`
-  — the visual system every workstream below builds inside. Already implemented at the token/chrome
-  level; each workstream's job is to apply it to its screens, not re-derive it.
+  `audit/nebula-design-system.md` et al. (already implemented); §1/§3/§4/§5/§6 stand as written.
+- `audit/nebula-design-system.md` / `audit/nebula-design-components.md` / `audit/nebula-design-plan.md`
+  — the visual system every workstream below builds inside (consolidated 2026-09-04 from an earlier
+  five-file set of the same name-family). Already implemented at the token/chrome level; each
+  workstream's job is to apply it to its screens, not re-derive it.
 - `audit/workplan-v1.md` — §0's "Underlying mechanics — also open" note (streak/XP framing,
   narrower than "everything") and item 10 in the consolidated open questions ("Streak/XP mechanics
   framing... still open, new this update's cross-check surfaced it as unresolved by the Nebula

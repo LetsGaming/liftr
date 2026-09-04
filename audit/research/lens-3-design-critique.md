@@ -1,5 +1,14 @@
 # Lens 3 — Design Critique (Surface-Only Review)
 
+**Status: historical input research — superseded by ratified decisions.** Findings here (notably
+the exercise-name text-wrap bug and the duplicate top-HUD/finish-screen XP display) fed directly
+into fixes now verified shipped (`audit/verify/agent-1.md` §1.4/§1.5) and into
+`audit/nebula-design-system.md`/`audit/finished/plan-c-new-ui-rebuild.md`, which cite this document
+by name. Kept intact, unedited, so those citations resolve. Not an open work item — but see
+`audit/verify/round2-agent-1.md` and `audit/nebula-design-components.md` §2 for where the
+text-truncation fix this document originally flagged is still incompletely adopted across screens
+(a live/current finding, not something this historical document itself needs updating for).
+
 Reviewer stance: senior product designer with zero repository access, working exclusively
 from the running build in a browser and the two supplied share-card images. No source
 code, configuration, or prior audit documents were read to produce this critique.

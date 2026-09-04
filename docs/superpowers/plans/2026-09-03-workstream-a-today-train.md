@@ -1,5 +1,7 @@
 # Workstream A: Today/Train — Implementation Plan
 
+**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 — every task in this plan (RPE/notes capture, RestTimer 3-state, mobile exercise rail, sync indicator, skip-confirm-tap decision, stale-session nudge, set-logged motion, XP chip) was independently confirmed via real clicks/drags in the running app, not just static code reading (`audit/verify/agent-7.md`, `audit/verify/round2-agent-1.md`/`-3.md`). No corrections needed — this workstream held up completely.
+
 ## Goal
 
 Rebuild Liftr's highest-frequency surface — the Today (home) screen and the Active Workout
@@ -9,7 +11,7 @@ already-implemented Nebula visual layer, closing the RPE/notes/PR-adjacent gaps 
 posture that makes this loop trustworthy mid-workout.
 
 This is **functional/structural work on an existing visual skin**, not a redesign. Nebula's
-color/gradient/glow rules for this screen are already shipped (`audit/nebula-design-layout.md`
+color/gradient/glow rules for this screen are already shipped (`audit/nebula-design-components.md`
 §0-§2) — the set-kind picker, rest-timer ring, and log-set button already carry their Nebula
 treatment. Nothing in this plan touches `--nebula-*` tokens, adds glow to the log-set button, or
 otherwise revisits the visual layer; every task below is either new UI (RPE, notes, jump rail,
@@ -47,7 +49,7 @@ components/stores before writing new tests, match existing patterns).
   exists → worth surfacing), not a demonstrated engagement gap. It is Plan A's own "most
   speculative phase." Ship it as a dismissible, low-cost, easily-reversible experiment; zero
   adoption is a valid outcome, not a phase failure.
-- `audit/nebula-design-layout.md` §0-§2 (Nebula's already-implemented visual layer for nav/Today/
+- `audit/nebula-design-components.md` §0-§2 (Nebula's already-implemented visual layer for nav/Today/
   Train — build functional changes on top of it, do not redo or revisit it).
 
 ## Global Constraints
@@ -463,7 +465,7 @@ of the same number the server will independently add to the real total; never au
 `triggerXpChip(amount)` is called in `logSet()` fire-and-forget after the set is already logged
 (the log already happened via `store.logCurrentSet()` before the chip fires), and nothing reads the
 chip's state to gate any button. Nebula's layout doc additionally specifies the chip's numeral
-color migrates to `--nebula-ink` (solid) — confirmed already true by `nebula-design-layout.md` §2's
+color migrates to `--nebula-ink` (solid) — confirmed already true by `nebula-design-components.md` §2's
 own text ("already implemented"), not re-verified against live CSS by this plan (out of scope per
 this workstream's "don't redo the visual layer" framing) — spot-check only if Tasks 1-11's edits
 touch the `.xp-chip` CSS block, which they should not.

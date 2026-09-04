@@ -1,5 +1,11 @@
 # Liftr — A UI/UX System Designed Blind, From the Data Model Up
 
+**Status: historical input research — superseded by ratified decisions.** Findings here fed
+directly into `audit/nebula-design-system.md` and `audit/finished/plan-c-new-ui-rebuild.md` (both
+cite specific rules/sections of this document by name as their evidence trail, e.g. "lens-2 §4 rule
+5"). Kept intact, unedited, so those citations resolve — do not delete without first updating every
+citing document. Not an open work item.
+
 ## 1. Disclosure Statement
 
 I never viewed Liftr's existing interface. I did not open any `.vue` file, any CSS or design-token

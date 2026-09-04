@@ -8,9 +8,9 @@ call, not a standards violation." This is exploration, not a spec, and nothing h
 Grounded in: `packages/client/src/lib/shareCard.ts` (the actual canvas routine — note it lives in
 `lib/`, not `services/`), `packages/shared/src/share/layout.ts` (`WorkoutCardModel`, the data the
 card is allowed to show), `packages/client/src/styles/tokens.css` (the shipped Nebula tokens and the
-9-tier `.badge` system), and the five Nebula documents (`nebula-design-philosophy.md`,
-`-framework.md`, `-patterns.md`, `-layout.md`, `-plan.md`). Where a variation names a color, it
-either cites a real token or is flagged as a deliberate new value.
+9-tier `.badge` system), and the Nebula ground-truth documents (`nebula-design-system.md`,
+`nebula-design-components.md`, `nebula-design-plan.md`). Where a variation names a color, it either
+cites a real token or is flagged as a deliberate new value.
 
 ## What the card draws today (the fixed content contract)
 
@@ -64,7 +64,7 @@ near-identical `--nebula-m`.
 geometry. Only the wordmark fill, the two background lobes, and two of four stat accents change.
 
 **Tier badge.** Completely untouched — full layered metal medal, tier halo, tier glyph, caption in
-`--text`/`--dim`. Nebula appears nowhere near it, which is exactly `nebula-design-philosophy.md` §2's
+`--text`/`--dim`. Nebula appears nowhere near it, which is exactly `nebula-design-system.md` §2's
 division of labor: the gradient answers "is this Liftr / was this earned," the medal answers "which
 of nine tiers."
 
@@ -135,7 +135,7 @@ dark-mode-leaked when someone posts it to a white-background story.
 
 **Idea.** The most restrained variation: almost no color at all, with the entire chromatic budget
 spent on exactly two things — the medal and one accent number. It's the share-card expression of
-`nebula-design-layout.md` §7's "exactly one gradient surface per screen" rule.
+`nebula-design-components.md` §7's "exactly one gradient surface per screen" rule.
 
 **Color.** Flat `--bg` (#0a0c14) background, no gradient, no glow lobe. All four stat cards become
 `--surface` (#161c2d) with a `--line` hairline and values in `--text`; only the stat that actually
@@ -241,7 +241,7 @@ Muscle silhouettes render as outline-only (stroke, no fill) with primaries in `-
 
 **Tier badge.** The most radical badge treatment here: the medal renders at 168px as today, but with
 a thin `--nebula-grad` hairline hexagon drawn concentrically around it at +14% inset — the canvas
-analogue of `nebula-design-patterns.md` §2's Nebula ring. Tier color is carried entirely by the
+analogue of `nebula-design-components.md` §2's Nebula ring. Tier color is carried entirely by the
 medal's own face; nothing else on the card shifts by tier, which keeps all nine cards
 system-consistent at the cost of the collectability variation 6 buys.
 
@@ -283,7 +283,7 @@ Liftoff-style references. Also the most implementation-expensive after variation
 ## 9. Honest Card (plausibility-aware)
 
 **Idea.** The only variation that treats the discounted-session case as a first-class visual state
-rather than an omission. `nebula-design-philosophy.md` §3 and `-framework.md` §5 make it a hard rule
+rather than an omission. `nebula-design-system.md` §3 and `nebula-design-system.md` §5 make it a hard rule
 that a plausibility-discounted session never receives the earned treatment — but that rule currently
 stops at the app boundary. A shared image is exactly where a discounted session is most likely to be
 mistaken for a genuine one, because the viewer has none of the in-app context. This variation extends
@@ -378,7 +378,7 @@ the DOM.
 color by tier; variations 1, 7, and 10 keep the card constant and let only the medal carry tier. That
 is the real fork in this exploration, and it maps onto a product question rather than a design one:
 is the share card a *collectible that should look different every rank* (6/2) or a *consistent brand
-frame the medal sits inside* (1/7/10)? `nebula-design-philosophy.md` §2's division of labor argues
+frame the medal sits inside* (1/7/10)? `nebula-design-system.md` §2's division of labor argues
 for the latter; collectability argues for the former.
 
 **A note on the hardcoded palette.** Whatever is chosen, `shareCard.ts`'s header comment already

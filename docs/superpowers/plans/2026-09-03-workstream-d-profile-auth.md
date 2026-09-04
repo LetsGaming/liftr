@@ -1,5 +1,7 @@
 # Workstream D: Profile & Auth Implementation Plan
 
+**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 — every task (onboarding staging/skippability, AuthGate 401 flow, CSV/ZIP export, BodyweightTrend, bodyweight empty-state copy fix) was independently confirmed live (`audit/verify/agent-7.md`, `audit/verify/round2-agent-1.md`/`-2.md`). No corrections needed.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close out Plan C's Phase 4 (Profile, Data & Auth) scope by verifying each sub-area against
