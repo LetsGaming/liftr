@@ -1,5 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { and, desc, eq, isNotNull, ne } from "drizzle-orm";
+import { exerciseMuscles, exercises, muscles, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 
 export function findWorkoutById(db: LiftrDb, id: string) {
   return db.query.workouts.findFirst({ where: eq(workouts.id, id) });
@@ -65,7 +65,14 @@ export async function insertWorkoutExercise(db: LiftrDb, values: Required<NewWor
 export function patchWorkout(
   db: LiftrDb,
   id: string,
-  patch: { endedAt?: Date; pausedSeconds?: number; notes?: string | null; plausibilityMultiplier?: number },
+  patch: {
+    endedAt?: Date;
+    pausedSeconds?: number;
+    notes?: string | null;
+    plausibilityMultiplier?: number;
+    consistencyBonusXp?: number;
+    varietyBonusXp?: number;
+  },
 ) {
   return db.update(workouts).set(patch).where(eq(workouts.id, id));
 }
@@ -82,4 +89,40 @@ export function findTouchedExerciseIds(db: LiftrDb, workoutId: string) {
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
     .where(and(eq(workoutExercises.workoutId, workoutId), eq(sets.isWarmup, false)));
+}
+
+/** The single immediately-preceding *finished* workout (`endedAt` set), used by the variety bonus
+ *  to compare "this session's muscles" against "the previous session's muscles"
+ *  (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md). Ordered by `endedAt` desc,
+ *  tie-broken by `startedAt` desc — deliberately NOT `startedAt` desc alone (that ordering is used
+ *  elsewhere for a chronological feed that legitimately includes in-progress workouts; here we
+ *  specifically want the last workout that was actually *completed*).
+ *
+ *  Excludes `workoutId` itself — mandatory, not defensive: by the time this runs during
+ *  finish-workout processing, the current workout's own `endedAt` has typically already been set,
+ *  so without this exclusion "previous" could resolve to the current workout. */
+export async function findPreviousFinishedWorkout(db: LiftrDb, workoutId: string) {
+  const [row] = await db
+    .select()
+    .from(workouts)
+    .where(and(isNotNull(workouts.endedAt), ne(workouts.id, workoutId)))
+    .orderBy(desc(workouts.endedAt), desc(workouts.startedAt))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Distinct primary-role muscle slugs trained in this workout — the variety bonus's "this
+ *  session's muscles" side of the comparison. Primary-only matches this codebase's existing
+ *  convention (see routineSuggestionRepository.ts's findPrimaryExerciseMusclesForMuscles) and the
+ *  design spec's own resolution of its "primary vs. primary+secondary" open question: primary-only
+ *  is the more conservative, less-gameable signal. */
+export function findPrimaryMuscleSlugsForWorkout(db: LiftrDb, workoutId: string) {
+  return db
+    .selectDistinct({ muscleSlug: muscles.slug })
+    .from(sets)
+    .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
+    .innerJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
+    .innerJoin(exerciseMuscles, eq(exerciseMuscles.exerciseId, exercises.id))
+    .innerJoin(muscles, eq(exerciseMuscles.muscleId, muscles.id))
+    .where(and(eq(workoutExercises.workoutId, workoutId), eq(exerciseMuscles.role, "primary")));
 }

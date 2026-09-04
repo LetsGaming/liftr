@@ -150,6 +150,15 @@ export const workouts = sqliteTable("workouts", {
    *  application code treats a null/missing value as 1 (fully plausible) rather than using a SQL
    *  default, since a workout with no endedAt has no plausibility verdict yet either. */
   plausibilityMultiplier: real("plausibility_multiplier"),
+  /** Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md)
+   *  — the session's consistency and variety XP bonuses, computed once at finish-workout time
+   *  (same nullable/frozen-at-finish convention as plausibilityMultiplier above, since both depend
+   *  on that session's temporal context — the streak-as-of-that-date, the previous session's
+   *  muscle set — which is awkward/expensive to re-derive on every read). Null until the workout
+   *  finishes; application code treats null as 0 when summing into a user's total XP. No backfill
+   *  for pre-existing rows — pre-v1, no production data to preserve. */
+  consistencyBonusXp: real("consistency_bonus_xp"),
+  varietyBonusXp: real("variety_bonus_xp"),
   notes: text("notes"),
   clientId: text("client_id").notNull().unique(), // offline-sync idempotency key
 });
