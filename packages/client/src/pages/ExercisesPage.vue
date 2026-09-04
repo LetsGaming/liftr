@@ -10,14 +10,29 @@
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
+import AddCustomExerciseForm from "../components/exercise/AddCustomExerciseForm.vue";
 import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseList from "../components/exercise/ExerciseList.vue";
+import SheetModal from "../components/ui/SheetModal.vue";
 import { useCatalogStore, type CatalogExercise } from "../stores/catalogStore";
 
 const catalog = useCatalogStore();
 onMounted(() => catalog.load());
 
 const openExercise = ref<CatalogExercise | null>(null);
+
+// Add-custom-exercise sheet (Plan C §3 Phase 3, Task 9). Per SheetModal.vue's own header
+// comment ("every close path here and in every caller was just emitting close/flipping the
+// parent's own v-if straight away... yanking the element out from under it via Vue unmount
+// races that teardown and null-derefs"), the form's created/cancel actions call dismiss() via
+// this ref rather than flipping `showAddForm` directly — only SheetModal's own @close (fired
+// after Ionic's real dismiss teardown finishes) unmounts the sheet. Mirrors
+// RoutineWizard.vue's sheetRef/dismiss() pattern.
+const showAddForm = ref(false);
+const addFormSheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
+function onExerciseCreated() {
+  addFormSheetRef.value?.dismiss();
+}
 </script>
 
 <template>
@@ -30,9 +45,14 @@ const openExercise = ref<CatalogExercise | null>(null);
     <IonContent class="ion-padding">
       <div class="ex-page">
         <ExerciseList mode="browse" @open="openExercise = $event" />
+        <button class="add-custom-btn" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
       </div>
 
       <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
+
+      <SheetModal v-if="showAddForm" ref="addFormSheetRef" title="Eigene Übung hinzufügen" @close="showAddForm = false">
+        <AddCustomExerciseForm @created="onExerciseCreated" @cancel="addFormSheetRef?.dismiss()" />
+      </SheetModal>
     </IonContent>
   </IonPage>
 </template>
@@ -45,5 +65,17 @@ const openExercise = ref<CatalogExercise | null>(null);
      coherent). Matches the grid-content tier it actually belongs to. */
   max-width: var(--content-w-wide);
   margin: 0 auto;
+}
+.add-custom-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--sp4);
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1px dashed var(--line);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 13.5px;
+  font-weight: 600;
 }
 </style>
