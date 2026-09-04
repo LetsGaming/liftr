@@ -10,6 +10,7 @@
  */
 import ExerciseIcon from "./ExerciseIcon.vue";
 import ExerciseThumb from "./ExerciseThumb.vue";
+import TruncatingLabel from "../ui/TruncatingLabel.vue";
 
 withDefaults(
   defineProps<{ slug: string; equipment: string; name: string; visual?: "thumb" | "icon"; size?: number }>(),
@@ -22,7 +23,7 @@ withDefaults(
     <ExerciseThumb v-if="visual === 'thumb'" :slug="slug" :equipment="equipment" :size="size" />
     <ExerciseIcon v-else :equipment="equipment" :size="size" />
     <div class="ex-row-meta">
-      <b>{{ name }}</b>
+      <TruncatingLabel as="b" class="ex-name">{{ name }}</TruncatingLabel>
       <slot name="meta" />
     </div>
     <slot name="trailing" />
@@ -44,7 +45,11 @@ withDefaults(
   flex-direction: column;
   gap: 2px;
 }
-.ex-row-meta b {
+/* TruncatingLabel (Foundation primitive, packages/client/src/components/ui/TruncatingLabel.vue)
+   supplies the flex + min-width:0 + ellipsis truncation contract itself — .ex-row-meta already
+   provides the flex/grid ancestor (flex: 1; min-width: 0 above) that primitive requires. This
+   class only carries over the font-size/color that previously lived on `.ex-row-meta b`. */
+.ex-name {
   font-size: 13.5px;
   color: var(--text);
 }
