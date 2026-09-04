@@ -1,9 +1,22 @@
-import { bestLoadRatio, computeWorkoutPlausibility, MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, type PlausibilityInput } from "@liftr/shared";
+import {
+  bestLoadRatio,
+  computeConsistencyBonus,
+  computeStreak,
+  computeVarietyBonus,
+  computeWorkoutPlausibility,
+  MAX_PLAUSIBLE_REPS,
+  MAX_PLAUSIBLE_WEIGHT_KG,
+  type PlausibilityInput,
+} from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { findSetByClientId, insertSet } from "../repositories/setRepository.js";
 import { findExerciseById, findRankByExerciseId, findStandardsForExercise } from "../repositories/rankRepository.js";
-import { creditStreak } from "../repositories/streakRepository.js";
+import { creditStreak, findAllStreakDates } from "../repositories/streakRepository.js";
+import { readJsonSetting } from "../repositories/settingsRepository.js";
+import type { Profile } from "../routes/settings.js";
 import {
+  findPreviousFinishedWorkout,
+  findPrimaryMuscleSlugsForWorkout,
   findTouchedExerciseIds,
   findWorkoutById,
   findWorkoutWithExercisesAndSets,
@@ -87,6 +100,19 @@ export interface SyncResult {
    *  end-of-workout moment. One verdict per exercise that had at least one non-warmup set
    *  logged in this workout. */
   ranks?: RankVerdict[];
+  /** Set only on finish_workout results — the streak/XP mechanics redesign
+   *  (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md, §2/§3): the two session-level
+   *  XP bonuses frozen onto this workout's row, plus which muscles actually earned the variety bonus
+   *  so the client's Finish Sequence can name them (e.g. "Schultern zum ersten Mal seit letztem
+   *  Training") instead of showing a bare count. */
+  consistencyBonusXp?: number;
+  varietyBonusXp?: number;
+  /** Primary-role muscle slugs trained this session that were NOT trained in the immediately-
+   *  preceding finished session (or, for a user's first-ever finished session, all of this
+   *  session's own primary muscles). Length always matches the muscle count that fed
+   *  `computeVarietyBonus` before the per-session cap — the cap only bounds the XP magnitude, not
+   *  this list, so the client can still name every newly-trained muscle even past the cap. */
+  newMuscleSlugs?: string[];
 }
 
 async function applyStartWorkout(db: LiftrDb, item: StartWorkoutItem): Promise<SyncResult> {
@@ -153,6 +179,36 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   // "did you train today", not when the sync happened to reach the server.
   const dateStr = item.payload.endedAt.toISOString().slice(0, 10);
   await creditStreak(db, dateStr, "workout");
+
+  // Consistency bonus (streak/XP mechanics redesign, spec §2) — `creditStreak` above already
+  // recorded today's date, so `computeStreak` here already reflects this session: do NOT add +1
+  // or credit again. Uses `item.payload.endedAt` (not `new Date()`, unlike the live GET /api/streak
+  // route) as "now" so a delayed/replayed sync flush computes the same streak the user actually
+  // earned on the day they finished, not whatever day the batch happens to reach the server.
+  const [streakDates, profile] = await Promise.all([findAllStreakDates(db), readJsonSetting<Profile>(db, "profile")]);
+  const streakDays = computeStreak(streakDates, item.payload.endedAt, profile?.workoutsPerWeek).streak;
+  const consistencyBonusXp = computeConsistencyBonus(streakDays);
+
+  // Variety bonus (spec §3) — a plain factual diff between this session's own primary-muscle set
+  // and the single immediately-preceding *finished* session's, never a recovery/readiness model.
+  // `findPrimaryMuscleSlugsForWorkout` naturally returns [] for a workout with zero logged sets
+  // (no sets to join against), so the zero-sets edge case falls out of this without a special case:
+  // newMuscleSlugs ends up [] and varietyBonusXp ends up 0.
+  const thisSessionMuscles = await findPrimaryMuscleSlugsForWorkout(db, item.payload.workoutId);
+  const thisSessionSlugs = thisSessionMuscles.map((m) => m.muscleSlug);
+  const previousWorkout = await findPreviousFinishedWorkout(db, item.payload.workoutId);
+  let newMuscleSlugs: string[];
+  if (!previousWorkout) {
+    // First-ever finished session: nothing to compare against, so every muscle trained today
+    // counts as "new" — intentional per the spec (a brand-new user gets the full variety bonus
+    // on day one).
+    newMuscleSlugs = thisSessionSlugs;
+  } else {
+    const previousMuscles = await findPrimaryMuscleSlugsForWorkout(db, previousWorkout.id);
+    const previousSlugSet = new Set(previousMuscles.map((m) => m.muscleSlug));
+    newMuscleSlugs = thisSessionSlugs.filter((slug) => !previousSlugSet.has(slug));
+  }
+  const varietyBonusXp = computeVarietyBonus(newMuscleSlugs.length);
 
   const touched = await findTouchedExerciseIds(db, item.payload.workoutId);
 
@@ -232,8 +288,18 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
       effectiveDurationSeconds,
       exercises: exerciseInputs,
     });
-    await patchWorkout(db, item.payload.workoutId, { plausibilityMultiplier: plausibility.multiplier });
   }
+
+  // Single write for every value this handler computes at finish-time (plausibility multiplier +
+  // the two session-level XP bonuses) — matches the existing `plausibilityMultiplier` precedent of
+  // freezing a value once at finish-time rather than re-deriving it on every read (spec's "Data
+  // model" section). `plausibilityMultiplier` is only set when `workoutWithSets` was found (the
+  // pre-existing guard); the two bonuses are always set, including the zero-sets edge case.
+  await patchWorkout(db, item.payload.workoutId, {
+    ...(workoutWithSets ? { plausibilityMultiplier: plausibility.multiplier } : {}),
+    consistencyBonusXp,
+    varietyBonusXp,
+  });
 
   // Rank/PR recompute now runs once per finished workout, not once per set: every exercise that
   // had a non-warmup set logged in this session gets recomputed exactly once here, and the
@@ -245,7 +311,15 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
     if (result) ranks.push({ exerciseId, ...result, plausibilityReason: plausibility.reason });
   }
 
-  return { clientId: item.clientId, status: "created", serverId: item.payload.workoutId, ranks };
+  return {
+    clientId: item.clientId,
+    status: "created",
+    serverId: item.payload.workoutId,
+    ranks,
+    consistencyBonusXp,
+    varietyBonusXp,
+    newMuscleSlugs,
+  };
 }
 
 async function applyAddExercise(db: LiftrDb, item: AddExerciseItem): Promise<SyncResult> {
