@@ -1,6 +1,14 @@
 <script setup lang="ts">
-/** Desktop-only clickable exercise list with done/active states (plan 1.5, mockup .wk-exlist). */
+/** Clickable exercise list with done/active states (plan 1.5, mockup .wk-exlist).
+ *  Despite this file's former "desktop-only" framing, none of this component's own CSS was ever
+ *  gated behind a viewport media query — WorkoutPage.vue's mobile layout already rendered this
+ *  as a full vertical list (identical markup to desktop), just stacked above the focus column
+ *  with no responsive treatment. `variant="horizontal"` (Task 6) is the actual mobile-parity fix:
+ *  a compact scroll-snap strip so the rail doesn't push the current exercise below the fold on
+ *  narrow viewports. Desktop keeps the default vertical variant unchanged. */
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
+
+withDefaults(defineProps<{ variant?: "vertical" | "horizontal" }>(), { variant: "vertical" });
 
 const store = useActiveWorkoutStore();
 
@@ -14,7 +22,7 @@ function workingReps(ex: ActiveExercise): number | null {
 </script>
 
 <template>
-  <div class="exercise-rail">
+  <div class="exercise-rail" :class="{ horizontal: variant === 'horizontal' }">
     <button
       v-for="(ex, i) in store.exercises"
       :key="ex.workoutExerciseId"
@@ -115,5 +123,41 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item .meta span {
   color: var(--faint);
   font-size: 11.5px;
+}
+
+/* Mobile jump-to-exercise parity (Task 6): same buttons, same store.jumpToExercise(i) handler,
+   same active/done/superset states — only the container's flex-direction and item sizing change,
+   so this reuses the template/logic above rather than duplicating the component. A horizontal
+   scroll-snap strip keeps the rail reachable without the vertical list's full-height cost on
+   narrow viewports (which otherwise pushes the focus column below the fold). */
+.exercise-rail.horizontal {
+  flex-direction: row;
+  gap: var(--sp2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  /* Let the strip bleed to the viewport edge on mobile without clipping the touch targets'
+     focus/active states above/below it. */
+  padding: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.exercise-rail.horizontal .rail-item {
+  flex: none;
+  scroll-snap-align: start;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp2);
+  /* Touch-target floor (WCAG 2.5.5 / Apple HIG 44pt) — same token used across the app's other
+     interactive controls (see tokens.css --touch-target-min). */
+  min-width: 116px;
+  min-height: var(--touch-target-min);
+}
+.exercise-rail.horizontal .rail-item .meta {
+  max-width: 100px;
+}
+.exercise-rail.horizontal .rail-item .meta b,
+.exercise-rail.horizontal .rail-item .meta span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
