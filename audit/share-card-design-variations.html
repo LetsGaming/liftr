@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liftr Share-Card Design Variations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* opt out of Chrome's auto-dark-mode: two of these mockups are light-by-design */
+  color-scheme:dark;
+  --bg:#0a0c14; --surface:#161c2d; --surface-2:#212a42; --surface-3:#2f3a5c;
+  --line:rgba(255,255,255,.14); --text:#eef2fb; --dim:#98a2c0;
+  --blue-hi:#5ba0ff; --fire-hi:#ffa04d; --violet:#8f6dff; --pr:#ffd23f;
+  --nebula-1:#2f9fe0; --nebula-m:#8a6dff; --nebula-2:#d63aff;
+  --nebula-ink:#6b3fd6; --nebula-ink-on-fill:#1a0f2e;
+  --scale:.3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080e;color:#e7ecf7;font-family:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  line-height:1.5;-webkit-font-smoothing:antialiased;padding:40px 28px 96px}
+.page{max-width:1440px;margin:0 auto}
+header.top{border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:26px;margin-bottom:38px}
+header.top h1{font-family:"Unbounded",system-ui,sans-serif;font-weight:800;font-size:clamp(22px,3.2vw,34px);letter-spacing:-.01em}
+header.top p{color:#9aa3bd;max-width:78ch;margin-top:12px;font-size:15px}
+header.top p+p{margin-top:8px}
+header.top code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:6px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(324px,1fr));gap:44px 32px;align-items:start}
+.cell{display:flex;flex-direction:column;gap:14px}
+figcaption .n{font-family:"Unbounded",system-ui,sans-serif;font-size:12px;color:#7d87a3;letter-spacing:.08em;display:block;margin-bottom:4px}
+figcaption b{font-family:"Unbounded",system-ui,sans-serif;font-size:16px;font-weight:700;display:block}
+figcaption p{color:#98a2c0;font-size:13.5px;margin-top:6px}
+.frame{width:calc(1080px * var(--scale));height:calc(1920px * var(--scale));position:relative;
+  border-radius:10px;overflow:hidden;box-shadow:0 18px 40px -18px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.09)}
+
+/* ---------- the card itself, drawn at true 1080x1920 and scaled down ---------- */
+.card{position:absolute;top:0;left:0;width:1080px;height:1920px;transform:scale(var(--scale));
+  transform-origin:top left;overflow:hidden;
+  background:linear-gradient(135deg,#0a0c14,#212a42);
+  color:var(--c-text,#eef2fb);
+  --c-text:#eef2fb; --c-dim:#98a2c0; --c-surface:#212a42; --c-inset:#0a0c14;
+  --c-line:rgba(255,255,255,.14); --c-ico:#2f3a5c;
+  --s1:#8f6dff; --s2:#5ba0ff; --s3:#ffa04d; --s4:#ffd23f;
+  --pill-bg:rgba(6,8,14,.32); --pill-fg:rgba(255,255,255,.94);
+  --wm-color:#5ba0ff; --badge-size:168px; --halo-alpha:.30;
+  --mm-body:#2a3350; --mm-sec:#5f7fd6; --mm-pri:#5ba0ff;
+  --rankup-color:#ffa04d;
+}
+.card::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 82% 8%,rgba(59,140,255,.22),rgba(59,140,255,0) 55%);}
+.inner{position:absolute;inset:64px;display:flex;flex-direction:column;justify-content:space-between}
+
+.wm{font-family:"Unbounded",system-ui,sans-serif;font-weight:800;font-size:30px;line-height:1;
+  letter-spacing:.02em;color:var(--wm-color)}
+.wm-grad{background-image:linear-gradient(120deg,var(--nebula-1),var(--nebula-m),var(--nebula-2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.wm-center{text-align:center}
+.wm .slug{font-family:"Hanken Grotesk",sans-serif;font-weight:700;font-size:18px;letter-spacing:.12em;
+  color:var(--c-dim);margin-left:26px}
+
+.head h2{font-family:"Unbounded",system-ui,sans-serif;font-weight:800;font-size:60px;line-height:64px;
+  letter-spacing:-.01em}
+.head .date{font-size:24px;font-weight:600;color:var(--c-dim);margin-top:14px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.stat{height:176px;border-radius:22px;padding:14px;display:flex;flex-direction:column}
+.stat.s1{background:var(--s1)} .stat.s2{background:var(--s2)}
+.stat.s3{background:var(--s3)} .stat.s4{background:var(--s4)}
+.pill{height:25px;border-radius:999px;background:var(--pill-bg);color:var(--pill-fg);
+  font-size:11px;font-weight:800;letter-spacing:.06em;display:flex;align-items:center;justify-content:center}
+.inset{flex:1;margin-top:10px;border-radius:16px;background:var(--c-inset);display:flex;
+  align-items:center;justify-content:center;border:var(--inset-border,none)}
+.val{font-family:"Unbounded",system-ui,sans-serif;font-weight:800;font-size:30px;color:var(--c-statval,#eef2fb)}
+.val.small{font-size:23px}
+.stats.two{grid-template-columns:repeat(2,1fr)}
+.metaline{margin-top:18px;font-size:22px;font-weight:600;color:var(--c-dim)}
+
+/* badge */
+.badgeblock{text-align:center}
+.badgewrap{width:var(--badge-size);height:var(--badge-size);margin:0 auto;position:relative}
+.badgewrap::before{content:"";position:absolute;left:50%;top:50%;width:320%;height:320%;
+  transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(circle,var(--b3) 0%,transparent 60%);opacity:var(--halo-alpha)}
+.badge{position:relative;width:100%;height:100%;display:grid;place-items:center;
+  clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+  background:
+    linear-gradient(35deg,transparent 28%,rgba(255,255,255,.55) 38% 42%,transparent 52%),
+    linear-gradient(35deg,transparent 62%,rgba(255,255,255,.22) 70% 73%,transparent 80%),
+    var(--face-grad)}
+.badge.matte{background:var(--face-grad)}
+.badge::before{content:"";position:absolute;inset:-9%;clip-path:inherit;z-index:-1;
+  background:linear-gradient(-25deg,var(--b3) 0%,var(--b1) 70%)}
+.badge::after{content:"";position:absolute;inset:-13% -13% -18% -13%;clip-path:inherit;z-index:-2;
+  background:var(--b1)}
+.badge svg{position:relative;width:52%;height:52%;fill:var(--tt);filter:drop-shadow(0 1px 0 rgba(0,0,0,.45))}
+.nring{position:absolute;inset:-14%;width:128%;height:128%;overflow:visible}
+.tiername{font-family:"Unbounded",system-ui,sans-serif;font-weight:800;font-size:26px;margin-top:26px}
+.level{font-size:20px;font-weight:600;color:var(--c-dim);margin-top:10px}
+.rankup{font-size:19px;font-weight:700;color:var(--rankup-color);margin-top:24px}
+.reduced{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim);
+  margin-top:26px}
+.reduced+.tiername{margin-top:10px}
+
+/* muscles */
+.muscles{text-align:center}
+.eyebrow{font-size:20px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c-dim)}
+.figs{display:flex;justify-content:center;gap:28px;margin-top:24px}
+.figs svg{height:300px;width:165.7px}
+
+.divider{height:1px;background:var(--c-line)}
+
+/* exercise grid */
+.exgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 20px}
+.ex{height:118px;border-radius:18px;background:var(--c-surface);border:1px solid var(--c-line);padding:16px}
+.exhead{display:flex;align-items:center;gap:12px}
+.ico{width:34px;height:34px;border-radius:10px;background:var(--c-ico);display:grid;place-items:center;flex:none}
+.db{width:34px;height:34px;stroke:var(--c-dim);stroke-linecap:round}
+.exname{font-size:21px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exdet{margin-top:8px}
+.exdet p{font-size:17px;font-weight:600;color:var(--c-dim);line-height:22px}
+.more{font-size:22px;font-weight:600;color:var(--c-dim);margin-top:14px}
+
+/* ============ 1 · Nebula Halo ============ */
+.v1{--wm-color:transparent;--s1:#8a6dff;--s2:#2f9fe0}
+.v1::before{background:
+  radial-gradient(circle at 82% 8%,rgba(47,159,224,.20),transparent 52%),
+  radial-gradient(circle at 18% 4%,rgba(214,58,255,.16),transparent 42%)}
+
+/* ============ 2 · Medal Poster ============ */
+.v2{background:linear-gradient(180deg,#152449 0%,#0a0c14 45%);--badge-size:260px;--wm-color:#8a6dff;
+  --s1:#212a42;--s2:#212a42;--s3:#212a42;--s4:#212a42;--pill-bg:rgba(6,8,14,.45)}
+.v2::before{display:none}
+.v2 .stat{border:1px solid rgba(143,180,255,.45)}
+.v2 .inset{background:rgba(10,12,20,.55)}
+.v2 .head h2{font-size:40px;line-height:46px}
+.v2 .tiername{font-size:34px}
+.v2 .badgeblock{margin-top:8px}
+
+/* ============ 3 · Glacier Light ============ */
+.v3{background:#f6f4fb;--c-text:#14121c;--c-dim:#635f78;--c-surface:#ffffff;
+  --c-line:rgba(20,16,32,.10);--c-inset:#ffffff;--inset-border:1px solid rgba(20,16,32,.10);
+  --c-statval:#14121c;--c-ico:#ece7f7;--wm-color:#6b3fd6;--halo-alpha:.18;
+  --s1:#e8e3fb;--s2:#dceefa;--s3:#ffeada;--s4:#fff4d2;
+  --pill-bg:rgba(20,16,32,.10);--pill-fg:#14121c;
+  --mm-body:#d9d5e6;--mm-sec:#b9b2cf;--mm-pri:#2f9fe0;--rankup-color:#c2571a}
+.v3::before{background:radial-gradient(circle at 82% 8%,rgba(47,159,224,.10),transparent 55%)}
+
+/* ============ 4 · Rationed Ink ============ */
+.v4{background:#0a0c14;--wm-color:#6b3fd6;--halo-alpha:.20;--rankup-color:#ffd23f;
+  --s1:#161c2d;--s2:#161c2d;--s3:#161c2d;--s4:#ffd23f;--pill-bg:rgba(255,255,255,.08)}
+.v4::before{display:none}
+.v4 .stat{border:1px solid var(--c-line)}
+.v4 .stat.s4{border-color:transparent}
+.v4 .stat.s4 .pill{background:rgba(6,8,14,.32)}
+.v4 .inset{background:rgba(0,0,0,.35)}
+.v4 .stat.s4 .inset{background:#0a0c14}
+.v4 .ex{background:transparent}
+
+/* ============ 5 · Story Native ============ */
+.v5{background:linear-gradient(160deg,#2f9fe0,#8a6dff 46%,#d63aff);--halo-alpha:0;
+  --badge-size:200px;--wm-color:#1a0f2e;--c-surface:rgba(255,255,255,.10);
+  --c-line:rgba(255,255,255,.22);--c-ico:rgba(255,255,255,.16);--c-dim:#d9d3ee}
+.v5::before{background:linear-gradient(180deg,rgba(10,12,20,0) 24%,rgba(10,12,20,.62) 40%,rgba(10,12,20,.86) 100%)}
+.v5 .head{text-align:center}
+.v5 .head h2{font-size:72px;line-height:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:#1a0f2e}
+.v5 .head .date{color:rgba(26,15,46,.72)}
+.v5 .stat{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);height:196px}
+.v5 .pill{background:rgba(255,255,255,.18);color:#fff;font-size:14px}
+.v5 .inset{background:transparent;border:none}
+.v5 .val{font-size:44px}
+.v5 .val.small{font-size:38px}
+.v5 .metaline{text-align:center}
+.v5 .exgrid{gap:14px 20px}
+.v5 .badgeblock{margin-bottom:8px}
+
+/* ============ 6 · Tier Duotone ============ */
+.v6{background:#1c0e23;--wm-color:#eef2fb;--halo-alpha:.20;--rankup-color:#f0dcf0;
+  --c-surface:#2a1d33;--c-line:rgba(200,160,204,.20);--c-ico:#3a2a42;
+  --s1:#785074;--s2:#c8a0cc;--s3:#785074;--s4:#c8a0cc;
+  --mm-body:#3a2a42;--mm-sec:#785074;--mm-pri:#c8a0cc}
+.v6::before{background:radial-gradient(circle at 82% 8%,rgba(200,160,204,.18),transparent 55%)}
+.v6 .stat.s2 .pill,.v6 .stat.s4 .pill{background:rgba(6,8,14,.36)}
+
+/* ============ 7 · Blueprint ============ */
+.v7{background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 48px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1.5px,transparent 1.5px 192px),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0 1.5px,transparent 1.5px 192px),
+    #080a10;
+  --wm-color:#eef2fb;--halo-alpha:0;--c-line:rgba(255,255,255,.16);--rankup-color:#8a6dff;
+  --mm-body:none;--mm-sec:none;--mm-pri:none;--mm-stroke:rgba(255,255,255,.34);
+  --mm-stroke-sec:rgba(255,255,255,.5);--mm-stroke-pri:#2f9fe0;--mm-sw:2}
+.v7::before{display:none}
+.v7 .wm{letter-spacing:.18em}
+.v7 .head h2{font-size:52px;line-height:58px;letter-spacing:.02em}
+.v7 .stats.spec{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.v7 .stat{background:none;border:1.5px solid #2f9fe0;border-radius:0;height:150px;padding:16px;
+  display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start}
+.v7 .stat .lbl{font-size:15px;font-weight:800;letter-spacing:.14em;color:var(--c-dim)}
+.v7 .stat .val{align-self:flex-end;font-variant-numeric:tabular-nums;font-size:32px}
+.v7 .stat .val.small{font-size:24px}
+.v7 .exnum{display:flex;flex-direction:column}
+.v7 .nrow{display:flex;align-items:baseline;gap:20px;padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,.16)}
+.v7 .nrow .num{font-family:"Unbounded",sans-serif;font-weight:700;font-size:19px;color:#8a6dff;width:44px}
+.v7 .nrow .nname{font-size:22px;font-weight:700;flex:1}
+.v7 .nrow .ndet{font-size:18px;font-weight:600;color:var(--c-dim);font-variant-numeric:tabular-nums}
+.v7 .divider{background:#2f9fe0;height:1.5px}
+.v7 .figs svg{height:260px;width:143.6px}
+
+/* ============ 8 · Receipt ============ */
+.v8{background:#f4f1ea;--c-text:#1a1720;--c-dim:#6a6478;--wm-color:#6b3fd6;--halo-alpha:0;
+  --c-line:rgba(26,23,32,.25);--rankup-color:#6b3fd6;
+  --mm-body:#ded8cc;--mm-sec:#bdb4a6;--mm-pri:#6b3fd6}
+.v8::before{display:none}
+.v8 .inner{inset:56px 92px}
+.v8 .rc-top{position:relative;text-align:center;padding-bottom:8px;
+  border-bottom:2px dashed rgba(26,23,32,.25)}
+.v8 .wm{font-size:34px;letter-spacing:.3em}
+.v8 .rc-head{margin-top:22px}
+.v8 .rc-head h2{font-size:46px;line-height:52px}
+.v8 .rc-head .date{font-size:21px;margin-top:8px}
+.v8 .stamp{position:absolute;right:0;top:-6px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.v8 .stamp .badge{width:96px;height:96px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.18))}
+.v8 .stamptext p{font-size:15px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--c-dim);text-align:center}
+.v8 .rrows{display:flex;flex-direction:column;gap:22px}
+.v8 .rrow{display:flex;align-items:baseline;gap:10px;font-size:26px;font-weight:700;
+  letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.v8 .rrow i{flex:1;border-bottom:2px dotted rgba(26,23,32,.35);transform:translateY(-6px)}
+.v8 .exlist{display:flex;flex-direction:column}
+.v8 .li{padding:16px 0;border-bottom:1px dashed rgba(26,23,32,.22)}
+.v8 .li .liname{display:flex;justify-content:space-between;font-size:24px;font-weight:700}
+.v8 .li p{font-size:19px;font-weight:600;color:var(--c-dim);margin-top:4px}
+.v8 .muscles.small .figs svg{height:190px;width:105px}
+.v8 .muscles.small .eyebrow{font-size:16px}
+.v8 .divider{background:rgba(26,23,32,.25)}
+
+/* ============ 9 · Honest Card ============ */
+.v9{--s1:#2f3a5c;--s2:#2f3a5c;--s3:#2f3a5c;--s4:#2f3a5c;--wm-color:#98a2c0;--halo-alpha:0;
+  --pill-bg:rgba(6,8,14,.32);--mm-body:#2a3350;--mm-sec:#4b5878;--mm-pri:#7f8aa8}
+.v9::before{display:none}
+
+/* ============ 10 · Split Field ============ */
+.v10{background:#0a0c14;--wm-color:#1a0f2e;--halo-alpha:.25}
+.v10::before{content:"";position:absolute;left:0;top:0;right:0;height:42%;
+  background:linear-gradient(120deg,#2f9fe0,#8a6dff,#d63aff);
+  border-bottom:3px solid #d63aff}
+.v10 .inner{justify-content:flex-start;gap:0}
+.v10 .zone-top{color:#1a0f2e;display:flex;flex-direction:column;gap:48px;height:742px}
+.v10 .zone-top .date{color:rgba(26,15,46,.72)}
+/* medal sits half over the seam: its lower third crosses onto the dark ground */
+.v10 .badgeblock{position:absolute;left:0;right:0;top:642px}
+.v10 .zone-bottom{flex:1;display:flex;flex-direction:column;justify-content:space-between;
+  padding-top:240px}
+.v10 .figs svg{height:260px;width:143.6px}
+.v10 .figs{margin-top:18px}
+
+/* tier tokens, verbatim from packages/client/src/styles/tokens.css */
+.t-athlete{--b1:#232a38;--b2:#69748a;--b3:#c7d1e4;--tt:#f2f6ff;
+  --face-grad:linear-gradient(155deg,var(--b1) 0%,var(--b1) 32%,var(--b3) 48%,var(--b3) 54%,var(--b1) 68%,var(--b2) 100%)}
+.t-apex{--b1:#152449;--b2:#3b5fd0;--b3:#8fb4ff;--tt:#dbe7ff;
+  --face-grad:linear-gradient(155deg,var(--b1) 0%,var(--b2) 30%,var(--tt) 55%,var(--b3) 75%,var(--tt) 100%)}
+.t-elite{--b1:#2a0f2e;--b2:#785074;--b3:#c8a0cc;--tt:#f0dcf0;
+  --face-grad:linear-gradient(155deg,var(--b1) 0%,var(--b2) 30%,var(--tt) 55%,var(--b3) 75%,var(--tt) 100%)}
+.t-advanced{--b1:#3a2a04;--b2:#a7820f;--b3:#ffd24a;--tt:#fff2c2;
+  --face-grad:linear-gradient(155deg,var(--b1) 0%,var(--b2) 30%,var(--b3) 50%,var(--tt) 65%,var(--b2) 100%)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="fig-front" viewBox="0 0 200 362">
+  <g fill="var(--mm-body)" stroke="var(--mm-stroke,none)" stroke-width="var(--mm-sw,0)">
+   <ellipse cx="100" cy="32" rx="22" ry="26"/>
+   <rect x="88" y="52" width="24" height="18"/>
+   <path d="M62 66 L138 66 L156 88 L148 132 L138 176 L62 176 L52 132 L44 88 Z"/>
+   <path d="M64 174 L136 174 L128 210 L72 210 Z"/>
+   <path d="M44 86 L58 90 L54 150 L48 186 L34 182 L36 140 Z"/>
+   <path d="M156 86 L142 90 L146 150 L152 186 L166 182 L164 140 Z"/>
+   <ellipse cx="40" cy="196" rx="10" ry="14"/><ellipse cx="160" cy="196" rx="10" ry="14"/>
+   <path d="M72 206 L98 206 L96 268 L74 268 Z"/><path d="M102 206 L128 206 L126 268 L104 268 Z"/>
+   <path d="M76 272 L96 272 L94 340 L78 340 Z"/><path d="M104 272 L124 272 L122 340 L106 340 Z"/>
+   <rect x="70" y="338" width="28" height="14" rx="5"/><rect x="102" y="338" width="28" height="14" rx="5"/>
+  </g>
+  <g fill="var(--mm-sec)" stroke="var(--mm-stroke-sec,none)" stroke-width="var(--mm-sw,0)">
+   <rect x="86" y="118" width="28" height="54" rx="9"/>
+   <ellipse cx="76" cy="96" rx="16" ry="12"/><ellipse cx="124" cy="96" rx="16" ry="12"/>
+  </g>
+  <g fill="var(--mm-pri)" stroke="var(--mm-stroke-pri,none)" stroke-width="var(--mm-sw,0)">
+   <path d="M76 210 L96 210 L94 262 L78 262 Z"/><path d="M104 210 L124 210 L122 262 L106 262 Z"/>
+  </g>
+ </symbol>
+ <symbol id="fig-back" viewBox="0 0 200 362">
+  <g fill="var(--mm-body)" stroke="var(--mm-stroke,none)" stroke-width="var(--mm-sw,0)">
+   <ellipse cx="100" cy="32" rx="22" ry="26"/>
+   <rect x="88" y="52" width="24" height="18"/>
+   <path d="M62 66 L138 66 L156 88 L148 132 L138 176 L62 176 L52 132 L44 88 Z"/>
+   <path d="M64 174 L136 174 L128 210 L72 210 Z"/>
+   <path d="M44 86 L58 90 L54 150 L48 186 L34 182 L36 140 Z"/>
+   <path d="M156 86 L142 90 L146 150 L152 186 L166 182 L164 140 Z"/>
+   <ellipse cx="40" cy="196" rx="10" ry="14"/><ellipse cx="160" cy="196" rx="10" ry="14"/>
+   <path d="M72 206 L98 206 L96 268 L74 268 Z"/><path d="M102 206 L128 206 L126 268 L104 268 Z"/>
+   <path d="M76 272 L96 272 L94 340 L78 340 Z"/><path d="M104 272 L124 272 L122 340 L106 340 Z"/>
+   <rect x="70" y="338" width="28" height="14" rx="5"/><rect x="102" y="338" width="28" height="14" rx="5"/>
+  </g>
+  <g fill="var(--mm-sec)" stroke="var(--mm-stroke-sec,none)" stroke-width="var(--mm-sw,0)">
+   <path d="M66 84 L134 84 L124 128 L76 128 Z"/>
+   <ellipse cx="86" cy="300" rx="10" ry="26"/><ellipse cx="114" cy="300" rx="10" ry="26"/>
+  </g>
+  <g fill="var(--mm-pri)" stroke="var(--mm-stroke-pri,none)" stroke-width="var(--mm-sw,0)">
+   <path d="M70 176 L99 176 L99 212 L74 212 Z"/><path d="M101 176 L130 176 L126 212 L101 212 Z"/>
+   <path d="M76 214 L96 214 L94 262 L78 262 Z"/><path d="M104 214 L124 214 L122 262 L106 262 Z"/>
+  </g>
+ </symbol>
+</svg>
+
+<div class="page">
+<header class="top">
+  <h1>Liftr Share-Card Design Variations &mdash; 10 Richtungen zur Ansicht</h1>
+  <p>Visuelle Mockups zu <code>audit/share-card-design-variations.md</code>. Jede Karte ist eine
+     CSS-Annäherung an das, was <code>packages/client/src/lib/shareCard.ts</code> auf die Leinwand
+     zeichnen würde &ndash; im echten Format 1080&times;1920 (die Story-Größe, die
+     <code>chooseCardSize</code> für einen Workout mit Tier-Medaille und Muskelfiguren praktisch
+     immer wählt), hier auf 30&nbsp;% skaliert.</p>
+  <p>Gleiche Platzhalter-Inhalte überall: Routine &bdquo;Beine &amp; Rumpf&ldquo;, 58:12&nbsp;/
+     12.480&nbsp;kg&nbsp;/ 24&nbsp;Sätze&nbsp;/ 3&nbsp;PRs, Tier <em>Sportler III, Level 42</em>,
+     Rank-up &bdquo;Langhantel-Kniebeuge: neuer Rekord&ldquo;. Variante&nbsp;2 zeigt Apex und
+     Variante&nbsp;6 Elite, weil beide die Karte absichtlich nach der Tier-Farbe einfärben;
+     Variante&nbsp;9 zeigt den <em>abgewerteten</em> Zustand (der genuine entspricht Variante&nbsp;1).</p>
+  <p>Nichts davon ist implementiert &ndash; reine Exploration, kein Spec. Muskelsilhouetten sind hier
+     vereinfachte Stellvertreter für die echten SVG-Assets.</p>
+</header>
+<div class="grid">
+<figure class="cell"><div class="frame"><div class="card v1 t-athlete"><div class="inner"><div class="wm wm-grad">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="tiername">SPORTLER III</p><p class="level">Level 42</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinstrecker</span></div><div class="exdet"><p>3 x 12 @ 45 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Unterarmstütz</span></div><div class="exdet"><p>3 x 60 s</p></div></div></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">01</span><b>Nebula Halo</b><p>Heutige Karte, unverändert — nur die zwei „blauen“ Stellen werden zum Nebula-Verlauf. Kleinster Diff mit echter Markenwirkung.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v2 t-apex"><div class="inner"><div class="wm">LIFTR</div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16l-1.2-8.5-3.8 3.8-3-6.3-3 6.3-3.8-3.8z"/></svg></span></div><p class="tiername">APEX I</p><p class="level">Level 91</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinstrecker</span></div><div class="exdet"><p>3 x 12 @ 45 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Unterarmstütz</span></div><div class="exdet"><p>3 x 60 s</p></div></div></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">02</span><b>Medal Poster</b><p>Medaille wird zum Helden: nach oben, auf 260px, Hintergrund in der Tier-Farbe — alles andere wird Bildunterschrift.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v3 t-athlete"><div class="inner"><div class="wm">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="tiername">SPORTLER III</p><p class="level">Level 42</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinstrecker</span></div><div class="exdet"><p>3 x 12 @ 45 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Unterarmstütz</span></div><div class="exdet"><p>3 x 60 s</p></div></div></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">03</span><b>Glacier Light</b><p>Dieselbe Karte auf Papier statt Glas: eine echte Light-Mode-Karte für helle Feeds und Story-Hintergründe.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v4 t-athlete"><div class="inner"><div class="wm">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="tiername">SPORTLER III</p><p class="level">Level 42</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinstrecker</span></div><div class="exdet"><p>3 x 12 @ 45 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Unterarmstütz</span></div><div class="exdet"><p>3 x 60 s</p></div></div></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">04</span><b>Rationed Ink</b><p>Fast keine Farbe: flaches Schwarz, neutrale Stat-Karten, das ganze Farbbudget liegt auf Medaille und PR.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v5 t-athlete"><div class="inner"><div class="wm wm-center">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats two"><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div></div><p class="metaline">Dauer 58:12 &nbsp;&middot;&nbsp; 3 neue Rekorde</p><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div></div><p class="more">+4 weitere Übungen</p></div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="tiername">SPORTLER III</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div></div></div></div><figcaption><span class="n">05</span><b>Story Native</b><p>Zuerst fürs 9:16-Story-Format gebaut: Vollbild-Nebula mit Scrim, riesige Typo, nur zwei Stats, Medaille unten.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v6 t-elite"><div class="inner"><div class="wm">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 9l9 13 9-13z"/></svg></span></div><p class="tiername">ELITE II</p><p class="level">Level 63</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinstrecker</span></div><div class="exdet"><p>3 x 12 @ 45 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Unterarmstütz</span></div><div class="exdet"><p>3 x 60 s</p></div></div></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">06</span><b>Tier Duotone</b><p>Jede neutrale Fläche wird zur Tier-Farbe getönt — eine Karte, neun sichtbar verschiedene Bilder, nur über Konstanten.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v7 t-athlete"><div class="inner"><div class="wm">LIFTR<span class="slug">SESSION / Mittwoch, 3. September</span></div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats spec"><div class="stat s1"><span class="lbl">DAUER</span><span class="val">58:12</span></div><div class="stat s2"><span class="lbl">VOLUMEN</span><span class="val small">12.480 kg</span></div><div class="stat s3"><span class="lbl">SÄTZE</span><span class="val">24</span></div><div class="stat s4"><span class="lbl">PRS</span><span class="val">3</span></div></div><div class="badgeblock"><div class="badgewrap"><svg class="nring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="nebring" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2f9fe0"/><stop offset=".5" stop-color="#8a6dff"/><stop offset="1" stop-color="#d63aff"/></linearGradient></defs><polygon points="50,1 92,25.5 92,74.5 50,99 8,74.5 8,25.5" fill="none" stroke="url(#nebring)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="tiername">SPORTLER III</p><p class="level">Level 42</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exnum"><div class="nrow"><span class="num">01</span><span class="nname">Langhantel-Kniebeuge</span><span class="ndet">4 x 8 @ 100 kg / 1 Aufwärmsatz @ 60 kg</span></div><div class="nrow"><span class="num">02</span><span class="nname">Rumänisches Kreuzheben</span><span class="ndet">3 x 10 @ 80 kg</span></div><div class="nrow"><span class="num">03</span><span class="nname">Beinpresse</span><span class="ndet">3 x 12 @ 160 kg</span></div><div class="nrow"><span class="num">04</span><span class="nname">Wadenheben stehend</span><span class="ndet">4 x 15 @ 60 kg</span></div><div class="nrow"><span class="num">05</span><span class="nname">Beinstrecker</span><span class="ndet">3 x 12 @ 45 kg</span></div><div class="nrow"><span class="num">06</span><span class="nname">Unterarmstütz</span><span class="ndet">3 x 60 s</span></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">07</span><b>Blueprint</b><p>Technische Zeichnung: Raster, Haarlinien, tabellarische Zahlen, keine Flächen — das Workout als Spezifikationsblatt.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v8 t-athlete"><div class="inner"><div class="rc-top"><div class="stamp"><span class="badge matte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span><div class="stamptext"><p>SPORTLER III</p><p>Level 42</p></div></div><div class="wm">LIFTR</div><div class="head rc-head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p><p class="date">Beleg #0428 &middot; 58:12</p></div></div><div class="rrows"><div class="rrow"><span>DAUER</span><i></i><span>58:12</span></div><div class="rrow"><span>VOLUMEN</span><i></i><span>12.480 kg</span></div><div class="rrow"><span>SÄTZE</span><i></i><span>24</span></div><div class="rrow"><span>PRS</span><i></i><span>3</span></div></div><div class="exlist"><div class="li"><div class="liname"><span>Langhantel-Kniebeuge</span><span>100 kg</span></div><p>4 x 8 @ 100 kg &middot; 1 Aufwärmsatz @ 60 kg</p></div><div class="li"><div class="liname"><span>Rumänisches Kreuzheben</span><span>80 kg</span></div><p>3 x 10 @ 80 kg</p></div><div class="li"><div class="liname"><span>Beinpresse</span><span>160 kg</span></div><p>3 x 12 @ 160 kg</p></div><div class="li"><div class="liname"><span>Wadenheben stehend</span><span>60 kg</span></div><p>4 x 15 @ 60 kg</p></div><div class="li"><div class="liname"><span>Beinstrecker</span><span>45 kg</span></div><p>3 x 12 @ 45 kg</p></div><div class="li"><div class="liname"><span>Unterarmstütz</span><span>3 x 60 s</span></div><p>3 x 60 s</p></div><p class="more">+2 weitere Übungen</p></div><div class="muscles small"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div></div></div></div><figcaption><span class="n">08</span><b>Receipt</b><p>Kassenbon statt Trophäe: warmes Papier, gepunktete Linien, Übungen als Posten, Medaille nur als kleiner Stempel.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v9 t-athlete"><div class="inner"><div class="wm">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="badgeblock"><div class="badgewrap"><span class="badge matte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="reduced">Wertung reduziert</p><p class="tiername">SPORTLER III</p><p class="level">Level 42</p></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="divider"></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinstrecker</span></div><div class="exdet"><p>3 x 12 @ 45 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Unterarmstütz</span></div><div class="exdet"><p>3 x 60 s</p></div></div></div><p class="more">+2 weitere Übungen</p></div></div></div></div><figcaption><span class="n">09</span><b>Honest Card</b><p>Der abgewertete Zustand als eigene Gestaltung: entsättigt, matte Medaille, kein Rank-up — die Zahlen bleiben vollständig.</p></figcaption></figure>
+<figure class="cell"><div class="frame"><div class="card v10 t-athlete"><div class="inner"><div class="zone zone-top"><div class="wm">LIFTR</div><div class="head"><h2>Beine &amp; Rumpf</h2><p class="date">Mittwoch, 3. September</p></div></div><div class="badgeblock"><div class="badgewrap"><span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5z"/></svg></span></div><p class="tiername">SPORTLER III</p><p class="level">Level 42</p><p class="rankup">Langhantel-Kniebeuge: neuer Rekord</p></div><div class="zone zone-bottom"><div class="stats"><div class="stat s1"><span class="pill">DAUER</span><span class="inset"><b class="val">58:12</b></span></div><div class="stat s2"><span class="pill">VOLUMEN</span><span class="inset"><b class="val small">12.480 kg</b></span></div><div class="stat s3"><span class="pill">SÄTZE</span><span class="inset"><b class="val">24</b></span></div><div class="stat s4"><span class="pill">PRS</span><span class="inset"><b class="val">3</b></span></div></div><div class="muscles"><p class="eyebrow">Trainierte Muskeln</p><div class="figs"><svg viewBox="0 0 200 362"><use href="#fig-front"/></svg><svg viewBox="0 0 200 362"><use href="#fig-back"/></svg></div></div><div class="exwrap"><div class="exgrid"><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Langhantel-Kniebeuge</span></div><div class="exdet"><p>4 x 8 @ 100 kg</p><p>1 Aufwärmsatz @ 60 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Rumänisches Kreuzheben</span></div><div class="exdet"><p>3 x 10 @ 80 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Beinpresse</span></div><div class="exdet"><p>3 x 12 @ 160 kg</p></div></div><div class="ex"><div class="exhead"><span class="ico"><svg class="db" viewBox="0 0 34 34" aria-hidden="true"><line x1="9" y1="17" x2="25" y2="17" stroke-width="2.4"/><line x1="8" y1="11" x2="8" y2="23" stroke-width="5"/><line x1="26" y1="11" x2="26" y2="23" stroke-width="5"/></svg></span><span class="exname">Wadenheben stehend</span></div><div class="exdet"><p>4 x 15 @ 60 kg</p></div></div></div><p class="more">+4 weitere Übungen</p></div></div></div></div></div><figcaption><span class="n">10</span><b>Split Field</b><p>Harte Naht: oben Nebula-Verlauf mit Identität und Medaille, unten flaches Schwarz mit allen Zahlen. Kein Verlauf hinter Daten.</p></figcaption></figure>
+</div>
+</div>
+</body>
+</html>

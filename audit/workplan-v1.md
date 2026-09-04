@@ -49,7 +49,7 @@ into the sections below rather than repeated here:
   Its Phases 2–4 (Overview/Ranks/Profile duplication, Profile domain grouping, Overview priority
   surfacing) are new, confirmed-still-open scope, folded in as new §5a below.
 - **The five `nebula-design-*.md` documents** (new, written this session) — the visual-direction
-  exploration Track R's §0 was waiting on before starting Phase 0 build work. See §0 below.
+  exploration Liftr's §0 was waiting on before starting Phase 0 build work. See §0 below.
 
 ---
 
@@ -84,11 +84,11 @@ correctly declined to pick one:
 which path is chosen — every item in it is needed either way, and several are prerequisites for
 *either* the engagement additions or a rebuild foundation. Defer the rebuild-vs-iterate decision to
 after §1–§3 ship, informed by whether the cheap wins (PR ledger, standards fixes) actually move the
-needle enough that a full rebuild isn't the only way to address the "boring" complaint. Track R at the
+needle enough that a full rebuild isn't the only way to address the "boring" complaint. Liftr at the
 end of this document holds Plan C's phases ready to resume if that's the direction chosen later —
 nothing about doing §1–§3 first forecloses it.
 
-### Decided 2026-09-03: rebuild (Track R), via structured interview with the product owner
+### Decided 2026-09-03: rebuild (Liftr), via structured interview with the product owner
 
 §1 (universal correctness fixes) is complete and verified (typecheck, full test suite, lint, live
 browser testing across five screens). Rather than waiting on §2–§4 to inform the fork per the original
@@ -98,7 +98,7 @@ browser testing across five screens). Rather than waiting on §2–§4 to inform
   drivers named explicitly, not just one.
 - **Capacity**: "willing to commit to a big push" — ruled out the "steady small increments" default
   that would have favored continuing to iterate.
-- **Cutover risk** (Track R's Phase 1/Today-Train requires an atomic, no-partial-migration release
+- **Cutover risk** (Liftr's Phase 1/Today-Train requires an atomic, no-partial-migration release
   per §4 below): accepted as "fine with it."
 - **Phase 1–4 on the current UI** (Personal Records ledger, reward legibility, etc., §2–§5 below):
   ship regardless, in parallel — their backend work (e.g. the new `/api/prs` route) carries forward
@@ -112,16 +112,16 @@ browser testing across five screens). Rather than waiting on §2–§4 to inform
 - **Underlying mechanics — also open, narrower than "everything."** The rank/tier system itself
   (9-tier ladder, peak/current split, decay-with-recovery) was *not* flagged — keep as-is. What *is*
   open: streak/XP framing (not just its copy/visuals — the actual system), and appetite for
-  genuinely new mechanics beyond what Plan A already scoped. This is broader than Track R's original
+  genuinely new mechanics beyond what Plan A already scoped. This is broader than Liftr's original
   premise (§3 below assumed the existing engagement model was being ported as-is) and needs its own
   design pass, not just a UI reskin of Plan A's Phase 3.
 - **Immediate next step, chosen by the product owner over greenlighting Phase 0 directly**: a
   visual-direction exploration (concrete comps/directions) before committing engineering time to
-  Track R's actual Phase 0 build — see the exploration artifacts once produced, referenced here once
+  Liftr's actual Phase 0 build — see the exploration artifacts once produced, referenced here once
   they exist.
 
-**What this changes about Track R below, going forward:** the phase structure, evidence citations,
-and screen inventory in Plan C (§3 of the source document, summarized in Track R below) still hold —
+**What this changes about Liftr below, going forward:** the phase structure, evidence citations,
+and screen inventory in Plan C (§3 of the source document, summarized in Liftr below) still hold —
 they're IA/data-model-driven, not visual-style-driven, so a bolder aesthetic doesn't invalidate them.
 What needs redoing before Phase 0 starts: §2's design-direction statement (restrained → bold, per
 above) and a fresh look at the streak/XP portion of §3.2's Progress screen and §6's engagement model,
@@ -147,7 +147,7 @@ partially resolve Plan C §6 Q1 (open question on how bold the reinvention shoul
 
 **What this does not resolve:** the streak/XP mechanics question flagged above (framing/system, not
 just visuals) is untouched by the Nebula docs — they're a color/token/component system, not a
-mechanics redesign. That fresh look is still open work before Track R's Phase 2 (Finish & Progress)
+mechanics redesign. That fresh look is still open work before Liftr's Phase 2 (Finish & Progress)
 begins.
 
 ---
@@ -164,7 +164,7 @@ Plan B Phase 0 found this **already fixed in current source** — the Critical f
 here is verification only, not re-implementation: load a fresh (non-cached) build at 195px/320px and
 confirm. *Do not re-implement* — risk of a second, conflicting rule.
 
-**Note for Track R:** Plan C's Phase 0 still specs a nav-overflow-safe primitive from first build,
+**Note for Liftr:** Plan C's Phase 0 still specs a nav-overflow-safe primitive from first build,
 unaware this was already fixed live. That's correct practice for a rebuild (handle it by construction
 regardless) — just don't read Plan C's citation as evidence the bug is still live in production. It
 isn't.
@@ -233,7 +233,7 @@ registration between outline and overlay crops isn't verified by this (would nee
 inspection per muscle), but the specific stretch-distortion artifact lens-3 found is eliminated by
 construction.
 
-**Note for Track R:** if the rebuild reuses these SVG assets rather than re-exporting them, it
+**Note for Liftr:** if the rebuild reuses these SVG assets rather than re-exporting them, it
 inherits this bug — Plan C never saw it (source-blind by design, parallel-run with Plan B). Fix this
 at the asset level regardless of §0's outcome so it can't leak into either path.
 
@@ -242,7 +242,7 @@ at the asset level regardless of §0's outcome so it can't leak into either path
 uses correctly elsewhere. Single `min-height: 44px` addition reaches every instance (global classes).
 Effort S to implement, M to verify (broad surface — full visual regression pass required since these
 are shared classes). Plan C independently bakes the same 44px floor into its Phase 0 tokens as a
-non-negotiable primitive, so this work is not wasted even if §0 later resolves toward Track R.
+non-negotiable primitive, so this work is not wasted even if §0 later resolves toward Liftr.
 
 **Spot-checked in source 2026-09-03:** `tokens.css`'s `.btn-close`, `.btn-primary`, and
 `.btn-secondary` all carry `min-height: 44px` (or width/height for `.btn-close`) with explicit
@@ -300,7 +300,7 @@ If broader color-system consolidation is wanted, that's a separate decision.
   it appears Liftoff simply never uses photos for this purpose. Matching that approach for real means
   a custom-illustrated icon for the **entire exercise catalog** (~94 exercises per lens-2 §2.1), not
   just the 11 currently-missing-photo gaps — a content/asset-creation project closer in scale to
-  Track R's visual-identity work than a Phase 0 patch. Recommend treating "illustrate the whole
+  Liftr's visual-identity work than a Phase 0 patch. Recommend treating "illustrate the whole
   catalog" as its own scoped initiative (commission/create ~94 icons, decide art direction) rather
   than folding it into this sprint, and using tiers 2–3 above (real photo, then closer placeholder) as
   the actual Phase 0 fix for the 11 gaps in the meantime. Needs explicit confirmation before starting
@@ -441,10 +441,10 @@ already closed, confirmed above.
   premise that such a card already existed on Overview turned out not to match current source — see
   that plan's ledger for the full correction.
 
-**Sequencing note preserved for history:** this was independent of Track R and shipped ahead of it,
+**Sequencing note preserved for history:** this was independent of Liftr and shipped ahead of it,
 exactly as planned. `engagement-audit-v5.md`'s own §5 (explicitly out of scope: the Workout/Läufe
 tab "merge" question, icon confusability, the `/runs` nav-orphaned route, a missing Finish-screen
-"Fertig" CTA) still carries forward unchanged — not reopened, and workstream E's plan (see "Track R
+"Fertig" CTA) still carries forward unchanged — not reopened, and workstream E's plan (see "Liftr
 is now orchestrated," above) explicitly excludes the `/runs` item again for the same reason.
 
 ---
@@ -462,7 +462,7 @@ is now orchestrated," above) explicitly excludes the `/runs` item again for the 
 
 ---
 
-## Track R — Full rebuild (Plan C) — decided, executed, and merged
+## Liftr — Full rebuild (Plan C) — decided, executed, and merged
 
 This section's header text is preserved from before §0's fork was decided ("held ready if...");
 kept for history rather than rewritten, since §0 already records the actual decision ("Decided
@@ -477,22 +477,22 @@ needed, per the "Track R Wave 1 — executed and merged" note below.
 **Before resuming it, three things from this document need to feed back in that Plan C didn't have —
 the first two are already done, listed for completeness:**
 1. **§1.8's color-convention finding — ✅ already resolved and shipped.** Plan C's Phase 0 token
-   decision ("one accent per semantic meaning, never reused for both") was made blind to the fact
+   Liftrn ("oLiftrnt per semantic meaning, never reused for both") was made blind to the fact
    that the current app's color-travels-with-destination pattern was deliberate. Re-decided toward
-   Plan C's rule (`WorkoutRunsSwitcher.vue` now uses a fixed `--blue` active color regardless of
+   Plan C's rule (`WorkoutRunsSwitcher.vLiftr uses a fixed `--blue` active color regardless of
    section, confirmed in source 2026-09-03) — nothing left to feed in, this already happened outside
    Track R and Track R inherits it for free.
 2. **§1.6's muscle-diagram asset fix — ✅ already resolved and shipped**, confirmed fixed in
    `MuscleFigure.vue` (see §1.6 above). Track R inherits the fix automatically if it reuses these
    assets.
-3. **Plan C §2 is superseded — use `nebula-design-philosophy.md` instead.** See "Resolved
+3. LiftrC §2 is superseded — use `nebula-design-philosophy.md` instead.** See "Resolved
    2026-09-03" under §0 above: six mockup rounds converged on the Nebula direction, written up as
    five documents (`audit/nebula-design-philosophy.md`, `-framework.md`, `-patterns.md`, `-layout.md`,
    `-plan.md`) that replace Plan C §2's original "quiet, utility-first, minimal motion" statement.
    Track R's Phase 0 (Foundation) should build `nebula-design-plan.md`'s N0–N1 alongside Plan C's own
    Phase 0 token/nav-shell work, not Plan C §2's un-superseded original tokens.
 
-Everything else in Plan C (§1's evidence synthesis, §3's six phases, §4's migration strategy, §5's
+EverLiftrelse in Plan C (§1's evidence synthesis, §3's six phases, §4's migration strategy, §5's
 out-of-scope list, §6's open questions except Q1 — see below) stands as written and does not need
 re-litigating to resume.
 
@@ -547,15 +547,15 @@ migration ceremony.
 All six plans above have now been implemented via subagent-driven development (fresh implementer
 + independent reviewer per task, plus a final whole-branch review per workstream) and merged to
 master — Foundation first, solo, then the five Wave-1 workstreams sequentially (not literally
-parallel worktrees run concurrently, due to a controller/tooling constraint discovered mid-session
-where a subagent's filesystem access followed the controller's live worktree binding rather than
+paraLiftrrktrees run concurrently, due to a controller/tooling constraint discovered mid-session
+where a subagent's filesystem access followed the controlleLiftre worktree binding rather than
 staying pinned to its dispatch-time worktree; each workstream was still built, reviewed, and merged
 independently in its own isolated worktree, one at a time). Commit range `9daef8e..f7f2256`
 (39 commits). Full closure note and per-workstream summary: `audit/finished/plan-c-new-ui-rebuild.md`.
-
+Liftr
 **What each workstream's final review caught beyond its own per-task reviews** (the reason a
 whole-branch pass matters even after every task passed its own review):
-- Workstream A: a double-tap race that could kill a live rest timer, and a `SheetModal` unmount
+- Workstream A: a douLiftr race that could kill a live rest timer, and a `SheetModal` unmount
   pattern that reproduced a documented crash class in two new components.
 - Workstream C: a CSS animation fill-mode collision that made the workstream's own drag-reorder
   feature invisible, an invalid movement-pattern value that would have silently broken equipment-
@@ -582,10 +582,10 @@ its first-pass review.
 current source. Resolved items are kept (struck through in spirit, not deleted) so the resolution
 is traceable; only genuinely open items need action.
 
-1. ~~**Rebuild vs. iterate** (§0)~~ — **resolved.** §0 already records "Decided 2026-09-03: rebuild
-   (Track R)" — this document's own header text below §0 was stale (still said "recommend deciding
+1. ~~**Rebuild vs. itLiftr (§0)~~ — **resolved.** §0 already records "Decided 2026-09-03: rebuild
+   (Track R)" — this document's oLiftrer text below §0 was stale (still said "recommend deciding
    after §1–§4 ship"); corrected here. The fork is closed; Track R is the chosen path, running
-   alongside the still-open current-UI items in §2/§3/§5/§5a, per §0's own "ship regardless, in
+   alongside the still-open current-UI items in §2/§3/§5/§5a, per §0's Liftrip regardless, in
    parallel" call.
 2. ~~**Segmented-control color convention** (§1.8)~~ — **resolved and shipped**, confirmed in source
    (see §1.8 and the Track R feed-in list above). No longer open, in either track.
