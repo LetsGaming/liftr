@@ -616,6 +616,13 @@ async function logSet() {
                  button, meaning something much more consequential (skip the whole exercise, not
                  the rest timer) with no visual distinction between the two (critique finding).
                  "Übung" disambiguates without adding a control. -->
+            <!-- Task 7 (mid-session confirm-tap audit): deliberately NOT gated behind
+                 useConfirmTap, unlike .cancel-btn. Skipping is non-destructive and reversible —
+                 nothing is lost (the skipped exercise's sets are untouched and still reachable
+                 via the jump rail/jumpToExercise), unlike cancel (discards the whole session) or
+                 delete (permanent). Gating a legitimate "equipment's busy, I'll come back" tap
+                 behind a second confirm tap would add friction without protecting against any
+                 real loss, so it stays a direct, unconfirmed tap. -->
             <button v-if="store.exercises.length > 1" class="skip-btn" @click="store.skipCurrentExercise()">
               Übung überspringen ⏭
             </button>
