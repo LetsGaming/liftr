@@ -132,9 +132,13 @@ function formatDate(iso: string): string {
   font-size: 12px;
   color: var(--faint);
 }
+/* .shimmer (styles/motion.css) only supplies the sweep gradient + animation — the call site
+   must give the block its own background-color or the "loading" state is just page background
+   with a near-invisible 8%-white sweep (same technique as RanksPage.vue's .rank-skel-block). */
 .pr-skel-row {
   height: 56px;
   border-radius: var(--r-lg);
   margin-top: var(--sp3);
+  background-color: var(--surface-2);
 }
 </style>

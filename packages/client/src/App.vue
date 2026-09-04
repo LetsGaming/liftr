@@ -484,13 +484,13 @@ const hideTopHud = computed(
      live layout (getBoundingClientRect), not by reading the CSS. */
   .app-shell {
     --top-hud-h: calc(52px + env(safe-area-inset-top, 0px));
-    /* Foundation Task 2 (2026-09-03 plan) — Task 4's ThumbZoneAction sticky variant needs to
-       know how much space the fixed .bottom-chrome tab bar reserves at the bottom of the
-       viewport, the same way .main-content already needs --top-hud-h for the top. Measured
-       content height is ~55-61px depending on the <380px icon/font shrink breakpoint (9px+
-       icon(18-23px)+3px gap+label line(~13-14px)+12px, see .tab-link above) — 64px is a
-       deliberate small margin over the tallest measured case, not a re-measurement per
-       breakpoint, since ThumbZoneAction only needs "enough clearance," not pixel-exact clearance. */
+    /* Foundation Task 2 (2026-09-03 plan) — needed so any fixed-position element can know how
+       much space the fixed .bottom-chrome tab bar reserves at the bottom of the viewport, the
+       same way .main-content already needs --top-hud-h for the top. Measured content height is
+       ~55-61px depending on the <380px icon/font shrink breakpoint (9px+ icon(18-23px)+3px
+       gap+label line(~13-14px)+12px, see .tab-link above) — 64px is a deliberate small margin
+       over the tallest measured case, not a re-measurement per breakpoint, since consumers only
+       need "enough clearance," not pixel-exact clearance. */
     --bottom-chrome-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   .main-content {

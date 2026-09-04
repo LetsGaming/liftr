@@ -26,6 +26,11 @@ const verdict = computed(() => {
 </script>
 
 <template>
+  <!-- Reserves this card's rough footprint while /api/readiness is still loading (feedback: fix
+       layout shift) — this is the first section on the dashboard, so without a placeholder here
+       every section below it jumps down the moment the request resolves. Shaped roughly like
+       the real content instead of one flat rectangle, per the same shimmer technique
+       WorkoutPage.vue's rank skeleton uses. -->
   <section v-if="loaded" class="erholungszone">
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
@@ -35,11 +40,6 @@ const verdict = computed(() => {
       <button class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>
   </section>
-  <!-- Reserves this card's rough footprint while /api/readiness is still loading (feedback: fix
-       layout shift) — this is the first section on the dashboard, so without a placeholder here
-       every section below it jumps down the moment the request resolves. Shaped roughly like
-       the real content instead of one flat rectangle, per the same shimmer technique
-       WorkoutPage.vue's rank skeleton uses. -->
   <div v-else class="erholungszone ez-skeleton" aria-hidden="true">
     <div class="shimmer ez-skel-eyebrow" />
     <div class="ez-skel-figure shimmer" />

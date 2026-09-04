@@ -12,6 +12,7 @@ import RankProgress from "../components/rank/RankProgress.vue";
 import RankUpCalendar from "../components/rank/RankUpCalendar.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
+import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
 import { useExerciseHistoryCache } from "../composables/useExerciseHistoryCache";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useOverallRankStore } from "../stores/overallRankStore";
@@ -110,7 +111,7 @@ const sortedRanks = computed(() =>
         <div v-if="ranksStore.ranks.length > 0" class="rank-grid">
         <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap">
           <button class="rank-card" :class="`t-${r.tier}`" @click="toggleExpand(r.exerciseId)">
-            <div class="en">{{ exerciseName(r.slug, r.name) }}</div>
+            <TruncatingLabel class="en">{{ exerciseName(r.slug, r.name) }}</TruncatingLabel>
             <RankProgress
               variant="card"
               :tier="r.tier"
@@ -216,6 +217,16 @@ const sortedRanks = computed(() =>
   background: transparent;
   transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
+/* Always-dark fill regardless of theme (tier colors are always dark, by design — see
+   tokens.css's `:root[data-theme="light"]` comment) — text inside must stay light-on-dark even
+   when the page itself is in light mode. Overriding these three custom properties locally means
+   every descendant that reads var(--text)/var(--dim)/var(--faint) inherits the right value
+   automatically. Same pattern as tokens.css's .panel-reward. */
+.rank-card {
+  --text: #eef2fb;
+  --dim: #b8c2e0;
+  --faint: #98a2c0;
+}
 .rank-card:active {
   transform: scale(0.98);
 }
@@ -237,8 +248,7 @@ const sortedRanks = computed(() =>
 .en {
   font-size: 16px;
   font-weight: 800;
-  color: #fff;
-  overflow-wrap: break-word;
+  color: var(--text);
 }
 .chart-slot {
   padding: var(--sp3) var(--sp4);

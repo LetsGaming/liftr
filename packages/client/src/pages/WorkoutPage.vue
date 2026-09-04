@@ -21,6 +21,7 @@ import SetEntry from "../components/workout/SetEntry.vue";
 import SetKindPicker from "../components/workout/SetKindPicker.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import SyncIndicator from "../components/ui/SyncIndicator.vue";
+import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useAddExerciseToSession } from "../composables/useAddExerciseToSession";
@@ -509,9 +510,9 @@ async function logSet() {
 
       <section v-if="store.currentExercise && !store.allSetsLogged" class="focus-col">
         <div class="focus-head">
-          <div>
+          <div class="focus-head-title">
             <span v-if="supersetLabel" class="superset-badge">{{ supersetLabel }}</span>
-            <h2>{{ store.currentExercise.name }}</h2>
+            <TruncatingLabel as="h2">{{ store.currentExercise.name }}</TruncatingLabel>
           </div>
           <div class="focus-head-actions">
             <!-- Was "Überspringen ⏭" — identical wording/weight to RestTimer's "Überspringen"
@@ -841,6 +842,15 @@ async function logSet() {
   justify-content: space-between;
   gap: var(--sp3);
   margin-bottom: var(--sp2);
+}
+/* Flex column + min-width:0 wrapper so TruncatingLabel's h2 can actually truncate instead of
+   wrapping/breaking mid-word — TruncatingLabel.vue's header comment requires an immediate
+   flex/grid parent, which this unclassed div previously was not (min-width:0 only overrides a
+   flex/grid item's default auto min-width, it does nothing inside a plain block parent). */
+.focus-head-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 .focus-head h2 {
   font-size: 22px;

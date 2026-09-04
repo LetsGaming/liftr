@@ -20,9 +20,31 @@ export function getStoredTheme(): Theme {
   return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
+/** Light-mode bug fix: index.html's `<meta name="theme-color">` (the color the OS/browser
+ *  chrome — status bar, task switcher — paints around the page) was a static `#0a0c14`, never
+ *  updated on theme change, so it stayed dark even after the user switched to light mode.
+ *  Reads the *actual* current `--bg` off the document (post `dataset.theme` assignment, so the
+ *  right `:root`/`:root[data-theme="light"]` block is already in effect) instead of duplicating
+ *  tokens.css's hex constants here — this can't silently drift out of sync with tokens.css the
+ *  way a hardcoded second copy could. */
+function applyThemeColorMeta() {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (bg) meta.setAttribute("content", bg);
+}
+
+/** Applies a theme to the document: sets `data-theme` (tokens.css's selector) and, in the same
+ *  step, the theme-color meta tag above — called both at boot (main.ts, before first paint) and
+ *  on every explicit toggle, so the meta tag never lags the actual visible theme. */
+export function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  applyThemeColorMeta();
+}
+
 export function setStoredTheme(theme: Theme) {
   localStorage.setItem(THEME_KEY, theme);
-  document.documentElement.dataset.theme = theme;
+  applyTheme(theme);
 }
 
 export const useThemeStore = defineStore("theme", {
