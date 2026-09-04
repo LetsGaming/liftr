@@ -48,6 +48,7 @@ const customExerciseSchema = z.object({
   equipment: z.string().optional(),
   movementPattern: z.string().min(1),
   isBodyweight: z.boolean().default(false),
+  muscleSlugs: z.array(z.object({ slug: z.string(), role: z.enum(["primary", "secondary"]) })).optional(),
 });
 
 /**
