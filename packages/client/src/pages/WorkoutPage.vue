@@ -547,7 +547,12 @@ async function logSet() {
           <div class="eyebrow">Trainierte Muskeln</div>
           <MuscleFigure :primary="sessionMuscles.primary" :secondary="sessionMuscles.secondary" />
         </div>
-        <ExerciseRail />
+        <!-- Vertical variant (default) — desktop's list, unchanged. Hidden below the 900px
+             breakpoint in favor of the horizontal strip placed just above the focus column,
+             since on mobile the full vertical list otherwise pushes the current exercise's
+             set-logging UI below the fold (Task 6: mobile parity for the jump-to-exercise rail —
+             see ExerciseRail.vue's header comment for what verification found). -->
+        <ExerciseRail class="rail-list-desktop" />
 
         <!-- Mid-session add (feedback gap: no way to change what a session includes once
              started — equipment in use / a busy rack had no path but cancelling entirely). -->
@@ -578,6 +583,11 @@ async function logSet() {
           {{ cancelConfirm.isArmed() ? "Wirklich abbrechen?" : "Workout abbrechen" }}
         </button>
       </aside>
+
+      <!-- Horizontal variant (Task 6) — mobile-only jump-to-exercise strip, shown directly above
+           the focus column so it's reachable without scrolling past the rest of .rail-col first.
+           Hidden at >=900px, where the vertical list above already covers this. -->
+      <ExerciseRail variant="horizontal" class="rail-strip-mobile" />
 
       <section v-if="store.currentExercise && !store.allSetsLogged" class="focus-col">
         <div class="focus-head">
@@ -1096,6 +1106,23 @@ async function logSet() {
 .stale-actions {
   display: flex;
   gap: var(--sp2);
+}
+/* Task 6: mobile parity for the jump-to-exercise rail. Below 900px, the vertical list (desktop's
+   unchanged rendering, still inside .rail-col) is replaced by the horizontal strip placed above
+   the focus column; at >=900px it's the reverse — the .rail-col media query below restores the
+   desktop layout exactly as it was. */
+.rail-strip-mobile {
+  margin-bottom: var(--sp4);
+}
+@media (min-width: 900px) {
+  .rail-strip-mobile {
+    display: none;
+  }
+}
+@media (max-width: 899.98px) {
+  .rail-list-desktop {
+    display: none;
+  }
 }
 .stale-actions button {
   flex: 1;
