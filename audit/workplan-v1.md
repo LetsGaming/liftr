@@ -74,6 +74,19 @@ Condensed to one line each with a pointer to the evidence; full history lives in
 - **§3.10's share-card palette (2026-09-04)** — see §3.10 below for the full decision; Nebula Halo
   palette adopted, tier medal demoted to a top-right corner stamp, freed space handed to the
   muscle figures and exercise grid. Verified live across three scenarios, no overlap.
+- **WS3 client UI cleanup batch (2026-09-04)** — closes §3.2, §3.3, §3.4, and the ErholungszoneCard
+  half of §3.6, all in one worktree/commit: manual run-entry validation now surfaces real per-field
+  German error messages (extracted to a pure, tested `validateManualEntry()`, 12 new tests) instead
+  of a silently-disabled button; the `/records` blank-flash bug is fixed (a real visible loading
+  skeleton, plus a generic `router.beforeResolve` chunk-prefetch guard so no lazy route leaves
+  `<main>` empty mid-transition); light mode now correctly applies to Ionic chrome, the theme-color
+  meta tag, and text sitting on the (deliberately still-dark) tier surfaces on `/ranks`, via the
+  same locally-pinned-token pattern `.panel-reward` already established; `ThumbZoneAction.vue` and
+  `DensityScope.vue`/`useDensity.ts` are deleted outright (confirmed zero consumers via a repo-wide
+  grep sweep) rather than left as dead code; `TruncatingLabel.vue` is now adopted at the two
+  remaining sites where the mid-word-break bug it exists to prevent had recurred (`RanksPage.vue`,
+  `WorkoutPage.vue`'s active-exercise heading), verified live at desktop and ~390px mobile width.
+  273/273 tests, clean typecheck across all 5 packages, clean lint. Merged to master.
 
 ---
 
@@ -100,35 +113,6 @@ routed at `/records`, linked from `RanksPage.vue`. Confirmed live: real PR data 
 
 ## 3. Open items
 
-### 3.2 Manual run-entry client-side validation doesn't actually surface errors
-
-Round 1 verified the `manualError`/try-catch code path exists in `RunsPage.vue`. Live testing shows
-it's only reachable via a genuine server-side rejection — the Save button stays `disabled` on
-blank/invalid client input (`canSubmitManual` gates on `Number(...) > 0`), so no inline error ever
-appears for the natural "user typed garbage" case. Minor UX gap, not a data-integrity issue.
-`audit/verify/round2-agent-6.md`.
-
-### 3.3 Light mode doesn't visually apply to Ranks-page surfaces (bug, not a design question)
-
-Toggling to light mode correctly sets `data-theme="light"` and `--bg` correctly resolves to
-`#f6f4fb` in CSS, but the rendered background of the tier-ladder panel and exercise cards on
-`/ranks` stays near-black. This is a genuine rendering bug — do not confuse it with the (already
-resolved, correct-by-design) decision to keep the dark-mode ground neutral rather than
-violet-tinted; that's a different, settled question. See `audit/nebula-design-system.md` §6.
-`audit/verify/round2-design-agent-3.md`.
-
-### 3.4 Track R Foundation primitives — partially orphaned
-
-- `ThumbZoneAction.vue` and `DensityScope.vue`/`useDensityMode` exist in code but have **zero live
-  consumers anywhere in the app** (confirmed via DOM query across all 6 major screens). Either wire
-  them in where originally intended, or remove them — dead primitives that nothing uses are worse
-  than no primitive, since they falsely signal "this is handled."
-- `TruncatingLabel.vue` is only adopted in one place (`ExerciseRow.vue`, the routine reorder list).
-  `RanksPage.vue`'s exercise-name element and `WorkoutPage.vue`'s active-exercise heading both still
-  mid-word-break (`overflow-wrap: break-word`) — the exact bug the primitive was built to eliminate
-  "at the primitive level so it cannot recur." It recurred. `audit/verify/agent-3.md`,
-  `round2-agent-1.md`.
-
 ### 3.5 Rank-up ring/glow — needs a one-time live confirmation, not a rebuild
 
 `FinishSequence.vue`'s `.badge-ring`/`.badge-ring-muted` split exists in code and is structurally
@@ -138,14 +122,15 @@ real beat has never been visually confirmed. Cheapest way to close this: deliber
 small, plausible, near-threshold improvement and complete the workout. `audit/nebula-design-plan.md`
 Phase N2, `audit/verify/round2-agent-3.md`.
 
-### 3.6 Minor live-only defects found, not yet triaged for priority
+### 3.6 Minor live-only defect — needs an investigation pass, not a code guess
 
-- Recurring Vue warning on every Overview mount: `ErholungszoneCard` receives non-props attributes
-  it can't inherit (fragment root component). Cosmetic — the `tile--priority` class still applies
-  one level up. `audit/verify/round2-agent-5.md`.
-- Recurring Ionic Vue console exception (`insertBefore` on null, in `removeViewFromDom`) firing
-  roughly every 35-90s throughout live sessions, independent of user action — some background
-  overlay/controller trying to dismiss an already-removed view. `audit/verify/round2-agent-4.md`.
+Recurring Ionic Vue console exception (`insertBefore` on null, in `removeViewFromDom`) firing
+roughly every 35-90s throughout live sessions, independent of user action — some background
+overlay/controller trying to dismiss an already-removed view. `audit/verify/round2-agent-4.md`.
+This is the one item this workplan explicitly does NOT want autonomously code-guessed — an
+exhaustive static search already ran with no conclusive culprit found (see the implementation
+plan's WS5 for the discriminating test to run instead: reproduce in a production build with the
+service worker unregistered, "pause on exceptions" on, capture the full stack).
 
 ### 3.7 Streak/XP mechanics redesign — spec written, not implemented
 
