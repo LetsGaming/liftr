@@ -17,6 +17,7 @@ import { useMesocycleControls } from "../../composables/useMesocycleControls";
 import { useRoutineManagement } from "../../composables/useRoutineManagement";
 import { useStartRoutine } from "../../composables/useStartRoutine";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
+import { useDragReorder } from "../../composables/useDragReorder";
 import { aggregateMuscles } from "../../lib/muscles";
 import { computed } from "vue";
 
@@ -43,13 +44,42 @@ function routineExerciseName(exerciseId: string): string {
 }
 
 const quickStartExercises = computed(() => catalog.exercises.slice(0, 4));
+
+/** Drag-to-reorder (plan C §3 Phase 3) — same composable/pattern already proven in
+ *  ArrangeStep.vue's wizard-step card reordering. Reorders routineStore.routines locally to
+ *  compute the new id order, then persists via routineStore.reorder(), which itself reloads
+ *  from the server rather than trusting this client-side splice as the final word. */
+const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => {
+  const ids = routineStore.routines.map((r) => r.id);
+  const [moved] = ids.splice(from, 1);
+  ids.splice(to, 0, moved!);
+  void routineStore.reorder(ids);
+});
+
+function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) {
+  if (!cardEl) return;
+  onPointerDown(e, index, routineStore.routines.length, cardEl);
+}
 </script>
 
 <template>
     <div class="not-started">
       <div v-if="routineStore.routines.length > 0" class="routine-grid">
-        <div v-for="routine in routineStore.routines" :key="routine.id" class="routine-card">
+        <div
+          v-for="(routine, i) in routineStore.routines"
+          :key="routine.id"
+          class="routine-card"
+          :class="{ dragging: draggingIndex === i }"
+          :style="styleFor(i)"
+        >
           <div class="rc-head">
+            <button
+              class="rc-drag-handle"
+              aria-label="Verschieben"
+              @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.routine-card') as HTMLElement)"
+            >
+              ≡
+            </button>
             <b>{{ routine.name }}</b>
             <span v-if="routine.mesocycle" class="meso-badge">
               Woche {{ routine.mesocycle.currentWeek }}/{{ routine.mesocycle.totalWeeks }} ·
@@ -203,7 +233,15 @@ const quickStartExercises = computed(() => catalog.exercises.slice(0, 4));
      is reserved for earned moments (rank-up, PR, level-up) per motion.css's own convention —
      a routine list entrance isn't one of those (see commit 8c0f158 for the same fix elsewhere). */
   animation: pop-in var(--dur-base) var(--ease-out) both;
-  transition: box-shadow var(--dur-base) var(--ease-out);
+  transition:
+    box-shadow var(--dur-base) var(--ease-out),
+    transform 180ms ease;
+}
+/* Drag-to-reorder (plan C §3 Phase 3, Task 6) — eased transform for displaced cards while a
+   drag is in progress; the dragged card itself gets `transition: none` inline from
+   useDragReorder's styleFor() so it tracks the pointer with no lag. */
+.routine-card.dragging {
+  transition: none;
 }
 .routine-grid > .routine-card:nth-child(1) {
   animation-delay: 0ms;
@@ -243,6 +281,26 @@ const quickStartExercises = computed(() => catalog.exercises.slice(0, 4));
 }
 .rc-head b {
   font-size: 15.5px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Drag-to-reorder (plan C §3 Phase 3, Task 6) — same visual pattern as ArrangeStep.vue's
+   .drag-handle, sized to the 44px touch-target floor used elsewhere on this card (.rc-menu-btn,
+   .rc-start), since this card lives on a primary mobile-first screen (unlike the wizard's
+   32px handle). */
+.rc-drag-handle {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 16px;
+  touch-action: none;
+  cursor: grab;
 }
 .rc-preview {
   display: flex;

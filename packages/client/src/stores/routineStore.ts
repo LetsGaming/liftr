@@ -94,6 +94,20 @@ export const useRoutineStore = defineStore("routine", {
       await this.load();
     },
 
+    /**
+     * Routine-list drag-reorder (plan C §3 Phase 3). Persists every routine whose position
+     * changed as a result of one drag, then reloads so the server's own orderIndex-sorted GET
+     * stays the single source of truth for display order (no client-side re-sort of the
+     * in-memory list — avoids the two ever disagreeing after a failed/partial request).
+     */
+    async reorder(orderedIds: string[]) {
+      const updates = orderedIds
+        .map((id, index) => ({ id, index }))
+        .filter(({ id, index }) => this.routines.find((r) => r.id === id)?.orderIndex !== index);
+      await Promise.all(updates.map(({ id, index }) => updateRoutine(id, { orderIndex: index })));
+      await this.load();
+    },
+
     /** Feature: "quickly create new routines based on past experience and a selection of
      *  muscle groups" — server analyzes stats (or falls back to entry-level standards for a
      *  brand-new lifter) and returns a draft exercise list + recommended sets/reps/weight for
