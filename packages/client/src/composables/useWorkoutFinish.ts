@@ -86,6 +86,15 @@ export function useWorkoutFinish(
    *  covers every touched exercise's verdict — a same-band recovery LP gain or a plausibility
    *  note is exactly the case that never trips rankedUp/newPr, so it needs its own list. */
   const sessionCaptions = ref<SessionCaption[]>([]);
+  /**
+   * Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md,
+   * §2/§3): unlike sessionXp above (accumulated client-side, live, per logged set), these two
+   * bonuses only exist server-side and are computed once at finish time — they arrive in
+   * store.finish()'s result and are populated in finishWorkout() below, not accumulated here.
+   */
+  const consistencyBonusXp = ref(0);
+  const varietyBonusXp = ref(0);
+  const newMuscleSlugs = ref<string[]>([]);
   watch(
     () => store.workoutId,
     (id, prev) => {
@@ -93,6 +102,9 @@ export function useWorkoutFinish(
         sessionXp.value = 0;
         sessionRankUps.value = [];
         sessionCaptions.value = [];
+        consistencyBonusXp.value = 0;
+        varietyBonusXp.value = 0;
+        newMuscleSlugs.value = [];
       }
     },
   );
@@ -178,7 +190,11 @@ export function useWorkoutFinish(
     // known before finishedSummary is set below. Setting finishedSummary first and populating
     // sessionRankUps afterward would race FinishSequence's onMounted, which decides whether to
     // show the "Rangaufstiege" beat the instant it mounts.
-    const ranks = await store.finish();
+    const finishResult = await store.finish();
+    const ranks = finishResult.ranks;
+    consistencyBonusXp.value = finishResult.consistencyBonusXp;
+    varietyBonusXp.value = finishResult.varietyBonusXp;
+    newMuscleSlugs.value = finishResult.newMuscleSlugs;
 
     sessionRankUps.value = ranks
       .filter((r) => r.rankedUp || r.newPr)
@@ -236,6 +252,9 @@ export function useWorkoutFinish(
     sessionXp,
     sessionRankUps,
     sessionCaptions,
+    consistencyBonusXp,
+    varietyBonusXp,
+    newMuscleSlugs,
     finishXpSnapshot,
     routineBeats,
     updatingRoutine,

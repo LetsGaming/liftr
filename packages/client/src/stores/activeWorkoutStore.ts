@@ -580,16 +580,23 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
 
     /**
      * Returns this session's rank verdicts (one per exercise that had a non-warmup set logged)
-     * so the caller can build the finish sequence's reward beat. Rank is now recomputed once
-     * here, when the workout actually finishes, not after every individual set — so unlike
-     * every other mutation in this store, this one is awaited all the way through the network
-     * flush rather than fire-and-forget: the caller needs the real verdicts before it decides
-     * what to show, not a guess made a moment later. Returns [] if offline or the flush
-     * otherwise didn't complete this round — the finish screen just shows no rank-ups for that
-     * session; a later background flush still lands the workout itself either way.
+     * plus the streak/XP mechanics redesign's two session-level bonuses (spec §2/§3), so the
+     * caller can build the finish sequence's reward beat. Rank is now recomputed once here, when
+     * the workout actually finishes, not after every individual set — so unlike every other
+     * mutation in this store, this one is awaited all the way through the network flush rather
+     * than fire-and-forget: the caller needs the real verdicts/bonuses before it decides what to
+     * show, not a guess made a moment later. Returns all-empty/zero if offline or the flush
+     * otherwise didn't complete this round — the finish screen just shows no rank-ups/bonuses for
+     * that session; a later background flush still lands the workout itself either way.
      */
-    async finish(): Promise<RankVerdict[]> {
-      if (!this.workoutId) return [];
+    async finish(): Promise<{
+      ranks: RankVerdict[];
+      consistencyBonusXp: number;
+      varietyBonusXp: number;
+      newMuscleSlugs: string[];
+    }> {
+      const empty = { ranks: [], consistencyBonusXp: 0, varietyBonusXp: 0, newMuscleSlugs: [] };
+      if (!this.workoutId) return empty;
       const pausedSeconds = Math.floor(this.totalPausedMs / 1000);
       const workoutId = this.workoutId;
 
@@ -603,7 +610,13 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       await clearActiveWorkout();
       this.$reset();
 
-      return result?.ranks ?? [];
+      if (!result) return empty;
+      return {
+        ranks: result.ranks ?? [],
+        consistencyBonusXp: result.consistencyBonusXp ?? 0,
+        varietyBonusXp: result.varietyBonusXp ?? 0,
+        newMuscleSlugs: result.newMuscleSlugs ?? [],
+      };
     },
   },
 });
