@@ -67,7 +67,7 @@ function formatDate(iso: string): string {
           :class="{ 'panel-reward panel-reward--nebula': isRecentlyAchieved(pr.achievedAt) }"
         >
           <div class="pr-row-main">
-            <b>{{ exerciseName(pr.exerciseSlug) }}</b>
+            <b>{{ exerciseName(pr.exerciseSlug, pr.exerciseName) }}</b>
             <span class="pr-kind">{{ KIND_LABEL[pr.kind] }}</span>
           </div>
           <div class="pr-row-meta">

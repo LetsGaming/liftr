@@ -64,7 +64,7 @@ const filtered = computed(() =>
   catalog.exercises
     .filter((e) => {
       const q = search.value.trim().toLowerCase();
-      if (q && !(e.slug.toLowerCase().includes(q) || exerciseName(e.slug).toLowerCase().includes(q))) return false;
+      if (q && !(e.slug.toLowerCase().includes(q) || exerciseName(e.slug, e.name).toLowerCase().includes(q))) return false;
       if (equipmentFilter.value && e.equipment !== equipmentFilter.value) return false;
       if (muscleFilter.value && !e.muscles.some((m) => m.slug === muscleFilter.value)) return false;
       if (onlyDoableEquipment.value && hasEquipmentFilter.value && !canPerform(requirementsFor(e), settingsStore.ownedEquipment)) {
@@ -78,7 +78,7 @@ const filtered = computed(() =>
       // Only a required-tier gap deprioritizes; a recommended-only gap (e.g. no mat) doesn't.
       const doableDiff = Number(missingRequiredFor(a).length > 0) - Number(missingRequiredFor(b).length > 0);
       if (doableDiff !== 0) return doableDiff;
-      return exerciseName(a.slug).localeCompare(exerciseName(b.slug), "de");
+      return exerciseName(a.slug, a.name).localeCompare(exerciseName(b.slug, b.name), "de");
     }),
 );
 
@@ -127,7 +127,7 @@ function equipmentLabel(eq: string | null): string {
     <ul class="ex-grid">
       <li v-for="ex in filtered" :key="ex.id">
         <button class="ex-card" :class="{ selected: mode === 'select' && selectedIds.has(ex.id) }" @click="onCardClick(ex)">
-          <ExerciseRow :slug="ex.slug" :equipment="ex.equipment ?? 'bodyweight'" :name="exerciseName(ex.slug)" :size="48">
+          <ExerciseRow :slug="ex.slug" :equipment="ex.equipment ?? 'bodyweight'" :name="exerciseName(ex.slug, ex.name)" :size="48">
             <template #meta>
               <span class="equip">{{ equipmentLabel(ex.equipment) }}</span>
               <span v-if="!onlyDoableEquipment && hasEquipmentFilter && missingRequiredFor(ex).length > 0" class="missing-note">

@@ -7,7 +7,10 @@ import type { ZodFastifyInstance } from "../types.js";
 const rankResponse = z.object({
   exerciseId: z.string(),
   slug: z.string(),
-  nameKey: z.string(),
+  /** Literal display name — set for custom exercises. Null for catalog exercises (resolved
+   *  client-side via i18n on `slug`). Custom exercises get ranked like any other, so this
+   *  route needs it too, not just /api/exercises. */
+  name: z.string().nullable(),
   isBodyweight: z.boolean(),
   tier: tierSchema,
   division: z.number(),
@@ -30,7 +33,7 @@ export function registerRankRoutes(app: ZodFastifyInstance, db: AppDb) {
       .map((r) => ({
         exerciseId: r.exerciseId,
         slug: r.exercise.slug,
-        nameKey: r.exercise.nameKey,
+        name: r.exercise.name,
         isBodyweight: r.exercise.isBodyweight,
         tier: r.tier,
         division: r.division,

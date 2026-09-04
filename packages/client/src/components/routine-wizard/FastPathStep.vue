@@ -75,7 +75,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
             :size="16"
             :slug="catalog.byId(exerciseId)?.slug ?? ''"
             :equipment="catalog.byId(exerciseId)?.equipment ?? 'bodyweight'"
-            :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '')"
+            :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '', catalog.byId(exerciseId)?.name)"
           >
             <template #trailing>
               <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>

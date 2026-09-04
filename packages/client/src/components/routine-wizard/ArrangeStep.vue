@@ -75,7 +75,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
           <ExerciseRow
             :slug="catalog.byId(exerciseId)?.slug ?? ''"
             :equipment="catalog.byId(exerciseId)?.equipment ?? 'bodyweight'"
-            :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '')"
+            :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '', catalog.byId(exerciseId)?.name)"
           >
             <template #meta>
               <span class="equip">{{ catalog.byId(exerciseId)?.equipment }}</span>

@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 export interface RankRow {
   exerciseId: string;
   slug: string;
-  nameKey: string;
+  name: string | null;
   isBodyweight: boolean;
   tier: string;
   division: number;

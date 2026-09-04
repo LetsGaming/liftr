@@ -42,7 +42,7 @@ function routineMuscles(routine: Routine) {
 
 function routineExerciseName(exerciseId: string): string {
   const ex = catalog.byId(exerciseId);
-  return ex ? exerciseName(ex.slug) : "";
+  return ex ? exerciseName(ex.slug, ex.name) : "";
 }
 
 const quickStartExercises = computed(() => catalog.exercises.slice(0, 4));

@@ -14,7 +14,10 @@ const tieredRequirementResponse = z.object({
 const exerciseResponse = z.object({
   id: z.string(),
   slug: z.string(),
-  nameKey: z.string(),
+  /** Literal display name — set for custom (user-created) exercises. Null for catalog exercises,
+   *  which resolve their name client-side via i18n keyed on `slug` (see the client's
+   *  useExerciseName.ts). */
+  name: z.string().nullable(),
   equipment: z.string().nullable(),
   requiredEquipment: z.array(tieredRequirementResponse),
   movementPattern: z.string(),
@@ -44,7 +47,7 @@ const customExerciseSchema = z.object({
   // path-traversal-shaped gap, since `slug` is later joined into a filesystem path unmodified
   // (`hasImage` below) — a `../` sequence with no format check would probe outside `imagesRoot`.
   slug: z.string().regex(EXERCISE_SLUG_PATTERN, "slug must be lowercase, alphanumeric, hyphen-separated"),
-  nameKey: z.string().min(1),
+  name: z.string().min(1),
   equipment: z.string().optional(),
   movementPattern: z.string().min(1),
   isBodyweight: z.boolean().default(false),
@@ -69,7 +72,7 @@ export function registerExerciseRoutes(app: ZodFastifyInstance, db: AppDb, image
     return rows.map((ex) => ({
       id: ex.id,
       slug: ex.slug,
-      nameKey: ex.nameKey,
+      name: ex.name,
       equipment: ex.equipment,
       requiredEquipment: parseRequiredEquipment(ex.requiredEquipment),
       movementPattern: ex.movementPattern,

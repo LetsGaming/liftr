@@ -27,7 +27,7 @@ export interface RoutineExercise {
    *  to the next exercise. */
   restBetweenSetsSeconds: number | null;
   restAfterExerciseSeconds: number | null;
-  exercise: { id: string; slug: string; nameKey: string; isBodyweight: boolean };
+  exercise: { id: string; slug: string; name: string | null; isBodyweight: boolean };
 }
 
 export interface Mesocycle {

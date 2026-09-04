@@ -110,7 +110,7 @@ const sortedRanks = computed(() =>
         <div v-if="ranksStore.ranks.length > 0" class="rank-grid">
         <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap">
           <button class="rank-card" :class="`t-${r.tier}`" @click="toggleExpand(r.exerciseId)">
-            <div class="en">{{ exerciseName(r.slug) }}</div>
+            <div class="en">{{ exerciseName(r.slug, r.name) }}</div>
             <RankProgress
               variant="card"
               :tier="r.tier"

@@ -4,6 +4,7 @@ export interface PrListItem {
   id: string;
   exerciseId: string;
   exerciseSlug: string;
+  exerciseName: string | null;
   kind: "e1rm" | "weight" | "reps" | "volume";
   value: number;
   achievedAt: string;

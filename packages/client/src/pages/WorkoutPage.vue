@@ -483,7 +483,7 @@ async function logSet() {
             <li v-for="ex in addExerciseCandidates" :key="ex.id">
               <button @click="addExerciseToSession(ex)">
                 <ExerciseIcon :equipment="ex.equipment ?? 'bodyweight'" :size="16" />
-                {{ exerciseName(ex.slug) }}
+                {{ exerciseName(ex.slug, ex.name) }}
               </button>
             </li>
           </ul>

@@ -48,7 +48,7 @@ export function useStartRoutine() {
                 : lastTime;
             return {
               exerciseId: re.exercise.id,
-              name: exerciseName(re.exercise.slug),
+              name: exerciseName(re.exercise.slug, re.exercise.name),
               isBodyweight: re.exercise.isBodyweight,
               targetSets: re.targetSets,
               supersetGroup: re.supersetGroup,
@@ -84,7 +84,7 @@ export function useStartRoutine() {
       const inputs: StartExerciseInput[] = await Promise.all(
         exercises.map(async (ex): Promise<StartExerciseInput> => ({
           exerciseId: ex.id,
-          name: exerciseName(ex.slug),
+          name: exerciseName(ex.slug, ex.name),
           isBodyweight: ex.isBodyweight,
           targetSets: targetSetsByExerciseId.get(ex.id) ?? fallbackTargetSets,
           lastTime: await fetchLastTime(ex.id),
