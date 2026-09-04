@@ -19,7 +19,7 @@ import { useStartRoutine } from "../../composables/useStartRoutine";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 import { useDragReorder } from "../../composables/useDragReorder";
 import { aggregateMuscles } from "../../lib/muscles";
-import { computed } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 
 const catalog = useCatalogStore();
 const routineStore = useRoutineStore();
@@ -60,6 +60,28 @@ function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | nu
   if (!cardEl) return;
   onPointerDown(e, index, routineStore.routines.length, cardEl);
 }
+
+/** Fix-round finding (task 5/6): useDragReorder's own doc comment says it's built for "one
+ *  list, vertical only" — its translateY math assumes a single itemHeight step per index, with
+ *  no concept of column-wrap. .routine-grid switches from single-column to a genuine multi-column
+ *  grid at the same 900px breakpoint used below (see the `@media (min-width: 900px)` rule on
+ *  .routine-grid in <style>), so dragging across a row boundary at desktop widths would compute
+ *  the wrong displaced-card offsets and resolve to the wrong target index. Rather than teaching
+ *  the shared composable about column-wrap (it's also used by ArrangeStep.vue's single-column
+ *  wizard list), gate the drag handle here: only render/wire it when the grid is single-column.
+ *  All other card actions (start, ⋮ menu, mesocycle controls) are unaffected at any width. */
+const dragReorderBreakpoint = "(min-width: 900px)";
+const isDesktopGrid = ref(typeof window !== "undefined" ? window.matchMedia(dragReorderBreakpoint).matches : false);
+let dragBreakpointMql: MediaQueryList | null = null;
+if (typeof window !== "undefined") {
+  dragBreakpointMql = window.matchMedia(dragReorderBreakpoint);
+  const syncIsDesktopGrid = (e: MediaQueryListEvent | MediaQueryList) => {
+    isDesktopGrid.value = e.matches;
+  };
+  dragBreakpointMql.addEventListener("change", syncIsDesktopGrid);
+  onBeforeUnmount(() => dragBreakpointMql?.removeEventListener("change", syncIsDesktopGrid));
+}
+const canDragReorder = computed(() => !isDesktopGrid.value);
 </script>
 
 <template>
@@ -73,7 +95,11 @@ function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | nu
           :style="styleFor(i)"
         >
           <div class="rc-head">
+            <!-- Drag handle restricted to the single-column (mobile) layout — see the
+                 canDragReorder computed above for why: useDragReorder's vertical-only math would
+                 misbehave once the grid wraps into multiple columns at >=900px. -->
             <button
+              v-if="canDragReorder"
               class="rc-drag-handle"
               aria-label="Verschieben"
               @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.routine-card') as HTMLElement)"
