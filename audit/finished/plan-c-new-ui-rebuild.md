@@ -1,5 +1,54 @@
 # Plan C — Full New UI Rebuild for Liftr
 
+## Closure note — 2026-09-04
+
+This plan's phases are now **implemented, reviewed, and merged to master**, moved here from
+`audit/` root per `docs/superpowers/plans/2026-09-03-full-rebuild-orchestration.md` §4 Step 4.
+Its §2 (design direction) had already been superseded before implementation began by the
+five `audit/nebula-design-*.md` documents (see `workplan-v1.md` §0's "Resolved 2026-09-03"
+note) — §1/§3/§4/§5/§6 stood as written and were executed against directly.
+
+Execution ran as Foundation (Wave 0, solo) followed by five parallel Wave-1 workstreams, each
+via subagent-driven development (fresh implementer + independent reviewer per task, plus a
+final whole-branch review per workstream). All six landed on master; commit range
+`9daef8e..f7f2256` (39 commits):
+
+- **Foundation** (`docs/superpowers/plans/2026-09-03-foundation-primitives.md`) — touch-target/
+  density tokens, `TruncatingLabel`, `ThumbZoneAction`, `DensityScope`, nav-shell hardening,
+  motion/haptic contract documentation.
+- **Workstream A — Today/Train** (`2026-09-03-workstream-a-today-train.md`) — RPE/notes
+  capture (Phase 1's "zero client consumer" gap, closed), RestTimer's three-state rendering,
+  mobile jump-to-exercise rail, non-modal sync indicator. Atomic-cutover requirement satisfied
+  in one contiguous range. Final review caught and fixed a double-tap race condition and a
+  documented `SheetModal` unmount-crash pattern.
+- **Workstream B — Finish, Progress & Mechanics** (`2026-09-03-workstream-b-finish-progress.md`)
+  — fixed a real, previously-shipped-and-unnoticed plausibility-gating bug (a discounted
+  session could render identically to a genuine rank-up) across three render sites, including
+  one (`WorkoutPage.vue`'s recap panel/share-card) the plan itself hadn't originally scoped;
+  animated the Finish Sequence's LP bar from `prevLp` to `lp`. Its Task 7 (streak/XP mechanics
+  redesign) was **deliberately not executed** — it requires an actual product-owner brainstorm,
+  not something to fabricate autonomously; still open, see `workplan-v1.md`'s open questions.
+- **Workstream C — Plan/Routines** (`2026-09-03-workstream-c-plan-routines.md`) — equipment-
+  substitution copy naming, exercise-name truncation via Foundation's primitive, routine-list
+  extraction into its own component with drag-to-reorder, add-custom-exercise form. Final
+  review caught and fixed a CSS animation collision that made drag-reorder invisible, an
+  invalid movement-pattern value, and umlaut-mangling in custom-exercise slugs.
+- **Workstream D — Profile & Auth** (`2026-09-03-workstream-d-profile-auth.md`) — verified 5 of
+  6 sub-areas already correct (including Plan C's own previously-unresolved auth/401 migration
+  risk flag); fixed the one real gap, bodyweight empty-state copy.
+- **Workstream E — Runs** (`2026-09-03-workstream-e-runs.md`) — verified the duplicate-import-
+  button fix holds; added manual-entry error handling, success toasts, a Health Connect mention
+  in the empty state.
+
+**What remains open, not closed by this work:** a real device/browser verification pass (no
+live dev server was available during implementation — every visual/interaction check was a
+static code trace instead; the final reviews caught real bugs this way, so this is a
+legitimate residual gap, not a formality) and Workstream B's Task 7 (streak/XP mechanics
+design brainstorm). See `workplan-v1.md`'s consolidated open questions for current status of
+every other item this plan touched.
+
+---
+
 A phase-driven plan for building a genuinely new interface for Liftr, rather than patching
 the existing one. This is one of three parallel plans; the other two address engagement
 additions and standards-fixes to the *existing* UI. This plan is deliberately independent
