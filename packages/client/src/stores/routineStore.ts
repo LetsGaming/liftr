@@ -27,6 +27,14 @@ export const useRoutineStore = defineStore("routine", {
     loaded: false,
     error: false,
   }),
+  getters: {
+    /** Wave 0-B W1 (Routine Overview screen): resolves a single routine by id for the new
+     *  `/routines/:id` route — everything the overview screen needs (exercises, targetSets,
+     *  weights/reps) is already present on the hydrated `Routine` objects `load()` returns, so
+     *  this is a pure lookup, no new fetch. Returns `undefined` for an unknown id (bogus deep
+     *  link), which the page renders as its not-found state rather than a crash. */
+    byId: (state) => (id: string) => state.routines.find((r) => r.id === id),
+  },
   actions: {
     async load() {
       try {
