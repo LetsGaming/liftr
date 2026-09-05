@@ -88,6 +88,72 @@ Condensed to one line each with a pointer to the evidence; full history lives in
   remaining sites where the mid-word-break bug it exists to prevent had recurred (`RanksPage.vue`,
   `WorkoutPage.vue`'s active-exercise heading), verified live at desktop and ~390px mobile width.
   273/273 tests, clean typecheck across all 5 packages, clean lint. Merged to master.
+- **Light-mode contrast audit (2026-09-05)** — product owner reported ongoing light-mode contrast
+  problems after WS3's fix claimed the Ranks-page tier-surface text and Ionic chrome were closed;
+  did not assume that fix was complete, re-verified live instead. Walked every major screen in
+  light mode at 390×844 (Overview, Ranks resting list + populated tier cards, Records, Exercises
+  list + detail's Über/Rang/Statistiken/Verlauf tabs, Workout logging incl. RPE/Notiz capture and a
+  full Finish Sequence, Runs incl. manual-entry validation, Profile incl. Darstellung/API-token,
+  routine builder, custom-exercise form) with a live DOM-based WCAG contrast scanner (computed
+  `color`/effective composited `background-color`, including gradient stops, not source CSS) run
+  after each screen, re-measuring after every fix in both themes. WS3's own fixes (Ionic chrome,
+  theme-color meta, `.panel-reward` text on `/ranks`' resting tier cards) held up and re-verified
+  clean. Two new, previously-uncaught bugs found and fixed:
+  1. **Placeholder text on every input/textarea app-wide** (weight/birth-year on Profile, API
+     token, run distance/duration, exercise search, routine name, custom-exercise name, Notiz) —
+     no component ever set `::placeholder` color, so every field fell through to the browser's
+     UA-default grey (`rgb(117,117,117)`), a hardcoded, non-token color. Measured 3.80:1 against
+     the `--surface-3` fill these fields use in light mode (below the 4.5:1 AA floor) — and, once
+     checked, an even worse 2.42:1 in dark mode (not something the user reported, but the same
+     bug, more severe there). Fixed with one global rule (`tokens.css`) reading `var(--dim)`
+     (5.04:1 light / would-be 4.39:1 dark — still short of AA against `--surface-3` specifically,
+     since `--dim` was tuned against `--surface-2`), plus a small locally-pinned dark-mode-only
+     override (`#aab2cd`, 5.30:1) following the same "pin locally instead of redefining the shared
+     token" pattern as `.panel-reward`, so `--dim`'s other already-passing call sites are
+     untouched. Verified live in both themes after the fix.
+  2. **Exercise-detail sheet's "Rang" tab tier label unreadable in light mode**
+     (`ExerciseInfoPanel.vue`) — `<RankProgress variant="card">` reads `var(--tt, ...)`, the
+     per-tier accent token, which is always a light/near-white color tuned for sitting on that
+     tier's own dark gradient card (`RanksPage.vue`'s `.rank-card` supplies that gradient plus a
+     local `--text`/`--dim`/`--faint` re-pin — the only other `variant="card"` call site, and the
+     one this variant's CSS comments assume always exists). `ExerciseInfoPanel.vue` was the one
+     place rendering the same variant bare, with no such wrapper, so the tier label rendered
+     near-white-on-near-white in light mode — measured ~1:1 (`rgb(240,240,240)` on
+     `rgb(246,244,251)`), i.e. functionally invisible ("ANFÄNGER VI" unreadable in the screenshot).
+     This is exactly a light-mode-specific bug that happened to look fine in dark mode by
+     accident (light text over a dark plain surface still read fine there, masking the missing
+     wrapper) and only broke once the plain surface went light — the same failure shape as §6's
+     documented Ranks-page defect, just at a different call site WS3 didn't reach. Fixed by giving
+     the "Rang" tab its own `.rank-card-frame` wrapper replicating `RanksPage.vue`'s exact
+     tier-gradient-plus-token-repin recipe (not a new pattern — a straight copy of the existing
+     one to the call site that was missing it). Verified live in both themes: light mode now
+     renders identically to the equivalent Ranks-page card; dark mode is visually unchanged.
+     Confirmed this is the only other `variant="card"` consumer (`RanksPage.vue` already wraps
+     correctly; the other two call sites use `variant="inline"`, which self-applies
+     `.panel-reward` and was never affected).
+  - **Noted but not fixed — a pre-existing, theme-invariant design question, not a light-mode bug**:
+    the Anfänger/Initiate tier's own gradient (`--initiate-1/-2/-3`, a light "steel" grey fading to
+    near-black) pairs with `--tt`'s near-white label color at as low as ~2.5:1 in the lightest
+    corner of that specific gradient — present identically in both themes and already shipped
+    unmodified on `RanksPage.vue` before this audit (this audit only copied that existing, already-
+    live treatment to the exercise-detail sheet, per above). Flagged for the product owner as a
+    possible follow-up (e.g. darkening the Initiate tier's lightest stop, or nudging its `--tt`)
+    rather than fixed here, since it is not light-mode-specific and changing a tier's own metal
+    palette is a design call `nebula-design-system.md` §1 reserves as out of Nebula's scope.
+  - **Noted but not fixed — a design-system-conformance question, not contrast**: the Workout tab's
+    empty state (`/workout`, no routine yet) shows two simultaneous `.btn-primary` gradient CTAs
+    ("+ Neue Routine" and "Ohne Routine loslegen …") — `nebula-design-system.md` §7 checklist item
+    2 requires exactly one gradient CTA per screen. Both buttons individually pass contrast; this
+    is a Nebula-positive-list violation, not a contrast bug, and outside this audit's brief — noted
+    for the product owner to decide which button stays primary.
+  - **Coverage note**: not independently re-verified this pass — Finish Sequence's rank-up
+    ring/glow beat specifically (the summary card rendered correctly, but no fresh rank-up ring
+    animation was caught mid-transition), and the Workout routine-builder's "Nach Muskelgruppe
+    vorschlagen lassen" suggestion flow and its resulting screens. No contrast issues were found in
+    what was covered, but these particular surfaces were not walked this session and should not be
+    assumed clean on the strength of this entry alone.
+  - 306/306 tests, clean typecheck across all 5 packages, clean lint (0 errors, 3 pre-existing
+    unrelated warnings).
 
 ---
 
