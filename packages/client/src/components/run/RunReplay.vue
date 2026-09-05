@@ -139,45 +139,56 @@ function fmtPace(sPerKm: number | null): string {
 
 <template>
   <div class="replay">
+    <!-- Nebula N6 — deliberately exempt from .surface-hybrid/.panel: this wraps RunMap, whose
+         Leaflet instance paints real map tiles onto its own canvas/DOM layer, outside the CSS
+         cascade. A translucent/blurred surface sitting behind opaque tile imagery is visually
+         meaningless (you'd either see nothing of the blur, since tiles are opaque, or — if the
+         map background peeked through gaps — tiles showing through a glass card, which isn't the
+         intent of this design). RunMap.vue's own `.run-map` background stays the plain `--bg`
+         solid fill it already was; this wrapper adds no surface treatment of its own either. -->
     <div class="map-wrap">
       <RunMap ref="mapRef" :points="points" />
     </div>
 
-    <div class="controls">
-      <button class="play-btn" @click="toggle">{{ playing ? "⏸" : "▶" }}</button>
-      <input
-        class="scrubber"
-        type="range"
-        min="0"
-        max="100"
-        :value="totalMs > 0 ? (playheadMs / totalMs) * 100 : 0"
-        @input="seek(Number(($event.target as HTMLInputElement).value))"
-      />
-      <span class="time tnum">{{ fmt(playheadMs) }} / {{ fmt(totalMs) }}</span>
-    </div>
+    <!-- Everything below is UI chrome (scrubber, speed toggle, live readouts), not the map itself
+         — this DOES adopt the hybrid surface per N6's scope. -->
+    <div class="replay-chrome panel">
+      <div class="controls">
+        <button class="play-btn" @click="toggle">{{ playing ? "⏸" : "▶" }}</button>
+        <input
+          class="scrubber"
+          type="range"
+          min="0"
+          max="100"
+          :value="totalMs > 0 ? (playheadMs / totalMs) * 100 : 0"
+          @input="seek(Number(($event.target as HTMLInputElement).value))"
+        />
+        <span class="time tnum">{{ fmt(playheadMs) }} / {{ fmt(totalMs) }}</span>
+      </div>
 
-    <div class="speed-row">
-      <span class="eyebrow">Geschwindigkeit</span>
-      <button v-for="s in [1, 2, 4, 8]" :key="s" class="speed-btn" :class="{ active: speed === s }" @click="speed = s">
-        {{ s }}×
-      </button>
-    </div>
+      <div class="speed-row">
+        <span class="eyebrow">Geschwindigkeit</span>
+        <button v-for="s in [1, 2, 4, 8]" :key="s" class="speed-btn" :class="{ active: speed === s }" @click="speed = s">
+          {{ s }}×
+        </button>
+      </div>
 
-    <div class="readouts">
-      <div class="readout">
-        <span class="eyebrow">Pace</span>
-        <span class="tnum">{{ fmtPace(currentFrame?.paceSPerKm ?? null) }}</span>
+      <div class="readouts">
+        <div class="readout">
+          <span class="eyebrow">Pace</span>
+          <span class="tnum">{{ fmtPace(currentFrame?.paceSPerKm ?? null) }}</span>
+        </div>
+        <div v-if="hasHr" class="readout">
+          <span class="eyebrow">Puls</span>
+          <span class="tnum">{{ currentFrame?.hr != null ? Math.round(currentFrame.hr) + " bpm" : "–" }}</span>
+        </div>
+        <div v-if="hasCadence" class="readout">
+          <span class="eyebrow">Kadenz</span>
+          <span class="tnum">{{ currentFrame?.cadence ?? "–" }}</span>
+        </div>
       </div>
-      <div v-if="hasHr" class="readout">
-        <span class="eyebrow">Puls</span>
-        <span class="tnum">{{ currentFrame?.hr != null ? Math.round(currentFrame.hr) + " bpm" : "–" }}</span>
-      </div>
-      <div v-if="hasCadence" class="readout">
-        <span class="eyebrow">Kadenz</span>
-        <span class="tnum">{{ currentFrame?.cadence ?? "–" }}</span>
-      </div>
+      <p v-if="reduceMotion" class="reduce-note">Automatisches Abspielen deaktiviert (reduzierte Bewegung) — manuell scrubben funktioniert weiterhin.</p>
     </div>
-    <p v-if="reduceMotion" class="reduce-note">Automatisches Abspielen deaktiviert (reduzierte Bewegung) — manuell scrubben funktioniert weiterhin.</p>
   </div>
 </template>
 

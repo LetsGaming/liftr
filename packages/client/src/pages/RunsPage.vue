@@ -138,7 +138,7 @@ function formatDuration(s: number) {
 
     <p v-if="importError" class="error">{{ importError }}</p>
 
-    <div v-if="showManualForm" class="manual-form pop-in">
+    <div v-if="showManualForm" class="manual-form panel pop-in">
       <input v-model="manualName" type="text" placeholder="Name (optional)" aria-label="Name des Laufs" />
       <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
       <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
@@ -154,7 +154,7 @@ function formatDuration(s: number) {
          either). The .pagehead button above is the only one that's always present (it's the sole
          import entry point once runs exist), so it — not this one — is the button to keep;
          duplicating it here only when the list happens to be empty was the actual redundancy. -->
-    <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty">
+    <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty panel">
       <div class="eyebrow">Läufe</div>
       <p>
         Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
@@ -193,7 +193,7 @@ function formatDuration(s: number) {
         <button
           v-for="run in runsStore.runs"
           :key="run.id"
-          class="run-row"
+          class="run-row panel"
           :class="{ active: selectedRun?.id === run.id }"
           @click="selectRun(run.id)"
         >
@@ -226,11 +226,15 @@ function formatDuration(s: number) {
   margin-top: var(--sp2);
   font-size: 13px;
 }
+/* Nebula N6 — manual-entry form adopts the shared .panel/surface-hybrid treatment (tokens.css)
+   instead of sitting flat on the page; padding/layout stay local since .panel itself only
+   supplies background/blur/shadow/hairline, not spacing. */
 .manual-form {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp2);
   margin-top: var(--sp3);
+  padding: var(--sp4);
   max-width: 560px;
 }
 .manual-form input {
@@ -241,9 +245,11 @@ function formatDuration(s: number) {
   color: var(--text);
   font-size: 13.5px;
 }
+/* Nebula N6 — was a flat --surface card; now rides .panel (hybrid bg/blur/shadow/hairline).
+   border-radius stays --r-xl (larger than .panel's default --r-lg) to preserve this empty
+   state's original, deliberately roomier look; .panel's own background/box-shadow/backdrop-filter
+   declarations are otherwise reused as-is. */
 .runs-empty {
-  background: var(--surface);
-  border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--sp5);
   margin-top: var(--sp4);
@@ -285,19 +291,24 @@ function formatDuration(s: number) {
   font-size: 15px;
   margin-bottom: var(--sp3);
 }
+/* Nebula N6 — was a flat --surface-2 card; now rides .panel (hybrid bg/blur/shadow + gradient
+   hairline edge via ::after). Per tokens.css's .panel/.surface-hybrid comment, a native <button>
+   needs its own explicit background (which .panel already sets) rather than relying on the
+   pseudo-element alone — this button already gets that from the .panel class in the template.
+   The old flat border-color active/hover cues no longer apply (there's no real border, just the
+   hairline gradient), so "active" and "hover" are re-expressed as an inset ring / brightness
+   tweak layered on top of .panel's own box-shadow instead of swapping backgrounds, which would
+   have broken translucency. */
 .run-row {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--sp3);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   margin-bottom: var(--sp2);
   text-align: left;
-  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-base) var(--ease-out), background var(--dur-fast) var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), filter var(--dur-fast) var(--ease-out);
   /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
      (rank-up, PR, level-up) per motion.css's own convention — a run-list row entrance isn't
      one of those (see commit 8c0f158 for the same fix elsewhere). */
@@ -308,11 +319,11 @@ function formatDuration(s: number) {
 }
 @media (hover: hover) {
   .run-row:not(.active):hover {
-    background: var(--surface-3);
+    filter: brightness(1.12);
   }
 }
 .run-row.active {
-  border-color: var(--blue);
+  box-shadow: var(--surface-hybrid-shadow), inset 0 0 0 2px var(--blue);
 }
 .run-row .meta {
   display: flex;
