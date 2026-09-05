@@ -102,12 +102,26 @@ routed at `/records`, linked from `RanksPage.vue`. Confirmed live: real PR data 
 - The Finish Sequence's PR beat does not link into the ledger — still a one-off in-session
   acknowledgment with no permanent home to revisit. Grep of `FinishSequence.vue` for
   record-related terms returns zero matches.
-- **New bug found by live testing**: navigating to `/records` via the in-app router-link (the
-  normal way a user reaches it, from `RanksPage.vue`) shows a fully blank content area for ~1-2
-  seconds before data renders — reproduced 3× on fresh tabs. A direct/hard URL load does not show
-  this. Likely a mount/fetch-sequencing issue in `RecordsPage.vue` (late `onMounted` fetch, missing
-  loading skeleton, or a router-transition timing issue) — not investigated further.
-  `audit/verify/round2-agent-2.md`.
+
+**Router-link blank-flash bug (`round2-agent-2.md`) — verified already resolved, 2026-09-05.**
+`round2-agent-2.md` found that navigating to `/records` via `RanksPage.vue`'s in-app router-link
+showed a fully blank content area for ~1-2 seconds before data rendered (reproduced 3× on fresh
+tabs), unlike a direct/hard URL load. That report predates same-day WS3 client UI cleanup work,
+which added `RecordsPage.vue`'s `.pr-skel-row` shimmer skeleton (gated on
+`!prStore.loaded && !prStore.error`, rendered immediately on mount, not on fetch completion). Live
+re-verification via an isolated Playwright session (`http://localhost:5174`, dev server, real
+click on the `RanksPage.vue` router-link, not a hard load): with `/api/prs` running at its normal
+near-instant local latency AND with `fetch` monkey-patched to artificially delay `/api/prs` by
+700ms/900ms/1800ms to stress-test the gap, `.main-content`'s `innerHTML` was sampled every 10-15ms
+across the whole transition in every run — it was never empty in any run. The outgoing
+`RanksPage.vue` content stays visible through the `route-fade` leave transition (~135-150ms, the
+existing `--dur-fast` transition, not a bug), then the skeleton is already mounted and painted by
+~150ms, well before any of the artificially delayed fetches resolved. No `router.beforeResolve`
+chunk-prefetch guard exists in this codebase (searched `router.ts`, `main.ts`, `App.vue` — none
+found), so the "beforeResolve guard" some prior note attributed to the WS3 batch was not actually
+part of what shipped here; it turned out not to be needed; the skeleton alone closes the gap the
+bug report described. Moving this out of "still open" — `round2-agent-2.md` is a historical record
+of a real bug that existed at the time it was written, not a currently-accurate status.
 
 ---
 
