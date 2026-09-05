@@ -85,11 +85,11 @@ const sortedRanks = computed(() =>
            analytics-row + card-grid shape instead of one flat placeholder. -->
       <template v-if="!ranksStore.loaded && !ranksStore.error">
         <div class="rank-analytics" aria-hidden="true">
-          <div class="rank-skel-tile"><div class="shimmer rank-skel-block" /></div>
-          <div class="rank-skel-tile"><div class="shimmer rank-skel-block" /></div>
+          <div class="rank-skel-tile surface-hybrid"><div class="shimmer rank-skel-block" /></div>
+          <div class="rank-skel-tile surface-hybrid"><div class="shimmer rank-skel-block" /></div>
         </div>
         <div class="rank-grid">
-          <div v-for="i in 4" :key="i" class="shimmer rank-skel-card" aria-hidden="true" />
+          <div v-for="i in 4" :key="i" class="shimmer rank-skel-card surface-hybrid" aria-hidden="true" />
         </div>
       </template>
 
@@ -153,12 +153,14 @@ const sortedRanks = computed(() =>
   max-width: var(--content-w-wide);
   align-items: start;
 }
-/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep, these give each piece the
-   real content's approximate size/shape/background (same technique as ErholungszoneCard.vue). */
+/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep; N3 adoption pass adds
+   `.surface-hybrid` (tokens.css, Foundation F3) so a loading Ränge screen sits on the same
+   translucent/hairline system as the loaded content it stands in for, rather than reverting to
+   flat --surface-2 while data is in flight. `.surface-hybrid` supplies background/blur/shadow +
+   the ::after hairline; border-radius/sizing stay local since the utility deliberately doesn't
+   set border-radius (it needs to work on differently-shaped hosts). */
 .rank-skel-tile {
   padding: var(--sp4);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
   min-height: 140px;
   display: flex;
@@ -173,8 +175,6 @@ const sortedRanks = computed(() =>
 .rank-skel-card {
   height: 128px;
   border-radius: var(--r-lg);
-  background-color: var(--surface-2);
-  border: 1px solid var(--line);
 }
 .load-error {
   display: flex;
@@ -237,7 +237,15 @@ const sortedRanks = computed(() =>
 }
 /* Full-card vivid tier gradient (UI/UX rework audit P0-C) — the reward screen should be the
    most colourful surface in the app, not a dark card with a faint tint at the top. Fallbacks
-   only matter if .t-<tier> somehow isn't also applied; in practice it always is. */
+   only matter if .t-<tier> somehow isn't also applied; in practice it always is.
+   N3 guardrail (2026-09-05): this is the tier-badge/reward system, not a generic panel —
+   deliberately NOT converted to .surface-hybrid/the gradient-hairline recipe. Tier cards keep
+   their existing metal/medal-derived fill exactly as-is per the redesign spec's hard rule (rank
+   reads as earned status, never brand decoration). `.rank-card`'s own `background: transparent`
+   above (the documented <button>-opaque-default gotcha this ::after's comment already names)
+   was re-verified live after the sibling .chart-slot below picked up backdrop-filter: blur —
+   the tier gradient still paints correctly through this ::after with no opaque button fill
+   stomping it, in both themes. */
 .rank-card::after {
   content: "";
   position: absolute;
@@ -250,12 +258,42 @@ const sortedRanks = computed(() =>
   font-weight: 800;
   color: var(--text);
 }
+/* N3 adoption pass: was flat --surface-2 + a real 1px --line border (border-top:none) that
+   relied on `margin-top: -1px` to visually fuse with .rank-card's own bottom border above it —
+   a real 1px flat line and the card's own 1px flat line lined up so the seam disappeared. Moving
+   to the surface-hybrid recipe (mask-composite gradient hairline via ::after, see tokens.css's
+   .surface-hybrid) breaks that fusion mechanically: the hairline ring is a *different* gradient
+   than .rank-card's plain --line border, and the generic .surface-hybrid/.panel utilities draw
+   that ring on all four edges uniformly — a ring across the top here would sit right on top of
+   the seam the -1px margin was built to hide, showing as a visible parting line instead of one
+   continuous card. Real fix (not a token swap that ignores the problem): give this element its
+   own ::after with asymmetric mask padding — 0 at the top, 1px on the other three sides. The
+   mask-composite technique subtracts a content-box inset from the border-box; a 0px inset on one
+   side makes content-box and border-box coincide there, so the ring's width degenerates to zero
+   exactly on that edge while staying a normal 1px hairline on the rest. The card above still
+   supplies the seam's only visible line (its own bottom border), so the fusion still works. */
 .chart-slot {
+  position: relative;
   padding: var(--sp3) var(--sp4);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-top: none;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
   margin-top: -1px;
+}
+.chart-slot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* Asymmetric mask padding: 0 top / 1px right,bottom,left — see comment above. Shorthand order
+     is top, horizontal, bottom (3-value form) so this reads as "no ring at top, 1px elsewhere". */
+  padding: 0 1px 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 </style>
