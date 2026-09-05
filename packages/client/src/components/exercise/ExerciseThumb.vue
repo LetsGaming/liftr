@@ -5,8 +5,9 @@
  * the same slug-convention image path ExerciseDemo.vue already proved
  * (`${apiBase()}/images/<slug>/start.jpg`) rather than the dead `demoStartImage` DB column
  * (see lib/equipmentIcons.ts's sibling note — that column is always null, ingest never writes
- * it). 11 of 94 catalog slugs have no mirrored photo (no open-licensed source exists); those
- * fall back to the equipment icon instead of a broken-image frame.
+ * it). 12 of 94 catalog slugs have no mirrored photo (no open-licensed source exists); those
+ * fall back to the equipment icon instead of a broken-image frame. (Corrected from "11": see
+ * audit/missing-photo-sourcing-research.md — curated.yaml's own header always said 12.)
  */
 import { computed, ref } from "vue";
 import { apiBase } from "../../lib/api";

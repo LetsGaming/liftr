@@ -161,12 +161,60 @@ Still genuinely open, unchanged from prior rounds: the plausibility-discount mes
 real recipient reads it — protective signal vs. accusation. Copy-only if it needs changing; the
 underlying mechanism is correct and untouched.
 
-### 3.9 Missing-photo catalog gap — resourcing decision, not a design one
+### 3.9 Missing-photo catalog gap — closed for 10 of 12 (2026-09-05)
 
-11 of ~94 catalog exercises have no photo (fallback to a generic equipment glyph). Decided
-direction: source real photos where feasible, closer-matching placeholder otherwise; full-catalog
-custom illustration explicitly deferred as its own separate initiative (out of scope for now). See
-`audit/missing-photo-sourcing-research.md` for sourcing research.
+Corrected count: **12** of 94 catalog exercises had no photo, not 11 — `curated.yaml`'s own
+header comment always said 12; the "11" was stale in this doc and in
+`ExerciseThumb.vue`'s doc comment (both now fixed). Full-catalog custom illustration remains
+explicitly deferred as its own separate initiative (out of scope) — see
+`audit/missing-photo-sourcing-research.md` §4 for that reference material.
+
+Acting on the research doc's recommendation, implemented in this pass:
+
+- **8 slugs got real free-exercise-db photos** (Unlicense, zero new licensing, matches the
+  existing photo pipeline exactly): `glute-bridge` (`Butt_Lift_Bridge`), `side-plank`
+  (`Side_Bridge`), `hip-abduction-machine` (`Thigh_Abductor`), `machine-chest-press`
+  (`Leverage_Chest_Press`), `pec-deck` (`Butterfly`), `neutral-grip-pullup` (`V-Bar_Pullup`),
+  `chest-supported-row` (`Leverage_Iso_Row`), `diamond-pushup`
+  (`Push-Ups_-_Close_Triceps_Position`). Pure `curated.yaml` `freeExerciseDbId:` additions +
+  `pnpm ingest --images`; no code changes needed.
+- **2 slugs got real wger photos** (CC-BY-SA 4.0): `single-leg-rdl` (wger exercise 1736,
+  "Single-Leg Deadlift with Dumbbell" — a different wger entry than the one already joined via
+  `wgerId: 1388`, which has no photo of its own) and `pike-pushup` (wger exercise 454). This
+  needed a small, precedented pipeline addition: a new `wgerImageId` field on
+  `tools/catalog/curated.yaml` entries (`packages/ingest/src/catalogSchema.ts`), a second
+  downloader branch in `packages/ingest/src/ingestImages.ts` that queries
+  `wger.de/api/v2/exerciseimage/?exercise=<id>` and mirrors the single main photo to
+  `data/images/<slug>/start.jpg` (no `end.jpg` — wger has no start/end pair; `ExerciseDemo.vue`
+  already degrades a missing single frame gracefully), and one new attribution row in
+  `AttributionsPage.vue` naming both authors. **`pike-pushup`'s photo is flagged
+  `is_ai_generated: true` by wger's own API** — noted plainly in the attribution and in
+  `curated.yaml`'s comment rather than hidden; it's the only candidate found anywhere for that
+  movement (free-exercise-db, wger's other 373 images, workout-guide, Commons) and is still a
+  correctly-posed CC-BY-SA photo.
+- **`landmine-press` deferred** (the 1 illustration-fallback candidate, `bryllim/workout-guide`'s
+  CC BY-SA 4.0 SVG frames): not done in this pass. The pipeline's `hasImage`/`start.jpg` convention
+  assumes raster images served with a `.jpg` extension; browsers only content-sniff a fixed set of
+  raster signatures for `<img>` (PNG/JPEG/GIF/WEBP/BMP/ICO — confirmed this works for the wger PNGs
+  above), not SVG, so an SVG frame saved as `start.jpg` would serve with `Content-Type: image/jpeg`
+  and fail to render. Doing this properly needs a small extension-aware change in three places
+  (`exercises.ts`'s `hasImage` check, `ExerciseThumb.vue`, `ExerciseDemo.vue`), which is more than
+  the one-field pattern used for the wger case above — left as a follow-up, not attempted under
+  this pass's time budget per the research doc's own priority order (explicitly lower priority
+  than the photo wins).
+- **`goblet-lunge` remains the one deliberate placeholder** — genuinely unsourceable (no goblet
+  lunge in free-exercise-db, wger's 374-image set, workout-guide's 302, or Commons), unchanged,
+  keeps `ExerciseThumb.vue`'s softened radial-gradient fallback.
+
+Verified live: server + client dev servers started, `/api/exercises`'s `hasImage` flag flips to
+`true` for all 10 fixed slugs and stays `false` for `goblet-lunge`/`landmine-press`; confirmed via
+browser automation that the exercise list renders decoded photos (non-zero `naturalWidth`/
+`naturalHeight`) for `glute-bridge`, `single-leg-rdl`, `pike-pushup`, `diamond-pushup` and
+`pec-deck`, and that `goblet-lunge` still renders the icon fallback with no `<img>` at all.
+`pnpm -w test` (260/260), `typecheck`, and `lint` all clean after the change. `data/images/` is
+gitignored (matches existing convention) — only the `curated.yaml`/ingest/attribution code changes
+are committed, not the downloaded image files; a fresh checkout regenerates them via
+`pnpm ingest --images`.
 
 ### 3.10 Share-card palette vs. app palette — open product-identity call
 

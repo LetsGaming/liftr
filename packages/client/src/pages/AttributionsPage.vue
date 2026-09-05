@@ -28,6 +28,17 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
             <p>github.com/wger-project/wger</p>
           </li>
           <li>
+            <b>wger Exercise Database</b> — Übungsfotos für 2 Übungen ohne freie
+            free-exercise-db-Aufnahme ("Einbeiniges RDL", "Pike-Liegestütze")
+            <span class="license">CC-BY-SA 4.0</span>
+            <p>
+              wger.de/media/exercise-images · Autoren: Tierrasverdes (Einbeiniges RDL), Nash
+              (Pike-Liegestütze). Das Pike-Liegestütze-Foto ist laut wger als KI-generiert
+              gekennzeichnet ("is_ai_generated") — bewusst übernommen, da keine andere frei
+              lizenzierte Aufnahme dieser Übung existiert.
+            </p>
+          </li>
+          <li>
             <b>Muskel-Diagramm (Anatomie-Figur)</b> — Körperumriss + 15 einzeln hervorgehobene Muskeln, mirror von wger's Assets, ursprünglich abgeleitet von "Muscular system.svg"/"Muscular system-back.svg" von Termininja
             <span class="license">CC-BY-SA 3.0</span>
             <p>commons.wikimedia.org · via github.com/wger-project/wger · eigene Einfärbung für das Dark-Theme</p>
