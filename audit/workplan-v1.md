@@ -78,8 +78,9 @@ Condensed to one line each with a pointer to the evidence; full history lives in
   half of §3.6, all in one worktree/commit: manual run-entry validation now surfaces real per-field
   German error messages (extracted to a pure, tested `validateManualEntry()`, 12 new tests) instead
   of a silently-disabled button; the `/records` blank-flash bug is fixed (a real visible loading
-  skeleton, plus a generic `router.beforeResolve` chunk-prefetch guard so no lazy route leaves
-  `<main>` empty mid-transition); light mode now correctly applies to Ionic chrome, the theme-color
+  skeleton, gated on the store's `loaded`/`error` state and rendered immediately on mount — see §2
+  for the 2026-09-05 live re-verification, which found no separate `router.beforeResolve` guard in
+  the codebase; the skeleton alone is sufficient); light mode now correctly applies to Ionic chrome, the theme-color
   meta tag, and text sitting on the (deliberately still-dark) tier surfaces on `/ranks`, via the
   same locally-pinned-token pattern `.panel-reward` already established; `ThumbZoneAction.vue` and
   `DensityScope.vue`/`useDensity.ts` are deleted outright (confirmed zero consumers via a repo-wide
