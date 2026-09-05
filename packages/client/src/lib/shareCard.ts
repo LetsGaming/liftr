@@ -182,8 +182,8 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   roundRectPath(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 18);
   ctx.stroke();
 
-  const pad = 18; // was 16 — grown alongside EXERCISE_ROW_H, see that constant's comment
-  const iconSize = 42; // was 34
+  const pad = 20; // was 16, then 18 (2026-09-04) — grown alongside EXERCISE_ROW_H
+  const iconSize = 46; // was 34, then 42 (2026-09-04)
   const iconX = x + pad;
   const iconY = y + pad;
   roundRectPath(ctx, iconX, iconY, iconSize, iconSize, 12);
@@ -208,7 +208,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   const textX = iconX + iconSize + 14;
   const textW = x + w - pad - textX;
   ctx.fillStyle = COLORS.text;
-  ctx.font = font(700, 23, false); // was 21
+  ctx.font = font(700, 25, false); // was 21, then 23 (2026-09-04)
   ctx.textBaseline = "middle";
   let displayName = name;
   while (ctx.measureText(displayName).width > textW && displayName.length > 1) {
@@ -219,11 +219,11 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   ctx.textBaseline = "alphabetic";
 
   ctx.fillStyle = COLORS.dim;
-  ctx.font = font(600, 18, false); // was 17
-  let detailY = iconY + iconSize + 26; // was +22 — a bit more breathing room in the taller row
+  ctx.font = font(600, 20, false); // was 17, then 18 (2026-09-04)
+  let detailY = iconY + iconSize + 28; // was +22, then +26 (2026-09-04)
   for (const line of detailLines) {
     ctx.fillText(line, x + pad, detailY);
-    detailY += 24; // was 22
+    detailY += 26; // was 22, then 24 (2026-09-04)
   }
 }
 
@@ -232,7 +232,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
  *  card (long set lists on a narrow half-width column). Font size must match drawExerciseCell's
  *  own detail-line font exactly — this measures the wrap, that one renders it. */
 function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  ctx.font = font(600, 18, false); // was 17 — keep in sync with drawExerciseCell above
+  ctx.font = font(600, 20, false); // was 17, then 18 — keep in sync with drawExerciseCell above
   const words = text.split(/\s+/);
   const lines: string[] = [];
   let current = "";
@@ -324,13 +324,15 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
   const left = cx - size / 2;
   const midY = topY + size / 2;
 
-  // Tier-hued halo (critique finding, typeset P2): reads as a colored anchor before the hex
-  // shape itself resolves at thumbnail scale — the same trick the card's own background glow
-  // uses, centered here instead so the badge, not a stat card, wins the first glance. Uses the
-  // tier's brightest fill (b3) so the halo always matches the medal it surrounds.
-  const haloR = size * 1.6;
+  // Tier-hued halo, small and tight (2026-09-05 correction: the original 1.6x/30%-alpha halo
+  // was sized to "win the first glance" — the wrong goal now that the badge itself is a demoted
+  // corner stamp, not the headline. A halo that big visually re-centers attention on the badge
+  // regardless of where it's positioned, which is exactly the "still feels like the middle"
+  // feedback this shrink addresses. Kept faint and close so the hex still reads as a coherent
+  // object at thumbnail scale without competing with the muscle figures/exercise grid below.
+  const haloR = size * 1.1;
   const halo = ctx.createRadialGradient(cx, midY, 0, cx, midY, haloR);
-  halo.addColorStop(0, `${c.b3}4d`); // ~30% alpha
+  halo.addColorStop(0, `${c.b3}26`); // ~15% alpha, was ~30%
   halo.addColorStop(1, `${c.b3}00`);
   ctx.fillStyle = halo;
   ctx.fillRect(cx - haloR, midY - haloR, haloR * 2, haloR * 2);
@@ -520,14 +522,17 @@ const STAT_GAP = 20;
 // into a small top-right corner stamp drawn independently of the header/stats/muscles/exercise
 // cursor (see drawCornerBadge below) — so it no longer needs a reserved section height, a fill
 // slot, or a rank-up-caption growth allowance the way the old centered ~254-300px badge section
-// did. The vertical space that freed up was handed to MUSCLE_FIG_H and EXERCISE_ROW_H below,
-// per the product decision: "the gained space should be filled with a size adjustment for the
-// trained muscle groups, as well as the exercises."
+// did. The vertical space that freed up was handed to MUSCLE_FIG_H and EXERCISE_ROW_H below.
+// 2026-09-05 correction: live review of the shipped 2026-09-04 sizes found the split too even —
+// direction was "mainly the muscle groups, the rest the exercise cards" — so this pass widens
+// the gap between the two rather than growing both roughly the same amount, and grows the
+// exercise cell's own fonts/icon (not just its box) so the extra height actually reads as more
+// legible content, not just more padding.
 const CORNER_BADGE_SIZE = 110;
-const MUSCLE_FIG_H = 360; // was 300
+const MUSCLE_FIG_H = 420; // was 300, then 360 (2026-09-04) — the larger share of the freed space
 const MUSCLE_SECTION_H = 34 + 24 + MUSCLE_FIG_H + 40;
 const DIVIDER_GAP = 40;
-const EXERCISE_ROW_H = 136; // was 118
+const EXERCISE_ROW_H = 152; // was 118, then 136 (2026-09-04) — the smaller share, for readability
 const EXERCISE_ROW_GAP = 16;
 const EXERCISE_COL_GAP = 20;
 

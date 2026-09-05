@@ -357,19 +357,36 @@ gitignored (matches existing convention) — only the `curated.yaml`/ingest/attr
 are committed, not the downloaded image files; a fresh checkout regenerates them via
 `pnpm ingest --images`.
 
-### 3.10 Share-card palette vs. app palette — resolved 2026-09-04
+### 3.10 Share-card palette vs. app palette — resolved 2026-09-04, corrected 2026-09-05
 
 Decided: **Variation 1 ("Nebula Halo")** from `audit/share-card-design-variations.md`, with one
 product adjustment beyond that document's own text — the tier medal, "Tier Division", "Level N",
 and the rank-up caption move out of the card's centered main-content flow into a small top-right
 corner stamp (`drawCornerBadge` in `packages/client/src/lib/shareCard.ts`, ~110px vs. the old
-168px, "less in the foreground"). The vertical space that freed up went to
-`MUSCLE_FIG_H` (300→360) and `EXERCISE_ROW_H` (118→136), per direction: "the gained space should
-be filled with a size adjustment for the trained muscle groups, as well as the exercises."
-Background glow, wordmark, and two of four stat-card accents now use the Nebula brand gradient
-(`--nebula-1/-m/-2`) in place of the old plain-blue values, closing this open question in favor of
-brand-consistent, not app-independent. Verified live: normal case, no-badge case, and a long-name +
-long-rank-up-caption stress case all render cleanly with no overlap. 261/261 tests, clean
+168px, "less in the foreground"). Background glow, wordmark, and two of four stat-card accents now
+use the Nebula brand gradient (`--nebula-1/-m/-2`) in place of the old plain-blue values, closing
+this open question in favor of brand-consistent, not app-independent.
+
+**2026-09-05 correction — the 2026-09-04 pass shipped, but not as intended.** Rendering the
+actual output live (previously only screenshotted, apparently without a close look) showed the
+badge's own tier-hued halo (`size * 1.6` radius, ~30% alpha) was large and bright enough to still
+read as the card's visual center of gravity even though the medal itself sits correctly in the
+top-right — the "less in the foreground" direction wasn't actually achieved. Separately, the
+2026-09-04 pass's `MUSCLE_FIG_H`/`EXERCISE_ROW_H` growth (300→360, 118→136) was roughly even
+between the two, not the "mainly muscle groups, the rest exercise cards" split actually wanted.
+Fixed:
+- Halo shrunk from `size * 1.6` / ~30% alpha to `size * 1.1` / ~15% alpha — tight enough to read as
+  a coherent glow on the hex itself, not a second bright object drawing the eye back to center.
+- `MUSCLE_FIG_H` grown further to 420 (the larger share of any additional space); `EXERCISE_ROW_H`
+  to 152 (the smaller share) — and, so the taller exercise row reads as more legible content and
+  not just more padding, its font/icon grew alongside it (name 23→25px, detail 18→20px, icon
+  42→46px, padding 18→20px).
+
+Verified live by rendering the actual `drawWorkoutCard` output (not the design mockup) via the
+client dev server: normal case (badge + 4 exercises), an 8-exercise + long-name + long-rank-up-
+caption stress case (fits within the "story" format with room to spare, no overflow, no overlap),
+and a no-badge case, all inspected as real rendered pixels, zoomed on the corner badge and an
+exercise cell specifically to confirm the halo and text-size changes. 306/306 tests, clean
 typecheck, clean lint.
 
 ---
