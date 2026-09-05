@@ -162,10 +162,13 @@
   --pl-yellow: #e8c21c;
   --pl-green: #2fa84f;
 
-  /* Nebula — the app's brand-identity gradient (nebula-design-framework.md §1). Chrome, CTAs,
-     streak/level accents, focus states ONLY — never the 9-tier .badge/.t-<tier> system above,
-     which answers a different question (which of 9 tiers) than Nebula does (is this interactive
-     or just-earned). See audit/nebula-design-philosophy.md §2 for the full reasoning. */
+  /* Nebula — the app's brand-identity gradient. Chrome, CTAs, streak/level accents, focus
+     states, AND (2026-09-05 complete-redesign spec, docs/superpowers/specs/2026-09-05-nebula-
+     complete-redesign-design.md) the pervasive background sweep every screen now sits on (see
+     --nebula-sweep-* below) — never the 9-tier .badge/.t-<tier> system above, which answers a
+     different question (which of 9 tiers) than Nebula does (is this interactive/branded, or an
+     earned rank). See audit/nebula-design-system.md §1/§2 for the full reasoning; §3/§4 were
+     rewritten by the same redesign to describe this pervasive scope (Foundation task F7). */
   --nebula-1: #2f9fe0;
   --nebula-m: #8a6dff;
   --nebula-2: #d63aff;
@@ -175,6 +178,25 @@
   --nebula-ink-on-fill: #1a0f2e;
   --nebula-glow: rgba(124, 92, 255, 0.4);
   --nebula-glow-strong: rgba(214, 58, 255, 0.55);
+
+  /* Nebula Foundation F2 — the pervasive background sweep (complete-redesign spec §3.1/§4.2).
+     One continuous cosmic scene behind every screen: a diagonal base gradient plus three wide,
+     heavily-blurred radial washes blended via `mix-blend-mode: screen` so hues melt into each
+     other instead of reading as separate patches (an earlier, discrete-blob draft was rejected
+     for exactly that look). These values are the literal product-owner-validated mockup numbers
+     ("Option 2 / b2") — reached by deliberately overshooting first (~3x these opacities) then
+     quieting twice in response to live correction ("glow can easily be read as cheap and a
+     strain on the eye"). Do not re-derive, brighten, or "improve" these — they are a final
+     spec, not a starting point. Applied as `body::before` below, not per-page, so it is one
+     continuous layer that never repaints on route transitions or scroll. */
+  --nebula-sweep-base-1: #0a0c14;
+  --nebula-sweep-base-2: #0b0d19;
+  --nebula-sweep-base-3: #0e0d20;
+  --nebula-sweep-base-4: #0a0c14;
+  --nebula-sweep-wash-1: rgba(138, 109, 255, 0.1);
+  --nebula-sweep-wash-2: rgba(214, 58, 255, 0.07);
+  --nebula-sweep-wash-3: rgba(47, 159, 224, 0.06);
+  --nebula-sweep-blend: screen;
 
   --r-sm: 10px;
   --r-md: 16px;
@@ -225,6 +247,38 @@
      four call sites updated below and in NumberStepper.vue/App.vue, so the floor can never again
      silently drift between components the way lens-3 originally found it had (§2.3). */
   --touch-target-min: 44px;
+
+  /* Nebula Foundation F3 — the "surface-hybrid" treatment (complete-redesign spec §3.4/§4.2):
+     translucent + blurred ("glass") background, an opaque-elevation-style drop shadow, and a
+     1px gradient-tinted hairline edge (mask-composite double-gradient border, authored from
+     scratch below — this exact pattern did not exist anywhere in the codebase before this task).
+     This becomes the new default surface for cards/panels/stat tiles, replacing flat
+     --surface/--surface-2 fills as the baseline. Values are the spec's validated mockup numbers,
+     used as written.
+     --surface-hybrid-blur is its own token, deliberately separate from the rest, specifically so
+     F4's performance gate can flip blur off everywhere with ONE token-level edit (set this to 0px)
+     if backdrop-filter proves too costly on throttled/older-Android WebViews, without touching
+     every consumer that uses .surface-hybrid/.panel.
+
+     F4 gate result (2026-09-05): live-traced a scrolling stress case with 24 simultaneous
+     .surface-hybrid/.panel cards (well beyond today's actual 0-3 panel count pre-Wave-1) on
+     Workout/Overview at 390px under 4x/6x CPU throttling. requestAnimationFrame delta sampling
+     during a 2s scroll showed 0 frames over 16.7ms with blur on (avg ~5.6ms/frame, max ~11.1ms)
+     — statistically identical to the same test with this token forced to 0px (also 0 long
+     frames, ~5.6ms avg). Decision: blur stays ON by default. Caveat carried forward for Wave 1:
+     this environment can only emulate CPU throttling, not GPU/compositor cost on real older-
+     Android WebViews (backdrop-filter is largely a compositor operation CPU throttling doesn't
+     model) — if a real-device regression surfaces later, flip this one token to 0px; the
+     kill-switch mechanism itself was verified functional during this same test. */
+  --surface-hybrid-bg: rgba(23, 26, 45, 0.88);
+  --surface-hybrid-blur: 6px;
+  --surface-hybrid-shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.6);
+  --surface-hybrid-edge-grad: linear-gradient(
+    155deg,
+    rgba(138, 109, 255, 0.35),
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(47, 159, 224, 0.2)
+  );
 }
 
 /* Light theme (nebula-design-system.md §6). Applied by themeStore setting
@@ -256,6 +310,32 @@
   --faint: #6c6178;
   --shadow: 0 8px 20px -14px rgba(15, 15, 25, 0.18);
   --nebula-ink: #6b3fd6;
+
+  /* F2 light-mode sweep translation (complete-redesign spec §3.2, "Option B") — same structural
+     recipe as dark mode, no mix-blend-mode (screen-blending onto a near-white base washes out
+     immediately, per the spec), plain layered opacity instead. Also validated mockup values, not
+     re-derived. */
+  --nebula-sweep-base-1: #f6f4fb;
+  --nebula-sweep-base-2: #f2eff9;
+  --nebula-sweep-base-3: #eeeafa;
+  --nebula-sweep-base-4: #f6f4fb;
+  --nebula-sweep-wash-1: rgba(138, 109, 255, 0.12);
+  --nebula-sweep-wash-2: rgba(214, 58, 255, 0.08);
+  --nebula-sweep-wash-3: rgba(47, 159, 224, 0.07);
+  --nebula-sweep-blend: normal;
+
+  /* F3 light-mode surface-hybrid (spec §3.4 light block) — same mask-composite hairline
+     structure as dark, needs a real contrast pass against actual content (done in F6), not just
+     the isolated gradient the spec validated. Blur radius unchanged (spec doesn't call for a
+     different value in light mode). */
+  --surface-hybrid-bg: rgba(255, 255, 255, 0.85);
+  --surface-hybrid-shadow: 0 8px 20px -14px rgba(15, 15, 25, 0.2);
+  --surface-hybrid-edge-grad: linear-gradient(
+    155deg,
+    rgba(138, 109, 255, 0.3),
+    rgba(20, 16, 32, 0.02) 40%,
+    rgba(47, 159, 224, 0.18)
+  );
 }
 
 *,
@@ -272,6 +352,39 @@ body {
   background: var(--bg);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  /* F2 requires body to establish a containing block for ::before's `position: fixed` sweep to
+     size against the viewport consistently and to sit in the same stacking context as the rest
+     of the page (it isn't strictly necessary for `position: fixed`, but keeps this rule visually
+     adjacent to the thing it enables). */
+  position: relative;
+}
+/* Nebula Foundation F2 — the pervasive cosmic background sweep (complete-redesign spec §3.1/
+   §3.2/§4.1). Lives on body::before, not a template node in App.vue, per the plan's resolved
+   decision: zero Vue changes, and it can never be redrawn by a route transition by construction
+   (there is exactly one body in the document, ever). `position: fixed; inset: 0` pins it to the
+   viewport regardless of document scroll (every page's real scrolling happens inside
+   ion-content's own shadow-DOM container per F1, not on body/window, so this element never needs
+   to move); `z-index: 0` sits it at the page's back — nothing at the page level occupies 0 or
+   negative z-index today, so this can't be accidentally covered or accidentally cover anything.
+   `pointer-events: none` so it never intercepts taps/clicks meant for real content above it. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 140% 100% at 60% -20%, var(--nebula-sweep-wash-1), transparent 65%),
+    radial-gradient(ellipse 120% 90% at 100% 90%, var(--nebula-sweep-wash-2), transparent 65%),
+    radial-gradient(ellipse 100% 80% at -10% 60%, var(--nebula-sweep-wash-3), transparent 65%),
+    linear-gradient(
+      155deg,
+      var(--nebula-sweep-base-1) 0%,
+      var(--nebula-sweep-base-2) 30%,
+      var(--nebula-sweep-base-3) 55%,
+      var(--nebula-sweep-base-4) 100%
+    );
+  background-blend-mode: var(--nebula-sweep-blend), var(--nebula-sweep-blend), var(--nebula-sweep-blend), normal;
 }
 
 .tnum {
@@ -416,10 +529,68 @@ body {
    (rank cards, XP/level chips, rank-up rows) gets .panel-reward's tier-tinted treatment instead.
    Both are additive over the plain --surface-2 recipe existing call sites already use, so this
    is an opt-in upgrade, not a breaking rename. */
+/* Nebula Foundation F3 — the gradient-hairline "surface-hybrid" utility (complete-redesign spec
+   §3.4/§4.2), authored from scratch: no mask-composite pattern existed anywhere in this codebase
+   before this task. Modeled on the closest existing precedents (.panel-reward::after above,
+   .badge::before/::after above, .rank-card::after in RanksPage.vue) for the position:absolute +
+   inset:0 + pseudo-element shape, but this is a genuinely new technique for this file: a 1px
+   gradient ring produced by painting the full box with the edge gradient, then masking away
+   everything except a 1px band at the edge via two mask layers combined with mask-composite:
+   exclude (content-box mask XOR border-box mask = only the ring between them survives).
+
+   IMPORTANT, carried forward from RanksPage.vue's .rank-card::after comment (the same lesson
+   applies here since this utility is also applied to native <button> elements, e.g. .rank-card
+   itself once N3 adopts this utility): a native <button>'s own opaque default background paints
+   over a pseudo-element's gradient even at a negative z-index, unless the button's own background
+   is explicitly set to transparent (or, as here, explicitly set to this utility's own
+   --surface-hybrid-bg) — never rely on the pseudo-element alone to supply a background. This
+   class always sets its OWN `background` on the host element for that reason; only the hairline
+   ring itself lives on ::after. */
+.surface-hybrid {
+  position: relative;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
+}
+.surface-hybrid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+/* .panel converted to the surface-hybrid treatment (F3) — this single change reaches every
+   existing .panel consumer at once (StatTile.vue, RankProgress.vue, TierLadder.vue,
+   FinishSequence.vue, and panels on OverviewPage.vue/RecordsPage.vue/WorkoutPage.vue), which is
+   exactly why this belongs in Foundation rather than a per-area phase: it's the highest-blast-
+   radius single edit in the whole plan. --line/--line-2 border tokens are dropped in favor of
+   the gradient hairline above (::after), which now does that job with more identity than a flat
+   1px line did. */
 .panel {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  position: relative;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
   border-radius: var(--r-lg);
+}
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 /* 0a's single biggest-bang-for-CSS finding (engagement-audit-v3 Phase 1): a reward surface
    should take the tier color as its WHOLE card background, not a border/accent on an otherwise
