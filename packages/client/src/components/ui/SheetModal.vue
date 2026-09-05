@@ -49,6 +49,15 @@
  * directly. Every close path calls `dismiss()` below, which calls the *real* Ionic dismiss;
  * only its `@did-dismiss` callback (guaranteed to fire after Ionic's own teardown finishes)
  * emits `close`, and only *that* event is what callers use to actually unmount/reset state.
+ *
+ * 2026-09-05: `@did-dismiss` firing "after Ionic's own teardown finishes" turned out not to mean
+ * "after Ionic's internal overlay-stack bookkeeping has fully detached the DOM subtree" — live
+ * production-build investigation (`audit/workplan-v1.md` §3.6) captured a real
+ * `insertBefore`-on-null crash happening *synchronously inside* the `did-dismiss` handler's own
+ * call stack: emitting `close` here triggers the caller's reactive unmount in the same tick,
+ * which can race Ionic's own cleanup of that same subtree. `requestAnimationFrame` (not
+ * `nextTick`, which can still land in the same microtask queue Ionic's teardown promise resolves
+ * through) gives real separation from that race for every caller at once.
  */
 import { IonModal } from "@ionic/vue";
 import { ref, useSlots } from "vue";
@@ -98,6 +107,11 @@ const modalRef = ref<InstanceType<typeof IonModal> | null>(null);
 function dismiss() {
   void (modalRef.value as unknown as { $el?: { dismiss: () => Promise<boolean> } } | null)?.$el?.dismiss();
 }
+/** See this file's header comment (2026-09-05 update) for why `close` is deferred a frame past
+ *  `did-dismiss` instead of emitted directly from the template. */
+function onDidDismiss() {
+  window.requestAnimationFrame(() => emit("close"));
+}
 defineExpose({ dismiss });
 </script>
 
@@ -122,7 +136,7 @@ defineExpose({ dismiss });
     :breakpoints="sheet ? [0, 1] : undefined"
     :initial-breakpoint="sheet ? 1 : undefined"
     :backdrop-dismiss="backdropDismiss ?? sheet"
-    @did-dismiss="emit('close')"
+    @did-dismiss="onDidDismiss"
   >
     <div class="sheet" :class="{ 'has-custom-header': !!slots.header }">
       <template v-if="slots.header">

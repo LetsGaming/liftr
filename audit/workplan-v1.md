@@ -99,10 +99,11 @@ was false and stale.** The feature is fully shipped: `packages/server/src/routes
 routed at `/records`, linked from `RanksPage.vue`. Confirmed live: real PR data renders, `GET
 /api/prs` returns 200, no console errors. `audit/verify/agent-1.md`, `round2-agent-2.md`.
 
-**What's actually still open:**
-- The Finish Sequence's PR beat does not link into the ledger — still a one-off in-session
-  acknowledgment with no permanent home to revisit. Grep of `FinishSequence.vue` for
-  record-related terms returns zero matches.
+**Finish Sequence → ledger link — closed by WS4 Wave 7 (2026-09-04).** The gap this section
+originally flagged (no permanent link from the Finish Sequence's PR beat into the ledger) is fixed:
+`FinishSequence.vue` now has a "🏆 Rekorde ansehen" link to `/records`, added as part of the
+streak/XP mechanics work (see §3.7). This bullet is stale — kept here only long enough to record
+the closure.
 
 **Router-link blank-flash bug (`round2-agent-2.md`) — verified already resolved, 2026-09-05.**
 `round2-agent-2.md` found that navigating to `/records` via `RanksPage.vue`'s in-app router-link
@@ -151,7 +152,7 @@ peak. No code changes were needed — the CSS/logic split works exactly as desig
 this session, screenshot evidence in-session (not persisted to the repo). `audit/nebula-design-plan.md`
 Phase N2, `audit/verify/round2-agent-3.md`.
 
-### 3.6 Minor live-only defect — needs an investigation pass, not a code guess
+### 3.6 Minor live-only defect — CLOSED, fixed and verified live 2026-09-05
 
 Recurring Ionic Vue console exception (`insertBefore` on null, in `removeViewFromDom`) firing
 roughly every 35-90s throughout live sessions, independent of user action — some background
@@ -245,15 +246,17 @@ service worker unregistered, "pause on exceptions" on, capture the full stack).
     without an active workout/press, and none touch an Ionic overlay). `ToastHost.vue` — it's a
     plain Vue `<TransitionGroup>` over a local array, not an `IonToast`/Ionic overlay at all, so it
     cannot be the "background overlay/controller" the original report speculated about.
-  - **Proposed fix for review (NOT applied — no code changed this pass):** give `SheetModal.vue`'s
-    own `@did-dismiss` handler one tick of separation from the `close` emit it triggers (e.g.
-    `@did-dismiss="() => nextTick(() => emit('close'))"`, or defer via `queueMicrotask`/
-    `requestAnimationFrame` — whichever is verified live to actually close the race, since `nextTick`
-    alone may still land inside the same microtask queue Ionic's own teardown promise resolves
-    through). Centralizing the deferral in `SheetModal.vue` itself would fix every caller at once
-    rather than requiring each of the ~6 call sites to add its own delay. This needs a human/live
-    verification pass before landing, not a blind patch — the exact deferral primitive matters and
-    wasn't verified here.
+  - **FIX APPLIED AND VERIFIED LIVE (2026-09-05):** `SheetModal.vue`'s `@did-dismiss` now defers
+    its `close` emit by one `requestAnimationFrame` tick instead of emitting synchronously
+    (`nextTick`/`queueMicrotask` were considered and rejected — both can still land inside the
+    same microtask queue Ionic's own teardown promise resolves through, per the diagnosis above;
+    `requestAnimationFrame` guarantees real separation). Centralized in `SheetModal.vue` itself, so
+    every one of its ~6 callers is fixed at once. Verified live in a fresh production build
+    (`pnpm --filter @liftr/client build`, served from the built server, service worker
+    unregistered): reproduced both of the original crash scenarios — onboarding wizard "Später"
+    and routine-builder "✕" cancel — repeating the routine-builder cancel 3× in direct succession
+    (previously a reliable, deterministic repro on every attempt). Zero `insertBefore` exceptions
+    across all runs. `pnpm -w test` (306/306), `typecheck`, `lint` all clean.
 
 ### 3.7 Streak/XP mechanics redesign — shipped 2026-09-04 (WS4)
 
