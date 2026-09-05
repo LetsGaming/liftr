@@ -53,7 +53,7 @@ async function submit() {
 
 <template>
   <div v-if="status === 'needs-token'" class="gate">
-    <div class="card">
+    <div class="card surface-hybrid">
       <h1>Liftr</h1>
       <p>
         Dieser Server ist mit einem Token gesichert. Derselbe Wert lässt sich später jederzeit
@@ -86,15 +86,23 @@ async function submit() {
 </template>
 
 <style scoped>
+/* Nebula N5 — this element used to paint an opaque `background: var(--bg)` here, which fully
+   covered the viewport and blocked tokens.css's `body::before` cosmic sweep from ever reaching
+   the unauthenticated login screen (the sweep sits at z-index 0 behind body's own children, so
+   any opaque child painted on top of it hides it completely). Since this is the very first
+   screen a locked-down server shows, that meant the "every screen, not just hero moments"
+   pervasive-background promise silently failed on this one — confirmed live during N5's
+   adoption pass, not a hypothetical. No background here now: the sweep shows straight through,
+   same as every other screen. */
 .gate {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: var(--bg);
 }
+/* Nebula N5 — adopts the shared .surface-hybrid utility (tokens.css) in place of the old flat
+   --surface-2 fill + --line border, so this card reads as a translucent object floating over
+   the sweep instead of an opaque box painted over it. */
 .card {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--sp8);
   width: min(320px, 100% - 2 * var(--sp4));
