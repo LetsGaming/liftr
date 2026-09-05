@@ -53,7 +53,7 @@ const customExerciseSchema = z.object({
 
 /**
  * `imagesRoot` (already resolved once in app.ts) lets this route tell the client up front
- * whether an exercise's demo photo actually exists — feedback: image 404s for the ~11 catalog
+ * whether an exercise's demo photo actually exists — feedback: image 404s for the catalog
  * slugs with no mirrored photo (documented in ExerciseThumb.vue: no open-licensed source exists
  * for them) were spamming the console, because the client had no way to know except by
  * attempting the request and catching the failure. `demoStartImage`/`demoEndImage` are separate,

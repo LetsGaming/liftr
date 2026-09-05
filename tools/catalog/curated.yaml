@@ -25,9 +25,19 @@
 # freeExerciseDbId: hand-verified against free-exercise-db's dist/exercises.json (fuzzy-matched
 # then manually checked, per plan 0.3's "hand-verify the join" requirement — auto-accepting the
 # top fuzzy-match score would have produced wrong photos for several exercises, e.g. reverse-fly
-# nearly matched to "Reverse Crunch"). 12 exercises are left with no id on purpose: no matching
-# open-licensed photo exists for them (e.g. pec-deck, diamond-pushup, glute-bridge) — a real
-# ceiling of the open-source photo sets, not an oversight.
+# nearly matched to "Reverse Crunch").
+#
+# Correction (audit/missing-photo-sourcing-research.md, 2026-09-04/05): the "12 exercises left
+# with no id on purpose: no matching open-licensed photo exists for them" claim that used to be
+# here was overstated for 10 of those 12 — see the research doc for the full per-exercise
+# breakdown. 8 had exact free-exercise-db matches that were simply missed in the original
+# hand-curation pass (glute-bridge, side-plank, hip-abduction-machine, machine-chest-press,
+# pec-deck, neutral-grip-pullup, chest-supported-row, diamond-pushup — now filled in below).
+# 2 more (single-leg-rdl, pike-pushup) have no free-exercise-db photo but do have a wger
+# CC-BY-SA 4.0 one, sourced via the new `wgerImageId` field (see ingestImages.ts) instead.
+# Only `goblet-lunge` remains genuinely unsourceable (no goblet lunge in any of the free
+# open-licensed sets checked) and `landmine-press` has no photo anywhere, only a CC BY-SA
+# illustration — both keep the softened ExerciseThumb.vue placeholder.
 #
 # wgerId: populated via packages/ingest/src/matchWgerIds.ts (exact English-name lookup, falling
 # back to token-overlap fuzzy scoring against wger's full exercise-translation list; re-run it
@@ -349,6 +359,10 @@ exercises:
     freeExerciseDbId: Good_Morning
   - slug: single-leg-rdl
     wgerId: 1388
+    # wgerId 1388 has no photo of its own; wgerImageId 1736 is a separate wger exercise entry
+    # ("Single-Leg Deadlift with Dumbbell") for the same movement that does — CC-BY-SA 4.0, not
+    # AI-generated (audit/missing-photo-sourcing-research.md §3).
+    wgerImageId: 1736
     nameDe: Einbeiniges RDL
     nameEn: Single-Leg RDL
     equipment: dumbbell
@@ -522,6 +536,7 @@ exercises:
     freeExerciseDbId: Close-Grip_Barbell_Bench_Press
   - slug: machine-chest-press
     wgerId: 379
+    freeExerciseDbId: Leverage_Chest_Press
     nameDe: Brustpresse (Maschine)
     nameEn: Machine Chest Press
     equipment: machine
@@ -550,6 +565,7 @@ exercises:
     freeExerciseDbId: Cable_Crossover
   - slug: pec-deck
     wgerId: 1904
+    freeExerciseDbId: Butterfly
     nameDe: Butterfly (Maschine)
     nameEn: Pec Deck
     equipment: machine
@@ -626,6 +642,7 @@ exercises:
     trust: synthetic
     freeExerciseDbId: Cable_Crunch
   - slug: diamond-pushup
+    freeExerciseDbId: Push-Ups_-_Close_Triceps_Position
     nameDe: Diamant-Liegestütze
     nameEn: Diamond Push-up
     equipment: bodyweight
@@ -689,6 +706,11 @@ exercises:
     trust: derived
     freeExerciseDbId: Incline_Push-Up
   - slug: pike-pushup
+    # wgerImageId 454's only photo is flagged `is_ai_generated: true` by wger's own API — a
+    # conscious accept, not an oversight (audit/missing-photo-sourcing-research.md §3): it's the
+    # only candidate found anywhere (free-exercise-db, wger's other 373 images, workout-guide,
+    # Commons), and it's still a correctly-posed, CC-BY-SA-licensed photo of the right movement.
+    wgerImageId: 454
     nameDe: Pike-Liegestütze
     nameEn: Pike Push-up
     equipment: bodyweight
@@ -1001,6 +1023,7 @@ exercises:
     trust: derived
     freeExerciseDbId: Lying_T-Bar_Row
   - slug: chest-supported-row
+    freeExerciseDbId: Leverage_Iso_Row
     nameDe: Rudern (brustgestützt)
     nameEn: Chest-Supported Row
     equipment: machine
@@ -1091,6 +1114,7 @@ exercises:
     trust: derived
     freeExerciseDbId: Wide-Grip_Rear_Pull-Up
   - slug: neutral-grip-pullup
+    freeExerciseDbId: V-Bar_Pullup
     nameDe: Klimmzug (neutraler Griff)
     nameEn: Neutral-Grip Pull-up
     equipment: bodyweight
@@ -1180,6 +1204,7 @@ exercises:
     freeExerciseDbId: Seated_Calf_Raise
   - slug: hip-abduction-machine
     wgerId: 1748
+    freeExerciseDbId: Thigh_Abductor
     nameDe: Abduktoren-Maschine
     nameEn: Hip Abduction Machine
     equipment: machine
@@ -1219,6 +1244,7 @@ exercises:
     freeExerciseDbId: Dumbbell_Step_Ups
   - slug: glute-bridge
     wgerId: 265
+    freeExerciseDbId: Butt_Lift_Bridge
     nameDe: Hüftheben (Boden)
     nameEn: Glute Bridge
     equipment: bodyweight
@@ -1292,6 +1318,7 @@ exercises:
     freeExerciseDbId: Plank
   - slug: side-plank
     wgerId: 580
+    freeExerciseDbId: Side_Bridge
     nameDe: Seitstütz
     nameEn: Side Plank
     equipment: bodyweight
