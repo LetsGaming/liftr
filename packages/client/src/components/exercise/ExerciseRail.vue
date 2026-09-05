@@ -9,8 +9,18 @@
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
 
 withDefaults(defineProps<{ variant?: "vertical" | "horizontal" }>(), { variant: "vertical" });
+/** Wave 0-B W4: emitted alongside store.jumpToExercise(i) so a caller rendering this rail inside
+ *  a dismissible sheet (WorkoutPage.vue's exercise-overview sheet, replacing the old always-on
+ *  horizontal strip) can close itself once a jump happens, without this component needing to
+ *  know anything about sheets. */
+const emit = defineEmits<{ jump: [index: number] }>();
 
 const store = useActiveWorkoutStore();
+
+function jump(i: number) {
+  store.jumpToExercise(i);
+  emit("jump", i);
+}
 
 /** The rail used to show only "2 / 4 Sätze" — a set count with no rep target at all, so you
  *  couldn't tell 3×5 from 3×15 without switching to that exercise. Reps can vary per set
@@ -28,7 +38,7 @@ function workingReps(ex: ActiveExercise): number | null {
       :key="ex.workoutExerciseId"
       class="rail-item"
       :class="{ active: i === store.currentExerciseIndex, done: ex.sets.every((s) => s.logged), grouped: ex.supersetGroup != null }"
-      @click="store.jumpToExercise(i)"
+      @click="jump(i)"
     >
       <span class="n">{{ ex.sets.every((s) => s.logged) ? "✓" : i + 1 }}</span>
       <span class="meta">
