@@ -161,16 +161,17 @@ function missingBadge(req: TieredRequirement): string | null {
     </div>
 
     <div v-else-if="activeTab === 'rang'">
-      <RankProgress
-        v-if="rankRow"
-        variant="card"
-        :tier="rankRow.tier"
-        :division="rankRow.division"
-        :lp="rankRow.lp"
-        :next-target-weight-kg="rankRow.nextTargetWeightKg"
-        :next-target-reps="rankRow.nextTargetReps"
-        :trust="rankRow.trust"
-      />
+      <div v-if="rankRow" class="rank-card-frame" :class="`t-${rankRow.tier}`">
+        <RankProgress
+          variant="card"
+          :tier="rankRow.tier"
+          :division="rankRow.division"
+          :lp="rankRow.lp"
+          :next-target-weight-kg="rankRow.nextTargetWeightKg"
+          :next-target-reps="rankRow.nextTargetReps"
+          :trust="rankRow.trust"
+        />
+      </div>
       <p v-else-if="ranksStore.loaded" class="hint">
         Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast.
       </p>
@@ -228,6 +229,33 @@ function missingBadge(req: TieredRequirement): string | null {
 .hint {
   color: var(--dim);
   font-size: 13px;
+}
+
+/* Contrast audit (2026-09-05): <RankProgress variant="card"> is built to sit on a dark
+   tier-gradient card — its .rp-tier label reads `var(--tt, ...)`, the per-tier accent token,
+   which is always a light/near-white value tuned for a dark tier fill (tokens.css's t-<tier>
+   blocks). RanksPage.vue supplies that fill via its own `.rank-card` wrapper; this sheet's
+   "Rang" tab rendered <RankProgress variant="card"> bare on the panel's plain (light-in-light-
+   mode) background, so the tier label came out near-white-on-near-white — effectively invisible
+   in light mode (measured ~1:1; "ANFÄNGER VI" was unreadable). Same root cause and same fix as
+   RanksPage.vue's `.rank-card`: paint the true tier gradient and locally re-pin
+   --text/--dim/--faint to light-on-dark, same pattern as tokens.css's .panel-reward. */
+.rank-card-frame {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  padding: var(--sp4);
+  position: relative;
+  overflow: hidden;
+  --text: #eef2fb;
+  --dim: #b8c2e0;
+  --faint: #98a2c0;
+}
+.rank-card-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(155deg, var(--b3, var(--surface-3)), var(--b2, var(--surface-2)) 55%, var(--b1, var(--surface)));
+  z-index: -1;
 }
 .wide-chart {
   width: 100%;

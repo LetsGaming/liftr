@@ -387,6 +387,33 @@ body::before {
   background-blend-mode: var(--nebula-sweep-blend), var(--nebula-sweep-blend), var(--nebula-sweep-blend), normal;
 }
 
+/* Contrast audit (2026-09-05): no component set `::placeholder` color anywhere, so every input
+   fell through to the browser's UA-default placeholder grey (Chromium: rgb(117, 117, 117)) —
+   a hardcoded color that never reads the theme's tokens. It happened to scrape by in dark mode
+   (very light-on-very-dark has huge headroom) but measured 3.80:1 in light mode against
+   --surface-3 (the input fill most fields sit on), below the 4.5:1 AA floor, on every plain
+   text/number input across the app (weight/birth-year on Profile, API token, run distance/
+   duration, exercise search, routine name). One global rule fixes every field at once, via the
+   same token cascade already used for real text — --dim measures 5.04-6.11:1 across every
+   light-mode surface in use (see tokens above) and adapts automatically in dark mode too. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--dim);
+  opacity: 1;
+}
+/* Every input/textarea in the app fills with --surface-3 (see e.g. ProfilePage.vue's
+   .profile-input) — but --dim was measured and tuned only against --surface-2 (comments above:
+   5.60:1 dark / 5.50:1 light). --surface-3 sits on the *opposite* side of --surface-2 in each
+   theme (darker in light mode, brighter in dark mode), so the same --dim-on-surface-3 pairing
+   lands at 5.04:1 in light mode (fine) but only 4.39:1 in dark mode — just under the 4.5:1 AA
+   floor. Locally pin a slightly brighter placeholder color for dark mode only, same pattern as
+   .panel-reward's local re-pin below, rather than changing --dim itself and risking its other
+   (already-passing) call sites. 5.30:1 against --surface-3. */
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: #aab2cd;
+}
+
 .tnum {
   font-family: var(--font-display);
   font-weight: 700;
