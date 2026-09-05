@@ -258,7 +258,18 @@
      --surface-hybrid-blur is its own token, deliberately separate from the rest, specifically so
      F4's performance gate can flip blur off everywhere with ONE token-level edit (set this to 0px)
      if backdrop-filter proves too costly on throttled/older-Android WebViews, without touching
-     every consumer that uses .surface-hybrid/.panel. */
+     every consumer that uses .surface-hybrid/.panel.
+
+     F4 gate result (2026-09-05): live-traced a scrolling stress case with 24 simultaneous
+     .surface-hybrid/.panel cards (well beyond today's actual 0-3 panel count pre-Wave-1) on
+     Workout/Overview at 390px under 4x/6x CPU throttling. requestAnimationFrame delta sampling
+     during a 2s scroll showed 0 frames over 16.7ms with blur on (avg ~5.6ms/frame, max ~11.1ms)
+     — statistically identical to the same test with this token forced to 0px (also 0 long
+     frames, ~5.6ms avg). Decision: blur stays ON by default. Caveat carried forward for Wave 1:
+     this environment can only emulate CPU throttling, not GPU/compositor cost on real older-
+     Android WebViews (backdrop-filter is largely a compositor operation CPU throttling doesn't
+     model) — if a real-device regression surfaces later, flip this one token to 0px; the
+     kill-switch mechanism itself was verified functional during this same test. */
   --surface-hybrid-bg: rgba(23, 26, 45, 0.88);
   --surface-hybrid-blur: 6px;
   --surface-hybrid-shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.6);
