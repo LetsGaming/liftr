@@ -127,13 +127,27 @@ of a real bug that existed at the time it was written, not a currently-accurate 
 
 ## 3. Open items
 
-### 3.5 Rank-up ring/glow — needs a one-time live confirmation, not a rebuild
+### 3.5 Rank-up ring/glow — CLOSED, verified live 2026-09-05
 
 `FinishSequence.vue`'s `.badge-ring`/`.badge-ring-muted` split exists in code and is structurally
 scoped correctly (never reachable from the plausibility-discounted branch). No session in either
 verification round produced an actual rank-up crossing live, so the ring/glow's rendering during a
-real beat has never been visually confirmed. Cheapest way to close this: deliberately engineer a
-small, plausible, near-threshold improvement and complete the workout. `audit/nebula-design-plan.md`
+real beat had never been visually confirmed. Closed by deliberately engineering a small, plausible,
+near-threshold improvement and completing the workout live in a dev instance (fresh bootstrapped DB,
+`packages/server` on :3012, `packages/client` on :5183): a brand-new test profile's first-ever logged
+set on Langhantel-Kniebeuge (back squat), 70 kg x 5 (e1RM/BW ratio ~1.09 against the default 75 kg
+bodyweight fallback) — a genuine first-ever peak, so `rankService.ts`'s jump/ceiling plausibility
+checks can't even fire (no `storedPeakRatio` yet) and the session's pace (single set, minutes
+elapsed) was nowhere near the pace-discount floor. `applySyncBatch`'s `finish_workout` returned this
+as a non-discounted (`plausibilityNote: null`) rank-up, and the client's Finish Sequence Beat 1
+rendered the full colorful `--nebula-grad` `.badge-ring` around the tier badge exactly as designed —
+confirmed via screenshot, not the muted `.badge-ring-muted` gray fallback, with no
+`.rankup-row.discounted` desaturation and no plausibility-note caption. Repeated on a second live
+session with a further plausible squat progression (82.5 kg → 90 kg x 5, a ~9% same-exercise jump,
+also comfortably under the 40%-fine plausibility threshold) crossing another division boundary,
+confirming the ring renders consistently across repeated genuine rank-ups, not just a first-ever
+peak. No code changes were needed — the CSS/logic split works exactly as designed. Verified live:
+this session, screenshot evidence in-session (not persisted to the repo). `audit/nebula-design-plan.md`
 Phase N2, `audit/verify/round2-agent-3.md`.
 
 ### 3.6 Minor live-only defect — needs an investigation pass, not a code guess
