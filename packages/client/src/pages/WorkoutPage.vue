@@ -19,6 +19,7 @@ import RoutineList from "../components/routine/RoutineList.vue";
 import RpeCapture from "../components/workout/RpeCapture.vue";
 import SetEntry from "../components/workout/SetEntry.vue";
 import SetKindPicker from "../components/workout/SetKindPicker.vue";
+import SheetModal from "../components/ui/SheetModal.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import SyncIndicator from "../components/ui/SyncIndicator.vue";
 import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
@@ -257,6 +258,36 @@ onMounted(async () => {
   showStalePrompt.value = store.isStale;
 });
 
+/** Wave 0-B W4: replaces the old always-on horizontal jump rail with a single compact line —
+ *  the next exercise's name plus its *first set's* weight/reps (design spec §3.1's exact
+ *  example: "Nächste Übung: Schulterdrücken · 40 kg × 10"), letting a lifter prep plates/
+ *  equipment before the transition. `undefined` on the routine's last exercise — the empty
+ *  state decided during this task (see the template's `next-ex-empty` branch) rather than
+ *  silently hiding the whole row, which would look like a layout bug. */
+const nextExercisePreview = computed(() => {
+  const next = store.exercises[store.currentExerciseIndex + 1];
+  if (!next) return undefined;
+  const firstSet = next.sets[0];
+  const summary = firstSet ? `${firstSet.weightKg != null ? `${firstSet.weightKg} kg × ` : ""}${firstSet.reps}` : null;
+  return { name: next.name, summary };
+});
+
+/** Wave 0-B W4: the "overview" affordance opens the full exercise list (reusing ExerciseRail's
+ *  own data/jump logic via its `variant="vertical"` rendering) in a sheet — preserves
+ *  store.jumpToExercise(i)'s jump-to-any capability per the resolved decision, just moved
+ *  behind a deliberate tap instead of an always-visible rail. */
+const showExerciseOverview = ref(false);
+
+/** Wave 0-B W3 (workout-flow redesign): the rank/XP display keeps its exact existing
+ *  presentation (RankProgress, variant="inline", below) — this is deliberately *not* being
+ *  folded into ExerciseInfoPanel's Rang tab, per the resolved product-owner decision. The only
+ *  change is that it's now hidden by default and only rendered once this deliberate-reveal
+ *  toggle is tapped, instead of always being on screen mid-set. No reserved-height skeleton is
+ *  needed for this any more (contrast with the old always-on version) — a user can only reach
+ *  this toggle after the page has already painted, so there's no auto-appearing-content layout
+ *  shift to guard against here. */
+const showRank = ref(false);
+
 /** The exercise currently in focus's cached rank row, if one exists yet — context for the
  *  in-session RankProgress bar. Rank is now only ever recomputed once, when the workout
  *  finishes (see finishWorkout() below), so this reads the value as of the *start* of the
@@ -472,12 +503,6 @@ async function logSet() {
             {{ activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1] }}%
           </span>
         </div>
-        <!-- Always visible during the workout (was only shown on the completion screen) so
-             "what does this session train" is answerable at any point, not just at the end. -->
-        <div class="muscle-preview">
-          <div class="eyebrow">Trainierte Muskeln</div>
-          <MuscleFigure :primary="sessionMuscles.primary" :secondary="sessionMuscles.secondary" />
-        </div>
         <!-- Vertical variant (default) — desktop's list, unchanged. Hidden below the 900px
              breakpoint in favor of the horizontal strip placed just above the focus column,
              since on mobile the full vertical list otherwise pushes the current exercise's
@@ -515,10 +540,27 @@ async function logSet() {
         </button>
       </aside>
 
-      <!-- Horizontal variant (Task 6) — mobile-only jump-to-exercise strip, shown directly above
-           the focus column so it's reachable without scrolling past the rest of .rail-col first.
-           Hidden at >=900px, where the vertical list above already covers this. -->
-      <ExerciseRail variant="horizontal" class="rail-strip-mobile" />
+      <!-- Wave 0-B W4: the always-visible horizontal jump-to-exercise strip (Task 6's mobile
+           parity fix) is replaced by this single compact line — exercise name plus its first
+           set's weight/reps, so a lifter can prep plates/equipment before the transition (design
+           spec §3.1) — plus a small "overview" affordance that reopens the full list in a sheet,
+           preserving jump-to-any (resolved decision: relocated behind a deliberate tap, not
+           removed). Hidden at >=900px, same breakpoint as the old strip, since the vertical rail
+           above already covers this on desktop. -->
+      <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile">
+        <span v-if="nextExercisePreview" class="next-ex-line">
+          <b>Nächste Übung:</b> {{ nextExercisePreview.name }}
+          <template v-if="nextExercisePreview.summary"> · {{ nextExercisePreview.summary }}</template>
+        </span>
+        <!-- Empty-state decision (recorded per plan W4): the routine's last exercise has no
+             "next" to preview — rather than just disappearing (which would look like a layout
+             bug), this says so explicitly. The overview affordance stays available regardless,
+             so jump-to-any is never lost even on the last exercise. -->
+        <span v-else class="next-ex-line next-ex-empty">Letzte Übung dieser Routine</span>
+        <button class="next-ex-overview-btn" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
+          ≡
+        </button>
+      </div>
 
       <section v-if="store.currentExercise && !store.allSetsLogged" class="focus-col">
         <div class="focus-head">
@@ -541,6 +583,19 @@ async function logSet() {
             <button v-if="store.exercises.length > 1" class="skip-btn" @click="store.skipCurrentExercise()">
               Übung überspringen ⏭
             </button>
+            <!-- Wave 0-B W3: rank/XP display moved behind this deliberate-reveal toggle
+                 (resolved decision — stays exactly RankProgress's existing presentation, not
+                 folded into ExerciseInfoPanel's Rang tab). A small, visually minimal tier-glyph
+                 chip, same footprint as the ⓘ info button next to it. -->
+            <button
+              class="info-btn rank-toggle-btn"
+              :class="{ active: showRank }"
+              :aria-pressed="showRank"
+              aria-label="Rang anzeigen"
+              @click="showRank = !showRank"
+            >
+              🏆
+            </button>
             <button class="info-btn" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)">ⓘ</button>
           </div>
         </div>
@@ -548,15 +603,13 @@ async function logSet() {
         <!-- The mockup's "ZUM NÄCHSTEN RANG" bar lives inside the exercise card, mid-session
              (examples/Screenshot_20260824-175421.png) — every logged set visibly moves it,
              instead of the reward only being visible on a different tab (engagement rework W2).
-             A skeleton fills the same slot while ranksStore is still loading — without it,
-             this block pops in a moment after the rest of the page has already painted and
-             shoves the reps entry/log button/rest timer down (feedback: fix layout shift,
-             especially during a workout — this is the loudest offender, since it happens once
-             per page load right as someone's trying to start logging). Once ranks have loaded,
-             an exercise that genuinely has no rank yet (never logged) renders nothing at all —
-             that's a real absence, not a loading flicker, so it doesn't get a reserved slot. -->
+             Wave 0-B W3: no longer always-visible — gated behind showRank's deliberate-reveal
+             toggle above. No reserved-height skeleton fallback any more (see showRank's own
+             comment for why the old layout-shift concern no longer applies once this only ever
+             renders on a deliberate tap). An exercise that genuinely has no rank yet (never
+             logged) renders nothing at all once revealed — a real absence, not a loading state. -->
         <RankProgress
-          v-if="currentRank"
+          v-if="showRank && currentRank"
           variant="inline"
           :tier="currentRank.tier"
           :division="currentRank.division"
@@ -565,7 +618,6 @@ async function logSet() {
           :next-target-reps="currentRank.nextTargetReps"
           :trust="currentRank.trust"
         />
-        <div v-else-if="!ranksStore.loaded" class="rank-skeleton shimmer" aria-hidden="true" />
 
         <button v-if="store.canInsertWarmup" class="warmup-btn" @click="store.insertWarmupSets()">
           + Aufwärmsätze einfügen
@@ -601,6 +653,15 @@ async function logSet() {
           </button>
         </div>
 
+        <!-- Wave 0-B W5: moved above "Satz speichern" (was below it) and always rendered — see
+             RestTimer.vue, which already renders an idle "startet nach dem Satz" state (or the
+             superset-continue variant) rather than nothing when no rest is running, so its slot
+             is permanently reserved. Their relative order is now fixed regardless of workout
+             state, so the Save button's own screen position never shifts between "no sets
+             logged" / "timer running" / "timer finished" (verified live via
+             getBoundingClientRect().top — see the task's completion notes). -->
+        <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
+
         <div class="log-set-wrap">
           <template v-if="store.currentSet">
             <!-- Reps start at 0 (activeWorkoutStore.ts) so the button stays disabled until the
@@ -611,8 +672,8 @@ async function logSet() {
             </button>
             <!-- Always rendered (not v-if) with a reserved min-height, visibility toggled
                  instead of the element being added/removed — otherwise the hint appearing and
-                 disappearing as reps go from 0 pushes the rest timer / set list up and down
-                 (feedback: fix layout shift during a workout, this is exactly that pattern). -->
+                 disappearing as reps go from 0 pushes the set list up and down (feedback: fix
+                 layout shift during a workout, this is exactly that pattern). -->
             <p class="reps-hint" :class="{ 'reps-hint-hidden': store.currentSet.reps > 0 }">
               Erst Wiederholungen, dann speichern.
             </p>
@@ -620,8 +681,6 @@ async function logSet() {
           <p v-else class="exercise-done">Übung erledigt ✓</p>
           <span v-if="xpChip" :key="xpChip.key" class="xp-chip tnum pop-in">+{{ xpChip.amount }} XP</span>
         </div>
-
-        <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
 
         <ul class="set-rows tnum">
           <li v-for="s in store.currentExercise.sets" :key="s.index" :class="{ done: s.logged, warmup: s.isWarmup, 'pop-in': justLoggedIndex === s.index }">
@@ -691,6 +750,14 @@ async function logSet() {
     </div>
 
     <ExerciseInfoPanel v-if="infoExercise" :exercise="infoExercise" @close="infoExerciseId = null" />
+
+    <!-- Wave 0-B W4: full jump-to-any-exercise list, relocated here from the always-visible
+         horizontal rail. Same ExerciseRail component/data/click logic as the desktop vertical
+         list above — its "jump" emit (added alongside its existing store.jumpToExercise(i) call)
+         closes this sheet once a jump happens. -->
+    <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
+      <ExerciseRail @jump="showExerciseOverview = false" />
+    </SheetModal>
     </div>
     </IonContent>
   </IonPage>
@@ -823,13 +890,53 @@ async function logSet() {
   display: flex;
   gap: var(--sp2);
 }
-/* Task 6: mobile parity for the jump-to-exercise rail. Below 900px, the vertical list (desktop's
-   unchanged rendering, still inside .rail-col) is replaced by the horizontal strip placed above
-   the focus column; at >=900px it's the reverse — the .rail-col media query below restores the
-   desktop layout exactly as it was. */
+/* Task 6 (mobile parity), then Wave 0-B W4 (replaced the horizontal jump rail with the compact
+   next-exercise line below). Below 900px this row sits above the focus column; at >=900px it's
+   hidden, since the vertical rail (.rail-col, unchanged) already covers "what's next"/jump-to-any
+   there. */
 .rail-strip-mobile {
   margin-bottom: var(--sp4);
 }
+.next-ex-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp3);
+  padding: var(--sp3);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.next-ex-line {
+  font-size: 12.5px;
+  color: var(--dim);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next-ex-line b {
+  color: var(--text);
+  font-weight: 700;
+}
+.next-ex-empty {
+  font-style: italic;
+  color: var(--faint);
+}
+.next-ex-overview-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 15px;
+  flex: none;
+}
+/* Placed after .next-ex-row's own unconditional `display: flex` (source order matters here —
+   two same-specificity class selectors on one element resolve ties by whichever rule comes
+   later) so this actually wins at >=900px, where the vertical rail in .rail-col already covers
+   "what's next"/jump-to-any and this row would otherwise duplicate it. */
 @media (min-width: 900px) {
   .rail-strip-mobile {
     display: none;
@@ -907,6 +1014,13 @@ async function logSet() {
   font-size: 15px;
   flex: none;
 }
+/* Wave 0-B W3: the rank-reveal toggle reuses .info-btn's shape/size, marked "on" via the same
+   filled-surface idiom .set-kind pickers use elsewhere (surface-3 instead of surface-2) rather
+   than a new color — a small state cue, not a second visual language for one toggle button. */
+.rank-toggle-btn.active {
+  background: var(--surface-3);
+  border-color: var(--line-2);
+}
 .add-ex-btn {
   font-size: 12px;
   color: var(--dim);
@@ -961,14 +1075,6 @@ async function logSet() {
 }
 .last-ref-hidden {
   visibility: hidden;
-}
-/* Reserves roughly RankProgress's own inline-variant height (badge + two text lines + bar) so
-   the page doesn't jump once ranksStore finishes loading and the real component takes this
-   slot — see the template comment above. .shimmer (styles/motion.css) supplies the sweep. */
-.rank-skeleton {
-  height: 78px;
-  border-radius: var(--r-lg);
-  background-color: var(--surface-2);
 }
 .warmup-btn {
   font-size: 12px;
@@ -1150,15 +1256,6 @@ button.sn:active {
   color: var(--dim);
   padding: var(--sp4) 0;
   text-align: center;
-}
-.muscle-preview {
-  padding: var(--sp3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-}
-.muscle-preview .eyebrow {
-  margin-bottom: var(--sp2);
 }
 /* Was styled identically to every other secondary rail button (add exercise, warm-up) — a
    destructive action needs to read as one before you tap it, not only after (when it flips

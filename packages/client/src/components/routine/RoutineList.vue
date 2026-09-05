@@ -21,12 +21,22 @@ import { useDragReorder } from "../../composables/useDragReorder";
 import { useToast } from "../../composables/useToast";
 import { aggregateMuscles } from "../../lib/muscles";
 import { computed, onBeforeUnmount, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const catalog = useCatalogStore();
 const routineStore = useRoutineStore();
 const store = useActiveWorkoutStore();
 const { toast } = useToast();
-const { starting, startRoutine, quickStart, exerciseName } = useStartRoutine();
+const { starting, quickStart, exerciseName } = useStartRoutine();
+const router = useRouter();
+
+/** Wave 0-B W2: tapping a routine card now opens the new Routine Overview screen instead of
+ *  calling startRoutine() immediately (design spec §3.2) — the overview's own sticky "Jetzt
+ *  starten" button is the one remaining quick-start path, so this card no longer needs its own
+ *  inline "▶ Starten" shortcut (spec §4 explicitly rejects a separate shortcut icon here). */
+function openOverview(routineId: string) {
+  void router.push(`/routines/${routineId}`);
+}
 
 const { openMenuId, editingRoutine, showBuilder, deleteConfirm, toggleMenu, editRoutine, duplicateRoutine, onRoutineCreated } =
   useRoutineManagement(routineStore);
@@ -102,16 +112,22 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           class="routine-card"
           :class="{ dragging: draggingIndex === i }"
           :style="styleFor(i)"
+          role="button"
+          tabindex="0"
+          @click="openOverview(routine.id)"
+          @keydown.enter="openOverview(routine.id)"
         >
           <div class="rc-head">
             <!-- Drag handle restricted to the single-column (mobile) layout — see the
                  canDragReorder computed above for why: useDragReorder's vertical-only math would
-                 misbehave once the grid wraps into multiple columns at >=900px. -->
+                 misbehave once the grid wraps into multiple columns at >=900px. @click.stop so
+                 grabbing the handle doesn't also fire the card's own navigate-to-overview tap. -->
             <button
               v-if="canDragReorder"
               class="rc-drag-handle"
               aria-label="Verschieben"
               @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.routine-card') as HTMLElement)"
+              @click.stop
             >
               ≡
             </button>
@@ -133,10 +149,12 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           </div>
           <span class="rc-count">{{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</span>
 
-          <div class="rc-actions">
-            <button class="btn-primary rc-start" :disabled="starting" @click="startRoutine(routine)">
-              {{ starting ? "…" : "▶ Starten" }}
-            </button>
+          <!-- Wave 0-B W2: the card itself now navigates to the Routine Overview screen on tap
+               (openOverview() above) — its sticky "Jetzt starten" button is the one remaining
+               quick-start path (design spec §3.2/§4: no separate inline shortcut here anymore).
+               @click.stop everywhere below so the ⋮ menu/edit/duplicate/mesocycle/delete
+               controls don't also trigger the card's own navigation. -->
+          <div class="rc-actions" @click.stop>
             <div class="rc-menu-wrap">
               <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)">⋮</button>
               <!-- Folded in from a standalone "✎ Bearbeiten" button that used to sit next to
@@ -161,7 +179,7 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
             </div>
           </div>
 
-          <div v-if="mesoFormRoutineId === routine.id" class="meso-form">
+          <div v-if="mesoFormRoutineId === routine.id" class="meso-form" @click.stop>
             <NumberStepper size="sm" :model-value="mesoWeeksInput.get(routine.id) ?? 4" @adjust="(d) => adjustMesoWeeks(routine.id, d)" />
             <span>Wochen</span>
             <button class="btn-secondary" @click="startMesocycle(routine.id)">Starten</button>
@@ -339,9 +357,8 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   text-overflow: ellipsis;
 }
 /* Drag-to-reorder (plan C §3 Phase 3, Task 6) — same visual pattern as ArrangeStep.vue's
-   .drag-handle, sized to the 44px touch-target floor used elsewhere on this card (.rc-menu-btn,
-   .rc-start), since this card lives on a primary mobile-first screen (unlike the wizard's
-   32px handle). */
+   .drag-handle, sized to the 44px touch-target floor used elsewhere on this card (.rc-menu-btn),
+   since this card lives on a primary mobile-first screen (unlike the wizard's 32px handle). */
 .rc-drag-handle {
   flex: none;
   width: 44px;
@@ -391,17 +408,15 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   font-size: 11px;
   flex: none;
 }
+/* Wave 0-B W2: the primary "▶ Starten" button that used to live here was removed — the card
+   itself now navigates to the Routine Overview screen on tap, whose own sticky start button is
+   the one remaining quick-start path. Only the ⋮ menu is left, so it sits flush right. */
 .rc-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--sp2);
   margin-top: var(--sp2);
-}
-.rc-start {
-  flex: 1;
-  min-height: 44px;
-  padding: 9px 10px;
-  font-size: 13px;
 }
 .rc-menu-wrap {
   position: relative;
