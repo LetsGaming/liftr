@@ -427,6 +427,19 @@ const hideTopHud = computed(
   background: var(--surface-2);
   border-radius: var(--r-sm);
 }
+/* F6 (Nebula Foundation light-mode contrast pass) — found by the required automated audit
+   (Lighthouse/axe color-contrast), pre-existing and unrelated to the sweep/hybrid surfaces this
+   task otherwise targets, but caught here because it lives in App.vue, which no later phase in
+   this plan ever touches again (see the plan's file-boundary table) — leaving it would orphan a
+   known AA failure permanently. --fire-hi/--surface-2 measured at 1.82:1 in light mode (need
+   4.5:1); mechanically darkened via color-mix rather than inventing a new brand hex (measured
+   ~5.3:1 against --surface-2 light). --blue-hi/--surface-2 similarly measured at 2.38:1;
+   --blue-lo is an existing token already used elsewhere for "the darker blue" and measures
+   ~5.25:1 here. OverviewPage.vue's two separate eyebrow-color contrast failures found by the
+   same audit are NOT fixed here — that file is owned by Wave 0-B/N1, not Foundation. */
+:root[data-theme="light"] .streak-chip {
+  color: color-mix(in srgb, var(--fire-hi) 55%, black);
+}
 /* One-shot pulse the moment the streak actually grows (engagement rework W6) — was dead text
    regardless of whether it just changed or has looked the same for a week. */
 .streak-pulse {
@@ -474,6 +487,12 @@ const hideTopHud = computed(
   color: var(--blue-hi);
   font-weight: 700;
   font-size: 11.5px;
+}
+/* F6 — see the .streak-chip light-mode override above for the full rationale; same audit finding
+   (--blue-hi/--surface-2 measured 2.38:1 in light mode), same fix approach (reuse an existing
+   token rather than inventing a color: --blue-lo measures ~5.25:1 here). */
+:root[data-theme="light"] .xp-amount {
+  color: var(--blue-lo);
 }
 .level-chip + .streak-chip {
   margin-top: var(--sp2);
