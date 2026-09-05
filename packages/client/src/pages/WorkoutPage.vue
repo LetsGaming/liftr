@@ -653,6 +653,15 @@ async function logSet() {
           </button>
         </div>
 
+        <!-- Wave 0-B W5: moved above "Satz speichern" (was below it) and always rendered — see
+             RestTimer.vue, which already renders an idle "startet nach dem Satz" state (or the
+             superset-continue variant) rather than nothing when no rest is running, so its slot
+             is permanently reserved. Their relative order is now fixed regardless of workout
+             state, so the Save button's own screen position never shifts between "no sets
+             logged" / "timer running" / "timer finished" (verified live via
+             getBoundingClientRect().top — see the task's completion notes). -->
+        <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
+
         <div class="log-set-wrap">
           <template v-if="store.currentSet">
             <!-- Reps start at 0 (activeWorkoutStore.ts) so the button stays disabled until the
@@ -663,8 +672,8 @@ async function logSet() {
             </button>
             <!-- Always rendered (not v-if) with a reserved min-height, visibility toggled
                  instead of the element being added/removed — otherwise the hint appearing and
-                 disappearing as reps go from 0 pushes the rest timer / set list up and down
-                 (feedback: fix layout shift during a workout, this is exactly that pattern). -->
+                 disappearing as reps go from 0 pushes the set list up and down (feedback: fix
+                 layout shift during a workout, this is exactly that pattern). -->
             <p class="reps-hint" :class="{ 'reps-hint-hidden': store.currentSet.reps > 0 }">
               Erst Wiederholungen, dann speichern.
             </p>
@@ -672,8 +681,6 @@ async function logSet() {
           <p v-else class="exercise-done">Übung erledigt ✓</p>
           <span v-if="xpChip" :key="xpChip.key" class="xp-chip tnum pop-in">+{{ xpChip.amount }} XP</span>
         </div>
-
-        <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
 
         <ul class="set-rows tnum">
           <li v-for="s in store.currentExercise.sets" :key="s.index" :class="{ done: s.logged, warmup: s.isWarmup, 'pop-in': justLoggedIndex === s.index }">
