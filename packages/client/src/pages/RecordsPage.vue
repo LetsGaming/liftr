@@ -50,12 +50,12 @@ function formatDate(iso: string): string {
         <div v-for="i in 4" :key="i" class="shimmer pr-skel-row" aria-hidden="true" />
       </template>
 
-      <p v-else-if="prStore.error" class="page-note load-error" style="margin-top: var(--sp4)">
+      <p v-else-if="prStore.error" class="page-note load-error panel" style="margin-top: var(--sp4)">
         Rekorde konnten nicht geladen werden.
         <button type="button" class="btn-secondary" @click="prStore.load()">Erneut versuchen</button>
       </p>
 
-      <p v-else-if="sorted.length === 0" class="page-note" style="margin-top: var(--sp4)">
+      <p v-else-if="sorted.length === 0" class="page-note empty-note panel" style="margin-top: var(--sp4)">
         Noch keine Rekorde — dein erster harter Satz auf einer beliebigen Übung startet einen.
       </p>
 
@@ -83,6 +83,14 @@ function formatDate(iso: string): string {
 <style scoped>
 .page-note {
   color: var(--dim);
+}
+/* Nebula N6 — error/empty-ledger states adopt the shared .panel/surface-hybrid treatment
+   (tokens.css) instead of sitting as bare page text, so they read as one system with the
+   populated .pr-row list below. .panel supplies background/blur/shadow/hairline; padding is
+   added locally since .panel itself is unopinionated about spacing. */
+.load-error,
+.empty-note {
+  padding: var(--sp4);
 }
 .load-error {
   display: flex;
