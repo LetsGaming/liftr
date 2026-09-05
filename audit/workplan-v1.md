@@ -144,6 +144,99 @@ Phase N2, `audit/verify/round2-agent-3.md`.
 - Recurring Ionic Vue console exception (`insertBefore` on null, in `removeViewFromDom`) firing
   roughly every 35-90s throughout live sessions, independent of user action — some background
   overlay/controller trying to dismiss an already-removed view. `audit/verify/round2-agent-4.md`.
+  **UPDATE (2026-09-05), live production-build investigation per this item's own instruction (WS5
+  discriminating test — prod build, service worker unregistered, full stack captured via
+  chrome-devtools-mcp `list_console_messages` with `includeStackTraces`, cross-referenced against
+  source via a temporary sourcemapped rebuild, reverted afterward — no speculative fix applied to
+  app code):**
+
+  - **Reproduces deterministically, on demand, on *any* SheetModal-based Ionic modal dismissal** —
+    it is not a mysterious background timer. Confirmed twice independently, on two unrelated
+    modals, each a clean click-to-close with zero other concurrent activity:
+    1. Dismissing the first-run onboarding wizard (`OnboardingGuide.vue`) via its "Später" (skip)
+       button.
+    2. Cancelling the routine builder (`RoutineWizard.vue`) via its "✕" close button with nothing
+       yet selected (`requestClose()` -> `sheetRef.value?.dismiss()`).
+    A **200-second pure-idle window** (service worker unregistered, zero interaction, console
+    watched throughout) produced **zero** occurrences — ruling out a genuine background
+    interval/timer as the mechanism. A third modal (ExercisesPage's "+ Eigene Übung hinzufügen"
+    custom-exercise form, also `SheetModal`-based but with no inner step `<Transition>`) was
+    dismissed the same way and did **not** reproduce it in this session, which is suggestive
+    (not proof) that an inner `<Transition>` around step content increases the odds of hitting the
+    race, rather than being strictly required. The original round-2 report's "every 35-90s,
+    independent of action" read is best explained by ordinary UI-testing pacing: with the bug
+    firing on essentially every sheet-modal close in the app, it will surface at roughly whatever
+    cadence a tester happens to open/close things — no separate periodic mechanism is implicated.
+  - **Full captured stack** (chunk names below are from the very first repro, before the
+    sourcemapped rebuild):
+    ```
+    TypeError: Cannot read properties of null (reading 'insertBefore')
+      at oc (vue-vendor-DNpSZe59.js:13:660)
+      at is (vue-vendor-DNpSZe59.js:13:596)
+      at wn (vue-vendor-DNpSZe59.js:13:59)
+      at no (vue-vendor-DNpSZe59.js:13:1859)
+      --- Promise.then -----------------------
+      at eo (vue-vendor-DNpSZe59.js:13:1115)
+      at ur (vue-vendor-DNpSZe59.js:13:1084)
+      at S.scheduler (vue-vendor-DNpSZe59.js:13:29026)
+      at trigger / notify / set value (vue-vendor-DNpSZe59.js:9:...)
+      at d.value.I.onClose... (index-BeMeFz7r.js:2:38208)   // App.vue: showOnboarding = false
+      at I.onClose... (index-BeMeFz7r.js:2:23253)             // OnboardingGuide.vue: emit('close')
+      at I.onDidDismiss... (index-BeMeFz7r.js:2:20853)        // SheetModal.vue: @did-dismiss handler
+      at ionic-vendor-DGlawHyM.js:263:25225 / emit / ei
+      --- await ------------------------------
+      at dismiss (ionic-vendor-DGlawHyM.js:219:24699)          // Ionic's real overlay dismiss()
+      --- await ------------------------------
+      at i / De (index-BeMeFz7r.js:2:20276 / 2:23095)          // OnboardingGuide.vue: skip()
+    ```
+    The second repro (routine-wizard cancel), captured **with sourcemaps enabled**, resolves the
+    same shape directly to source with no ambiguity left:
+    ```
+    TypeError: Cannot read properties of null (reading 'insertBefore')
+      --- Promise.then -----------------------
+      at C (WorkoutPage-Ow32FmsN.js:1:34363)                  -> useRoutineManagement.ts:61
+                                                                  (onRoutineCreated: showBuilder.value = false)
+      at V.onClose... (WorkoutPage-Ow32FmsN.js:1:31328)       -> RoutineWizard.vue:427
+                                                                  (@close="emit('created')")
+      at  (SheetModal.vue:125:19)                             -- @did-dismiss="emit('close')"
+      --- await ------------------------------
+      at dismiss (SheetModal.vue:99:98)                       -- modalRef.$el.dismiss()
+      at Ge (WorkoutPage-Ow32FmsN.js:1:31019)                 -> RoutineWizard.vue:387
+                                                                  (requestClose(): sheetRef.dismiss())
+    ```
+  - **Diagnosis (evidenced, not fully proven — flagging as a fix proposal for review, not applied):**
+    `SheetModal.vue` already implements the documented fix for the *previous* version of this same
+    crash class (see its own header comment, and `App.vue`'s comment on `showOnboarding`): every
+    caller is supposed to unmount only in response to `@close`, which `SheetModal.vue` only emits
+    from `@did-dismiss` — i.e., *after* Ionic's own async dismiss teardown reports itself complete.
+    Both captured traces confirm callers are doing exactly that (`RoutineWizard.vue:427`,
+    `App.vue`'s `showOnboarding` watcher/handler). Despite following that rule correctly, the crash
+    still happens **synchronously inside the `did-dismiss` handler's own call stack** — the parent's
+    state flip (`showOnboarding.value = false` / `showBuilder.value = false`) triggers Vue's
+    reactive unmount of the whole modal subtree in the same tick `did-dismiss` fired in, with no
+    `nextTick`/microtask gap. If Ionic's `did-dismiss` event fires slightly before Ionic's own
+    internal overlay-stack bookkeeping (`hasController`, per the original report's stack) has fully
+    detached/cleaned up that DOM subtree, Vue's own unmount patch can end up operating on a node
+    whose parent Ionic has already pulled out from under it — `insertBefore`/`removeChild` on a now-
+    null `parentNode`. This would explain why the fix that closed the *previous* incarnation of this
+    bug (routine-wizard/workout-delete, "fixed elsewhere") didn't fully close this one: it moved the
+    unmount from "immediately on user action" to "on `@close`," but never added a tick of separation
+    between Ionic's teardown completing and Vue's own unmount running.
+  - **Ruled out:** a genuine `setInterval`/background-timer source (200s clean idle, zero
+    occurrences; the only intervals in the client are `RestTimer.vue`, `WorkoutClock.vue`,
+    `useCelebrate.ts`'s beat timer, and `NumberStepper.vue`'s press-and-hold repeat — none run
+    without an active workout/press, and none touch an Ionic overlay). `ToastHost.vue` — it's a
+    plain Vue `<TransitionGroup>` over a local array, not an `IonToast`/Ionic overlay at all, so it
+    cannot be the "background overlay/controller" the original report speculated about.
+  - **Proposed fix for review (NOT applied — no code changed this pass):** give `SheetModal.vue`'s
+    own `@did-dismiss` handler one tick of separation from the `close` emit it triggers (e.g.
+    `@did-dismiss="() => nextTick(() => emit('close'))"`, or defer via `queueMicrotask`/
+    `requestAnimationFrame` — whichever is verified live to actually close the race, since `nextTick`
+    alone may still land inside the same microtask queue Ionic's own teardown promise resolves
+    through). Centralizing the deferral in `SheetModal.vue` itself would fix every caller at once
+    rather than requiring each of the ~6 call sites to add its own delay. This needs a human/live
+    verification pass before landing, not a blind patch — the exact deferral primitive matters and
+    wasn't verified here.
 
 ### 3.7 Streak/XP mechanics redesign — spec written, not implemented
 
