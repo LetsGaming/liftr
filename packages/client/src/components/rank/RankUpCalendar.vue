@@ -52,10 +52,22 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 </template>
 
 <style scoped>
+/* N3 adoption pass: swaps the flat --surface fill for the surface-hybrid bg/blur/shadow triad
+   (tokens.css, Foundation F3) so this analytics card reads as part of the same translucent
+   system as everything else on the page. Deliberately does NOT add the shared gradient-hairline
+   ::after here: this card already carries a real, meaningful border color
+   (`var(--tier-accent, var(--line))`, engagement-audit-v4 Phase 2B — a genuine rank-up this week
+   tints the border with the tier's own accent) and stacking the generic hairline gradient on top
+   would either fight or wash out that signal. Adopting the background half of the hybrid recipe
+   while keeping this component's own semantic border is the correct partial adoption, not a
+   shortcut — see RanksPage.vue's rank-card guardrail comment for the same kind of judgment call
+   applied to a different case (there: don't touch at all; here: adopt bg, keep the bespoke
+   border). */
 .rankup-calendar {
-  background: var(--surface);
-  /* engagement-audit-v4 Phase 2B critique fix: see RankDistributionDonut.vue's identical
-     comment — analytics card, not a reward, so only the border picks up tier flavor. */
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
   border: 1px solid var(--tier-accent, var(--line));
   border-radius: var(--r-xl);
   padding: var(--sp5);
