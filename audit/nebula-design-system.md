@@ -91,6 +91,18 @@ mockup is a reference for direction, not a pixel contract.
 
 ### Where Nebula is allowed to appear (positive list — if a surface isn't listed, it does not get the gradient)
 
+**Scope note (2026-09-05 complete-redesign, superseding this list's premise): this positive list
+still governs exactly one thing — the concentrated `--nebula-grad`/`--nebula-grad-cta` FILL (a CTA
+button's own background, the rank-up ring, a just-earned PR row). It no longer governs the whole
+app's visual identity.** Two other, separate mechanisms are now pervasive by design (every screen,
+not gated by this list) and are documented in §3/§4 below, not here:
+- the cosmic **background sweep** every screen sits on (`body::before`, `--nebula-sweep-*` tokens) —
+  a low-opacity wash *derived from* Nebula's hues, not the CTA gradient itself, and
+- the **surface-hybrid** hairline edge (`--surface-hybrid-edge-grad`) on every card/panel/nav/header
+  — also a low-opacity gradient echo, not the CTA fill.
+Do not read "pervasive background exists now" as license to apply the concentrated CTA gradient
+more widely — that rationing (below) is unchanged and still real.
+
 - `.btn-primary` background (the single primary CTA per screen — see `nebula-design-components.md` §3)
 - The HUD `.level-chip`'s ring/dot accent
 - The `.streak-chip`'s glow **during** an extension event only (`.streak-pulse`, `--dur-cele`), not
@@ -110,7 +122,10 @@ mockup is a reference for direction, not a pixel contract.
   explicitly — now resolved: solid color is correct.)
 - Empty states, loading skeletons, disabled controls — an empty state wearing the "earned" gradient
   would misrepresent the state as achieved.
-- The app's base background/ground in either theme — see §3.
+- The concentrated CTA fill specifically, on the base background/ground of a screen — the ground
+  itself now carries a low-opacity Nebula-derived wash by design (see §3, rewritten 2026-09-05);
+  what stays off this list is stamping the full-strength `--nebula-grad-cta` fill onto a background
+  the way it appears on `.btn-primary`.
 
 ### Text: gradient-clip vs. solid ink
 
@@ -121,44 +136,56 @@ mockup is a reference for direction, not a pixel contract.
 
 ---
 
-## 3. Base background/ground — ratified decision
+## 3. Base background/ground — superseded 2026-09-05, now a pervasive cosmic sweep
 
-**This was the single most consequential open question this rewrite resolves.** The finalist
-mockup (`liftr-pulse-liftoff-finalists.html`) wraps its entire dark-mode phone screen in a
-violet-tinted radial wash (`#1c1a3a → #0a0912`). The shipped app's dark `--bg`/`--surface`
-(`#0a0c14`/`#161c22`-family, neutral blue-black) never adopted that tint. The prior version of this
-document carried this forward silently ("existing dark values stay here as the default") without
-weighing it against the mockup — an omission, not a decision, and exactly the kind of ambiguity
-that let round 2's live-browser audit read it as a fidelity failure.
+**This section previously ratified a neutral (non-tinted) ground as correct-not-a-gap. That
+ruling is superseded, not amended — the current rule is the literal opposite of what this section
+used to say.** The supersession is recorded in
+`docs/superpowers/specs/2026-09-05-nebula-complete-redesign-design.md`: the product owner's
+judgment, after `audit/nebula-application-gap-audit-2026-09-05.md` confirmed the old rationed plan
+was fully shipped as originally written, was that the plan itself undersold what Nebula should mean
+for Liftr — "only buttons have the new styling" was accurate and insufficient. This section's old
+reasoning (a violet ground would flatten the resting-vs-earned distinction; the mockup's raw wash
+was tuned for hero shots, not minutes-long screens) is not wrong as far as it went, but it was
+reasoning about the *concentrated* CTA-strength gradient, not a restrained, low-opacity ambient
+wash — the new system is deliberately not what that reasoning was rejecting.
 
-**Ratified: the neutral background stays. This is correct, not a gap, and must not be "fixed" to
-match the mockup's violet wash.** Reasoning:
-- §1's central rule is that Nebula is *rationed* — it signals a specific, narrow thing (interactive
-  or just-earned), and that signal only works if it is not also the ambient wallpaper of every
-  screen. A violet-tinted ground the user stares at through every idle moment of every screen is
-  the definition of ambient decoration, not a rationed signal — it would flatten the exact
-  distinction (resting vs. earned) the whole system exists to draw.
-- The mockup's raw violet ground was tuned for a handful of static hero shots, not for a screen a
-  user looks at for minutes at a time during active logging. `nebula-design-components.md` §Train
-  already separately established that Train's high-frequency surfaces deliberately use solid
-  `--nebula-ink`, not gradient, for exactly this "stared-at dozens of times a session" reason — the
-  same logic extends to the ground itself, a fortiori.
-- Keeping the ground neutral is also why the CTA gradient reads clearly when it appears (confirmed
-  in round 2: the CTA gradient is legible and correctly rendered against the neutral ground in both
-  themes) — a violet ground would reduce the CTA's contrast against its own background.
+**Current rule: every screen sits on one continuous, low-opacity cosmic background sweep, in both
+themes — a `body::before` layer (`--nebula-sweep-*` tokens, `tokens.css`), not a per-page node.**
+This is pervasive *in reach* (every route, not just hero moments) but stays deliberately restrained
+*in intensity*, per explicit product-owner correction during the redesign's brainstorming pass (an
+earlier, brighter draft — roughly 3x the shipped wash opacities — was rejected as "cheap" and "a
+strain on the eye"; a discrete-radial-blob draft was rejected for reading as separate patches
+instead of one blended scene; a literal starfield draft was rejected as "screen dust"). Concretely:
+- One diagonal base gradient plus three wide, heavily-blurred radial washes, blended via
+  `mix-blend-mode: screen` in dark mode (plain layered opacity in light mode, since screen-blending
+  onto a near-white base washes out immediately) so hues melt into each other rather than reading
+  as separate blobs.
+- Fully static — no ambient motion, ever (battery/perf on a mobile PWA; motion stays reserved for
+  existing interaction/celebration primitives, which already respect `prefers-reduced-motion`).
+- The values in `tokens.css`'s `--nebula-sweep-*` tokens are the literal validated spec numbers —
+  do not re-brighten or re-derive them "to make it feel more branded"; that is the exact mistake
+  this redesign corrected twice during its own brainstorming pass.
+- The CTA gradient's own legibility (the old section's other supporting argument) still holds:
+  the sweep's washes are low-opacity enough that `.btn-primary`'s full-strength fill still reads as
+  clearly the loudest element on any screen — this was re-verified live during Foundation task F2/F3
+  rather than assumed.
 
-If a future redesign wants a tinted ground, that is a new brainstorm and a new decision, not a
-"finish what Nebula started" task — this document closes that question for the current system.
+Tier badges, resting progress bars, and the concentrated §2 positive-list CTA fill are unaffected —
+this section is about the ground only, exactly as before; §1's tier-vs-Nebula split and §2's
+rationing of the concentrated fill are both restated, not reopened, by this rewrite.
 
 ---
 
-## 4. Glow — the rationing rule
+## 4. Glow — the rationing rule (restated for interactive/reward glow; the ground is no longer
+   evidence for this rule — see 2026-09-05 update below)
 
 No new duration/easing tokens; `--dur-fast/base/slow/cele` and `--ease-out/--ease-spring` from
 `motion.css` are reused as-is.
 
-**Glow activates only on a state transition the user just caused, for the duration of that
-transition's existing motion primitive, then it turns off.** It is never a resting/ambient effect.
+**Glow on an interactive/reward element activates only on a state transition the user just caused,
+for the duration of that transition's existing motion primitive, then it turns off.** It is never a
+resting/ambient effect on these elements.
 
 - A streak extending (`streakJustExtended` in `App.vue`) permits the streak chip's glow for that
   `--dur-cele` window only.
@@ -170,6 +197,23 @@ transition's existing motion primitive, then it turns off.** It is never a resti
   discounted branch), not a runtime `if` that could be gotten wrong. This is the concrete
   implementation of the honesty principle already established elsewhere in the audit (discounted
   sessions get muted, non-celebratory treatment, never the "earned" gradient/glow).
+
+**2026-09-05 update — this rule never applied to the ground, and still doesn't, but §3 changed
+what "the ground" is.** Before this date, this section's rationing was easy to conflate with §3's
+old "the ground stays neutral" ruling — both pointed the same direction (nothing ambient), so the
+distinction between "glow is event-gated" and "the ground carries no color" didn't need separating.
+Now that §3's ground *does* carry a low-opacity Nebula-derived wash pervasively, the distinction
+matters: **the background sweep is not glow, and is not subject to this section's event-gating
+rule.** It is a different mechanism serving a different job (ambient scene-setting, always on, by
+explicit product-owner design) — it is allowed to be always-on precisely because it is restrained
+(soft diffusion only, never a bloom/haze aura per the redesign spec's guardrails) and does not
+compete with the signal glow provides. The rule above — glow fires only on a just-caused
+success-tier transition, then turns off — is otherwise completely unchanged and still governs every
+interactive/reward glow use listed above, including the showcase-moment intensification the same
+redesign adds (Rank-up, Finish Sequence, share-card temporarily increase the *sweep's* saturation
+for the celebration's existing motion duration, then settle back — an extension of this exact
+mechanic to the background as a whole, not a new one; see the design spec §3.3, numbers tuned live
+in a later phase, not specified here).
 
 **Verified status:** round 1 confirmed `--nebula-glow`/`--nebula-glow-strong` are defined with
 values matching the mockup and are wired to exactly one live trigger app-wide — the `.streak-pulse`
@@ -247,14 +291,28 @@ all* on specific surfaces.
 
 Before merging anything that touches color, chrome, a CTA, or a reward/celebration surface:
 
-1. Does this surface appear on the §2 positive list? If not, it does not get `--nebula-*` — use the
-   existing neutral/tier system instead. When in doubt, the answer is "no gradient."
+1. Does this surface appear on the §2 positive list? **Note the 2026-09-05 scope narrowing: this
+   question now applies only to the concentrated `--nebula-grad`/`--nebula-grad-cta` FILL** (a CTA's
+   own background, the rank-up ring, a just-earned PR row) — not to the pervasive background sweep
+   or the surface-hybrid hairline edge, which are separate, always-on-by-design mechanisms (§3/§4).
+   If the surface in front of you wants the concentrated fill and isn't on the list, it does not get
+   `--nebula-*` — use the existing neutral/tier system (or, for a card/panel, the surface-hybrid
+   utility) instead. When in doubt about the concentrated fill specifically, the answer is "no
+   gradient."
 2. If it's a CTA: is there already a `.btn-primary` gradient surface at rest on this screen? There
-   must be exactly one. A second always-on gradient surface on the same screen is a violation — flatten
-   it back to `.btn-secondary`'s neutral treatment or re-read §1 before adding a second one.
+   must be exactly one. A second always-on **concentrated CTA-strength** gradient surface on the
+   same screen is a violation — flatten it back to `.btn-secondary`'s neutral treatment or re-read
+   §1 before adding a second one. (This does not count the background sweep or a surface-hybrid
+   hairline — both are pervasive by design and present on every screen already, not a second CTA.)
 3. If it's glow: does it fire only on a `success`-tier event the user just caused, for that event's
-   existing motion duration, then turn off? If it's visible at rest, it's wrong.
+   existing motion duration, then turn off? If it's visible at rest, it's wrong. (The background
+   sweep is not glow and is exempt from this — see §4's 2026-09-05 update.)
 4. If it's a tier badge or tier progress bar: it stays on the metal-gradient system. Do not add
    Nebula to it, even "just a little," even for emphasis.
-5. If it's the base background of a screen: it stays neutral (§3). Do not add a tint "to make it
-   feel more branded" — that is the ambient-decoration failure mode this system is built to avoid.
+5. **Superseded 2026-09-05 — the base background of a screen is no longer neutral; it is the
+   pervasive cosmic sweep by design (§3).** The check that survives from this item's original
+   intent: does the sweep still use the exact validated `--nebula-sweep-*` token values, unmodified?
+   Do not re-brighten or re-derive them "to make it feel more branded" — that overshoot-then-correct
+   history is exactly what produced the current restrained values; second-guessing them back upward
+   without live product-owner re-validation repeats a mistake this system's own history already
+   made and fixed twice.

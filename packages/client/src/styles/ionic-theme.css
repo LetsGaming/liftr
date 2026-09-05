@@ -42,6 +42,13 @@
   --ion-color-medium: var(--dim);
   --ion-color-medium-rgb: 152, 162, 192;
 
+  /* F5 (2026-09-05 Nebula Foundation): was a flat var(--surface) fill — the header hybrid
+     treatment below (ion-toolbar rule) now sets its own translucent --background per toolbar
+     instance instead, so the sweep bleeds through subtly per the complete-redesign spec §3.5.
+     Left set to --surface here too as the pre-hydration/no-JS fallback value Ionic reads before
+     the ion-toolbar rule's own --background override applies, and as a safety net for any
+     toolbar instance that doesn't get that rule (none currently, but this keeps the token
+     non-empty rather than transparent-by-omission). */
   --ion-toolbar-background: var(--surface);
   --ion-toolbar-border-color: var(--line);
   --ion-item-background: var(--surface-2);
@@ -85,6 +92,48 @@ ion-title {
   width: 100%;
   font-weight: 700;
   font-family: var(--font-display);
+}
+
+/* Nebula Foundation F5 — header hybrid (complete-redesign spec §3.5). All 8 pages share this
+   identical IonHeader > IonToolbar skeleton with no per-page styling, so this one global rule
+   reaches every screen's header at once. `--background`/`--border-color` are ion-toolbar's own
+   shadow-DOM hooks (same mechanism as ion-content's `--background` in F1 above); backdrop-filter
+   is applied to the real (light-DOM) host element, which composites on top of whatever
+   ion-toolbar's shadow DOM paints using --background, so the two combine correctly. The
+   mask-composite hairline reuses F3's exact edge-gradient recipe for visual consistency with
+   every other hybrid surface, rather than a bespoke header-only border. */
+ion-toolbar {
+  --background: var(--surface-hybrid-bg);
+  --border-color: transparent;
+  --backdrop-filter: blur(var(--surface-hybrid-blur));
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  position: relative;
+}
+ion-toolbar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Nebula Foundation F1 (2026-09-05 plan) — hard blocker for the whole pervasive-background
+   redesign. Every routed page is an <IonPage>, and ion-content's real scrollable surface lives
+   in its shadow DOM; Ionic paints it opaque via `--background` (defaulting to
+   `--ion-background-color`, itself `var(--bg)` above) regardless of anything set on `body` in
+   ordinary CSS — a shadow-DOM-internal custom property isn't reachable by inheritance the way a
+   normal background is. A `body::before` sweep layer behind `<router-view>` (F2) would therefore
+   be fully invisible on every single screen until this is set. Transparent here, not removed,
+   so `--ion-background-color` still exists as a documented fallback/reference value for anything
+   that reads it directly (nothing currently does, but Ionic internals could). */
+ion-content {
+  --background: transparent;
 }
 
 /* Every routed page is an <IonPage>, which is position:absolute + inset:0 inside
