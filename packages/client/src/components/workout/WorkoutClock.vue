@@ -40,7 +40,7 @@ onBeforeUnmount(() => {
       <small>Trainingszeit</small>
       <span class="tnum">{{ display }}</span>
     </div>
-    <button class="icon-btn" :aria-label="store.isPaused ? 'Fortsetzen' : 'Pausieren'" @click="store.togglePause()">
+    <button class="icon-btn surface-hybrid" :aria-label="store.isPaused ? 'Fortsetzen' : 'Pausieren'" @click="store.togglePause()">
       {{ store.isPaused ? "▶" : "⏸" }}
     </button>
   </div>
@@ -65,12 +65,12 @@ onBeforeUnmount(() => {
   font-size: 22px;
   font-weight: 800;
 }
+/* N2: was a flat --surface-2 fill — .surface-hybrid instead (see WorkoutPage.vue's .next-ex-row
+   comment for the general rationale). */
 .icon-btn {
   width: 40px;
   height: 40px;
   border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   font-size: 16px;
 }

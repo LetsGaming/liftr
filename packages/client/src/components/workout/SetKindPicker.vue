@@ -22,11 +22,11 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
 <template>
   <SheetModal title="Satzart auswählen" height="45%" @close="emit('close')">
     <div class="kind-list">
-      <button v-for="opt in OPTIONS" :key="opt.kind" class="kind-row" @click="emit('pick', opt.kind)">
+      <button v-for="opt in OPTIONS" :key="opt.kind" class="kind-row surface-hybrid" @click="emit('pick', opt.kind)">
         <span class="kind-letter" :class="`k-${opt.kind}`">{{ opt.letter }}</span>
         {{ opt.label }}
       </button>
-      <button class="kind-row danger" @click="emit('remove')">
+      <button class="kind-row danger surface-hybrid" @click="emit('remove')">
         <span class="kind-letter k-remove">🗑</span>
         Satz entfernen
       </button>
@@ -40,14 +40,18 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   flex-direction: column;
   gap: var(--sp2);
 }
+/* N2 (Nebula adoption): was a flat --surface-2 fill + 1px --line border — .surface-hybrid
+   instead (see template), same recipe as every other row/card this workstream converted. This
+   sheet's own backdrop (SheetModal.vue, out of this workstream's file boundary) still defaults
+   to an opaque --surface fill, so the backdrop-blur this utility adds has no visible effect here
+   — kept anyway for the translucent bg + gradient hairline, so this row still reads as "in the
+   system" rather than needing a second, sheet-specific treatment. */
 .kind-row {
   display: flex;
   align-items: center;
   gap: var(--sp3);
   padding: var(--sp3) var(--sp4);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   font-size: 14.5px;
   font-weight: 700;
