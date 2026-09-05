@@ -257,6 +257,16 @@ onMounted(async () => {
   showStalePrompt.value = store.isStale;
 });
 
+/** Wave 0-B W3 (workout-flow redesign): the rank/XP display keeps its exact existing
+ *  presentation (RankProgress, variant="inline", below) — this is deliberately *not* being
+ *  folded into ExerciseInfoPanel's Rang tab, per the resolved product-owner decision. The only
+ *  change is that it's now hidden by default and only rendered once this deliberate-reveal
+ *  toggle is tapped, instead of always being on screen mid-set. No reserved-height skeleton is
+ *  needed for this any more (contrast with the old always-on version) — a user can only reach
+ *  this toggle after the page has already painted, so there's no auto-appearing-content layout
+ *  shift to guard against here. */
+const showRank = ref(false);
+
 /** The exercise currently in focus's cached rank row, if one exists yet — context for the
  *  in-session RankProgress bar. Rank is now only ever recomputed once, when the workout
  *  finishes (see finishWorkout() below), so this reads the value as of the *start* of the
@@ -472,12 +482,6 @@ async function logSet() {
             {{ activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1] }}%
           </span>
         </div>
-        <!-- Always visible during the workout (was only shown on the completion screen) so
-             "what does this session train" is answerable at any point, not just at the end. -->
-        <div class="muscle-preview">
-          <div class="eyebrow">Trainierte Muskeln</div>
-          <MuscleFigure :primary="sessionMuscles.primary" :secondary="sessionMuscles.secondary" />
-        </div>
         <!-- Vertical variant (default) — desktop's list, unchanged. Hidden below the 900px
              breakpoint in favor of the horizontal strip placed just above the focus column,
              since on mobile the full vertical list otherwise pushes the current exercise's
@@ -541,6 +545,19 @@ async function logSet() {
             <button v-if="store.exercises.length > 1" class="skip-btn" @click="store.skipCurrentExercise()">
               Übung überspringen ⏭
             </button>
+            <!-- Wave 0-B W3: rank/XP display moved behind this deliberate-reveal toggle
+                 (resolved decision — stays exactly RankProgress's existing presentation, not
+                 folded into ExerciseInfoPanel's Rang tab). A small, visually minimal tier-glyph
+                 chip, same footprint as the ⓘ info button next to it. -->
+            <button
+              class="info-btn rank-toggle-btn"
+              :class="{ active: showRank }"
+              :aria-pressed="showRank"
+              aria-label="Rang anzeigen"
+              @click="showRank = !showRank"
+            >
+              🏆
+            </button>
             <button class="info-btn" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)">ⓘ</button>
           </div>
         </div>
@@ -548,15 +565,13 @@ async function logSet() {
         <!-- The mockup's "ZUM NÄCHSTEN RANG" bar lives inside the exercise card, mid-session
              (examples/Screenshot_20260824-175421.png) — every logged set visibly moves it,
              instead of the reward only being visible on a different tab (engagement rework W2).
-             A skeleton fills the same slot while ranksStore is still loading — without it,
-             this block pops in a moment after the rest of the page has already painted and
-             shoves the reps entry/log button/rest timer down (feedback: fix layout shift,
-             especially during a workout — this is the loudest offender, since it happens once
-             per page load right as someone's trying to start logging). Once ranks have loaded,
-             an exercise that genuinely has no rank yet (never logged) renders nothing at all —
-             that's a real absence, not a loading flicker, so it doesn't get a reserved slot. -->
+             Wave 0-B W3: no longer always-visible — gated behind showRank's deliberate-reveal
+             toggle above. No reserved-height skeleton fallback any more (see showRank's own
+             comment for why the old layout-shift concern no longer applies once this only ever
+             renders on a deliberate tap). An exercise that genuinely has no rank yet (never
+             logged) renders nothing at all once revealed — a real absence, not a loading state. -->
         <RankProgress
-          v-if="currentRank"
+          v-if="showRank && currentRank"
           variant="inline"
           :tier="currentRank.tier"
           :division="currentRank.division"
@@ -565,7 +580,6 @@ async function logSet() {
           :next-target-reps="currentRank.nextTargetReps"
           :trust="currentRank.trust"
         />
-        <div v-else-if="!ranksStore.loaded" class="rank-skeleton shimmer" aria-hidden="true" />
 
         <button v-if="store.canInsertWarmup" class="warmup-btn" @click="store.insertWarmupSets()">
           + Aufwärmsätze einfügen
@@ -907,6 +921,13 @@ async function logSet() {
   font-size: 15px;
   flex: none;
 }
+/* Wave 0-B W3: the rank-reveal toggle reuses .info-btn's shape/size, marked "on" via the same
+   filled-surface idiom .set-kind pickers use elsewhere (surface-3 instead of surface-2) rather
+   than a new color — a small state cue, not a second visual language for one toggle button. */
+.rank-toggle-btn.active {
+  background: var(--surface-3);
+  border-color: var(--line-2);
+}
 .add-ex-btn {
   font-size: 12px;
   color: var(--dim);
@@ -961,14 +982,6 @@ async function logSet() {
 }
 .last-ref-hidden {
   visibility: hidden;
-}
-/* Reserves roughly RankProgress's own inline-variant height (badge + two text lines + bar) so
-   the page doesn't jump once ranksStore finishes loading and the real component takes this
-   slot — see the template comment above. .shimmer (styles/motion.css) supplies the sweep. */
-.rank-skeleton {
-  height: 78px;
-  border-radius: var(--r-lg);
-  background-color: var(--surface-2);
 }
 .warmup-btn {
   font-size: 12px;
@@ -1150,15 +1163,6 @@ button.sn:active {
   color: var(--dim);
   padding: var(--sp4) 0;
   text-align: center;
-}
-.muscle-preview {
-  padding: var(--sp3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-}
-.muscle-preview .eyebrow {
-  margin-bottom: var(--sp2);
 }
 /* Was styled identically to every other secondary rail button (add exercise, warm-up) — a
    destructive action needs to read as one before you tap it, not only after (when it flips
