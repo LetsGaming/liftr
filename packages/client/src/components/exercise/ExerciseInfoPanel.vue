@@ -240,6 +240,11 @@ function missingBadge(req: TieredRequirement): string | null {
    in light mode (measured ~1:1; "ANFÄNGER VI" was unreadable). Same root cause and same fix as
    RanksPage.vue's `.rank-card`: paint the true tier gradient and locally re-pin
    --text/--dim/--faint to light-on-dark, same pattern as tokens.css's .panel-reward. */
+/* N4 Nebula pass: deliberately NOT converted to .surface-hybrid. This frame paints the real
+   tier-color gradient fill (see ::after below) as its whole background — a reward/rank surface,
+   not a neutral panel — same category as RanksPage.vue's .rank-card, which N3's own hard
+   guardrail keeps on the tier metal/medal system rather than the translucent Nebula treatment.
+   Making rank read as earned status (not brand decoration) applies here too. */
 .rank-card-frame {
   border-radius: var(--r-lg);
   border: 1px solid var(--line);
@@ -348,6 +353,10 @@ function missingBadge(req: TieredRequirement): string | null {
   background: var(--blue-hi);
 }
 .legend .sec {
-  background: #5f7fd6;
+  /* N4 fix: was a second hardcoded #5f7fd6 copy of tokens.css's .mm-sec fill (confirmed by
+     ingestMuscleAssets.ts's own comment: that hex "matches the app's existing --mm-sec token").
+     Non-theme-aware because it never went through a var() in the first place — now references
+     the single --muscle-secondary token both this swatch and .mm-sec draw from. */
+  background: var(--muscle-secondary);
 }
 </style>

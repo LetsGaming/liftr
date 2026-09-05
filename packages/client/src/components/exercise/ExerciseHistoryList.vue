@@ -48,7 +48,7 @@ const groups = computed<DayGroup[]>(() => {
     <div v-for="g in groups" :key="g.day" class="day-group">
       <div class="day-label">{{ g.dateLabel }}</div>
       <ul class="set-rows">
-        <li v-for="(s, i) in g.sets" :key="i" class="set-row" :class="{ warmup: s.isWarmup }">
+        <li v-for="(s, i) in g.sets" :key="i" class="set-row surface-hybrid" :class="{ warmup: s.isWarmup }">
           <span class="set-value tnum">
             <template v-if="s.weightKg != null">{{ s.weightKg }} kg × {{ s.reps }}</template>
             <template v-else>{{ s.reps }} Wdh.</template>
@@ -86,17 +86,23 @@ const groups = computed<DayGroup[]>(() => {
   gap: 6px;
 }
 .set-row {
+  /* N4: adopted Foundation's .surface-hybrid utility in place of the flat --surface-2 fill +
+     plain --line border — same reasoning as ExerciseList.vue's .ex-card. .surface-hybrid
+     already supplies the fill/blur/shadow/hairline; this block only adds layout + type. */
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px;
   border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   font-size: 13px;
 }
 .set-row.warmup {
-  border-style: dashed;
+  /* Was `border-style: dashed` on a real `border` shorthand — .surface-hybrid's edge is a
+     mask-composite hairline on ::after, not a `border` property, so a dashed override on the
+     host no longer has a border to restyle. The "Aufwärmen" text badge already marks a warmup
+     set unambiguously; a lower opacity on the whole row is the hybrid-era equivalent of "this
+     one's de-emphasized" instead of fighting the hairline for a second edge treatment. */
+  opacity: 0.72;
 }
 .set-value {
   font-weight: 700;

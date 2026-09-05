@@ -52,6 +52,9 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
 
 <style scoped>
 .demo-stage {
+  /* N4: background here is an image-loading backdrop (visible only until the cross-fading
+     start/end photos paint over it), not a content surface — exempt from .surface-hybrid for
+     the same reason as .placeholder/.frame below and ExerciseThumb.vue's fallback fill. */
   position: relative;
   aspect-ratio: 4 / 3;
   border-radius: var(--r-md);
@@ -123,7 +126,12 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
   place-items: center;
   /* Matches ExerciseThumb.vue's already-shipped fallback (audit fix, workplan-v1 §1.10c) —
      same tonal radial-highlight treatment instead of a flat single-tone break, applied here to
-     the ExerciseInfoPanel detail view's static fallback, which still had the old flat look. */
+     the ExerciseInfoPanel detail view's static fallback, which still had the old flat look.
+     N4 Nebula pass: deliberately EXEMPT from .surface-hybrid, verified live (both themes,
+     390px/1024px) sitting inside this file's own now-hybrid parent cards. This is an image-
+     placeholder fill standing in for a missing photo, not a content surface — a translucent,
+     blurred "glass" treatment on a broken-image stand-in would read as a see-through image,
+     which makes no sense. Stays an opaque, fully-hardcoded tonal fill on purpose. */
   background: radial-gradient(circle at 35% 30%, var(--surface-2), var(--surface-3) 70%);
   color: var(--faint);
   font-size: 11px;
