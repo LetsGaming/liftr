@@ -60,7 +60,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
       <div
         v-for="([exerciseId, cfg], i) in entries"
         :key="exerciseId"
-        class="card"
+        class="card surface-hybrid"
         :class="{ dragging: draggingIndex === i }"
         :style="styleFor(i)"
       >
@@ -211,13 +211,12 @@ function kindOf(kind: SetKind | undefined): SetKind {
   gap: var(--sp3);
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   transition: transform 120ms ease;
 }
 .card.dragging {
   box-shadow: var(--shadow);
-  border-color: var(--line-2);
+  outline: 1px solid var(--line-2);
+  outline-offset: -1px;
 }
 .card-head {
   display: flex;
