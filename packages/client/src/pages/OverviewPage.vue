@@ -236,7 +236,7 @@ function retryFailed() {
         <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
 
         <!-- 1. Launchpad -->
-        <section class="launchpad tile--priority">
+        <section class="launchpad tile--priority surface-hybrid">
           <template v-if="activeWorkout.isActive">
             <div class="eyebrow lp-eyebrow">Weiter machen</div>
             <div class="lp-row">
@@ -309,7 +309,7 @@ function retryFailed() {
 
           <!-- 3. Progress tiles -->
           <section class="progress-tiles">
-            <div class="tile">
+            <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
               <template v-if="weeklyVolume.some((v) => v > 0)">
                 <div class="volume-bars">
@@ -334,7 +334,7 @@ function retryFailed() {
               <p v-else class="tile-empty">Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab.</p>
             </div>
 
-            <div class="tile">
+            <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Nächster Rang</div>
               <p v-if="topRanks.length > 0" class="tile-empty">
                 <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> bis zum nächsten Rang in
@@ -343,7 +343,7 @@ function retryFailed() {
               <p v-else class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</p>
             </div>
 
-            <div class="tile">
+            <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Körpergewicht</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
               <!-- Audit fix (workplan-v1 §1.10b): stated a threshold ("two entries") but never
@@ -369,7 +369,7 @@ function retryFailed() {
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
-            <router-link to="/ranks" class="tile discover-tile">
+            <router-link to="/ranks" class="tile discover-tile surface-hybrid">
               <div class="discover-icon">🏆</div>
               <b>Rang-Analyse</b>
               <p class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</p>
@@ -389,7 +389,7 @@ function retryFailed() {
           <ul v-else class="feed">
             <li v-for="item in history.items" :key="item.id" class="feed-row">
               <button
-                class="feed-btn"
+                class="feed-btn surface-hybrid"
                 :disabled="item.kind !== 'workout'"
                 @click="item.kind === 'workout' && openWorkout(item.id, item.title)"
               >
@@ -441,19 +441,28 @@ function retryFailed() {
   }
 }
 
+/* Was a bespoke `linear-gradient(155deg, var(--surface-3), var(--surface-2))` predating Nebula
+   Foundation's .surface-hybrid utility (N1 adoption pass) — reconciled by dropping the bespoke
+   gradient/border entirely and adopting .surface-hybrid (see template) instead of stacking the
+   two. The "priority" highlight (this card + ErholungszoneCard) now layers as an outline on top
+   of the hybrid surface via the shared .tile--priority rule below, rather than overriding the
+   hybrid background with a flat one. */
 .launchpad {
   padding: var(--sp4);
   border-radius: var(--r-xl);
-  background: linear-gradient(155deg, var(--surface-3), var(--surface-2));
-  border: 1px solid var(--line-2);
-}
-.launchpad.tile--priority {
-  border: 1px solid var(--nebula-1);
-  background: var(--surface-3);
 }
 .lp-eyebrow {
   --eyebrow-color: var(--blue-hi);
   margin-bottom: var(--sp2);
+}
+/* N1 light-mode contrast fix (F6 finding, out of Foundation's file boundary): --blue-hi
+   (#5ba0ff) measured ~2.66:1 against the light-mode hybrid surface's near-white background —
+   well under the 4.5:1 AA floor for this 11px/800-weight eyebrow text (too small/light-weight to
+   qualify as "large text" at the lower 3:1 threshold). --nebula-ink is the token this codebase
+   already uses everywhere else for a light-on-light-mode accent (see .tile--priority's own
+   light-mode override above) — 6.34:1 against white, comfortably AA. */
+[data-theme="light"] .lp-eyebrow {
+  --eyebrow-color: var(--nebula-ink);
 }
 .lp-row {
   display: flex;
@@ -550,16 +559,18 @@ function retryFailed() {
 }
 .tile {
   padding: var(--sp4);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
+/* Shared "priority" accent (ErholungszoneCard's root + .launchpad above) — was a flat
+   background/border override that fully replaced the hybrid surface underneath it (stacking two
+   surface systems). An outline composes on top of .surface-hybrid's own background/shadow/hairline
+   instead of competing with them for the same box-shadow/background property. */
 .tile--priority {
-  border: 1px solid var(--nebula-1);
-  background: var(--surface-3);
+  outline: 1px solid var(--nebula-1);
+  outline-offset: -1px;
 }
 [data-theme="light"] .tile--priority {
-  border-color: var(--nebula-ink);
+  outline-color: var(--nebula-ink);
 }
 .tile-head {
   --eyebrow-color: var(--dim);
@@ -665,8 +676,6 @@ function retryFailed() {
   gap: var(--sp3);
   padding: var(--sp3);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   text-align: left;
 }
@@ -708,5 +717,10 @@ function retryFailed() {
   font-size: 11px;
   font-weight: 700;
   color: var(--blue-hi);
+}
+/* N1 light-mode contrast fix (F6 finding, second of two in this file) — same --blue-hi-on-white
+   failure as .lp-eyebrow above (~2.66:1), same fix. */
+[data-theme="light"] .xp-sub {
+  color: var(--nebula-ink);
 }
 </style>
