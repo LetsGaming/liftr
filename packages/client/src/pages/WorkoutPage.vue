@@ -19,6 +19,7 @@ import RoutineList from "../components/routine/RoutineList.vue";
 import RpeCapture from "../components/workout/RpeCapture.vue";
 import SetEntry from "../components/workout/SetEntry.vue";
 import SetKindPicker from "../components/workout/SetKindPicker.vue";
+import SheetModal from "../components/ui/SheetModal.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import SyncIndicator from "../components/ui/SyncIndicator.vue";
 import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
@@ -256,6 +257,26 @@ onMounted(async () => {
   await Promise.all([catalog.load(), store.restore(), routineStore.load(), ranksStore.load(), historyStore.load(), overallRank.load()]);
   showStalePrompt.value = store.isStale;
 });
+
+/** Wave 0-B W4: replaces the old always-on horizontal jump rail with a single compact line —
+ *  the next exercise's name plus its *first set's* weight/reps (design spec §3.1's exact
+ *  example: "Nächste Übung: Schulterdrücken · 40 kg × 10"), letting a lifter prep plates/
+ *  equipment before the transition. `undefined` on the routine's last exercise — the empty
+ *  state decided during this task (see the template's `next-ex-empty` branch) rather than
+ *  silently hiding the whole row, which would look like a layout bug. */
+const nextExercisePreview = computed(() => {
+  const next = store.exercises[store.currentExerciseIndex + 1];
+  if (!next) return undefined;
+  const firstSet = next.sets[0];
+  const summary = firstSet ? `${firstSet.weightKg != null ? `${firstSet.weightKg} kg × ` : ""}${firstSet.reps}` : null;
+  return { name: next.name, summary };
+});
+
+/** Wave 0-B W4: the "overview" affordance opens the full exercise list (reusing ExerciseRail's
+ *  own data/jump logic via its `variant="vertical"` rendering) in a sheet — preserves
+ *  store.jumpToExercise(i)'s jump-to-any capability per the resolved decision, just moved
+ *  behind a deliberate tap instead of an always-visible rail. */
+const showExerciseOverview = ref(false);
 
 /** Wave 0-B W3 (workout-flow redesign): the rank/XP display keeps its exact existing
  *  presentation (RankProgress, variant="inline", below) — this is deliberately *not* being
@@ -519,10 +540,27 @@ async function logSet() {
         </button>
       </aside>
 
-      <!-- Horizontal variant (Task 6) — mobile-only jump-to-exercise strip, shown directly above
-           the focus column so it's reachable without scrolling past the rest of .rail-col first.
-           Hidden at >=900px, where the vertical list above already covers this. -->
-      <ExerciseRail variant="horizontal" class="rail-strip-mobile" />
+      <!-- Wave 0-B W4: the always-visible horizontal jump-to-exercise strip (Task 6's mobile
+           parity fix) is replaced by this single compact line — exercise name plus its first
+           set's weight/reps, so a lifter can prep plates/equipment before the transition (design
+           spec §3.1) — plus a small "overview" affordance that reopens the full list in a sheet,
+           preserving jump-to-any (resolved decision: relocated behind a deliberate tap, not
+           removed). Hidden at >=900px, same breakpoint as the old strip, since the vertical rail
+           above already covers this on desktop. -->
+      <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile">
+        <span v-if="nextExercisePreview" class="next-ex-line">
+          <b>Nächste Übung:</b> {{ nextExercisePreview.name }}
+          <template v-if="nextExercisePreview.summary"> · {{ nextExercisePreview.summary }}</template>
+        </span>
+        <!-- Empty-state decision (recorded per plan W4): the routine's last exercise has no
+             "next" to preview — rather than just disappearing (which would look like a layout
+             bug), this says so explicitly. The overview affordance stays available regardless,
+             so jump-to-any is never lost even on the last exercise. -->
+        <span v-else class="next-ex-line next-ex-empty">Letzte Übung dieser Routine</span>
+        <button class="next-ex-overview-btn" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
+          ≡
+        </button>
+      </div>
 
       <section v-if="store.currentExercise && !store.allSetsLogged" class="focus-col">
         <div class="focus-head">
@@ -705,6 +743,14 @@ async function logSet() {
     </div>
 
     <ExerciseInfoPanel v-if="infoExercise" :exercise="infoExercise" @close="infoExerciseId = null" />
+
+    <!-- Wave 0-B W4: full jump-to-any-exercise list, relocated here from the always-visible
+         horizontal rail. Same ExerciseRail component/data/click logic as the desktop vertical
+         list above — its "jump" emit (added alongside its existing store.jumpToExercise(i) call)
+         closes this sheet once a jump happens. -->
+    <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
+      <ExerciseRail @jump="showExerciseOverview = false" />
+    </SheetModal>
     </div>
     </IonContent>
   </IonPage>
@@ -837,10 +883,10 @@ async function logSet() {
   display: flex;
   gap: var(--sp2);
 }
-/* Task 6: mobile parity for the jump-to-exercise rail. Below 900px, the vertical list (desktop's
-   unchanged rendering, still inside .rail-col) is replaced by the horizontal strip placed above
-   the focus column; at >=900px it's the reverse — the .rail-col media query below restores the
-   desktop layout exactly as it was. */
+/* Task 6 (mobile parity), then Wave 0-B W4 (replaced the horizontal jump rail with the compact
+   next-exercise line below). Below 900px this row sits above the focus column; at >=900px it's
+   hidden, since the vertical rail (.rail-col, unchanged) already covers "what's next"/jump-to-any
+   there. */
 .rail-strip-mobile {
   margin-bottom: var(--sp4);
 }
@@ -848,6 +894,42 @@ async function logSet() {
   .rail-strip-mobile {
     display: none;
   }
+}
+.next-ex-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp3);
+  padding: var(--sp3);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.next-ex-line {
+  font-size: 12.5px;
+  color: var(--dim);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next-ex-line b {
+  color: var(--text);
+  font-weight: 700;
+}
+.next-ex-empty {
+  font-style: italic;
+  color: var(--faint);
+}
+.next-ex-overview-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 15px;
+  flex: none;
 }
 @media (max-width: 899.98px) {
   .rail-list-desktop {
