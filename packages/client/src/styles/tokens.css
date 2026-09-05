@@ -247,6 +247,27 @@
      four call sites updated below and in NumberStepper.vue/App.vue, so the floor can never again
      silently drift between components the way lens-3 originally found it had (§2.3). */
   --touch-target-min: 44px;
+
+  /* Nebula Foundation F3 — the "surface-hybrid" treatment (complete-redesign spec §3.4/§4.2):
+     translucent + blurred ("glass") background, an opaque-elevation-style drop shadow, and a
+     1px gradient-tinted hairline edge (mask-composite double-gradient border, authored from
+     scratch below — this exact pattern did not exist anywhere in the codebase before this task).
+     This becomes the new default surface for cards/panels/stat tiles, replacing flat
+     --surface/--surface-2 fills as the baseline. Values are the spec's validated mockup numbers,
+     used as written.
+     --surface-hybrid-blur is its own token, deliberately separate from the rest, specifically so
+     F4's performance gate can flip blur off everywhere with ONE token-level edit (set this to 0px)
+     if backdrop-filter proves too costly on throttled/older-Android WebViews, without touching
+     every consumer that uses .surface-hybrid/.panel. */
+  --surface-hybrid-bg: rgba(23, 26, 45, 0.88);
+  --surface-hybrid-blur: 6px;
+  --surface-hybrid-shadow: 0 10px 28px -14px rgba(0, 0, 0, 0.6);
+  --surface-hybrid-edge-grad: linear-gradient(
+    155deg,
+    rgba(138, 109, 255, 0.35),
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(47, 159, 224, 0.2)
+  );
 }
 
 /* Light theme (nebula-design-system.md §6). Applied by themeStore setting
@@ -291,6 +312,19 @@
   --nebula-sweep-wash-2: rgba(214, 58, 255, 0.08);
   --nebula-sweep-wash-3: rgba(47, 159, 224, 0.07);
   --nebula-sweep-blend: normal;
+
+  /* F3 light-mode surface-hybrid (spec §3.4 light block) — same mask-composite hairline
+     structure as dark, needs a real contrast pass against actual content (done in F6), not just
+     the isolated gradient the spec validated. Blur radius unchanged (spec doesn't call for a
+     different value in light mode). */
+  --surface-hybrid-bg: rgba(255, 255, 255, 0.85);
+  --surface-hybrid-shadow: 0 8px 20px -14px rgba(15, 15, 25, 0.2);
+  --surface-hybrid-edge-grad: linear-gradient(
+    155deg,
+    rgba(138, 109, 255, 0.3),
+    rgba(20, 16, 32, 0.02) 40%,
+    rgba(47, 159, 224, 0.18)
+  );
 }
 
 *,
@@ -484,10 +518,68 @@ body::before {
    (rank cards, XP/level chips, rank-up rows) gets .panel-reward's tier-tinted treatment instead.
    Both are additive over the plain --surface-2 recipe existing call sites already use, so this
    is an opt-in upgrade, not a breaking rename. */
+/* Nebula Foundation F3 — the gradient-hairline "surface-hybrid" utility (complete-redesign spec
+   §3.4/§4.2), authored from scratch: no mask-composite pattern existed anywhere in this codebase
+   before this task. Modeled on the closest existing precedents (.panel-reward::after above,
+   .badge::before/::after above, .rank-card::after in RanksPage.vue) for the position:absolute +
+   inset:0 + pseudo-element shape, but this is a genuinely new technique for this file: a 1px
+   gradient ring produced by painting the full box with the edge gradient, then masking away
+   everything except a 1px band at the edge via two mask layers combined with mask-composite:
+   exclude (content-box mask XOR border-box mask = only the ring between them survives).
+
+   IMPORTANT, carried forward from RanksPage.vue's .rank-card::after comment (the same lesson
+   applies here since this utility is also applied to native <button> elements, e.g. .rank-card
+   itself once N3 adopts this utility): a native <button>'s own opaque default background paints
+   over a pseudo-element's gradient even at a negative z-index, unless the button's own background
+   is explicitly set to transparent (or, as here, explicitly set to this utility's own
+   --surface-hybrid-bg) — never rely on the pseudo-element alone to supply a background. This
+   class always sets its OWN `background` on the host element for that reason; only the hairline
+   ring itself lives on ::after. */
+.surface-hybrid {
+  position: relative;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
+}
+.surface-hybrid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+/* .panel converted to the surface-hybrid treatment (F3) — this single change reaches every
+   existing .panel consumer at once (StatTile.vue, RankProgress.vue, TierLadder.vue,
+   FinishSequence.vue, and panels on OverviewPage.vue/RecordsPage.vue/WorkoutPage.vue), which is
+   exactly why this belongs in Foundation rather than a per-area phase: it's the highest-blast-
+   radius single edit in the whole plan. --line/--line-2 border tokens are dropped in favor of
+   the gradient hairline above (::after), which now does that job with more identity than a flat
+   1px line did. */
 .panel {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  position: relative;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
   border-radius: var(--r-lg);
+}
+.panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 /* 0a's single biggest-bang-for-CSS finding (engagement-audit-v3 Phase 1): a reward surface
    should take the tier color as its WHOLE card background, not a border/accent on an otherwise
