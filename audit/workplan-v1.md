@@ -132,14 +132,19 @@ exhaustive static search already ran with no conclusive culprit found (see the i
 plan's WS5 for the discriminating test to run instead: reproduce in a production build with the
 service worker unregistered, "pause on exceptions" on, capture the full stack).
 
-### 3.7 Streak/XP mechanics redesign — spec written, not implemented
+### 3.7 Streak/XP mechanics redesign — shipped 2026-09-04 (WS4)
 
-`docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md` defines per-set XP (weight-
-independent), a consistency bonus, and a variety bonus, replacing the current weight-fabricable
-formula. Confirmed not yet implemented: `packages/shared/src/math/xp.ts` still uses the old formula;
-no `consistencyBonusXp`/`varietyBonusXp` anywhere in the repo. This is the one deliberately-deferred
-item from Track R Wave 1 (needed a real product-owner brainstorm, not autonomous invention) — ready
-for `writing-plans`. `audit/verify/agent-8.md`.
+`docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md`'s per-set XP (weight-independent),
+consistency bonus, and variety bonus are implemented end-to-end across 7 waves: XP formula +
+anti-cheat math (`packages/shared/src/math/xp.ts`), DB migration 0014 adding
+`consistencyBonusXp`/`varietyBonusXp` columns, previous-workout/muscle-overlap queries, bonus
+summing, client sync/finish-workout state plumbing, Finish Sequence XP breakdown UI + recap chip
+total, and a PR-ledger link from the Finish Sequence into `/records` (closing part of §2's gap).
+306/306 tests, clean typecheck (5 packages), clean lint. Live-verified against a real running server
+over real HTTP round-trips (not just unit tests): an identical 8-rep set at 20kg vs. 500kg produced
+the exact same 240 XP delta (anti-cheese: weight cannot inflate XP), and a same-exercise/same-reps
+set logged 4x in one workout with cosmetically nudged weights (20/20.5/20/20.25kg) scored well below
+the undecayed 4x estimate (anti-nudge: repeat-decay isn't dodged by trivial weight changes).
 
 ### 3.8 Anti-farming copy reception — needs a real-user check
 
