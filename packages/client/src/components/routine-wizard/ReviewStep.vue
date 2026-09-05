@@ -57,7 +57,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 
 <template>
   <div class="review-step">
-    <div class="summary">
+    <div class="summary surface-hybrid">
       <b>{{ name || "Unbenannte Routine" }}</b>
       <span>{{ entries.length }} {{ entries.length === 1 ? "Übung" : "Übungen" }} · {{ totalSets }} Sätze</span>
     </div>
@@ -72,7 +72,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
     </div>
 
     <ul class="ex-summary">
-      <li v-for="[exerciseId, cfg] in entries" :key="exerciseId">
+      <li v-for="[exerciseId, cfg] in entries" :key="exerciseId" class="surface-hybrid">
         <ExerciseRow
           visual="icon"
           :size="16"
@@ -109,8 +109,6 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 .summary {
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -162,7 +160,6 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 .ex-summary li {
   padding: var(--sp2) var(--sp3);
   border-radius: var(--r-sm);
-  background: var(--surface-2);
   font-size: 13px;
 }
 .ex-summary :deep(.equipment-icon) {

@@ -64,7 +64,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 <template>
   <div class="fast-step">
     <ul class="ex-list">
-      <li v-for="([exerciseId, cfg], i) in entries" :key="exerciseId">
+      <li v-for="([exerciseId, cfg], i) in entries" :key="exerciseId" class="surface-hybrid">
         <div class="ex-line">
           <div class="reorder">
             <button :disabled="i === 0" aria-label="Nach oben" @click="emit('move', i, i - 1)">▲</button>
@@ -124,8 +124,6 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 .ex-list li {
   padding: var(--sp3);
   border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
 }
 .ex-line {
   display: flex;
