@@ -109,7 +109,7 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
         <div
           v-for="(routine, i) in routineStore.routines"
           :key="routine.id"
-          class="routine-card"
+          class="routine-card surface-hybrid"
           :class="{ dragging: draggingIndex === i }"
           :style="styleFor(i)"
           role="button"
@@ -192,7 +192,7 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
            ErholungszoneCard.vue's bordered-surface pattern (same .erholungszone-shaped card,
            eyebrow, and primary CTA) so this gets the same visual investment as the app's best
            empty/loading state instead of being an afterthought. -->
-      <div v-else class="routine-empty">
+      <div v-else class="routine-empty surface-hybrid">
         <div class="eyebrow routine-empty-eyebrow">Noch keine Routine</div>
         <p class="routine-empty-copy">
           Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist
@@ -232,8 +232,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
 .routine-empty {
   width: 100%;
   max-width: var(--content-w-narrow);
-  background: var(--surface);
-  border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--sp5);
   display: flex;
@@ -272,13 +270,16 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   gap: var(--sp2);
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
   /* engagement-audit-v4 Phase 2 (routine-card shape pass): tier-accent border, same fallback
      idiom as RankDistributionDonut.vue/RankUpCalendar.vue/RestTimer.vue — ties the
      highest-frequency screen in the app to the rank spine without misrepresenting an unranked
      routine as an earned moment (no .panel-reward gradient, no muscle-derived color — routines
-     aren't ranked, so a uniform tier accent is the honest signal here, not a competing one). */
-  border: 1px solid var(--tier-accent, var(--line));
+     aren't ranked, so a uniform tier accent is the honest signal here, not a competing one).
+     N1 adoption: was a flat `border`, now layered as an `outline` on top of .surface-hybrid's
+     own background/blur/shadow/hairline (see template) instead of replacing them — falls back to
+     transparent, not --line, since the hairline edge already supplies the neutral case. */
+  outline: 1px solid var(--tier-accent, transparent);
+  outline-offset: -1px;
   position: relative;
   /* Entrance stagger + hover lift (feedback: the rest of the app was still missing the
      dashboard's liveliness) — this is the actual "choose a workout" screen, so it's worth as

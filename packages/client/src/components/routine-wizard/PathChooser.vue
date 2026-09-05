@@ -11,11 +11,11 @@ defineEmits<{ choose: [mode: "manual" | "muscles"] }>();
 
 <template>
   <div class="path-chooser">
-    <button class="path-card" @click="$emit('choose', 'manual')">
+    <button class="path-card surface-hybrid" @click="$emit('choose', 'manual')">
       <span class="path-title">Selbst zusammenstellen</span>
       <span class="path-desc">Übungen aus der Liste wählen und Sätze, Wiederholungen und Gewicht selbst festlegen.</span>
     </button>
-    <button class="path-card" @click="$emit('choose', 'muscles')">
+    <button class="path-card surface-hybrid" @click="$emit('choose', 'muscles')">
       <span class="path-title">Nach Muskelgruppe vorschlagen lassen</span>
       <span class="path-desc">
         Muskelgruppen wählen — Liftr stellt passende Übungen zusammen, mit Sätzen, Wiederholungen und Gewicht, die zu deinem bisherigen Training passen.
@@ -41,12 +41,11 @@ defineEmits<{ choose: [mode: "manual" | "muscles"] }>();
   gap: 6px;
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   text-align: left;
 }
 .path-card:active {
-  border-color: var(--line-2);
+  outline: 1px solid var(--line-2);
+  outline-offset: -1px;
 }
 .path-title {
   font-size: 15px;

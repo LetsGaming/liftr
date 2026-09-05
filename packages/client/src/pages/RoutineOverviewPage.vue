@@ -108,7 +108,7 @@ async function jetztStarten() {
 
           <div class="eyebrow ro-ex-eyebrow">Übungen</div>
           <ul class="ro-ex-list">
-            <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-row">
+            <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-row surface-hybrid">
               <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
               <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
             </li>
@@ -186,7 +186,6 @@ async function jetztStarten() {
   gap: var(--sp3);
   padding: var(--sp3);
   border-radius: var(--r-md);
-  background: var(--surface-2);
 }
 .ro-ex-name {
   font-size: 13.5px;
