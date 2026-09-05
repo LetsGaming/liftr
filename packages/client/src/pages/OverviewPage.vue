@@ -6,9 +6,10 @@
  * stacked — reusing the same stores every other page already has (no new backend beyond the
  * history-route title/duration fixes in historyStore.ts):
  *
- *   1. Launchpad card — resume an in-progress workout, or one-tap start the most recently
- *      used routine. Uses useStartRoutine(), the same composable WorkoutPage.vue uses, so
- *      there's exactly one implementation of "start a workout," not two that can drift.
+ *   1. Launchpad card — resume an in-progress workout, or open the Routine Overview screen for
+ *      the most recently used routine (Wave 0-B W2: all three start call sites route through
+ *      there now, rather than calling useStartRoutine() directly, so a lifter always sees what
+ *      they're about to do before it begins).
  *   2. Status strip — streak / level / this-week's workout count.
  *   3. Progress tiles — weekly volume (from already-loaded history), top ranks, bodyweight
  *      trend (BodyweightTrend.vue existed and was only ever wired into Profil).
@@ -17,6 +18,7 @@
  */
 import { IonContent, IonHeader, IonPage, IonRefresher, IonRefresherContent, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
@@ -29,7 +31,6 @@ import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { LP_EXPLAINER } from "../copy/rankCopy";
 import { useExerciseName } from "../composables/useExerciseName";
-import { useStartRoutine } from "../composables/useStartRoutine";
 import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useCatalogStore } from "../stores/catalogStore";
@@ -51,8 +52,8 @@ const overallRank = useOverallRankStore();
 const bodyweight = useBodyweightStore();
 const catalog = useCatalogStore();
 const readiness = useReadinessStore();
-const { starting, startRoutine } = useStartRoutine();
 const { exerciseName } = useExerciseName();
+const router = useRouter();
 
 const openWorkoutId = ref<string | null>(null);
 const openWorkoutTitle = ref<string | undefined>(undefined);
@@ -82,12 +83,14 @@ const overallRankLabel = computed(() => {
   return div ? `${label} ${div}` : label;
 });
 
-/** Erholungszone's CTA reuses the exact same one-tap start the launchpad card already offers
- *  (useStartRoutine) — a smarter "start the routine that trains these specific recovered
- *  muscles" match would need routine-to-muscle cross-referencing this component doesn't have;
- *  scoped honestly to "get the user into the workout flow", not a claim of that precision. */
+/** Erholungszone's CTA now routes through the Routine Overview screen (Wave 0-B W2 resolved
+ *  decision) instead of starting the workout directly — the same one-consistent-behavior reason
+ *  the other two start sites do (launchpad card, RoutineList.vue's routine card). A smarter
+ *  "start the routine that trains these specific recovered muscles" match would need
+ *  routine-to-muscle cross-referencing this component doesn't have; scoped honestly to "get the
+ *  user into the workout flow", not a claim of that precision. */
 function startFromReadiness() {
-  if (suggestedRoutine.value) void startRoutine(suggestedRoutine.value);
+  if (suggestedRoutine.value) void router.push(`/routines/${suggestedRoutine.value.id}`);
 }
 
 async function onRefresh(ev: CustomEvent) {
@@ -257,8 +260,10 @@ function retryFailed() {
                    equipment-icon row which said nothing about what the routine actually trains. -->
               <MuscleFigure class="lp-muscles" :size="36" v-bind="suggestedRoutineMuscles" />
             </div>
-            <button class="btn-primary btn-block" :disabled="starting" @click="startRoutine(suggestedRoutine)">
-              {{ starting ? "Wird gestartet…" : "▶ Starten" }}
+            <!-- Wave 0-B W2: routes through the Routine Overview screen instead of starting
+                 directly — one consistent start behavior across all three entry points. -->
+            <button class="btn-primary btn-block" @click="router.push(`/routines/${suggestedRoutine.id}`)">
+              ▶ Starten
             </button>
             <!-- Critique finding (clarify, P2): suggestedRoutine is a stand-in for "last used"
                  (no lastUsedAt tracking exists yet — real fix needs a migration, out of scope
