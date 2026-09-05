@@ -32,9 +32,9 @@ const DAY_ABBR = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 /** Rank engine v2 (task 10): honest, threshold-free German copy for each plausibility-gate
  *  reason a finish-workout verdict can carry. Never states the exact numbers that tripped it. */
 const PLAUSIBILITY_NOTE_DE: Record<string, string> = {
-  pace: "Diese Session wirkte ungewöhnlich schnell — Rang- und XP-Gewinn wurden reduziert.",
-  improbable_jump: "Dieser Sprung wirkte ungewöhnlich groß — Rang- und XP-Gewinn wurden reduziert.",
-  exceeds_ceiling: "Dieser Wert wirkte unrealistisch — Rang- und XP-Gewinn wurden reduziert.",
+  pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
+  improbable_jump: "Dieser Sprung war ungewöhnlich groß — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
+  exceeds_ceiling: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
 };
 
 /** Rank engine v2 (task 10): a one-time post-workout caption for an exercise's rank card,
