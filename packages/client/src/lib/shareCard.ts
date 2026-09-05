@@ -227,7 +227,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   const textX = iconX + iconSize + 14;
   const textW = x + w - pad - textX;
   ctx.fillStyle = COLORS.text;
-  ctx.font = font(700, 25, false); // was 21, then 23 (2026-09-04)
+  ctx.font = font(700, 28, false); // was 21, 23, then 25 — text size is the priority lever here, not just the box
   ctx.textBaseline = "middle";
   let displayName = name;
   while (ctx.measureText(displayName).width > textW && displayName.length > 1) {
@@ -238,11 +238,11 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   ctx.textBaseline = "alphabetic";
 
   ctx.fillStyle = COLORS.dim;
-  ctx.font = font(600, 20, false); // was 17, then 18 (2026-09-04)
-  let detailY = iconY + iconSize + 28; // was +22, then +26 (2026-09-04)
+  ctx.font = font(600, 22, false); // was 17, 18, then 20
+  let detailY = iconY + iconSize + 30; // was +22, +26, then +28
   for (const line of detailLines) {
     ctx.fillText(line, x + pad, detailY);
-    detailY += 26; // was 22, then 24 (2026-09-04)
+    detailY += 28; // was 22, 24, then 26
   }
 }
 
@@ -251,7 +251,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
  *  card (long set lists on a narrow half-width column). Font size must match drawExerciseCell's
  *  own detail-line font exactly — this measures the wrap, that one renders it. */
 function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  ctx.font = font(600, 20, false); // was 17, then 18 — keep in sync with drawExerciseCell above
+  ctx.font = font(600, 22, false); // was 17, 18, then 20 — keep in sync with drawExerciseCell above
   const words = text.split(/\s+/);
   const lines: string[] = [];
   let current = "";
@@ -547,11 +547,20 @@ const STAT_GAP = 20;
 // the gap between the two rather than growing both roughly the same amount, and grows the
 // exercise cell's own fonts/icon (not just its box) so the extra height actually reads as more
 // legible content, not just more padding.
+// 2026-09-05, second pass (visual markup review): the header->stat gap was reading as dead
+// space above the stat row rather than as breathing room, so that slot no longer gets any of the
+// distributed fill (stats sit right after the fixed post-date gap, "pulled up"). Likewise the
+// muscle->divider gap no longer gets fill, so the exercise grid sits snug against the muscle
+// section instead of drifting down on a short routine ("exercise grid moving up a bit"). The
+// space that both of those slots used to soak up goes instead into MUSCLE_FIG_H directly (a real
+// size increase, not just surrounding whitespace) and a modest EXERCISE_ROW_H bump — with the
+// exercise cell's own text sized up further still, called out explicitly as the priority over the
+// box size itself.
 const CORNER_BADGE_SIZE = 110;
-const MUSCLE_FIG_H = 420; // was 300, then 360 (2026-09-04) — the larger share of the freed space
+const MUSCLE_FIG_H = 470; // was 300, then 360, then 420 (2026-09-04/05) — takes the freed space directly
 const MUSCLE_SECTION_H = 34 + 24 + MUSCLE_FIG_H + 40;
 const DIVIDER_GAP = 40;
-const EXERCISE_ROW_H = 152; // was 118, then 136 (2026-09-04) — the smaller share, for readability
+const EXERCISE_ROW_H = 164; // was 118, then 136, then 152 — modest bump; text size is the real lever
 const EXERCISE_ROW_GAP = 16;
 const EXERCISE_COL_GAP = 20;
 
@@ -601,15 +610,16 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   // spread whatever's unused across the gaps between major sections instead of leaving it all
   // silently at the bottom. `overflowsStory` (too many exercises even for the taller format)
   // means there's no surplus to distribute; rows get capped by maxRows below instead.
+  //
+  // 2026-09-05, second pass: this used to spread across three slots (header->stats,
+  // stats->muscles, muscles->divider). Visual review flagged the header->stats slot as reading
+  // like dead space above the stat row rather than breathing room ("pull the stats up"), and the
+  // muscles->divider slot as pushing the exercise grid down on a short routine when it should sit
+  // snug against the muscle section instead ("exercise grid moving up a bit"). Both are gone now
+  // — only the stats->muscles slot still absorbs surplus, and MUSCLE_FIG_H/EXERCISE_ROW_H above
+  // were grown directly to take up the space those two removed slots used to.
   const available = height - PAD * 2;
-  // header->stats, stats->muscles, and the gap right before the divider (drawn either way — with
-  // the muscle figure's own trailing margin, or as the bare pre-divider gap when there's no
-  // muscle content at all). The old badge-adjacent slot is gone: the corner badge (drawn below)
-  // no longer sits in this flow at all, so it doesn't get or need a fill slot of its own. That
-  // last slot always exists: a card with no muscle content (nothing between the stat cards and
-  // the exercise list) still needs somewhere to put a large surplus, not just the header/stat
-  // gap, or a very short routine reverts to the exact dead-space bug this phase set out to fix.
-  const fillSlots = 3;
+  const fillSlots = 1;
   const fillGap = overflowsStory ? 0 : distributeFillGap(naturalTotal, available, fillSlots, 150);
 
   // background — re-synced 2026-09-05 against tokens.css's live `--nebula-sweep-*` recipe
@@ -688,8 +698,6 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.fillText(model.dateLabel, pad, y - 6);
   y += 44;
 
-  y += fillGap;
-
   // ---- Stat cards ----
   const statCount = 4;
   const statCardW = (width - pad * 2 - STAT_GAP * (statCount - 1)) / statCount;
@@ -715,7 +723,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
       ctx.fillText("TRAINIERTE MUSKELN", width / 2, cursorY);
       ctx.textAlign = "left";
       cursorY = await drawMuscleFigures(ctx, width / 2, cursorY + 24, MUSCLE_FIG_H, model.muscles.primary, model.muscles.secondary);
-      cursorY += 40 + fillGap;
+      cursorY += 40; // no fillGap here — the exercise grid sits snug against the muscle section
     } catch {
       // image load failed — carry on without the figure, see comment above
     }
