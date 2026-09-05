@@ -87,6 +87,19 @@ ion-title {
   font-family: var(--font-display);
 }
 
+/* Nebula Foundation F1 (2026-09-05 plan) — hard blocker for the whole pervasive-background
+   redesign. Every routed page is an <IonPage>, and ion-content's real scrollable surface lives
+   in its shadow DOM; Ionic paints it opaque via `--background` (defaulting to
+   `--ion-background-color`, itself `var(--bg)` above) regardless of anything set on `body` in
+   ordinary CSS — a shadow-DOM-internal custom property isn't reachable by inheritance the way a
+   normal background is. A `body::before` sweep layer behind `<router-view>` (F2) would therefore
+   be fully invisible on every single screen until this is set. Transparent here, not removed,
+   so `--ion-background-color` still exists as a documented fallback/reference value for anything
+   that reads it directly (nothing currently does, but Ionic internals could). */
+ion-content {
+  --background: transparent;
+}
+
 /* Every routed page is an <IonPage>, which is position:absolute + inset:0 inside
    .main-content — that fills the *entire* box and ignores .main-content's own padding
    entirely (abs-positioned children aren't constrained by an ancestor's padding). So the
