@@ -238,7 +238,7 @@ async function exportData() {
 
     <h2 class="group-header">Trainingsprofil</h2>
 
-    <section class="card">
+    <section class="card surface-hybrid">
       <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
       <p class="hint">Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht.</p>
       <div class="bw-row">
@@ -261,7 +261,7 @@ async function exportData() {
       <BodyweightTrend v-if="bodyweight.entries.length > 1" :entries="bodyweight.entries" />
     </section>
 
-    <section class="card">
+    <section class="card surface-hybrid">
       <h2 class="eyebrow">Trainingsprofil</h2>
       <p class="hint">Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast.</p>
       <div class="profile-field">
@@ -296,7 +296,7 @@ async function exportData() {
       </button>
     </section>
 
-    <section class="card">
+    <section class="card surface-hybrid">
       <h2 class="eyebrow">Equipment</h2>
       <p class="hint">Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause).</p>
       <span class="profile-label">Trainingsgerät</span>
@@ -328,7 +328,7 @@ async function exportData() {
       </button>
     </section>
 
-    <section v-if="ownedBarTypes.length > 0" class="card">
+    <section v-if="ownedBarTypes.length > 0" class="card surface-hybrid">
       <h2 class="eyebrow">Scheiben &amp; Stange</h2>
       <p class="hint">Macht die Scheiben-Anzeige beim Training exakt: nur was du wirklich hast, wird zum Beladen vorgeschlagen.</p>
       <span class="profile-label">Stangengewicht</span>
@@ -360,7 +360,7 @@ async function exportData() {
 
     <h2 class="group-header">Fortschritt</h2>
 
-    <section class="card">
+    <section class="card surface-hybrid">
       <h2 class="eyebrow">XP &amp; Level</h2>
       <p class="hint">Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden.</p>
       <div v-if="xp.loaded" class="stat-row">
@@ -377,7 +377,7 @@ async function exportData() {
 
     <h2 class="group-header">Daten &amp; Server</h2>
 
-    <section class="card card--quiet">
+    <section class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Darstellung</h2>
       <div class="chip-row">
         <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">Dunkel</button>
@@ -385,7 +385,7 @@ async function exportData() {
       </div>
     </section>
 
-    <section class="card card--quiet">
+    <section class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">API-Token</h2>
       <p class="hint">
         Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist — derselbe Wert, nach dem beim
@@ -416,7 +416,7 @@ async function exportData() {
       </div>
     </section>
 
-    <section v-if="isHealthConnectAvailable()" class="card card--quiet">
+    <section v-if="isHealthConnectAvailable()" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Health Connect</h2>
       <p class="hint">
         Läufe, die du mit deiner Uhr aufgezeichnet hast, automatisch importieren — inklusive Route, sobald Health
@@ -428,7 +428,7 @@ async function exportData() {
       <p v-if="healthConnectStatus" class="current">{{ healthConnectStatus }}</p>
     </section>
 
-    <section class="card card--quiet">
+    <section class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Daten-Export</h2>
       <p class="hint">Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr.</p>
       <button class="btn-primary" :disabled="exporting" @click="exportData">
@@ -446,9 +446,12 @@ async function exportData() {
 </template>
 
 <style scoped>
+/* Nebula N5 — the flat --surface-2 fill + --line border that used to live here are replaced by
+   the shared .surface-hybrid utility (applied in the template alongside .card, tokens.css), so
+   every settings section reads as a translucent panel floating over the cosmic sweep instead of
+   an opaque box. border-radius stays local since .surface-hybrid doesn't set one (it's supposed
+   to be layered over whatever shape the host already uses). */
 .card {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--sp4);
   margin-top: var(--sp4);
@@ -649,11 +652,11 @@ async function exportData() {
 .group-header:first-of-type {
   margin-top: var(--sp2);
 }
+/* Nebula N5 — was a distinct flat --surface/--surface-3 fill (lighter than .card's old
+   --surface-2) to read as visually quieter than the profile/equipment cards above; now that both
+   share the same .surface-hybrid fill, the reduced opacity alone still recedes it correctly
+   without needing a second surface color to fork on. */
 .card--quiet {
   opacity: 0.92;
-  background: var(--surface);
-}
-[data-theme="light"] .card--quiet {
-  background: var(--surface-3);
 }
 </style>
