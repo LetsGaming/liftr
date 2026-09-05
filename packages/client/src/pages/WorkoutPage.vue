@@ -897,11 +897,6 @@ async function logSet() {
 .rail-strip-mobile {
   margin-bottom: var(--sp4);
 }
-@media (min-width: 900px) {
-  .rail-strip-mobile {
-    display: none;
-  }
-}
 .next-ex-row {
   display: flex;
   align-items: center;
@@ -937,6 +932,15 @@ async function logSet() {
   color: var(--text);
   font-size: 15px;
   flex: none;
+}
+/* Placed after .next-ex-row's own unconditional `display: flex` (source order matters here —
+   two same-specificity class selectors on one element resolve ties by whichever rule comes
+   later) so this actually wins at >=900px, where the vertical rail in .rail-col already covers
+   "what's next"/jump-to-any and this row would otherwise duplicate it. */
+@media (min-width: 900px) {
+  .rail-strip-mobile {
+    display: none;
+  }
 }
 @media (max-width: 899.98px) {
   .rail-list-desktop {
