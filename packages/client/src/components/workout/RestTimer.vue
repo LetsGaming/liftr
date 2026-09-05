@@ -91,13 +91,13 @@ function formatSeconds(s: number): string {
   <!-- Task 3: third distinct rest state — mid-superset, no rest coming. No ring (nothing to
        count down), no skip button (nothing to skip). Compact, "acknowledged, move on", not a
        broken-looking timer. -->
-  <div v-if="restKind === 'superset-continue'" class="rest-timer rest-timer-continue">
+  <div v-if="restKind === 'superset-continue'" class="rest-timer rest-timer-continue surface-hybrid">
     <div class="meta">
       <b>Weiter im Superset</b>
       <span>keine Pause</span>
     </div>
   </div>
-  <div v-else class="rest-timer">
+  <div v-else class="rest-timer surface-hybrid">
     <div class="ring" :class="{ 'ring-done': justFinished }" :style="{ '--p': progressPercent() + '%' }">
       <i class="tnum">{{ running ? formatSeconds(Math.max(left, 0)) : formatSeconds(props.seconds ?? 90) }}</i>
     </div>
@@ -105,17 +105,22 @@ function formatSeconds(s: number): string {
       <b>Pause</b>
       <span>{{ running ? "läuft…" : "startet nach dem Satz" }}</span>
     </div>
-    <button class="skip-btn" @click="stop">Überspringen</button>
+    <button class="skip-btn surface-hybrid" @click="stop">Überspringen</button>
   </div>
 </template>
 
 <style scoped>
+/* N2 (Nebula adoption): this is the one surface visible in every state of the sacred logging
+   loop (idle "startet nach dem Satz" / running / just-finished / superset-continue) — was a flat
+   --surface-2 fill + 1px --line border, which is exactly the "leftover flat-surface UI bolted
+   onto a translucent screen" look the redesign is meant to remove. .surface-hybrid utility class
+   (see template) instead: translucent + blurred background, gradient hairline edge via ::after,
+   same recipe every other card/panel on this screen now uses. Border dropped in favor of the
+   hairline (same pattern as tokens.css's .panel conversion). */
 .rest-timer {
   display: flex;
   align-items: center;
   gap: var(--sp3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--sp3) var(--sp4);
 }
@@ -155,6 +160,12 @@ function formatSeconds(s: number): string {
     transform: scale(1);
   }
 }
+/* Deliberately NOT converted to a translucent hybrid fill — this is the countdown digit
+   readout itself (a live numeric value the lifter reads mid-rest), and it sits inside the
+   already-translucent .surface-hybrid card above it. Stacking a second layer of translucency
+   directly behind the one number on this screen someone is actively timing their next set
+   against would risk exactly the legibility regression the redesign spec calls out avoiding —
+   kept as the opaque --surface fill on purpose. */
 .ring i {
   width: 42px;
   height: 42px;
@@ -184,12 +195,11 @@ function formatSeconds(s: number): string {
 .rest-timer-continue .meta span {
   color: var(--faint);
 }
+/* N2: was a flat --surface-3 fill — .surface-hybrid instead (see .rest-timer above). */
 .skip-btn {
   padding: 9px 14px;
   font-size: 13px;
   border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
   color: var(--text);
 }
 </style>

@@ -512,7 +512,7 @@ async function logSet() {
 
         <!-- Mid-session add (feedback gap: no way to change what a session includes once
              started — equipment in use / a busy rack had no path but cancelling entirely). -->
-        <button class="add-ex-btn" @click="showAddExercise = !showAddExercise">
+        <button class="add-ex-btn surface-hybrid" @click="showAddExercise = !showAddExercise">
           {{ showAddExercise ? "Abbrechen" : "+ Übung hinzufügen" }}
         </button>
         <div v-if="showAddExercise" class="add-ex-panel panel">
@@ -531,7 +531,7 @@ async function logSet() {
              session-level controls (add-exercise, cancel) rather than the per-set focus column.
              Reads/writes store.workoutNotes via setWorkoutNotes(); rides along in finish()'s
              existing sync payload (Task 2), never a separate network call and never required. -->
-        <button class="add-ex-btn note-pill" @click="noteCaptureTarget = 'workout'">
+        <button class="add-ex-btn note-pill surface-hybrid" @click="noteCaptureTarget = 'workout'">
           {{ store.workoutNotes ? `Workout-Notiz: ${store.workoutNotes}` : "+ Workout-Notiz" }}
         </button>
 
@@ -547,7 +547,7 @@ async function logSet() {
            preserving jump-to-any (resolved decision: relocated behind a deliberate tap, not
            removed). Hidden at >=900px, same breakpoint as the old strip, since the vertical rail
            above already covers this on desktop. -->
-      <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile">
+      <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile surface-hybrid">
         <span v-if="nextExercisePreview" class="next-ex-line">
           <b>Nächste Übung:</b> {{ nextExercisePreview.name }}
           <template v-if="nextExercisePreview.summary"> · {{ nextExercisePreview.summary }}</template>
@@ -557,7 +557,7 @@ async function logSet() {
              bug), this says so explicitly. The overview affordance stays available regardless,
              so jump-to-any is never lost even on the last exercise. -->
         <span v-else class="next-ex-line next-ex-empty">Letzte Übung dieser Routine</span>
-        <button class="next-ex-overview-btn" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
+        <button class="next-ex-overview-btn surface-hybrid" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
           ≡
         </button>
       </div>
@@ -580,15 +580,19 @@ async function logSet() {
                  delete (permanent). Gating a legitimate "equipment's busy, I'll come back" tap
                  behind a second confirm tap would add friction without protecting against any
                  real loss, so it stays a direct, unconfirmed tap. -->
-            <button v-if="store.exercises.length > 1" class="skip-btn" @click="store.skipCurrentExercise()">
+            <button v-if="store.exercises.length > 1" class="skip-btn surface-hybrid" @click="store.skipCurrentExercise()">
               Übung überspringen ⏭
             </button>
             <!-- Wave 0-B W3: rank/XP display moved behind this deliberate-reveal toggle
                  (resolved decision — stays exactly RankProgress's existing presentation, not
                  folded into ExerciseInfoPanel's Rang tab). A small, visually minimal tier-glyph
-                 chip, same footprint as the ⓘ info button next to it. -->
+                 chip, same footprint as the ⓘ info button next to it.
+                 N2 (Nebula adoption): .surface-hybrid instead of the old flat --surface-2 fill,
+                 and its `.active` (revealed) state gets a Nebula-tinted ring instead of a plain
+                 --surface-3 fill — see .rank-toggle-btn.active below — so "revealed" reads as an
+                 intentional interactive state in the new system, not leftover flat-surface UI. -->
             <button
-              class="info-btn rank-toggle-btn"
+              class="info-btn rank-toggle-btn surface-hybrid"
               :class="{ active: showRank }"
               :aria-pressed="showRank"
               aria-label="Rang anzeigen"
@@ -596,7 +600,7 @@ async function logSet() {
             >
               🏆
             </button>
-            <button class="info-btn" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)">ⓘ</button>
+            <button class="info-btn surface-hybrid" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)">ⓘ</button>
           </div>
         </div>
 
@@ -619,7 +623,7 @@ async function logSet() {
           :trust="currentRank.trust"
         />
 
-        <button v-if="store.canInsertWarmup" class="warmup-btn" @click="store.insertWarmupSets()">
+        <button v-if="store.canInsertWarmup" class="warmup-btn surface-hybrid" @click="store.insertWarmupSets()">
           + Aufwärmsätze einfügen
         </button>
 
@@ -645,10 +649,10 @@ async function logSet() {
              store.currentSet, so both reset to their unset label on their own once a set logs and
              the store's currentSet advances — no local caching to go stale. -->
         <div v-if="store.currentSet" class="set-meta-row">
-          <button class="meta-pill" @click="showRpeCapture = true">
+          <button class="meta-pill surface-hybrid" @click="showRpeCapture = true">
             {{ store.currentSet.rpe != null ? `RPE ${store.currentSet.rpe}` : "RPE" }}
           </button>
-          <button class="meta-pill note-pill" @click="noteCaptureTarget = 'set'">
+          <button class="meta-pill note-pill surface-hybrid" @click="noteCaptureTarget = 'set'">
             {{ store.currentSet.notes ? `Notiz: ${store.currentSet.notes}` : "Notiz" }}
           </button>
         </div>
@@ -897,6 +901,10 @@ async function logSet() {
 .rail-strip-mobile {
   margin-bottom: var(--sp4);
 }
+/* N2 (Nebula adoption): was a flat --surface-2 fill + 1px --line border — now the shared
+   .surface-hybrid utility (translucent + blurred, gradient hairline via ::after) instead, per
+   the redesign spec's "replaces flat --surface/--surface-2 fills as the baseline" rule. Border
+   dropped since the hairline pseudo-element now does that job (same pattern as .panel above). */
 .next-ex-row {
   display: flex;
   align-items: center;
@@ -904,8 +912,6 @@ async function logSet() {
   gap: var(--sp3);
   padding: var(--sp3);
   border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
 }
 .next-ex-line {
   font-size: 12.5px;
@@ -923,12 +929,11 @@ async function logSet() {
   font-style: italic;
   color: var(--faint);
 }
+/* N2: was a flat --surface-3 fill — .surface-hybrid instead (see .next-ex-row above). */
 .next-ex-overview-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--surface-3);
-  border: 1px solid var(--line);
   color: var(--text);
   font-size: 15px;
   flex: none;
@@ -992,40 +997,43 @@ async function logSet() {
   gap: var(--sp2);
   flex: none;
 }
+/* N2: was a flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). */
 .skip-btn {
   font-size: 11.5px;
   font-weight: 700;
   color: var(--dim);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: 7px 10px;
   white-space: nowrap;
 }
 /* Was 30x30px, below the 44px touch-target floor .btn-close already meets (critique finding:
-   applied inconsistently). */
+   applied inconsistently). N2: was a flat --surface-2 fill — .surface-hybrid instead. */
 .info-btn {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   font-size: 15px;
   flex: none;
 }
-/* Wave 0-B W3: the rank-reveal toggle reuses .info-btn's shape/size, marked "on" via the same
-   filled-surface idiom .set-kind pickers use elsewhere (surface-3 instead of surface-2) rather
-   than a new color — a small state cue, not a second visual language for one toggle button. */
+/* Wave 0-B W3: the rank-reveal toggle reuses .info-btn's shape/size, marked "on" via a distinct
+   fill so it reads as a real state change.
+   N2 follow-up: the flat --surface-3 "on" fill this used to be read as leftover pre-Nebula UI
+   sitting on an otherwise-hybrid screen. Re-derived (not a mechanical swap) as a Nebula-tinted
+   version of the same .surface-hybrid base .info-btn already carries: color-mix's result stays
+   translucent (same family as every other hybrid surface on this screen, not a special-cased
+   opaque fill) and the added ring is the cheapest legible way to say "revealed" that still
+   reuses only existing tokens (--nebula-m/--nebula-ink), matching the positive list's allowance
+   of a Nebula ring/accent on an interactive state indicator (nebula-design-system.md §2) without
+   reaching for the concentrated CTA gradient itself. */
 .rank-toggle-btn.active {
-  background: var(--surface-3);
-  border-color: var(--line-2);
+  background: color-mix(in srgb, var(--nebula-m) 22%, var(--surface-hybrid-bg));
+  box-shadow: var(--surface-hybrid-shadow), 0 0 0 1px var(--nebula-ink);
 }
+/* N2: was a flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). */
 .add-ex-btn {
   font-size: 12px;
   color: var(--dim);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: 8px 12px;
 }
@@ -1076,19 +1084,19 @@ async function logSet() {
 .last-ref-hidden {
   visibility: hidden;
 }
+/* N2: was a flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). */
 .warmup-btn {
   font-size: 12px;
   color: var(--dim);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: 8px 12px;
   margin-bottom: var(--sp3);
   align-self: flex-start;
 }
-/* RPE/notes (Tasks 4-5) — same row-family as .warmup-btn/.add-ex-btn: small, --surface-2,
-   --dim text, non-.btn-primary, deliberately not inline with the weight/reps steppers and not
-   competing with "Satz speichern" (Global Constraint 4). */
+/* RPE/notes (Tasks 4-5) — same row-family as .warmup-btn/.add-ex-btn: small, --dim text,
+   non-.btn-primary, deliberately not inline with the weight/reps steppers and not competing with
+   "Satz speichern" (Global Constraint 4). N2: was a flat --surface-2 fill — .surface-hybrid
+   instead (see .next-ex-row above). */
 .set-meta-row {
   display: flex;
   gap: var(--sp2);
@@ -1097,8 +1105,6 @@ async function logSet() {
 .meta-pill {
   font-size: 12px;
   color: var(--dim);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-md);
   padding: 8px 12px;
   max-width: 100%;
@@ -1186,20 +1192,39 @@ async function logSet() {
   gap: 6px;
   margin-top: var(--sp4);
 }
+/* N2: was a flat --surface-2 fill. Given to <li> directly rather than via the shared
+   .surface-hybrid class (translucency + blur only, no ::after hairline/box-shadow) — these rows
+   are dense repeated list items, not floating cards, so the full card recipe (gradient ring +
+   drop shadow on every single set) would read as visual noise; translucency alone is still
+   enough to read as "in the system" rather than a leftover opaque row. */
 .set-rows li {
   display: flex;
   align-items: center;
   gap: var(--sp3);
   padding: var(--sp2) var(--sp3);
   border-radius: var(--r-sm);
-  background: var(--surface-2);
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
   font-size: 13.5px;
 }
 /* Was `opacity: 0.75` — the only visible consequence of completing a set was that it faded
    (critique finding: the reward inverts). A logged set now gets a faint green tint instead,
-   full opacity — done work reads as brighter, not dimmer. */
+   full opacity — done work reads as brighter, not dimmer.
+   N2 re-derivation (not a mechanical --surface-2 -> --surface-hybrid-bg swap): the old base was
+   fully opaque, so color-mix's 14%-green output was itself fully opaque and its exact hue was
+   the whole visual story. --surface-hybrid-bg is translucent (~0.88 alpha) and this row has no
+   card behind it — color-mix here still carries that alpha through (mixing a ~14%-weighted
+   opaque green into an ~0.88-alpha base yields ~0.90 alpha), so the result is a translucent tint
+   sitting directly over whatever's rendered behind it (the page content and, at the row's own
+   position, the pervasive cosmic sweep) rather than over a flat neutral fill. A straight 14%
+   swap visibly diluted toward whatever hue the sweep carries at that spot, reading as a duller,
+   less legible "done" signal than before. Bumped to 20% green share to compensate and keep the
+   success tint reading as unambiguously green rather than washed out, while staying in the same
+   translucent family as the sibling (non-done) rows above instead of special-casing it back to a
+   fully opaque fill. */
 .set-rows li.done {
-  background: color-mix(in srgb, var(--green) 14%, var(--surface-2));
+  background: color-mix(in srgb, var(--green) 20%, var(--surface-hybrid-bg));
 }
 .set-rows li.warmup:not(.done) {
   color: var(--dim);
