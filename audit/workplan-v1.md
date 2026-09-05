@@ -268,12 +268,35 @@ the exact same 240 XP delta (anti-cheese: weight cannot inflate XP), and a same-
 set logged 4x in one workout with cosmetically nudged weights (20/20.5/20/20.25kg) scored well below
 the undecayed 4x estimate (anti-nudge: repeat-decay isn't dodged by trivial weight changes).
 
-### 3.8 Anti-farming copy reception — needs a real-user check
+### 3.8 Anti-farming copy reception — addressed (copy reworded)
 
-Still genuinely open, unchanged from prior rounds: the plausibility-discount message's wording
-("this session felt unusually fast — rank/XP gain reduced") has never been checked against how a
-real recipient reads it — protective signal vs. accusation. Copy-only if it needs changing; the
-underlying mechanism is correct and untouched.
+Reviewed against the human-writing-style audit (2026-09-05). The old wording used "wirkte
+unrealistisch" ("seemed unrealistic") and "wirkte ungewöhnlich schnell/groß" ("seemed unusually
+fast/large") for the trigger clause, then a passive, agentless "Rang- und XP-Gewinn wurden
+reduziert" ("rank and XP gain were reduced") for the consequence. Read from a real recipient's
+seat, "unrealistisch" applied directly to a value the user actually lifted reads as a verdict on
+their honesty, not a system safeguard — closest to an accusation of the three, and the passive
+consequence clause reads as a bureaucratic penalty notice rather than a protective/transparent
+explanation.
+
+Reworded (`useWorkoutFinish.ts`'s `PLAUSIBILITY_NOTE_DE`) to drop "wirkte"/"unrealistisch"
+entirely and reframe the consequence as the system being cautious rather than a punishment for a
+verdict already rendered:
+- pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb
+  vorsichtiger aus."
+- improbable_jump: "Dieser Sprung war ungewöhnlich groß — dein Rang- und XP-Gewinn fällt deshalb
+  vorsichtiger aus."
+- exceeds_ceiling: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb
+  vorsichtiger aus."
+
+Still states only that the value/session was statistically unusual, never a number or threshold
+(constraint from the comment above `PLAUSIBILITY_NOTE_DE` preserved). "fällt vorsichtiger aus"
+("turns out more cautious") keeps the outcome first-person-possessive and attributes the caution
+to the system's process, not to a claim that the user faked the number. No mechanism change; copy
+only. Rest of the client's user-facing strings (`locales/de.json`, `locales/exercises.de.json`,
+and inline copy across `pages/`/`components/`) were audited against the same skill and found
+already in the app's established direct, concrete, non-corporate voice — no further changes
+warranted there.
 
 ### 3.9 Missing-photo catalog gap — resourcing decision, not a design one
 
