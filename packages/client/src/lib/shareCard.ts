@@ -23,6 +23,17 @@
  * content flow to a small top-right corner stamp (closer in spirit to that doc's variation 8),
  * so "rank and level" read as a badge, not the headline — the vertical space that freed up goes
  * to the trained-muscle figures and the exercise grid, both drawn larger than before.
+ *
+ * 2026-09-05 (Nebula complete-redesign, N3): the background wash is re-synced against
+ * tokens.css's new `--nebula-sweep-*` layer (Foundation F2) — same diagonal-base +
+ * three-wide-radial-wash recipe every live screen now sits on, not a separate one-off "Nebula
+ * Halo" look. Per the redesign spec §3.3, this file is explicitly allowed a *stronger*,
+ * non-settling version of that recipe (roughly 2x the live tokens' wash opacities): a static
+ * share PNG has no "settling back" concept the live app's celebratory glow does, so there's no
+ * reason to cap it at the same restrained baseline intensity. Canvas has no `mix-blend-mode`,
+ * but `globalCompositeOperation = "screen"` is the same blend mode under a different name, so the
+ * three washes below screen-composite onto the base gradient exactly like the CSS layer does.
+ * The corner-badge demotion and glyph/glow sizing above are untouched by this pass.
  */
 import {
   CARD_DIMENSIONS,
@@ -56,6 +67,14 @@ const COLORS = {
   nebula1: "#2f9fe0",
   nebulaM: "#8a6dff",
   nebula2: "#d63aff",
+  // tokens.css's dark-mode `--nebula-sweep-base-1..4` (Foundation F2, 2026-09-05) — the same
+  // diagonal 155deg base gradient every live screen's body::before now sits on. See the header
+  // comment's 2026-09-05 note for why the share card re-syncs against this instead of its own
+  // one-off "Nebula Halo" bg/surface 2-stop.
+  sweepBase1: "#0a0c14",
+  sweepBase2: "#0b0d19",
+  sweepBase3: "#0e0d20",
+  sweepBase4: "#0a0c14",
 };
 
 /**
@@ -593,25 +612,50 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   const fillSlots = 3;
   const fillGap = overflowsStory ? 0 : distributeFillGap(naturalTotal, available, fillSlots, 150);
 
-  // background — "Nebula Halo" (audit/share-card-design-variations.md variation 1): a two-lobe
-  // wash using the brand gradient's own two end stops, replacing the old single plain-blue glow.
-  const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-  bgGrad.addColorStop(0, COLORS.bg);
-  bgGrad.addColorStop(1, COLORS.surface);
+  // background — re-synced 2026-09-05 against tokens.css's live `--nebula-sweep-*` recipe
+  // (Foundation F2's body::before): the same diagonal 155deg base gradient, plus the same three
+  // wide radial washes (violet top, magenta bottom-right, blue left), screen-composited so hues
+  // melt into each other instead of reading as separate patches — but at roughly 2x the live
+  // tokens' wash opacities, the "stronger, non-settling" version the redesign spec §3.3
+  // explicitly allows here since a share PNG has no in-app settle-back to protect.
+  const bgGrad = cssAngleGradient(ctx, 155, 0, 0, width, height);
+  bgGrad.addColorStop(0, COLORS.sweepBase1);
+  bgGrad.addColorStop(0.3, COLORS.sweepBase2);
+  bgGrad.addColorStop(0.55, COLORS.sweepBase3);
+  bgGrad.addColorStop(1, COLORS.sweepBase4);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  const glow1 = ctx.createRadialGradient(width * 0.82, height * 0.08, 0, width * 0.82, height * 0.08, width * 0.55);
-  glow1.addColorStop(0, "rgba(47, 159, 224, 0.20)"); // --nebula-1
-  glow1.addColorStop(1, "rgba(47, 159, 224, 0)");
-  ctx.fillStyle = glow1;
+  // `globalCompositeOperation = "screen"` is canvas's equivalent of CSS `mix-blend-mode: screen`
+  // (tokens.css's --nebula-sweep-blend in dark mode) — reset to "source-over" immediately after
+  // so it doesn't leak into the wordmark/badge/stat/exercise drawing below.
+  ctx.globalCompositeOperation = "screen";
+
+  // Wash 1 — violet, top area (CSS: ellipse 140% 100% at 60% -20%, --nebula-sweep-wash-1 is
+  // rgba(138,109,255,0.10) live; ~2x here).
+  const wash1 = ctx.createRadialGradient(width * 0.6, height * -0.2, 0, width * 0.6, height * -0.2, width * 1.1);
+  wash1.addColorStop(0, "rgba(138, 109, 255, 0.22)");
+  wash1.addColorStop(1, "rgba(138, 109, 255, 0)");
+  ctx.fillStyle = wash1;
   ctx.fillRect(0, 0, width, height);
 
-  const glow2 = ctx.createRadialGradient(width * 0.18, height * 0.04, 0, width * 0.18, height * 0.04, width * 0.4);
-  glow2.addColorStop(0, "rgba(214, 58, 255, 0.16)"); // --nebula-2
-  glow2.addColorStop(1, "rgba(214, 58, 255, 0)");
-  ctx.fillStyle = glow2;
+  // Wash 2 — magenta, bottom-right (CSS: ellipse 120% 90% at 100% 90%, --nebula-sweep-wash-2 is
+  // rgba(214,58,255,0.07) live; ~2x here).
+  const wash2 = ctx.createRadialGradient(width * 1.0, height * 0.9, 0, width * 1.0, height * 0.9, width * 0.9);
+  wash2.addColorStop(0, "rgba(214, 58, 255, 0.16)");
+  wash2.addColorStop(1, "rgba(214, 58, 255, 0)");
+  ctx.fillStyle = wash2;
   ctx.fillRect(0, 0, width, height);
+
+  // Wash 3 — blue, left-mid (CSS: ellipse 100% 80% at -10% 60%, --nebula-sweep-wash-3 is
+  // rgba(47,159,224,0.06) live; ~2x here).
+  const wash3 = ctx.createRadialGradient(width * -0.1, height * 0.6, 0, width * -0.1, height * 0.6, width * 0.8);
+  wash3.addColorStop(0, "rgba(47, 159, 224, 0.14)");
+  wash3.addColorStop(1, "rgba(47, 159, 224, 0)");
+  ctx.fillStyle = wash3;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.globalCompositeOperation = "source-over";
 
   const pad = PAD;
 
