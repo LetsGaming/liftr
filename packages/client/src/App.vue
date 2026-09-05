@@ -278,11 +278,21 @@ const hideTopHud = computed(
 .route-fade-leave-to {
   opacity: 0;
 }
+/* Nebula Foundation F5 — nav hybrid (complete-redesign spec §3.5). Translucent + blurred, same
+   tokens as every other hybrid surface, so the sweep bleeds through subtly instead of the nav
+   reading as opaque chrome floating on top of the scene. Kept the existing solid border-right
+   (rather than F3's full mask-composite ring) since a ring reads oddly on a straight edge-to-
+   edge bar with no rounded corners — translucency+blur is what "hybrid" buys a full-bleed nav,
+   the ring is specifically a card/panel affordance. See the F5 regression-check comment on
+   .bottom-chrome below for the live clipping/legibility re-verification this required. */
 .side-nav {
   display: none;
   flex-direction: column;
   gap: 4px;
   width: 224px;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
   border-right: 1px solid var(--line);
   padding: var(--sp4) var(--sp3);
 }
@@ -297,7 +307,10 @@ const hideTopHud = computed(
 .tab-bar {
   display: flex;
   justify-content: space-around;
-  background: var(--surface);
+  /* F5: .tab-bar and its fixed ancestor .bottom-chrome (below) independently painted
+     var(--surface) — both switched to the hybrid fill together so there's no opaque layer
+     hiding behind the translucent one. */
+  background: var(--surface-hybrid-bg);
   border-top: 1px solid var(--line);
   /* Vertical padding moved onto .tab-link itself (was here) so an active tab's fill block can
      reach the bar's full height edge-to-edge (0a's active-tab redesign, see .tab-link.router-
@@ -555,7 +568,20 @@ const hideTopHud = computed(
     margin-top: 0;
   }
   /* Single fixed element for the tab bar — see the P0 fix comment above the template markup for
-     the history here (it used to also carry the status row now in .top-hud). */
+     the history here (it used to also carry the status row now in .top-hud).
+
+     F5 regression check (2026-09-05): this bar's own opacity was never what the P0 clipping fix
+     depended on — that bug (content rendering unreachable behind the fixed bar) was fixed
+     structurally via ion-content's --padding-bottom (ionic-theme.css) and .main-content's
+     reserved --bottom-chrome-h, both independent of this element's background. Re-verified live
+     with the same technique already used to clear .top-hud (Playwright scroll-to-end +
+     elementFromPoint hit-testing along the bar's midline) after switching to the translucent
+     fill below: on all 8 routes at 390px, the last content element still fully clears the bar at
+     scroll end, and elementFromPoint at the bar's midline mid-scroll still resolves to the bar
+     itself (or its children), never to content rendering through/behind it. Legibility (the
+     other real risk — text sitting on the sweep bleeding through a translucent, 100%-of-the-
+     time-visible bar) was also checked live and read clearly in both themes, so this stays
+     translucent per the spec's default rather than being reverted to opaque. */
   .bottom-chrome {
     display: flex;
     flex-direction: column;
@@ -564,8 +590,10 @@ const hideTopHud = computed(
     right: 0;
     bottom: 0;
     z-index: 1;
-    background: var(--surface);
-    box-shadow: var(--shadow);
+    background: var(--surface-hybrid-bg);
+    backdrop-filter: blur(var(--surface-hybrid-blur));
+    -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+    box-shadow: var(--surface-hybrid-shadow);
   }
 }
 </style>
