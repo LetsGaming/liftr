@@ -31,7 +31,7 @@ const verdict = computed(() => {
        every section below it jumps down the moment the request resolves. Shaped roughly like
        the real content instead of one flat rectangle, per the same shimmer technique
        WorkoutPage.vue's rank skeleton uses. -->
-  <section v-if="loaded" class="erholungszone">
+  <section v-if="loaded" class="erholungszone surface-hybrid">
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
     <div class="ez-status">
@@ -40,7 +40,7 @@ const verdict = computed(() => {
       <button class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>
   </section>
-  <div v-else class="erholungszone ez-skeleton" aria-hidden="true">
+  <div v-else class="erholungszone ez-skeleton surface-hybrid" aria-hidden="true">
     <div class="shimmer ez-skel-eyebrow" />
     <div class="ez-skel-figure shimmer" />
     <div class="ez-status">
@@ -54,8 +54,6 @@ const verdict = computed(() => {
 
 <style scoped>
 .erholungszone {
-  background: var(--surface);
-  border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--sp5);
   display: flex;
