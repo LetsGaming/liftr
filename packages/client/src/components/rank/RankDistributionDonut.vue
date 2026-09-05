@@ -102,13 +102,23 @@ const total = computed(() => ranksStore.ranks.length);
 
 <style scoped>
 .rank-donut {
-  background: var(--surface);
-  /* engagement-audit-v4 Phase 2B critique fix: was a flat --line border — this is an analytics
-     card, not a reward, so it keeps the plain --surface fill rather than .panel-reward's full
-     tier gradient, but a bare neutral border sitting two scrolls above the reference-quality
-     .rank-card grid (RanksPage.vue) read as more generic than it needed to. --tier-accent falls
-     back to --line for a brand-new account with no overall rank yet (App.vue's overallTierClass
-     is "" until then, so --tier-accent is genuinely unset). */
+  /* N8 adoption-audit fix: this sat right next to RankUpCalendar.vue in the same
+     `.rank-analytics` row on RanksPage.vue, which N3 already moved onto the surface-hybrid
+     bg/blur/shadow triad — leaving this one flat was an oversight (out of N3's own file
+     boundary, flagged by that agent), not a deliberate exemption. Same partial-adoption
+     judgment as RankUpCalendar.vue: adopt the hybrid background, keep this component's own
+     semantic border rather than adding the generic gradient-hairline ::after, since the border
+     already carries a real signal (the account's current overall tier) that a second ring would
+     compete with. engagement-audit-v4 Phase 2B critique fix (still applies): was a flat --line
+     border — this is an analytics card, not a reward, so it keeps a plain-ish fill rather than
+     .panel-reward's full tier gradient, but a bare neutral border sitting two scrolls above the
+     reference-quality .rank-card grid (RanksPage.vue) read as more generic than it needed to.
+     --tier-accent falls back to --line for a brand-new account with no overall rank yet
+     (App.vue's overallTierClass is "" until then, so --tier-accent is genuinely unset). */
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
   border: 1px solid var(--tier-accent, var(--line));
   border-radius: var(--r-xl);
   padding: var(--sp5);

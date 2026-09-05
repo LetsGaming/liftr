@@ -36,7 +36,7 @@ function workingReps(ex: ActiveExercise): number | null {
     <button
       v-for="(ex, i) in store.exercises"
       :key="ex.workoutExerciseId"
-      class="rail-item"
+      class="rail-item surface-hybrid"
       :class="{ active: i === store.currentExerciseIndex, done: ex.sets.every((s) => s.logged), grouped: ex.supersetGroup != null }"
       @click="jump(i)"
     >
@@ -69,8 +69,16 @@ function workingReps(ex: ActiveExercise): number | null {
      done dimming), never by flipping to a lighter background. A bare native <button> falls
      back to the browser's own light chrome if you don't set this explicitly, which is exactly
      the bug this replaced: every upcoming/idle row rendered on a near-white default button
-     background with default-black text, while only .active had a background at all. */
-  background: var(--surface-2);
+     background with default-black text, while only .active had a background at all.
+     N8 adoption-audit fix (2026-09-06): this file sat between two owners on the file-boundary
+     table (0-B built the rail, N2 was meant to adopt it) and fell through — N2's actual commits
+     never touched it, so every row here stayed flat --surface-2/-3 even after W4 moved this
+     component from an always-visible strip into the workout screen's "Alle Übungen anzeigen"
+     sheet, sitting right next to hybrid siblings (.next-ex-row, .rest-timer, .skip-btn) that
+     already got the N2 treatment. `.surface-hybrid` (template) now supplies the base
+     background/blur/shadow/hairline; `.active`'s own fill below is re-derived the same way
+     WorkoutPage.vue's `.rank-toggle-btn.active` re-derives its "on" state against
+     --surface-hybrid-bg — color-mix over the hybrid base, not a special-cased opaque fill. */
   color: var(--dim);
   transition: background var(--dur-base) var(--ease-out);
 }
@@ -78,7 +86,7 @@ function workingReps(ex: ActiveExercise): number | null {
   color: var(--dim);
 }
 .rail-item.active {
-  background: var(--surface-3);
+  background: color-mix(in srgb, var(--blue-hi) 18%, var(--surface-hybrid-bg));
   color: var(--text);
 }
 .rail-item.active .meta b {

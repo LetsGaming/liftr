@@ -27,6 +27,25 @@
  *   - "drawer": square corners, pinned to the right edge, left border, full height — a
  *     reference panel meant to sit alongside the page behind it, not float over it.
  *
+ * N8 cross-branch adoption audit (2026-09-06): this shell's own `background` default was still
+ * `var(--surface)` — flat, opaque — through every one of N1-N6, because it sits one file outside
+ * each of their boundaries (SetKindPicker.vue's own N2-era comment on `.kind-row` names this
+ * exact gap: its rows adopted `.surface-hybrid` but "this sheet's own backdrop ... still defaults
+ * to an opaque --surface fill, so the backdrop-blur this utility adds has no visible effect
+ * here"). Every sheet built on the default background — RpeCapture, NoteCapture, SetKindPicker,
+ * ExerciseInfoPanel, WorkoutDetail, the exercise-overview sheet, the custom-exercise-add form —
+ * inherited that flat backdrop while nested `.surface-hybrid` rows sat uselessly on top of it.
+ * Fixed here: default background is now `var(--surface-hybrid-bg)`, and `::part(content)` below
+ * adds the blur/shadow half of the recipe for every sheet *except* `.full-modal` ones (the
+ * `sheet: false` full-bleed flows — RoutineWizard.vue, OnboardingGuide.vue — which already pass
+ * their own `background="var(--bg)"` deliberately, so they show the page's own sweep instead of
+ * a floating card; skipping them here isn't an oversight, it's this same fix not re-fighting a
+ * choice those two callers already made explicitly). Also carries the same gradient-hairline
+ * `::after` every other `.surface-hybrid`/`.panel` consumer gets — live-verified that chaining a
+ * pseudo-element off a shadow part (`::part(content)::after`) does render, positioned against
+ * that part's own box, in this app's target Chromium; the mask-composite ring lines up on the
+ * modal's real edges exactly like the light-DOM version.
+ *
  * `desktopWidth`/`desktopHeight` are optional overrides of `width`/`height` for the ≥900px
  * breakpoint (falling back to the base value when unset) — implemented as a plain CSS custom-
  * property cascade inside this component's own stylesheet (`--sheet-width-desktop` feeding
@@ -91,7 +110,7 @@ withDefaults(
     height: "100%",
     desktopHeight: undefined,
     maxWidth: undefined,
-    background: "var(--surface)",
+    background: "var(--surface-hybrid-bg)",
     sheet: true,
     desktopVariant: "card",
     backdropDismiss: undefined,
@@ -167,6 +186,27 @@ defineExpose({ dismiss });
   /* Square at every breakpoint — a drawer collapses to a full-bleed sheet on mobile, which
      shouldn't have rounded corners either. */
   border-radius: 0;
+}
+/* N8 adoption fix (see header comment): every sheet except the full-bleed flows gets the full
+   surface-hybrid recipe on its actual painted box. `--background` above only sets fill color (an
+   Ionic-internal custom property); backdrop-filter and the gradient hairline both have to target
+   the real shadow-DOM node via ::part(content) instead — plain scoped CSS can't reach in there. */
+.sheet-modal:not(.full-modal)::part(content) {
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
+}
+.sheet-modal:not(.full-modal)::part(content)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 @media (min-width: 900px) {
   .sheet-modal {

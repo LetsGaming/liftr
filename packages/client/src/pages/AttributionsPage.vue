@@ -22,12 +22,12 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
         </p>
 
         <ul class="sources">
-          <li>
+          <li class="surface-hybrid">
             <b>wger Exercise Database</b> — Übungskatalog, Muskelgruppen-Tags
             <span class="license">CC-BY-SA</span>
             <p>github.com/wger-project/wger</p>
           </li>
-          <li>
+          <li class="surface-hybrid">
             <b>wger Exercise Database</b> — Übungsfotos für 2 Übungen ohne freie
             free-exercise-db-Aufnahme ("Einbeiniges RDL", "Pike-Liegestütze")
             <span class="license">CC-BY-SA 4.0</span>
@@ -38,22 +38,22 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
               lizenzierte Aufnahme dieser Übung existiert.
             </p>
           </li>
-          <li>
+          <li class="surface-hybrid">
             <b>Muskel-Diagramm (Anatomie-Figur)</b> — Körperumriss + 15 einzeln hervorgehobene Muskeln, mirror von wger's Assets, ursprünglich abgeleitet von "Muscular system.svg"/"Muscular system-back.svg" von Termininja
             <span class="license">CC-BY-SA 3.0</span>
             <p>commons.wikimedia.org · via github.com/wger-project/wger · eigene Einfärbung für das Dark-Theme</p>
           </li>
-          <li>
+          <li class="surface-hybrid">
             <b>free-exercise-db (yuhonas)</b> — Start-/End-Positionsbilder
             <span class="license">Unlicense (gemeinfrei)</span>
             <p>github.com/yuhonas/free-exercise-db</p>
           </li>
-          <li>
+          <li class="surface-hybrid">
             <b>OpenPowerlifting</b> — Kraftstandards (Kniebeuge/Bankdrücken/Kreuzheben)
             <span class="license">CC0 (gemeinfrei)</span>
             <p>openpowerlifting.org</p>
           </li>
-          <li>
+          <li class="surface-hybrid">
             <b>OpenStreetMap</b> — Kartendaten für Laufrouten
             <span class="license">ODbL</span>
             <p>© OpenStreetMap-Mitwirkende</p>
@@ -80,9 +80,12 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
   gap: var(--sp3);
   margin-top: var(--sp5);
 }
+/* N8 cross-branch adoption audit (2026-09-06): this page was never claimed by any N1-N6
+   workstream (it's not in the plan's per-area list at all — a static licenses page, out of
+   every phase's assigned scope) and so never adopted Foundation's surface-hybrid recipe; these
+   rows were still flat --surface-2 cards. `.surface-hybrid` (template, tokens.css) now supplies
+   background/blur/shadow/hairline; only radius/padding stay local here. */
 .sources li {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--sp4);
 }
