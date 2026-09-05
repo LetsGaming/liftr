@@ -91,6 +91,12 @@
   --blue-hi: #5ba0ff;
   --blue-lo: #1e5fd0;
   --blue-ink: #04122e;
+  /* N4: secondary-muscle highlight color, matching .mm-sec below and the ingest-time bake of the
+     secondary muscle overlay assets (see ingestMuscleAssets.ts's SECONDARY_TO comment — "matches
+     the app's existing --mm-sec token"). Was two independent hardcoded #5f7fd6 copies (here as a
+     bare fill, and again in ExerciseInfoPanel.vue's legend swatch) with no shared source; this is
+     now the one definition both reference via var(). */
+  --muscle-secondary: #5f7fd6;
   /* Foreground for text sitting on a --blue-lo fill (active chips/rows) — ~9:1 on --blue-lo.
      --blue-hi was being used for this everywhere (~2.2:1, fails WCAG AA badly: both colors are
      mid-brightness blues, so "brighter blue on blue" still reads as low-contrast blue-on-blue)
@@ -848,7 +854,7 @@ textarea::placeholder {
   fill: #414d72;
 }
 .mm-sec {
-  fill: #5f7fd6;
+  fill: var(--muscle-secondary);
 }
 .mm-pri {
   fill: var(--blue-hi);

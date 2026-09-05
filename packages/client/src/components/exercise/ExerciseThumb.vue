@@ -39,7 +39,12 @@ const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === fal
      catalog gaps aren't sourceable in this pass (needs actual photography/licensing, tracked as
      open content work — see workplan-v1 §1.10c); this softens the fallback with the same
      radial-highlight tonal variation a photo thumbnail naturally has, so the gap reads as a
-     quieter, more deliberate icon slot rather than a stark placeholder. */
+     quieter, more deliberate icon slot rather than a stark placeholder.
+     N4 Nebula pass: deliberately EXEMPT from .surface-hybrid, verified live (both themes,
+     390px/1024px) sitting inside ExerciseList.vue's now-hybrid .ex-card and ExerciseRow's row
+     layout. This is an image-placeholder fill (photo missing -> icon fallback), not a content
+     surface — a translucent/blurred treatment on it would read as a see-through image slot,
+     which makes no sense next to the real opaque photo thumbnails beside it. Stays opaque. */
   background: radial-gradient(circle at 35% 30%, var(--surface-2), var(--surface-3) 70%);
   display: grid;
   place-items: center;

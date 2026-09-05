@@ -45,7 +45,7 @@ function onExerciseCreated() {
     <IonContent class="ion-padding">
       <div class="ex-page">
         <ExerciseList mode="browse" @open="openExercise = $event" />
-        <button class="add-custom-btn" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
+        <button class="add-custom-btn surface-hybrid" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
       </div>
 
       <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
@@ -67,13 +67,17 @@ function onExerciseCreated() {
   margin: 0 auto;
 }
 .add-custom-btn {
+  /* N4: adopted .surface-hybrid (translucent fill + gradient hairline, tokens.css) in place of
+     the flat --surface-2 fill. Kept its own dashed `border` on top — .surface-hybrid's hairline
+     lives on a separate ::after ring, so this doesn't fight it; the dashed line is this button's
+     own "insertion point" affordance (matches the app's other add-new dashed-border pattern,
+     e.g. FastPathStep.vue/ArrangeStep.vue), independent of the surface treatment underneath it. */
   display: block;
   width: 100%;
   margin-top: var(--sp4);
   padding: 12px;
   border-radius: var(--r-md);
-  border: 1px dashed var(--line);
-  background: var(--surface-2);
+  border: 1px dashed var(--line-2);
   color: var(--dim);
   font-size: 13.5px;
   font-weight: 600;

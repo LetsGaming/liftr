@@ -126,7 +126,11 @@ function equipmentLabel(eq: string | null): string {
 
     <ul class="ex-grid">
       <li v-for="ex in filtered" :key="ex.id">
-        <button class="ex-card" :class="{ selected: mode === 'select' && selectedIds.has(ex.id) }" @click="onCardClick(ex)">
+        <button
+          class="ex-card surface-hybrid"
+          :class="{ selected: mode === 'select' && selectedIds.has(ex.id) }"
+          @click="onCardClick(ex)"
+        >
           <ExerciseRow :slug="ex.slug" :equipment="ex.equipment ?? 'bodyweight'" :name="exerciseName(ex.slug, ex.name)" :size="48">
             <template #meta>
               <span class="equip">{{ equipmentLabel(ex.equipment) }}</span>
@@ -198,30 +202,40 @@ function equipmentLabel(eq: string | null): string {
   gap: var(--sp2);
 }
 .ex-card {
-  position: relative;
+  /* N4: adopted Foundation's .surface-hybrid utility (translucent fill + gradient hairline,
+     tokens.css) in place of the old flat --surface-2 fill + plain --line border — this is the
+     main card grid item for the exercise library and the wizard's exercise picker, the clearest
+     "card" surface in this file. .surface-hybrid already supplies position/background/
+     backdrop-filter/box-shadow; this block only adds the layout + interaction bits it doesn't. */
   width: 100%;
   display: flex;
   align-items: center;
   gap: var(--sp3);
   padding: var(--sp3);
   border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   text-align: left;
-  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .ex-card:active {
   transform: scale(0.98);
 }
 @media (hover: hover) {
+  /* Was `background: var(--surface-3)` — with .surface-hybrid now supplying the base fill,
+     overriding `background` on hover would flatten the card back to opaque right when the user
+     is interacting with it. `filter: brightness()` gives the same "lit up" hover feedback
+     without fighting the hybrid fill or its backdrop-filter blur. */
   .ex-card:hover {
-    background: var(--surface-3);
+    filter: brightness(1.12);
   }
 }
 .ex-card.selected {
+  /* Deliberate exception, not a flat-surface leftover: "selected" is an accent STATE (wizard
+     picker), not a neutral panel background, so it stays the existing opaque --blue-lo treatment
+     rather than adopting the hybrid neutral fill — same reasoning as .equipment-toggle.active
+     below and the app's other active/selected chip states. */
   background: var(--blue-lo);
-  border-color: var(--blue);
+  border: 1px solid var(--blue);
 }
 /* Entrance stagger removed (motion audit, Phase 4 — 2026-09-02). This list re-renders on every
    keystroke in the search input above (`filtered` is a computed keyed off `search`), so the
