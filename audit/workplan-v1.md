@@ -222,7 +222,7 @@ service worker unregistered, "pause on exceptions" on, capture the full stack).
       at Ge (WorkoutPage-Ow32FmsN.js:1:31019)                 -> RoutineWizard.vue:387
                                                                   (requestClose(): sheetRef.dismiss())
     ```
-  - **Diagnosis (evidenced, not fully proven — flagging as a fix proposal for review, not applied):**
+  - **Diagnosis (evidenced at the time, since acted on — see the FIX APPLIED note below):**
     `SheetModal.vue` already implements the documented fix for the *previous* version of this same
     crash class (see its own header comment, and `App.vue`'s comment on `showOnboarding`): every
     caller is supposed to unmount only in response to `@close`, which `SheetModal.vue` only emits
