@@ -14,10 +14,10 @@ const hasPlates = computed(() => needsPlatesStep(draft) && [...draft.plates.valu
     <h2>Fertig!</h2>
     <p>Los geht's — hier ist, was das für dich freischaltet:</p>
     <ul class="unlocks">
-      <li>🎯 Gewichtsvorschläge passend zu deiner Erfahrung</li>
-      <li>🏋 Übungsvorschläge, die zu deinem Equipment ({{ equipmentCount }} ausgewählt) passen — mit Alternativen statt einfach nichts</li>
-      <li v-if="hasPlates">⚖️ Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten</li>
-      <li>🏆 Rang-Berechnung basierend auf Körpergewicht und Geschlecht</li>
+      <li class="surface-hybrid">🎯 Gewichtsvorschläge passend zu deiner Erfahrung</li>
+      <li class="surface-hybrid">🏋 Übungsvorschläge, die zu deinem Equipment ({{ equipmentCount }} ausgewählt) passen — mit Alternativen statt einfach nichts</li>
+      <li v-if="hasPlates" class="surface-hybrid">⚖️ Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten</li>
+      <li class="surface-hybrid">🏆 Rang-Berechnung basierend auf Körpergewicht und Geschlecht</li>
     </ul>
   </div>
 </template>
@@ -59,11 +59,12 @@ const hasPlates = computed(() => needsPlatesStep(draft) && [...draft.plates.valu
   width: 100%;
   margin-top: var(--sp2);
 }
+/* Nebula N5 — .surface-hybrid (tokens.css) applied in the template alongside this class replaces
+   the flat --surface-2 fill + --line border with the shared translucent panel treatment; this
+   rule now only supplies layout (padding/radius/type), same split as ProfilePage.vue's .card. */
 .unlocks li {
   padding: var(--sp3);
   border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   font-size: 13px;
   line-height: 1.4;
 }
