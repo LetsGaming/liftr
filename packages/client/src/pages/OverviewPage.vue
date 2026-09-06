@@ -233,7 +233,7 @@ function retryFailed() {
         </div>
 
         <!-- 0. Erholungszone — a reason to open the app on a rest day (engagement rework W5) -->
-        <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" @start="startFromReadiness" />
+        <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" :can-start="!!suggestedRoutine" @start="startFromReadiness" />
 
         <!-- 1. Launchpad -->
         <section class="launchpad tile--priority">
