@@ -50,7 +50,7 @@ const groups = computed<DayGroup[]>(() => {
       <ul class="set-rows">
         <li v-for="(s, i) in g.sets" :key="i" class="set-row surface-hybrid" :class="{ warmup: s.isWarmup }">
           <span class="set-value tnum">
-            <template v-if="s.weightKg != null">{{ s.weightKg }} kg × {{ s.reps }}</template>
+            <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg × {{ s.reps }}</template>
             <template v-else>{{ s.reps }} Wdh.</template>
           </span>
           <span v-if="s.isWarmup" class="warmup-marker">Aufwärmen</span>

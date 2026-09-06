@@ -185,7 +185,7 @@ async function share() {
               <span class="tnum set-chips">
                 <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
                   <!-- reps×weight, matching shareCard.ts's same fix (feedback: "8x7,5kg" not "7,5x8"). -->
-                  <template v-if="s.weightKg != null">{{ s.reps }}×{{ s.weightKg }}kg</template>
+                  <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
                   <span v-if="s.isPr" aria-hidden="true"> 🏆</span>
                 </span>

@@ -266,7 +266,7 @@ async function exportData() {
         <button class="btn-primary" :disabled="!canSave || saving" @click="saveWeight">Speichern</button>
       </div>
       <p v-if="bodyweight.latest" class="current">
-        Aktuell: <b class="tnum">{{ bodyweight.latest.weightKg }} kg</b> ({{ bodyweight.latest.date }})
+        Aktuell: <b class="tnum">{{ Math.round(bodyweight.latest.weightKg * 100) / 100 }} kg</b> ({{ bodyweight.latest.date }})
       </p>
       <p v-else class="current" style="color: var(--faint)">
         Trag dein Gewicht oben ein — bis dahin nutzt die Rang-Berechnung vorläufig 75 kg.
