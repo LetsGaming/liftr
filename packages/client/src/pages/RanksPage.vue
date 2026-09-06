@@ -109,7 +109,7 @@ const sortedRanks = computed(() =>
         </div>
 
         <div v-if="ranksStore.ranks.length > 0" class="rank-grid">
-        <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap">
+        <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap" :class="`t-${r.tier}`">
           <button class="rank-card" :class="`t-${r.tier}`" @click="toggleExpand(r.exerciseId)">
             <TruncatingLabel class="en">{{ exerciseName(r.slug, r.name) }}</TruncatingLabel>
             <RankProgress
@@ -206,7 +206,12 @@ const sortedRanks = computed(() =>
   width: 100%;
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  border: 1px solid var(--line);
+  /* Tier-accent rim, not a generic neutral hairline (visual-design fix: this border used to be
+     the flat var(--line) every other utility surface uses, which barely registers against a
+     saturated tier-gradient fill and reads as a leftover default rather than the medal's own
+     edge). Same border source as tokens.css's .panel-reward (var(--b3, ...)) — the reward
+     surface's rim is tier-colored everywhere else in the app; this card was the one holdout. */
+  border: 1px solid var(--b3, var(--line));
   text-align: left;
   position: relative;
   overflow: hidden;
@@ -215,7 +220,7 @@ const sortedRanks = computed(() =>
      Same root cause as the exercise-rail white-card bug (P0-A): always set a background
      explicitly on interactive elements, never rely on the pseudo-element alone. */
   background: transparent;
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-fast) var(--ease-out);
 }
 /* Always-dark fill regardless of theme (tier colors are always dark, by design — see
    tokens.css's `:root[data-theme="light"]` comment) — text inside must stay light-on-dark even
@@ -230,9 +235,14 @@ const sortedRanks = computed(() =>
 .rank-card:active {
   transform: scale(0.98);
 }
+/* Was a bespoke flat-black box-shadow found nowhere else in the app — tokens.css's own
+   .panel-reward explicitly drops box-shadow on reward surfaces ("the reward surface doesn't
+   need the fake elevation cue... its own saturation already separates it from the page") and
+   the app's real hover language for a colored fill is a brightness lift (.btn-primary:hover
+   uses the same filter). Matching that instead of inventing a new elevation value here. */
 @media (hover: hover) {
   .rank-card:hover {
-    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+    filter: brightness(1.08);
   }
 }
 /* Full-card vivid tier gradient (UI/UX rework audit P0-C) — the reward screen should be the
@@ -271,7 +281,11 @@ const sortedRanks = computed(() =>
    mask-composite technique subtracts a content-box inset from the border-box; a 0px inset on one
    side makes content-box and border-box coincide there, so the ring's width degenerates to zero
    exactly on that edge while staying a normal 1px hairline on the rest. The card above still
-   supplies the seam's only visible line (its own bottom border), so the fusion still works. */
+   supplies the seam's only visible line (its own bottom border), so the fusion still works.
+   (A separate visual-design pass wanted to tint this panel toward the card's own tier color
+   instead of the neutral surface-hybrid fill — .rank-card-wrap now carries the tier class for
+   that purpose, but the asymmetric-mask hairline above already solves the seam problem that
+   pass was independently trying to work around, so the neutral surface-hybrid fill stays.) */
 .chart-slot {
   position: relative;
   padding: var(--sp3) var(--sp4);
