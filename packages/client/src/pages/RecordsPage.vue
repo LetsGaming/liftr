@@ -28,7 +28,12 @@ function isRecentlyAchieved(iso: string): boolean {
 function formatValue(kind: string, value: number): string {
   if (kind === "reps") return `${Math.round(value)} Wdh.`;
   if (kind === "volume") return `${Math.round(value).toLocaleString("de-DE")} kg`;
-  return `${value} kg`;
+  // "weight" and "e1rm" — e1rm in particular is computed (epley formula: weightKg * (1 +
+  // reps/30)) and routinely lands on a non-terminating decimal (e.g. 100kg x 8 reps ->
+  // 126.66666666666667), which rendered here unrounded as "126.66666666666667 kg". Round to a
+  // whole kg, matching the convention already used for e1rm everywhere else it's displayed
+  // (ExerciseInfoPanel.vue's `Math.round(bestE1rm)`, ProgressChart.vue's `Math.round(...)`).
+  return `${Math.round(value)} kg`;
 }
 
 function formatDate(iso: string): string {

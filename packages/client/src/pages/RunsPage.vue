@@ -266,11 +266,25 @@ function formatDuration(s: number) {
   gap: var(--sp5);
   margin-top: var(--sp5);
 }
+/* Same cramped-4-across fix as OverviewPage's .status-strip (engagement-audit-v3 Phase 2):
+   2x2 on mobile, widening to 4-across only once there's room (>=560px). */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--sp2);
   margin-top: var(--sp3);
+}
+.stats :deep(.stat-tile b) {
+  font-size: clamp(14px, 4.2vw, 20px);
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.15;
+}
+@media (min-width: 560px) {
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .delete-run-btn {
   margin-top: var(--sp4);
