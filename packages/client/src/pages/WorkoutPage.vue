@@ -179,7 +179,23 @@ async function onCopyFinished() {
   toast(ok ? "In Zwischenablage kopiert" : "Kopieren fehlgeschlagen");
 }
 
-const cancelConfirm = useConfirmTap(() => void store.cancelWorkout());
+/** Header-decluttering audit fix: the occasional-use session actions ("Übung hinzufügen",
+ *  "Workout-Notiz", "Aufwärmsätze einfügen", "Workout abbrechen") used to render as four
+ *  always-visible buttons crammed in right below the clock/pause — the single most-crowded
+ *  spot on the screen (audit's annotated `extra-overloaded-top-mid-workout.png`), competing for
+ *  space with the elapsed-time clock and the rank-reveal icon a lifter actually touches every
+ *  set. They now live behind one compact "⋯" trigger (see `.overflow-btn` below), opened as a
+ *  small sheet — everything a lifter touches every set (clock/pause, current exercise,
+ *  weight/reps entry) stays exactly where it was, one tap closer to nothing. */
+const showWorkoutMenu = ref(false);
+
+const cancelConfirm = useConfirmTap(() => {
+  // Closes the overflow sheet on the *confirming* tap only (useConfirmTap's onConfirm callback
+  // fires exactly once, on the second tap) — the first ("Wirklich abbrechen?") tap must leave
+  // the sheet open so the user can see and complete the confirmation.
+  showWorkoutMenu.value = false;
+  void store.cancelWorkout();
+});
 
 const { activeMesocycle } = useMesocycleControls(store, routineStore);
 
@@ -496,12 +512,18 @@ async function logSet() {
              overlap by construction. -->
         <SyncIndicator />
         <WorkoutClock />
-        <div class="progress">
-          <span>{{ store.progressLabel }}</span>
-          <span v-if="activeMesocycle" class="meso-active-badge">
-            Woche {{ activeMesocycle.currentWeek }}/{{ activeMesocycle.totalWeeks }} ·
-            {{ activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1] }}%
-          </span>
+        <div class="progress-row">
+          <div class="progress">
+            <span>{{ store.progressLabel }}</span>
+            <span v-if="activeMesocycle" class="meso-active-badge">
+              Woche {{ activeMesocycle.currentWeek }}/{{ activeMesocycle.totalWeeks }} ·
+              {{ activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1] }}%
+            </span>
+          </div>
+          <!-- Header-decluttering audit fix: the one remaining session-level control up here —
+               everything else (add exercise, workout note, warm-up, cancel) moved into the sheet
+               this opens (see below). -->
+          <button class="overflow-btn" aria-label="Weitere Optionen" @click="showWorkoutMenu = true">⋯</button>
         </div>
         <!-- Vertical variant (default) — desktop's list, unchanged. Hidden below the 900px
              breakpoint in favor of the horizontal strip placed just above the focus column,
@@ -511,11 +533,14 @@ async function logSet() {
         <ExerciseRail class="rail-list-desktop" />
 
         <!-- Mid-session add (feedback gap: no way to change what a session includes once
-             started — equipment in use / a busy rack had no path but cancelling entirely). -->
-        <button class="add-ex-btn" @click="showAddExercise = !showAddExercise">
-          {{ showAddExercise ? "Abbrechen" : "+ Übung hinzufügen" }}
-        </button>
+             started — equipment in use / a busy rack had no path but cancelling entirely).
+             Trigger moved into the overflow sheet (below); this inline search panel still
+             renders right here once opened, unchanged. -->
         <div v-if="showAddExercise" class="add-ex-panel panel">
+          <div class="add-ex-panel-head">
+            <b>Übung hinzufügen</b>
+            <button class="btn-close" aria-label="Schließen" @click="showAddExercise = false">✕</button>
+          </div>
           <input v-model="addExerciseSearch" class="add-ex-search" type="text" placeholder="Übung suchen…" />
           <ul class="add-ex-list">
             <li v-for="ex in addExerciseCandidates" :key="ex.id">
@@ -526,18 +551,6 @@ async function logSet() {
             </li>
           </ul>
         </div>
-
-        <!-- Workout-level notes (Task 5) — session-scoped, so it belongs with the other
-             session-level controls (add-exercise, cancel) rather than the per-set focus column.
-             Reads/writes store.workoutNotes via setWorkoutNotes(); rides along in finish()'s
-             existing sync payload (Task 2), never a separate network call and never required. -->
-        <button class="add-ex-btn note-pill" @click="noteCaptureTarget = 'workout'">
-          {{ store.workoutNotes ? `Workout-Notiz: ${store.workoutNotes}` : "+ Workout-Notiz" }}
-        </button>
-
-        <button class="cancel-btn" :class="{ confirming: cancelConfirm.isArmed() }" @click="cancelConfirm.trigger()">
-          {{ cancelConfirm.isArmed() ? "Wirklich abbrechen?" : "Workout abbrechen" }}
-        </button>
       </aside>
 
       <!-- Wave 0-B W4: the always-visible horizontal jump-to-exercise strip (Task 6's mobile
@@ -574,7 +587,8 @@ async function logSet() {
                  the rest timer) with no visual distinction between the two (critique finding).
                  "Übung" disambiguates without adding a control. -->
             <!-- Task 7 (mid-session confirm-tap audit): deliberately NOT gated behind
-                 useConfirmTap, unlike .cancel-btn. Skipping is non-destructive and reversible —
+                 useConfirmTap, unlike the overflow sheet's "Workout abbrechen" (.menu-item-danger).
+                 Skipping is non-destructive and reversible —
                  nothing is lost (the skipped exercise's sets are untouched and still reachable
                  via the jump rail/jumpToExercise), unlike cancel (discards the whole session) or
                  delete (permanent). Gating a legitimate "equipment's busy, I'll come back" tap
@@ -619,9 +633,9 @@ async function logSet() {
           :trust="currentRank.trust"
         />
 
-        <button v-if="store.canInsertWarmup" class="warmup-btn" @click="store.insertWarmupSets()">
-          + Aufwärmsätze einfügen
-        </button>
+        <!-- "+ Aufwärmsätze einfügen" moved into the overflow sheet (header-decluttering audit
+             fix) — see showWorkoutMenu's declaration above. Acts on store.currentExercise
+             regardless of where the trigger lives, so relocating it changes nothing functional. -->
 
         <!-- Always rendered (feedback: fix layout shift) — some sets have a "last time"
              reference and some don't (a freshly added exercise never does), so this used to pop
@@ -639,8 +653,8 @@ async function logSet() {
         <SetEntry />
 
         <!-- RPE/notes (Tasks 4-5) — secondary, off the primary logging path (Global Constraint 4):
-             same row-family as .warmup-btn/.add-ex-btn, deliberately not inline with the weight/
-             reps steppers and not competing with "Satz speichern". Only shown while there's a
+             small pill row, deliberately not inline with the weight/reps steppers and not
+             competing with "Satz speichern". Only shown while there's a
              current set to attach them to (mirrors SetEntry's own v-if scope). Reads straight off
              store.currentSet, so both reset to their unset label on their own once a set logs and
              the store's currentSet advances — no local caching to go stale. -->
@@ -742,6 +756,38 @@ async function logSet() {
         @close="noteCaptureTarget = null"
         @save="saveNoteCapture"
       />
+
+      <!-- Header-decluttering audit fix: "Übung hinzufügen", "Workout-Notiz", "Aufwärmsätze
+           einfügen" and "Workout abbrechen" consolidated behind the "⋯" trigger next to
+           .progress — these are all occasional, once-in-a-while actions, never touched between
+           sets the way the clock/pause, current exercise, and weight/reps entry are. -->
+      <SheetModal v-if="showWorkoutMenu" title="Mehr" @close="showWorkoutMenu = false">
+        <div class="workout-menu">
+          <button class="menu-item" @click="showWorkoutMenu = false; showAddExercise = true">
+            + Übung hinzufügen
+          </button>
+          <button class="menu-item" @click="showWorkoutMenu = false; noteCaptureTarget = 'workout'">
+            {{ store.workoutNotes ? `Workout-Notiz: ${store.workoutNotes}` : "+ Workout-Notiz" }}
+          </button>
+          <button
+            v-if="store.canInsertWarmup"
+            class="menu-item"
+            @click="showWorkoutMenu = false; store.insertWarmupSets()"
+          >
+            + Aufwärmsätze einfügen
+          </button>
+          <!-- Deliberately does NOT close the sheet on the first (arming) tap — see
+               cancelConfirm's declaration above for why: the user needs to see and complete the
+               "Wirklich abbrechen?" confirmation before the sheet dismisses. -->
+          <button
+            class="menu-item menu-item-danger"
+            :class="{ confirming: cancelConfirm.isArmed() }"
+            @click="cancelConfirm.trigger()"
+          >
+            {{ cancelConfirm.isArmed() ? "Wirklich abbrechen?" : "Workout abbrechen" }}
+          </button>
+        </div>
+      </SheetModal>
 
       <div v-if="!(store.currentExercise && !store.allSetsLogged)" class="workout-complete">
         <p>Alle Übungen erledigt.</p>
@@ -950,10 +996,33 @@ async function logSet() {
 .stale-actions button {
   flex: 1;
 }
+/* Header-decluttering audit fix: the progress label now shares a row with the "⋯" overflow
+   trigger (the one remaining session-level control up here) instead of that trigger needing its
+   own separate row. */
+.progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp2);
+}
 .progress {
   font-size: 13px;
   color: var(--dim);
   padding: var(--sp2) 0;
+}
+/* Reuses .info-btn's exact 44px round shape/touch-target so the header keeps the same visual
+   language it already established for icon-only actions (ⓘ, 🏆), instead of a new one for this
+   single new control. */
+.overflow-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  flex: none;
 }
 .focus-head {
   display: flex;
@@ -1021,20 +1090,23 @@ async function logSet() {
   background: var(--surface-3);
   border-color: var(--line-2);
 }
-.add-ex-btn {
-  font-size: 12px;
-  color: var(--dim);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 8px 12px;
-}
 /* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
 .add-ex-panel {
   display: flex;
   flex-direction: column;
   gap: var(--sp2);
   padding: var(--sp3);
+}
+/* Header-decluttering audit fix: this panel used to open/close under its own dedicated toggle
+   button (removed, see the overflow sheet below), so it needs its own small close affordance
+   now that opening it happens one level removed (via the sheet). */
+.add-ex-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.add-ex-panel-head b {
+  font-size: 13.5px;
 }
 .add-ex-search {
   padding: 8px 12px;
@@ -1076,19 +1148,9 @@ async function logSet() {
 .last-ref-hidden {
   visibility: hidden;
 }
-.warmup-btn {
-  font-size: 12px;
-  color: var(--dim);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 8px 12px;
-  margin-bottom: var(--sp3);
-  align-self: flex-start;
-}
-/* RPE/notes (Tasks 4-5) — same row-family as .warmup-btn/.add-ex-btn: small, --surface-2,
-   --dim text, non-.btn-primary, deliberately not inline with the weight/reps steppers and not
-   competing with "Satz speichern" (Global Constraint 4). */
+/* RPE/notes (Tasks 4-5) — small, --surface-2, --dim text, non-.btn-primary, deliberately not
+   inline with the weight/reps steppers and not competing with "Satz speichern" (Global
+   Constraint 4). */
 .set-meta-row {
   display: flex;
   gap: var(--sp2);
@@ -1257,20 +1319,40 @@ button.sn:active {
   padding: var(--sp4) 0;
   text-align: center;
 }
+/* Header-decluttering audit fix: "Übung hinzufügen" / "Workout-Notiz" / "Aufwärmsätze einfügen" /
+   "Workout abbrechen" now live in one sheet (see the SheetModal in the template, opened from the
+   "⋯" .overflow-btn next to .progress) instead of four always-visible buttons crammed under the
+   clock. Plain stacked list rows, full-width — a sheet's contents don't need to compete for
+   horizontal space the way the old inline pill row did. */
+.workout-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+}
+.menu-item {
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  min-height: 44px;
+}
 /* Was styled identically to every other secondary rail button (add exercise, warm-up) — a
    destructive action needs to read as one before you tap it, not only after (when it flips
    to the .confirming fill). Red text/border on a transparent fill marks it as "careful" at a
-   glance without competing with the solid-red confirm step. */
-.cancel-btn {
-  font-size: 12.5px;
-  font-weight: 700;
+   glance without competing with the solid-red confirm step. Kept as its own modifier (rather
+   than folded into .menu-item) now that it lives alongside three non-destructive rows in the
+   same list. */
+.menu-item-danger {
   color: var(--red);
   background: transparent;
   border: 1px solid var(--red-lo);
-  border-radius: var(--r-md);
-  padding: 10px 12px;
 }
-.cancel-btn.confirming {
+.menu-item-danger.confirming {
   background: var(--red-lo);
   border-color: var(--red);
   color: var(--text);
