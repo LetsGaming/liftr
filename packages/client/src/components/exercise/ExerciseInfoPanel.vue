@@ -16,6 +16,7 @@
  */
 import { estimateE1rm, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, ref } from "vue";
+import AppIcon from "../ui/AppIcon.vue";
 import type { CatalogExercise } from "../../stores/catalogStore";
 import { useExerciseHistoryCache } from "../../composables/useExerciseHistoryCache";
 import { useExerciseName } from "../../composables/useExerciseName";
@@ -116,7 +117,7 @@ function missingBadge(req: TieredRequirement): string | null {
     <template #header>
       <div class="sheet-head">
         <b>{{ exerciseName(exercise.slug, exercise.name) }}</b>
-        <button class="btn-close" aria-label="Schließen" @click="emit('close')">✕</button>
+        <button class="btn-close" aria-label="Schließen" @click="emit('close')"><AppIcon name="close" /></button>
       </div>
       <div class="tab-strip" role="tablist">
         <button
