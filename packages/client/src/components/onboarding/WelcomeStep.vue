@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /** Step 1: a short intent-framing hero rather than launching straight into a form field — the
  *  wizard's nav bar already carries the primary CTA, so this step is pure copy. */
+import AppIcon from "../ui/AppIcon.vue";
 </script>
 
 <template>
   <div class="welcome">
-    <div class="hero-badge">🏋</div>
+    <div class="hero-badge"><AppIcon name="dumbbell" :size="40" /></div>
     <h2>Willkommen bei Liftr</h2>
     <p>
       Ein paar kurze Fragen, damit Trainingsvorschläge, Rang-Berechnung und die Scheiben-Anzeige
@@ -34,6 +35,7 @@
   background: linear-gradient(135deg, var(--blue-hi), var(--blue));
   box-shadow: var(--glow-blue);
   margin-bottom: var(--sp2);
+  color: #fff;
 }
 .welcome h2 {
   font-size: 24px;
