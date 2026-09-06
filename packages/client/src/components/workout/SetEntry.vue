@@ -6,6 +6,7 @@ import { computed, ref } from "vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
+import AppIcon from "../ui/AppIcon.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 
 const store = useActiveWorkoutStore();
@@ -49,7 +50,8 @@ const plates = computed(() => {
       @set="(v) => store.setCurrentSetValue('weightKg', v)"
     >
       <button class="plates-toggle" @click="showPlates = !showPlates">
-        {{ showPlates ? "Scheiben ausblenden" : "🏋 Scheiben anzeigen" }}
+        <template v-if="showPlates">Scheiben ausblenden</template>
+        <template v-else><AppIcon name="dumbbell" /> Scheiben anzeigen</template>
       </button>
       <div v-if="showPlates && plates" class="plates-out tnum">
         <template v-if="plates.perSide.length > 0">
@@ -58,7 +60,7 @@ const plates = computed(() => {
         <template v-else> nur die {{ plates.barWeightKg }} kg Stange </template>
       </div>
       <div v-if="showPlates && plates && !plates.exact" class="plates-warning">
-        ⚠ Mit deinen Scheiben nicht exakt erreichbar — {{ plates.achievedWeightKg }} kg stattdessen
+        <AppIcon name="warning" /> Mit deinen Scheiben nicht exakt erreichbar — {{ plates.achievedWeightKg }} kg stattdessen
       </div>
     </NumberStepper>
     <NumberStepper

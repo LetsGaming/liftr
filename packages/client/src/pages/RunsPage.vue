@@ -4,6 +4,7 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
+import AppIcon from "../components/ui/AppIcon.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
@@ -183,7 +184,9 @@ function formatDuration(s: number) {
             :disabled="deleting"
             @click="deleteConfirm.trigger()"
           >
-            {{ deleting ? "Wird gelöscht…" : deleteConfirm.isArmed() ? "Wirklich löschen?" : "🗑 Lauf löschen" }}
+            <template v-if="deleting">Wird gelöscht…</template>
+            <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen?</template>
+            <template v-else><AppIcon name="trash" /> Lauf löschen</template>
           </button>
         </template>
       </div>

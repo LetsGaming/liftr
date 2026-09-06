@@ -14,6 +14,7 @@ import { computed, onMounted, ref } from "vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../../lib/shareCard";
+import AppIcon from "../ui/AppIcon.vue";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useHistoryStore, type WorkoutDetail } from "../../stores/historyStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
@@ -187,7 +188,7 @@ async function share() {
                   <!-- reps×weight, matching shareCard.ts's same fix (feedback: "8x7,5kg" not "7,5x8"). -->
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
-                  <span v-if="s.isPr" aria-hidden="true"> 🏆</span>
+                  <span v-if="s.isPr" aria-hidden="true"> <AppIcon name="trophy" /></span>
                 </span>
               </span>
             </template>
@@ -196,7 +197,8 @@ async function share() {
       </ul>
 
       <button class="btn-primary btn-block" :disabled="sharing" @click="share">
-        {{ sharing ? "Erstelle Bild…" : "📤 Als Bild teilen" }}
+        <template v-if="sharing">Erstelle Bild…</template>
+        <template v-else><AppIcon name="share" /> Als Bild teilen</template>
       </button>
       <button
         class="btn-secondary btn-block delete-btn"
@@ -204,7 +206,9 @@ async function share() {
         :disabled="deleting"
         @click="deleteConfirm.trigger()"
       >
-        {{ deleting ? "Wird gelöscht…" : deleteConfirm.isArmed() ? "Wirklich löschen? (XP/Rang werden zurückgenommen)" : "🗑 Workout löschen" }}
+        <template v-if="deleting">Wird gelöscht…</template>
+        <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen? (XP/Rang werden zurückgenommen)</template>
+        <template v-else><AppIcon name="trash" /> Workout löschen</template>
       </button>
       <canvas ref="shareCanvas" class="share-canvas" aria-hidden="true" />
     </template>

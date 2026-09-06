@@ -11,6 +11,7 @@
  */
 import { canPerform, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, ref } from "vue";
+import AppIcon from "../ui/AppIcon.vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { EQUIPMENT_LABEL_DE, equipmentRequirementLabelDe, type Equipment } from "../../lib/equipmentIcons";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
@@ -119,7 +120,8 @@ function equipmentLabel(eq: string | null): string {
       :class="{ active: onlyDoableEquipment }"
       @click="onlyDoableEquipment = !onlyDoableEquipment"
     >
-      {{ onlyDoableEquipment ? "✓ Nur machbare Übungen" : "Nur machbare Übungen" }}
+      <template v-if="onlyDoableEquipment"><AppIcon name="check" /> Nur machbare Übungen</template>
+      <template v-else>Nur machbare Übungen</template>
     </button>
 
     <p v-if="catalog.loaded && filtered.length === 0" class="empty">Keine Übung passt zu diesen Filtern.</p>
@@ -142,7 +144,7 @@ function equipmentLabel(eq: string | null): string {
               </span>
             </template>
           </ExerciseRow>
-          <span v-if="mode === 'select' && selectedIds.has(ex.id)" class="check">✓</span>
+          <span v-if="mode === 'select' && selectedIds.has(ex.id)" class="check"><AppIcon name="check" /></span>
         </button>
       </li>
     </ul>
