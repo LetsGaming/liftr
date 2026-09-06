@@ -220,9 +220,12 @@ async function share() {
   font-weight: 700;
   margin-bottom: var(--sp4);
 }
+/* Audit fix: 4 tiles squeezed into one row left each card too narrow for its own value — e.g.
+   "1.658 kg" wrapped awkwardly inside the Volumen tile. 2x2 gives each tile real width instead
+   of fighting the other three for horizontal space; the row just grows a little taller. */
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--sp2);
   margin-bottom: var(--sp5);
 }

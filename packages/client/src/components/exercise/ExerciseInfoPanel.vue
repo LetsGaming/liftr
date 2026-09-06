@@ -205,21 +205,30 @@ function missingBadge(req: TieredRequirement): string | null {
 .sheet-head b {
   font-size: 17px;
 }
+/* Audit fix: was 4 content-sized pills (`flex: none`) left-packed with empty space on the
+   right — since the active pill's own background is what shows "selected" (not a separate
+   underline), a narrower pill also meant a narrower highlight than its neighbors, so switching
+   tabs visibly changed the highlight's width for no reason tied to what's selected. `flex: 1`
+   makes every tab the same width, same segmented-control pattern as WorkoutRunsSwitcher.vue's
+   Workout/Läufe pills — the highlight now always spans one full, equal-width tab slot. */
 .tab-strip {
   display: flex;
   gap: var(--sp2);
   padding: var(--sp4) var(--sp5) 0;
-  overflow-x: auto;
 }
 .tab-pill {
-  flex: none;
-  padding: 7px 14px;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--dim);
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tab-pill.active {
   background: var(--surface-3, var(--surface-2));
