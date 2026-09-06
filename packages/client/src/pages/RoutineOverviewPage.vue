@@ -9,9 +9,11 @@
  * RoutineList.vue/OverviewPage.vue rather than inventing a new one.
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
+import RoutineWizard from "../components/routine-wizard/RoutineWizard.vue";
+import { useRoutineManagement } from "../composables/useRoutineManagement";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { aggregateMuscles } from "../lib/muscles";
 import { useCatalogStore } from "../stores/catalogStore";
@@ -22,9 +24,24 @@ const router = useRouter();
 const catalog = useCatalogStore();
 const routineStore = useRoutineStore();
 const { starting, startRoutine, exerciseName } = useStartRoutine();
+const { editingRoutine, showBuilder, editRoutine, onRoutineCreated } = useRoutineManagement(routineStore);
 
 const routineId = computed(() => route.params.id as string);
 const routine = computed(() => routineStore.byId(routineId.value));
+
+/** Bug-list fix: no back button previously — this drill-in screen has no nav-bar entry of its
+ *  own (forceActiveTo highlights "Workout" instead), so it needs an explicit way back rather
+ *  than relying on the app's usual "tap the tab" convention. */
+function goBack() {
+  router.back();
+}
+
+/** Bug-list fix: per-exercise set details collapsed by default to save vertical space, expandable
+ *  per row. Keyed by routineExercise id so state doesn't shift if exercises reorder. */
+const expandedExercises = reactive<Record<string, boolean>>({});
+function toggleExpanded(routineExerciseId: string) {
+  expandedExercises[routineExerciseId] = !expandedExercises[routineExerciseId];
+}
 
 /** Same aggregation as RoutineList.vue:39-41 / OverviewPage.vue:130-132 — hard requirement per
  *  the design spec: trained muscles are always the mannequin, never a text/tag list. */
@@ -47,6 +64,12 @@ function setSummary(targetSets: { reps: number; weightKg: number | null }[]): st
   if (!first) return "";
   const weightPart = first.weightKg != null ? `${first.weightKg} kg · ` : "";
   return `${targetSets.length} × ${weightPart}${first.reps} Wdh.`;
+}
+
+/** Expanded-row detail: one line per planned set, e.g. "Satz 2 — 80 kg × 8 Wdh." */
+function setLine(targetSet: { reps: number; weightKg: number | null }, index: number): string {
+  const weightPart = targetSet.weightKg != null ? `${targetSet.weightKg} kg × ` : "";
+  return `Satz ${index + 1} — ${weightPart}${targetSet.reps} Wdh.`;
 }
 
 onMounted(() => {
@@ -78,6 +101,21 @@ async function jetztStarten() {
     </IonHeader>
     <IonContent class="ion-padding">
       <div class="routine-overview">
+        <!-- Back affordance lives in the page content, not the IonToolbar: on mobile the
+             toolbar sits directly underneath App.vue's fixed .top-hud status bar (different
+             stacking contexts — a toolbar button there gets visually collided with the
+             level-ring/streak chip instead of reliably rendered above them), the exact same
+             reason the page title itself was relocated out of the toolbar. This screen has no
+             nav-bar entry of its own (forceActiveTo highlights "Workout" instead), so it needs
+             an explicit way back rather than relying on the app's usual "tap the tab"
+             convention. -->
+        <button class="ro-back-btn" aria-label="Zurück" @click="goBack">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span>Zurück</span>
+        </button>
+
         <!-- Not-yet-loaded: routineStore.load() is in flight (kicked off by router.ts's
              beforeEnter on a cold deep-link, or already running from wherever navigation
              originated). Distinguished from "not found" below by routineStore.loaded. -->
@@ -101,6 +139,11 @@ async function jetztStarten() {
             <span class="ro-count">
               {{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}
             </span>
+            <button class="ro-edit-btn" aria-label="Routine bearbeiten" @click="editRoutine(routine)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              </svg>
+            </button>
           </div>
 
           <div class="eyebrow">Trainierte Muskeln</div>
@@ -108,9 +151,30 @@ async function jetztStarten() {
 
           <div class="eyebrow ro-ex-eyebrow">Übungen</div>
           <ul class="ro-ex-list">
-            <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-row surface-hybrid">
-              <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
-              <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
+            <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-item surface-hybrid">
+              <button
+                class="ro-ex-row"
+                :aria-expanded="!!expandedExercises[re.id]"
+                @click="toggleExpanded(re.id)"
+              >
+                <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
+                <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
+                <svg
+                  class="ro-ex-chevron"
+                  :class="{ open: expandedExercises[re.id] }"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <ul v-if="expandedExercises[re.id]" class="ro-ex-sets">
+                <li v-for="(set, i) in re.targetSets" :key="i">{{ setLine(set, i) }}</li>
+              </ul>
             </li>
           </ul>
 
@@ -124,11 +188,43 @@ async function jetztStarten() {
           </div>
         </template>
       </div>
+      <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
     </IonContent>
   </IonPage>
 </template>
 
 <style scoped>
+.ro-back-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--sp2) var(--sp2) var(--sp2) 0;
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ro-back-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.ro-edit-btn {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--dim);
+}
+.ro-edit-btn svg {
+  width: 18px;
+  height: 18px;
+}
 .routine-overview {
   max-width: var(--content-w-narrow);
   margin: 0 auto;
@@ -151,11 +247,11 @@ async function jetztStarten() {
 }
 .ro-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp3);
+  align-items: center;
+  gap: var(--sp2);
 }
 .ro-header h2 {
+  flex: 1;
   font-size: 20px;
   min-width: 0;
   overflow: hidden;
@@ -179,13 +275,41 @@ async function jetztStarten() {
   flex-direction: column;
   gap: 6px;
 }
+.ro-ex-item {
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
 .ro-ex-row {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp3);
   padding: var(--sp3);
-  border-radius: var(--r-md);
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+}
+.ro-ex-chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--dim);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.ro-ex-chevron.open {
+  transform: rotate(180deg);
+}
+.ro-ex-sets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 var(--sp3) var(--sp3);
+  font-size: 12px;
+  color: var(--dim);
 }
 .ro-ex-name {
   font-size: 13.5px;

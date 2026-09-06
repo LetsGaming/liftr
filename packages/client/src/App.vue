@@ -8,11 +8,13 @@ import ToastHost from "./components/ui/ToastHost.vue";
 import { showingFinishRecap } from "./composables/useWorkoutChrome";
 import { useActiveWorkoutStore } from "./stores/activeWorkoutStore";
 import { useOverallRankStore } from "./stores/overallRankStore";
+import { useRoutineStore } from "./stores/routineStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useStreakStore } from "./stores/streakStore";
 import { useXpStore } from "./stores/xpStore";
 
 const { t } = useI18n();
+const routineStore = useRoutineStore();
 const streak = useStreakStore();
 const xp = useXpStore();
 const settingsStore = useSettingsStore();
@@ -124,6 +126,10 @@ const pageTitle = computed(() => {
   // reason /runs needed its own case above) — previously silently fell through to "Liftr" here.
   if (route.name === "records") return "Rekorde";
   if (route.name === "attributions") return "Quellen & Lizenzen";
+  if (route.name === "routine-overview") {
+    const routine = routineStore.byId(route.params.id as string);
+    return routine ? routine.name : "Routine";
+  }
   return "Liftr";
 });
 
