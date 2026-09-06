@@ -120,6 +120,10 @@ const pageTitle = computed(() => {
   // Workout tab (see the in-page switcher on WorkoutPage.vue/RunsPage.vue), but the route itself
   // is unchanged and still needs a real heading here, not the "Liftr" fallback.
   if (route.path === "/runs") return t("nav.runs");
+  // UI audit fix (2026-09-06): these two routes are drill-ins with no navItems entry (same
+  // reason /runs needed its own case above) — previously silently fell through to "Liftr" here.
+  if (route.name === "records") return "Rekorde";
+  if (route.name === "attributions") return "Quellen & Lizenzen";
   return "Liftr";
 });
 
@@ -143,8 +147,19 @@ const hideTopHud = computed(
  * into /records left every tab looking unselected, not "Ränge" as the parent-ish section still
  * showing active. No central route-to-tab map exists to patch (navItems is the only route list),
  * so this is a targeted override for the one known case rather than a generic ancestor-route
- * lookup. */
-const forceActiveTo = computed(() => (route.name === "records" ? "/ranks" : null));
+ * lookup.
+ *
+ * UI audit fix (2026-09-06): two more of the same class of bug, found live — /runs (the "Läufe"
+ * switcher tab on WorkoutPage.vue/RunsPage.vue) isn't in navItems either (it merged into the
+ * Workout tab's in-page switcher, per the /runs case in pageTitle above, but the route itself is
+ * still a separate path RouterLink's own active-matching never sees), and /routines/:id (the new
+ * Routine Overview drill-in) is reached from a routine card on Übersicht/Workout, so it belongs
+ * to "Workout" the same way /records belongs to "Ränge". */
+const forceActiveTo = computed(() => {
+  if (route.name === "records") return "/ranks";
+  if (route.name === "runs" || route.name === "routine-overview") return "/workout";
+  return null;
+});
 </script>
 
 <template>
@@ -152,24 +167,36 @@ const forceActiveTo = computed(() => (route.name === "records" ? "/ranks" : null
     <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
     <ToastHost />
     <!-- Accessibility audit (P2): a real <h1> heading landmark for screen-reader heading
-         navigation. Visually hidden — every page's <IonTitle> stays the only VISIBLE title;
-         this exists purely so assistive tech has a landing point. Lives once here (not per-page)
-         so it survives every route transition without duplication. -->
+         navigation. Visually hidden. 2026-09-06 (top-hud redesign, direction C): each page's own
+         <IonTitle> is now ALSO hidden globally (ionic-theme.css) — the mobile header row became a
+         level/streak status readout instead of a title bar (see .top-hud below), so this sr-only
+         heading is the page's ONLY title anywhere right now, sighted or not. Lives once here (not
+         per-page) so it survives every route transition without duplication. -->
     <h1 class="sr-only">{{ pageTitle }}</h1>
     <div class="app-shell" :class="overallTierClass">
-      <!-- Persistent top HUD (rework Phase 4). UI audit fix (2026-09-06): this used to be a
-           full-width strip floating ABOVE every page's own IonHeader/IonToolbar, with a visible
-           gap between the two — it read as a stray rendering artifact, not an intentional part
-           of the header, on every screen it appeared on. First-pass fix (further visual
-           iteration expected — see task notes): folded it into the header row itself as a
-           compact trailing chip, overlaid top-right on the page's own toolbar (every page shares
-           the exact same IonHeader/IonToolbar skeleton, see ionic-theme.css's ion-toolbar rule)
-           rather than reserving its own separate band above it. Mobile only — >=900px still shows
-           the same data in .side-nav's own level/streak chips. -->
+      <!-- Persistent top HUD (rework Phase 4). Was a full-width strip floating above every page's
+           header, then (2026-09-06 first pass) a trailing chip overlaid top-right on the toolbar
+           — both read as bolted-on per PO feedback ("looks like a bug, feels cheap, rethink
+           entirely"). Direction C (brainstormed with visual mockups, chosen over a nav-icon badge
+           and a floating corner pill): the header row itself BECOMES the status readout instead
+           of carrying a page title — a small XP-progress ring with the level number inside, plus
+           streak, spanning the toolbar's full width now that ion-title is hidden globally
+           (ionic-theme.css) and each page's real title lives only in the sr-only <h1> above. No
+           title text is shown anywhere sighted on mobile — the bottom tab bar's own labels
+           already say which screen you're on. Mobile only — >=900px still shows the fuller
+           level/streak chips (with the XP-amount text this compact ring deliberately drops) in
+           .side-nav. Still hidden on the Workout tab while a set is being logged (hideTopHud,
+           unchanged) — the header reads as intentionally quiet there, consistent with everything
+           else decluttered on that screen this session, rather than falling back to a title. -->
       <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
-        <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
-          <span class="level-dot" aria-hidden="true"></span>
-          <b>Lv. {{ xp.level }}</b>
+        <div
+          v-if="xp.showXp && xp.loaded"
+          class="level-ring"
+          :style="{ '--progress': xp.progressPercent }"
+          role="img"
+          :aria-label="`Level ${xp.level}, ${xp.xpIntoLevel} von ${xp.xpForNextLevel} XP bis Level ${xp.level + 1}`"
+        >
+          <span>{{ xp.level }}</span>
         </div>
         <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
       </div>
@@ -566,25 +593,61 @@ const forceActiveTo = computed(() => (route.name === "records" ? "/ranks" : null
   .top-hud {
     display: flex;
     align-items: center;
-    gap: 6px;
+    /* Was gap:6px + right:var(--sp3) (a trailing chip pair). Direction C spans the whole toolbar
+       now that no title shares the row with it, ring on the left edge, streak on the right — the
+       same "level first, streak second" reading order the fuller side-nav chips already use. */
+    justify-content: space-between;
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 8px);
-    right: var(--sp3);
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    height: 52px;
+    padding: 0 var(--sp4);
     z-index: 5;
+    /* The ring/streak are the only interactive-looking pieces; nothing else lives in this band
+       (the title is gone) so there's no content underneath a click here could ever need to reach
+       — but pointer-events stays default (auto) rather than none-with-children-auto, since that
+       extra indirection isn't buying anything real here. */
   }
-  .top-hud .level-chip,
   .top-hud .streak-chip {
     margin-top: 0;
     padding: 5px 10px;
-    font-size: 11.5px;
+    font-size: 12.5px;
     display: flex;
     align-items: center;
     gap: 4px;
   }
-  .top-hud .level-chip b {
-    display: inline;
-    margin-bottom: 0;
-    font-size: 11.5px;
+  /* The XP-progress ring — level number centered inside a conic-gradient ring sized to
+     xp.progressPercent (0-100 -> 0-360deg). Deliberately compact/quiet: this replaces a title,
+     it shouldn't out-shout one. --nebula-1 (not the full 3-stop --nebula-grad) for the same
+     "restrained, precise glow, never a bloom" discipline the rest of this redesign holds to —
+     a full brand gradient spinning around a tiny ring read as busier in testing than a single
+     hue. The unfilled remainder uses --line-2 (an existing neutral token) rather than a new one. */
+  .level-ring {
+    --progress: 0;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: conic-gradient(var(--nebula-1) calc(var(--progress) * 3.6deg), var(--line-2) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .level-ring span {
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    /* --surface-2, not --bg — matches the streak-chip sitting right next to it (same token,
+       tokens.css), so the ring's punched-out center and the streak pill read as one consistent
+       surface family rather than the ring poking through to a visually different color. */
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    font-weight: 800;
+    font-size: 11px;
   }
   /* Single fixed element for the tab bar — see the P0 fix comment above the template markup for
      the history here (it used to also carry the status row now in .top-hud).
