@@ -19,6 +19,7 @@
 import { IonContent, IonHeader, IonPage, IonRefresher, IonRefresherContent, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import AppIcon from "../components/ui/AppIcon.vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
@@ -274,7 +275,7 @@ function retryFailed() {
             <!-- Wave 0-B W2: routes through the Routine Overview screen instead of starting
                  directly — one consistent start behavior across all three entry points. -->
             <button class="btn-primary btn-block" @click="router.push(`/routines/${suggestedRoutine.id}`)">
-              ▶ Starten
+              <AppIcon name="play" /> Starten
             </button>
             <!-- Critique finding (clarify, P2): suggestedRoutine is a stand-in for "last used"
                  (no lastUsedAt tracking exists yet — real fix needs a migration, out of scope
@@ -299,7 +300,9 @@ function retryFailed() {
         <template v-else>
           <!-- 2. Status strip -->
           <section class="status-strip">
-            <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'" label="🔥 Tage Serie" />
+            <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'">
+              <template #label><AppIcon name="flame" /> Tage Serie</template>
+            </StatTile>
             <StatTile accent="blue" :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
             <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
             <StatTile reward :value="overallRankLabel" label="Gesamt&shy;rang" />
@@ -381,7 +384,7 @@ function retryFailed() {
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
             <router-link to="/ranks" class="tile discover-tile surface-hybrid">
-              <div class="discover-icon">🏆</div>
+              <div class="discover-icon"><AppIcon name="trophy" /></div>
               <b>Rang-Analyse</b>
               <p class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</p>
             </router-link>
@@ -403,7 +406,7 @@ function retryFailed() {
                 class="feed-btn surface-hybrid"
                 @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
               >
-                <span class="icon" :class="item.kind">{{ item.kind === "run" ? "🏃" : "🏋" }}</span>
+                <span class="icon" :class="item.kind"><AppIcon :name="item.kind === 'run' ? 'running' : 'dumbbell'" /></span>
                 <div class="meta">
                   <b>{{ item.title ?? (item.kind === "run" ? "Lauf" : "Workout") }}</b>
                   <span>{{ formatDate(item.at) }}</span>

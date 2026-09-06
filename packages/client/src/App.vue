@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, RouterView, useRoute } from "vue-router";
+import AppIcon from "./components/ui/AppIcon.vue";
 import AuthGate from "./components/ui/AuthGate.vue";
 import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
@@ -204,7 +205,9 @@ const forceActiveTo = computed(() => {
         >
           <span>{{ xp.level }}</span>
         </div>
-        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
+        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">
+          <AppIcon name="flame" /> {{ streak.streak }}
+        </div>
       </div>
       <!-- desktop sidebar / mobile tab bar: one route set, two layouts (plan 1.2) -->
       <nav class="side-nav" aria-label="Hauptnavigation">
@@ -224,10 +227,10 @@ const forceActiveTo = computed(() => {
           <span class="level-dot" aria-hidden="true"></span>
           <b>Lv. {{ xp.level }}</b>
           <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
-          <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
+          <span class="xp-amount"><AppIcon name="sparkle" /> {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
         </div>
         <div v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
-          🔥 {{ streak.streak }} Tage Serie
+          <AppIcon name="flame" /> {{ streak.streak }} Tage Serie
         </div>
       </nav>
       <main class="main-content">

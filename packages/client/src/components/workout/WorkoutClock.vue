@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import AppIcon from "../ui/AppIcon.vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 
 const store = useActiveWorkoutStore();
@@ -46,7 +47,7 @@ onBeforeUnmount(() => {
          reading as an unrelated control rather than "same family, different action"). -->
     <div class="clock-actions">
       <button class="icon-btn surface-hybrid" :aria-label="store.isPaused ? 'Fortsetzen' : 'Pausieren'" @click="store.togglePause()">
-        {{ store.isPaused ? "▶" : "⏸" }}
+        <AppIcon :name="store.isPaused ? 'play' : 'pause'" />
       </button>
       <slot name="actions" />
     </div>

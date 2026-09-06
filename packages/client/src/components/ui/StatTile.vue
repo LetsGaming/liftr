@@ -22,15 +22,19 @@
  *  instead, reusing the exact conventions already established for these two axes elsewhere
  *  (App.vue's .streak-chip text is --fire-hi; .level-chip's xp-amount and the XP/level .rankbar's
  *  documented fallback are --blue-hi) rather than inventing new colors. */
-withDefaults(defineProps<{ value: string | number; label: string; reward?: boolean; accent?: "fire" | "blue" }>(), {
+// `label` stays a plain string for the common case; a caller needing an icon in front of the
+// label text (e.g. the streak tile's flame icon, see the emoji-to-SVG pass) can use the
+// `#label` slot instead, which overrides the prop.
+withDefaults(defineProps<{ value: string | number; label?: string; reward?: boolean; accent?: "fire" | "blue" }>(), {
   reward: false,
+  label: "",
 });
 </script>
 
 <template>
   <div class="stat-tile" :class="{ 'panel-reward': reward, panel: !reward }">
     <b class="tnum" :class="accent && `accent-${accent}`">{{ value }}</b>
-    <span>{{ label }}</span>
+    <span><slot name="label">{{ label }}</slot></span>
   </div>
 </template>
 

@@ -8,6 +8,7 @@
  * Task 5 for the coordination note. Zero props/emits: every dependency below is a Pinia store or
  * a composable that already instantiates its own store references, so this mounts standalone.
  */
+import AppIcon from "../ui/AppIcon.vue";
 import MuscleFigure from "../ui/MuscleFigure.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 import RoutineWizard from "../routine-wizard/RoutineWizard.vue";
@@ -129,7 +130,7 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
               @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.routine-card') as HTMLElement)"
               @click.stop
             >
-              ≡
+              <AppIcon name="drag-handle" />
             </button>
             <b>{{ routine.name }}</b>
             <span v-if="routine.mesocycle" class="meso-badge">
@@ -156,13 +157,13 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
                controls don't also trigger the card's own navigation. -->
           <div class="rc-actions" @click.stop>
             <div class="rc-menu-wrap">
-              <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)">⋮</button>
+              <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)"><AppIcon name="more" /></button>
               <!-- Folded in from a standalone "✎ Bearbeiten" button that used to sit next to
                    Start at equal visual weight (design critique: 5 simultaneous affordances on
                    the screen a returning user sees every session competed with the one action
                    that matters — starting). Same editRoutine() call, just relocated. -->
               <div v-if="openMenuId === routine.id" class="rc-menu">
-                <button @click="editRoutine(routine); openMenuId = null">✎ Bearbeiten</button>
+                <button @click="editRoutine(routine); openMenuId = null"><AppIcon name="edit" /> Bearbeiten</button>
                 <button @click="duplicateRoutine(routine)">Duplizieren</button>
                 <button v-if="routine.mesocycle" @click="routineStore.endMesocycle(routine.id); openMenuId = null">
                   Mesozyklus beenden

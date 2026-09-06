@@ -6,6 +6,7 @@
  * unlogged sets — see activeWorkoutStore.ts's setSetKind()/removeSet() for why.
  */
 import { SET_KIND_LABEL, type SetKind } from "../../stores/activeWorkoutStore";
+import AppIcon from "../ui/AppIcon.vue";
 import SheetModal from "../ui/SheetModal.vue";
 
 defineProps<{ workoutExerciseId: string; setIndex: number }>();
@@ -27,7 +28,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
         {{ opt.label }}
       </button>
       <button class="kind-row danger surface-hybrid" @click="emit('remove')">
-        <span class="kind-letter k-remove">🗑</span>
+        <span class="kind-letter k-remove"><AppIcon name="trash" /></span>
         Satz entfernen
       </button>
     </div>
