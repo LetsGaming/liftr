@@ -24,6 +24,7 @@ import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import RunDetail from "../components/run/RunDetail.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
@@ -57,6 +58,12 @@ const router = useRouter();
 
 const openWorkoutId = ref<string | null>(null);
 const openWorkoutTitle = ref<string | undefined>(undefined);
+/** UI audit fix: "Letzte Aktivität" run rows used to be permanently `disabled` — the only
+ *  interactive-looking element on the page that visibly did nothing when tapped. Workout rows
+ *  already open WorkoutDetail.vue as a sheet; runs get the same treatment via RunDetail.vue
+ *  (new, mirrors WorkoutDetail.vue's pattern exactly), reusing runsStore.loadDetail()/
+ *  RunReplay.vue, which already existed but were only ever reachable from RunsPage.vue. */
+const openRunId = ref<string | null>(null);
 
 onMounted(() => {
   void history.load();
@@ -121,6 +128,10 @@ function runLabel(item: { kind: string; meta: Record<string, unknown> }) {
 function openWorkout(itemId: string, title: string | null) {
   openWorkoutId.value = itemId;
   openWorkoutTitle.value = title ?? undefined;
+}
+
+function openRun(itemId: string) {
+  openRunId.value = itemId;
 }
 
 /** "Last touched" isn't tracked per routine today (would need a lastUsedAt column) — the
@@ -309,7 +320,7 @@ function retryFailed() {
 
           <!-- 3. Progress tiles -->
           <section class="progress-tiles">
-            <div class="tile">
+            <div class="tile panel">
               <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
               <template v-if="weeklyVolume.some((v) => v > 0)">
                 <div class="volume-bars">
@@ -334,7 +345,7 @@ function retryFailed() {
               <p v-else class="tile-empty">Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab.</p>
             </div>
 
-            <div class="tile">
+            <div class="tile panel">
               <div class="eyebrow tile-head">Nächster Rang</div>
               <p v-if="topRanks.length > 0" class="tile-empty">
                 <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> bis zum nächsten Rang in
@@ -343,7 +354,7 @@ function retryFailed() {
               <p v-else class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</p>
             </div>
 
-            <div class="tile">
+            <div class="tile panel">
               <div class="eyebrow tile-head">Körpergewicht</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
               <!-- Audit fix (workplan-v1 §1.10b): stated a threshold ("two entries") but never
@@ -369,7 +380,7 @@ function retryFailed() {
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
-            <router-link to="/ranks" class="tile discover-tile">
+            <router-link to="/ranks" class="tile discover-tile panel">
               <div class="discover-icon">🏆</div>
               <b>Rang-Analyse</b>
               <p class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</p>
@@ -389,9 +400,8 @@ function retryFailed() {
           <ul v-else class="feed">
             <li v-for="item in history.items" :key="item.id" class="feed-row">
               <button
-                class="feed-btn"
-                :disabled="item.kind !== 'workout'"
-                @click="item.kind === 'workout' && openWorkout(item.id, item.title)"
+                class="feed-btn panel"
+                @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
               >
                 <span class="icon" :class="item.kind">{{ item.kind === "run" ? "🏃" : "🏋" }}</span>
                 <div class="meta">
@@ -413,6 +423,7 @@ function retryFailed() {
       </div>
 
       <WorkoutDetail v-if="openWorkoutId" :workout-id="openWorkoutId" :title="openWorkoutTitle" @close="openWorkoutId = null" />
+      <RunDetail v-if="openRunId" :run-id="openRunId" @close="openRunId = null" />
     </IonContent>
   </IonPage>
 </template>
@@ -548,11 +559,13 @@ function retryFailed() {
   grid-template-columns: 1fr;
   gap: var(--sp3);
 }
+/* UI audit fix (Nebula gap): was a flat var(--surface-2) fill + var(--line) border — the one
+   card treatment on this page that never got the .panel/.surface-hybrid pass every other panel
+   (StatTile, RankProgress, TierLadder, launchpad, etc.) already has. `.panel` (tokens.css)
+   supplies the translucent hybrid background, blur, and gradient hairline; padding/layout below
+   is unchanged. */
 .tile {
   padding: var(--sp4);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
 }
 .tile--priority {
   border: 1px solid var(--nebula-1);
@@ -658,15 +671,13 @@ function retryFailed() {
   flex-direction: column;
   gap: var(--sp2);
 }
+/* Same Nebula-gap fix as .tile above — was flat var(--surface-2)/var(--line). */
 .feed-btn {
   width: 100%;
   display: flex;
   align-items: center;
   gap: var(--sp3);
   padding: var(--sp3);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   text-align: left;
 }
