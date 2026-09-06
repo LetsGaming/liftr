@@ -329,6 +329,14 @@ const forceActiveTo = computed(() => (route.name === "records" ? "/ranks" : null
   min-height: var(--touch-target-min);
 }
 .tab-link {
+  /* Bug fix (PO: "nav button highlight is still not fixed, especially on mobile"): this was
+     content-sized (`.tab-bar`'s `justify-content: space-around` only spaces gaps evenly, it
+     doesn't equalize width), so five tabs rendered five different widths (measured 56/51/37/51/
+     33px live) and the "whole tab cell" active-fill below (0a's redesign) filled a different,
+     oddly-shaped box per tab instead of a uniform column. flex: 1 makes every tab an equal-width
+     column edge-to-edge, matching the equal-width fix already applied to WorkoutRunsSwitcher.vue
+     and ExerciseInfoPanel.vue's tab strip for the same complaint. */
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
