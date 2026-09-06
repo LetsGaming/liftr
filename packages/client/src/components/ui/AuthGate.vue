@@ -8,6 +8,7 @@
  */
 import { onMounted, ref } from "vue";
 import { ApiError, api, setToken } from "../../lib/api";
+import AppIcon from "./AppIcon.vue";
 
 const status = ref<"checking" | "ok" | "needs-token" | "offline">("checking");
 const tokenInput = ref("");
@@ -73,7 +74,7 @@ async function submit() {
           :aria-label="tokenVisible ? 'Token verbergen' : 'Token anzeigen'"
           @click="tokenVisible = !tokenVisible"
         >
-          {{ tokenVisible ? "🙈" : "👁" }}
+          <AppIcon :name="tokenVisible ? 'eye-off' : 'eye'" />
         </button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
