@@ -205,7 +205,12 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
       <button v-if="routineStore.routines.length > 0" class="btn-secondary" @click="showBuilder = true">+ Neue Routine</button>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
 
-      <button class="btn-primary btn-lg" :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
+      <!-- Alignment fix (audit): was `btn-primary btn-lg` with no width rule, so it hugged the
+           left edge inside `.not-started`'s `align-items: flex-start` while every sibling above
+           it (the empty-state card, "+ Neue Routine") is `width: 100%` / `btn-block` and reads
+           as centered purely because it spans the same width as its container. `btn-block`
+           makes this button match that width so it visually aligns the same way. -->
+      <button class="btn-primary btn-lg btn-block" :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
         {{ starting ? "Wird gestartet…" : "Ohne Routine loslegen · die ersten 4 Übungen" }}
       </button>
     </div>
