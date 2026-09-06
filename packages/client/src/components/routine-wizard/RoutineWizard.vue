@@ -13,6 +13,7 @@
  */
 import type { SetKind } from "@liftr/shared";
 import { computed, reactive, ref, watch } from "vue";
+import AppIcon from "../ui/AppIcon.vue";
 import SheetModal from "../ui/SheetModal.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useToast } from "../../composables/useToast";
@@ -428,7 +429,8 @@ function useFullArrange() {
     <template #header>
       <header class="wizard-head">
         <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" aria-label="Schließen" @click="requestClose">
-          {{ closeConfirm.isArmed() ? "Verwerfen?" : "✕" }}
+          <template v-if="closeConfirm.isArmed()">Verwerfen?</template>
+          <AppIcon v-else name="close" />
         </button>
         <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" aria-label="Name der Routine" />
         <!-- Audit fix (workplan-v1 §1.9c): FastPathStep's save goes straight to save(), never

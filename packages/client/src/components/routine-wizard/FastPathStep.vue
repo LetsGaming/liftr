@@ -15,6 +15,7 @@ import { useCatalogStore } from "../../stores/catalogStore";
 import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
 import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
+import AppIcon from "../ui/AppIcon.vue";
 import type { DraftExercise } from "./RoutineWizard.vue";
 
 const props = defineProps<{
@@ -67,8 +68,8 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
       <li v-for="([exerciseId, cfg], i) in entries" :key="exerciseId">
         <div class="ex-line">
           <div class="reorder">
-            <button :disabled="i === 0" aria-label="Nach oben" @click="emit('move', i, i - 1)">▲</button>
-            <button :disabled="i === entries.length - 1" aria-label="Nach unten" @click="emit('move', i, i + 1)">▼</button>
+            <button :disabled="i === 0" aria-label="Nach oben" @click="emit('move', i, i - 1)"><AppIcon name="arrow-up" /></button>
+            <button :disabled="i === entries.length - 1" aria-label="Nach unten" @click="emit('move', i, i + 1)"><AppIcon name="arrow-down" /></button>
           </div>
           <ExerciseRow
             visual="icon"
@@ -81,7 +82,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
               <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
             </template>
           </ExerciseRow>
-          <button class="remove-btn" aria-label="Entfernen" @click="emit('removeExercise', exerciseId)">🗑</button>
+          <button class="remove-btn" aria-label="Entfernen" @click="emit('removeExercise', exerciseId)"><AppIcon name="trash" /></button>
         </div>
         <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">

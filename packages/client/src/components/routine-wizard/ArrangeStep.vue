@@ -8,6 +8,7 @@
  */
 import { SET_KIND_BADGE, SET_KIND_LABEL, type SetKind } from "@liftr/shared";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
+import AppIcon from "../ui/AppIcon.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 import { useDragReorder } from "../../composables/useDragReorder";
 import { useExerciseName } from "../../composables/useExerciseName";
@@ -54,7 +55,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
 
 <template>
   <div class="arrange-step">
-    <p class="hint">Ziehe am ≡, um die Reihenfolge zu ändern.</p>
+    <p class="hint">Ziehe am Griff, um die Reihenfolge zu ändern.</p>
 
     <div class="cards">
       <div
@@ -70,7 +71,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
             aria-label="Verschieben"
             @pointerdown="handleDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
           >
-            ≡
+            <AppIcon name="drag-handle" />
           </button>
           <ExerciseRow
             :slug="catalog.byId(exerciseId)?.slug ?? ''"
@@ -81,7 +82,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
               <span class="equip">{{ catalog.byId(exerciseId)?.equipment }}</span>
             </template>
           </ExerciseRow>
-          <button class="remove-btn" aria-label="Entfernen" @click="emit('removeExercise', exerciseId)">🗑</button>
+          <button class="remove-btn" aria-label="Entfernen" @click="emit('removeExercise', exerciseId)"><AppIcon name="trash" /></button>
         </div>
 
         <div class="set-rows">
@@ -123,7 +124,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
                 aria-label="Satz entfernen"
                 @click="emit('removeSet', exerciseId, si)"
               >
-                ✕
+                <AppIcon name="close" />
               </button>
             </div>
           </div>
@@ -174,7 +175,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
             :title="'Superset: kein Pausentimer zwischen dieser und der nächsten Übung — nur nach der ganzen Runde.'"
             @click="emit('toggleLink', exerciseId)"
           >
-            {{ cfg.linkNext ? "🔗 Superset aktiv" : "🔗 Als Superset mit nächster Übung" }}
+            <AppIcon name="link" /> {{ cfg.linkNext ? "Superset aktiv" : "Als Superset mit nächster Übung" }}
           </button>
           <p v-if="cfg.linkNext" class="link-hint">
             Kein Pausentimer nach dieser Übung — er startet erst nach der nächsten.
