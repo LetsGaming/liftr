@@ -333,6 +333,32 @@ describe("applySyncBatch — finish_workout", () => {
       } as SyncItem,
     ]);
 
+    // Session 1b: same performance on a distinct day. Peak corroboration (XP/rank balancing
+    // redesign §3) requires a second day at/above a result before it's confirmed as the stored
+    // peak — without this, session 1 alone would leave `peakE1rm` null, and the improbable-jump
+    // check below (which compares against a *stored* peak) could never fire at all.
+    await applySyncBatch(db, [
+      {
+        clientId: "start-bw-1b",
+        type: "start_workout",
+        payload: { id: "workout-bw-1b", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-bw-1b", exerciseId: bwExerciseId, orderIndex: 0 }] },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "set-bw-1b",
+        type: "log_set",
+        payload: { workoutExerciseId: "we-bw-1b", setIndex: 0, weightKg: 0, reps: 5, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "finish-bw-1b",
+        type: "finish_workout",
+        payload: { workoutId: "workout-bw-1b", endedAt: new Date("2026-01-02T10:06:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+
     // Session 2: a heavily-weighted set. With bodyweight-adjusted load (75kg body + 100kg added =
     // 175kg), the e1RM-ratio jump is ~1.33x above the stored peak ratio, well past the jump
     // heuristic's severity ceiling. Using raw added weight alone (the pre-fix bug: 100kg / 75kg
@@ -343,21 +369,21 @@ describe("applySyncBatch — finish_workout", () => {
       {
         clientId: "start-bw-2",
         type: "start_workout",
-        payload: { id: "workout-bw-2", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-bw-2", exerciseId: bwExerciseId, orderIndex: 0 }] },
+        payload: { id: "workout-bw-2", startedAt: new Date("2026-01-03T10:00:00Z"), exercises: [{ id: "we-bw-2", exerciseId: bwExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
     await applySyncBatch(db, [
       {
         clientId: "set-bw-2",
         type: "log_set",
-        payload: { workoutExerciseId: "we-bw-2", setIndex: 0, weightKg: 100, reps: 5, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
+        payload: { workoutExerciseId: "we-bw-2", setIndex: 0, weightKg: 100, reps: 5, kind: "normal", loggedAt: new Date("2026-01-03T10:05:00Z") },
       } as SyncItem,
     ]);
     const [result] = await applySyncBatch(db, [
       {
         clientId: "finish-bw-2",
         type: "finish_workout",
-        payload: { workoutId: "workout-bw-2", endedAt: new Date("2026-01-02T10:06:00Z"), pausedSeconds: 0 },
+        payload: { workoutId: "workout-bw-2", endedAt: new Date("2026-01-03T10:06:00Z"), pausedSeconds: 0 },
       } as SyncItem,
     ]);
 
@@ -443,7 +469,7 @@ describe("applySyncBatch — finish_workout", () => {
       { exerciseId: repsExerciseId, sex: "male", metric: "reps", tier: "apex", division: 1, threshold: 40, trust: "real" },
     ]);
 
-    // Session 1 establishes a peak of 8 reps.
+    // Session 1 establishes a candidate of 8 reps.
     await applySyncBatch(db, [
       {
         clientId: "start-repjump-1",
@@ -466,27 +492,53 @@ describe("applySyncBatch — finish_workout", () => {
       } as SyncItem,
     ]);
 
+    // Session 1b: same performance on a distinct day, corroborating it into a confirmed stored
+    // peak (XP/rank balancing redesign §3) — without this, session 1 alone leaves `peakE1rm`
+    // null and the improbable-jump check below (which compares against a *stored* peak) could
+    // never fire.
+    await applySyncBatch(db, [
+      {
+        clientId: "start-repjump-1b",
+        type: "start_workout",
+        payload: { id: "workout-repjump-1b", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-repjump-1b", exerciseId: repsExerciseId, orderIndex: 0 }] },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "set-repjump-1b",
+        type: "log_set",
+        payload: { workoutExerciseId: "we-repjump-1b", setIndex: 0, weightKg: null, reps: 8, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
+      } as SyncItem,
+    ]);
+    await applySyncBatch(db, [
+      {
+        clientId: "finish-repjump-1b",
+        type: "finish_workout",
+        payload: { workoutId: "workout-repjump-1b", endedAt: new Date("2026-01-02T10:06:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+
     // Session 2: a single set at 25 reps — a >200% jump over the 8-rep stored peak, with an
     // otherwise unremarkable single-set session (no pace red flag).
     await applySyncBatch(db, [
       {
         clientId: "start-repjump-2",
         type: "start_workout",
-        payload: { id: "workout-repjump-2", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-repjump-2", exerciseId: repsExerciseId, orderIndex: 0 }] },
+        payload: { id: "workout-repjump-2", startedAt: new Date("2026-01-03T10:00:00Z"), exercises: [{ id: "we-repjump-2", exerciseId: repsExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
     await applySyncBatch(db, [
       {
         clientId: "set-repjump-2",
         type: "log_set",
-        payload: { workoutExerciseId: "we-repjump-2", setIndex: 0, weightKg: null, reps: 25, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
+        payload: { workoutExerciseId: "we-repjump-2", setIndex: 0, weightKg: null, reps: 25, kind: "normal", loggedAt: new Date("2026-01-03T10:05:00Z") },
       } as SyncItem,
     ]);
     const [result] = await applySyncBatch(db, [
       {
         clientId: "finish-repjump-2",
         type: "finish_workout",
-        payload: { workoutId: "workout-repjump-2", endedAt: new Date("2026-01-02T10:06:00Z"), pausedSeconds: 0 },
+        payload: { workoutId: "workout-repjump-2", endedAt: new Date("2026-01-03T10:06:00Z"), pausedSeconds: 0 },
       } as SyncItem,
     ]);
 
