@@ -19,7 +19,7 @@ async function seedStandards(exerciseId: string, trust: "real" | "synthetic" = "
   ]);
 }
 
-async function logSet(exerciseId: string, weightKg: number, reps: number) {
+async function logSet(exerciseId: string, weightKg: number, reps: number, loggedAt: Date = new Date()) {
   const [workout] = await db.insert(workouts).values({ clientId: `w-${Math.random()}`, startedAt: new Date(), pausedSeconds: 0 }).returning();
   const [we] = await db.insert(workoutExercises).values({ workoutId: workout!.id, exerciseId, orderIndex: 0 }).returning();
   await db.insert(sets).values({
@@ -29,9 +29,17 @@ async function logSet(exerciseId: string, weightKg: number, reps: number) {
     reps,
     kind: "normal",
     isWarmup: false,
-    loggedAt: new Date(),
+    loggedAt,
     clientId: `s-${Math.random()}`,
   });
+}
+
+/** Peak corroboration (XP/rank balancing redesign §3) requires a second, distinct day at the same
+ *  or stronger performance before a peak is established — see rankService.test.ts's own helper of
+ *  the same name for the full rationale. */
+async function establishCorroboratedPeak(exerciseId: string, weightKg: number, reps: number) {
+  await logSet(exerciseId, weightKg, reps);
+  await logSet(exerciseId, weightKg, reps, new Date(Date.now() - 24 * 60 * 60 * 1000));
 }
 
 describe("getOverallRank", () => {
@@ -85,7 +93,7 @@ describe("getOverallRank", () => {
   it("peak aggregate reflects each exercise's peak snapshot independently of current decay", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 90, 8);
+    await establishCorroboratedPeak(ex.id, 90, 8);
     await recomputeRankForExercise(db, ex.id);
 
     const result = await getOverallRank(db);

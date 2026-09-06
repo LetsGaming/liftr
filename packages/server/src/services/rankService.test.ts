@@ -35,6 +35,27 @@ async function logSet(exerciseId: string, weightKg: number, reps: number, logged
   });
 }
 
+/**
+ * Peak corroboration (XP/rank balancing redesign §3): a result only becomes/advances the stored
+ * peak once it's been reached on a SECOND, distinct calendar day — see `rankService.ts`'s
+ * `isPeakCorroborated` computation and `ratchetPeak`'s new `isCorroborated` gate. Most of the
+ * existing peak/decay/PR tests below care about ratchet/decay/PR-gating behavior, not
+ * corroboration itself (which has its own dedicated describe block), so this helper logs the same
+ * performance on two distinct UTC days to give those tests a confirmed peak baseline without each
+ * one having to reason about day-count.
+ *
+ * `candidateDate` is inserted FIRST and defaults to "now" — the main loop's `value > bestValue`
+ * comparison is strict, so among equal-value sets the first one *encountered* (in the DB's
+ * natural, insertion-order return) stays `bestSet`. Inserting the candidate date first keeps
+ * `achievedAt`/`occurredAt` deterministically pointed at it rather than the corroborating day,
+ * which matters for tests asserting "today" (e.g. `computeRankEventsByWeekday`). The corroborating
+ * set is logged one day before it.
+ */
+async function establishCorroboratedPeak(exerciseId: string, weightKg: number, reps: number, candidateDate: Date = new Date()) {
+  await logSet(exerciseId, weightKg, reps, candidateDate);
+  await logSet(exerciseId, weightKg, reps, new Date(candidateDate.getTime() - 24 * 60 * 60 * 1000));
+}
+
 describe("recomputeRankForExercise", () => {
   it("returns null when the exercise has no logged sets", async () => {
     const ex = await insertTestExercise(db);
@@ -51,19 +72,24 @@ describe("recomputeRankForExercise", () => {
   it("resolves a tier from the best logged set's e1RM / bodyweight ratio", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    // default fallback bodyweight is 75kg; 60kg x 8 reps -> e1rm ~76 -> ratio ~1.01 -> apprentice/II
+    // default fallback bodyweight is 75kg; 60kg x 8 reps -> e1rm ~76 -> ratio ~1.01 -> apprentice/II.
+    // A single set is enough here: the *displayed current* rank is always the plain resolved value
+    // when there's no peak yet (see the dedicated corroboration tests below) — only the stored
+    // *peak* requires a second corroborating day.
     await logSet(ex.id, 60, 8);
     const result = await recomputeRankForExercise(db, ex.id);
     expect(result).not.toBeNull();
     expect(result!.tier).toBe("apprentice");
   });
 
-  it("flags rankedUp on the first-ever computation and detects a new PR", async () => {
+  it("detects a new PR on the first-ever computation (PR is independent of peak corroboration)", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 60, 8);
     const result = await recomputeRankForExercise(db, ex.id);
-    expect(result!.rankedUp).toBe(true);
+    // rankedUp requires a corroborated peak (a second day) and is false here — see the dedicated
+    // corroboration tests below — but PR detection doesn't depend on peak/corroboration at all.
+    expect(result!.rankedUp).toBe(false);
     expect(result!.newPr).toEqual({ kind: "e1rm", value: expect.any(Number) });
   });
 
@@ -86,19 +112,23 @@ describe("recomputeRankForExercise", () => {
       { exerciseId: ex.id, sex: "female", metric: "load_ratio", tier: "apprentice", division: 3, threshold: 0.3, trust: "derived" },
       { exerciseId: ex.id, sex: "female", metric: "load_ratio", tier: "athlete", division: 3, threshold: 0.8, trust: "derived" },
     ]);
-    await logSet(ex.id, 60, 8); // e1rm ~76, ratio ~1.01 at the 75kg fallback bodyweight
+    // Two corroborating days so the male recompute below establishes a confirmed peak to switch
+    // away from — e1rm ~76, ratio ~1.01 at the 75kg fallback bodyweight.
+    await establishCorroboratedPeak(ex.id, 60, 8);
 
     const maleResult = await recomputeRankForExercise(db, ex.id);
     expect(maleResult!.tier).toBe("apprentice"); // 1.01 is below the male athlete threshold of 5.0
 
     // Same logged history, switch the stored profile to female, recompute again. The *peak*
-    // switches to athlete immediately (ratchetPeak just compares strength, no session concept
-    // involved). The displayed *current* band also reflects it immediately here, not gradually:
-    // going into this recompute, `previousCurrentBand` (set by the male recompute above) already
-    // equals the old (male) peak exactly — the lifter was fully caught up, no decay backlog —
-    // so the buffed recovery-gain throttle correctly does not engage even though this is a
-    // same-day recompute; only a genuine backlog (current sitting below the OLD peak) should
-    // throttle the climb (see the dedicated decay/recovery tests above for that case).
+    // switches to athlete immediately (ratchetPeak just compares strength once corroborated — and
+    // it already was, from the two identical logged days above; switching sex doesn't reset
+    // corroboration since it's recomputed fresh from the same underlying sets every time). The
+    // displayed *current* band also reflects it immediately here, not gradually: going into this
+    // recompute, `previousCurrentBand` (set by the male recompute above) already equals the old
+    // (male) peak exactly — the lifter was fully caught up, no decay backlog — so the buffed
+    // recovery-gain throttle correctly does not engage even though this is a same-day recompute;
+    // only a genuine backlog (current sitting below the OLD peak) should throttle the climb (see
+    // the dedicated decay/recovery tests below for that case).
     await writeJsonSetting(db, "profile", { sex: "female" });
     const femaleResult = await recomputeRankForExercise(db, ex.id);
     const femaleRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
@@ -109,26 +139,47 @@ describe("recomputeRankForExercise", () => {
     expect(femaleCurrentPos).toBeGreaterThan(maleCurrentPos); // moved to the new, stronger peak
   });
 
-  it("logs exactly one rank_events row per genuine tier/division change, not per set logged (W8)", async () => {
+  it("logs exactly one rank_events row per genuine, corroborated tier/division change, not per set logged (W8)", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
 
-    // First set: first-ever computation always flags rankedUp -> one event row.
-    await logSet(ex.id, 60, 8);
-    await recomputeRankForExercise(db, ex.id);
+    // First day: apprentice-level set. Uncorroborated yet — no peak, no event.
+    const day1 = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 60, 8, day1);
+    let result = await recomputeRankForExercise(db, ex.id);
+    expect(result!.rankedUp).toBe(false);
     let rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(0);
+
+    // Second day, same performance: now corroborated -> peak establishes -> one event row.
+    const day2 = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 60, 8, day2);
+    result = await recomputeRankForExercise(db, ex.id);
+    expect(result!.rankedUp).toBe(true);
+    rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
     expect(rows[0]!.tier).toBe("apprentice");
 
-    // A second, weaker set doesn't change tier/division -> rankedUp false -> no new row.
+    // A third, weaker set doesn't change the candidate (apprentice from day1/2 is still best) ->
+    // no new row.
     await logSet(ex.id, 40, 5);
     await recomputeRankForExercise(db, ex.id);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
 
-    // A set that clears the athlete threshold genuinely ranks up -> a second row.
-    await logSet(ex.id, 90, 8);
-    const result = await recomputeRankForExercise(db, ex.id);
+    // A stronger set clears the athlete threshold, but on its own first day it's uncorroborated
+    // -> peak stays at apprentice, no new row yet.
+    const day4 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 90, 8, day4);
+    result = await recomputeRankForExercise(db, ex.id);
+    expect(result!.rankedUp).toBe(false);
+    rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+    expect(rows).toHaveLength(1);
+
+    // A second day at the same athlete-level performance corroborates it -> genuine rank-up.
+    const day5 = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 90, 8, day5);
+    result = await recomputeRankForExercise(db, ex.id);
     expect(result!.rankedUp).toBe(true);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(2);
@@ -141,8 +192,9 @@ describe("recomputeRankForExercise", () => {
 
     // Bodyweight 75kg (fallback): 60kg x 8 -> e1rm ~76 -> ratio ~1.01 -> apprentice/II.
     // Bump the set weight so the ratio clears athlete (>1.1) to exercise the peak-ratchet path.
+    // Two corroborating days establish the peak.
     await db.insert(bodyweightLogs).values({ date: "2026-01-01", weightKg: 75 });
-    await logSet(ex.id, 85, 8);
+    await establishCorroboratedPeak(ex.id, 85, 8, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
     const first = await recomputeRankForExercise(db, ex.id);
     expect(first!.rankedUp).toBe(true);
     const firstRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
@@ -165,14 +217,15 @@ describe("recomputeRankForExercise", () => {
     expect(secondRow!.peakE1rm).toBe(firstRow!.peakE1rm);
   });
 
-  it("peak (R1) ratchets forward when a genuinely stronger set is logged", async () => {
+  it("peak (R1) ratchets forward when a genuinely stronger, corroborated set is logged", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
     await recomputeRankForExercise(db, ex.id);
     const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
-    await logSet(ex.id, 90, 8); // clears the athlete threshold
+    // A stronger performance, also corroborated on a second day, clears the athlete threshold.
+    await establishCorroboratedPeak(ex.id, 90, 8, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
     await recomputeRankForExercise(db, ex.id);
     const after = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
@@ -204,9 +257,10 @@ describe("recomputeRankForExercise", () => {
     await seedMultiDivisionStandards(ex.id);
 
     // 90kg x 8 at the 75kg fallback bodyweight -> ratio ~1.52 -> athlete/I (top division).
-    // Log it 200 days ago (well past grace + window) so decay is fully in effect "today."
+    // Two corroborating days, both well past grace + window, so decay is fully in effect "today"
+    // and the peak is confirmed.
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
-    await logSet(ex.id, 90, 8, longAgo);
+    await establishCorroboratedPeak(ex.id, 90, 8, longAgo);
     const result = await recomputeRankForExercise(db, ex.id);
 
     const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
@@ -229,7 +283,7 @@ describe("recomputeRankForExercise", () => {
     await seedMultiDivisionStandards(ex.id);
 
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
-    await logSet(ex.id, 90, 8, longAgo);
+    await establishCorroboratedPeak(ex.id, 90, 8, longAgo);
     await recomputeRankForExercise(db, ex.id);
     const decayed = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(decayed!.division).not.toBe(decayed!.peakDivision);
@@ -253,8 +307,8 @@ describe("recomputeRankForExercise", () => {
     await seedStandards(ex.id);
 
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
-    await logSet(ex.id, 90, 8, longAgo);
-    await recomputeRankForExercise(db, ex.id); // first-ever computation: genuine rank-up, 1 row
+    await establishCorroboratedPeak(ex.id, 90, 8, longAgo);
+    await recomputeRankForExercise(db, ex.id); // corroborated peak establishes: genuine rank-up, 1 row
     let rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
 
@@ -270,13 +324,13 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedMultiDivisionStandards(ex.id);
 
-    // Log the ONLY set 200 days ago: a first-ever recompute both establishes the peak and (since
-    // passive decay runs unconditionally, even on a first-ever computation) immediately decays
-    // the current band down to the floor — `daysSinceLastTrained` is derived from the *max* of
-    // every logged set's timestamp, so a second, more-recent set of the same exercise would mask
-    // the decay entirely; this test deliberately has only the one old-dated set at this point.
+    // Two corroborating sets, both 200+ days ago: establishes the peak and (since passive decay
+    // runs unconditionally, even once a peak is freshly confirmed) immediately decays the current
+    // band down to the floor — `daysSinceLastTrained` is derived from the *max* of every logged
+    // set's timestamp, so both corroborating sets need to predate "today" by the same wide margin,
+    // or a more-recent one would mask the decay entirely.
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
-    await logSet(ex.id, 90, 8, longAgo); // 90kg x 8 at 75kg fallback bodyweight -> ratio ~1.52 -> athlete/I
+    await establishCorroboratedPeak(ex.id, 90, 8, longAgo); // 90kg x 8 at 75kg fallback -> ratio ~1.52 -> athlete/I
     const decayed = await recomputeRankForExercise(db, ex.id);
     expect(decayed).not.toBeNull();
     const decayedRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
@@ -306,7 +360,8 @@ describe("recomputeRankForExercise", () => {
   it("a flagged (implausible) workout is blocked from advancing peak", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8); // establish a normal peak (bodyweight-relative exercise, ratio-based)
+    // Establish a normal, corroborated peak (bodyweight-relative exercise, ratio-based).
+    await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
     await recomputeRankForExercise(db, ex.id);
     const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
@@ -323,7 +378,7 @@ describe("recomputeRankForExercise", () => {
   it("a badly-flagged workout is hard-blocked from recording a PR at all (Phase 3 hard-block)", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8); // establishes a normal PR
+    await logSet(ex.id, 60, 8); // establishes a normal PR (PR detection is independent of peak corroboration)
     await recomputeRankForExercise(db, ex.id);
     const before = await db.query.prs.findFirst({ where: eq(prs.exerciseId, ex.id) });
     expect(before).not.toBeUndefined();
@@ -339,13 +394,16 @@ describe("recomputeRankForExercise", () => {
     expect(after!.value).toBe(before!.value);
   });
 
-  it("a moderately-flagged workout (below PR floor, at/above peak floor) blocks the PR but still advances peak", async () => {
+  it("a moderately-flagged workout (below PR floor, at/above peak floor) blocks the PR but still advances a corroborated peak", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
     await recomputeRankForExercise(db, ex.id);
 
-    await logSet(ex.id, 90, 8); // genuinely higher e1RM
+    // Genuinely higher e1RM, corroborated across two days so the peak-advance itself isn't what's
+    // under test here — only whether the moderate flag still blocks the PR while letting a
+    // corroborated peak through.
+    await establishCorroboratedPeak(ex.id, 90, 8, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
     // 0.4 sits between PEAK_ELIGIBILITY_FLOOR (0.3) and PR_ELIGIBILITY_FLOOR (0.5): peak-eligible,
     // PR-ineligible — this is exactly the gap the stricter PR floor is meant to create.
     const result = await recomputeRankForExercise(db, ex.id, 0.4);
@@ -377,7 +435,7 @@ describe("recomputeRankForExercise", () => {
     // PEAK_ELIGIBILITY_FLOOR) is exactly the case the plausibility ceiling check exists to catch
     // (an absurd first-ever session) — but with no storedPeak, the improbable-jump check can't
     // even fire, so the ceiling check is the only safeguard. Peak must stay unestablished rather
-    // than being seeded from this flagged data.
+    // than being seeded from this flagged data. (It also wouldn't be corroborated yet either way.)
     await logSet(ex.id, 400, 5); // huge, implausible for a brand-new exercise
     const result = await recomputeRankForExercise(db, ex.id, 0.02); // below PEAK_ELIGIBILITY_FLOOR
     expect(result).not.toBeNull();
@@ -403,27 +461,16 @@ describe("recomputeRankForExercise", () => {
     expect(rows).toHaveLength(0);
   });
 
-  it("a normal (non-flagged) first-ever session is unaffected and still establishes peak", async () => {
+  it("stores the plausibility reason on the rank_events row for a moderately-flagged, corroborated rank-up", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8);
-    const result = await recomputeRankForExercise(db, ex.id); // default multiplier = 1, fully plausible
-    expect(result!.rankedUp).toBe(true);
-    const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
-    expect(row!.peakTier).not.toBeNull();
-    expect(row!.peakTier).toBe(row!.tier);
-    expect(row!.peakDivision).toBe(row!.division);
-    const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
-    expect(rows).toHaveLength(1);
-  });
-
-  it("stores the plausibility reason on the rank_events row for a moderately-flagged rank-up", async () => {
-    const ex = await insertTestExercise(db);
-    await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
     await recomputeRankForExercise(db, ex.id);
 
-    await logSet(ex.id, 90, 8); // genuinely higher e1RM -> a real peak advance
+    // Genuinely higher e1RM, corroborated across two days -> a real peak advance.
+    const day = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await logSet(ex.id, 90, 8, day);
+    await logSet(ex.id, 90, 8, new Date(day.getTime() + 24 * 60 * 60 * 1000));
     // 0.4 is peak-eligible (>= PEAK_ELIGIBILITY_FLOOR 0.3) so this still fires rankedUp, but it
     // carries a reason — exactly the gap this task closes.
     const result = await recomputeRankForExercise(db, ex.id, 0.4, "improbable_jump");
@@ -433,6 +480,67 @@ describe("recomputeRankForExercise", () => {
     expect(rows).toHaveLength(2); // the clean first rank-up + this flagged one
     expect(rows.some((r) => r.plausibilityReason === "improbable_jump")).toBe(true);
     expect(rows.some((r) => r.plausibilityReason === null)).toBe(true);
+  });
+
+  describe("peak corroboration (XP/rank balancing redesign §3)", () => {
+    it("a normal, single first-ever session establishes NO peak — it takes a second day", async () => {
+      const ex = await insertTestExercise(db);
+      await seedStandards(ex.id);
+      await logSet(ex.id, 60, 8);
+      const result = await recomputeRankForExercise(db, ex.id); // default multiplier = 1, fully plausible
+      expect(result!.rankedUp).toBe(false);
+      const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+      expect(row!.peakTier).toBeNull();
+      // The live current display is unaffected — it still shows the plain resolved value.
+      expect(row!.tier).toBe(result!.tier);
+      const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+      expect(rows).toHaveLength(0);
+    });
+
+    it("a second day at the same performance corroborates and establishes the peak", async () => {
+      const ex = await insertTestExercise(db);
+      await seedStandards(ex.id);
+      await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 24 * 60 * 60 * 1000));
+      const result = await recomputeRankForExercise(db, ex.id);
+      expect(result!.rankedUp).toBe(true);
+      const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+      expect(row!.peakTier).not.toBeNull();
+      expect(row!.peakTier).toBe(row!.tier);
+      expect(row!.peakDivision).toBe(row!.division);
+      const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
+      expect(rows).toHaveLength(1);
+    });
+
+    it("two sets logged on the SAME day do not corroborate each other", async () => {
+      const ex = await insertTestExercise(db);
+      await seedStandards(ex.id);
+      // Fixed UTC-noon reference (not "now") so a two-hour spread can never straddle the UTC
+      // day-key boundary this test is specifically about, regardless of when the suite runs.
+      const midday = new Date();
+      midday.setUTCHours(12, 0, 0, 0);
+      await logSet(ex.id, 60, 8, midday);
+      await logSet(ex.id, 60, 8, new Date(midday.getTime() + 60 * 60 * 1000)); // same day, an hour later
+      const result = await recomputeRankForExercise(db, ex.id);
+      expect(result!.rankedUp).toBe(false);
+      const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+      expect(row!.peakTier).toBeNull();
+    });
+
+    it("an established, confirmed peak is never taken away by a later uncorroborated weaker result", async () => {
+      const ex = await insertTestExercise(db);
+      await seedStandards(ex.id);
+      await establishCorroboratedPeak(ex.id, 90, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)); // athlete
+      await recomputeRankForExercise(db, ex.id);
+      const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+      expect(before!.peakTier).toBe("athlete");
+
+      // A weaker set doesn't touch the peak at all — it isn't even the new candidate.
+      await logSet(ex.id, 40, 5);
+      await recomputeRankForExercise(db, ex.id);
+      const after = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
+      expect(after!.peakTier).toBe("athlete");
+      expect(after!.peakDivision).toBe(before!.peakDivision);
+    });
   });
 });
 
@@ -444,10 +552,10 @@ describe("computeRankEventsByWeekday", () => {
     expect(result.map((r) => r.weekday).sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
-  it("counts a genuine rank-up on today's weekday", async () => {
+  it("counts a genuine, corroborated rank-up on today's weekday", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8);
     await recomputeRankForExercise(db, ex.id);
 
     const result = await computeRankEventsByWeekday(db);
@@ -460,12 +568,12 @@ describe("computeRankEventsByWeekday", () => {
   it("splits today's rank-ups into total vs. flagged counts", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await logSet(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8);
     await recomputeRankForExercise(db, ex.id); // clean rank-up #1
 
     const ex2 = await insertTestExercise(db);
     await seedStandards(ex2.id);
-    await logSet(ex2.id, 60, 8);
+    await establishCorroboratedPeak(ex2.id, 60, 8);
     await recomputeRankForExercise(db, ex2.id, 0.4, "pace"); // flagged rank-up #2
 
     const result = await computeRankEventsByWeekday(db);

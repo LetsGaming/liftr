@@ -198,13 +198,33 @@ export interface PeakSnapshot {
  * Peak is a ratchet: it is never recomputed retroactively (e.g. against today's bodyweight),
  * only compared-against and possibly replaced by a genuinely stronger result. `storedPeak`
  * being `null` (first recompute after the R1 migration, or a brand-new exercise) always yields
- * `current` as the peak.
+ * `current` as the peak — PROVIDED `isCorroborated` is true (see below).
+ *
+ * `isCorroborated` (XP/rank balancing redesign §3): a result only gets to become — or replace —
+ * the peak once it has been reached on at least one OTHER day, not just the single best-ever set.
+ * Without this, one outlier (a typo'd weight, a fluke rep, unusually good form that one day) could
+ * permanently define a lifter's rank for that exercise. The caller (rankService.ts) computes this
+ * by re-checking the full set history for a second, separate day whose own resolved position
+ * meets or beats the candidate's — this function stays a pure comparison and doesn't know about
+ * "days" or set history itself.
+ *
+ * When `isCorroborated` is false, this simply returns `storedPeak` unchanged (which may be `null`
+ * if there is no confirmed peak yet) — strictly a delay, never a demotion: a corroborated peak is
+ * never taken away by a later, weaker, or uncorroborated result. This applies even to the very
+ * first peak an exercise ever gets, not just later promotions — a single lucky first set shouldn't
+ * define a lifter's rank any more than a single lucky later one should override an established
+ * peak. Note this only gates the *stored, decay-protected* peak; the live/current rank shown
+ * before any peak is confirmed is unaffected (see `recomputeRankForExercise`'s `peak == null`
+ * branch) — a first-ever set still shows a real rank immediately, it just isn't "peak" yet.
  */
 export function ratchetPeak(
   current: { tier: Tier; division: Division; lp: number; e1rm: number },
   achievedAt: number,
   storedPeak: PeakSnapshot | null,
-): PeakSnapshot {
+  isCorroborated: boolean,
+): PeakSnapshot | null {
+  if (!isCorroborated) return storedPeak;
+
   const currentOrdinal = ordinal(current.tier, current.division);
   const isStronger =
     !storedPeak ||
