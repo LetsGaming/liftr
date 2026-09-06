@@ -6,6 +6,7 @@
  *  with no responsive treatment. `variant="horizontal"` (Task 6) is the actual mobile-parity fix:
  *  a compact scroll-snap strip so the rail doesn't push the current exercise below the fold on
  *  narrow viewports. Desktop keeps the default vertical variant unchanged. */
+import AppIcon from "../ui/AppIcon.vue";
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
 
 withDefaults(defineProps<{ variant?: "vertical" | "horizontal" }>(), { variant: "vertical" });
@@ -40,7 +41,7 @@ function workingReps(ex: ActiveExercise): number | null {
       :class="{ active: i === store.currentExerciseIndex, done: ex.sets.every((s) => s.logged), grouped: ex.supersetGroup != null }"
       @click="jump(i)"
     >
-      <span class="n">{{ ex.sets.every((s) => s.logged) ? "✓" : i + 1 }}</span>
+      <span class="n"><AppIcon v-if="ex.sets.every((s) => s.logged)" name="check" /><template v-else>{{ i + 1 }}</template></span>
       <span class="meta">
         <b><span v-if="ex.supersetGroup != null" class="superset-dot" aria-hidden="true" />{{ ex.name }}</b>
         <span>
