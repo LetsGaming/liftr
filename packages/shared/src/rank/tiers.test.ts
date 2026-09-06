@@ -11,7 +11,7 @@ import {
   ordinalToBand,
   type StandardThreshold,
 } from "./tiers.js";
-import { epley } from "../math/e1rm.js";
+import { rankRepMultiplier } from "../math/e1rm.js";
 
 const loadThresholds: StandardThreshold[] = [
   { tier: "initiate", division: 6, threshold: 0.5, trust: "real" },
@@ -56,9 +56,11 @@ describe("resolveRank", () => {
 
 describe("nextLoadTarget", () => {
   it("finds a concrete weight x reps pair crossing the target ratio", () => {
+    // Rank scoring resolves ratios via `rankSkillScore` (XP/rank balancing redesign §2), not
+    // Epley — the suggested target must be verified against the same curve it was derived from.
     const target = nextLoadTarget(1.1, 80, 6);
-    const impliedE1rm = epley(target.weightKg, target.reps);
-    expect(impliedE1rm).toBeGreaterThanOrEqual(1.1 * 80 - 1); // within rounding
+    const impliedScore = target.weightKg * rankRepMultiplier(target.reps);
+    expect(impliedScore).toBeGreaterThanOrEqual(1.1 * 80 - 1); // within rounding
     expect(target.reps).toBeGreaterThanOrEqual(4);
     expect(target.reps).toBeLessThanOrEqual(8);
   });

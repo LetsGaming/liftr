@@ -9,6 +9,7 @@
 import type { LiftrDb } from "@liftr/db";
 import {
   estimateE1rm,
+  rankSkillScore,
   resolveRank,
   nextLoadTarget,
   nextTargetAtOrdinal,
@@ -125,6 +126,13 @@ export async function recomputeRankForExercise(
   let preferredReps = 8;
 
   for (const s of loggedSets) {
+    // `value` drives tier/rank resolution (resolveRank below) and picks which set is "best" —
+    // it uses rank's own skill-score curve (XP/rank balancing redesign §2), NOT Epley. `e1rm`
+    // is the separate, unchanged Epley estimate stored for display and PR tracking
+    // (rankRepository's `ranks.e1rm`/`peakE1rm`, and the `prs` table below) — deliberately kept
+    // on Epley per the redesign's decision to scope the new curve to rank scoring only. The two
+    // can diverge (a high-rep set can be the rank-best set while a different, heavier set holds
+    // the higher Epley PR); that's expected, not a bug — see rankSkillScore's doc comment.
     let value: number;
     let e1rm: number;
     if (metric === "reps") {
@@ -134,8 +142,8 @@ export async function recomputeRankForExercise(
       const load = exercise.isBodyweight
         ? bodyweightKg * (exercise.bodyweightLeverage ?? 1) + (s.weightKg ?? 0)
         : (s.weightKg ?? 0);
+      value = rankSkillScore(load, s.reps) / bodyweightKg;
       e1rm = estimateE1rm(load, s.reps).e1rm;
-      value = e1rm / bodyweightKg;
     }
     if (value > bestValue) {
       bestValue = value;
