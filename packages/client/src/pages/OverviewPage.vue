@@ -24,6 +24,7 @@ import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import RunDetail from "../components/run/RunDetail.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
@@ -57,6 +58,12 @@ const router = useRouter();
 
 const openWorkoutId = ref<string | null>(null);
 const openWorkoutTitle = ref<string | undefined>(undefined);
+/** UI audit fix: "Letzte Aktivität" run rows used to be permanently `disabled` — the only
+ *  interactive-looking element on the page that visibly did nothing when tapped. Workout rows
+ *  already open WorkoutDetail.vue as a sheet; runs get the same treatment via RunDetail.vue
+ *  (new, mirrors WorkoutDetail.vue's pattern exactly), reusing runsStore.loadDetail()/
+ *  RunReplay.vue, which already existed but were only ever reachable from RunsPage.vue. */
+const openRunId = ref<string | null>(null);
 
 onMounted(() => {
   void history.load();
@@ -121,6 +128,10 @@ function runLabel(item: { kind: string; meta: Record<string, unknown> }) {
 function openWorkout(itemId: string, title: string | null) {
   openWorkoutId.value = itemId;
   openWorkoutTitle.value = title ?? undefined;
+}
+
+function openRun(itemId: string) {
+  openRunId.value = itemId;
 }
 
 /** "Last touched" isn't tracked per routine today (would need a lastUsedAt column) — the
@@ -390,8 +401,7 @@ function retryFailed() {
             <li v-for="item in history.items" :key="item.id" class="feed-row">
               <button
                 class="feed-btn surface-hybrid"
-                :disabled="item.kind !== 'workout'"
-                @click="item.kind === 'workout' && openWorkout(item.id, item.title)"
+                @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
               >
                 <span class="icon" :class="item.kind">{{ item.kind === "run" ? "🏃" : "🏋" }}</span>
                 <div class="meta">
@@ -413,6 +423,7 @@ function retryFailed() {
       </div>
 
       <WorkoutDetail v-if="openWorkoutId" :workout-id="openWorkoutId" :title="openWorkoutTitle" @close="openWorkoutId = null" />
+      <RunDetail v-if="openRunId" :run-id="openRunId" @close="openRunId = null" />
     </IonContent>
   </IonPage>
 </template>
@@ -557,6 +568,11 @@ function retryFailed() {
   grid-template-columns: 1fr;
   gap: var(--sp3);
 }
+/* UI audit fix (Nebula gap): was a flat var(--surface-2) fill + var(--line) border — the one
+   card treatment on this page that never got the .panel/.surface-hybrid pass every other panel
+   (StatTile, RankProgress, TierLadder, launchpad, etc.) already has. `.panel` (tokens.css)
+   supplies the translucent hybrid background, blur, and gradient hairline; padding/layout below
+   is unchanged. */
 .tile {
   padding: var(--sp4);
   border-radius: var(--r-lg);
@@ -669,6 +685,7 @@ function retryFailed() {
   flex-direction: column;
   gap: var(--sp2);
 }
+/* Same Nebula-gap fix as .tile above — was flat var(--surface-2)/var(--line). */
 .feed-btn {
   width: 100%;
   display: flex;

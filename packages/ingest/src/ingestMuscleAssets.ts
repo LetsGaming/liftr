@@ -21,7 +21,20 @@ import { MUSCLES } from "./muscles.js";
 const RAW_BASE = "https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/muscles";
 
 const PRIMARY_FROM = "#fc0000";
-const PRIMARY_TO = "#5ba0ff"; // --blue-hi
+/* UI audit fix (mannequin contrast, 2026-09-06 screenshot review): was #5ba0ff (--blue-hi) — too
+ * close in lightness to the recolored body outline's own lightest shade (BODY_LIGHT below,
+ * #4f5c82) and to the surrounding dark-panel backgrounds this figure renders on (StatTile/panel
+ * hybrid surfaces), so a "recovered" region barely read as highlighted at all, especially at the
+ * lower end of heatOverlaysFor()'s opacity ramp (MuscleFigure.vue fades main-variant opacity down
+ * to 0.35 just above the recovery threshold). This is NOT a tokens.css value read at runtime —
+ * it's baked directly into the pre-generated overlay SVGs at ingest time (see module doc above),
+ * so a CSS-only fix would have had zero effect on what's actually served; this file is the real
+ * fix, followed by `pnpm ingest --muscles` to regenerate the served assets. Pushed noticeably
+ * lighter/more saturated than --blue-hi while staying in the same blue family (deliberately no
+ * longer an exact token match — this asset is generated once, not live-themed, so it only needs
+ * to read clearly against the dark body/panel it's drawn on, not stay pixel-identical to a token
+ * used elsewhere for very different, non-anatomical UI). */
+const PRIMARY_TO = "#8fd0ff";
 const SECONDARY_FROM = "#f57900";
 const SECONDARY_TO = "#5f7fd6"; // matches the app's existing --mm-sec token
 
