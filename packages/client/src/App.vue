@@ -135,6 +135,16 @@ const pageTitle = computed(() => {
 const hideTopHud = computed(
   () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
 );
+
+/**
+ * UI audit fix: /records (RecordsPage.vue's "Rang-Analyse" screen) isn't in navItems at all — it
+ * lives behind the "Ränge" tab as a drill-in, not its own tab. RouterLink's automatic
+ * router-link-active only matches on the routes it was actually given (/ranks), so navigating
+ * into /records left every tab looking unselected, not "Ränge" as the parent-ish section still
+ * showing active. No central route-to-tab map exists to patch (navItems is the only route list),
+ * so this is a targeted override for the one known case rather than a generic ancestor-route
+ * lookup. */
+const forceActiveTo = computed(() => (route.name === "records" ? "/ranks" : null));
 </script>
 
 <template>
@@ -147,35 +157,21 @@ const hideTopHud = computed(
          so it survives every route transition without duplication. -->
     <h1 class="sr-only">{{ pageTitle }}</h1>
     <div class="app-shell" :class="overallTierClass">
-      <!-- Persistent top HUD (rework Phase 4, deferred to its own pass — mobile only, hidden at
-           the >=900px breakpoint where .side-nav already shows the same level/streak chips in
-           the sidebar). Was floating at the *bottom* as .mobile-status, stacked directly above
-           the tab bar (see the long P0 comment further down explaining why that had to be one
-           solid fixed block, not two independently-positioned ones) — that placement buried the
-           app's only persistent identity signal in the thumb zone, competing with primary
-           navigation for the same ~150px band. Moved to the top for the same reason the P0 fix
-           existed: a *second* independently-fixed element here would risk the exact clipping bug
-           that comment documents, so this still reserves clearance via .main-content's
-           margin-top below, the same discipline as .bottom-chrome. It does NOT carry a solid
-           backdrop, though (engagement-audit-v3.md Phase 1/0a) — every routed page renders as an
-           Ionic <IonPage>, whose <ion-content> scrolls in its own internal shadow-DOM container
-           clipped well below this bar (measured live: ion-content's box starts ~108px down at
-           this breakpoint, this bar ends at 52px), not via document/window scroll. There is no
-           code path in this app where scrolled page content can render into the 0-52px band, so
-           the "content visible through the gap" risk the original .bottom-chrome P0 fix solved
-           doesn't apply here — verified with Playwright (scroll + elementFromPoint hit-testing
-           at the HUD's midline on Übersicht/Workout/Ränge, before and after scrolling) before
-           dropping the backdrop, matching Liftoff's own borderless HUD. -->
+      <!-- Persistent top HUD (rework Phase 4). UI audit fix (2026-09-06): this used to be a
+           full-width strip floating ABOVE every page's own IonHeader/IonToolbar, with a visible
+           gap between the two — it read as a stray rendering artifact, not an intentional part
+           of the header, on every screen it appeared on. First-pass fix (further visual
+           iteration expected — see task notes): folded it into the header row itself as a
+           compact trailing chip, overlaid top-right on the page's own toolbar (every page shares
+           the exact same IonHeader/IonToolbar skeleton, see ionic-theme.css's ion-toolbar rule)
+           rather than reserving its own separate band above it. Mobile only — >=900px still shows
+           the same data in .side-nav's own level/streak chips. -->
       <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
         <div v-if="xp.showXp && xp.loaded" class="level-chip mobile">
-          <div class="mobile-level-row">
-            <span class="level-dot" aria-hidden="true"></span>
-            <b>Lv. {{ xp.level }}</b>
-            <span class="xp-amount">✦ {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
-          </div>
-          <div class="rankbar mobile-bar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
+          <span class="level-dot" aria-hidden="true"></span>
+          <b>Lv. {{ xp.level }}</b>
         </div>
-        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }} Tage</div>
+        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">🔥 {{ streak.streak }}</div>
       </div>
       <!-- desktop sidebar / mobile tab bar: one route set, two layouts (plan 1.2) -->
       <nav class="side-nav" aria-label="Hauptnavigation">
@@ -184,6 +180,7 @@ const hideTopHud = computed(
           :key="item.to"
           :to="item.to"
           class="nav-link"
+          :class="{ 'router-link-active': item.to === forceActiveTo }"
           :style="{ '--nav-color': item.color }"
         >
           <!-- eslint-disable-next-line vue/no-v-html -- static, hand-authored SVG paths only, never user input, see header comment -->
@@ -221,6 +218,7 @@ const hideTopHud = computed(
             :key="item.to"
             :to="item.to"
             class="tab-link"
+            :class="{ 'router-link-active': item.to === forceActiveTo }"
             :style="{ '--nav-color': item.color }"
           >
             <!-- eslint-disable-next-line vue/no-v-html -- static, hand-authored SVG paths only, never user input, see header comment -->
@@ -515,7 +513,11 @@ const hideTopHud = computed(
      moved — real content silently rendered underneath the fixed HUD. Caught by measuring the
      live layout (getBoundingClientRect), not by reading the CSS. */
   .app-shell {
-    --top-hud-h: calc(52px + env(safe-area-inset-top, 0px));
+    /* UI audit fix: was calc(52px + safe-area) to reserve a whole separate band above every
+       page's header for the old full-width .top-hud strip. Now that the HUD overlays the header
+       itself (see .top-hud below) instead of pushing content down, no extra clearance is needed
+       here — .main-content still reads this var (0px = no-op) so nothing else has to change. */
+    --top-hud-h: 0px;
     /* Foundation Task 2 (2026-09-03 plan) — needed so any fixed-position element can know how
        much space the fixed .bottom-chrome tab bar reserves at the bottom of the viewport, the
        same way .main-content already needs --top-hud-h for the top. Measured content height is
@@ -540,51 +542,41 @@ const hideTopHud = computed(
        for the tab bar. */
     margin-top: var(--top-hud-h, 0px);
   }
-  /* Persistent top HUD (rework Phase 4) — reserves fixed clearance via .main-content's
-     margin-top the same way .bottom-chrome reserves its own space below, so nothing renders
-     underneath it at rest. Deliberately borderless (no background/box-shadow): unlike
-     .bottom-chrome, this bar sits above content that only ever scrolls inside each page's own
-     clipped <ion-content> container (see the template comment above), never past this bar's own
-     box — verified live with Playwright before removing the backdrop, matching Liftoff's HUD,
-     which blends into the page background the same way. */
+  /* Persistent top HUD (rework Phase 4) — UI audit fix (2026-09-06, first pass, see the template
+     comment above for the full rationale): was a full-width, borderless bar floating in its own
+     reserved band above every page's IonHeader/IonToolbar, reading as an unstyled rendering glitch
+     rather than an intentional element. Now a small trailing chip overlaid top-right ON TOP of
+     that toolbar (every page shares the identical header skeleton — see ionic-theme.css's
+     ion-toolbar rule for its height/background) instead of a separate strip: no reserved
+     clearance needed (--top-hud-h is 0 above), just a fixed overlay positioned within the header's
+     own vertical band. IonTitle is centered with nothing docked to its trailing edge on any of
+     these pages, so this doesn't collide with any existing header content at the widths tested
+     (360-430px). Left deliberately simple (one line, no XP bar/streak-day label) per the "compact
+     trailing element, first reasonable pass" scope — further visual iteration (matching the
+     toolbar's exact hybrid fill/edge treatment, tap target to open a details sheet, etc.) is
+     expected in a follow-up pass with the product owner, not attempted here. */
   .top-hud {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: var(--sp2);
-    height: var(--top-hud-h);
-    padding: env(safe-area-inset-top, 0px) var(--sp3) 0;
+    gap: 6px;
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1;
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: var(--sp3);
+    z-index: 5;
   }
   .top-hud .level-chip,
   .top-hud .streak-chip {
     margin-top: 0;
-    padding: 4px var(--sp3);
+    padding: 5px 10px;
+    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
   .top-hud .level-chip b {
     display: inline;
     margin-bottom: 0;
-  }
-  .mobile-level-row {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
-  .top-hud .level-chip .xp-amount {
-    display: inline;
-    margin-top: 0;
-  }
-  .mobile-bar {
-    width: 64px;
-    height: 5px;
-    margin-top: 3px;
-  }
-  .top-hud .level-chip + .streak-chip {
-    margin-top: 0;
+    font-size: 11.5px;
   }
   /* Single fixed element for the tab bar — see the P0 fix comment above the template markup for
      the history here (it used to also carry the status row now in .top-hud).
