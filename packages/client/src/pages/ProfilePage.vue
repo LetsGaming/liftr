@@ -35,7 +35,10 @@ const sex = ref<"male" | "female" | null>(null);
 const birthYearInput = ref("");
 const experienceLevel = ref<ExperienceLevel | null>(null);
 const workoutsPerWeek = ref(3);
-const equipment = ref<Set<string>>(new Set());
+// Defaults to bodyweight-owned even before the store loads (same default as onboarding's
+// OnboardingDraft.ts) — a profile with no saved equipment yet (server returns null, e.g. a
+// brand-new account) must never render as "nothing owned, not even your own body".
+const equipment = ref<Set<string>>(new Set(["bodyweight"]));
 const profileSaving = ref(false);
 const equipmentSaving = ref(false);
 
