@@ -8,8 +8,10 @@ import {
 } from "./decay.js";
 import { ordinal } from "./tiers.js";
 
-// "advanced" and "elite" both kept the old 3-division (III/II/I) shape, so they stand in for the
-// old "gold"/"diamond" fixture tiers with identical division semantics.
+// "advanced" and "lifter" both have the 3-division (III/II/I) shape under the current
+// TIER_DIVISION_COUNT (XP/rank balancing redesign §5 narrowed most tiers; these two still land on
+// 3), so they stand in for the old "gold"/"diamond" fixture tiers with identical division
+// semantics.
 const peak = { tier: "advanced" as const, division: 2 as const, lp: 40 };
 
 describe("computeCurrentBand", () => {
@@ -36,9 +38,9 @@ describe("computeCurrentBand", () => {
   });
 
   it("never crosses into the tier below peak's tier, even at the very top of the peak band", () => {
-    const topOfElite = { tier: "elite" as const, division: 1 as const, lp: 100 };
-    const floor = computeCurrentBand(topOfElite, RANK_DECAY_GRACE_DAYS + RANK_DECAY_WINDOW_DAYS + 1000);
-    expect(floor).toEqual({ tier: "elite", division: 3, lp: 0 });
+    const topOfLifter = { tier: "lifter" as const, division: 1 as const, lp: 100 };
+    const floor = computeCurrentBand(topOfLifter, RANK_DECAY_GRACE_DAYS + RANK_DECAY_WINDOW_DAYS + 1000);
+    expect(floor).toEqual({ tier: "lifter", division: 3, lp: 0 });
   });
 
   it("reverses to exactly peak the instant daysSinceLastTrained resets to 0, not gradually", () => {

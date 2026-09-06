@@ -267,14 +267,15 @@ describe("recomputeRankForExercise", () => {
     expect(row!.peakTier).toBe("athlete");
     expect(row!.peakDivision).toBe(1); // peak itself is untouched by decay
 
-    // Displayed current is floored at division IV (athlete's actual weakest division per
-    // TIER_DIVISION_COUNT, not the 3-division fixture below) / 0 LP of the peak's own tier —
+    // Displayed current is floored at division III (athlete's actual weakest division per
+    // TIER_DIVISION_COUNT, not the 3-division fixture below — they happen to coincide since
+    // athlete also has 3 divisions under the current count) / 0 LP of the peak's own tier —
     // softened, but never a lower tier than peak.
     expect(result!.tier).toBe("athlete");
-    expect(result!.division).toBe(4);
+    expect(result!.division).toBe(3);
     expect(result!.lp).toBe(0);
     expect(row!.tier).toBe("athlete");
-    expect(row!.division).toBe(4);
+    expect(row!.division).toBe(3);
     expect(row!.lp).toBe(0);
   });
 
@@ -337,7 +338,7 @@ describe("recomputeRankForExercise", () => {
     expect(decayedRow!.peakTier).toBe("athlete");
     expect(decayedRow!.peakDivision).toBe(1); // peak untouched by decay
     expect(decayedRow!.tier).toBe("athlete");
-    expect(decayedRow!.division).toBe(4); // fully decayed to the tier floor (TIER_DIVISION_COUNT.athlete)
+    expect(decayedRow!.division).toBe(3); // fully decayed to the tier floor (TIER_DIVISION_COUNT.athlete)
     expect(decayedRow!.lp).toBe(0);
 
     // Now return: log a fresh, unremarkable set today (same weight, not a new peak).
