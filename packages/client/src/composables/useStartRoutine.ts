@@ -24,7 +24,13 @@ export function useStartRoutine() {
       const sets = await getExerciseHistory(exerciseId);
       const bySetIndex = new Map<number, { weightKg: number | null; reps: number }>();
       for (const s of sets) if (!bySetIndex.has(s.setIndex)) bySetIndex.set(s.setIndex, s);
-      return Array.from({ length: 5 }, (_, i) => bySetIndex.get(i) ?? { weightKg: null, reps: 0 });
+      // Bug fix (product owner report — reps always defaulted to 0 on a new workout): this used
+      // to fill a missing set index with `{ weightKg: null, reps: 0 }`. weightKg's `null` reads
+      // as "no history" and activeWorkoutStore's seeding falls back to the routine's target —
+      // but reps' `0` is a real number, not nullish, so that same `?? target.reps` fallback
+      // never fired for reps and it silently stayed 0 forever. `reps: null` here makes "no
+      // history for this set" symmetric with weightKg, and lets the target fallback work.
+      return Array.from({ length: 5 }, (_, i) => bySetIndex.get(i) ?? { weightKg: null, reps: null });
     } catch {
       return undefined; // offline with nothing cached — start fresh, no "last time" reference
     }
