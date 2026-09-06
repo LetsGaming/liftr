@@ -93,6 +93,19 @@ ion-title {
   font-weight: 700;
   font-family: var(--font-display);
 }
+/* UI audit fix (2026-09-06, top-hud redesign direction C): on mobile the header row became a
+   level/streak status readout (App.vue's .top-hud) instead of a title bar — every page still
+   renders its own <IonTitle> in its template (touching all 8 pages wasn't needed, see App.vue's
+   .top-hud comment), so it's hidden here globally instead. Desktop is unaffected and keeps the
+   centered title as before, since the ring/streak readout is mobile-only there too (.side-nav
+   already carries the fuller level/streak chips on desktop, no title needed there for that
+   reason, but the PO's ask was scoped to "especially mobile" — not touching desktop's working
+   layout). The page's real title lives on regardless, in the always-present sr-only <h1>. */
+@media (max-width: 899px) {
+  ion-title {
+    display: none;
+  }
+}
 
 /* Nebula Foundation F5 — header hybrid (complete-redesign spec §3.5). All 8 pages share this
    identical IonHeader > IonToolbar skeleton with no per-page styling, so this one global rule
