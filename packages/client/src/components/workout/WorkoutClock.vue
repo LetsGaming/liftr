@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import AppIcon from "../ui/AppIcon.vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 
 const store = useActiveWorkoutStore();
@@ -41,7 +42,7 @@ onBeforeUnmount(() => {
       <span class="tnum">{{ display }}</span>
     </div>
     <button class="icon-btn" :aria-label="store.isPaused ? 'Fortsetzen' : 'Pausieren'" @click="store.togglePause()">
-      {{ store.isPaused ? "▶" : "⏸" }}
+      <AppIcon :name="store.isPaused ? 'play' : 'pause'" />
     </button>
   </div>
 </template>
