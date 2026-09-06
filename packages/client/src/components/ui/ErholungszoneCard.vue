@@ -11,7 +11,7 @@ import { computed } from "vue";
 import { MUSCLE_LABEL_DE } from "../../lib/muscles";
 import MuscleFigure from "./MuscleFigure.vue";
 
-const props = defineProps<{ heat: Record<string, number>; recoveredSlugs: string[]; loaded: boolean }>();
+const props = defineProps<{ heat: Record<string, number>; recoveredSlugs: string[]; loaded: boolean; canStart: boolean }>();
 const emit = defineEmits<{ start: [] }>();
 
 const topRecovered = computed(() => props.recoveredSlugs.slice(0, 3).map((s) => MUSCLE_LABEL_DE[s] ?? s));
@@ -37,7 +37,12 @@ const verdict = computed(() => {
     <div class="ez-status">
       <span class="ez-pill">DEIN STATUS</span>
       <p>{{ verdict }}</p>
-      <button class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
+      <!-- Bug fix (product owner report): this button silently no-op'd when there was no
+           routine yet (suggestedRoutine was null, so startFromReadiness had nothing to route
+           to). The launchpad card right below already owns the "no routine yet" empty state
+           ("Erste Routine anlegen") — rather than duplicate that guidance here, just hide this
+           CTA until there's actually a routine to jump into. -->
+      <button v-if="canStart" class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>
   </section>
   <div v-else class="erholungszone ez-skeleton" aria-hidden="true">
