@@ -14,10 +14,19 @@ export type Tier = (typeof TIERS)[number];
 /** Divisions per tier — deliberately more at the bottom (frequent rank-ups early) and fewer at
  *  the top (Apex has exactly 1: a single real milestone, not another grind). Within a tier of N
  *  divisions, values run N (weakest, entry) down to 1 (strongest, closest to promotion) — same
- *  "higher number = weaker" convention as the old fixed III/II/I, generalized to N divisions. */
+ *  "higher number = weaker" convention as the old fixed III/II/I, generalized to N divisions.
+ *
+ *  Reduced from the original 6/5/5/4/4/3/3/2/1 (33 bands total) to 5/4/4/3/3/3/2/2/1 (27 bands) as
+ *  part of the XP/rank balancing redesign §5 — the original bottom-heavy clustering, combined with
+ *  a first-ever set's typically-generous first resolution, let a single first-ever performance
+ *  clear 3-4 tiers at once regardless of which exercise it was. Still strictly "more at the
+ *  bottom, fewer at the top" (never increasing tier-to-tier), just less extreme — paired with
+ *  `defaultStandards.ts`'s `widenAnchorSpread` (which makes each tier require a genuinely bigger
+ *  jump in real strength, independent of division count) to address the "too easy to climb"
+ *  complaint from two different angles at once. */
 export const TIER_DIVISION_COUNT: Record<Tier, number> = {
-  initiate: 6, apprentice: 5, trainee: 5, athlete: 4, lifter: 4,
-  advanced: 3, elite: 3, expert: 2, apex: 1,
+  initiate: 5, apprentice: 4, trainee: 4, athlete: 3, lifter: 3,
+  advanced: 3, elite: 2, expert: 2, apex: 1,
 };
 
 export type Division = number;

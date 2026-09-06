@@ -6,7 +6,7 @@
  * shared component, two call sites: RanksPage's hero (real position) and OverviewPage's
  * first-run state (Initiate lit, nothing else known yet).
  *
- * Divisions are NOT uniform across tiers (TIER_DIVISION_COUNT: 6/5/5/4/4/3/3/2/1 — more at the
+ * Divisions are NOT uniform across tiers (TIER_DIVISION_COUNT: 5/4/4/3/3/3/2/2/1 — more at the
  * bottom for frequent early rank-ups, fewer at the top since Apex is a single real milestone).
  * This only ever labels the *current* tier's division (via DIVISION_LABEL), so it never assumes
  * three divisions or any other fixed count.

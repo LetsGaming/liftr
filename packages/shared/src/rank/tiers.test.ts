@@ -89,10 +89,10 @@ describe("ratchetPeak", () => {
   });
 
   it("never regresses when a later bodyweight increase alone would lower the naive ratio", () => {
-    // Simulates: PR set at bodyweight 80kg reaches trainee-5, then bodyweight climbs to 90kg
-    // with no strength change, so recomputing the ratio today against the same absolute e1RM
-    // would resolve to a *lower* band (apprentice-1). Peak must stay at trainee-5.
-    const peakAfterPr = ratchetPeak({ tier: "trainee", division: 5, lp: 20, e1rm: 120 }, 1000, null, true);
+    // Simulates: PR set at bodyweight 80kg reaches trainee-4 (trainee's weakest division), then
+    // bodyweight climbs to 90kg with no strength change, so recomputing the ratio today against
+    // the same absolute e1RM would resolve to a *lower* band (apprentice-1). Peak must stay put.
+    const peakAfterPr = ratchetPeak({ tier: "trainee", division: 4, lp: 20, e1rm: 120 }, 1000, null, true);
     const peakAfterBodyweightIncrease = ratchetPeak(
       { tier: "apprentice", division: 1, lp: 80, e1rm: 120 },
       2000,
@@ -166,22 +166,22 @@ describe("9-tier ladder", () => {
     ]);
   });
 
-  it("has the documented division count per tier, summing to 33 bands", () => {
+  it("has the documented division count per tier, summing to 27 bands", () => {
     expect(TIER_DIVISION_COUNT).toEqual({
-      initiate: 6, apprentice: 5, trainee: 5, athlete: 4, lifter: 4,
-      advanced: 3, elite: 3, expert: 2, apex: 1,
+      initiate: 5, apprentice: 4, trainee: 4, athlete: 3, lifter: 3,
+      advanced: 3, elite: 2, expert: 2, apex: 1,
     });
     const total = Object.values(TIER_DIVISION_COUNT).reduce((a, b) => a + b, 0);
-    expect(total).toBe(33);
-    expect(MAX_ORDINAL).toBe(32);
+    expect(total).toBe(27);
+    expect(MAX_ORDINAL).toBe(26);
   });
 
   it("ordinal: division N (weakest) in a tier is always the tier's lowest ordinal", () => {
-    expect(ordinal("initiate", 6)).toBe(0);
-    expect(ordinal("initiate", 1)).toBe(5);
-    expect(ordinal("apprentice", 5)).toBe(6); // right after initiate's 6 bands (0-5)
-    expect(ordinal("apprentice", 1)).toBe(10);
-    expect(ordinal("apex", 1)).toBe(32); // last band overall
+    expect(ordinal("initiate", 5)).toBe(0);
+    expect(ordinal("initiate", 1)).toBe(4);
+    expect(ordinal("apprentice", 4)).toBe(5); // right after initiate's 5 bands (0-4)
+    expect(ordinal("apprentice", 1)).toBe(8);
+    expect(ordinal("apex", 1)).toBe(26); // last band overall
   });
 
   it("ordinalToBand inverts ordinal exactly across the whole range", () => {
