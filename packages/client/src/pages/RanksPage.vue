@@ -109,7 +109,7 @@ const sortedRanks = computed(() =>
         </div>
 
         <div v-if="ranksStore.ranks.length > 0" class="rank-grid">
-        <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap">
+        <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap" :class="`t-${r.tier}`">
           <button class="rank-card" :class="`t-${r.tier}`" @click="toggleExpand(r.exerciseId)">
             <TruncatingLabel class="en">{{ exerciseName(r.slug, r.name) }}</TruncatingLabel>
             <RankProgress
@@ -206,7 +206,12 @@ const sortedRanks = computed(() =>
   width: 100%;
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  border: 1px solid var(--line);
+  /* Tier-accent rim, not a generic neutral hairline (visual-design fix: this border used to be
+     the flat var(--line) every other utility surface uses, which barely registers against a
+     saturated tier-gradient fill and reads as a leftover default rather than the medal's own
+     edge). Same border source as tokens.css's .panel-reward (var(--b3, ...)) — the reward
+     surface's rim is tier-colored everywhere else in the app; this card was the one holdout. */
+  border: 1px solid var(--b3, var(--line));
   text-align: left;
   position: relative;
   overflow: hidden;
@@ -215,7 +220,7 @@ const sortedRanks = computed(() =>
      Same root cause as the exercise-rail white-card bug (P0-A): always set a background
      explicitly on interactive elements, never rely on the pseudo-element alone. */
   background: transparent;
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-fast) var(--ease-out);
 }
 /* Always-dark fill regardless of theme (tier colors are always dark, by design — see
    tokens.css's `:root[data-theme="light"]` comment) — text inside must stay light-on-dark even
@@ -230,9 +235,14 @@ const sortedRanks = computed(() =>
 .rank-card:active {
   transform: scale(0.98);
 }
+/* Was a bespoke flat-black box-shadow found nowhere else in the app — tokens.css's own
+   .panel-reward explicitly drops box-shadow on reward surfaces ("the reward surface doesn't
+   need the fake elevation cue... its own saturation already separates it from the page") and
+   the app's real hover language for a colored fill is a brightness lift (.btn-primary:hover
+   uses the same filter). Matching that instead of inventing a new elevation value here. */
 @media (hover: hover) {
   .rank-card:hover {
-    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+    filter: brightness(1.08);
   }
 }
 /* Full-card vivid tier gradient (UI/UX rework audit P0-C) — the reward screen should be the
@@ -250,10 +260,22 @@ const sortedRanks = computed(() =>
   font-weight: 800;
   color: var(--text);
 }
+/* Live-verification finding (click-to-expand division chart): this used the app's generic flat
+   --surface-2 utility panel color, which reads as an unrelated grey/blue box bolted under a
+   saturated tier-gradient card — the single most jarring thing on the page, worse the higher the
+   tier's saturation (most visible on gold/apprentice tiers). Fixed by tinting --surface-2 with a
+   fraction of the card's own --b1 (its darkest fill stop) and giving the border the same --b3
+   accent the card uses, so the panel reads as the same card tapering off rather than a foreign
+   element. A flat 22% mix, not a full-strength gradient to --b1: this panel's own content
+   (ProgressChart.vue) sets its text in --dim/--faint, contrast-checked against plain --surface-2
+   — a full-strength --b1 fill (near-black on most tiers) would darken the panel enough to break
+   that contrast, which a first pass of this fix did before catching it live in the browser. Still
+   the tier system, not Nebula — no gradient hue introduced that isn't already part of the 9-tier
+   metal palette this row's card is using. */
 .chart-slot {
   padding: var(--sp3) var(--sp4);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--b1, var(--surface-3)) 22%, var(--surface-2));
+  border: 1px solid var(--b3, var(--line));
   border-top: none;
   border-radius: 0 0 var(--r-lg) var(--r-lg);
   margin-top: -1px;
