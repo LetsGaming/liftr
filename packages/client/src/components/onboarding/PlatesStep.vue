@@ -3,18 +3,30 @@
  *  how to load the barbell to achieve the desired weight." Fixed common plate sizes rather than
  *  a free-form add/remove list — faster to fill in on a phone, and covers what actually ships in
  *  a home-gym plate set; @liftr/shared's calculatePlatesFromInventory only needs the counts. */
-import { BAR_TYPES, DEFAULT_BAR_WEIGHTS_KG, useOnboardingDraft, type BarType } from "./OnboardingDraft";
+import { BAR_TYPES, DEFAULT_BAR_WEIGHTS_KG, MAX_BAR_WEIGHT_KG, MIN_BAR_WEIGHT_KG, useOnboardingDraft, type BarType } from "./OnboardingDraft";
 
 const draft = useOnboardingDraft();
 
-const BAR_LABEL_DE: Record<BarType, string> = { barbell: "Langhantel", "ez-bar": "SZ-Stange", "trap-bar": "Trap-Bar" };
+const BAR_LABEL_DE: Record<BarType, string> = {
+  barbell: "Langhantel",
+  "ez-bar": "SZ-Stange",
+  "trap-bar": "Trap-Bar",
+  // "Kurzhantel-Griff" (not just "Kurzhantel") — this asks for the adjustable-dumbbell HANDLE's
+  // own empty weight, same wording ProfilePage.vue's later-editable copy of this step uses.
+  dumbbell: "Kurzhantel-Griff",
+};
 const ownedBarTypes = BAR_TYPES.filter((t) => draft.equipment.has(t));
+// Loadable-plate inventory only applies to the barbell family — a dumbbell handle's own plates
+// are covered by the same PLATE_SIZES_KG count below (feedback didn't ask for a separate
+// dumbbell-plate tally), but a dumbbell-only user (no barbell-family bar) has nothing to load
+// onto a "bar" beyond the handle itself, so the plate-count section stays scoped to that case.
+const ownedBarbellFamilyTypes = ownedBarTypes.filter((t) => t !== "dumbbell");
 
 function barWeight(type: BarType): number {
   return draft.barWeightsKg.get(type) ?? DEFAULT_BAR_WEIGHTS_KG[type];
 }
 function adjustBarWeight(type: BarType, delta: number) {
-  draft.barWeightsKg.set(type, Math.min(50, Math.max(5, barWeight(type) + delta)));
+  draft.barWeightsKg.set(type, Math.min(MAX_BAR_WEIGHT_KG[type], Math.max(MIN_BAR_WEIGHT_KG[type], barWeight(type) + delta)));
 }
 
 const PLATE_SIZES_KG = [25, 20, 15, 10, 5, 2.5, 1.25, 1];
@@ -53,7 +65,7 @@ function adjust(weightKg: number, delta: number) {
       </div>
     </section>
 
-    <section class="field">
+    <section v-if="ownedBarbellFamilyTypes.length > 0" class="field">
       <label>Scheiben pro Größe</label>
       <div class="plate-rows">
         <div v-for="size in PLATE_SIZES_KG" :key="size" class="plate-row">
