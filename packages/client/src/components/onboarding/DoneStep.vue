@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import AppIcon from "../ui/AppIcon.vue";
 import { needsPlatesStep, useOnboardingDraft } from "./OnboardingDraft";
 
 const draft = useOnboardingDraft();
@@ -10,14 +11,14 @@ const hasPlates = computed(() => needsPlatesStep(draft) && [...draft.plates.valu
 
 <template>
   <div class="done">
-    <div class="hero-badge">✓</div>
+    <div class="hero-badge"><AppIcon name="check" :size="40" /></div>
     <h2>Fertig!</h2>
     <p>Los geht's — hier ist, was das für dich freischaltet:</p>
     <ul class="unlocks">
-      <li>🎯 Gewichtsvorschläge passend zu deiner Erfahrung</li>
-      <li>🏋 Übungsvorschläge, die zu deinem Equipment ({{ equipmentCount }} ausgewählt) passen — mit Alternativen statt einfach nichts</li>
-      <li v-if="hasPlates">⚖️ Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten</li>
-      <li>🏆 Rang-Berechnung basierend auf Körpergewicht und Geschlecht</li>
+      <li><AppIcon name="target" /> Gewichtsvorschläge passend zu deiner Erfahrung</li>
+      <li><AppIcon name="dumbbell" /> Übungsvorschläge, die zu deinem Equipment ({{ equipmentCount }} ausgewählt) passen — mit Alternativen statt einfach nichts</li>
+      <li v-if="hasPlates"><AppIcon name="scale" /> Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten</li>
+      <li><AppIcon name="trophy" /> Rang-Berechnung basierend auf Körpergewicht und Geschlecht</li>
     </ul>
   </div>
 </template>
