@@ -4,6 +4,7 @@
 // also lives here as a fallback path — the primary path is the AuthGate prompt on first 401.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref, watch } from "vue";
+import AppIcon from "../components/ui/AppIcon.vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import { useToast } from "../composables/useToast";
@@ -410,7 +411,7 @@ async function exportData() {
           :aria-label="tokenVisible ? 'Token verbergen' : 'Token anzeigen'"
           @click="tokenVisible = !tokenVisible"
         >
-          {{ tokenVisible ? "🙈" : "👁" }}
+          <AppIcon :name="tokenVisible ? 'eye-off' : 'eye'" />
         </button>
         <button class="btn-primary" @click="saveToken">Speichern</button>
       </div>
