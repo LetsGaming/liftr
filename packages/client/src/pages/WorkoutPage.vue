@@ -284,7 +284,8 @@ const nextExercisePreview = computed(() => {
   const next = store.exercises[store.currentExerciseIndex + 1];
   if (!next) return undefined;
   const firstSet = next.sets[0];
-  const summary = firstSet ? `${firstSet.weightKg != null ? `${firstSet.weightKg} kg × ` : ""}${firstSet.reps}` : null;
+  const w = firstSet?.weightKg != null ? Math.round(firstSet.weightKg * 100) / 100 : null;
+  const summary = firstSet ? `${w != null ? `${w} kg × ` : ""}${firstSet.reps}` : null;
   return { name: next.name, summary };
 });
 
@@ -649,7 +650,7 @@ async function logSet() {
         <p class="last-ref" :class="{ 'last-ref-hidden': store.currentSet?.prevWeightKg == null && !store.currentSet?.prevReps }">
           Letztes Mal an dieser Stelle:
           <b>
-            <template v-if="store.currentSet?.prevWeightKg != null">{{ store.currentSet.prevWeightKg }} kg × </template>
+            <template v-if="store.currentSet?.prevWeightKg != null">{{ Math.round(store.currentSet.prevWeightKg * 100) / 100 }} kg × </template>
             {{ store.currentSet?.prevReps }} Wdh.
           </b>
         </p>
@@ -718,10 +719,10 @@ async function logSet() {
             <span v-else class="sn">✓</span>
             <span>
               <template v-if="s.logged">
-                <template v-if="s.weightKg != null">{{ s.weightKg }} kg · </template>{{ s.reps }} Wdh.
+                <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg · </template>{{ s.reps }} Wdh.
               </template>
               <template v-else-if="s.kind !== 'normal'">
-                <template v-if="s.weightKg != null">{{ s.weightKg }} kg · </template>{{ s.reps }} Wdh. ({{ kindLabel(s.kind) }})
+                <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg · </template>{{ s.reps }} Wdh. ({{ kindLabel(s.kind) }})
               </template>
               <template v-else>offen</template>
             </span>
