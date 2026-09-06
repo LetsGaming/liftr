@@ -512,7 +512,23 @@ async function logSet() {
              finding). Placing it as its own row directly above WorkoutClock guarantees no
              overlap by construction. -->
         <SyncIndicator />
-        <WorkoutClock />
+        <!-- Bug fix (product owner report): cancel used to sit alone far down the rail — moved
+             here, right of the pause button, so it reads as "same family of control, different
+             action" instead of an unrelated button off on its own. Same confirm-tap behavior
+             (useConfirmTap), just repositioned + restyled to match the pause button's
+             shape/size with a danger treatment instead of its neutral one. -->
+        <WorkoutClock>
+          <template #actions>
+            <button
+              class="cancel-btn"
+              :class="{ confirming: cancelConfirm.isArmed() }"
+              :aria-label="cancelConfirm.isArmed() ? 'Wirklich abbrechen?' : 'Workout abbrechen'"
+              @click="cancelConfirm.trigger()"
+            >
+              {{ cancelConfirm.isArmed() ? "Wirklich?" : "✕" }}
+            </button>
+          </template>
+        </WorkoutClock>
         <div class="progress-row">
           <div class="progress">
             <span>{{ store.progressLabel }}</span>
@@ -588,7 +604,7 @@ async function logSet() {
                  the rest timer) with no visual distinction between the two (critique finding).
                  "Übung" disambiguates without adding a control. -->
             <!-- Task 7 (mid-session confirm-tap audit): deliberately NOT gated behind
-                 useConfirmTap, unlike the overflow sheet's "Workout abbrechen" (.menu-item-danger).
+                 useConfirmTap, unlike the cancel-workout button (.cancel-btn, next to pause).
                  Skipping is non-destructive and reversible —
                  nothing is lost (the skipped exercise's sets are untouched and still reachable
                  via the jump rail/jumpToExercise), unlike cancel (discards the whole session) or
@@ -781,16 +797,6 @@ async function logSet() {
           >
             + Aufwärmsätze einfügen
           </button>
-          <!-- Deliberately does NOT close the sheet on the first (arming) tap — see
-               cancelConfirm's declaration above for why: the user needs to see and complete the
-               "Wirklich abbrechen?" confirmation before the sheet dismisses. -->
-          <button
-            class="menu-item menu-item-danger"
-            :class="{ confirming: cancelConfirm.isArmed() }"
-            @click="cancelConfirm.trigger()"
-          >
-            {{ cancelConfirm.isArmed() ? "Wirklich abbrechen?" : "Workout abbrechen" }}
-          </button>
         </div>
       </SheetModal>
 
@@ -911,12 +917,28 @@ async function logSet() {
   color: var(--green);
   font-weight: 700;
 }
+/* Bug fix (product owner report): "Nicht jetzt" and "Routine aktualisieren" didn't match
+   height. Root cause — `flex: 1` split the row 50/50, and at mobile widths that gave
+   "Routine aktualisieren" too little space, wrapping it onto two lines while the shorter
+   "Nicht jetzt" stayed on one, so .btn-secondary's 44px min-height won while .btn-primary grew
+   taller. Stacking them full-width on mobile (each gets the whole row, so neither wraps) fixes
+   it there; the >=900px row layout below has enough width for both on one line already. */
 .beat-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--sp2);
 }
 .beat-actions button {
-  flex: 1;
+  width: 100%;
+}
+@media (min-width: 900px) {
+  .beat-actions {
+    flex-direction: row;
+  }
+  .beat-actions button {
+    flex: 1;
+    width: auto;
+  }
 }
 .share-canvas {
   display: none;
@@ -1030,11 +1052,15 @@ async function logSet() {
   line-height: 1;
   flex: none;
 }
+/* Bug fix (product owner report): title and actions used to sit side by side
+   (row + space-between), which squeezed a long exercise name against the skip/rank/info
+   buttons. Now stacked — title on its own row, actions on the row below — same pattern as
+   the rest of this header's children. */
 .focus-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp2);
   margin-bottom: var(--sp2);
 }
 /* Flex column + min-width:0 wrapper so TruncatingLabel's h2 can actually truncate instead of
@@ -1348,11 +1374,14 @@ button.sn:active {
   padding: var(--sp4) 0;
   text-align: center;
 }
-/* Header-decluttering audit fix: "Übung hinzufügen" / "Workout-Notiz" / "Aufwärmsätze einfügen" /
-   "Workout abbrechen" now live in one sheet (see the SheetModal in the template, opened from the
-   "⋯" .overflow-btn next to .progress) instead of four always-visible buttons crammed under the
-   clock. Plain stacked list rows, full-width — a sheet's contents don't need to compete for
-   horizontal space the way the old inline pill row did. */
+/* Header-decluttering audit fix: "Übung hinzufügen" / "Workout-Notiz" / "Aufwärmsätze einfügen"
+   now live in one sheet (see the SheetModal in the template, opened from the "⋯" .overflow-btn
+   next to .progress) instead of always-visible buttons crammed under the clock. Plain stacked
+   list rows, full-width — a sheet's contents don't need to compete for horizontal space the way
+   the old inline pill row did. "Workout abbrechen" used to live here too as `.menu-item-danger`,
+   but a later bug-fix pass relocated cancel next to the pause button (`.cancel-btn` below) so it
+   reads as "same family of control, different action" — this sheet no longer offers a second,
+   redundant way to trigger the same destructive action. */
 .workout-menu {
   display: flex;
   flex-direction: column;
@@ -1370,18 +1399,31 @@ button.sn:active {
   padding: 12px 14px;
   min-height: 44px;
 }
-/* Was styled identically to every other secondary rail button (add exercise, warm-up) — a
-   destructive action needs to read as one before you tap it, not only after (when it flips
-   to the .confirming fill). Red text/border on a transparent fill marks it as "careful" at a
-   glance without competing with the solid-red confirm step. Kept as its own modifier (rather
-   than folded into .menu-item) now that it lives alongside three non-destructive rows in the
-   same list. */
-.menu-item-danger {
+/* Bug fix (product owner report): used to live alone far down the rail with a completely
+   different look (a wide text pill) from the pause button it has nothing to do with visually.
+   Now positioned right next to WorkoutClock's pause `.icon-btn` (same 40px height, same
+   border-radius, same border weight — "same family of control") but red instead of neutral,
+   so it reads as "same family, higher stakes" rather than an unrelated control. Widens past
+   the 40px square only for the "Wirklich?" confirm label — auto width keeps the icon state a
+   true square matching the pause button exactly. */
+.cancel-btn {
+  /* Slot content keeps WorkoutPage's own scope id, not WorkoutClock.vue's — so its scoped
+     `.icon-btn` rules don't reach in here; base sizing is repeated explicitly to match it. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  min-width: 40px;
+  width: auto;
+  padding: 0 10px;
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--red);
   background: transparent;
   border: 1px solid var(--red-lo);
 }
-.menu-item-danger.confirming {
+.cancel-btn.confirming {
   background: var(--red-lo);
   border-color: var(--red);
   color: var(--text);
