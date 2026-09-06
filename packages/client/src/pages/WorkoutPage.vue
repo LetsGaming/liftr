@@ -11,6 +11,7 @@ import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
 import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
 import FinishSequence from "../components/workout/FinishSequence.vue";
+import AppIcon from "../components/ui/AppIcon.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import NoteCapture from "../components/workout/NoteCapture.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
@@ -438,7 +439,7 @@ async function logSet() {
               {{ b.targetWeightKg != null ? `${b.targetWeightKg} kg × ` : "" }}{{ b.targetReps }}
             </li>
           </ul>
-          <p v-if="routineUpdated" class="beat-done">✓ Routine aktualisiert.</p>
+          <p v-if="routineUpdated" class="beat-done"><AppIcon name="check" /> Routine aktualisiert.</p>
           <div v-else class="beat-actions">
             <button class="btn-secondary" @click="routineBeats = []">Nicht jetzt</button>
             <button class="btn-primary" :disabled="updatingRoutine" @click="updateRoutineWithBeats">
@@ -455,10 +456,12 @@ async function logSet() {
         </div>
 
         <button class="btn-primary btn-lg btn-block" :disabled="sharingFinished" @click="shareFinished">
-          {{ sharingFinished ? "Erstelle Bild…" : "📤 Als Bild teilen" }}
+          <template v-if="sharingFinished">Erstelle Bild…</template>
+          <template v-else><AppIcon name="share" /> Als Bild teilen</template>
         </button>
         <button v-if="canCopyShareImage" class="btn-secondary btn-block" :disabled="copyingFinished" @click="onCopyFinished">
-          {{ copyingFinished ? "Kopiere…" : "📋 In Zwischenablage kopieren" }}
+          <template v-if="copyingFinished">Kopiere…</template>
+          <template v-else><AppIcon name="clipboard" /> In Zwischenablage kopieren</template>
         </button>
         <button class="btn-secondary btn-block" @click="finishedSummary = null">Fertig</button>
         <canvas ref="finishedCanvas" class="share-canvas" aria-hidden="true" />
@@ -558,7 +561,7 @@ async function logSet() {
              so jump-to-any is never lost even on the last exercise. -->
         <span v-else class="next-ex-line next-ex-empty">Letzte Übung dieser Routine</span>
         <button class="next-ex-overview-btn" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
-          ≡
+          <AppIcon name="drag-handle" />
         </button>
       </div>
 
@@ -581,7 +584,7 @@ async function logSet() {
                  behind a second confirm tap would add friction without protecting against any
                  real loss, so it stays a direct, unconfirmed tap. -->
             <button v-if="store.exercises.length > 1" class="skip-btn" @click="store.skipCurrentExercise()">
-              Übung überspringen ⏭
+              Übung überspringen <AppIcon name="skip-forward" />
             </button>
             <!-- Wave 0-B W3: rank/XP display moved behind this deliberate-reveal toggle
                  (resolved decision — stays exactly RankProgress's existing presentation, not
@@ -594,9 +597,9 @@ async function logSet() {
               aria-label="Rang anzeigen"
               @click="showRank = !showRank"
             >
-              🏆
+              <AppIcon name="trophy" />
             </button>
-            <button class="info-btn" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)">ⓘ</button>
+            <button class="info-btn" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
           </div>
         </div>
 
@@ -678,7 +681,7 @@ async function logSet() {
               Erst Wiederholungen, dann speichern.
             </p>
           </template>
-          <p v-else class="exercise-done">Übung erledigt ✓</p>
+          <p v-else class="exercise-done">Übung erledigt <AppIcon name="check" /></p>
           <span v-if="xpChip" :key="xpChip.key" class="xp-chip tnum pop-in">+{{ xpChip.amount }} XP</span>
         </div>
 
@@ -697,7 +700,7 @@ async function logSet() {
             >
               {{ kindLetter(s.kind, s.index) }}
             </button>
-            <span v-else class="sn">✓</span>
+            <span v-else class="sn"><AppIcon name="check" /></span>
             <span>
               <template v-if="s.logged">
                 <template v-if="s.weightKg != null">{{ s.weightKg }} kg · </template>{{ s.reps }} Wdh.

@@ -11,6 +11,7 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import AppIcon from "../components/ui/AppIcon.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { aggregateMuscles } from "../lib/muscles";
@@ -119,7 +120,8 @@ async function jetztStarten() {
                sticky-inside-ion-content pattern already proven by PickStep.vue's .continue-bar. -->
           <div class="ro-start-bar">
             <button class="btn-primary btn-lg btn-block" :disabled="starting" @click="jetztStarten">
-              {{ starting ? "Wird gestartet…" : "▶ Jetzt starten" }}
+              <template v-if="starting">Wird gestartet…</template>
+              <template v-else><AppIcon name="play" /> Jetzt starten</template>
             </button>
           </div>
         </template>

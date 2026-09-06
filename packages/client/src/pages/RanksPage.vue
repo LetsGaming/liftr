@@ -11,6 +11,7 @@ import RankDistributionDonut from "../components/rank/RankDistributionDonut.vue"
 import RankProgress from "../components/rank/RankProgress.vue";
 import RankUpCalendar from "../components/rank/RankUpCalendar.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
+import AppIcon from "../components/ui/AppIcon.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
 import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
 import { useExerciseHistoryCache } from "../composables/useExerciseHistoryCache";
@@ -69,7 +70,7 @@ const sortedRanks = computed(() =>
       />
 
       <router-link to="/records" class="btn-secondary" style="display: inline-flex; margin-top: var(--sp3)">
-        🏆 Rekorde ansehen
+        <AppIcon name="trophy" /> Rekorde ansehen
       </router-link>
 
       <InfoToggle label="Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt">
