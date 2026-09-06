@@ -53,12 +53,22 @@ watch(
 watch(
   () => settingsStore.ownedEquipment,
   (owned) => {
-    if (owned) equipment.value = new Set(owned);
+    // Bodyweight is always available (everyone has a body) — force it into the set
+    // regardless of what the server has on record, same guarantee as onboarding's
+    // OnboardingDraft.ts default (`new Set(["bodyweight"])`), so a stored profile that
+    // predates this fix (or one saved without it, see the toggle guard below) still shows
+    // it as owned instead of silently reverting to "not selected".
+    if (owned) equipment.value = new Set([...owned, "bodyweight"]);
   },
   { immediate: true },
 );
 
+// Bodyweight can never be deselected — every user has a body, so unchecking it would just
+// break exercise suggestions for no real-world reason (same fix as onboarding's equipment
+// step is meant to have). Guard here rather than disabling the chip outright so it still
+// reads as "on" rather than as a dead control.
 function toggleEquipment(slug: string) {
+  if (slug === "bodyweight") return;
   if (equipment.value.has(slug)) equipment.value.delete(slug);
   else equipment.value.add(slug);
 }
@@ -305,10 +315,12 @@ async function exportData() {
           v-for="slug in EQUIPMENT_SLUGS"
           :key="slug"
           class="chip"
-          :class="{ active: equipment.has(slug) }"
+          :class="{ active: equipment.has(slug), locked: slug === 'bodyweight' }"
+          :aria-disabled="slug === 'bodyweight' ? 'true' : undefined"
+          :title="slug === 'bodyweight' ? 'Körpergewicht ist immer aktiv' : undefined"
           @click="toggleEquipment(slug)"
         >
-          {{ EQUIPMENT_LABEL_DE[slug] }}
+          {{ EQUIPMENT_LABEL_DE[slug] }}<span v-if="slug === 'bodyweight'" class="lock-mark" aria-hidden="true"> 🔒</span>
         </button>
       </div>
       <span class="profile-label support-label">Weiteres Equipment</span>
@@ -446,9 +458,20 @@ async function exportData() {
 </template>
 
 <style scoped>
+/* Nebula polish pass (PO feedback: "input fields are completely missing the nebula vibe,
+   just like basically everything at the profile-tab"). Cards were still on the flat pre-F3
+   --surface-2 + 1px --line recipe instead of tokens.css's surface-hybrid/.panel treatment
+   (translucent+blurred glass fill, opaque-elevation shadow, 1px gradient hairline edge) that
+   the rest of the redesigned app already uses. Reproduced locally here (same recipe as
+   .panel in tokens.css) rather than adding `class="panel"` in the template, since this file
+   also needs card-specific rules (stagger animation, .card--quiet) layered on the same
+   selector. */
 .card {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  position: relative;
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
+  box-shadow: var(--surface-hybrid-shadow);
   border-radius: var(--r-lg);
   padding: var(--sp4);
   margin-top: var(--sp4);
@@ -457,6 +480,21 @@ async function exportData() {
      --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
      (rank-up, PR, level-up) per motion.css's own convention (see commit 8c0f158). */
   animation: pop-in var(--dur-base) var(--ease-out) both;
+}
+/* The 1px gradient hairline ring (tokens.css's .panel::after technique, reproduced here —
+   see that comment for the mask-composite mechanics). Replaces the old flat `border: 1px
+   solid var(--line)` on .card itself. */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--surface-hybrid-edge-grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .card:nth-of-type(1) {
   animation-delay: 0ms;
@@ -518,9 +556,17 @@ async function exportData() {
   padding: 10px 12px;
   border-radius: var(--r-md);
   background: var(--surface-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-2);
   color: var(--text);
   font-size: 14px;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+/* Nebula-tinted focus state (see .profile-input's identical rule below for the shared
+   rationale) — was relying only on the global :focus-visible outline, which reads as a
+   generic browser affordance rather than part of this app's own accent system. */
+.bw-row input:focus-visible {
+  border-color: var(--nebula-m);
+  box-shadow: 0 0 0 3px var(--nebula-glow);
 }
 /* Token row has 3 items (input + reveal toggle + save) instead of the base 2 — wraps to a
    second line on narrow viewports instead of overflowing the card. */
@@ -549,9 +595,16 @@ async function exportData() {
   padding: 10px 12px;
   border-radius: var(--r-md);
   background: var(--surface-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-2);
   color: var(--text);
   font-size: 14px;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+/* Same nebula-tinted focus ring as every other text input on this page — the app's accent
+   gradient, not the browser default, is what should announce "you're editing this field". */
+.profile-input:focus-visible {
+  border-color: var(--nebula-m);
+  box-shadow: 0 0 0 3px var(--nebula-glow);
 }
 .profile-save {
   width: 100%;
@@ -568,16 +621,44 @@ async function exportData() {
   padding: 8px 14px;
   border-radius: 999px;
   background: var(--surface-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-2);
   color: var(--dim);
   font-size: 13px;
   font-weight: 600;
+  min-height: var(--touch-target-min);
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
+.chip:active:not(.locked) {
+  transform: scale(0.96);
+}
+/* Selected state now takes the app's actual accent — the CTA/reward gradient (.btn-primary,
+   .chip's onboarding sibling could use this too) — instead of a flat --blue-lo fill, so a
+   selected chip visually agrees with every other "this is the active/primary thing" surface
+   in the app rather than inventing its own one-off blue. */
 .chip.active {
-  background: var(--blue-lo);
-  border-color: var(--blue);
-  color: var(--on-blue-lo);
+  background: var(--nebula-grad);
+  border-color: transparent;
+  color: var(--nebula-ink-on-fill);
   font-weight: 800;
+  box-shadow: 0 4px 14px -6px var(--nebula-glow);
+}
+/* Bodyweight equipment chip — always owned, never deselectable (fix: it could previously be
+   toggled off, silently breaking exercise suggestions for a piece of "equipment" everyone
+   always has). Kept visually active but with a locked affordance instead of just disabling
+   the button outright, so it still reads as "on" rather than as dead UI. */
+.chip.locked {
+  cursor: default;
+}
+.lock-mark {
+  font-size: 11px;
+  opacity: 0.85;
+}
+@media (hover: hover) {
+  .chip:not(.active):not(.locked):hover {
+    background: var(--surface-2);
+    border-color: var(--nebula-m);
+  }
 }
 .support-label {
   display: block;
@@ -597,7 +678,7 @@ async function exportData() {
   padding: var(--sp2) var(--sp3);
   border-radius: var(--r-md);
   background: var(--surface-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-2);
 }
 .stepper-row {
   display: flex;
@@ -613,10 +694,20 @@ async function exportData() {
   height: 32px;
   border-radius: var(--r-sm);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-2);
   color: var(--text);
   font-size: 17px;
   font-weight: 700;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.stepper-row button:active {
+  transform: scale(0.9);
+  border-color: var(--nebula-m);
+}
+@media (hover: hover) {
+  .stepper-row button:hover {
+    border-color: var(--nebula-m);
+  }
 }
 .stepper-row span {
   min-width: 24px;
@@ -649,11 +740,11 @@ async function exportData() {
 .group-header:first-of-type {
   margin-top: var(--sp2);
 }
+/* "Quiet" cards (secondary settings: theme/token/export/health-connect) stay on the same
+   surface-hybrid glass recipe as every other card now — de-emphasis comes purely from opacity,
+   not from dropping back to a flat fill, so they don't read as a leftover pre-redesign card
+   sitting next to properly-restyled ones. */
 .card--quiet {
   opacity: 0.92;
-  background: var(--surface);
-}
-[data-theme="light"] .card--quiet {
-  background: var(--surface-3);
 }
 </style>
