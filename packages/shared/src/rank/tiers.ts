@@ -3,6 +3,7 @@
  * client can recompute optimistically offline and the server can recompute authoritatively
  * after sync, with guaranteed-identical results.
  */
+import { rankRepMultiplier } from "../math/e1rm.js";
 
 export const TIERS = [
   "initiate", "apprentice", "trainee", "athlete", "lifter",
@@ -135,18 +136,21 @@ export function nextLoadTarget(
   bodyweightKg: number,
   preferredReps: number,
 ): { weightKg: number; reps: number } {
-  const targetE1rm = nextThresholdRatio * bodyweightKg;
+  // `nextThresholdRatio` is a rank-skill-score ratio (rank scoring uses `rankSkillScore`, not
+  // Epley, as of the XP/rank balancing redesign §2) — the target must be inverted through the
+  // same curve or the suggested weight would not actually cross the threshold it came from.
+  const targetScore = nextThresholdRatio * bodyweightKg;
   // search reps within +/-2 of the lifter's recent pattern, clamped to a sane 1-15 range
   const repCandidates = [preferredReps, preferredReps - 1, preferredReps + 1, preferredReps - 2, preferredReps + 2]
     .filter((r) => r >= 1 && r <= 15);
 
   let best: { weightKg: number; reps: number } | null = null;
   for (const reps of repCandidates) {
-    // invert epley: e1rm = w * (1 + reps/30) => w = e1rm / (1 + reps/30)
-    const weightKg = targetE1rm / (1 + reps / 30);
+    // invert rankSkillScore: score = w * rankRepMultiplier(reps) => w = score / rankRepMultiplier(reps)
+    const weightKg = targetScore / rankRepMultiplier(reps);
     if (!best || weightKg < best.weightKg) best = { weightKg: roundToStep(weightKg, 1.25), reps };
   }
-  return best ?? { weightKg: roundToStep(targetE1rm, 1.25), reps: preferredReps };
+  return best ?? { weightKg: roundToStep(targetScore, 1.25), reps: preferredReps };
 }
 
 function roundToStep(value: number, step: number): number {
