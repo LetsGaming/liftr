@@ -10,6 +10,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { TIERS, type Tier } from "@liftr/shared";
+import AppIcon from "../ui/AppIcon.vue";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
 import { haptics } from "../../lib/haptics";
@@ -242,7 +243,7 @@ onBeforeUnmount(() => {
         style="display: inline-flex; margin-top: var(--sp3)"
         @click.stop
       >
-        🏆 Rekorde ansehen
+        <AppIcon name="trophy" /> Rekorde ansehen
       </router-link>
     </div>
 
@@ -251,11 +252,11 @@ onBeforeUnmount(() => {
          protection-token walk (streak.ts's own math already runs server-side for the number
          itself) — good enough to show the week's shape, not a claim of exact token attribution. -->
     <div v-else-if="celebrate.activeIndex.value === 1" class="beat pop-in">
-      <div class="streak-num tnum">{{ streak }} 🔥</div>
+      <div class="streak-num tnum">{{ streak }} <AppIcon name="flame" /></div>
       <div class="eyebrow beat-eyebrow">Trainingsserie</div>
       <div class="streak-strip">
         <div v-for="(d, i) in streakDays" :key="i" class="streak-day">
-          <span class="dot" :class="{ active: d.active }">{{ d.active ? "🔥" : "" }}</span>
+          <span class="dot" :class="{ active: d.active }"><AppIcon v-if="d.active" name="flame" /></span>
           <span class="dl">{{ d.label }}</span>
         </div>
       </div>

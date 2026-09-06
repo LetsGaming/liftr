@@ -9,6 +9,7 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import RunMap from "./RunMap.vue";
+import AppIcon from "../ui/AppIcon.vue";
 import type { RunPoint } from "../../stores/runsStore";
 
 const props = defineProps<{ points: RunPoint[] }>();
@@ -144,7 +145,7 @@ function fmtPace(sPerKm: number | null): string {
     </div>
 
     <div class="controls">
-      <button class="play-btn" @click="toggle">{{ playing ? "⏸" : "▶" }}</button>
+      <button class="play-btn" @click="toggle"><AppIcon :name="playing ? 'pause' : 'play'" /></button>
       <input
         class="scrubber"
         type="range"
