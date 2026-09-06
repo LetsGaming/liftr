@@ -86,7 +86,10 @@ export interface StartExerciseInput {
   isBodyweight: boolean;
   /** One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid) — set count is this array's length. */
   targetSets: StartSetTarget[];
-  lastTime?: { weightKg: number | null; reps: number }[]; // per set index, oldest-first
+  /** Per set index, oldest-first. `reps: null` (like `weightKg: null`) means "no history for
+   *  this set index" — distinct from a genuine historical 0, so the reps-defaulting fallback
+   *  below can tell "nothing to fall back to" apart from "you really did 0 last time". */
+  lastTime?: { weightKg: number | null; reps: number | null }[];
   supersetGroup?: number | null;
   restBetweenSetsSeconds?: number | null;
   restAfterExerciseSeconds?: number | null;
@@ -238,13 +241,14 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
               return {
                 index: i,
                 weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-                // Reps are never pre-filled from the routine's target or last time (feedback:
-                // "a user always needs to enter how many reps they made, instead of the value
-                // set for the routine being the default") — weight tends to be planned in
-                // advance, but rep count is the actual outcome of the set. Starts at 0, an
-                // incomplete state logCurrentSet() refuses to log (see WorkoutPage.vue's
-                // logSet()); lastTime/target still show as the "Letztes Mal"/"Ziel" reference.
-                reps: 0,
+                // Bug fix (product owner report): reps always started at 0, forcing a manual
+                // entry on every single set even when there was a perfectly good "last time" or
+                // routine-target rep count to suggest — unlike weightKg just above, which
+                // already defaults sensibly. Same fallback shape as weight now: prefer last
+                // time's actual reps for this set index, then the routine's target reps. Still
+                // fully editable via the stepper before logging — this only changes the
+                // starting value, not whether the lifter can override it.
+                reps: input.lastTime?.[i]?.reps ?? target.reps,
                 isWarmup: (target.kind ?? "normal") === "warmup",
                 kind: target.kind ?? "normal",
                 logged: false,
@@ -384,10 +388,11 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       const ex = this.currentExercise;
       const set = this.currentSet;
       if (!ex || !set) return null;
-      // reps === 0 means the stepper was never actually touched (feedback: reps must always be
-      // entered, never silently logged from a routine's target/last-time default — see the 0
-      // starting value above). The UI already disables "Satz speichern" in this state; this is
-      // the belt-and-braces guard against a submit slipping through some other path.
+      // A set with 0 reps isn't a completed set (and reps now defaults to last-time/target —
+      // see the seeding logic in start()/addExercise() above — so this is no longer "was the
+      // stepper ever touched", just a sanity floor). The UI already disables "Satz speichern"
+      // in this state; this is the belt-and-braces guard against a submit slipping through some
+      // other path.
       if (set.reps <= 0) return null;
 
       set.logged = true;
@@ -506,15 +511,10 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           return {
             index: i,
             weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-            // Reps are never pre-filled from the routine's target or last time (feedback: "a
-            // user always needs to enter how many reps they made, instead of the value set for
-            // the routine being the default") — weight tends to be planned in advance and
-            // usually is what you intended, but rep count is the actual outcome of the set and
-            // isn't known until you've done it. Starts at 0 (an incomplete state logCurrentSet()
-            // refuses to log, see store.currentSet's caller in WorkoutPage.vue) so the stepper
-            // has to be genuinely touched. lastTime/target still show as the "Letztes Mal" /
-            // "Ziel" reference text — just never silently become the logged value.
-            reps: 0,
+            // Bug fix (product owner report) — same reps-defaulting fix as start() above,
+            // applied here too so a mid-session added exercise gets the same sensible default
+            // instead of always starting at 0.
+            reps: input.lastTime?.[i]?.reps ?? target.reps,
             isWarmup: (target.kind ?? "normal") === "warmup",
             kind: target.kind ?? "normal",
             logged: false,

@@ -148,3 +148,68 @@ describe("activeWorkoutStore — workout-level notes (Task 2)", () => {
     expect(call.payload).toMatchObject({ notes: null });
   });
 });
+
+// Bug fix (product owner report): starting a workout always seeded reps at 0, forcing manual
+// re-entry on every single set even when a sensible default (last time's reps, or the routine's
+// target reps) was available — unlike weightKg, which already defaulted this way. No prior test
+// covered start()'s/addExercise()'s seeding of a set's initial reps value at all.
+describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
+  it("start() defaults reps to last time's reps when history exists for that set index", async () => {
+    const store = useActiveWorkoutStore();
+    await store.start(null, "Test", [
+      {
+        exerciseId: "ex-1",
+        name: "Bench Press",
+        isBodyweight: false,
+        targetSets: [{ reps: 8, weightKg: null }],
+        lastTime: [{ weightKg: 60, reps: 10 }],
+      },
+    ]);
+
+    expect(store.exercises[0]!.sets[0]!.reps).toBe(10);
+  });
+
+  it("start() falls back to the routine's target reps when there's no history for that set index", async () => {
+    const store = useActiveWorkoutStore();
+    await store.start(null, "Test", [
+      {
+        exerciseId: "ex-1",
+        name: "Bench Press",
+        isBodyweight: false,
+        targetSets: [{ reps: 8, weightKg: null }],
+        lastTime: [{ weightKg: null, reps: null }],
+      },
+    ]);
+
+    expect(store.exercises[0]!.sets[0]!.reps).toBe(8);
+  });
+
+  it("start() falls back to the routine's target reps when lastTime is undefined entirely (e.g. offline)", async () => {
+    const store = useActiveWorkoutStore();
+    await store.start(null, "Test", [
+      {
+        exerciseId: "ex-1",
+        name: "Bench Press",
+        isBodyweight: false,
+        targetSets: [{ reps: 12, weightKg: null }],
+      },
+    ]);
+
+    expect(store.exercises[0]!.sets[0]!.reps).toBe(12);
+  });
+
+  it("addExercise() applies the same reps-defaulting as start()", async () => {
+    const store = useActiveWorkoutStore();
+    seedOneSetExercise(store);
+
+    await store.addExercise({
+      exerciseId: "ex-2",
+      name: "Squat",
+      isBodyweight: false,
+      targetSets: [{ reps: 5, weightKg: null }],
+      lastTime: [{ weightKg: 100, reps: 7 }],
+    });
+
+    expect(store.exercises[1]!.sets[0]!.reps).toBe(7);
+  });
+});
