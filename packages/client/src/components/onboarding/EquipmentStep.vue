@@ -10,7 +10,13 @@ const draft = useOnboardingDraft();
 // sizes, how many) is its own dedicated step, not this coarse ownership picker.
 const supportSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !== "plates");
 
+// Product-confirmed bug (2026-09-06): bodyweight training isn't optional equipment the way a
+// barbell or dumbbell is — every user can do bodyweight exercises regardless of what else they
+// own, so it starts pre-selected (createOnboardingDraft) and must stay that way; deselecting it
+// would leave a user with zero equipment able to see zero exercise suggestions. Locked instead of
+// just "always re-added on toggle" so the chip visibly communicates why the click did nothing.
 function toggle(slug: string) {
+  if (slug === "bodyweight") return;
   if (draft.equipment.has(slug)) draft.equipment.delete(slug);
   else draft.equipment.add(slug);
 }
@@ -30,11 +36,14 @@ function toggle(slug: string) {
         v-for="slug in EQUIPMENT_SLUGS"
         :key="slug"
         class="equip-chip"
-        :class="{ active: draft.equipment.has(slug) }"
+        :class="{ active: draft.equipment.has(slug), locked: slug === 'bodyweight' }"
+        :aria-pressed="draft.equipment.has(slug)"
+        :aria-disabled="slug === 'bodyweight' ? 'true' : undefined"
         @click="toggle(slug)"
       >
         <ExerciseIcon :equipment="slug" :size="22" />
-        {{ EQUIPMENT_LABEL_DE[slug] }}
+        <span class="equip-chip-label">{{ EQUIPMENT_LABEL_DE[slug] }}</span>
+        <span v-if="slug === 'bodyweight'" class="lock-hint">Immer aktiv</span>
       </button>
     </div>
 
@@ -89,10 +98,33 @@ function toggle(slug: string) {
   font-weight: 600;
   text-align: left;
 }
+.equip-chip-label {
+  flex: 1;
+}
+/* Selected state: the same Nebula CTA gradient .btn-primary uses (tokens.css), not a flat
+   --blue-lo fill (audit: "the selected option is a flat solid blue fill with no relationship to
+   the app's Nebula gradient system"). --nebula-ink-on-fill is the app's proven AA-safe ink for
+   this exact gradient (worst stop ~5:1, see tokens.css's .btn-primary comment). */
 .equip-chip.active {
-  background: var(--blue-lo);
-  border-color: var(--blue);
-  color: var(--on-blue-lo);
+  background: var(--nebula-grad-cta);
+  border-color: transparent;
+  color: var(--nebula-ink-on-fill);
   font-weight: 800;
+}
+/* Bodyweight is always-on, not optional equipment (product-confirmed bug fix) — a lock cue plus
+   a non-interactive cursor communicates why the click did nothing, rather than the chip silently
+   ignoring taps like a broken toggle would. Stays on the active/nebula fill (never grayed out):
+   it's not disabled functionality, it's a permanently-true fact about the user. */
+.equip-chip.locked {
+  cursor: default;
+}
+.lock-hint {
+  /* Full-strength ink, not a dimmed opacity — measured, not eyeballed: opacity on this small
+     (10px) uppercase label dropped its contrast against the gradient to ~3.5:1, below AA even
+     for large text. Font-size/tracking alone (not opacity) carries the "secondary" hierarchy. */
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 </style>
