@@ -61,6 +61,7 @@
  */
 import { IonModal } from "@ionic/vue";
 import { ref, useSlots } from "vue";
+import AppIcon from "./AppIcon.vue";
 
 withDefaults(
   defineProps<{
@@ -146,7 +147,7 @@ defineExpose({ dismiss });
       <template v-else>
         <div class="sheet-head">
           <b>{{ title }}</b>
-          <button class="btn-close" aria-label="Schließen" @click="dismiss">✕</button>
+          <button class="btn-close" aria-label="Schließen" @click="dismiss"><AppIcon name="close" /></button>
         </div>
         <slot />
       </template>

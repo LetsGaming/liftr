@@ -8,6 +8,7 @@
  * gets the identical mechanism instead of a second hand-rolled copy that can drift.
  */
 import { ref } from "vue";
+import AppIcon from "./AppIcon.vue";
 
 defineProps<{ label: string }>();
 const open = ref(false);
@@ -16,7 +17,7 @@ const open = ref(false);
 <template>
   <button type="button" class="info-toggle" :aria-expanded="open" @click="open = !open">
     {{ label }}
-    <span class="info-dot" aria-hidden="true">ⓘ</span>
+    <span class="info-dot" aria-hidden="true"><AppIcon name="info" /></span>
   </button>
   <p v-if="open" class="info-body pop-in">
     <slot />
