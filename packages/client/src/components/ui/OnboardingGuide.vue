@@ -102,8 +102,14 @@ async function finish() {
     await settingsStore.saveEquipment([...draft.equipment]);
 
     const plateEntries = [...draft.plates.entries()].filter(([, count]) => count > 0).map(([weightKg2, count]) => ({ weightKg: weightKg2, count }));
-    if (needsPlatesStep(draft) && plateEntries.length > 0) {
-      const barWeights = Object.fromEntries(draft.barWeightsKg.entries());
+    const barWeights = Object.fromEntries(draft.barWeightsKg.entries());
+    // Bug fix, found while wiring up the new dumbbell-weight row: this used to require
+    // plateEntries.length > 0 as well, so a user who only adjusted a bar/handle weight (e.g. a
+    // dumbbell-only owner, who has no "Scheiben pro Größe" section to touch at all — see
+    // PlatesStep.vue's ownedBarbellFamilyTypes gate) had that edit silently discarded on save,
+    // reverting to @liftr/shared's flat default the moment they left onboarding. Either signal
+    // (a changed bar weight OR a plate count) is reason enough to persist gym setup.
+    if (needsPlatesStep(draft) && (plateEntries.length > 0 || Object.keys(barWeights).length > 0)) {
       await settingsStore.saveGymSetup({ barWeights, plates: plateEntries });
     }
 
@@ -211,11 +217,27 @@ async function skip() {
   overflow-y: auto;
   padding: var(--sp5) var(--sp4);
 }
+/* Bug fix (product-confirmed, 2026-09-06): SheetModal.vue wraps this whole component's default
+   slot — .wizard-body AND .wizard-actions together — in one scrolling `.sheet-scroll` container
+   (see that file's template: `<div class="sheet-scroll"><slot /></div>`). That means the
+   continue/back bar was never actually a fixed footer; it scrolled away with .wizard-body's
+   content on any step tall enough to need scrolling, so the primary CTA could go completely
+   off-screen. `position: sticky; bottom: 0` inside that same scrolling container pins it to the
+   bottom of the viewport without touching SheetModal.vue (a shared shell other flows also use) —
+   the sticky element still scrolls into view initially, then holds at the bottom edge for the
+   rest of the scroll range. Needs its own opaque background (the modal's own --bg, matching
+   SheetModal's `background="var(--bg)"` prop above) so scrolled-past content doesn't show
+   through underneath it, plus a z-index above .wizard-body's content. */
 .wizard-actions {
   flex: none;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   gap: var(--sp2);
   padding: var(--sp3) var(--sp4);
+  padding-bottom: calc(var(--sp3) + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
   border-top: 1px solid var(--line);
 }
 .wizard-actions .btn-secondary {

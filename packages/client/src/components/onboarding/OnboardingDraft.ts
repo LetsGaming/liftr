@@ -8,13 +8,22 @@ import type { ExperienceLevel } from "../../stores/settingsStore";
  * step stays a thin, mostly-presentational child instead of round-tripping values through
  * v-model props on each field.
  */
-/** The three bar-family equipment types the onboarding plates step asks about — a barbell,
- *  EZ-bar, and trap-bar all have meaningfully different empty weights (feedback: "usually a
- *  barbell has a different weight than a dumbbell"). Adjustable-dumbbell handle weight is a
- *  rarer setup, configured later on Profil instead of adding a 4th row to first-run onboarding. */
-export type BarType = "barbell" | "ez-bar" | "trap-bar";
-export const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar"];
-export const DEFAULT_BAR_WEIGHTS_KG: Record<BarType, number> = { barbell: 20, "ez-bar": 10, "trap-bar": 25 };
+/** The bar-family equipment types the onboarding plates step asks about — a barbell, EZ-bar,
+ *  trap-bar, and adjustable-dumbbell handle all have meaningfully different empty weights
+ *  (feedback: "usually a barbell has a different weight than a dumbbell"). Product-confirmed
+ *  bug (2026-09-06): this step only asked for the barbell-family weight, never the dumbbell's —
+ *  "dumbbell" is now a 4th row here too, same as ProfilePage.vue's later-editable copy of this
+ *  same step (that file's own dumbbell row already existed; only onboarding's first pass was
+ *  missing it, not a deliberate omission worth keeping). */
+export type BarType = "barbell" | "ez-bar" | "trap-bar" | "dumbbell";
+export const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar", "dumbbell"];
+export const DEFAULT_BAR_WEIGHTS_KG: Record<BarType, number> = { barbell: 20, "ez-bar": 10, "trap-bar": 25, dumbbell: 2.5 };
+/** Per-type max (kg), mirrors the server's barWeightsInput schema (settings.ts) exactly — an
+ *  adjustable-dumbbell *handle* tops out far lower than a full barbell (schema caps it at 10kg;
+ *  everything else at 50kg). Onboarding's stepper must respect this or a saved value can fail
+ *  server-side validation silently dropping the whole gym-setup save. */
+export const MAX_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 50, "ez-bar": 50, "trap-bar": 50, dumbbell: 10 };
+export const MIN_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 5, "ez-bar": 5, "trap-bar": 5, dumbbell: 1 };
 
 export interface OnboardingDraft {
   sex: "male" | "female" | null;
@@ -68,7 +77,14 @@ export function parsedBirthYear(draft: OnboardingDraft): number | null {
   return Number.isInteger(v) && v >= 1900 && v <= new Date().getFullYear() ? v : null;
 }
 
-/** A barbell-family item was picked — only then does asking about plate inventory make sense. */
+/** A barbell-family item (or a dumbbell, whose adjustable handle also has a configurable empty
+ *  weight) was picked — only then does asking about bar/handle weight (and, for the barbell
+ *  family, plate inventory) make sense. */
 export function needsPlatesStep(draft: OnboardingDraft): boolean {
-  return draft.equipment.has("barbell") || draft.equipment.has("ez-bar") || draft.equipment.has("trap-bar");
+  return (
+    draft.equipment.has("barbell") ||
+    draft.equipment.has("ez-bar") ||
+    draft.equipment.has("trap-bar") ||
+    draft.equipment.has("dumbbell")
+  );
 }
