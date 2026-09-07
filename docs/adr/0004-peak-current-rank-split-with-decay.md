@@ -33,8 +33,8 @@ it's safe to call on every qualifying session without separate progress tracking
   computation to drive decay.
 - A bodyweight fluctuation or a miscalibrated standard being corrected later can't take back a
   peak that was legitimately earned — only current, decay-softened rank moves.
-- The instant-snap recovery from v1 was explicitly replaced because it gave "no re-climbing, no
-  second grind" too cheaply; the buffed multi-session version still guarantees recovery happens
-  faster than the original climb, just not instantly.
+- V1's instant-snap recovery gave "no re-climbing, no second grind" too cheaply, which is why it's
+  gone; the buffed multi-session version still recovers faster than the original climb, just not
+  instantly.
 - `nextTargetAtOrdinal` had to be added so next-target predictions stay consistent with a
   *decayed* current band rather than the freshly-resolved naive value.

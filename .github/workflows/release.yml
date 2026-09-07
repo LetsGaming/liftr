@@ -29,7 +29,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # see ci.yml's matching comment: pnpm's own CLI needs Node >=22.13 to run at all.
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies

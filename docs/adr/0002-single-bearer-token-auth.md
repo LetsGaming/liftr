@@ -34,5 +34,4 @@ that only leaks length, not any byte of the actual token.
   LAN port being an open API," per the code's own comment — not a substitute for network-level
   security.
 - Any future multi-user pivot would require a genuinely new auth layer, not an extension of this
-  one — this decision structurally forecloses social/multi-tenant features, which matches
-  `audit/workplan-v1.md` §4's explicit "out of scope" list.
+  one.

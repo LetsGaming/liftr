@@ -61,6 +61,28 @@ vi.mock("~client/services/fooService", () => ({ getFoo: fooMock }));
 *after* importing the now-mocked module, both dodge the same TDZ hazard too — `vi.hoisted()` is
 just the most direct fix.)
 
+## Rank balance & anti-cheat testing
+
+`tests/server/helpers/rankGrindSimulator.ts` + `tests/server/services/{rankBalance,rankAntiCheat}.test.ts`
+simulate realistic multi-session lifter grinds through the real production sync pipeline
+(`applySyncBatch`, not a reimplementation) to test pacing and anti-cheat behavior, not just
+individual formulas (those are already covered in `tests/shared/rank/*.test.ts`). Two things worth
+knowing before touching this area:
+
+- Grinds are dated in the past to simulate months/years of training quickly. `recomputeRankForExercise`
+  computes decay against the *real* wall-clock date the test runs on, so a trace's `tier`/`division`
+  (the displayed *current* band) reflects decay-since-the-test-ran, not decay-since-the-next-simulated-
+  session. Read `peakTier`/`peakDivision` (queried directly from the `ranks` table, decay-immune) for
+  any pacing/balance assertion; only use `tier`/`division` when a scenario is deliberately testing
+  decay itself.
+- Peak only advances once a candidate is corroborated by a SECOND, separate calendar day — including
+  a lifter's very first-ever session (there's nothing to corroborate against yet). A weight curve
+  that increases every single session without ever repeating a rounded value can leave peak "stuck",
+  which can in turn false-positive the separate `improbable_jump` plausibility check once the gap
+  from stored (stale) peak grows past its threshold — see the `[FINDING]`-tagged tests for two real,
+  reproduced instances of this (and a bodyweight-manipulation blind spot) found while building this
+  suite. They're regression trip-wires, not something this test suite fixes on its own.
+
 ## Shared test helpers
 
 - `tests/server/helpers/testDb.ts` — `createTestDb()` returns a fresh, fully-migrated in-memory

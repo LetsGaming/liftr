@@ -67,10 +67,10 @@ the point:
   watch or app — no Strava account or third-party API required to get your own data into your own
   tracker. Catalog images are mirrored at ingest time rather than hotlinked at runtime, so the app
   doesn't silently depend on an external service staying up.
-- **Offline-first isn't a bonus feature.** A basement gym with zero signal is a normal place to
-  train, so it has to be a normal place to log a set — the PWA queues writes locally and syncs
-  once connectivity returns, rather than treating connectivity as a given.
+- **Offline-first.** A basement gym with zero signal is a normal place to train, so it has to be
+  a normal place to log a set — the PWA queues writes locally and syncs once connectivity
+  returns, rather than treating connectivity as a given.
 
 Taken together: Liftr optimizes for being *yours* — your data, your server, your rank system that
-doesn't answer to anyone else's roadmap. That stance is a filter on every future decision, not
-just a launch-time pitch; see [`docs/ROADMAP.md`](ROADMAP.md) for how it plays out going forward.
+doesn't answer to anyone else's roadmap. See [`docs/ROADMAP.md`](ROADMAP.md) for how that plays
+out in what's planned next.

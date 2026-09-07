@@ -7,8 +7,8 @@ messages alone, and nobody proposes "just add user accounts" without knowing tha
 weighed and rejected on purpose.
 
 These are **retrospective**: written after the fact, documenting decisions Liftr already made and
-shipped, sourced from the actual commit history and code comments rather than invented after the
-fact for the sake of having ADRs. New decisions of comparable weight (anything that would be
+shipped, sourced from the actual commit history and code comments rather than invented for the sake
+of having ADRs. New decisions of comparable weight (anything that would be
 painful or awkward to reverse later) should get a new one going forward.
 
 ## Format

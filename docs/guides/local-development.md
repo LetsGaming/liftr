@@ -74,9 +74,9 @@ working instance. It:
      generates the German exercise-name i18n file, and pulls in exercise photos and muscle-map
      assets.
 
-In other words: the very first `pnpm dev` you run will take noticeably longer (it's doing a real
-ingest, including some network fetches for images) — that's expected. Every run after that is
-fast, because the guard above short-circuits it.
+The very first `pnpm dev` you run will take noticeably longer (it's doing a real ingest, including
+some network fetches for images). Every run after that is fast, because the guard above
+short-circuits it.
 
 You generally never need to run `pnpm bootstrap` by hand — `pnpm dev` already does it. You would
 run the underlying ingest steps manually if you're actively editing the exercise catalog itself;
@@ -101,8 +101,7 @@ see [adding-an-exercise.md](./adding-an-exercise.md).
   it, then run `pnpm db:migrate` (or just restart the server/`pnpm dev`) to apply it.
 
 If you ever want a truly clean slate, delete `data/` and re-run `pnpm dev` — bootstrap will detect
-the empty `exercises` table and re-seed everything from scratch (see the bootstrap section above;
-this is also called out directly in the comment at the top of `bootstrap.ts`).
+the empty `exercises` table and re-seed everything from scratch (see the bootstrap section above).
 
 ## Tests
 
