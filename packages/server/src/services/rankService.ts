@@ -9,6 +9,7 @@
 import type { LiftrDb } from "@liftr/db";
 import {
   estimateE1rm,
+  rankSkillScore,
   resolveRank,
   nextLoadTarget,
   nextTargetAtOrdinal,
@@ -123,8 +124,19 @@ export async function recomputeRankForExercise(
   let bestSet: (typeof loggedSets)[number] | null = null;
   let bestE1rm = 0;
   let preferredReps = 8;
+  // Peak corroboration (XP/rank balancing redesign §3): every set's resolved value + calendar day
+  // is recorded here in the same pass, so the corroboration check below can re-scan history
+  // without recomputing the load/rankSkillScore formula a second time.
+  const dailyBest = new Map<string, number>(); // day key -> that day's best `value`
 
   for (const s of loggedSets) {
+    // `value` drives tier/rank resolution (resolveRank below) and picks which set is "best" —
+    // it uses rank's own skill-score curve (XP/rank balancing redesign §2), NOT Epley. `e1rm`
+    // is the separate, unchanged Epley estimate stored for display and PR tracking
+    // (rankRepository's `ranks.e1rm`/`peakE1rm`, and the `prs` table below) — deliberately kept
+    // on Epley per the redesign's decision to scope the new curve to rank scoring only. The two
+    // can diverge (a high-rep set can be the rank-best set while a different, heavier set holds
+    // the higher Epley PR); that's expected, not a bug — see rankSkillScore's doc comment.
     let value: number;
     let e1rm: number;
     if (metric === "reps") {
@@ -134,8 +146,8 @@ export async function recomputeRankForExercise(
       const load = exercise.isBodyweight
         ? bodyweightKg * (exercise.bodyweightLeverage ?? 1) + (s.weightKg ?? 0)
         : (s.weightKg ?? 0);
+      value = rankSkillScore(load, s.reps) / bodyweightKg;
       e1rm = estimateE1rm(load, s.reps).e1rm;
-      value = e1rm / bodyweightKg;
     }
     if (value > bestValue) {
       bestValue = value;
@@ -143,10 +155,34 @@ export async function recomputeRankForExercise(
       bestE1rm = e1rm;
       preferredReps = s.reps;
     }
+    // UTC calendar day as the "session" proxy — simple, consistent with this loop's own
+    // no-DB-round-trip style, and precise enough for "was this reached on a genuinely separate
+    // occasion" (the actual property corroboration needs), not exact session boundaries.
+    const dayKey = s.loggedAt.toISOString().slice(0, 10);
+    const prevDayBest = dailyBest.get(dayKey);
+    if (prevDayBest == null || value > prevDayBest) dailyBest.set(dayKey, value);
   }
   if (!bestSet) return null;
 
   const rank = resolveRank(bestValue, thresholds);
+
+  // Corroboration: the candidate must have been reached (or bettered) on at least one OTHER day,
+  // not only on the single best-ever set's own day. Resolving each day's own best `value` against
+  // the same thresholds (rather than comparing raw `value` numbers directly) is what makes this
+  // check tier/division/LP-aware instead of load-unit-aware — a different day's set only counts if
+  // it reaches an equal-or-stronger *band*, matching what `ratchetPeak` itself compares on.
+  const bestDayKey = bestSet.loggedAt.toISOString().slice(0, 10);
+  const candidatePosition = ordinal(rank.tier, rank.division) * 100 + rank.lp;
+  let isPeakCorroborated = false;
+  for (const [dayKey, dayBestValue] of dailyBest) {
+    if (dayKey === bestDayKey) continue;
+    const dayRank = resolveRank(dayBestValue, thresholds);
+    const dayPosition = ordinal(dayRank.tier, dayRank.division) * 100 + dayRank.lp;
+    if (dayPosition >= candidatePosition) {
+      isPeakCorroborated = true;
+      break;
+    }
+  }
 
   const previousRank = await findRankByExerciseId(db, exerciseId);
 
@@ -195,20 +231,20 @@ export async function recomputeRankForExercise(
   const PR_ELIGIBILITY_FLOOR = 0.5;
   const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
 
-  // `peak` is `null` only when a session is badly flagged AND there is no `storedPeak` yet (a
-  // brand-new exercise's very first recompute). That combination must NOT establish a peak from
-  // this session — the improbable-jump check can't even fire without a prior peak to compare
-  // against, so the ceiling check is the only thing that could have caught an absurd first-ever
-  // session, and its whole point is defeated if a fallback quietly seeds peak from the flagged
-  // data anyway. A later, plausible session is the one that gets to establish it. When
-  // `peakEligible` is true, `ratchetPeak` always returns non-null (it treats a null `storedPeak`
-  // as "current always becomes peak"), so this is the only null case.
+  // `peak` is `null` when either of two independent gates hasn't cleared yet — a badly flagged
+  // session with no `storedPeak` yet (the improbable-jump check can't fire without a prior peak
+  // to compare against, so a flagged first-ever session must not quietly seed one), OR a
+  // genuinely plausible result that simply hasn't been corroborated on a second day yet (§3
+  // above). Either way, a later session is what gets to establish/advance the peak — `ratchetPeak`
+  // itself returns `storedPeak` unchanged (possibly still `null`) whenever `isCorroborated` is
+  // false, so this is no longer unconditionally non-null once `peakEligible` is true.
   const peak =
     peakEligible
       ? ratchetPeak(
           { tier: rank.tier, division: rank.division, lp: rank.lp, e1rm: bestE1rm },
           bestSet.loggedAt.getTime(),
           storedPeak,
+          isPeakCorroborated,
         )
       : storedPeak;
 

@@ -22,6 +22,10 @@ export const OPL_POPULATION_SHIFT = 0.75;
  * neighbors, and the two ends (Initiate, Apex) extrapolate one step beyond their nearest anchor
  * using that anchor's own ratio to its newly-interpolated neighbor — the same rule in both
  * directions, so the curve is self-consistent rather than treating the two ends differently.
+ *
+ * Deliberately takes the raw (unwidened) 5-anchor input — `widenAnchorSpread` below is a separate,
+ * composable preprocessing step applied at each call site, so this function's own well-tested
+ * contract ("the 4 even-indexed tiers exactly equal the old 5 anchors") stays exactly what it was.
  */
 export function interpolateNineTierAnchors(
   old5: [number, number, number, number, number],
@@ -45,6 +49,34 @@ export function interpolateNineTierAnchors(
   };
 }
 
+/**
+ * Widens the gap between each anchor tier and the entry (bronze/apprentice) tier, around that same
+ * fixed entry point (XP/rank balancing redesign §5, the "tier curve reshaping" half of the
+ * hammer-curl-reaches-Athlete-on-a-first-set fix — see `TIER_DIVISION_COUNT`'s doc comment for the
+ * other half). Bronze itself never moves — it's already a real, sourced entry-level standard — but
+ * every tier above it is pushed proportionally further away, on a log scale so the widening
+ * compounds smoothly rather than distorting the low tiers vs. the high ones asymmetrically. The
+ * higher a tier already sits above bronze, the more real strength this adds to reach it: at
+ * `TIER_SPREAD_WIDENING = 1.25`, Athlete (a ~1.67x-of-bronze ratio in a typical anchor) ends up
+ * needing roughly 13% more than before, while Expert (a ~3x-of-bronze ratio) ends up needing
+ * roughly 32% more — deliberately steeper further up the ladder, matching "climbing should get
+ * harder, not just uniformly harder."
+ *
+ * Applied to the raw 5-anchor tuple BEFORE `interpolateNineTierAnchors`, not after — widening the
+ * already-interpolated 9-tier output would also stretch `expand()`'s within-tier division spacing
+ * in a way this function isn't trying to control; widening only the 5 real anchor points and then
+ * interpolating/expanding as normal keeps those two concerns separate.
+ */
+export const TIER_SPREAD_WIDENING = 1.25;
+
+export function widenAnchorSpread(
+  old5: [number, number, number, number, number],
+): [number, number, number, number, number] {
+  const [bronze, silver, gold, platinum, diamond] = old5;
+  const widen = (v: number) => bronze * Math.pow(v / bronze, TIER_SPREAD_WIDENING);
+  return [bronze, widen(silver), widen(gold), widen(platinum), diamond];
+}
+
 /** Divide each tier's ratio span into TIER_DIVISION_COUNT[tier] evenly-spaced thresholds. */
 function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"]): StandardThreshold[] {
   const out: StandardThreshold[] = [];
@@ -65,13 +97,15 @@ function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"])
   return out;
 }
 
-/** Anchor lifts with real external standards (OPL, shifted; ExRx for OHP/row). Tier A. */
+/** Anchor lifts with real external standards (OPL, shifted; ExRx for OHP/row). Tier A. Each
+ *  5-anchor tuple passes through `widenAnchorSpread` (XP/rank balancing redesign §5) before
+ *  interpolation — see that function's doc comment for what it does and why. */
 export const ANCHOR_STANDARDS: Record<string, StandardThreshold[]> = {
-  "back-squat": expand(interpolateNineTierAnchors([0.75, 1.25, 1.75, 2.25, 2.75]), "real"),
-  "bench-press": expand(interpolateNineTierAnchors([0.5, 0.9, 1.3, 1.75, 2.1]), "real"),
-  deadlift: expand(interpolateNineTierAnchors([1.0, 1.5, 2.1, 2.6, 3.1]), "real"),
-  "overhead-press": expand(interpolateNineTierAnchors([0.35, 0.55, 0.8, 1.05, 1.3]), "real"),
-  "barbell-row": expand(interpolateNineTierAnchors([0.5, 0.8, 1.1, 1.45, 1.75]), "real"),
+  "back-squat": expand(interpolateNineTierAnchors(widenAnchorSpread([0.75, 1.25, 1.75, 2.25, 2.75])), "real"),
+  "bench-press": expand(interpolateNineTierAnchors(widenAnchorSpread([0.5, 0.9, 1.3, 1.75, 2.1])), "real"),
+  deadlift: expand(interpolateNineTierAnchors(widenAnchorSpread([1.0, 1.5, 2.1, 2.6, 3.1])), "real"),
+  "overhead-press": expand(interpolateNineTierAnchors(widenAnchorSpread([0.35, 0.55, 0.8, 1.05, 1.3])), "real"),
+  "barbell-row": expand(interpolateNineTierAnchors(widenAnchorSpread([0.5, 0.8, 1.1, 1.45, 1.75])), "real"),
 };
 
 /** Sibling to interpolateNineTierAnchors: flattens rep-based (single-division-per-tier) tables. */
@@ -87,12 +121,13 @@ function expandRepStandard(old5: [number, number, number, number, number]): Stan
   }));
 }
 
-/** Rep-based (bodyweight, metric: 'reps') default norms — audit §7's explicit open question. */
+/** Rep-based (bodyweight, metric: 'reps') default norms — audit §7's explicit open question.
+ *  Also widened per `widenAnchorSpread`'s doc comment, for the same "every exercise" reason. */
 export const REP_STANDARDS: Record<string, StandardThreshold[]> = {
-  pushup: expandRepStandard([5, 15, 30, 50, 75]),
-  pullup: expandRepStandard([1, 5, 10, 16, 22]),
-  chinup: expandRepStandard([1, 6, 12, 18, 25]),
-  dip: expandRepStandard([3, 10, 20, 32, 45]),
+  pushup: expandRepStandard(widenAnchorSpread([5, 15, 30, 50, 75])),
+  pullup: expandRepStandard(widenAnchorSpread([1, 5, 10, 16, 22])),
+  chinup: expandRepStandard(widenAnchorSpread([1, 6, 12, 18, 25])),
+  dip: expandRepStandard(widenAnchorSpread([3, 10, 20, 32, 45])),
 };
 
 /**
