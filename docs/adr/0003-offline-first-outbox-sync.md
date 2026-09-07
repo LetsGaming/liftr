@@ -37,10 +37,9 @@ wedging the sync queue.
   identical results.
 - Every mutation needs a stable `clientId` so the server can dedupe (`already_synced`) rather than
   double-apply a retried item.
-- The queue-size ceiling is a real constraint that already caused one production-shaped bug
-  (permanent wedge past 200 items) — the sync-correctness review agent for this codebase
-  specifically calls this class of regression out as high-severity and worth re-checking on any
-  change to either side of the sync boundary.
+- That queue-size ceiling already caused one production-shaped bug (described above); a dedicated
+  review agent for this codebase now treats this regression class as high-severity and checks for
+  it on any change to either side of the sync boundary.
 - `finish_workout` is the one exception to "fire and forget": the finish screen needs rank
   verdicts back before it can render the finish sequence, so that specific call awaits its own
   flush result rather than firing and moving on.

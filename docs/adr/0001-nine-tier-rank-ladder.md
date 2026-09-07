@@ -39,7 +39,7 @@ exercise.
 - `Division` becomes a plain `number` instead of a `1|2|3` union; all division-position math
   routes through the shared `ordinal`/`ordinalToBand` helpers instead of each caller
   (`decay.ts`, `aggregate.ts`) duplicating its own inversion logic.
-- Climbing is now deliberately harder and slower, by design — this is a direct, traceable
-  response to the "too easy to climb" complaint, not a default that crept in gradually.
+- Climbing is now harder and slower by design — a direct response to the "too easy to climb"
+  complaint, not an unintended side effect.
 - Two tuning knobs (division counts, `widenAnchorSpread`) now exist as the levers for future
   difficulty adjustments instead of hand-editing standards data per exercise.

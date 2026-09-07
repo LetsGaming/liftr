@@ -96,8 +96,6 @@ The signed APK lands at `packages/client/android/app/build/outputs/apk/release/a
 
 ## If you ever lose the keystore
 
-There's no way to recover it or make Android accept a differently-signed "update" over an
-existing install. The practical fix: generate a new keystore (step 1), update the four GitHub
-secrets (step 2) with the new values, and treat the next release as a fresh install for anyone who
-already has the app on their device (uninstall the old one first — same as installing on a new
-phone). This is why the backup note in the intro matters more than it might seem right now.
+Generate a new keystore (step 1), update the four GitHub secrets (step 2) with the new values, and
+treat the next release as a fresh install for anyone who already has the app on their device
+(uninstall the old one first — same as installing on a new phone).

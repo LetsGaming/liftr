@@ -1,19 +1,23 @@
 <img src="docs/assets/banner.svg" alt="Liftr — log a set, watch your rank move" width="100%" />
 
 <p align="center">
-  <img alt="self-hosted" src="https://img.shields.io/badge/self--hosted-yours%2C%20forever-5ba0ff?style=flat-square" />
-  <img alt="offline-first" src="https://img.shields.io/badge/offline--first-PWA-1e5fd0?style=flat-square" />
-  <img alt="no accounts" src="https://img.shields.io/badge/accounts-none%2C%20ever-8fb4ff?style=flat-square" />
+  <img alt="self-hosted" src="https://img.shields.io/badge/self--hosted-5ba0ff?style=flat-square" />
+  <img alt="offline-first PWA" src="https://img.shields.io/badge/offline--first-PWA-1e5fd0?style=flat-square" />
+  <img alt="no accounts" src="https://img.shields.io/badge/accounts-none-8fb4ff?style=flat-square" />
   <img alt="stack" src="https://img.shields.io/badge/stack-Vue%203%20%2B%20Fastify%20%2B%20SQLite-1c2233?style=flat-square" />
 </p>
 
 # Liftr
 
-Log a set. Watch your rank move. That's the whole loop — and it's designed to stay that fast forever.
+Log a set, watch your rank move. That's the whole loop.
 
-Liftr is a self-hosted strength and running tracker built on a simple bet: most workout apps either have a progression system worth caring about but are miserable to actually use, or they're feature-complete and totally forgettable. Liftr tries to be the first thing without becoming the second — a private, ad-free, no-account app that turns "did I get stronger" into something you can *see*, one set at a time.
+Liftr is a self-hosted strength and running tracker. Most workout apps either have a progression
+system worth caring about and are miserable to use, or they're polished and forgettable. Liftr is
+an attempt at the first one without the second: private, ad-free, no account, and it turns "did I
+get stronger" into something you can actually see, one set at a time.
 
-> *"The rank system is the retention mechanism, and everything else exists to support logging sets fast enough that using it doesn't feel like a chore."* — Liftr's one design rule, applied to every screen.
+The rank system is the retention mechanic — that's the whole design rule. Everything else exists
+to make logging a set fast enough that using the app doesn't feel like a chore.
 
 ## The core loop
 
@@ -55,7 +59,11 @@ Rank** that rolls your strongest lifts into a single headline number.
 
 ## Why it's built this way
 
-Progression only stays motivating if it's *honest*. A rank that goes up for reasons you don't understand, or that can vanish for reasons outside your control (a bodyweight fluctuation shouldn't cost you a rank you legitimately earned), stops feeling like a game and starts feeling like noise. Every mechanic in Liftr — the peak/current split, the trust markers on estimated numbers, the streak forgiveness — exists to keep the rank system feeling *fair*, because fair is what makes it worth checking again tomorrow.
+Progression only stays motivating if it's honest. A rank that goes up for reasons you don't
+understand, or vanishes for reasons outside your control (a bodyweight fluctuation shouldn't cost
+you a rank you legitimately earned), stops feeling like a game and starts feeling like noise. The
+peak/current split, the trust markers on estimated numbers, the streak forgiveness — all three
+exist for the same reason: to keep the numbers fair.
 
 ## Getting it running
 

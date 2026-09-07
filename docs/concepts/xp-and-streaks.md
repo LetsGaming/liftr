@@ -19,9 +19,8 @@ magnitude comes from `reps × tier multiplier × repeat-decay × plausibility`, 
 note below.
 
 **It scales with the exercise's current rank tier** (`TIER_XP_MULTIPLIER`, 0.9× at Initiate up to
-1.75× at Apex), so raw volume on an easy lift doesn't outweigh real strength progress on a hard
-one — grinding light accessory work forever doesn't out-earn a lifter actually climbing a
-demanding lift's tiers.
+1.75× at Apex), so grinding light accessory work forever doesn't out-earn a lifter actually
+climbing a demanding lift's tiers.
 
 **It decays toward a floor, not to zero, on repetition.** `repeatSetMultiplier(occurrence)`
 computes `1 / (1 + REPEAT_XP_DECAY_STEP * (occurrence - 1))`, floored at

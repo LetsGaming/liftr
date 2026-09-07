@@ -19,6 +19,37 @@ const createdAt = () =>
     .default(sql`(unixepoch('subsec') * 1000)`);
 
 // ---------------------------------------------------------------------------
+// Users (multi-user hardening groundwork — see docs/adr/0006-per-user-data-scoping.md)
+// ---------------------------------------------------------------------------
+
+/** The single seeded owner, created by migration 0015. Deterministic (not `crypto.randomUUID()`)
+ *  so every fresh db — including every in-memory test db, which runs the same migrations — gets
+ *  a known user id for free, and so the migration's seed INSERT can be plain static SQL. Real
+ *  per-user login doesn't exist yet; this is the one row every request resolves to today, via
+ *  `userContext.ts`'s `resolveCurrentUserId`. */
+export const OWNER_USER_ID = "00000000-0000-4000-8000-000000000001";
+
+export const users = sqliteTable("users", {
+  id: id(),
+  name: text("name").notNull(),
+  role: text("role", { enum: ["owner", "member"] }).notNull(),
+  createdAt: createdAt(),
+});
+
+/** Every per-user table's owner column. Defaults to `OWNER_USER_ID` — not because there's
+ *  legacy data to preserve (there isn't; this is v1, no deployments exist yet), but because
+ *  SQLite can't `ALTER TABLE ADD COLUMN ... NOT NULL` without a default, and because the default
+ *  is what keeps every existing `db.insert(...)` test fixture across the codebase compiling and
+ *  correctly attributing to the owner throughout the staged rollout to real per-user scoping,
+ *  instead of forcing one simultaneous change across every repository/service/route/test file at
+ *  once. Real per-user login removes this default in a later pass. */
+const userId = () =>
+  text("user_id")
+    .notNull()
+    .default(OWNER_USER_ID)
+    .references(() => users.id, { onDelete: "cascade" });
+
+// ---------------------------------------------------------------------------
 // Catalog
 // ---------------------------------------------------------------------------
 
@@ -49,6 +80,14 @@ export const exercises = sqliteTable("exercises", {
   movementPattern: text("movement_pattern").notNull(),
   isBodyweight: integer("is_bodyweight", { mode: "boolean" }).notNull().default(false),
   isCustom: integer("is_custom", { mode: "boolean" }).notNull().default(false),
+  /** Multi-user hardening groundwork: null for every catalog exercise (ingested or seeded); set
+   *  to the creator's id for a custom (`isCustom`) exercise. NOT currently used to scope
+   *  visibility — custom exercises stay in the shared catalog, visible to every user, for this
+   *  pass (see docs/adr/0006-per-user-data-scoping.md's "accepted limitation": two users picking
+   *  the same natural slug for a custom exercise collide on `exercises.slug`'s global
+   *  uniqueness). This column exists now so scoping custom-exercise visibility per creator later
+   *  is a query change, not another schema migration. */
+  createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
   /** wger CC-BY-SA attribution string, required for the attributions page (plan 3.3). */
   sourceAttribution: text("source_attribution"),
   demoStartImage: text("demo_start_image"),
@@ -79,6 +118,7 @@ export const exerciseMuscles = sqliteTable(
 
 export const routines = sqliteTable("routines", {
   id: id(),
+  userId: userId(),
   name: text("name").notNull(),
   orderIndex: integer("order_index").notNull().default(0),
   archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
@@ -138,30 +178,35 @@ export const mesocycles = sqliteTable("mesocycles", {
   createdAt: createdAt(),
 });
 
-export const workouts = sqliteTable("workouts", {
-  id: id(),
-  routineId: text("routine_id").references(() => routines.id, { onDelete: "set null" }),
-  startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
-  endedAt: integer("ended_at", { mode: "timestamp_ms" }),
-  pausedSeconds: integer("paused_seconds").notNull().default(0),
-  /** Plausibility gate multiplier (rank engine v2) — computed once at finish-workout time from
-   *  session pace / improbable-jump / unrealistic-value checks (see @liftr/shared's
-   *  plausibility.ts). Null until the workout finishes (matches endedAt's own nullability);
-   *  application code treats a null/missing value as 1 (fully plausible) rather than using a SQL
-   *  default, since a workout with no endedAt has no plausibility verdict yet either. */
-  plausibilityMultiplier: real("plausibility_multiplier"),
-  /** Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md)
-   *  — the session's consistency and variety XP bonuses, computed once at finish-workout time
-   *  (same nullable/frozen-at-finish convention as plausibilityMultiplier above, since both depend
-   *  on that session's temporal context — the streak-as-of-that-date, the previous session's
-   *  muscle set — which is awkward/expensive to re-derive on every read). Null until the workout
-   *  finishes; application code treats null as 0 when summing into a user's total XP. No backfill
-   *  for pre-existing rows — pre-v1, no production data to preserve. */
-  consistencyBonusXp: real("consistency_bonus_xp"),
-  varietyBonusXp: real("variety_bonus_xp"),
-  notes: text("notes"),
-  clientId: text("client_id").notNull().unique(), // offline-sync idempotency key
-});
+export const workouts = sqliteTable(
+  "workouts",
+  {
+    id: id(),
+    userId: userId(),
+    routineId: text("routine_id").references(() => routines.id, { onDelete: "set null" }),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+    endedAt: integer("ended_at", { mode: "timestamp_ms" }),
+    pausedSeconds: integer("paused_seconds").notNull().default(0),
+    /** Plausibility gate multiplier (rank engine v2) — computed once at finish-workout time from
+     *  session pace / improbable-jump / unrealistic-value checks (see @liftr/shared's
+     *  plausibility.ts). Null until the workout finishes (matches endedAt's own nullability);
+     *  application code treats a null/missing value as 1 (fully plausible) rather than using a SQL
+     *  default, since a workout with no endedAt has no plausibility verdict yet either. */
+    plausibilityMultiplier: real("plausibility_multiplier"),
+    /** Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md)
+     *  — the session's consistency and variety XP bonuses, computed once at finish-workout time
+     *  (same nullable/frozen-at-finish convention as plausibilityMultiplier above, since both depend
+     *  on that session's temporal context — the streak-as-of-that-date, the previous session's
+     *  muscle set — which is awkward/expensive to re-derive on every read). Null until the workout
+     *  finishes; application code treats null as 0 when summing into a user's total XP. No backfill
+     *  for pre-existing rows — pre-v1, no production data to preserve. */
+    consistencyBonusXp: real("consistency_bonus_xp"),
+    varietyBonusXp: real("variety_bonus_xp"),
+    notes: text("notes"),
+    clientId: text("client_id").notNull(), // offline-sync idempotency key, unique per user (below)
+  },
+  (t) => [uniqueIndex("workouts_user_client_idx").on(t.userId, t.clientId)],
+);
 
 export const workoutExercises = sqliteTable(
   "workout_exercises",
@@ -182,6 +227,15 @@ export const sets = sqliteTable(
   "sets",
   {
     id: id(),
+    /** Denormalized from `workoutExerciseId -> workoutExercises -> workouts.userId` — a
+     *  deliberate exception to "children inherit ownership via their parent", written by exactly
+     *  one function (`insertSet`) in lockstep with the parent, same precedent as this table's own
+     *  `isWarmup`/`kind` pair below. `sets` is the join target of ~8 ownership-sensitive queries
+     *  across six repository files (rank resolution, XP, history, export, muscle training log,
+     *  "last performed" lookups) that would otherwise each need their own two-hop join with no
+     *  compiler-enforced guarantee it's present — a forgotten join here is a silent cross-user
+     *  data leak. See docs/adr/0006-per-user-data-scoping.md. */
+    userId: userId(),
     workoutExerciseId: text("workout_exercise_id")
       .notNull()
       .references(() => workoutExercises.id, { onDelete: "cascade" }),
@@ -204,14 +258,19 @@ export const sets = sqliteTable(
     kind: text("kind", { enum: ["normal", "warmup", "failure", "dropset"] }).notNull().default("normal"),
     notes: text("notes"),
     loggedAt: integer("logged_at", { mode: "timestamp_ms" }).notNull(),
-    /** offline write-queue idempotency key (plan 1.3) — POST /api/sync dedupes on this. */
-    clientId: text("client_id").notNull().unique(),
+    /** offline write-queue idempotency key (plan 1.3) — POST /api/sync dedupes on this, unique
+     *  per user (below). */
+    clientId: text("client_id").notNull(),
   },
-  (t) => [index("sets_workout_exercise_idx").on(t.workoutExerciseId)],
+  (t) => [
+    index("sets_workout_exercise_idx").on(t.workoutExerciseId),
+    uniqueIndex("sets_user_client_idx").on(t.userId, t.clientId),
+  ],
 );
 
 export const bodyweightLogs = sqliteTable("bodyweight_logs", {
   id: id(),
+  userId: userId(),
   date: text("date").notNull(), // YYYY-MM-DD
   weightKg: real("weight_kg").notNull(),
 });
@@ -237,34 +296,42 @@ export const standards = sqliteTable(
   (t) => [index("standards_exercise_idx").on(t.exerciseId)],
 );
 
-/** Derived cache, always rebuildable from sets + standards via `pnpm recompute`. */
-export const ranks = sqliteTable("ranks", {
-  exerciseId: text("exercise_id")
-    .primaryKey()
-    .references(() => exercises.id, { onDelete: "cascade" }),
-  tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
-  division: integer("division").notNull(),
-  lp: real("lp").notNull(),
-  e1rm: real("e1rm").notNull(),
-  trust: text("trust", { enum: ["real", "derived", "synthetic"] }).notNull(),
-  nextTargetWeightKg: real("next_target_weight_kg"),
-  nextTargetReps: integer("next_target_reps"),
-  computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
-  /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — locked in the moment it's
-   *  achieved and never recomputed retroactively (e.g. against today's bodyweight). Nullable:
-   *  existing rows are backfilled to `peak* = current *` on their first post-migration
-   *  recompute (see `recomputeRankForExercise`), not by the migration itself. */
-  peakTier: text("peak_tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }),
-  peakDivision: integer("peak_division"),
-  peakLp: real("peak_lp"),
-  peakE1rm: real("peak_e1rm"),
-  peakAchievedAt: integer("peak_achieved_at", { mode: "timestamp_ms" }),
-});
+/** Derived cache, always rebuildable from sets + standards via `pnpm recompute`. Primary key is
+ *  composite `(userId, exerciseId)` — was bare `exerciseId` before multi-user hardening (one
+ *  rank row per exercise, globally); each user now gets their own resolved rank per exercise. */
+export const ranks = sqliteTable(
+  "ranks",
+  {
+    userId: userId(),
+    exerciseId: text("exercise_id")
+      .notNull()
+      .references(() => exercises.id, { onDelete: "cascade" }),
+    tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
+    division: integer("division").notNull(),
+    lp: real("lp").notNull(),
+    e1rm: real("e1rm").notNull(),
+    trust: text("trust", { enum: ["real", "derived", "synthetic"] }).notNull(),
+    nextTargetWeightKg: real("next_target_weight_kg"),
+    nextTargetReps: integer("next_target_reps"),
+    computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+    /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — locked in the moment it's
+     *  achieved and never recomputed retroactively (e.g. against today's bodyweight). Nullable:
+     *  existing rows are backfilled to `peak* = current *` on their first post-migration
+     *  recompute (see `recomputeRankForExercise`), not by the migration itself. */
+    peakTier: text("peak_tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }),
+    peakDivision: integer("peak_division"),
+    peakLp: real("peak_lp"),
+    peakE1rm: real("peak_e1rm"),
+    peakAchievedAt: integer("peak_achieved_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.exerciseId] })],
+);
 
 export const prs = sqliteTable(
   "prs",
   {
     id: id(),
+    userId: userId(),
     exerciseId: text("exercise_id")
       .notNull()
       .references(() => exercises.id, { onDelete: "cascade" }),
@@ -283,6 +350,7 @@ export const rankEvents = sqliteTable(
   "rank_events",
   {
     id: id(),
+    userId: userId(),
     exerciseId: text("exercise_id")
       .notNull()
       .references(() => exercises.id, { onDelete: "cascade" }),
@@ -306,18 +374,23 @@ export const rankEvents = sqliteTable(
 // Running
 // ---------------------------------------------------------------------------
 
-export const runs = sqliteTable("runs", {
-  id: id(),
-  source: text("source", { enum: ["gpx", "fit", "manual", "healthconnect"] }).notNull(),
-  name: text("name"),
-  startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
-  distanceM: real("distance_m").notNull(),
-  durationS: real("duration_s").notNull(),
-  avgPaceSPerKm: real("avg_pace_s_per_km"),
-  avgHr: real("avg_hr"),
-  elevationGainM: real("elevation_gain_m"),
-  clientId: text("client_id").notNull().unique(),
-});
+export const runs = sqliteTable(
+  "runs",
+  {
+    id: id(),
+    userId: userId(),
+    source: text("source", { enum: ["gpx", "fit", "manual", "healthconnect"] }).notNull(),
+    name: text("name"),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+    distanceM: real("distance_m").notNull(),
+    durationS: real("duration_s").notNull(),
+    avgPaceSPerKm: real("avg_pace_s_per_km"),
+    avgHr: real("avg_hr"),
+    elevationGainM: real("elevation_gain_m"),
+    clientId: text("client_id").notNull(), // unique per user (below)
+  },
+  (t) => [uniqueIndex("runs_user_client_idx").on(t.userId, t.clientId)],
+);
 
 /** The replay-enabling table (audit §5) — never discard points after computing the summary. */
 export const runPoints = sqliteTable(
@@ -347,17 +420,27 @@ export const runPoints = sqliteTable(
 export const streaks = sqliteTable(
   "streaks",
   {
+    userId: userId(),
     date: text("date").notNull(), // YYYY-MM-DD
     kind: text("kind", { enum: ["workout", "run"] }).notNull(),
     protectionUsed: integer("protection_used", { mode: "boolean" }).notNull().default(false),
   },
-  (t) => [uniqueIndex("streaks_date_kind_idx").on(t.date, t.kind)],
+  (t) => [uniqueIndex("streaks_user_date_kind_idx").on(t.userId, t.date, t.kind)],
 );
 
-export const settings = sqliteTable("settings", {
-  key: text("key").primaryKey(),
-  value: text("value").notNull(), // JSON-encoded
-});
+/** Composite primary key `(userId, key)` — was bare `key` before multi-user hardening (one
+ *  global JSON k/v store); every settings key in use today (profile, ownedEquipment, gymSetup,
+ *  defaultBodyweightKg) is genuinely per-user (sex/workoutsPerWeek drive which standards
+ *  population and streak-token pool a user is ranked/protected against). */
+export const settings = sqliteTable(
+  "settings",
+  {
+    userId: userId(),
+    key: text("key").notNull(),
+    value: text("value").notNull(), // JSON-encoded
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.key] })],
+);
 
 // ---------------------------------------------------------------------------
 // Relations (drizzle relational query API — used by the server's db.query.* calls)

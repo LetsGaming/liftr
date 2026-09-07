@@ -18,7 +18,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # pnpm's own CLI (action below pins a floating v11.x) now requires Node >=22.13 just to
+          # run `pnpm install` — this is about the tool, not the app itself (package.json's
+          # "engines" still says >=20, which remains accurate for what Liftr needs at runtime).
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies

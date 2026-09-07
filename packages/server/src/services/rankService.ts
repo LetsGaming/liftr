@@ -190,7 +190,10 @@ export async function recomputeRankForExercise(
   // regression bug: peak is locked in at the moment it's achieved and never recomputed
   // retroactively against today's bodyweight, so a legitimate bodyweight increase alone can
   // never erase a peak. `storedPeak` is null on the first recompute after the R1 migration (or
-  // for a brand-new exercise), which `ratchetPeak` treats as "current always becomes peak."
+  // for a brand-new exercise) — `ratchetPeak`'s own corroboration gate applies here exactly like
+  // everywhere else (`if (!isCorroborated) return storedPeak`), so a genuinely first-ever session
+  // does NOT seed a peak by itself; it stays null until a second, separate day matches or exceeds
+  // it (see the corroboration block below and tests/server/services/rankAntiCheat.test.ts).
   const storedPeak =
     previousRank?.peakTier != null &&
     previousRank.peakDivision != null &&
