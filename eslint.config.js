@@ -9,7 +9,9 @@ import globals from "globals";
 
 const tsRules = {
   ...tseslint.configs.recommended.rules,
-  "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+  // ignoreRestSiblings: `const { fieldToOmit, ...rest } = obj` is the standard way to build an
+  // object missing one field — fieldToOmit is intentionally never read, that's the whole point.
+  "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", ignoreRestSiblings: true }],
   "no-unused-vars": "off",
   // Core no-undef isn't type-aware, so it false-positives on ambient/lib types (RequestInit,
   // HTMLIonRefresherElement, …) that only exist in type position. tsc/vue-tsc (pnpm typecheck)

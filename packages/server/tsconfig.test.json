@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "noEmit": true,
+    "outDir": "dist-test-typecheck-unused",
+    "paths": {
+      "@liftr/shared": ["packages/shared/src/index.ts"],
+      "@liftr/shared/*": ["packages/shared/src/*"],
+      "@liftr/db": ["packages/db/src/index.ts"],
+      "@liftr/db/*": ["packages/db/src/*"],
+      "~server/*": ["packages/server/src/*"]
+    }
+  },
+  "include": ["src", "../../tests/server"]
+}

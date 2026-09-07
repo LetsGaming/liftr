@@ -27,7 +27,7 @@ Every lift has a rank — nine tiers from Initiate to Apex, with divisions insid
 
 Once you hit a rank, it's locked in as your peak. The app won't quietly take it back from you, even if your bodyweight shifts or an old standard turns out to have been miscalibrated. Your *current* rank is a separate number: it softens a little if you stop training a lift for a few weeks — three weeks off costs you a division, not the whole tier — and it snaps straight back the moment you log one real set. No re-climbing, no second grind, just a reason to come back.
 
-Beyond the roughly 15 individual lift ranks, Liftr rolls your strongest, most-trusted lifts into a single Overall Rank, weighted toward your real barbell numbers so one obscure accessory exercise can't drag it around.
+Beyond your individual lift ranks — nearly every exercise in the catalog gets one, not just a handful of barbell classics — Liftr rolls your strongest, most-trusted lifts into a single Overall Rank, weighted toward your real barbell numbers so one obscure accessory exercise can't drag it around.
 
 The Recovery Zone looks at your recent training load and tells you plainly whether today is a green light or a rest day — a heuristic, not a claim to know your physiology better than you do. Streaks work on the same logic: miss a day and the streak survives, because the point is protecting motivation, not punishing a Tuesday.
 
@@ -39,13 +39,19 @@ None of it leaves your hands, either. No cloud account, no analytics, no feed to
 
 | Tier | What it means |
 |---|---|
-| 🥉 Bronze | You showed up and logged real numbers. Everyone starts here. |
-| 🛡️ Silver | Consistent, solid lifting — the floor most lifters live on. |
-| 🏅 Gold | Strong relative to standard, the tier that starts turning heads. |
-| 💎 Platinum | Rare air — the standards here assume years of dedicated training. |
-| 👑 Diamond | The top of the curve. Getting here on even one lift is a real feat. |
+| Initiate | You showed up and logged real numbers. Everyone starts here. |
+| Apprentice | Building a real base. |
+| Trainee | Training with real weight, momentum building. |
+| Athlete | Consistent, solid lifting — the floor most lifters live on. |
+| Lifter | Visibly, genuinely strong. |
+| Advanced | Strong relative to standard, the tier that starts turning heads. |
+| Elite | Rare air. |
+| Expert | The standards here assume years of dedicated training. |
+| Apex | The top of the curve. One real milestone, not another grind — getting here on even one lift is a genuine feat. |
 
-Five tiers, three divisions each, per exercise — plus one **Overall Rank** that rolls your strongest lifts into a single headline number.
+Nine tiers per exercise, each split into divisions — more of them near the bottom (Initiate has
+five) so early rank-ups come often, tapering to a single division at Apex, plus one **Overall
+Rank** that rolls your strongest lifts into a single headline number.
 
 ## Why it's built this way
 
@@ -76,7 +82,15 @@ Install it to your phone's home screen from the browser's "Add to Home Screen" p
 
 </details>
 
-See `audit/finished/liftr-audit.md` for the full architecture reference, environment variables, and development workflow if you're working on the codebase itself.
+Tests live under `tests/`, mirroring the package layout (`tests/server/services/foo.test.ts` for
+`packages/server/src/services/foo.ts`, and so on) — run them with `pnpm test`; see
+`tests/README.md` for the conventions if you're adding to them.
+
+See [`docs/`](docs/) for the full documentation suite — architecture, the HTTP API reference,
+environment variables, and guides for local development, adding an exercise, and releasing —
+if you're working on the codebase itself. (`audit/finished/liftr-audit.md` is the original,
+point-in-time architecture audit `docs/ARCHITECTURE.md` builds on — still worth a read for the
+full "why", but `docs/` is the maintained reference going forward.)
 
 ## Stack
 

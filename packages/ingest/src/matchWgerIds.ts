@@ -59,12 +59,12 @@ async function fetchAllEnglishTranslations(): Promise<WgerTranslation[]> {
  *  and anything ending "ss") so it never mangles a real word into a false match, just closes the
  *  singular/plural gap that was otherwise scoring e.g. "Ring Dip" vs "Ring Dips" as barely
  *  related. */
-function stem(word: string): string {
+export function stem(word: string): string {
   if (word.length > 3 && word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
   return word;
 }
 
-function tokenize(s: string): Set<string> {
+export function tokenize(s: string): Set<string> {
   return new Set(
     s
       .toLowerCase()
@@ -93,7 +93,7 @@ function tokenize(s: string): Set<string> {
  * half-kneeling variant — two extra qualifier words is usually a genuinely different exercise,
  * not the same one under a fuller name.
  */
-function tokenOverlapScore(curatedName: string, candidateName: string): number {
+export function tokenOverlapScore(curatedName: string, candidateName: string): number {
   const setA = tokenize(curatedName);
   const setB = tokenize(candidateName);
   const intersection = [...setA].filter((t) => setB.has(t)).length;
@@ -103,7 +103,7 @@ function tokenOverlapScore(curatedName: string, candidateName: string): number {
   return Math.max(jaccard, containment * 0.85);
 }
 
-const FUZZY_ACCEPT_THRESHOLD = 0.85;
+export const FUZZY_ACCEPT_THRESHOLD = 0.85;
 
 async function main() {
   const raw = await readFile(CATALOG_PATH, "utf-8");
@@ -155,7 +155,12 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Guarded so importing this module (e.g. from tests, to exercise the pure matching helpers
+// above) never triggers the real network/file-system run — only `tsx src/matchWgerIds.ts`
+// itself, where import.meta.url resolves to the invoked script path, does.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
