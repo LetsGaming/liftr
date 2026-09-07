@@ -1,7 +1,7 @@
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import staticFiles from "@fastify/static";
-import Fastify, { type FastifyError } from "fastify";
+import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -29,17 +29,23 @@ import { registerSyncRoutes } from "./routes/sync.js";
 import { registerWorkoutRoutes } from "./routes/workouts.js";
 import { registerXpRoutes } from "./routes/xp.js";
 
-export async function buildApp() {
-  const app = Fastify({ logger: true }).withTypeProvider<ZodTypeProvider>();
-  app.setValidatorCompiler(validatorCompiler);
-  app.setSerializerCompiler(serializerCompiler);
+/**
+ * Validation/serialization + the one error handler (fastify.md: "map typed failures to
+ * responses here, never leak internals"). Factored out of buildApp() so tests can get a real,
+ * isolated app instance (`registerXRoutes(app, testDb)` on a bare Fastify()) that exercises the
+ * same validation/error behavior as production, without the singleton db/static-file wiring
+ * below.
+ */
+export function configureApp(app: FastifyInstance) {
+  const typedApp = app.withTypeProvider<ZodTypeProvider>();
+  typedApp.setValidatorCompiler(validatorCompiler);
+  typedApp.setSerializerCompiler(serializerCompiler);
 
-  // One error handler (fastify.md: "map typed failures to responses here, never leak
-  // internals"). Zod validation failures (now thrown by the compiler above instead of each
-  // route's own `.parse()`) and the service layer's typed NotFoundError/ConflictError map to a
-  // clean status + body; anything else is a genuinely unexpected failure, logged with its real
-  // stack server-side but returned to the client as a bare 500 with no internal detail.
-  app.setErrorHandler((error: FastifyError, request, reply) => {
+  // Zod validation failures (now thrown by the compiler above instead of each route's own
+  // `.parse()`) and the service layer's typed NotFoundError/ConflictError map to a clean status
+  // + body; anything else is a genuinely unexpected failure, logged with its real stack
+  // server-side but returned to the client as a bare 500 with no internal detail.
+  typedApp.setErrorHandler((error: FastifyError, request, reply) => {
     if (error instanceof ZodError || error.code === "FST_ERR_VALIDATION") {
       return reply.code(400).send({ error: "invalid_request", detail: error.message });
     }
@@ -52,6 +58,11 @@ export async function buildApp() {
     request.log.error(error);
     return reply.code(500).send({ error: "internal_error" });
   });
+  return typedApp;
+}
+
+export async function buildApp() {
+  const app = configureApp(Fastify({ logger: true }));
 
   await app.register(cors, { origin: env.allowedOrigins ?? true });
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }); // GPX files are small text; 20MB is generous

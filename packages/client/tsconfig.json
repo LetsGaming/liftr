@@ -7,7 +7,14 @@
     "declaration": false,
     "declarationMap": false,
     "module": "ESNext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "paths": {
+      "@liftr/shared": ["packages/shared/src/index.ts"],
+      "@liftr/shared/*": ["packages/shared/src/*"],
+      "@liftr/db": ["packages/db/src/index.ts"],
+      "@liftr/db/*": ["packages/db/src/*"],
+      "~client/*": ["packages/client/src/*"]
+    }
   },
   "include": ["src"]
 }

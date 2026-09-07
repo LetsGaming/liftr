@@ -1,5 +1,22 @@
 apply plugin: 'com.android.application'
 
+// Release signing (release workflow / audit: "self-hosted, sideloaded app, no Play Store").
+// Two ways to supply the keystore, checked in this order:
+//   1. android/keystore.properties (gitignored) — for a local release build on a dev machine.
+//      See docs/operations/android-release-signing.md to generate one.
+//   2. LIFTR_KEYSTORE_PATH/LIFTR_KEYSTORE_PASSWORD/LIFTR_KEY_ALIAS/LIFTR_KEY_PASSWORD env vars
+//      — what .github/workflows/release.yml sets, decoding the ANDROID_KEYSTORE_BASE64 etc.
+//      GitHub Actions secrets to a temp file for the duration of the build.
+// Neither present (e.g. a plain local `assembleDebug`, or `assembleRelease` without secrets
+// configured) → signingConfig is left unset and the build proceeds unsigned rather than failing.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+def resolvedStoreFile = keystoreProperties['storeFile'] ?: System.getenv('LIFTR_KEYSTORE_PATH')
+def hasSigningConfig = resolvedStoreFile != null && resolvedStoreFile != ''
+
 android {
     namespace = "dev.liftr.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +24,10 @@ android {
         applicationId "dev.liftr.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Overridable via `-PversionName=1.2.3 -PversionCode=42` (release.yml derives both from
+        // the pushed git tag / run number); falls back to a fixed dev value otherwise.
+        versionCode project.hasProperty('versionCode') ? (project.versionCode as Integer) : 1
+        versionName project.hasProperty('versionName') ? project.versionName : "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +35,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasSigningConfig) {
+                storeFile file(resolvedStoreFile)
+                storePassword keystoreProperties['storePassword'] ?: System.getenv('LIFTR_KEYSTORE_PASSWORD')
+                keyAlias keystoreProperties['keyAlias'] ?: System.getenv('LIFTR_KEY_ALIAS')
+                keyPassword keystoreProperties['keyPassword'] ?: System.getenv('LIFTR_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasSigningConfig) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

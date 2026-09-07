@@ -24,6 +24,8 @@ const detail = ref<RunDetailModel | null>(null);
 onMounted(async () => {
   try {
     detail.value = await runsStore.loadDetail(props.runId);
+  } catch {
+    // offline or request failed — `detail` stays null, template shows the "couldn't load" hint
   } finally {
     loading.value = false;
   }
