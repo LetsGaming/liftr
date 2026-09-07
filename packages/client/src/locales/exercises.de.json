@@ -6,7 +6,7 @@
     },
     "bench-press": {
       "name": "Bankdrücken",
-      "howto": "Ellenbogen ca. 45° zum Körper, Stange kontrolliert zur Brust ablassen, ohne Schwung drücken — die Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "deadlift": {
       "name": "Kreuzheben",
@@ -18,19 +18,19 @@
     },
     "barbell-row": {
       "name": "Langhantelrudern",
-      "howto": "Rücken flach, Schulterblätter zusammenziehen, Ellenbogen nah am Körper führen — du spürst es im oberen Rücken."
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
     },
     "pushup": {
       "name": "Liegestütze",
-      "howto": "Körper von Kopf bis Ferse gerade, Ellenbogen ca. 45° zum Körper, kontrolliert absenken, ohne Schwung drücken — die Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "pullup": {
       "name": "Klimmzug (Obergriff)",
-      "howto": "Schulterblätter aktiv nach unten ziehen, Kinn über die Stange, kontrolliert ablassen — du spürst es im seitlichen Rücken."
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
     },
     "chinup": {
       "name": "Klimmzug (Untergriff)",
-      "howto": "Schulterblätter aktiv nach unten ziehen, Handflächen zu dir, kontrolliert ablassen — du spürst es im seitlichen Rücken."
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
     },
     "dip": {
       "name": "Dips",
@@ -102,7 +102,7 @@
     },
     "farmers-carry": {
       "name": "Farmers Walk",
-      "howto": "Rumpf stabil halten, aufrechte Haltung, gleichmäßige Schritte — dabei stabilisierst du auch den oberen Rücken."
+      "howto": "Rumpf stabil halten, aufrechte Haltung, gleichmäßige Schritte — den oberen Rücken stabilisiert."
     },
     "shrug": {
       "name": "Shrugs",
@@ -114,27 +114,27 @@
     },
     "incline-bench-press": {
       "name": "Schrägbankdrücken",
-      "howto": "Auf der Schrägbank, Ellenbogen ca. 45° zum Körper, Stange kontrolliert zur oberen Brust ablassen — die obere Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "decline-bench-press": {
       "name": "Negativbankdrücken",
-      "howto": "Auf der Negativbank, Ellenbogen ca. 45° zum Körper, Stange kontrolliert zur unteren Brust ablassen — die untere Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "dumbbell-bench-press": {
       "name": "Kurzhantel-Bankdrücken",
-      "howto": "Ellenbogen ca. 45° zum Körper, Kurzhanteln kontrolliert ablassen, oben nicht einklappen — die Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "dumbbell-incline-press": {
       "name": "Kurzhantel-Schrägbankdrücken",
-      "howto": "Auf der Schrägbank, Ellenbogen ca. 45° zum Körper, Kurzhanteln kontrolliert zur oberen Brust ablassen — die obere Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "close-grip-bench-press": {
       "name": "Enges Bankdrücken",
-      "howto": "Ellenbogen eng am Körper, Stange kontrolliert ablassen, ohne Schwung drücken — der Trizeps übernimmt den Hauptteil der Arbeit."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — den Trizeps arbeitet."
     },
     "machine-chest-press": {
       "name": "Brustpresse (Maschine)",
-      "howto": "Ellenbogen ca. 45° zum Körper, Griffe kontrolliert zurückführen, ohne Schwung drücken — die Brust arbeitet."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "cable-fly": {
       "name": "Kabelzug-Fliegende",
@@ -166,19 +166,19 @@
     },
     "diamond-pushup": {
       "name": "Diamant-Liegestütze",
-      "howto": "Hände unter der Brust zur Raute formen, Ellenbogen eng am Körper, kontrolliert absenken — der Trizeps übernimmt den Hauptteil der Arbeit."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — den Trizeps arbeitet."
     },
     "close-grip-pushup": {
       "name": "Enge Liegestütze",
-      "howto": "Hände enger als schulterbreit, Ellenbogen eng am Körper, kontrolliert absenken — der Trizeps übernimmt den Hauptteil der Arbeit."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — den Trizeps arbeitet."
     },
     "decline-pushup": {
       "name": "Liegestütze (Füße erhöht)",
-      "howto": "Füße erhöht, Körper gerade, Ellenbogen ca. 45° zum Körper, kontrolliert absenken — die obere Brust arbeitet stärker."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "incline-pushup": {
       "name": "Liegestütze (Hände erhöht)",
-      "howto": "Hände erhöht auf Bank oder Kasten, Körper gerade, Ellenbogen ca. 45° zum Körper, kontrolliert absenken — die untere Brust arbeitet stärker."
+      "howto": "Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — die Brust arbeitet."
     },
     "pike-pushup": {
       "name": "Pike-Liegestütze",
@@ -262,23 +262,23 @@
     },
     "dumbbell-row": {
       "name": "Kurzhantelrudern",
-      "howto": "Rücken parallel zum Boden, Ellenbogen nah am Körper zum Becken ziehen — du spürst es im oberen Rücken."
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
     },
     "seated-cable-row": {
       "name": "Rudern am Kabelzug (sitzend)",
-      "howto": "Aufrecht sitzen, Schulterblätter zusammenziehen, Ellenbogen am Körper vorbeiziehen — du spürst es im oberen Rücken."
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
     },
     "t-bar-row": {
       "name": "T-Bar-Rudern",
-      "howto": "Oberkörper leicht vorgebeugt, Ellenbogen nah am Körper zur Brust ziehen — du spürst es im oberen Rücken."
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
     },
     "chest-supported-row": {
       "name": "Rudern (brustgestützt)",
-      "howto": "Brust auf der Bank abstützen, kein Schwung nötig, Ellenbogen nah am Körper ziehen — du spürst es im oberen Rücken."
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
     },
     "inverted-row": {
       "name": "Invertiertes Rudern",
-      "howto": "Körper gestreckt, Brust zur Stange ziehen, Ellenbogen nah am Körper — du spürst es im oberen Rücken."
+      "howto": "Schulterblätter zusammenziehen, Ellenbogen nah am Körper — den oberen Rücken zieht."
     },
     "face-pull": {
       "name": "Face Pull",
@@ -290,15 +290,15 @@
     },
     "lat-pulldown": {
       "name": "Latzug",
-      "howto": "Aufrecht sitzen, Schulterblätter aktiv nach unten ziehen, kontrolliert nachlassen — du spürst es im seitlichen Rücken."
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
     },
     "wide-grip-pullup": {
       "name": "Klimmzug (weiter Griff)",
-      "howto": "Weiter Griff, Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — du spürst es im seitlichen Rücken."
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
     },
     "neutral-grip-pullup": {
       "name": "Klimmzug (neutraler Griff)",
-      "howto": "Neutraler Griff, Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — du spürst es im seitlichen Rücken."
+      "howto": "Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — den seitlichen Rücken übernimmt."
     },
     "hanging-leg-raise": {
       "name": "Hängendes Beinheben",
