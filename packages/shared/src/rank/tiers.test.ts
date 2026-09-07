@@ -11,7 +11,7 @@ import {
   ordinalToBand,
   type StandardThreshold,
 } from "./tiers.js";
-import { epley } from "../math/e1rm.js";
+import { rankRepMultiplier } from "../math/e1rm.js";
 
 const loadThresholds: StandardThreshold[] = [
   { tier: "initiate", division: 6, threshold: 0.5, trust: "real" },
@@ -56,9 +56,11 @@ describe("resolveRank", () => {
 
 describe("nextLoadTarget", () => {
   it("finds a concrete weight x reps pair crossing the target ratio", () => {
+    // Rank scoring resolves ratios via `rankSkillScore` (XP/rank balancing redesign §2), not
+    // Epley — the suggested target must be verified against the same curve it was derived from.
     const target = nextLoadTarget(1.1, 80, 6);
-    const impliedE1rm = epley(target.weightKg, target.reps);
-    expect(impliedE1rm).toBeGreaterThanOrEqual(1.1 * 80 - 1); // within rounding
+    const impliedScore = target.weightKg * rankRepMultiplier(target.reps);
+    expect(impliedScore).toBeGreaterThanOrEqual(1.1 * 80 - 1); // within rounding
     expect(target.reps).toBeGreaterThanOrEqual(4);
     expect(target.reps).toBeLessThanOrEqual(8);
   });
@@ -78,41 +80,81 @@ describe("nextRepTarget", () => {
 });
 
 describe("ratchetPeak", () => {
+  // Every existing behavior below is verified with `isCorroborated: true` — corroboration itself
+  // (whether a result *gets* to be compared at all) is tested separately below.
+
   it("adopts current as peak when there is no stored peak yet", () => {
-    const peak = ratchetPeak({ tier: "initiate", division: 5, lp: 40, e1rm: 100 }, 1000, null);
+    const peak = ratchetPeak({ tier: "initiate", division: 5, lp: 40, e1rm: 100 }, 1000, null, true);
     expect(peak).toEqual({ tier: "initiate", division: 5, lp: 40, e1rm: 100, achievedAt: 1000 });
   });
 
   it("never regresses when a later bodyweight increase alone would lower the naive ratio", () => {
-    // Simulates: PR set at bodyweight 80kg reaches trainee-5, then bodyweight climbs to 90kg
-    // with no strength change, so recomputing the ratio today against the same absolute e1RM
-    // would resolve to a *lower* band (apprentice-1). Peak must stay at trainee-5.
-    const peakAfterPr = ratchetPeak({ tier: "trainee", division: 5, lp: 20, e1rm: 120 }, 1000, null);
+    // Simulates: PR set at bodyweight 80kg reaches trainee-4 (trainee's weakest division), then
+    // bodyweight climbs to 90kg with no strength change, so recomputing the ratio today against
+    // the same absolute e1RM would resolve to a *lower* band (apprentice-1). Peak must stay put.
+    const peakAfterPr = ratchetPeak({ tier: "trainee", division: 4, lp: 20, e1rm: 120 }, 1000, null, true);
     const peakAfterBodyweightIncrease = ratchetPeak(
       { tier: "apprentice", division: 1, lp: 80, e1rm: 120 },
       2000,
       peakAfterPr,
+      true,
     );
     expect(peakAfterBodyweightIncrease).toEqual(peakAfterPr);
   });
 
   it("ratchets forward when a genuinely stronger tier/division is reached", () => {
-    const first = ratchetPeak({ tier: "initiate", division: 6, lp: 10, e1rm: 50 }, 1000, null);
-    const stronger = ratchetPeak({ tier: "initiate", division: 4, lp: 5, e1rm: 70 }, 2000, first);
+    const first = ratchetPeak({ tier: "initiate", division: 6, lp: 10, e1rm: 50 }, 1000, null, true);
+    const stronger = ratchetPeak({ tier: "initiate", division: 4, lp: 5, e1rm: 70 }, 2000, first, true);
     expect(stronger).toEqual({ tier: "initiate", division: 4, lp: 5, e1rm: 70, achievedAt: 2000 });
   });
 
   it("ratchets forward on a higher LP within the same tier/division", () => {
-    const first = ratchetPeak({ tier: "trainee", division: 5, lp: 30, e1rm: 90 }, 1000, null);
-    const higherLp = ratchetPeak({ tier: "trainee", division: 5, lp: 60, e1rm: 95 }, 2000, first);
-    expect(higherLp.lp).toBe(60);
-    expect(higherLp.achievedAt).toBe(2000);
+    const first = ratchetPeak({ tier: "trainee", division: 5, lp: 30, e1rm: 90 }, 1000, null, true);
+    const higherLp = ratchetPeak({ tier: "trainee", division: 5, lp: 60, e1rm: 95 }, 2000, first, true);
+    expect(higherLp?.lp).toBe(60);
+    expect(higherLp?.achievedAt).toBe(2000);
   });
 
   it("does not regress on a lower LP within the same tier/division", () => {
-    const first = ratchetPeak({ tier: "trainee", division: 5, lp: 60, e1rm: 95 }, 1000, null);
-    const lowerLp = ratchetPeak({ tier: "trainee", division: 5, lp: 30, e1rm: 90 }, 2000, first);
+    const first = ratchetPeak({ tier: "trainee", division: 5, lp: 60, e1rm: 95 }, 1000, null, true);
+    const lowerLp = ratchetPeak({ tier: "trainee", division: 5, lp: 30, e1rm: 90 }, 2000, first, true);
     expect(lowerLp).toEqual(first);
+  });
+
+  describe("corroboration gating (XP/rank balancing redesign §3)", () => {
+    it("does not establish a first-ever peak when uncorroborated", () => {
+      const peak = ratchetPeak({ tier: "initiate", division: 5, lp: 40, e1rm: 100 }, 1000, null, false);
+      expect(peak).toBeNull();
+    });
+
+    it("does not advance an existing peak when the stronger result is uncorroborated", () => {
+      const first = ratchetPeak({ tier: "initiate", division: 6, lp: 10, e1rm: 50 }, 1000, null, true);
+      const uncorroborated = ratchetPeak(
+        { tier: "initiate", division: 4, lp: 5, e1rm: 70 },
+        2000,
+        first,
+        false,
+      );
+      expect(uncorroborated).toEqual(first); // unchanged, not the stronger uncorroborated result
+    });
+
+    it("never demotes an already-confirmed peak just because a later result is uncorroborated", () => {
+      const confirmed = ratchetPeak({ tier: "trainee", division: 3, lp: 50, e1rm: 100 }, 1000, null, true);
+      const laterWeakerUncorroborated = ratchetPeak(
+        { tier: "initiate", division: 6, lp: 10, e1rm: 30 },
+        2000,
+        confirmed,
+        false,
+      );
+      expect(laterWeakerUncorroborated).toEqual(confirmed);
+    });
+
+    it("does eventually advance once a later call reports corroboration", () => {
+      const first = ratchetPeak({ tier: "initiate", division: 6, lp: 10, e1rm: 50 }, 1000, null, true);
+      // A second day reaches the same strong result and the caller now reports it corroborated.
+      const confirmed = ratchetPeak({ tier: "initiate", division: 4, lp: 5, e1rm: 70 }, 3000, first, true);
+      expect(confirmed).toEqual({ tier: "initiate", division: 4, lp: 5, e1rm: 70, achievedAt: 3000 });
+    });
   });
 });
 
@@ -124,22 +166,22 @@ describe("9-tier ladder", () => {
     ]);
   });
 
-  it("has the documented division count per tier, summing to 33 bands", () => {
+  it("has the documented division count per tier, summing to 27 bands", () => {
     expect(TIER_DIVISION_COUNT).toEqual({
-      initiate: 6, apprentice: 5, trainee: 5, athlete: 4, lifter: 4,
-      advanced: 3, elite: 3, expert: 2, apex: 1,
+      initiate: 5, apprentice: 4, trainee: 4, athlete: 3, lifter: 3,
+      advanced: 3, elite: 2, expert: 2, apex: 1,
     });
     const total = Object.values(TIER_DIVISION_COUNT).reduce((a, b) => a + b, 0);
-    expect(total).toBe(33);
-    expect(MAX_ORDINAL).toBe(32);
+    expect(total).toBe(27);
+    expect(MAX_ORDINAL).toBe(26);
   });
 
   it("ordinal: division N (weakest) in a tier is always the tier's lowest ordinal", () => {
-    expect(ordinal("initiate", 6)).toBe(0);
-    expect(ordinal("initiate", 1)).toBe(5);
-    expect(ordinal("apprentice", 5)).toBe(6); // right after initiate's 6 bands (0-5)
-    expect(ordinal("apprentice", 1)).toBe(10);
-    expect(ordinal("apex", 1)).toBe(32); // last band overall
+    expect(ordinal("initiate", 5)).toBe(0);
+    expect(ordinal("initiate", 1)).toBe(4);
+    expect(ordinal("apprentice", 4)).toBe(5); // right after initiate's 5 bands (0-4)
+    expect(ordinal("apprentice", 1)).toBe(8);
+    expect(ordinal("apex", 1)).toBe(26); // last band overall
   });
 
   it("ordinalToBand inverts ordinal exactly across the whole range", () => {

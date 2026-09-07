@@ -3,6 +3,7 @@
  * client can recompute optimistically offline and the server can recompute authoritatively
  * after sync, with guaranteed-identical results.
  */
+import { rankRepMultiplier } from "../math/e1rm.js";
 
 export const TIERS = [
   "initiate", "apprentice", "trainee", "athlete", "lifter",
@@ -13,10 +14,19 @@ export type Tier = (typeof TIERS)[number];
 /** Divisions per tier — deliberately more at the bottom (frequent rank-ups early) and fewer at
  *  the top (Apex has exactly 1: a single real milestone, not another grind). Within a tier of N
  *  divisions, values run N (weakest, entry) down to 1 (strongest, closest to promotion) — same
- *  "higher number = weaker" convention as the old fixed III/II/I, generalized to N divisions. */
+ *  "higher number = weaker" convention as the old fixed III/II/I, generalized to N divisions.
+ *
+ *  Reduced from the original 6/5/5/4/4/3/3/2/1 (33 bands total) to 5/4/4/3/3/3/2/2/1 (27 bands) as
+ *  part of the XP/rank balancing redesign §5 — the original bottom-heavy clustering, combined with
+ *  a first-ever set's typically-generous first resolution, let a single first-ever performance
+ *  clear 3-4 tiers at once regardless of which exercise it was. Still strictly "more at the
+ *  bottom, fewer at the top" (never increasing tier-to-tier), just less extreme — paired with
+ *  `defaultStandards.ts`'s `widenAnchorSpread` (which makes each tier require a genuinely bigger
+ *  jump in real strength, independent of division count) to address the "too easy to climb"
+ *  complaint from two different angles at once. */
 export const TIER_DIVISION_COUNT: Record<Tier, number> = {
-  initiate: 6, apprentice: 5, trainee: 5, athlete: 4, lifter: 4,
-  advanced: 3, elite: 3, expert: 2, apex: 1,
+  initiate: 5, apprentice: 4, trainee: 4, athlete: 3, lifter: 3,
+  advanced: 3, elite: 2, expert: 2, apex: 1,
 };
 
 export type Division = number;
@@ -135,18 +145,21 @@ export function nextLoadTarget(
   bodyweightKg: number,
   preferredReps: number,
 ): { weightKg: number; reps: number } {
-  const targetE1rm = nextThresholdRatio * bodyweightKg;
+  // `nextThresholdRatio` is a rank-skill-score ratio (rank scoring uses `rankSkillScore`, not
+  // Epley, as of the XP/rank balancing redesign §2) — the target must be inverted through the
+  // same curve or the suggested weight would not actually cross the threshold it came from.
+  const targetScore = nextThresholdRatio * bodyweightKg;
   // search reps within +/-2 of the lifter's recent pattern, clamped to a sane 1-15 range
   const repCandidates = [preferredReps, preferredReps - 1, preferredReps + 1, preferredReps - 2, preferredReps + 2]
     .filter((r) => r >= 1 && r <= 15);
 
   let best: { weightKg: number; reps: number } | null = null;
   for (const reps of repCandidates) {
-    // invert epley: e1rm = w * (1 + reps/30) => w = e1rm / (1 + reps/30)
-    const weightKg = targetE1rm / (1 + reps / 30);
+    // invert rankSkillScore: score = w * rankRepMultiplier(reps) => w = score / rankRepMultiplier(reps)
+    const weightKg = targetScore / rankRepMultiplier(reps);
     if (!best || weightKg < best.weightKg) best = { weightKg: roundToStep(weightKg, 1.25), reps };
   }
-  return best ?? { weightKg: roundToStep(targetE1rm, 1.25), reps: preferredReps };
+  return best ?? { weightKg: roundToStep(targetScore, 1.25), reps: preferredReps };
 }
 
 function roundToStep(value: number, step: number): number {
@@ -194,13 +207,33 @@ export interface PeakSnapshot {
  * Peak is a ratchet: it is never recomputed retroactively (e.g. against today's bodyweight),
  * only compared-against and possibly replaced by a genuinely stronger result. `storedPeak`
  * being `null` (first recompute after the R1 migration, or a brand-new exercise) always yields
- * `current` as the peak.
+ * `current` as the peak — PROVIDED `isCorroborated` is true (see below).
+ *
+ * `isCorroborated` (XP/rank balancing redesign §3): a result only gets to become — or replace —
+ * the peak once it has been reached on at least one OTHER day, not just the single best-ever set.
+ * Without this, one outlier (a typo'd weight, a fluke rep, unusually good form that one day) could
+ * permanently define a lifter's rank for that exercise. The caller (rankService.ts) computes this
+ * by re-checking the full set history for a second, separate day whose own resolved position
+ * meets or beats the candidate's — this function stays a pure comparison and doesn't know about
+ * "days" or set history itself.
+ *
+ * When `isCorroborated` is false, this simply returns `storedPeak` unchanged (which may be `null`
+ * if there is no confirmed peak yet) — strictly a delay, never a demotion: a corroborated peak is
+ * never taken away by a later, weaker, or uncorroborated result. This applies even to the very
+ * first peak an exercise ever gets, not just later promotions — a single lucky first set shouldn't
+ * define a lifter's rank any more than a single lucky later one should override an established
+ * peak. Note this only gates the *stored, decay-protected* peak; the live/current rank shown
+ * before any peak is confirmed is unaffected (see `recomputeRankForExercise`'s `peak == null`
+ * branch) — a first-ever set still shows a real rank immediately, it just isn't "peak" yet.
  */
 export function ratchetPeak(
   current: { tier: Tier; division: Division; lp: number; e1rm: number },
   achievedAt: number,
   storedPeak: PeakSnapshot | null,
-): PeakSnapshot {
+  isCorroborated: boolean,
+): PeakSnapshot | null {
+  if (!isCorroborated) return storedPeak;
+
   const currentOrdinal = ordinal(current.tier, current.division);
   const isStronger =
     !storedPeak ||

@@ -119,18 +119,57 @@ export interface LevelInfo {
   progressPercent: number;
 }
 
-/** level = floor(sqrt(totalXp / 100)) — an accelerating curve, so early levels come fast. */
+/**
+ * Level curve (XP/rank balancing redesign, `docs/superpowers/specs/2026-09-06-xp-rank-balancing-design.md` §1).
+ *
+ * `level = floor((totalXp / LEVEL_XP_SCALE) ^ LEVEL_CURVE_EXPONENT)`.
+ *
+ * Replaces the previous `floor(sqrt(totalXp / 100))`. That curve was calibrated back when total XP
+ * was *only* the per-set sum; the 2026-09-04 streak/XP redesign then stacked two once-per-session
+ * bonuses (consistency + variety, up to ~4000 XP combined) on top of every workout without
+ * rescaling the curve — so a single first session (~4600 XP) cleared level 6's 3600-XP threshold
+ * outright, and the curve then ran away to level 69 by month 6.
+ *
+ * `LEVEL_XP_SCALE` is sized to roughly one first session's total XP, which is what pins day 1 to
+ * exactly level 1. The exponent sits between 1.0 (a pure "one level per session" line, which never
+ * decelerates) and the old curve's implicit deceleration — early sessions still grant close to a
+ * level each, then growth visibly slows instead of compounding. See the worked table at the bottom
+ * of this file for the resulting pacing.
+ */
+export const LEVEL_XP_SCALE = 4600;
+export const LEVEL_CURVE_EXPONENT = 0.8;
+
+/** Total XP required to reach `level` — the exact inverse of `computeLevel`'s curve. Exported so
+ *  the progress-to-next-level math has a single source of truth rather than re-deriving the
+ *  inverse at each call site (the old curve's `level ** 2 * 100` was inlined twice). */
+export function xpAtLevel(level: number): number {
+  if (level <= 0) return 0;
+  return LEVEL_XP_SCALE * Math.pow(level, 1 / LEVEL_CURVE_EXPONENT);
+}
+
 export function computeLevel(totalXp: number): LevelInfo {
   const xp = Math.max(0, totalXp);
-  const level = Math.floor(Math.sqrt(xp / 100));
-  const levelFloorXp = level ** 2 * 100;
-  const nextLevelXp = (level + 1) ** 2 * 100;
+  let level = Math.floor(Math.pow(xp / LEVEL_XP_SCALE, LEVEL_CURVE_EXPONENT));
+
+  // Floating-point guard. `Math.pow` round-trips through logs, so at a level's exact boundary XP
+  // the forward curve can land a hair under the integer (e.g. 1.9999999997) and floor a full level
+  // too low. Re-establish the defining invariant directly against `xpAtLevel` instead of trusting
+  // the forward computation: xpAtLevel(level) <= xp < xpAtLevel(level + 1). Both loops step at most
+  // once in practice; they are written as loops only so the invariant holds unconditionally.
+  while (xpAtLevel(level + 1) <= xp) level += 1;
+  while (level > 0 && xpAtLevel(level) > xp) level -= 1;
+
+  const levelFloorXp = xpAtLevel(level);
+  const nextLevelXp = xpAtLevel(level + 1);
   const xpIntoLevel = xp - levelFloorXp;
   const xpForNextLevel = nextLevelXp - levelFloorXp;
   return {
     level,
-    xpIntoLevel,
-    xpForNextLevel,
+    // Rounded for display: unlike the old integer-threshold curve, `xpAtLevel` is fractional, and
+    // these two feed the UI's "N / M XP" readout directly. `progressPercent` uses the unrounded
+    // values so the bar never disagrees with itself at a boundary.
+    xpIntoLevel: Math.round(xpIntoLevel),
+    xpForNextLevel: Math.round(xpForNextLevel),
     progressPercent: xpForNextLevel > 0 ? Math.round((xpIntoLevel / xpForNextLevel) * 100) : 0,
   };
 }
@@ -181,11 +220,16 @@ export function computeVarietyBonus(newMuscleCount: number): number {
  *
  * | Point    | streakDays | Per-set XP (session) | Consistency bonus | Variety bonus | Session XP | ~totalXp | Level |
  * |----------|-----------:|----------------------:|-------------------:|---------------:|-----------:|---------:|------:|
- * | Day 1    |          1 |                  2280 |                 850 |           1500 |       4630 |     4630 |     6 |
- * | Week 2   |         14 |                  2040 |                2358 |           1000 |       5398 |    30084 |    17 |
- * | Month 1  |         30 |                  1390 |                3312 |           1500 |       6202 |    70408 |    26 |
- * | Month 3  |         90 |                  1380 |    5063 (cap @ d75) |           1500 |       7943 |   245175 |    49 |
- * | Month 6  |        180 |                  1440 |    5063 (cap @ d75) |           1500 |       8003 |   486371 |    69 |
+ * | Day 1    |          1 |                  2280 |                 850 |           1500 |       4630 |     4630 |     1 |
+ * | Week 2   |         14 |                  2040 |                2358 |           1000 |       5398 |    30084 |     4 |
+ * | Month 1  |         30 |                  1390 |                3312 |           1500 |       6202 |    70408 |     8 |
+ * | Month 3  |         90 |                  1380 |    5063 (cap @ d75) |           1500 |       7943 |   245175 |    24 |
+ * | Month 6  |        180 |                  1440 |    5063 (cap @ d75) |           1500 |       8003 |   486371 |    41 |
+ *
+ * Level column now uses `computeLevel`'s `floor((totalXp / LEVEL_XP_SCALE) ^ LEVEL_CURVE_EXPONENT)`
+ * curve (see that function's doc comment) — day 1 lands at exactly level 1 (the reported bug this
+ * curve fixes: the old `floor(sqrt(totalXp/100))` put day 1 at level 6), and growth decelerates
+ * smoothly instead of reaching level 69 by month 6.
  *
  * Ordering check (binding per the spec, "past their first month"): at Month 1/3/6, per-set XP
  * (1390/1380/1440) < variety bonus (1500) < consistency bonus (3312/5063/5063) — consistency is

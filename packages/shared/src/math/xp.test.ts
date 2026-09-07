@@ -7,10 +7,12 @@ import {
   computeVarietyBonus,
   quantizeLoadForDecay,
   repeatSetMultiplier,
+  xpAtLevel,
   BODYWEIGHT_NOMINAL_LOAD_KG,
   CONSISTENCY_BASE,
   CONSISTENCY_SCALE,
   CONSISTENCY_STREAK_CAP,
+  LEVEL_XP_SCALE,
   VARIETY_MAX_MUSCLES_PER_SESSION,
   VARIETY_PER_MUSCLE,
 } from "./xp.js";
@@ -267,18 +269,58 @@ describe("computeVarietyBonus", () => {
 
 describe("computeLevel", () => {
   it("starts at level 0 with 0 xp", () => {
-    expect(computeLevel(0)).toEqual({ level: 0, xpIntoLevel: 0, xpForNextLevel: 100, progressPercent: 0 });
+    const result = computeLevel(0);
+    expect(result.level).toBe(0);
+    expect(result.xpIntoLevel).toBe(0);
+    expect(result.progressPercent).toBe(0);
   });
 
-  it("is 50% through level 0 at 50 xp", () => {
-    expect(computeLevel(50)).toEqual({ level: 0, xpIntoLevel: 50, xpForNextLevel: 100, progressPercent: 50 });
+  it("is 50% through level 0 at half of level 1's threshold", () => {
+    const halfway = xpAtLevel(1) / 2;
+    const result = computeLevel(halfway);
+    expect(result.level).toBe(0);
+    expect(result.progressPercent).toBe(50);
   });
 
-  it("hits level 2 exactly at 400 xp (2^2 * 100)", () => {
-    expect(computeLevel(400)).toEqual({ level: 2, xpIntoLevel: 0, xpForNextLevel: 500, progressPercent: 0 });
+  it("hits level 2 exactly at xpAtLevel(2), the curve's own inverse", () => {
+    const result = computeLevel(xpAtLevel(2));
+    expect(result.level).toBe(2);
+    expect(result.xpIntoLevel).toBe(0);
+    expect(result.progressPercent).toBe(0);
   });
 
-  it("is 50% through level 2 at 650 xp", () => {
-    expect(computeLevel(650)).toEqual({ level: 2, xpIntoLevel: 250, xpForNextLevel: 500, progressPercent: 50 });
+  it("is 50% through level 2 at the midpoint between its threshold and level 3's", () => {
+    const midpoint = xpAtLevel(2) + (xpAtLevel(3) - xpAtLevel(2)) / 2;
+    const result = computeLevel(midpoint);
+    expect(result.level).toBe(2);
+    expect(result.progressPercent).toBe(50);
+  });
+
+  it("is monotonically non-decreasing in xp", () => {
+    let prevLevel = 0;
+    for (let xp = 0; xp <= 500_000; xp += 137) {
+      const level = computeLevel(xp).level;
+      expect(level).toBeGreaterThanOrEqual(prevLevel);
+      prevLevel = level;
+    }
+  });
+
+  it("round-trips against xpAtLevel across a wide range of levels", () => {
+    for (let level = 0; level <= 200; level++) {
+      expect(computeLevel(xpAtLevel(level)).level).toBe(level);
+      if (level > 0) expect(computeLevel(xpAtLevel(level) - 1).level).toBe(level - 1);
+    }
+  });
+
+  // Regression guard for the reported bug this curve fixes: a brand-new user's very first
+  // session (worked-table total below, this file's own module doc comment) used to reach level 6
+  // under the old floor(sqrt(xp/100)) curve. One session must now land at exactly level 1.
+  it("caps a single first-ever session's XP at level 1, never higher", () => {
+    const firstSessionXp = 4630; // per this module's worked sizing table, Day 1 row
+    expect(computeLevel(firstSessionXp).level).toBe(1);
+  });
+
+  it("is sized so LEVEL_XP_SCALE alone (roughly a first session's XP) is still level 0 or 1", () => {
+    expect(computeLevel(LEVEL_XP_SCALE).level).toBeLessThanOrEqual(1);
   });
 });

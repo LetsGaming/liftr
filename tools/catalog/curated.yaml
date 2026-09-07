@@ -269,7 +269,7 @@ exercises:
     secondaryMuscles:
       - glutes
     anchor: back-squat
-    ratio: 1.6
+    ratio: 1.4
     trust: derived
     freeExerciseDbId: Hack_Squat
   - slug: zercher-squat
@@ -432,7 +432,7 @@ exercises:
     secondaryMuscles:
       - abs
     anchor: deadlift
-    ratio: 0.5
+    ratio: 0.65
     trust: synthetic
     freeExerciseDbId: Farmers_Walk
   - slug: shrug
@@ -445,7 +445,7 @@ exercises:
       - traps
     secondaryMuscles: []
     anchor: deadlift
-    ratio: 0.5
+    ratio: 0.9
     trust: synthetic
     freeExerciseDbId: Barbell_Shrug
   - slug: leg-curl
@@ -637,8 +637,8 @@ exercises:
     primaryMuscles:
       - abs
     secondaryMuscles: []
-    anchor: bench-press
-    ratio: 0.2
+    anchor: deadlift
+    ratio: 0.15
     trust: synthetic
     freeExerciseDbId: Cable_Crunch
   - slug: diamond-pushup
@@ -751,7 +751,7 @@ exercises:
     secondaryMuscles:
       - triceps
     anchor: overhead-press
-    ratio: 0.8
+    ratio: 0.65
     trust: derived
     freeExerciseDbId: Dumbbell_Shoulder_Press
   - slug: arnold-press
@@ -765,7 +765,7 @@ exercises:
     secondaryMuscles:
       - triceps
     anchor: overhead-press
-    ratio: 0.75
+    ratio: 0.6
     trust: derived
     freeExerciseDbId: Arnold_Dumbbell_Press
   - slug: machine-shoulder-press
@@ -809,7 +809,7 @@ exercises:
       - triceps
       - abs
     anchor: overhead-press
-    ratio: 0.55
+    ratio: 0.85
     trust: synthetic
   - slug: lateral-raise
     wgerId: 348
@@ -846,8 +846,8 @@ exercises:
       - front-delts
     secondaryMuscles:
       - traps
-    anchor: overhead-press
-    ratio: 0.12
+    anchor: barbell-row
+    ratio: 0.15
     trust: synthetic
     freeExerciseDbId: Reverse_Flyes
   - slug: upright-row
@@ -860,7 +860,7 @@ exercises:
     secondaryMuscles:
       - biceps
     anchor: overhead-press
-    ratio: 0.35
+    ratio: 0.55
     trust: synthetic
     freeExerciseDbId: Upright_Barbell_Row
   - slug: barbell-curl
@@ -873,7 +873,7 @@ exercises:
       - biceps
     secondaryMuscles: []
     anchor: overhead-press
-    ratio: 0.55
+    ratio: 0.78
     trust: synthetic
     freeExerciseDbId: Barbell_Curl
   - slug: dumbbell-curl
@@ -911,7 +911,7 @@ exercises:
       - biceps
     secondaryMuscles: []
     anchor: overhead-press
-    ratio: 0.55
+    ratio: 0.8
     trust: synthetic
     freeExerciseDbId: EZ-Bar_Curl
   - slug: concentration-curl
@@ -924,7 +924,7 @@ exercises:
       - biceps
     secondaryMuscles: []
     anchor: overhead-press
-    ratio: 0.25
+    ratio: 0.38
     trust: synthetic
     freeExerciseDbId: Standing_Concentration_Curl
   - slug: preacher-curl
@@ -937,7 +937,7 @@ exercises:
       - biceps
     secondaryMuscles: []
     anchor: overhead-press
-    ratio: 0.45
+    ratio: 0.55
     trust: synthetic
     freeExerciseDbId: Preacher_Curl
   - slug: cable-curl
@@ -961,8 +961,8 @@ exercises:
     movementPattern: isolation-arms
     primaryMuscles: []
     secondaryMuscles: []
-    anchor: overhead-press
-    ratio: 0.2
+    anchor: deadlift
+    ratio: 0.4
     trust: synthetic
     freeExerciseDbId: Seated_Palm-Up_Barbell_Wrist_Curl
   - slug: reverse-wrist-curl
@@ -973,8 +973,8 @@ exercises:
     movementPattern: isolation-arms
     primaryMuscles: []
     secondaryMuscles: []
-    anchor: overhead-press
-    ratio: 0.15
+    anchor: deadlift
+    ratio: 0.4
     trust: synthetic
     freeExerciseDbId: Palms-Down_Wrist_Curl_Over_A_Bench
   - slug: dumbbell-row
@@ -1127,7 +1127,7 @@ exercises:
     secondaryMuscles:
       - traps
     anchor: pullup
-    ratio: 1
+    ratio: 1.1
     trust: derived
   - slug: hanging-leg-raise
     wgerId: 283
@@ -1140,8 +1140,8 @@ exercises:
     primaryMuscles:
       - abs
     secondaryMuscles: []
-    anchor: pullup
-    ratio: 1.5
+    anchor: pushup
+    ratio: 1.3
     trust: synthetic
     freeExerciseDbId: Hanging_Leg_Raise
   - slug: ring-dip
@@ -1173,7 +1173,7 @@ exercises:
       - quads
     secondaryMuscles: []
     anchor: back-squat
-    ratio: 0.55
+    ratio: 0.75
     trust: synthetic
     freeExerciseDbId: Leg_Extensions
   - slug: calf-raise-standing
@@ -1186,7 +1186,7 @@ exercises:
       - calves
     secondaryMuscles: []
     anchor: back-squat
-    ratio: 0.5
+    ratio: 1.0
     trust: synthetic
     freeExerciseDbId: Standing_Calf_Raises
   - slug: calf-raise-seated
@@ -1199,7 +1199,7 @@ exercises:
       - calves
     secondaryMuscles: []
     anchor: back-squat
-    ratio: 0.3
+    ratio: 0.55
     trust: synthetic
     freeExerciseDbId: Seated_Calf_Raise
   - slug: hip-abduction-machine
@@ -1255,8 +1255,8 @@ exercises:
       - glutes
     secondaryMuscles:
       - hamstrings
-    anchor: back-squat
-    ratio: 0.3
+    anchor: deadlift
+    ratio: 0.35
     trust: synthetic
   - slug: crunch
     wgerId: 167
