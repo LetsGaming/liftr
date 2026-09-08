@@ -5,6 +5,7 @@ import { generateSessionToken, hashSessionToken } from "../lib/sessionTokens.js"
 import {
   createSession,
   deleteSessionByTokenHash,
+  deleteUser,
   findOwnerUser,
   findUserByUsername,
   findUserById,
@@ -22,6 +23,13 @@ const passwordSchema = z.string().min(8, "at least 8 characters");
 const setupInput = z.object({ password: passwordSchema });
 const loginInput = z.object({ username: usernameSchema, password: z.string() });
 const registerInput = z.object({ code: z.string().length(8), username: usernameSchema, password: passwordSchema });
+
+/** A real hash (in the same `scrypt:N:r:p:salt:hash` format `hashPassword` produces — see
+ *  passwords.ts) computed once at module load and used only as a timing decoy in `/api/auth/login`
+ *  below, so a lookup for a nonexistent username still pays the full scrypt cost before returning
+ *  401 — never used to actually authenticate. Computed via `hashPassword` (rather than hand-crafted)
+ *  so the format is guaranteed valid; the one-time cost at startup is negligible. */
+const dummyPasswordHashPromise = hashPassword("dummy-password-for-timing");
 
 const tokenResponse = z.object({ token: z.string() });
 const statusResponse = z.object({ needsSetup: z.boolean() });
@@ -63,7 +71,16 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
     { schema: { body: loginInput, response: { 200: tokenResponse, 401: errorResponse } } },
     async (req, reply) => {
       const user = await findUserByUsername(db, req.body.username);
-      if (!user?.passwordHash || !(await verifyPassword(req.body.password, user.passwordHash))) {
+      if (!user?.passwordHash) {
+        // No such user (or setup never ran): still pay the full scrypt cost against a dummy hash
+        // so this branch takes about as long as a wrong-password check below. Otherwise a
+        // nonexistent username short-circuits fast while a real username with a wrong password
+        // pays ~128 MiB of scrypt work, letting an attacker enumerate valid usernames by timing.
+        // The result is discarded — it never gates authentication.
+        await verifyPassword(req.body.password, await dummyPasswordHashPromise);
+        return reply.code(401).send({ error: "invalid_credentials" });
+      }
+      if (!(await verifyPassword(req.body.password, user.passwordHash))) {
         return reply.code(401).send({ error: "invalid_credentials" });
       }
       return { token: await issueSession(db, user.id) };
@@ -84,7 +101,21 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
         role: "member",
         passwordHash: await hashPassword(req.body.password),
       });
-      await redeemInviteCode(db, invite.id, user.id);
+      // `findValidInviteCode` (check) and redeeming (act) are separate steps, so two concurrent
+      // registrations against the same still-unused code can both pass the check above before
+      // either redeems it. `redeemInviteCode` is a conditional update — `usedByUserId IS NULL` in
+      // its WHERE clause — that only one concurrent caller can actually claim; the other gets
+      // `false` back. The user row has to be inserted first (not after, as one might expect for a
+      // "redeem before commit" flow) because `invite_codes.used_by_user_id` has a FOREIGN KEY
+      // against `users.id`, so the redemption can't reference a user that doesn't exist yet.
+      // Instead, atomicity from the caller's perspective is achieved by deleting the just-inserted
+      // user when the redemption loses the race, so a losing caller never ends up with — or the
+      // system never ends up holding — an account it didn't actually earn with a valid code.
+      const redeemed = await redeemInviteCode(db, invite.id, user.id);
+      if (!redeemed) {
+        await deleteUser(db, user.id);
+        return reply.code(400).send({ error: "invalid_invite_code" });
+      }
       return { token: await issueSession(db, user.id) };
     },
   );

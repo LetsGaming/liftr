@@ -74,6 +74,18 @@ export function findValidInviteCode(db: LiftrDb, code: string) {
   });
 }
 
-export async function redeemInviteCode(db: LiftrDb, id: string, usedByUserId: string): Promise<void> {
-  await db.update(inviteCodes).set({ usedByUserId }).where(eq(inviteCodes.id, id));
+/** Conditional update — only claims the code if it hasn't already been redeemed by someone else.
+ *  This closes a TOCTOU race between `findValidInviteCode` (check) and this call (act): two
+ *  concurrent registrations against the same code can both pass the check, but only one of the
+ *  two `redeemInviteCode` calls will actually affect a row here. Returns whether this call was the
+ *  one that claimed it, via `.returning()` (idiomatic for this codebase — see `insertUser` above)
+ *  rather than a driver-specific affected-row count. Callers MUST check the return value and treat
+ *  `false` the same as an invalid code. */
+export async function redeemInviteCode(db: LiftrDb, id: string, usedByUserId: string): Promise<boolean> {
+  const rows = await db
+    .update(inviteCodes)
+    .set({ usedByUserId })
+    .where(and(eq(inviteCodes.id, id), isNull(inviteCodes.usedByUserId)))
+    .returning({ id: inviteCodes.id });
+  return rows.length > 0;
 }
