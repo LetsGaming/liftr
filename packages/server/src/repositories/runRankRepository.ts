@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, ne } from "drizzle-orm";
+import { and, asc, desc, eq, exists, ne } from "drizzle-orm";
 import { runPoints, runPrs, runRankEvents, runRanks, runs, runStandards, type LiftrDb } from "@liftr/db";
 import { nearestRunCategory, type RunCategory } from "@liftr/shared";
 
@@ -69,10 +69,16 @@ export function upsertRunRank(db: LiftrDb, userId: string, category: RunCategory
     .onConflictDoUpdate({ target: [runRanks.userId, runRanks.category], set: row });
 }
 
+/** "Best" is kind-direction-aware: for `kind: "speed"` (m/s) higher is better, but for
+ *  `kind: "time"` (seconds) LOWER is better — a plain `desc(value)` would return the slowest
+ *  historically-recorded time instead of the fastest once more than one "time" row exists for a
+ *  category. Ordering by the direction that actually means "best" for each kind keeps this a
+ *  correct, single-source-of-truth "best PR row" lookup for every current and future caller,
+ *  rather than pushing kind-direction awareness onto each call site. */
 export function findBestRunPrByKind(db: LiftrDb, userId: string, category: RunCategory, kind: (typeof runPrs.$inferInsert)["kind"]) {
   return db.query.runPrs.findFirst({
     where: and(eq(runPrs.userId, userId), eq(runPrs.category, category), eq(runPrs.kind, kind)),
-    orderBy: desc(runPrs.value),
+    orderBy: kind === "time" ? asc(runPrs.value) : desc(runPrs.value),
   });
 }
 
