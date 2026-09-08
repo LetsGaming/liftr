@@ -21,7 +21,7 @@ stays solid `--text`. `.streak-chip`'s flame icon is `--nebula-ink` at rest; its
 during the existing `.streak-pulse` window. Layout/positioning/visibility (`hideTopHud`) is
 unchanged by any of this.
 **Status:** 🟡 — round 1 confirmed `.level-dot` and `.streak-pulse` glow wiring exist in `App.vue`
-with matching token values (`audit/verify/agent-6.md`). Not independently re-confirmed rendering
+with matching token values (`audit/verify/SUMMARY.md`). Not independently re-confirmed rendering
 live in round 2 (round 2's design agents screenshotted Overview/Workout page content, not the
 top-of-screen HUD strip specifically) — a live spot-check is a cheap follow-up, not a rebuild.
 
@@ -33,9 +33,9 @@ pseudo-element on `.badge`, which is already using `::before` for its bevel) sho
 rank-up's celebratory beat, muted (`.badge-ring-muted`) for a plausibility-discounted rank-up.
 Resting badges (browsing Ranks) never show a ring.
 **Status:** 🟡 — round 1 confirmed `.badge-ring`/`.badge-ring-muted` exist in `FinishSequence.vue`
-and are structurally scoped to the rank-up beat condition (`audit/verify/agent-8.md`). Round 2
+and are structurally scoped to the rank-up beat condition (`audit/verify/SUMMARY.md`). Round 2
 could not trigger a genuine rank-up live in either session to visually confirm the ring/glow render
-(`audit/verify/round2-agent-3.md`, `round2-design-agent-3.md`) — **this is the single highest-value
+(`audit/verify/ROUND2-SUMMARY.md`) — **this is the single highest-value
 live check left to do**: complete a workout that crosses a rank threshold and screenshot the beat.
 
 ### 3. Primary CTA
@@ -45,14 +45,14 @@ feedback unchanged. `.btn-primary:disabled` stays flat/neutral — disabled must
 gradient. `.btn-secondary` stays neutral, always — Nebula is reserved for exactly one button tier.
 **Status:** ✅ — round 2 independently confirmed this live on Overview ("Jetzt trainieren"), Workout
 ("Satz speichern"), and Profile ("Speichern") in both dark and light mode, with the gradient stops
-matching tokens.css exactly (`round2-design-agent-1.md`, `-2.md`, `-3.md`). This is the one element
+matching tokens.css exactly (`audit/verify/ROUND2-SUMMARY.md`). This is the one element
 of the whole system confirmed working end-to-end.
 
 ### 4. Progress bars (`.rankbar`)
 **Files:** `tokens.css`'s `.rankbar > i`, `motion.css`'s `.bar-fill`.
 **Rule:** non-tiered bars (no `.t-<tier>` ancestor) fall back to `--nebula-grad` instead of plain
 blue. Tier-context bars keep rendering their tier's own metal gradient, unaffected.
-**Status:** 🟡 — fallback chain confirmed in source (`audit/verify/agent-1.md`). Round 2 only
+**Status:** 🟡 — fallback chain confirmed in source (`audit/verify/SUMMARY.md`). Round 2 only
 observed tier-context bars live (bronze/silver, correctly not Nebula per rule); the non-tiered
 fallback case wasn't separately exercised live. Low-risk, single-line CSS — no action needed unless
 a future non-tiered bar is added and visually spot-checked then.
@@ -65,7 +65,7 @@ moment it's achieved) gets `.panel-reward--nebula`, falling back to `--nebula-gr
 pattern as `.rankbar`. The PR ledger's steady-state list (browsing past PRs) stays on plain
 `.panel` with a small `--nebula-ink` badge, not a gradient card per row.
 **Status:** 🟡 — class and token confirmed present in `tokens.css` and wired into `RecordsPage.vue`
-(`audit/verify/agent-6.md`). The "just achieved" one-time-vs-steady-state distinction was not
+(`audit/verify/SUMMARY.md`). The "just achieved" one-time-vs-steady-state distinction was not
 independently exercised live (would require triggering a fresh PR mid-session).
 
 ### 6. Empty/loading/disabled states
@@ -88,8 +88,8 @@ set row), it's a small inline `--nebula-ink` marker, never a row-level backgroun
 The active-tab indicator falls back to `--nebula-grad` only when no tier context is in scope at
 all (the nav chrome itself, outside any specific rank card).
 **Status:** ✅ round 2 confirmed the live nav is a static 5-tab bar (Overview/Workout/Ranks/
-Exercises/Profile — `round2-agent-1.md`); active-tab treatment (filled block + full-color icon) was
-separately confirmed live (`round2-design-agent-1.md`). **Note:** the app's actual nav is 5 flat
+Exercises/Profile — `audit/verify/ROUND2-SUMMARY.md`); active-tab treatment (filled block + full-color icon) was
+separately confirmed live (`audit/verify/ROUND2-SUMMARY.md`). **Note:** the app's actual nav is 5 flat
 tabs, not the "Today/Train/Progress/Plan/Profile" five-zone IA some older planning docs (Plan C)
 described — that IA was never built and this document does not resurrect it as a requirement; the
 current flat nav is the accepted shipped shape.
@@ -100,7 +100,7 @@ routine cards, status-strip stat tiles — stays on the neutral/tier system per
 `nebula-design-system.md` §2's positive list (this explicitly includes `StatTile.vue`'s streak/level
 values staying solid, not gradient — see the ratified resolution there).
 **Status:** ✅ confirmed live — CTA gradient present and correct, StatTile solid colors confirmed
-and now understood as correct-by-design, not a gap (`round2-design-agent-1.md`).
+and now understood as correct-by-design, not a gap (`audit/verify/ROUND2-SUMMARY.md`).
 
 ### Train (active workout)
 No HUD chrome at all (`hideTopHud` stays true here — unrelated to Nebula, an existing rule). The
@@ -112,7 +112,7 @@ pressed 30×/session would read as noise, not reward).
 **Status:** ✅ CTA gradient confirmed live and correct. 🟡 the rank/tier progress card at the top of
 the active-workout screen (the first thing a user sees on entering a set) correctly stays on the
 tier metal-color system per this rule — round 2 flagged this as "not matching the mockup"
-(`round2-design-agent-2.md`), which per `nebula-design-system.md` §1 is the system working as
+(`audit/verify/ROUND2-SUMMARY.md`), which per `nebula-design-system.md` §1 is the system working as
 designed, not a defect; no action needed.
 
 ### Finish Sequence & Ranks
@@ -124,7 +124,7 @@ page's weekday rank-up strip: cells with a genuine rank-up get a small Nebula-ti
 the one *persistent* (non-transient) Nebula usage in the app, justified because it marks a
 historical fact, not ambient decoration.
 **Status:** 🟡 LP-bar animation and plausibility-muting confirmed live and working correctly
-(`round2-agent-3.md` — a forced-implausible session was correctly caught and visually flagged).
+(`audit/verify/ROUND2-SUMMARY.md` — a forced-implausible session was correctly caught and visually flagged).
 Ring/glow during an actual rank-up beat: not yet confirmed live (see component §2 above — top
 follow-up item). Resting Ranks-list badges correctly show tier colors, not Nebula — confirmed, and
 correct per design, not a gap.

@@ -83,7 +83,7 @@ export const exercises = sqliteTable("exercises", {
   /** Multi-user hardening groundwork: null for every catalog exercise (ingested or seeded); set
    *  to the creator's id for a custom (`isCustom`) exercise. NOT currently used to scope
    *  visibility — custom exercises stay in the shared catalog, visible to every user, for this
-   *  pass (see docs/adr/0006-per-user-data-scoping.md's "accepted limitation": two users picking
+   *  pass (see docs/adr/0006-multi-user-hardening.md's "accepted limitation": two users picking
    *  the same natural slug for a custom exercise collide on `exercises.slug`'s global
    *  uniqueness). This column exists now so scoping custom-exercise visibility per creator later
    *  is a query change, not another schema migration. */
@@ -232,7 +232,7 @@ export const sets = sqliteTable(
      *  across six repository files (rank resolution, XP, history, export, muscle training log,
      *  "last performed" lookups) that would otherwise each need their own two-hop join with no
      *  compiler-enforced guarantee it's present — a forgotten join here is a silent cross-user
-     *  data leak. See docs/adr/0006-per-user-data-scoping.md. */
+     *  data leak. See docs/adr/0006-multi-user-hardening.md. */
     userId: userId(),
     workoutExerciseId: text("workout_exercise_id")
       .notNull()

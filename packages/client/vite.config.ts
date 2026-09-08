@@ -75,8 +75,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:3001",
-      "/images": "http://localhost:3001",
+      // BACKEND_PORT lets an isolated dev session (scripts/dev-up.mjs --id <name>) point this
+      // client at its own dynamically-allocated backend instead of the default :3001 — unset in
+      // the normal `pnpm dev` flow, where it keeps defaulting to 3001 exactly as before.
+      "/api": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,
+      "/images": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,
     },
   },
 });

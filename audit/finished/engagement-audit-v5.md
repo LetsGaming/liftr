@@ -5,7 +5,7 @@
 completion and never re-labeled. Verification evidence: Phase 1a (routine-save silent-failure fix),
 1b (NumberStepper select-on-focus), Phase 2 (Overview/Ranks/Profile duplication cut), Phase 3
 (Profile domain-header split), and Phase 4 (Overview priority-tile surfacing) are all confirmed
-`VERIFIED COMPLETE` against live source in `audit/verify/agent-1.md` (round 1, static) — the exact
+`VERIFIED COMPLETE` against live source in `audit/verify/SUMMARY.md` (round 1, static) — the exact
 fixes described below (`RoutineWizard.vue` reps rounding + try/catch + toast, `NumberStepper.vue`
 `.select()` on focus, single `Daten-Export` entry point, `ProfilePage.vue`'s four group headers,
 `.tile--priority` on Overview's action cards) all exist in current code. No open work remains from

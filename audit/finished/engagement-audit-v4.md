@@ -266,7 +266,7 @@ implementation and need no further work.
   fallback idiom as the nav indicator.
 - **[P1] Workout tab's `.routine-card` grid** (`packages/client/src/components/routine/RoutineList.vue:251-263`
   as of 2026-09-04 — a later extraction moved this code out of `WorkoutPage.vue`, which now only
-  renders `<RoutineList>`; corrected citation per `audit/verify/agent-4.md`, the underlying claim
+  renders `<RoutineList>`; corrected citation per `audit/verify/SUMMARY.md`, the underlying claim
   below is unaffected) got its own shape pass
   first (a routine has no tier of its own the way an exercise does — `Routine`/`RoutineExercise`
   carry no color/tier/primary-muscle field, only a `mesocycle` state and exercise list, confirmed

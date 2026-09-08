@@ -1,9 +1,9 @@
 /**
  * Feature: onboarding setup guide ("gender, age, weight, prior experience... workouts per
  * week") + owned-equipment filtering. Backed by the existing generic `settings` k/v table
- * (already used for defaultBodyweightKg) rather than dedicated tables — this is a single-user,
- * no-accounts app, so there's exactly one profile and one equipment set, which is exactly what a
- * k/v row already models with no schema change needed.
+ * (already used for defaultBodyweightKg) rather than dedicated tables — the table is user-scoped
+ * (see docs/adr/0006-multi-user-hardening.md), but with no login yet there's exactly one resolved
+ * identity, so a plain k/v row per key still models it with no schema change needed.
  */
 import type { LiftrDb } from "@liftr/db";
 import { z } from "zod";

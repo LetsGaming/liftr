@@ -22,7 +22,21 @@
 - Recurring Ionic Vue console exception (`insertBefore` on null) firing every 35-90s throughout the whole session, independent of user action.
 - A GPX-imported run showed `distanceM: 0, durationS: 0` despite valid timestamped trackpoints and a correctly-rendered map — flagged unconfirmed (may be a test-fixture artifact).
 
-Full detail: `round2-agent-1.md` through `round2-agent-6.md`.
+**Two nuance corrections to round 1's findings**, also from live testing:
+- **Mobile exercise-rail truncation actually works** (`rail-strip-mobile`: `white-space:nowrap;
+  text-overflow:ellipsis`) — but via a second, independent, ad-hoc CSS implementation, not the
+  shared `TruncatingLabel` primitive. This is a third data point reinforcing round 1's "the fix is
+  reinvented per-screen" finding: mobile rail = correct via ad-hoc CSS; desktop rail and the
+  active-exercise `<h2>` = wrong (break-word); `RanksPage.vue` = wrong. — round2-agent-1
+- **RestTimer's "3 distinct states" is really 2 visually-identical states plus 1 compact variant.**
+  Between-sets and after-exercise both render the same ring+skip template (only duration/trigger
+  differ — confirmed in `RestTimer.vue`); only the third, `superset-continue` (no ring, no skip)
+  is visually distinct, and it wasn't triggerable live (no seeded routine had an active superset
+  grouping) — confirmed present in source (`RestTimer.vue:94-99`) but not exercised end-to-end.
+  — round2-agent-3
+
+(Per-agent detail reports `round2-agent-1.md` through `round2-agent-6.md` have been merged into
+this summary and removed.)
 
 ---
 
@@ -46,7 +60,9 @@ You said some findings were false without saying which — this is almost certai
 - **Corner radius drift**: mockup uses one uniform ~20px; shipped app uses three different values (16/22/28px).
 - **A real light-mode theming bug, independent of the Nebula question**: toggling "Hell" correctly sets `data-theme="light"` and `--bg` resolves correctly in CSS, but the rank-ladder panel and exercise cards' *actual rendered* background stays near-black — light mode does not visually apply to these surfaces at all.
 
-Full detail with computed-style evidence: `round2-design-agent-1.md` (Overview), `round2-design-agent-2.md` (Workout), `round2-design-agent-3.md` (Ranks).
+(Per-agent detail reports with computed-style evidence — `round2-design-agent-1.md` (Overview),
+`round2-design-agent-2.md` (Workout), `round2-design-agent-3.md` (Ranks) — have been merged into
+this summary and removed.)
 
 ---
 
