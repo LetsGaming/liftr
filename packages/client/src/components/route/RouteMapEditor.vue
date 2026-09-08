@@ -150,7 +150,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   height: 44px;
   border-radius: 50%;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   font-size: 20px;
 }
 .remove-last-btn {
@@ -162,6 +162,43 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   padding: 0 14px;
   border-radius: var(--r-md);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
+}
+
+/* Waypoint marker badge: L.divIcon's `className: "route-waypoint-icon"` REPLACES DivIcon's
+   default `className: 'leaflet-div-icon'` option (Leaflet merges size/anchor but not the class
+   string), so the marker also loses leaflet.css's built-in box/border styling — this component
+   owns the full visual here, not just an addition to Leaflet's default look.
+   Leaflet also sets inline `width`/`height` on the outer div from `iconSize` (28px, chosen for
+   map density, not touch target), so the 44px touch-target convention used by .locate-btn/
+   .remove-last-btn above is applied to the inner <span> instead: it's unconstrained by Leaflet's
+   inline styles, and centering it in the (larger, unclipped) flex box keeps it anchored on the
+   same map coordinate while presenting a full 44px hit area. `:deep()` is required because
+   Leaflet injects this markup imperatively via innerHTML, outside Vue's scoped-CSS render tree. */
+:deep(.route-waypoint-icon) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+:deep(.route-waypoint-icon span) {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  background: var(--fire);
+  color: var(--k-warmup-text);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
+}
+/* Armed-to-delete state (renderMarkers() adds this class while removeConfirm has this waypoint
+   armed) — mirrors WorkoutPage.vue's .cancel-btn.confirming treatment for the same tap-to-arm
+   delete pattern elsewhere in the app. */
+:deep(.route-waypoint-icon span.confirming) {
+  background: var(--red-lo);
+  border-color: var(--red);
+  color: var(--text);
 }
 </style>
