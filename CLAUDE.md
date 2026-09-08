@@ -32,7 +32,9 @@ exercises get a locked-in (corroborated) peak rank, one is left intentionally un
 one (chin-up) is trained early and then abandoned so current-vs-peak rank decay has something real
 to show too. Plus two finished runs — one GPS-tracked (route + replay) and one logged manually (no
 route/HR/elevation, matching the real manual-entry contract) — so both what a run can and can't
-show are covered. It prints the dashboard URL, backend URL, and log paths to use.
+show are covered, plus two planned routes (Tempelhof-Runde with full ORS-style geometry, a second
+left as an unresolved straight-line fallback), with the manual run linked back to the first. It
+prints the dashboard URL, backend URL, and log paths to use.
 
 Exercise catalog *images* are the one thing **not** scoped to your session — they're static,
 network-fetched, and identical across every session, so they live in the ordinary shared

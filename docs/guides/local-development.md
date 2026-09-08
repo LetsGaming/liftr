@@ -88,7 +88,10 @@ node scripts/dev-down.mjs --id my-session   # stop + clean up when done
    (`applySyncBatch`) so ranks, PRs, streaks, and XP are all correctly derived rather than
    hand-computed. Plus two finished runs — one GPS-tracked (route + replay) and one logged
    manually (no route/HR/elevation, matching the real manual-entry contract) — so both what a
-   run can and can't show are covered, not just the GPS happy path.
+   run can and can't show are covered, not just the GPS happy path. Also two planned routes,
+   written straight through `plannedRouteRepository` (never via the OpenRouteService adapter, so
+   this stays fully offline): Tempelhof-Runde with full ORS-style geometry, and a second left as
+   an unresolved straight-line fallback — the manual run above is linked back to the first.
 
 `dev-down.mjs --id my-session` stops exactly the two processes that id's `dev-up.mjs` started (by
 recorded PID, never a broad kill) and deletes `data/agent-<id>/` + `logs/agent-<id>/` — never the

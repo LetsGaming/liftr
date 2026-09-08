@@ -19,7 +19,11 @@
  *     rank decay UI has something real to show too. Plus two finished runs — one GPS-tracked (a
  *     real route with map + replay) and one logged manually (no route/HR/elevation, per POST
  *     /api/runs' actual manual-entry contract) — so both the presence and the absence of
- *     GPS-derived features are covered, not just the happy path.
+ *     GPS-derived features are covered, not just the happy path. Also two planned routes, written
+ *     straight through plannedRouteRepository (never via the OpenRouteService adapter, so this
+ *     stays fully offline): one with "ors"-style full geometry, one left as an unresolved
+ *     "straight"-line fallback — and the manual run above is linked to the first via
+ *     plannedRouteId.
  */
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -38,8 +42,10 @@ import { insertCustomExercise } from "../packages/server/src/repositories/exerci
 import { insertRoutine, insertRoutineExercises, type RoutineExerciseInput } from "../packages/server/src/repositories/routineRepository.js";
 import { insertMesocycle } from "../packages/server/src/repositories/mesocycleRepository.js";
 import { insertRun, insertRunPoints } from "../packages/server/src/repositories/runRepository.js";
+import { insertPlannedRoute, insertPlannedRoutePoints } from "../packages/server/src/repositories/plannedRouteRepository.js";
 import { applySyncBatch, type SyncItem } from "../packages/server/src/services/syncService.js";
 import type { GymSetup } from "../packages/server/src/routes/settings.js";
+import { pathDistanceM } from "@liftr/shared";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -294,6 +300,49 @@ async function seedRoutines(db: LiftrDb, customExerciseId: string): Promise<Reco
   return routineIds;
 }
 
+/** Two routes writing straight through plannedRouteRepository — must NEVER call ORS (this script
+ *  has to work fully offline, same as its existing image-fetch step already treats network as
+ *  optional). Reuses seedGpsRun's 52.4732/13.4021 Tempelhof coordinates so the mock data reads as
+ *  one person's neighborhood. Returns the "ors" route's id so the manual run below can link to it. */
+async function seedPlannedRoutes(db: LiftrDb): Promise<string> {
+  const waypointCount = 8;
+  const waypoints = Array.from({ length: waypointCount }, (_, i) => {
+    const angle = (i / waypointCount) * 2 * Math.PI;
+    return { lat: 52.4732 + Math.sin(angle) * 0.004, lon: 13.4021 + Math.cos(angle) * 0.006 };
+  });
+  const orsRoute = await insertPlannedRoute(db, USER_ID, {
+    name: "Tempelhof-Runde",
+    orderIndex: 0,
+    waypoints,
+    distanceM: 6400,
+    elevationGainM: 34,
+    geometrySource: "ors",
+    computedAt: new Date(),
+  });
+  await insertPlannedRoutePoints(
+    db,
+    orsRoute.id,
+    waypoints.map((w, idx) => ({ idx, lat: w.lat, lon: w.lon, ele: 40 + Math.sin(idx) * 3 })),
+  );
+
+  // A second route covers what the feature *can't* show — no ORS key, so a real straight-line
+  // fallback, same reasoning that already put a manual run alongside the GPS run in this script.
+  const parkweg = [{ lat: 52.4732, lon: 13.4021 }, { lat: 52.478, lon: 13.4021 }, { lat: 52.478, lon: 13.409 }];
+  const straightRoute = await insertPlannedRoute(db, USER_ID, {
+    name: "Parkweg (ungeprüft)",
+    orderIndex: 1,
+    waypoints: parkweg,
+    distanceM: pathDistanceM(parkweg),
+    elevationGainM: null,
+    geometrySource: "straight",
+    computedAt: new Date(),
+  });
+  await insertPlannedRoutePoints(db, straightRoute.id, parkweg.map((w, idx) => ({ idx, lat: w.lat, lon: w.lon, ele: null })));
+
+  console.log("  2 planned routes seeded (Tempelhof-Runde: ors, Parkweg: straight-line fallback).");
+  return orsRoute.id;
+}
+
 async function seedWorkoutHistory(db: LiftrDb, routineIds: Record<RoutineName, string>, customExerciseId: string) {
   const plan = buildSessionPlan();
   let workoutCount = 0;
@@ -400,7 +449,7 @@ async function seedGpsRun(db: LiftrDb) {
  *  — the "what a manual entry can't do that a GPS import can" feature-coverage counterpart to
  *  seedGpsRun. Name left null on purpose: a real manual entry has no title unless the user types
  *  one, so this also exercises the unnamed-run display state. */
-async function seedManualRun(db: LiftrDb) {
+async function seedManualRun(db: LiftrDb, plannedRouteId: string) {
   const startedAt = daysAgo(3, 6, 45);
   const distanceM = 8000;
   const durationS = 2460; // 41 min
@@ -413,8 +462,9 @@ async function seedManualRun(db: LiftrDb) {
     distanceM,
     durationS,
     avgPaceSPerKm: durationS / (distanceM / 1000),
+    plannedRouteId,
   });
-  console.log(`  Manual run seeded (${(distanceM / 1000).toFixed(1)} km, no route/HR/elevation — manual-entry fallback).`);
+  console.log(`  Manual run seeded (${(distanceM / 1000).toFixed(1)} km, no GPS points) linked to planned route ${plannedRouteId}.`);
 }
 
 async function main() {
@@ -447,9 +497,12 @@ async function main() {
   console.log("[seed] workout history (via the real sync pipeline)...");
   await seedWorkoutHistory(db, routineIds, customExercise.id);
 
+  console.log("[seed] planned routes...");
+  const plannedRouteId = await seedPlannedRoutes(db);
+
   console.log("[seed] runs (GPS + manual entry)...");
   await seedGpsRun(db);
-  await seedManualRun(db);
+  await seedManualRun(db, plannedRouteId);
 
   console.log("[seed] done.");
 }
