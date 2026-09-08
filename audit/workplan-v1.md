@@ -27,18 +27,18 @@ Condensed to one line each with a pointer to the evidence; full history lives in
   digit-concatenation, duplicate finish-screen XP display, persistent top-HUD during logging,
   muscle-diagram stretch glitch, 44px touch-target floor, segmented-control neutral color, token
   reveal/hide toggle on both Profile and AuthGate, wizard fast-path step relabel, bottom-anchor CTA
-  copy) — all verified shipped and correct. `audit/verify/agent-1.md`.
+  copy) — all verified shipped and correct. `audit/verify/SUMMARY.md`.
 - **Personal Records ledger** — see §2, corrected below; the *feature* is done, one integration gap
   and one live bug remain open.
 - **Reward-signal legibility** (`standards.trust` rendered on Ranks/Progress/exercise-info screens,
   Overall Lifter Rank surfaced on Overview/Ranks/Workout/WorkoutDetail) — verified present and
-  wired. `audit/verify/agent-1.md`, `agent-2.md`.
+  wired. `audit/verify/SUMMARY.md`.
 - **RPE and notes surfacing** — shipped 2026-09-04: `RpeCapture.vue`/`NoteCapture.vue`, off the
   primary logging path, never blocking "Satz speichern," confirmed live via real clicks (sheet
-  opens, picks an option, logs without RPE set). `audit/verify/round2-agent-3.md`.
+  opens, picks an option, logs without RPE set). `audit/verify/ROUND2-SUMMARY.md`.
 - **`engagement-audit-v5` carry-forward** (Overview/Ranks/Profile duplication cut, Profile domain
   grouping into 4 sections, Overview priority tiles) — verified shipped and correct live.
-  `audit/verify/round2-agent-2.md`, `round2-design-agent-1.md`.
+  `audit/verify/ROUND2-SUMMARY.md`.
 - **Track R (the full UI rebuild, formerly "Plan C")** — six phases (Foundation, Today/Train,
   Finish & Progress, Plan, Profile/Auth, Runs) executed via subagent-driven development and merged
   to master, commit range `9daef8e..f7f2256`. Nearly every claimed feature was independently
@@ -47,18 +47,17 @@ Condensed to one line each with a pointer to the evidence; full history lives in
   app correctly flagged and suppressed the gain with the exact expected copy), drag-to-reorder,
   equipment-substitution copy naming the specific missing item, muscle-coverage/lopsided-distribution
   review checks, auth 401 gate, CSV/ZIP export, PR ledger. Full detail:
-  `audit/finished/plan-c-new-ui-rebuild.md`, `audit/verify/round2-agent-3.md`,
-  `round2-agent-4.md`, `round2-agent-6.md`.
+  `audit/finished/plan-c-new-ui-rebuild.md`, `audit/verify/ROUND2-SUMMARY.md`,
+  see `audit/verify/ROUND2-SUMMARY.md`.
 - **Rank engine v2** (9-tier ladder, peak/decay/recovery-gain, plausibility gate, XP discounting) —
   fully implemented and tested (260/260 tests passing). One real gap the plan itself never
   anticipated: migration 0009 didn't remap pre-existing rows holding old 5-tier strings; caught and
   fixed by a later migration (`0010_remap_legacy_tier_strings.sql`), already shipped. Design spec's
   exact plausibility threshold numbers are stale (tightened later by engagement-audit-v3) — the
-  mechanic is correct, only the spec's literal numbers drifted. `audit/verify/agent-5.md`.
+  mechanic is correct, only the spec's literal numbers drifted. `audit/verify/SUMMARY.md`.
 - **Nebula chrome/CTA layer (N0-N1)** — tokens, light-mode base palette, theme store, `.btn-primary`
   gradient — confirmed shipped AND confirmed live/rendered correctly on Overview, Workout, and
-  Profile in both themes. `audit/nebula-design-plan.md`, `audit/verify/round2-design-agent-1.md`
-  through `-3.md`.
+  Profile in both themes. `audit/nebula-design-plan.md`, `audit/verify/ROUND2-SUMMARY.md`.
 - **§3.6's gym-setup 500 (WS1, 2026-09-04)** — was one bad legacy-shaped row in the dev DB, not a
   code bug; reset directly (`GET /api/settings/gym` returns 200, confirmed live in a fresh boot
   console with zero errors).
@@ -163,7 +162,7 @@ Condensed to one line each with a pointer to the evidence; full history lives in
 was false and stale.** The feature is fully shipped: `packages/server/src/routes/prs.ts`
 (registered), `packages/client/src/stores/prStore.ts`, `packages/client/src/pages/RecordsPage.vue`
 routed at `/records`, linked from `RanksPage.vue`. Confirmed live: real PR data renders, `GET
-/api/prs` returns 200, no console errors. `audit/verify/agent-1.md`, `round2-agent-2.md`.
+/api/prs` returns 200, no console errors. `audit/verify/SUMMARY.md`, `audit/verify/ROUND2-SUMMARY.md`.
 
 **Finish Sequence → ledger link — closed by WS4 Wave 7 (2026-09-04).** The gap this section
 originally flagged (no permanent link from the Finish Sequence's PR beat into the ledger) is fixed:
@@ -171,8 +170,8 @@ originally flagged (no permanent link from the Finish Sequence's PR beat into th
 streak/XP mechanics work (see §3.7). This bullet is stale — kept here only long enough to record
 the closure.
 
-**Router-link blank-flash bug (`round2-agent-2.md`) — verified already resolved, 2026-09-05.**
-`round2-agent-2.md` found that navigating to `/records` via `RanksPage.vue`'s in-app router-link
+**Router-link blank-flash bug (`audit/verify/ROUND2-SUMMARY.md`) — verified already resolved, 2026-09-05.**
+`audit/verify/ROUND2-SUMMARY.md` found that navigating to `/records` via `RanksPage.vue`'s in-app router-link
 showed a fully blank content area for ~1-2 seconds before data rendered (reproduced 3× on fresh
 tabs), unlike a direct/hard URL load. That report predates same-day WS3 client UI cleanup work,
 which added `RecordsPage.vue`'s `.pr-skel-row` shimmer skeleton (gated on
@@ -188,7 +187,7 @@ existing `--dur-fast` transition, not a bug), then the skeleton is already mount
 chunk-prefetch guard exists in this codebase (searched `router.ts`, `main.ts`, `App.vue` — none
 found), so the "beforeResolve guard" some prior note attributed to the WS3 batch was not actually
 part of what shipped here; it turned out not to be needed; the skeleton alone closes the gap the
-bug report described. Moving this out of "still open" — `round2-agent-2.md` is a historical record
+bug report described. Moving this out of "still open" — `audit/verify/ROUND2-SUMMARY.md` is a historical record
 of a real bug that existed at the time it was written, not a currently-accurate status.
 
 ---
@@ -216,13 +215,13 @@ also comfortably under the 40%-fine plausibility threshold) crossing another div
 confirming the ring renders consistently across repeated genuine rank-ups, not just a first-ever
 peak. No code changes were needed — the CSS/logic split works exactly as designed. Verified live:
 this session, screenshot evidence in-session (not persisted to the repo). `audit/nebula-design-plan.md`
-Phase N2, `audit/verify/round2-agent-3.md`.
+Phase N2, `audit/verify/ROUND2-SUMMARY.md`.
 
 ### 3.6 Minor live-only defect — CLOSED, fixed and verified live 2026-09-05
 
 Recurring Ionic Vue console exception (`insertBefore` on null, in `removeViewFromDom`) firing
 roughly every 35-90s throughout live sessions, independent of user action — some background
-overlay/controller trying to dismiss an already-removed view. `audit/verify/round2-agent-4.md`.
+overlay/controller trying to dismiss an already-removed view. `audit/verify/ROUND2-SUMMARY.md`.
 This is the one item this workplan explicitly does NOT want autonomously code-guessed — an
 exhaustive static search already ran with no conclusive culprit found (see the implementation
 plan's WS5 for the discriminating test to run instead: reproduce in a production build with the
@@ -425,7 +424,9 @@ are committed, not the downloaded image files; a fresh checkout regenerates them
 
 ### 3.10 Share-card palette vs. app palette — resolved 2026-09-04, corrected 2026-09-05
 
-Decided: **Variation 1 ("Nebula Halo")** from `audit/share-card-design-variations.md`, with one
+Decided: **Variation 1 ("Nebula Halo")** from `audit/share-card-design-variations.md` (since
+removed as fully superseded by this decision — see §3.11 for the one idea from it worth keeping),
+with one
 product adjustment beyond that document's own text — the tier medal, "Tier Division", "Level N",
 and the rank-up caption move out of the card's centered main-content flow into a small top-right
 corner stamp (`drawCornerBadge` in `packages/client/src/lib/shareCard.ts`, ~110px vs. the old
@@ -454,6 +455,22 @@ caption stress case (fits within the "story" format with room to spare, no overf
 and a no-badge case, all inspected as real rendered pixels, zoomed on the corner badge and an
 exercise cell specifically to confirm the halo and text-size changes. 306/306 tests, clean
 typecheck, clean lint.
+
+### 3.11 Unshipped share-card idea worth keeping — plausibility-aware "Honest Card" state
+
+The share-card exploration (`audit/share-card-design-variations.md`, now deleted as superseded by
+the decision above) proposed ten directions; only Variation 1 ("Nebula Halo") shipped. One other
+idea from that document has no other home and is worth preserving as a backlog item: **Variation 9,
+"Honest Card"** — a plausibility-aware *state* (not a competing base look) that extends the app's
+"a discounted session never gets the earned treatment" rule across the share-image boundary. When
+`plausibility.ts`'s discount fires, the card would drop its Nebula background lobes, desaturate the
+stat-card accents to `--surface-3`, omit the `topRankUp` caption entirely (a discounted session by
+definition didn't earn a celebration-grade rank-up), add a small `WERTUNG REDUZIERT` eyebrow, and
+render the tier medal matte (no halo, no specular streaks) instead of glinting. It composes with
+any base look and needs one new field threaded through `WorkoutCardModel`
+(`packages/shared/src/share/layout.ts`) — the multiplier `packages/shared/src/rank/plausibility.ts`
+already computes per workout, just not yet passed into the share-card model. Not scheduled; flagged
+here so the idea isn't lost with the source document.
 
 ---
 

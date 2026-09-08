@@ -555,8 +555,10 @@ Response `201`: `runResponse` with `source: "manual"`.
 Source: [`packages/server/src/routes/settings.ts`](../../packages/server/src/routes/settings.ts) ·
 Tests: [`tests/server/routes/settings.test.ts`](../../tests/server/routes/settings.test.ts)
 
-Single-user app — every setting here is one k/v row (`readJsonSetting`/`writeJsonSetting`), not
-per-account data. `null` distinguishes "never configured" from "configured to an empty value."
+Every setting here is one k/v row (`readJsonSetting`/`writeJsonSetting`), scoped by `user_id`
+alongside the key — resolves to a single owner identity today (see the Auth section above), but
+already per-user underneath. `null` distinguishes "never configured" from "configured to an empty
+value."
 
 ### `GET /api/settings/profile` / `PUT /api/settings/profile`
 Onboarding profile: sex, birth year, experience level, workouts/week.
@@ -735,6 +737,8 @@ Params: `{ id: string }` · Body:
 ```
 
 Response `200`: `{ ok: true }`
+
+Notable statuses: `404` if the workout doesn't exist or belongs to another user.
 
 ### `GET /api/workouts/:id`
 Full detail for the history detail view and share cards.

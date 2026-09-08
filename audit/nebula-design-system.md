@@ -20,9 +20,9 @@ tokens; read `nebula-design-components.md` for how each component/screen applies
 
 **Verification provenance (2026-09-04):** every implementation-status claim in this document is
 sourced from two independent verification passes, not from memory of what was planned:
-- Round 1 (static code read): `audit/verify/agent-6.md`, `audit/verify/SUMMARY.md`
+- Round 1 (static code read): `audit/verify/SUMMARY.md`
 - Round 2 (live browser + rendered screenshot comparison against the mockups):
-  `audit/verify/round2-design-agent-1.md` (Overview), `-2.md` (Workout), `-3.md` (Ranks),
+  `audit/verify/ROUND2-SUMMARY.md` (covering Overview, Workout, and Ranks),
   `audit/verify/ROUND2-SUMMARY.md`
 
 ---
@@ -53,9 +53,9 @@ badge system.
   while the surrounding "you ranked up" chrome (the ring around the badge, the beat's background
   wash, the continue CTA) uses Nebula. **Confirmed as correctly implemented**: round 1 verified
   `FinishSequence.vue`'s `.badge-ring`/`.badge-ring-muted` split exists and is structurally scoped
-  to the rank-up beat only, never the resting Ranks list (`audit/verify/agent-8.md`). Round 2's
+  to the rank-up beat only, never the resting Ranks list (`audit/verify/SUMMARY.md`). Round 2's
   observation that `/ranks`' resting tier bars are bronze/silver, not violet-magenta
-  (`audit/verify/round2-design-agent-3.md`) is **not a defect** — it is this rule working as
+  (`audit/verify/ROUND2-SUMMARY.md`) is **not a defect** — it is this rule working as
   designed. Do not "fix" this by adding Nebula to resting tier badges.
 
 | Question the color answers | System | Where it lives |
@@ -217,7 +217,7 @@ in a later phase, not specified here).
 
 **Verified status:** round 1 confirmed `--nebula-glow`/`--nebula-glow-strong` are defined with
 values matching the mockup and are wired to exactly one live trigger app-wide — the `.streak-pulse`
-celebration in `App.vue` — with no other standing usage (`audit/verify/round2-design-agent-1.md`).
+celebration in `App.vue` — with no other standing usage (`audit/verify/ROUND2-SUMMARY.md`).
 That is the rule working correctly, not an under-adoption bug: glow being rare in the live DOM is
 the intended outcome of "rationed, not ambient." The Finish Sequence rank-up ring/glow's live
 rendering during an actual rank-up beat was not independently confirmed in round 2 (no rank-up was
@@ -276,7 +276,7 @@ that choice persists and overrides system preference from then on.
 
 ### ⚠ Known open defect (not a design question — a bug, log it and fix it)
 
-Round 2 (`audit/verify/round2-design-agent-3.md`) found that toggling to light mode correctly sets
+Round 2 (`audit/verify/ROUND2-SUMMARY.md`) found that toggling to light mode correctly sets
 `data-theme="light"` and `--bg` correctly resolves to `#f6f4fb` in CSS, but the **actual rendered**
 background of the Ranks-page tier ladder and exercise cards stays near-black
 (`rgb(24,26,27)`) — light mode does not visually apply to these surfaces. This is a real

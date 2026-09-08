@@ -1,6 +1,6 @@
 # Streak/XP Mechanics Redesign — Design Spec
 
-**STATUS: SPEC ONLY, NOT YET IMPLEMENTED** (confirmed 2026-09-04, `audit/verify/agent-8.md`: `packages/shared/src/math/xp.ts` still has the pre-redesign formula; no `consistencyBonusXp`/`varietyBonusXp` code exists anywhere in the repo). This is a forward-looking design, not a false completion claim — ready for a `superpowers:writing-plans` pass, referenced from `docs/superpowers/plans/2026-09-03-workstream-b-finish-progress.md`'s deferred Task 7.
+**STATUS: SPEC ONLY, NOT YET IMPLEMENTED** (confirmed 2026-09-04, `audit/verify/SUMMARY.md`: `packages/shared/src/math/xp.ts` still has the pre-redesign formula; no `consistencyBonusXp`/`varietyBonusXp` code exists anywhere in the repo). This is a forward-looking design, not a false completion claim — ready for a `superpowers:writing-plans` pass, referenced from `docs/superpowers/plans/2026-09-03-workstream-b-finish-progress.md`'s deferred Task 7.
 
 ## Status
 

@@ -23,7 +23,7 @@ final whole-branch review per workstream). All six landed on master; commit rang
 - **Foundation** (`docs/superpowers/plans/2026-09-03-foundation-primitives.md`) — touch-target/
   density tokens, `TruncatingLabel`, `ThumbZoneAction`, `DensityScope`, nav-shell hardening,
   motion/haptic contract documentation. **Correction (2026-09-04, live-verified in
-  `audit/verify/agent-3.md` and `audit/verify/round2-agent-1.md`):** `ThumbZoneAction` and
+  `audit/verify/SUMMARY.md` and `audit/verify/ROUND2-SUMMARY.md`):** `ThumbZoneAction` and
   `DensityScope`/`useDensityMode` were built exactly as specced but were **never adopted
   anywhere** — a DOM query across all six major live screens found zero usages of either.
   They exist in code as dead, unreachable primitives, not as foundations later phases build

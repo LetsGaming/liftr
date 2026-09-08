@@ -1,7 +1,7 @@
 # Nebula — Design Plan
 
-**Status as of 2026-09-04, per two independent verification passes** (`audit/verify/agent-6.md`,
-`audit/verify/round2-design-agent-1.md`/`-2.md`/`-3.md`, `audit/verify/ROUND2-SUMMARY.md`):
+**Status as of 2026-09-04, per two independent verification passes** (`audit/verify/SUMMARY.md`,
+`audit/verify/ROUND2-SUMMARY.md`):
 **Phases N0-N3 are shipped in code.** N0 (tokens/theme) and N1 (chrome/CTA) are confirmed working
 live, not just in source. N2 (medallion ring/Finish Sequence) exists in code and is correctly
 scoped, but its live rendering during an actual rank-up beat has not yet been visually confirmed —

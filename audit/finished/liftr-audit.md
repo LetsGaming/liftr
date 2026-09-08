@@ -249,7 +249,7 @@ problems a single-user app doesn't have.
   with a `test` script). At this audit's original writing (2026-08-31): 19 test files, 154
   tests, all in `@liftr/shared` and `@liftr/server`, no client tests. That snapshot is stale —
   as of 2026-09-04 (confirmed by independently re-running `pnpm test` in two separate
-  verification passes, `audit/verify/agent-2.md` and `audit/verify/round2-*.md`), the suite is
+  verification passes, `audit/verify/SUMMARY.md` and `audit/verify/round2-*.md`), the suite is
   **260 tests across 28 files**, and `packages/client/src/stores/activeWorkoutStore.spec.ts`
   now exists — the "no client tests" claim no longer holds even at the store-test level (no
   component-level Vue tests exist yet, that part is still accurate).

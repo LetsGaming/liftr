@@ -112,9 +112,8 @@ real or derivable strength standards, each with:
   target muscles, instructions, and stats.
 - Muscle-group tagging feeding an interactive **muscle figure/diagram**.
 - Full exercise history per exercise.
-- An **attributions page** crediting every third-party photo source (free-exercise-db, wger,
-  workout-guide) by license, since the catalog leans on openly-licensed images rather than
-  original photography.
+- An **attributions page** crediting every third-party photo source (free-exercise-db, wger)
+  by license, since the catalog leans on openly-licensed images rather than original photography.
 
 ## Profile and settings
 

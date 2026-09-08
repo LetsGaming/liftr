@@ -1,6 +1,6 @@
 # Workstream A: Today/Train — Implementation Plan
 
-**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 — every task in this plan (RPE/notes capture, RestTimer 3-state, mobile exercise rail, sync indicator, skip-confirm-tap decision, stale-session nudge, set-logged motion, XP chip) was independently confirmed via real clicks/drags in the running app, not just static code reading (`audit/verify/agent-7.md`, `audit/verify/round2-agent-1.md`/`-3.md`). No corrections needed — this workstream held up completely.
+**STATUS: SHIPPED, VERIFIED LIVE** on 2026-09-04 — every task in this plan (RPE/notes capture, RestTimer 3-state, mobile exercise rail, sync indicator, skip-confirm-tap decision, stale-session nudge, set-logged motion, XP chip) was independently confirmed via real clicks/drags in the running app, not just static code reading (`audit/verify/SUMMARY.md`, `audit/verify/ROUND2-SUMMARY.md`). No corrections needed — this workstream held up completely.
 
 ## Goal
 

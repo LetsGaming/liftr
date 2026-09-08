@@ -2,7 +2,7 @@
 
 **Status: historical — fully actioned.** This is the raw research behind
 `audit/finished/engagement-audit-v5.md`, whose four phases are all independently verified shipped
-(`audit/verify/agent-1.md`). Kept as reference for the reasoning; not an open work item.
+(`audit/verify/SUMMARY.md`). Kept as reference for the reasoning; not an open work item.
 
 Method: 5 independent agents tested cold (no prior audit context), each against the **live app** (localhost:5173) as a real user performing a real task, then cross-checked findings against source. Scope: top-level IA, routine creation, Overview/Ranks, Profile, workout logging.
 

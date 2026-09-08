@@ -4,7 +4,9 @@
 **Method:** 8 independent worker agents, each assigned a disjoint set of documents, re-derived every "finished/complete/shipped" claim from direct source inspection, greps, and test/typecheck runs — not from git history, commit messages, or the documents' own status markers.
 **Verification Status:** Discrepancies Found (5 of 8 report groups), but the discrepancy rate is low relative to claim volume — the large majority of "complete" claims across ~200+ discrete items are real, wired, and tested.
 
-Per-file detail reports: `agent-1.md` through `agent-8.md` in this directory.
+Per-file detail reports (`agent-1.md` through `agent-8.md`) have been merged into this summary
+and removed; their citation trails (line-by-line evidence) are not preserved beyond what's quoted
+above.
 
 | # | Documents | Verdict |
 | :-- | :--- | :--- |
@@ -27,6 +29,12 @@ Per-file detail reports: `agent-1.md` through `agent-8.md` in this directory.
 ## FALSE POSITIVE — stale status (claimed *not* done, but actually is)
 
 * **`audit/workplan-v1.md` §2 Personal Records ledger** — explicitly marked ⏳ **not started**, "no `/api/prs` route, no client screen," called "the top of the remaining work queue." Actually fully shipped: `packages/server/src/routes/prs.ts`, `prStore.ts`, `RecordsPage.vue` routed at `/records`, linked from `RanksPage.vue`. One real partial gap: the Finish Sequence PR beat does not link into the ledger as the doc's own spec calls for. — agent-1
+
+* **`routine-builder-shape-v4.md`'s "No code yet" framing** — the brief itself states no
+  implementation exists, but Phase 1B is actually fully built and wired: `PathChooser.vue`,
+  `FastPathStep.vue`, `useRoutineReviewChecks.ts`, and a widened `routineSuggestionService.ts`
+  payload, correctly threaded end-to-end through `RoutineWizard.vue`, matching essentially every
+  structural decision, edge case, and anti-goal in the brief. — agent-2
 
 ## Minor inaccuracies (not functional false positives)
 

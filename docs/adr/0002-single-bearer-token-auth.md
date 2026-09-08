@@ -2,6 +2,9 @@
 
 **Date:** initial build
 **Status:** Accepted
+**Superseded by:** [0006](0006-multi-user-hardening.md)'s revision of this decision's "single user,
+forever" framing — the bearer-token mechanism itself is unchanged and still accurately described
+below.
 
 ## Context
 

@@ -2,10 +2,10 @@
 
 **Status: historical input research — superseded by ratified decisions.** Findings here (notably
 the exercise-name text-wrap bug and the duplicate top-HUD/finish-screen XP display) fed directly
-into fixes now verified shipped (`audit/verify/agent-1.md` §1.4/§1.5) and into
+into fixes now verified shipped (`audit/verify/SUMMARY.md` §1.4/§1.5) and into
 `audit/nebula-design-system.md`/`audit/finished/plan-c-new-ui-rebuild.md`, which cite this document
 by name. Kept intact, unedited, so those citations resolve. Not an open work item — but see
-`audit/verify/round2-agent-1.md` and `audit/nebula-design-components.md` §2 for where the
+`audit/verify/ROUND2-SUMMARY.md` and `audit/nebula-design-components.md` §2 for where the
 text-truncation fix this document originally flagged is still incompletely adopted across screens
 (a live/current finding, not something this historical document itself needs updating for).
 

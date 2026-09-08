@@ -1,6 +1,6 @@
 # Full Rebuild Orchestration Plan
 
-**STATUS: ALL WORKSTREAMS SHIPPED — historical coordination record.** Written when Workstreams A-E and Foundation were still future work; all are now independently confirmed shipped and, for most, live-tested (`audit/verify/agent-6.md`, `agent-7.md`, `agent-8.md`, and the `round2-*.md` live-browser reports). Nothing in this document is an open dependency anymore — it's kept for the record of how the parallel-workstream split and file-boundary rules were reasoned about, not as an active tracker.
+**STATUS: ALL WORKSTREAMS SHIPPED — historical coordination record.** Written when Workstreams A-E and Foundation were still future work; all are now independently confirmed shipped and, for most, live-tested (`audit/verify/SUMMARY.md`, and `audit/verify/ROUND2-SUMMARY.md`). Nothing in this document is an open dependency anymore — it's kept for the record of how the parallel-workstream split and file-boundary rules were reasoned about, not as an active tracker.
 
 **Not an implementation plan itself** — this is the coordination layer above six workstream
 implementation plans (listed in §3), each written separately so they can be authored and executed
