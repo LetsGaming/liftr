@@ -135,34 +135,37 @@ describe("nearestRunCategory", () => {
     });
   });
 
-  describe("distances between categories", () => {
-    it("returns closer category for distance between mile and 5k", () => {
-      // Midpoint between mile (1609.344) and 5k (5000)
+  describe("distances between categories (midpoint tie-break determinism)", () => {
+    it("returns mile for exact midpoint between mile and 5k (tie-break: first in array order)", () => {
+      // Midpoint between mile (1609.344) and 5k (5000): 3304.672
+      // Exact tie (both 1695.328m away). Tie-break rule: first in RUN_CATEGORIES array order wins.
       const midpoint = (1609.344 + 5000) / 2;
       const nearest = nearestRunCategory(midpoint);
-      // Should be either mile or 5k - just check it's one of them
-      expect(["mile", "5k"]).toContain(nearest);
+      expect(nearest).toBe("mile");
     });
 
-    it("returns closer category for distance between 5k and 10k", () => {
-      // Midpoint between 5k (5000) and 10k (10000)
+    it("returns 5k for exact midpoint between 5k and 10k (tie-break: first in array order)", () => {
+      // Midpoint between 5k (5000) and 10k (10000): 7500
+      // Exact tie (both 2500m away). Tie-break rule: first in RUN_CATEGORIES array order wins.
       const midpoint = (5000 + 10000) / 2;
       const nearest = nearestRunCategory(midpoint);
-      expect(["5k", "10k"]).toContain(nearest);
+      expect(nearest).toBe("5k");
     });
 
-    it("returns closer category for distance between 10k and half_marathon", () => {
-      // Midpoint between 10k (10000) and half_marathon (21097.5)
+    it("returns 10k for exact midpoint between 10k and half_marathon (tie-break: first in array order)", () => {
+      // Midpoint between 10k (10000) and half_marathon (21097.5): 15548.75
+      // Exact tie (both 5548.75m away). Tie-break rule: first in RUN_CATEGORIES array order wins.
       const midpoint = (10000 + 21097.5) / 2;
       const nearest = nearestRunCategory(midpoint);
-      expect(["10k", "half_marathon"]).toContain(nearest);
+      expect(nearest).toBe("10k");
     });
 
-    it("returns closer category for distance between half_marathon and marathon", () => {
-      // Midpoint between half_marathon (21097.5) and marathon (42195)
+    it("returns half_marathon for exact midpoint between half_marathon and marathon (tie-break: first in array order)", () => {
+      // Midpoint between half_marathon (21097.5) and marathon (42195): 31646.25
+      // Exact tie (both 10548.75m away). Tie-break rule: first in RUN_CATEGORIES array order wins.
       const midpoint = (21097.5 + 42195) / 2;
       const nearest = nearestRunCategory(midpoint);
-      expect(["half_marathon", "marathon"]).toContain(nearest);
+      expect(nearest).toBe("half_marathon");
     });
   });
 
@@ -244,12 +247,9 @@ describe("runRankValue", () => {
   });
 
   describe("off-distance run in mile-adjacent range (mile -> 5k)", () => {
-    it("adjusts speed using 1.08 exponent for 5k category target", () => {
-      // Run 4.5km in 22:00 (1320 seconds)
-      // Nearest category is 5k
-      // But Riegel converts TO 5k, which uses 1.06 (not 1.08)
-      // Wait - re-reading the brief: the exponent depends on the TARGET category
-      // So when converting TO 5k, we use 1.06
+    it("adjusts speed using 1.06 exponent when bucketed to 5k category", () => {
+      // Run 4.5km in 22:00 (1320 seconds), bucketed to nearest (5k).
+      // Exponent is selected by TARGET category (5k -> 1.06, not 1.08).
       const distanceM = 4500;
       const durationS = 1320;
       const result = runRankValue(distanceM, durationS);
@@ -260,40 +260,23 @@ describe("runRankValue", () => {
       expect(result.speedMps).toBeCloseTo(expectedSpeed, 5);
     });
 
-    it("uses 1.06 exponent when converting TO 5k (even from closer to mile)", () => {
-      // 2km run (closer to mile) in 10:00 = 600 seconds
-      // But 2km is closer to 5k than to mile
-      // Nearest category is mile or between mile and 5k
-      // Let's use 1.2km, which is very close to mile
-      // 1.2km in 5:00 = 300 seconds
+    it("uses 1.08 exponent when bucketed to mile category", () => {
+      // Run 1.2km in 5:00 (300 seconds), bucketed to mile (nearest category).
+      // Exponent is selected by TARGET category (mile -> 1.08).
       const result = runRankValue(1200, 300);
-      // Nearest category should be mile
       expect(result.category).toBe("mile");
-      // When converting TO mile, we use 1.08
       const predictedTimeS = 300 * Math.pow(1609.344 / 1200, 1.08);
       const expectedSpeed = 1609.344 / predictedTimeS;
       expect(result.speedMps).toBeCloseTo(expectedSpeed, 5);
     });
   });
 
-  describe("regression test: measurable difference between exponent regimes", () => {
-    it("produces different results when the target category changes", () => {
-      // Same actual run (3km in 15:00), but bucketed to different targets
-      // depending on rounding
-      // Actually, let's use a run that's equidistant between mile and 5k
-      // Midpoint: (1609.344 + 5000) / 2 ≈ 3304.67m
-      const distanceM = 3305;
-      const durationS = 15 * 60; // 15:00
-
-      const result = runRankValue(distanceM, durationS);
-
-      // Should bucketed to one of the categories
-      expect(["mile", "5k"]).toContain(result.category);
-
-      // The key regression test: if someone "simplified" the exponent back to
-      // a single value, they'd get a wrong speed. We can't easily test the
-      // counterfactual here, but we can verify both 1.06 and 1.08 are actually
-      // being used by creating two scenarios
+  describe("sanity check: plausible results across range", () => {
+    it("produces valid category assignments and positive speeds", () => {
+      // Verify that runs at various distances produce valid, plausible results:
+      // correct category bucketing and positive speeds (as a baseline sanity check).
+      // Regression test coverage for dual-exponent behavior exists in
+      // riegelPredictedTimeS tests (lines 35-59) and earlier off-distance tests.
       const mileDistance = 1500;
       const mileTime = 6 * 60;
       const resultMile = runRankValue(mileDistance, mileTime);
@@ -302,11 +285,11 @@ describe("runRankValue", () => {
       const fiveKTime = 22 * 60;
       const result5K = runRankValue(fiveKDistance, fiveKTime);
 
-      // Both should return valid categories
+      // Category assignments should be plausible
       expect(["mile", "5k"]).toContain(resultMile.category);
       expect(["5k", "10k"]).toContain(result5K.category);
 
-      // Speeds should be positive and reasonable
+      // Speeds should be positive
       expect(resultMile.speedMps).toBeGreaterThan(0);
       expect(result5K.speedMps).toBeGreaterThan(0);
     });
