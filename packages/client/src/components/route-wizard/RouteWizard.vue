@@ -18,10 +18,16 @@ import RouteMapEditor from "../route/RouteMapEditor.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useToast } from "../../composables/useToast";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
-import { previewPlannedRoute, type PlannedRoute, type RoutePoint, type Waypoint } from "../../services/plannedRouteService";
+import {
+  getPlannedRouteDetail,
+  previewPlannedRoute,
+  type PlannedRoute,
+  type RoutePoint,
+  type Waypoint,
+} from "../../services/plannedRouteService";
 
 const props = defineProps<{ route?: PlannedRoute | null; initialCenter?: { lat: number; lon: number } }>();
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{ saved: []; close: [] }>();
 
 const plannedRouteStore = usePlannedRouteStore();
 const { toast } = useToast();
@@ -40,7 +46,7 @@ const distanceM = computed(() =>
 );
 const canSave = computed(() => name.value.trim().length > 0 && waypoints.value.length >= 2);
 
-function hydrateFrom(route: PlannedRoute | null | undefined) {
+async function hydrateFrom(route: PlannedRoute | null | undefined) {
   if (!route) {
     name.value = "";
     waypoints.value = [];
@@ -55,6 +61,18 @@ function hydrateFrom(route: PlannedRoute | null | undefined) {
   geometrySource.value = route.geometrySource;
   lastComputedDistanceM.value = route.distanceM;
   elevationGainM.value = route.elevationGainM;
+  // Populate the saved snapped geometry so distanceM (below) uses the route's real saved
+  // distance instead of falling back to a straight-line recompute, the ≈ marker stays accurate
+  // to geometrySource, and RouteMapEditor draws the actual saved line instead of a raw waypoint
+  // polyline. Same fetch RunDetail.vue already uses to resolve a route's detail.
+  routedPoints.value = [];
+  try {
+    const detail = await getPlannedRouteDetail(route.id);
+    routedPoints.value = detail.points;
+  } catch {
+    // Detail fetch failed — falls back to the straight-line distance/rendering, same non-event
+    // handling as a failed preview below.
+  }
 }
 watch(() => props.route, hydrateFrom, { immediate: true });
 
@@ -126,7 +144,10 @@ async function save() {
 </script>
 
 <template>
-  <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="hydrateFrom(null)">
+  <!-- @close only fires after Ionic's own dismiss teardown completes (see SheetModal.vue's header
+       comment) — it's the single place that tells the parent it's safe to unmount (RunsPage.vue
+       flips showRouteWizard to false there), never resolved here directly. -->
+  <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="emit('close')">
     <template #header>
       <header class="wizard-head">
         <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" aria-label="Schließen" @click="requestClose">

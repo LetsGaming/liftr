@@ -315,7 +315,7 @@ function formatDuration(s: number) {
         v-if="showRouteWizard"
         :route="editingRoute"
         :initial-center="initialCenter"
-        @saved="showRouteWizard = false"
+        @close="showRouteWizard = false"
       />
     </template>
     </IonContent>
@@ -441,7 +441,7 @@ function formatDuration(s: number) {
   display: inline-block;
   margin-top: var(--sp2);
   padding: 4px 10px;
-  border-radius: var(--r-full, 999px);
+  border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   color: var(--dim);
