@@ -547,3 +547,9 @@ export const prsRelations = relations(prs, ({ one }) => ({
   exercise: one(exercises, { fields: [prs.exerciseId], references: [exercises.id] }),
   set: one(sets, { fields: [prs.setId], references: [sets.id] }),
 }));
+
+/** Lets `db.query.sessions.findFirst({ with: { user: ... } })` resolve a session's owning user
+ *  (role, in particular) in a single round-trip — see authRepository.ts's `findSessionByTokenHash`. */
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
