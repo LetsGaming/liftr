@@ -1,6 +1,14 @@
 import { plannedRoutePoints, plannedRoutes, type LiftrDb } from "@liftr/db";
 import { and, eq } from "drizzle-orm";
 
+/** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx` —
+ *  both expose the same query-builder methods these write helpers use, but `tx`'s concrete type
+ *  (`SQLiteTransaction<...>`) isn't structurally assignable to `LiftrDb` itself (it's missing
+ *  `$client`), so writers that need to run inside a transaction (see
+ *  services/plannedRouteService.ts's updatePlannedRoute) take this narrower, transaction-
+ *  compatible type instead. */
+export type PlannedRouteDbClient = Pick<LiftrDb, "update" | "delete" | "insert" | "query">;
+
 export interface Waypoint {
   lat: number;
   lon: number;
@@ -28,7 +36,10 @@ export interface NewPlannedRoute {
 export async function findActivePlannedRoutes(db: LiftrDb, userId: string) {
   const rows = await db.query.plannedRoutes.findMany({
     where: (r, { isNull, and: andOp, eq: eqOp }) => andOp(eqOp(r.userId, userId), isNull(r.archivedAt)),
-    orderBy: (r, { asc }) => asc(r.orderIndex),
+    // orderIndex alone is effectively undefined ordering — nothing client-side ever sets a
+    // non-zero orderIndex, so every row ties at 0 and falls back to SQLite rowid order in
+    // practice. createdAt as a secondary key gives a stable, meaningful tiebreak.
+    orderBy: (r, { asc }) => [asc(r.orderIndex), asc(r.createdAt)],
   });
   return rows.map((r) => ({ ...r, waypoints: JSON.parse(r.waypoints) as Waypoint[] }));
 }
@@ -60,17 +71,17 @@ export async function insertPlannedRoute(db: LiftrDb, userId: string, values: Ne
 }
 
 /** No-op on an empty array, mirrors insertRunPoints. */
-export function insertPlannedRoutePoints(db: LiftrDb, routeId: string, points: RoutePoint[]) {
+export function insertPlannedRoutePoints(db: PlannedRouteDbClient, routeId: string, points: RoutePoint[]) {
   if (points.length === 0) return Promise.resolve();
   return db.insert(plannedRoutePoints).values(points.map((p) => ({ ...p, routeId })));
 }
 
-export function deletePlannedRoutePoints(db: LiftrDb, routeId: string) {
+export function deletePlannedRoutePoints(db: PlannedRouteDbClient, routeId: string) {
   return db.delete(plannedRoutePoints).where(eq(plannedRoutePoints.routeId, routeId));
 }
 
 export function updatePlannedRouteMeta(
-  db: LiftrDb,
+  db: PlannedRouteDbClient,
   userId: string,
   id: string,
   patch: Partial<{

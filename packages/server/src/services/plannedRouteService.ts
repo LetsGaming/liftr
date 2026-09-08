@@ -1,5 +1,5 @@
 import { pathDistanceM } from "@liftr/shared";
-import type { LiftrDb } from "@liftr/db";
+import { plannedRoutePoints, type LiftrDb } from "@liftr/db";
 import type { FastifyBaseLogger } from "fastify";
 import { env } from "../env.js";
 import { fetchOrsRoute, OrsUnavailableError } from "../lib/openRouteService.js";
@@ -80,19 +80,40 @@ export async function updatePlannedRoute(
   logger: FastifyBaseLogger,
 ) {
   if (!patch.waypoints) {
+    // An all-undefined patch (e.g. `{}`) reaches here with nothing to set — Drizzle's
+    // mapUpdateSet throws "No values to set" on an empty .set({}), so no-op rather than issue a
+    // pointless update.
+    if (patch.name === undefined && patch.orderIndex === undefined) return;
     await updatePlannedRouteMeta(db, userId, id, { name: patch.name, orderIndex: patch.orderIndex });
     return;
   }
   const geometry = await computeGeometry(patch.waypoints, logger);
-  await updatePlannedRouteMeta(db, userId, id, {
-    name: patch.name,
-    orderIndex: patch.orderIndex,
-    waypoints: patch.waypoints,
-    distanceM: geometry.distanceM,
-    elevationGainM: geometry.elevationGainM,
-    geometrySource: geometry.geometrySource,
-    computedAt: new Date(),
+  // better-sqlite3's db.transaction() runs its callback fully synchronously (the underlying
+  // native binding commits as soon as the callback returns) — an async callback returns a
+  // pending Promise immediately, on the first `await`, so the driver considers the transaction
+  // finished before the awaited statements actually execute, and every statement after the
+  // first `await` silently runs on an already-closed transaction. So this callback stays
+  // synchronous and drives each statement to completion via .run() rather than await, same as
+  // Drizzle's own better-sqlite3 transaction docs require.
+  db.transaction((tx) => {
+    updatePlannedRouteMeta(tx, userId, id, {
+      name: patch.name,
+      orderIndex: patch.orderIndex,
+      waypoints: patch.waypoints,
+      distanceM: geometry.distanceM,
+      elevationGainM: geometry.elevationGainM,
+      geometrySource: geometry.geometrySource,
+      computedAt: new Date(),
+    }).run();
+    deletePlannedRoutePoints(tx, id).run();
+    // Inlined rather than routed through insertPlannedRoutePoints: that helper's no-op-on-empty
+    // guard returns a plain Promise for the empty case (fine for its other, non-transactional
+    // callers), which isn't a runnable query builder — this guard is equivalent, just expressed
+    // so every branch here stays a synchronous .run() call.
+    if (geometry.points.length > 0) {
+      tx.insert(plannedRoutePoints)
+        .values(geometry.points.map((p) => ({ ...p, routeId: id })))
+        .run();
+    }
   });
-  await deletePlannedRoutePoints(db, id);
-  await insertPlannedRoutePoints(db, id, geometry.points);
 }

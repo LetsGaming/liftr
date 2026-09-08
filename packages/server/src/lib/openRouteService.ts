@@ -47,13 +47,19 @@ export interface OrsRouteResult {
  * and response), so it can never leak into the rest of the app as a silent bug.
  */
 export async function fetchOrsRoute(waypoints: { lat: number; lon: number }[]): Promise<OrsRouteResult> {
+  // Safe today — every caller (computeGeometry) already guards on env.orsApiKey being present
+  // before calling this — but this function is exported, so a direct call without that guard
+  // would otherwise silently send `Authorization: undefined` instead of failing loudly.
+  if (!env.orsApiKey) {
+    throw new OrsUnavailableError("network", "ORS API key is not configured");
+  }
   const url = `${env.orsBaseUrl}/v2/directions/${env.orsProfile}/geojson`;
 
   let res: Response;
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: env.orsApiKey! },
+      headers: { "Content-Type": "application/json", Authorization: env.orsApiKey },
       body: JSON.stringify({
         coordinates: waypoints.map((w) => [w.lon, w.lat]), // [lon, lat] — see module doc above
         elevation: true,
