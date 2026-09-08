@@ -90,6 +90,23 @@ describe("POST /api/auth/login", () => {
     const res = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "owner", password: "whatever1" } });
     expect(res.statusCode).toBe(401);
   });
+
+  // Timing-side-channel fix: a nonexistent username must still hit the dummy-hash `verifyPassword`
+  // call before returning 401, so it isn't measurably faster than a wrong-password check against a
+  // real account. A reliable timing assertion in a unit test would be flaky, so this only checks
+  // that both branches remain behavior-identical (same status + body) after the fix — the "dummy
+  // verifyPassword is unconditionally reached" part is confirmed by reading the diff in
+  // packages/server/src/routes/auth.ts, not by timing here.
+  it("returns the identical invalid_credentials response for an unknown username and a wrong password on a real account", async () => {
+    await setUserPassword(db, "00000000-0000-4000-8000-000000000001", await hashPassword("ownerpass1"));
+    const app = buildApp(db);
+    const unknownRes = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "nobody", password: "whatever1" } });
+    const wrongPasswordRes = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "owner", password: "wrong1234" } });
+    expect(unknownRes.statusCode).toBe(401);
+    expect(wrongPasswordRes.statusCode).toBe(401);
+    expect(unknownRes.json()).toEqual(wrongPasswordRes.json());
+    expect(unknownRes.json()).toEqual({ error: "invalid_credentials" });
+  });
 });
 
 describe("POST /api/auth/register", () => {

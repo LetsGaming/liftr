@@ -109,4 +109,20 @@ describe("invite codes", () => {
     await redeemInviteCode(db, found!.id, member.id);
     expect(await findValidInviteCode(db, "USEDCODE")).toBeUndefined();
   });
+
+  it("redeemInviteCode returns true for the first caller and false for a second, concurrent-style call on the same id — only the first usedByUserId sticks", async () => {
+    await createInviteCode(db, { code: "RACECODE", createdByUserId: OWNER_USER_ID, expiresAt: new Date(Date.now() + 86_400_000) });
+    const found = await findValidInviteCode(db, "RACECODE");
+    const first = await insertUser(db, { username: "erin", name: "Erin", role: "member", passwordHash: "x:y" });
+    const second = await insertUser(db, { username: "frank", name: "Frank", role: "member", passwordHash: "x:y" });
+
+    const firstResult = await redeemInviteCode(db, found!.id, first.id);
+    const secondResult = await redeemInviteCode(db, found!.id, second.id);
+
+    expect(firstResult).toBe(true);
+    expect(secondResult).toBe(false);
+
+    const row = await db.query.inviteCodes.findFirst({ where: (t, { eq }) => eq(t.id, found!.id) });
+    expect(row?.usedByUserId).toBe(first.id);
+  });
 });
