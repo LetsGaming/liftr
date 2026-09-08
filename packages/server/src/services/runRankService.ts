@@ -18,7 +18,7 @@ import {
   nextTargetAtOrdinal,
   runRankValue,
   type StandardThreshold,
-  type PlausibilityReason,
+  type RunPlausibilityReason,
   type RunCategory,
 } from "@liftr/shared";
 import {
@@ -42,7 +42,7 @@ export async function recomputeRunRank(
   userId: string,
   category: RunCategory,
   plausibilityMultiplier = 1,
-  plausibilityReason: PlausibilityReason | null = null,
+  plausibilityReason: RunPlausibilityReason | null = null,
 ): Promise<RecomputeResult | null> {
   const sex = await getUserSex(db, userId);
   const thresholdRows = (await findRunStandardsForCategory(db, category)).filter((t) => t.sex === sex);

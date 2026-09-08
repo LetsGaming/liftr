@@ -46,6 +46,17 @@ export async function insertRun(db: LiftrDb, userId: string, values: NewRun) {
   return run;
 }
 
+/** Patches in the plausibility gate's verdict once it's computed (Task 4/7/8) — the run row is
+ *  already persisted by the time `computeRunPlausibility` can run (it needs the row's own
+ *  `run_points`), so this is a follow-up patch, not part of the original insert. Mirrors
+ *  `workouts.plausibilityMultiplier`'s frozen-at-finish convention: written once, never revised
+ *  after. Never called for a manual run — the column stays `null` for those. */
+export async function updateRunPlausibilityMultiplier(db: LiftrDb, runId: string, plausibilityMultiplier: number) {
+  const [updated] = await db.update(runs).set({ plausibilityMultiplier }).where(eq(runs.id, runId)).returning();
+  if (!updated) throw new Error("run plausibility update failed");
+  return updated;
+}
+
 /** The replay-enabling table — never discard points after computing the summary. */
 export function insertRunPoints(db: LiftrDb, runId: string, points: (RunPoint & { idx: number })[]) {
   if (points.length === 0) return Promise.resolve();

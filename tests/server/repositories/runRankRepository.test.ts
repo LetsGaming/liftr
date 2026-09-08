@@ -263,7 +263,7 @@ describe("insertRunRankEvent", () => {
         tier: "trainee",
         division: 2,
         occurredAt: new Date("2026-08-21T00:00:00Z"),
-        plausibilityReason: "pace",
+        plausibilityReason: "sustained_speed",
       }),
     ).resolves.not.toThrow();
   });

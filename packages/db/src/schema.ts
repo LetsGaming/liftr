@@ -522,9 +522,13 @@ export const runRankEvents = sqliteTable(
     tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
-    /** Same semantics as rankEvents.plausibilityReason above, for the run-specific plausibility
-     *  gate (Task 4/7). */
-    plausibilityReason: text("plausibility_reason", { enum: ["pace", "improbable_jump", "exceeds_ceiling"] }),
+    /** Same semantics as rankEvents.plausibilityReason above, but for the run-specific plausibility
+     *  gate (`computeRunPlausibility`, Task 4/7/8) — a different reason vocabulary than the
+     *  workout gate's ("pace"/"improbable_jump"/"exceeds_ceiling"), since a run has no per-set pace
+     *  or improbable-jump check; it has its own sustained-speed and distance-mismatch checks
+     *  instead. No CHECK constraint at the SQL level either way (sqlite-core's `enum` option is
+     *  TS-only), so this column fix needs no migration. */
+    plausibilityReason: text("plausibility_reason", { enum: ["sustained_speed", "distance_mismatch"] }),
   },
   (t) => [index("run_rank_events_category_idx").on(t.category)],
 );

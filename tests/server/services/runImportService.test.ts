@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { OWNER_USER_ID, runPoints, runs, streaks, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, runPoints, runs, runStandards, streaks, type LiftrDb } from "@liftr/db";
 import {
   importHealthConnectRun,
   importRunFile,
@@ -9,6 +9,7 @@ import {
   UnsupportedFileFormatError,
   type HealthConnectPoint,
 } from "~server/services/runImportService.js";
+import { findRunRankByCategory } from "~server/repositories/runRankRepository.js";
 import { createTestDb } from "../helpers/testDb.js";
 
 let db: LiftrDb;
@@ -145,5 +146,75 @@ describe("logManualRun", () => {
     });
 
     expect(result.avgPaceSPerKm).toBeNull();
+  });
+
+  it("skips plausibility computation and rank recompute entirely: plausibilityMultiplier stays null, no runRanks row", async () => {
+    // Standards exist for the category this run would fall into (if it were rank-eligible), so a
+    // missing runRanks row can only be explained by the manual-run skip, not by "no standards".
+    await db.insert(runStandards).values([
+      { category: "5k", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "real" },
+    ]);
+
+    const result = await logManualRun(db, OWNER_USER_ID, {
+      name: "Manual rank check",
+      startedAt: new Date("2026-09-06T07:00:00Z"),
+      distanceM: 5000,
+      durationS: 1500,
+    });
+
+    const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+    expect(persisted?.plausibilityMultiplier).toBeNull();
+
+    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    expect(rank).toBeUndefined();
+  });
+});
+
+describe("rank recompute on finish (GPS-tracked runs only)", () => {
+  // Same shape as VALID_GPX above (3 points, 5s apart, ~13m/interval — well under both the
+  // pause-gap and jitter-speed cutoffs) so distance/duration survive summarizeRun's filtering
+  // intact. Tiny in absolute terms, but nearestRunCategory still buckets it into "mile" (the
+  // closest of the 5 fixed category distances), which is all a rank recompute needs.
+  const rankEligiblePoints: HealthConnectPoint[] = [
+    { t: new Date("2026-09-05T06:00:00Z"), lat: 52.52, lon: 13.405, ele: 34, hr: 140 },
+    { t: new Date("2026-09-05T06:00:05Z"), lat: 52.5201, lon: 13.4051, ele: 35, hr: 145 },
+    { t: new Date("2026-09-05T06:00:10Z"), lat: 52.5202, lon: 13.4052, ele: 36, hr: 150 },
+  ];
+
+  it("a GPS-tracked (HealthConnect) import computes plausibility and triggers a rank recompute", async () => {
+    await db.insert(runStandards).values([
+      { category: "mile", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "real" },
+    ]);
+
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, "platform-rank", "Rank Run", rankEligiblePoints);
+
+    const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+    expect(persisted?.plausibilityMultiplier).not.toBeNull();
+
+    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "mile");
+    expect(rank).toBeDefined();
+    expect(rank?.category).toBe("mile");
+  });
+
+  it("a GPX file import (source !== manual) also triggers a rank recompute", async () => {
+    await db.insert(runStandards).values([
+      { category: "mile", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "real" },
+    ]);
+
+    await importRunFile(db, OWNER_USER_ID, "Rank Check.gpx", Buffer.from(VALID_GPX, "utf-8"));
+
+    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "mile");
+    expect(rank).toBeDefined();
+  });
+
+  it("no rank recompute (and no runRanks row) when standards aren't modeled for the category, even for a GPS-tracked run", async () => {
+    // No runStandards seeded at all here — recomputeRunRank should no-op, not throw.
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, "platform-no-standards", "No Standards", rankEligiblePoints);
+
+    const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+    expect(persisted?.plausibilityMultiplier).not.toBeNull(); // plausibility still computed...
+
+    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "mile");
+    expect(rank).toBeUndefined(); // ...but recomputeRunRank itself no-ops without standards
   });
 });
