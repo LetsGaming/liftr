@@ -72,6 +72,14 @@ function spawnBackground(command, args, { cwd, env, logFile }) {
     env,
     stdio: ["ignore", fd, fd],
     detached: true,
+    // Windows-only: pnpm resolves to a .CMD shim there, and Node's spawn() no longer
+    // auto-resolves PATHEXT-based shims without shell:true (a security hardening change in
+    // recent Node releases) — without this every spawn("pnpm", ...) call below fails with
+    // "spawn pnpm ENOENT" on Windows, even though `pnpm` is on PATH and works fine from a
+    // real shell. No-op on other platforms. Args are never interpolated into a shell string
+    // here (spawn still passes them as an argv array), so this doesn't reopen the injection
+    // risk that prompted Node's change.
+    shell: process.platform === "win32",
   });
   child.unref();
   return child;
@@ -128,10 +136,21 @@ async function main() {
 
   log("ingesting exercise catalog + seeding mock data (first run on this machine also fetches catalog images — may take a while)...");
   await new Promise((resolve, reject) => {
-    const seed = spawn("pnpm", ["exec", "tsx", "scripts/seed-mock-data.ts"], {
+    // `pnpm exec tsx ...` doesn't resolve here: tsx isn't a root-level devDependency (only
+    // packages/{server,db,ingest} depend on it directly), and `pnpm exec` only looks at the
+    // *current* package's node_modules/.bin — the workspace root has none — so this fails on
+    // every platform, not just Windows, with "Command \"tsx\" not found". Invoking the
+    // packages/server copy's bin shim directly sidesteps that; cwd stays repoRoot since
+    // seed-mock-data.ts's own imports are file-relative (`../packages/...`), not cwd-relative —
+    // only the script-path argument below needs to resolve against repoRoot, which it already
+    // does as a relative path passed straight through (no shell involved).
+    const tsxBin = path.join(repoRoot, "packages", "server", "node_modules", ".bin", process.platform === "win32" ? "tsx.CMD" : "tsx");
+    const seed = spawn(tsxBin, ["scripts/seed-mock-data.ts"], {
       cwd: repoRoot,
       env,
       stdio: "inherit",
+      // Same Windows shim-resolution issue as spawnBackground above — tsx.CMD needs shell:true.
+      shell: process.platform === "win32",
     });
     seed.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`seed-mock-data.ts exited with code ${code}`))));
   });
