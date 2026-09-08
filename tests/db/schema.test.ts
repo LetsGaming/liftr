@@ -4,12 +4,16 @@ import {
   createDb,
   exerciseMuscles,
   exercises,
+  inviteCodes,
   muscles,
+  OWNER_USER_ID,
   routineExercises,
   routines,
   runMigrations,
+  sessions,
   sets,
   streaks,
+  users,
   workoutExercises,
   workouts,
   type LiftrDb,
@@ -56,6 +60,13 @@ describe("uniqueness constraints", () => {
     await db.insert(streaks).values({ date: "2026-09-07", kind: "workout" });
 
     await expect(db.insert(streaks).values({ date: "2026-09-07", kind: "run" })).resolves.not.toThrow();
+  });
+
+  it("enforces a unique username", async () => {
+    await db.insert(users).values({ username: "alice", name: "Alice", role: "member" });
+    await expect(
+      db.insert(users).values({ username: "alice", name: "Alice Two", role: "member" }),
+    ).rejects.toThrow();
   });
 });
 
@@ -124,5 +135,24 @@ describe("foreign key cascade behavior", () => {
     await db.insert(routineExercises).values({ routineId: routine!.id, exerciseId: exercise.id });
 
     await expect(db.delete(exercises).where(eq(exercises.id, exercise.id))).rejects.toThrow();
+  });
+
+  it("cascades session deletion when the owning user is deleted", async () => {
+    const [user] = await db.insert(users).values({ username: "bob", name: "Bob", role: "member" }).returning();
+    await db.insert(sessions).values({ userId: user!.id, tokenHash: "abc" });
+    await db.delete(users).where(eq(users.id, user!.id));
+    const remaining = await db.query.sessions.findMany({ where: eq(sessions.userId, user!.id) });
+    expect(remaining).toEqual([]);
+  });
+
+  it("sets usedByUserId to null (not deleting the invite row) when the redeeming user is deleted", async () => {
+    const [member] = await db.insert(users).values({ username: "carol", name: "Carol", role: "member" }).returning();
+    const [invite] = await db
+      .insert(inviteCodes)
+      .values({ code: "ABCD2345", createdByUserId: OWNER_USER_ID, expiresAt: new Date(Date.now() + 86_400_000), usedByUserId: member!.id })
+      .returning();
+    await db.delete(users).where(eq(users.id, member!.id));
+    const row = await db.query.inviteCodes.findFirst({ where: eq(inviteCodes.id, invite!.id) });
+    expect(row?.usedByUserId).toBeNull();
   });
 });

@@ -124,7 +124,7 @@ describe("runMigrations", () => {
 
     const allUsers = await db.query.users.findMany();
     expect(allUsers).toHaveLength(1);
-    expect(allUsers[0]).toMatchObject({ id: OWNER_USER_ID, role: "owner" });
+    expect(allUsers[0]).toMatchObject({ id: OWNER_USER_ID, role: "owner", username: "owner", passwordHash: null });
   });
 
   it("defaults per-user rows onto the owner user and enforces composite primary keys (multi-user hardening)", async () => {
@@ -171,7 +171,7 @@ describe("runMigrations", () => {
   it("cascades a deleted user onto their own rows without touching the shared exercise catalog (multi-user hardening)", async () => {
     runMigrations(db);
 
-    const [otherUser] = await db.insert(users).values({ name: "Member", role: "member" }).returning();
+    const [otherUser] = await db.insert(users).values({ username: "member", name: "Member", role: "member" }).returning();
     const [exercise] = await db
       .insert(exercises)
       .values({ slug: "incline-press", movementPattern: "push" })

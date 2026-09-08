@@ -35,6 +35,18 @@ CREATE TABLE `exercises` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `exercises_slug_unique` ON `exercises` (`slug`);--> statement-breakpoint
+CREATE TABLE `invite_codes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`code` text NOT NULL,
+	`created_by_user_id` text NOT NULL,
+	`expires_at` integer NOT NULL,
+	`used_by_user_id` text,
+	`created_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL,
+	FOREIGN KEY (`created_by_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`used_by_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `invite_codes_code_idx` ON `invite_codes` (`code`);--> statement-breakpoint
 CREATE TABLE `mesocycles` (
 	`id` text PRIMARY KEY NOT NULL,
 	`routine_id` text NOT NULL,
@@ -155,6 +167,16 @@ CREATE TABLE `runs` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `runs_user_client_idx` ON `runs` (`user_id`,`client_id`);--> statement-breakpoint
+CREATE TABLE `sessions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`token_hash` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL,
+	`last_used_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `sessions_token_hash_idx` ON `sessions` (`token_hash`);--> statement-breakpoint
 CREATE TABLE `sets` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
@@ -206,13 +228,16 @@ CREATE TABLE `streaks` (
 CREATE UNIQUE INDEX `streaks_user_date_kind_idx` ON `streaks` (`user_id`,`date`,`kind`);--> statement-breakpoint
 CREATE TABLE `users` (
 	`id` text PRIMARY KEY NOT NULL,
+	`username` text NOT NULL,
+	`password_hash` text,
 	`name` text NOT NULL,
 	`role` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO `users` (`id`, `name`, `role`, `created_at`) VALUES ('00000000-0000-4000-8000-000000000001', 'Owner', 'owner', unixepoch('subsec') * 1000);
+INSERT INTO `users` (`id`, `username`, `name`, `role`, `created_at`) VALUES ('00000000-0000-4000-8000-000000000001', 'owner', 'Owner', 'owner', unixepoch('subsec') * 1000);
 --> statement-breakpoint
+CREATE UNIQUE INDEX `users_username_idx` ON `users` (`username`);--> statement-breakpoint
 CREATE TABLE `workout_exercises` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workout_id` text NOT NULL,
