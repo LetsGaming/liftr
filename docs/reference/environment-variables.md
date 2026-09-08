@@ -18,6 +18,9 @@ resulting `env` object rather than touching `process.env` directly.
 | `LIFTR_IMAGES_DIR` | `../../data/images` | Directory the exercise-demo images are mirrored into by `pnpm ingest --images`, and served from at `/images/*`. Same `process.cwd()`-relative resolution as `LIFTR_DB_PATH`. If the directory doesn't exist at startup, the server logs a warning and skips registering the static file server rather than failing. |
 | `LIFTR_CLIENT_DIST` | `../../packages/client/dist` | Directory the built client PWA is served from at `/` in production (single self-hosted origin). If it doesn't exist at startup (e.g. dev, where the client runs on its own Vite dev server and proxies `/api` here instead), the server logs a warning and skips registering it. |
 | `LIFTR_ALLOWED_ORIGINS` | *(unset → `null`)* | Comma-separated CORS allow-list (e.g. `https://liftr.example.com,capacitor://localhost`), trimmed and empty-filtered per entry. When unset, CORS reflects any origin (`cors` plugin's `origin: true`) — considered low-risk today since auth is a bearer token in a header rather than a cookie, so a page merely being allowed to call the API can't also read the token out of another origin's `localStorage`. Set this once the server is reachable beyond the reverse proxy's own trusted network. |
+| `LIFTR_ORS_API_KEY` | *(unset)* | OpenRouteService API key for planned-route road-snapping and elevation. Unset is a fully supported degraded state — straight-line distance, no elevation — not a misconfiguration. See [ADR 0007](../adr/0007-openrouteservice-external-routing-exception.md) and [SECURITY.md](../SECURITY.md). |
+| `LIFTR_ORS_BASE_URL` | `https://api.openrouteservice.org` | ORS API base URL — point this at a self-hosted ORS instance to remove the third party entirely, no code change. |
+| `LIFTR_ORS_PROFILE` | `foot-walking` | ORS routing profile. |
 
 ### Production requirement
 

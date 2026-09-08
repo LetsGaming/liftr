@@ -264,6 +264,94 @@ Response `200`:
 
 ---
 
+## Planned Routes (`plannedRoutes.ts`)
+
+Source: [`packages/server/src/routes/plannedRoutes.ts`](../../packages/server/src/routes/plannedRoutes.ts)
+
+Wegpunkte (waypoints) placed on a map, resolved into a real geometry (road-snapped distance +
+elevation via OpenRouteService, or a straight-line fallback) that a run can later be started
+against or manually linked to via `plannedRouteId` (see [Runs](#runs-runsts) below). See
+[environment-variables.md](./environment-variables.md) for `LIFTR_ORS_API_KEY` and friends, and
+[ADR 0007](../adr/0007-openrouteservice-external-routing-exception.md) for why this feature calls
+an external service at all.
+
+Common shapes:
+```ts
+type Waypoint = { lat: number; lon: number };
+
+// plannedRouteResponse
+{
+  id: string;
+  name: string;
+  orderIndex: number;
+  waypoints: Waypoint[];
+  distanceM: number;
+  elevationGainM: number | null;
+  geometrySource: "ors" | "straight";  // which path computed distanceM/elevationGainM
+  computedAt: Date;
+  createdAt: Date;
+}
+
+// routePointResponse — one resolved point of the (possibly road-snapped) route line
+{ idx: number; lat: number; lon: number; ele: number | null }
+```
+
+### `GET /api/planned-routes`
+Lists active (non-archived) planned routes. No geometry — `waypoints` only, not the resolved
+`points` — for a lightweight list view.
+
+Response `200`: `Array<plannedRouteResponse>`
+
+### `GET /api/planned-routes/:id`
+Full detail including the resolved route line.
+
+Params: `{ id: string }`
+
+Response `200`: `plannedRouteResponse & { points: routePointResponse[] }` · `404` if the route
+doesn't exist or belongs to another user.
+
+### `POST /api/planned-routes/preview`
+Computes geometry for a waypoint set **without persisting anything** — no id is created or
+returned. Runs through the exact same `computeGeometry` path as create/update, so what the map
+shows while editing can't drift from what gets saved. Used to render the live snapped line as the
+user places waypoints.
+
+Request body: `{ waypoints: Waypoint[] }` (2-50 points)
+
+Response `200`: `{ points: routePointResponse[]; distanceM: number; elevationGainM: number | null; geometrySource: "ors" | "straight" }`
+
+### `POST /api/planned-routes`
+Creates a route: resolves geometry from `waypoints` (ORS if `LIFTR_ORS_API_KEY` is set and
+reachable, straight-line fallback otherwise) and persists it.
+
+Request body:
+```ts
+{ name: string; orderIndex?: number; waypoints: Waypoint[] } // waypoints: 2-50 points, default orderIndex 0
+```
+
+Response `201`: `plannedRouteResponse & { points: routePointResponse[] }`
+
+### `PATCH /api/planned-routes/:id`
+Partial update. Geometry is only recomputed (re-calling ORS/straight-line and rewriting the stored
+points) when `waypoints` is present in the body — renaming a route or reordering it doesn't trigger
+a wasted recompute/network call.
+
+Params: `{ id: string }` · Body:
+```ts
+{ name?: string; orderIndex?: number; waypoints?: Waypoint[] } // waypoints: 2-50 points if present
+```
+
+Response `200`: `{ ok: true }` · `404` if the route doesn't exist or belongs to another user.
+
+### `DELETE /api/planned-routes/:id`
+Soft archive — same pattern as routines (`DELETE /api/routines/:id`), not a hard delete, so a run
+already linked via `plannedRouteId` keeps a valid reference.
+
+Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404` if the route doesn't exist or
+belongs to another user.
+
+---
+
 ## PRs (`prs.ts`)
 
 Source: [`packages/server/src/routes/prs.ts`](../../packages/server/src/routes/prs.ts) ·
@@ -540,13 +628,17 @@ Request body:
 ```ts
 {
   name?: string | null;
-  startedAt: Date;         // coerced
-  distanceM: number;        // positive
-  durationS: number;        // positive
+  startedAt: Date;               // coerced
+  distanceM: number;              // positive
+  durationS: number;              // positive
+  plannedRouteId?: string | null; // links this run back to a planned route (see Planned Routes below)
+  elevationGainM?: number | null; // manual entry has no GPS track to derive this from, so it's taken as-is
 }
 ```
 
-Response `201`: `runResponse` with `source: "manual"`.
+Response `201`: `runResponse` with `source: "manual"`. Note `runResponse` itself (shared by every
+`/api/runs*` endpoint) also carries `plannedRouteId: string | null` — set here, always `null` for
+GPX/FIT/Health Connect imports.
 
 ---
 

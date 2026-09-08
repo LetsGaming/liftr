@@ -63,10 +63,29 @@ The `/api/export.zip` route (`packages/server/src/routes/export.ts`) is a read-o
 export, not an upload path — see `packages/server/src/services/exportService.ts` for what it
 includes.
 
+## Outbound requests (OpenRouteService)
+
+With `LIFTR_ORS_API_KEY` configured, planned-route creation/update/preview
+(`packages/server/src/routes/plannedRoutes.ts`) sends every waypoint coordinate set to
+OpenRouteService (`LIFTR_ORS_BASE_URL`, default `https://api.openrouteservice.org`) — or to a
+self-hosted ORS instance, if `LIFTR_ORS_BASE_URL` points there instead — to resolve road-snapped
+distance and elevation. This is the first outbound runtime request this server makes anywhere;
+every other feature is either self-hosted or entirely offline (see
+[docs/features.md](features.md)'s "no third party in the loop" framing for running/logging).
+
+The key is opt-in: unset by default, and unset is a fully supported state (straight-line distance,
+no elevation), not a degraded error path. Self-hosting your own ORS instance and pointing
+`LIFTR_ORS_BASE_URL` at it removes the third party from this feature entirely. See
+[ADR 0007](adr/0007-openrouteservice-external-routing-exception.md) for the full reasoning, and
+[environment-variables.md](reference/environment-variables.md) for all three `LIFTR_ORS_*`
+variables.
+
 ## Where secrets live
 
 - `LIFTR_TOKEN` — the API bearer token (see above). Set as an environment variable on whatever
   host runs the server; never committed.
+- `LIFTR_ORS_API_KEY` — the OpenRouteService API key (see above), if configured. Same handling as
+  `LIFTR_TOKEN`: environment variable only, never committed.
 - Android release-signing secrets (the release keystore and its passwords, used by
   `.github/workflows/release.yml`) — see
   [`docs/operations/android-release-signing.md`](operations/android-release-signing.md) for how

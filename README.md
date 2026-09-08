@@ -106,4 +106,10 @@ Vue 3 + Ionic/Capacitor (installable PWA) · Fastify + SQLite/Drizzle · TypeScr
 
 ---
 
-<p align="center"><sub>One lifter's home gym, one server, no third parties in between. 🏋️</sub></p>
+<p align="center"><sub>One lifter's home gym, one server, no third parties in between.* 🏋️</sub></p>
+
+<sub>\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
+distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
+straight-line distance, and self-hostable via `LIFTR_ORS_BASE_URL` to remove the third party
+entirely. See [docs/SECURITY.md](docs/SECURITY.md#outbound-requests-openrouteservice) and
+[ADR 0007](docs/adr/0007-openrouteservice-external-routing-exception.md).</sub>
