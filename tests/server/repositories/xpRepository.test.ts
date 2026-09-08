@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { OWNER_USER_ID, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, runs, workouts, type LiftrDb } from "@liftr/db";
 import { createTestDb } from "../helpers/testDb.js";
-import { findTotalSessionBonusXp } from "~server/repositories/xpRepository.js";
+import { findAllRunsForXp, findTotalSessionBonusXp } from "~server/repositories/xpRepository.js";
 
 let db: LiftrDb;
 
@@ -51,5 +51,68 @@ describe("findTotalSessionBonusXp", () => {
     expect(result.totalVarietyBonusXp).toBe(1500);
     expect(Number.isNaN(result.totalConsistencyBonusXp)).toBe(false);
     expect(Number.isNaN(result.totalVarietyBonusXp)).toBe(false);
+  });
+});
+
+describe("findAllRunsForXp", () => {
+  it("returns an empty array when the user has no runs", async () => {
+    const result = await findAllRunsForXp(db, OWNER_USER_ID);
+    expect(result).toEqual([]);
+  });
+
+  it("selects distanceM, durationS, startedAt, plausibilityMultiplier for every run, no join required", async () => {
+    await db.insert(runs).values({
+      userId: OWNER_USER_ID,
+      source: "gpx",
+      name: null,
+      startedAt: new Date("2026-09-01T10:00:00Z"),
+      distanceM: 5000,
+      durationS: 1500,
+      avgPaceSPerKm: 300,
+      plausibilityMultiplier: 0.8,
+      clientId: "xp-run-gps",
+    });
+    // Manual run: plausibilityMultiplier is always null in the DB (the gate never runs against
+    // manual entries) — this row is the one Ruling 5's `?? 1` mapping exists to protect.
+    await db.insert(runs).values({
+      userId: OWNER_USER_ID,
+      source: "manual",
+      name: null,
+      startedAt: new Date("2026-09-02T10:00:00Z"),
+      distanceM: 10000,
+      durationS: 3000,
+      avgPaceSPerKm: 300,
+      plausibilityMultiplier: null,
+      clientId: "xp-run-manual",
+    });
+
+    const result = await findAllRunsForXp(db, OWNER_USER_ID);
+
+    expect(result).toHaveLength(2);
+    const gps = result.find((r) => r.distanceM === 5000)!;
+    expect(gps.durationS).toBe(1500);
+    expect(gps.startedAt).toEqual(new Date("2026-09-01T10:00:00Z"));
+    expect(gps.plausibilityMultiplier).toBe(0.8);
+
+    const manual = result.find((r) => r.distanceM === 10000)!;
+    expect(manual.plausibilityMultiplier).toBeNull();
+  });
+
+  it("does not leak another user's runs", async () => {
+    const { insertTestUser } = await import("../helpers/testDb.js");
+    const otherUser = await insertTestUser(db);
+    await db.insert(runs).values({
+      userId: otherUser.id,
+      source: "gpx",
+      name: null,
+      startedAt: new Date("2026-09-01T10:00:00Z"),
+      distanceM: 5000,
+      durationS: 1500,
+      avgPaceSPerKm: 300,
+      clientId: "xp-run-other",
+    });
+
+    const result = await findAllRunsForXp(db, OWNER_USER_ID);
+    expect(result).toEqual([]);
   });
 });
