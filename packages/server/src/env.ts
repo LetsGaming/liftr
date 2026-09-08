@@ -13,6 +13,12 @@ export const env = {
    *  localStorage. Set this once the server is reachable beyond the reverse proxy's own trusted
    *  network to lock CORS down to known origins for real. */
   allowedOrigins: process.env.LIFTR_ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? null,
+  /** OpenRouteService: BYO API key for planned-route road-snapping + elevation. Unset is a fully
+   *  supported degraded state (straight-line distance, no elevation) — no production-throw like
+   *  LIFTR_TOKEN has, since self-hosting without this key is a legitimate, deliberate choice. */
+  orsApiKey: process.env.LIFTR_ORS_API_KEY,
+  orsBaseUrl: process.env.LIFTR_ORS_BASE_URL ?? "https://api.openrouteservice.org",
+  orsProfile: process.env.LIFTR_ORS_PROFILE ?? "foot-walking",
 };
 
 if (!env.token && process.env.NODE_ENV === "production") {
