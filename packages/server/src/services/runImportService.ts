@@ -1,25 +1,48 @@
-import { summarizeRun, type RunPoint } from "@liftr/shared";
+import { computeRunPlausibility, runRankValue, summarizeRun, type RunPoint } from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { parseFit } from "../fit.js";
 import { parseGpx } from "../gpx.js";
 import { NotFoundError } from "../lib/errors.js";
 import { findPlannedRouteById } from "../repositories/plannedRouteRepository.js";
-import { findRunByClientId, insertRun, insertRunPoints, type NewRun } from "../repositories/runRepository.js";
+import {
+  findRunByClientId,
+  insertRun,
+  insertRunPoints,
+  updateRunPlausibilityMultiplier,
+  type NewRun,
+} from "../repositories/runRepository.js";
 import { creditStreak } from "../repositories/streakRepository.js";
+import { recomputeRunRank } from "./runRankService.js";
 
 /**
  * Running: import a GPX you own, or log a run manually with no file. All three write paths below
- * converge on the same `runs` + `run_points` tables and the same history/streak plumbing — a
- * manual entry and an imported one are indistinguishable downstream. Factored here (not left as
- * three near-identical route handlers) because that convergence is exactly the kind of
- * duplicated-across-a-boundary shape that drifts if repeated.
+ * converge on the same `runs` + `run_points` tables and the same history/streak/rank plumbing — a
+ * manual entry and an imported one are indistinguishable downstream except for the rank step
+ * itself. Factored here (not left as three near-identical route handlers) because that
+ * convergence is exactly the kind of duplicated-across-a-boundary shape that drifts if repeated.
+ *
+ * This is the run-analog of workoutService.ts's `applyFinishWorkout`: insert -> streak -> (for a
+ * GPS-tracked run only) plausibility gate -> rank recompute. A manual run has no `run_points` to
+ * independently check its claimed distance/duration against, so it's XP-only — it skips both the
+ * plausibility computation and the rank recompute entirely, and `plausibilityMultiplier` stays
+ * `null` on that row forever (never defaulted to 1, which would be a silent lie about a check that
+ * never ran).
  */
 async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (RunPoint & { idx: number })[]) {
-  const inserted = await insertRun(db, userId, run);
+  let inserted = await insertRun(db, userId, run);
   await insertRunPoints(db, inserted.id, points);
   const dateStr = run.startedAt.toISOString().slice(0, 10);
   await creditStreak(db, userId, dateStr, "run");
-  return inserted;
+
+  let rankResult: Awaited<ReturnType<typeof recomputeRunRank>> = null;
+  if (run.source !== "manual" && points.length > 0) {
+    const plausibility = computeRunPlausibility({ distanceM: run.distanceM, durationS: run.durationS, points });
+    inserted = await updateRunPlausibilityMultiplier(db, inserted.id, plausibility.multiplier);
+    const { category } = runRankValue(run.distanceM, run.durationS);
+    rankResult = await recomputeRunRank(db, userId, category, plausibility.multiplier, plausibility.reason);
+  }
+
+  return { ...inserted, rankResult };
 }
 
 export class UnsupportedFileFormatError extends Error {}
