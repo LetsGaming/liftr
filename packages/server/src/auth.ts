@@ -1,29 +1,29 @@
-import { timingSafeEqual } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { env } from "./env.js";
+import type { LiftrDb } from "@liftr/db";
+import { findSessionByTokenHash, touchSession } from "./repositories/authRepository.js";
+import { hashSessionToken } from "./lib/sessionTokens.js";
 
 /**
- * `!==` on secrets leaks length and prefix through timing (each character comparison exits as
- * soon as one byte differs, so a closer-matching guess takes measurably longer to reject) —
- * `timingSafeEqual` compares in constant time instead. It requires equal-length buffers, so the
- * length check has to happen first; that check itself isn't constant-time, but it only leaks
- * *length*, not any byte of the token's actual content, which is the property that matters here.
+ * Every `/api/*` request carries a bearer token; this looks it up against `sessions` and, on a
+ * hit, sets `request.userId`/`request.role` for the rest of the request to use. Replaces the old
+ * single-shared-token check and the separate `userContext.ts` hook that used to run after it —
+ * those were two hooks doing halves of the same lookup; this is the one place identity gets
+ * resolved now.
  */
-function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
-}
-
-/**
- * Single-bearer-token check. No accounts, no sessions — the homelab reverse proxy is the outer
- * perimeter, this is just enough to stop an open LAN port being an open API. Skipped entirely
- * when LIFTR_TOKEN is unset, e.g. local dev.
- */
-export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
-  if (!env.token) return; // dev mode: no token configured
-  const header = request.headers.authorization;
-  if (!header || !safeEqual(header, `Bearer ${env.token}`)) {
-    return reply.code(401).send({ error: "unauthorized" });
-  }
+export function requireAuth(db: LiftrDb) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const header = request.headers.authorization;
+    const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+    if (!token) {
+      return reply.code(401).send({ error: "unauthorized" });
+    }
+    const tokenHash = hashSessionToken(token);
+    const session = await findSessionByTokenHash(db, tokenHash);
+    if (!session) {
+      return reply.code(401).send({ error: "unauthorized" });
+    }
+    request.userId = session.userId;
+    request.role = session.role;
+    await touchSession(db, tokenHash);
+  };
 }
