@@ -7,8 +7,8 @@
  * every frame.
  */
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { cssVar, createOsmTileLayer } from "../../lib/leafletTheme";
 import type { RunPoint } from "../../stores/runsStore";
 
 const props = defineProps<{ points: RunPoint[] }>();
@@ -19,18 +19,6 @@ let marker: L.CircleMarker | null = null;
 /** Tracked separately (not stashed as an untyped property on `map`) so `render()` can clear
  *  everything *except* the base tile layer on every points update without an `any` cast. */
 let osmLayer: L.TileLayer | null = null;
-
-/** Leaflet draws to its own canvas/SVG layer, outside the page's CSS cascade — `var(--fire)`
- *  can't be written directly into a Leaflet color option the way it can into a stylesheet.
- *  Reading the resolved custom property off :root at draw time (this file previously
- *  re-hardcoded 5 hexes that already exist as tokens.css tokens, one of which — #0e1826 —
- *  matched no token at all, so the map couldn't follow any future palette change) keeps this
- *  file on the same palette as everything else without needing a build-time color pipeline. */
-function cssVar(name: string, fallback: string): string {
-  if (typeof document === "undefined") return fallback;
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v || fallback;
-}
 
 function render() {
   if (!map || props.points.length === 0) return;
@@ -54,10 +42,7 @@ function render() {
 onMounted(() => {
   if (!container.value) return;
   map = L.map(container.value, { attributionControl: true, zoomControl: true });
-  const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap contributors",
-    maxZoom: 19,
-  });
+  const osm = createOsmTileLayer();
   osm.addTo(map);
   osmLayer = osm;
   render();
