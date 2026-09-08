@@ -3,6 +3,7 @@ import { OWNER_USER_ID, runStandards, type LiftrDb } from "@liftr/db";
 import { createTestDb, insertTestUser } from "../helpers/testDb.js";
 import { insertRun, insertRunPoints, type NewRun } from "~server/repositories/runRepository.js";
 import {
+  findAllRunPrs,
   findAllRunRanks,
   findBestRunPrByKind,
   findLoggedRunsForCategory,
@@ -238,6 +239,49 @@ describe("insertRunPr / findBestRunPrByKind", () => {
 
     const result = await findBestRunPrByKind(db, OWNER_USER_ID, "5k", "time");
     expect(result).toBeUndefined();
+  });
+});
+
+describe("findAllRunPrs", () => {
+  it("returns an empty array when no run PRs exist yet", async () => {
+    expect(await findAllRunPrs(db, OWNER_USER_ID)).toEqual([]);
+  });
+
+  it("returns every PR row for this user across categories and kinds, newest first", async () => {
+    const run = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "all-prs-run" }));
+    await insertRunPr(db, OWNER_USER_ID, {
+      category: "5k",
+      kind: "speed",
+      value: 3.5,
+      runId: run.id,
+      achievedAt: new Date("2026-08-01T00:00:00Z"),
+    });
+    await insertRunPr(db, OWNER_USER_ID, {
+      category: "10k",
+      kind: "time",
+      value: 2500,
+      runId: run.id,
+      achievedAt: new Date("2026-09-01T00:00:00Z"),
+    });
+
+    const result = await findAllRunPrs(db, OWNER_USER_ID);
+
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.category)).toEqual(["10k", "5k"]);
+  });
+
+  it("does not leak another user's run PR", async () => {
+    const otherUser = await insertTestUser(db);
+    const run = await insertRun(db, otherUser.id, newRun({ clientId: "all-prs-other" }));
+    await insertRunPr(db, otherUser.id, {
+      category: "5k",
+      kind: "speed",
+      value: 3.5,
+      runId: run.id,
+      achievedAt: new Date("2026-08-01T00:00:00Z"),
+    });
+
+    expect(await findAllRunPrs(db, OWNER_USER_ID)).toEqual([]);
   });
 });
 

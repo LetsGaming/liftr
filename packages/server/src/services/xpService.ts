@@ -1,7 +1,7 @@
-import { computeLevel, computeTotalXp, type Tier } from "@liftr/shared";
+import { computeLevel, computeRunXp, computeTotalXp, type Tier } from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { findAllRanks } from "../repositories/rankRepository.js";
-import { findAllSetsForXp, findTotalSessionBonusXp } from "../repositories/xpRepository.js";
+import { findAllRunsForXp, findAllSetsForXp, findTotalSessionBonusXp } from "../repositories/xpRepository.js";
 
 export interface XpSummary {
   totalXp: number;
@@ -11,10 +11,14 @@ export interface XpSummary {
   progressPercent: number;
 }
 
-/** Total XP across every logged non-warmup set + the resulting level. */
+/** Total XP across every logged non-warmup set + every logged run + the resulting level. XP is
+ *  global-per-user (there's no separate "strength XP"/"running XP" split anywhere else in the
+ *  product), so this is the one place strength and running literally converge into the same
+ *  number. */
 export async function getXpSummary(db: LiftrDb, userId: string): Promise<XpSummary> {
-  const [rows, rankRows, sessionBonusXp] = await Promise.all([
+  const [rows, runRows, rankRows, sessionBonusXp] = await Promise.all([
     findAllSetsForXp(db, userId),
+    findAllRunsForXp(db, userId),
     findAllRanks(db, userId),
     findTotalSessionBonusXp(db, userId),
   ]);
@@ -33,8 +37,21 @@ export async function getXpSummary(db: LiftrDb, userId: string): Promise<XpSumma
       })),
   );
 
+  // Ruling 5: a manual run's `plausibilityMultiplier` is always `null` in the DB (the gate never
+  // runs against one, since there are no `run_points` to check distance against) — that must map
+  // to `1` (full credit), NOT `0`, which would zero out every manual run's XP entirely.
+  const runXp = computeRunXp(
+    runRows.map((r) => ({
+      runId: "", // computeRunXp doesn't key its decay on runId, only used for interface completeness
+      distanceM: r.distanceM,
+      durationS: r.durationS,
+      loggedAt: r.startedAt,
+      plausibilityMultiplier: r.plausibilityMultiplier ?? 1,
+    })),
+  );
+
   const totalXp = Math.round(
-    perSetXp + sessionBonusXp.totalConsistencyBonusXp + sessionBonusXp.totalVarietyBonusXp,
+    perSetXp + runXp + sessionBonusXp.totalConsistencyBonusXp + sessionBonusXp.totalVarietyBonusXp,
   );
 
   return { totalXp, ...computeLevel(totalXp) };

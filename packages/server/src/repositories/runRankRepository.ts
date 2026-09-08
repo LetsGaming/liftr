@@ -86,6 +86,14 @@ export function insertRunPr(db: LiftrDb, userId: string, values: Omit<typeof run
   return db.insert(runPrs).values({ ...values, userId });
 }
 
+/** Every run PR row for this user, across every category and kind — for GET /api/runs/prs.
+ *  Mirrors prRepository's listing shape, but no exercise join is needed: `category` is enough
+ *  context on its own, and `runId` alone (no exercise/set join chain) is the "jump to this run"
+ *  link. */
+export function findAllRunPrs(db: LiftrDb, userId: string) {
+  return db.query.runPrs.findMany({ where: eq(runPrs.userId, userId), orderBy: desc(runPrs.achievedAt) });
+}
+
 /** History row for a genuine run rank-up — mirrors rankRepository.ts's `insertRankEvent`. */
 export function insertRunRankEvent(db: LiftrDb, userId: string, values: Omit<typeof runRankEvents.$inferInsert, "userId">) {
   return db.insert(runRankEvents).values({ ...values, userId });
