@@ -48,6 +48,7 @@ export async function findTotalSessionBonusXp(
 export function findAllRunsForXp(db: LiftrDb, userId: string) {
   return db
     .select({
+      id: runs.id,
       distanceM: runs.distanceM,
       durationS: runs.durationS,
       startedAt: runs.startedAt,

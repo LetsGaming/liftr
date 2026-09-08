@@ -42,7 +42,7 @@ export async function getXpSummary(db: LiftrDb, userId: string): Promise<XpSumma
   // to `1` (full credit), NOT `0`, which would zero out every manual run's XP entirely.
   const runXp = computeRunXp(
     runRows.map((r) => ({
-      runId: "", // computeRunXp doesn't key its decay on runId, only used for interface completeness
+      runId: r.id,
       distanceM: r.distanceM,
       durationS: r.durationS,
       loggedAt: r.startedAt,
