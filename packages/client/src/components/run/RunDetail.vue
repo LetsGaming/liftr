@@ -11,6 +11,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useRunsStore, type RunDetail as RunDetailModel } from "../../stores/runsStore";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
+import { getPlannedRouteDetail } from "../../services/plannedRouteService";
 import RunReplay from "./RunReplay.vue";
 import SheetModal from "../ui/SheetModal.vue";
 import StatTile from "../ui/StatTile.vue";
@@ -22,18 +23,38 @@ const runsStore = useRunsStore();
 const plannedRouteStore = usePlannedRouteStore();
 const loading = ref(true);
 const detail = ref<RunDetailModel | null>(null);
-const sourceRouteName = computed(() =>
-  detail.value?.plannedRouteId ? (plannedRouteStore.byId(detail.value.plannedRouteId)?.name ?? null) : null,
-);
+// A run can reference a planned route that's since been soft-archived — archived routes are
+// deliberately excluded from plannedRouteStore's active list (GET /api/planned-routes), so
+// resolving one for the chip below falls back to a direct by-id fetch, cached here rather than
+// in the global store since this is a display-only edge case, not part of the app's "active
+// routes" list semantics.
+const archivedRouteCache = ref<Record<string, string | null>>({});
+const sourceRouteName = computed(() => {
+  const id = detail.value?.plannedRouteId;
+  if (!id) return null;
+  return plannedRouteStore.byId(id)?.name ?? archivedRouteCache.value[id] ?? null;
+});
 
 onMounted(async () => {
-  if (!plannedRouteStore.loaded) plannedRouteStore.load();
+  const routesLoaded = plannedRouteStore.loaded ? Promise.resolve() : plannedRouteStore.load();
   try {
     detail.value = await runsStore.loadDetail(props.runId);
   } catch {
     // offline or request failed — `detail` stays null, template shows the "couldn't load" hint
   } finally {
     loading.value = false;
+  }
+
+  const routeId = detail.value?.plannedRouteId;
+  if (routeId) {
+    await routesLoaded;
+    if (!plannedRouteStore.byId(routeId) && archivedRouteCache.value[routeId] === undefined) {
+      try {
+        archivedRouteCache.value[routeId] = (await getPlannedRouteDetail(routeId)).name;
+      } catch {
+        archivedRouteCache.value[routeId] = null;
+      }
+    }
   }
 });
 

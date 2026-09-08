@@ -42,6 +42,7 @@ function makeDetail(overrides: Partial<RunDetailModel> = {}): RunDetailModel {
     avgPaceSPerKm: 310,
     avgHr: 152.4,
     elevationGainM: 40,
+    plannedRouteId: null,
     points: [{ idx: 0, t: "2026-03-15T07:00:00.000Z", lat: 52.5, lon: 13.4, ele: null, hr: 140, cadence: 80 }],
     ...overrides,
   };

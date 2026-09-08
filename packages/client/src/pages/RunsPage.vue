@@ -2,7 +2,7 @@
 // Läufe: GPX import, route map, and run replay built on the stored run_points array — the
 // whole point of keeping the full trackpoint array.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
@@ -15,7 +15,7 @@ import { useToast } from "../composables/useToast";
 import { isHealthConnectAvailable } from "../health/healthConnect";
 import { validateManualEntry } from "../lib/runValidation";
 import { getRunDetail } from "../services/runService";
-import type { PlannedRoute } from "../services/plannedRouteService";
+import { getPlannedRouteDetail, type PlannedRoute } from "../services/plannedRouteService";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
@@ -23,6 +23,24 @@ const runsStore = useRunsStore();
 const { toast } = useToast();
 const selectedRun = ref<RunDetail | null>(null);
 const deleting = ref(false);
+
+// Same archived-route fallback as RunDetail.vue's chip: plannedRouteStore only ever holds active
+// (non-archived) routes, so a run referencing a since-deleted route falls back to a direct by-id
+// fetch, cached locally here — display-only edge case, not part of the store's active-list state.
+const archivedRouteCache = ref<Record<string, string | null>>({});
+const selectedRunRouteName = computed(() => {
+  const id = selectedRun.value?.plannedRouteId;
+  if (!id) return null;
+  return plannedRouteStore.byId(id)?.name ?? archivedRouteCache.value[id] ?? null;
+});
+async function resolveRouteName(id: string) {
+  if (plannedRouteStore.byId(id) || archivedRouteCache.value[id] !== undefined) return;
+  try {
+    archivedRouteCache.value[id] = (await getPlannedRouteDetail(id)).name;
+  } catch {
+    archivedRouteCache.value[id] = null;
+  }
+}
 
 const activeSubTab = ref<"verlauf" | "strecken">("verlauf");
 const plannedRouteStore = usePlannedRouteStore();
@@ -85,11 +103,14 @@ watch(activeRoute, (route) => {
 onMounted(async () => {
   await runsStore.load();
   if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
-  await plannedRouteStore.load();
+  if (!plannedRouteStore.loaded) await plannedRouteStore.load();
 });
 
 async function selectRun(id: string) {
   selectedRun.value = await runsStore.loadDetail(id);
+  if (!plannedRouteStore.loaded) await plannedRouteStore.load();
+  const routeId = selectedRun.value?.plannedRouteId;
+  if (routeId) await resolveRouteName(routeId);
 }
 
 function triggerImport() {
@@ -241,8 +262,8 @@ function formatDuration(s: number) {
         <template v-if="selectedRun">
           <RunReplay v-if="selectedRun.points.length > 0" :points="selectedRun.points" />
           <p v-else style="color: var(--dim)">Manuell erfasster Lauf — keine Route verfügbar.</p>
-          <div v-if="selectedRun.plannedRouteId && plannedRouteStore.byId(selectedRun.plannedRouteId)" class="route-chip">
-            Strecke: {{ plannedRouteStore.byId(selectedRun.plannedRouteId)?.name }}
+          <div v-if="selectedRunRouteName" class="route-chip">
+            Strecke: {{ selectedRunRouteName }}
           </div>
           <div class="stats">
             <StatTile :value="`${(selectedRun.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
