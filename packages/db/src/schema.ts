@@ -388,6 +388,11 @@ export const runs = sqliteTable(
      *  useStartPlannedRoute.ts). Archiving/deleting the route never breaks this run's history —
      *  a literal mirror of workouts.routineId's onDelete behavior. */
     plannedRouteId: text("planned_route_id").references(() => plannedRoutes.id, { onDelete: "set null" }),
+    /** Plausibility gate multiplier for a GPS-tracked run's pace/consistency checks, computed
+     *  once when that gate runs (Task 4/7) — mirrors workouts.plausibilityMultiplier's
+     *  frozen-at-write-time/nullable convention. Always null for a manual run (`source: "manual"`),
+     *  which has no GPS trace to gate on. */
+    plausibilityMultiplier: real("plausibility_multiplier"),
     clientId: text("client_id").notNull(), // unique per user (below)
   },
   (t) => [uniqueIndex("runs_user_client_idx").on(t.userId, t.clientId)],
@@ -457,6 +462,92 @@ export const plannedRoutePoints = sqliteTable(
     primaryKey({ columns: [t.routeId, t.idx] }),
     index("planned_route_points_route_idx").on(t.routeId),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Running rank engine — mirrors standards/ranks/prs/rankEvents above, one set per run
+// category instead of per exercise. The category tuple is inlined at each column definition
+// (not imported from @liftr/shared's RUN_CATEGORIES) to match how tier/peakTier above always
+// inline TIERS's literal 9-tuple rather than importing it.
+// ---------------------------------------------------------------------------
+
+export const runStandards = sqliteTable(
+  "run_standards",
+  {
+    id: id(),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    sex: text("sex", { enum: ["male", "female"] }).notNull(),
+    tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
+    division: integer("division").notNull(), // N (weakest) down to 1 (strongest), N = TIER_DIVISION_COUNT[tier]
+    threshold: real("threshold").notNull(), // m/s
+    trust: text("trust", { enum: ["real", "derived", "synthetic"] }).notNull(),
+  },
+  (t) => [uniqueIndex("run_standards_category_sex_tier_division_idx").on(t.category, t.sex, t.tier, t.division)],
+);
+
+/** Derived cache, always rebuildable from runs + runStandards. Composite primary key
+ *  `(userId, category)` — one resolved rank row per running category per user, same shape as
+ *  `ranks`'s `(userId, exerciseId)` above. */
+export const runRanks = sqliteTable(
+  "run_ranks",
+  {
+    userId: userId(),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
+    division: integer("division").notNull(),
+    lp: real("lp").notNull(),
+    bestSpeedMps: real("best_speed_mps"),
+    trust: text("trust", { enum: ["real", "derived", "synthetic"] }),
+    nextTargetSpeedMps: real("next_target_speed_mps"),
+    computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+    /** Ratchet-only "best ever" snapshot, same semantics as ranks.peak* above — locked in the
+     *  moment it's achieved and never recomputed retroactively. */
+    peakTier: text("peak_tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }),
+    peakDivision: integer("peak_division"),
+    peakLp: real("peak_lp"),
+    peakSpeedMps: real("peak_speed_mps"),
+    peakAchievedAt: integer("peak_achieved_at", { mode: "timestamp_ms" }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.category] })],
+);
+
+/** Append-only history of every running rank-up — shape copied verbatim from `rankEvents`
+ *  above, category in place of exerciseId. */
+export const runRankEvents = sqliteTable(
+  "run_rank_events",
+  {
+    id: id(),
+    userId: userId(),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
+    division: integer("division").notNull(),
+    occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
+    /** Same semantics as rankEvents.plausibilityReason above, for the run-specific plausibility
+     *  gate (Task 4/7). */
+    plausibilityReason: text("plausibility_reason", { enum: ["pace", "improbable_jump", "exceeds_ceiling"] }),
+  },
+  (t) => [index("run_rank_events_category_idx").on(t.category)],
+);
+
+export const runPrs = sqliteTable(
+  "run_prs",
+  {
+    id: id(),
+    userId: userId(),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    /** Mirrors prs.kind's e1rm/weight/reps/volume split: one row per kind so both a category's
+     *  "fastest time" and "highest average speed" (same underlying number, but time is what a
+     *  runner actually cares about seeing) can be queried without recomputing from value each
+     *  time. Multiple historical rows are allowed per (userId, category, kind), same as `prs` —
+     *  "best" is an application-level concept (findBestRunPrByKind, Task 9), not a DB constraint. */
+    kind: text("kind", { enum: ["time", "speed"] }).notNull(),
+    value: real("value").notNull(), // seconds for "time", m/s for "speed"
+    runId: text("run_id")
+      .notNull()
+      .references(() => runs.id, { onDelete: "cascade" }),
+    achievedAt: integer("achieved_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("run_prs_category_idx").on(t.category)],
 );
 
 // ---------------------------------------------------------------------------
@@ -557,4 +648,8 @@ export const ranksRelations = relations(ranks, ({ one }) => ({
 export const prsRelations = relations(prs, ({ one }) => ({
   exercise: one(exercises, { fields: [prs.exerciseId], references: [exercises.id] }),
   set: one(sets, { fields: [prs.setId], references: [sets.id] }),
+}));
+
+export const runPrsRelations = relations(runPrs, ({ one }) => ({
+  run: one(runs, { fields: [runPrs.runId], references: [runs.id] }),
 }));
