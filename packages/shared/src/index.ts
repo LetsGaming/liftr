@@ -5,6 +5,7 @@ export * from "./math/mesocycle.js";
 export * from "./math/gps.js";
 export * from "./math/plates.js";
 export * from "./math/riegel.js";
+export * from "./math/runXp.js";
 export * from "./math/setLimits.js";
 export * from "./math/warmup.js";
 export * from "./math/xp.js";
