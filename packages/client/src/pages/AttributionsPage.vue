@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Attributions page — required by license for every ingested third-party source. Static
-// content; nothing here is fetched at runtime, matching the ingest-once rule.
+// Attributions page — required by license for every ingested third-party source. Content is
+// static except for one noted exception (OpenRouteService), which is a live per-request call
+// rather than an ingest-once source — see the intro paragraph below.
 //
 // Uses the same IonPage/IonHeader/IonToolbar/IonTitle/IonContent pattern every other page
 // follows instead of a bare <div>, with tokens.css (via ionic-theme.css) still the source of
