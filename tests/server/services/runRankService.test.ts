@@ -1,5 +1,6 @@
+import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { OWNER_USER_ID, runStandards, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, runPrs, runStandards, type LiftrDb } from "@liftr/db";
 import { writeJsonSetting } from "~server/repositories/settingsRepository.js";
 import { insertRun, insertRunPoints, type NewRun } from "~server/repositories/runRepository.js";
 import { findRunRankByCategory, findAllRunRanks } from "~server/repositories/runRankRepository.js";
@@ -164,6 +165,41 @@ describe("recomputeRunRank", () => {
     expect(result!.rankedUp).toBe(false); // uncorroborated, but PR detection doesn't care
     expect(result!.newPr).not.toBeNull();
     expect(result!.newPr!.value).toBeCloseTo(3.333, 2);
+  });
+
+  it("does not insert a spurious 'time' PR once >=2 time-PR rows exist and the true best hasn't changed (findBestRunPrByKind kind-direction bug regression)", async () => {
+    await seedStandards();
+
+    // Recompute #1: first-ever run, D1=1500s (3.333 m/s) -> inserts time PR value=1500.
+    await logRun(1500);
+    const first = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    expect(first!.newPr).not.toBeNull();
+
+    // Recompute #2: a genuinely faster run, D2=1400s (3.571 m/s) becomes the new overall best
+    // (both speed and time improve together since they're tied to the same run) -> inserts a
+    // second time PR row, value=1400. Two "time" rows now exist: {1500, 1400}.
+    await logRun(1400);
+    const second = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    expect(second!.newPr).not.toBeNull();
+
+    const timePrRowsAfterSecond = await db.query.runPrs.findMany({
+      where: and(eq(runPrs.userId, OWNER_USER_ID), eq(runPrs.category, "5k"), eq(runPrs.kind, "time")),
+    });
+    expect(timePrRowsAfterSecond).toHaveLength(2);
+
+    // Recompute #3: an extra run logged that is slower than D2 but faster than D1 (1450s) — it
+    // does NOT change which run is the overall best (still the D2=1400s run), so nothing has
+    // actually improved. Before the fix, `findBestRunPrByKind(..., "time")`'s desc(value)
+    // ordering would incorrectly return the stale D1=1500 row as "existing", and
+    // 1400 < 1500 would wrongly look like a new PR on every such call.
+    await logRun(1450);
+    const third = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+
+    expect(third!.newPr).toBeNull();
+    const timePrRowsAfterThird = await db.query.runPrs.findMany({
+      where: and(eq(runPrs.userId, OWNER_USER_ID), eq(runPrs.category, "5k"), eq(runPrs.kind, "time")),
+    });
+    expect(timePrRowsAfterThird).toHaveLength(2); // still exactly 2 — no spurious insert
   });
 
   it("does not record a PR when plausibilityMultiplier is below PR_ELIGIBILITY_FLOOR (0.5)", async () => {
