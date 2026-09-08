@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildRunStandards,
   RUN_ANCHOR_STANDARDS,
+  RUN_CATEGORIES,
   TIER_DIVISION_COUNT,
   TIERS,
 } from "@liftr/shared";
@@ -98,10 +99,10 @@ describe("buildRunStandards", () => {
 describe("RUN_ANCHOR_STANDARDS", () => {
   it("exports all 5 categories with male and female anchors", () => {
     expect(Object.keys(RUN_ANCHOR_STANDARDS)).toHaveLength(5);
-    for (const category of ["mile", "5k", "10k", "half_marathon", "marathon"]) {
-      expect(RUN_ANCHOR_STANDARDS[category as any]).toBeDefined();
-      expect(RUN_ANCHOR_STANDARDS[category as any].male).toHaveLength(5);
-      expect(RUN_ANCHOR_STANDARDS[category as any].female).toHaveLength(5);
+    for (const category of RUN_CATEGORIES) {
+      expect(RUN_ANCHOR_STANDARDS[category]).toBeDefined();
+      expect(RUN_ANCHOR_STANDARDS[category]!.male).toHaveLength(5);
+      expect(RUN_ANCHOR_STANDARDS[category]!.female).toHaveLength(5);
     }
   });
 
@@ -109,7 +110,7 @@ describe("RUN_ANCHOR_STANDARDS", () => {
     const mileM = RUN_ANCHOR_STANDARDS.mile.male;
     const expected = [2.848, 3.439, 4.043, 4.651, 5.226];
     for (let i = 0; i < expected.length; i++) {
-      expect(mileM[i]).toBeCloseTo(expected[i], 3);
+      expect(mileM[i]!).toBeCloseTo(expected[i]!, 3);
     }
   });
 
@@ -117,7 +118,7 @@ describe("RUN_ANCHOR_STANDARDS", () => {
     const marathonF = RUN_ANCHOR_STANDARDS.marathon.female;
     const expected = [2.102, 2.453, 2.816, 3.176, 3.516];
     for (let i = 0; i < expected.length; i++) {
-      expect(marathonF[i]).toBeCloseTo(expected[i], 3);
+      expect(marathonF[i]!).toBeCloseTo(expected[i]!, 3);
     }
   });
 });
