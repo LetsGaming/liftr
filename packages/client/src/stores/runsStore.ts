@@ -37,7 +37,14 @@ export const useRunsStore = defineStore("runs", {
       return run;
     },
 
-    async logManual(input: { name: string | null; startedAt: string; distanceM: number; durationS: number }) {
+    async logManual(input: {
+      name: string | null;
+      startedAt: string;
+      distanceM: number;
+      durationS: number;
+      plannedRouteId?: string | null;
+      elevationGainM?: number | null;
+    }) {
       await logManualRun(input);
       await this.load();
     },
