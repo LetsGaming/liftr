@@ -319,11 +319,29 @@ async function seedPlannedRoutes(db: LiftrDb): Promise<string> {
     geometrySource: "ors",
     computedAt: new Date(),
   });
-  await insertPlannedRoutePoints(
-    db,
-    orsRoute.id,
-    waypoints.map((w, idx) => ({ idx, lat: w.lat, lon: w.lon, ele: 40 + Math.sin(idx) * 3 })),
-  );
+  // Real ORS output is a much denser polyline than the sparse user-placed waypoints it's snapped
+  // from — interpolate a couple of lerp'd points between each consecutive waypoint pair (plus the
+  // closing segment back to the start, since this is a loop) so the seeded "ors" route's points
+  // array is genuinely denser than its waypoints array, not just a copy of them. Not
+  // geographically accurate (straight lerp, not road-snapped) — this is mock data, it only needs
+  // to be structurally representative of "denser than waypoints".
+  const INTERPOLATED_PER_SEGMENT = 2;
+  const orsPoints: { idx: number; lat: number; lon: number; ele: number }[] = [];
+  for (let i = 0; i < waypoints.length; i++) {
+    const from = waypoints[i]!;
+    const to = waypoints[(i + 1) % waypoints.length]!;
+    const steps = i === waypoints.length - 1 ? INTERPOLATED_PER_SEGMENT : INTERPOLATED_PER_SEGMENT + 1;
+    for (let s = 0; s < steps; s++) {
+      const t = s / (INTERPOLATED_PER_SEGMENT + 1);
+      orsPoints.push({
+        idx: orsPoints.length,
+        lat: from.lat + (to.lat - from.lat) * t,
+        lon: from.lon + (to.lon - from.lon) * t,
+        ele: 40 + Math.sin(orsPoints.length) * 3,
+      });
+    }
+  }
+  await insertPlannedRoutePoints(db, orsRoute.id, orsPoints);
 
   // A second route covers what the feature *can't* show — no ORS key, so a real straight-line
   // fallback, same reasoning that already put a manual run alongside the GPS run in this script.

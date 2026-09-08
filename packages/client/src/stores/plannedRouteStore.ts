@@ -21,10 +21,15 @@ export const usePlannedRouteStore = defineStore("plannedRoute", {
     async load() {
       try {
         this.routes = await getPlannedRoutes();
-        this.loaded = true;
         this.error = false;
       } catch {
         this.error = true;
+      } finally {
+        // `loaded` means "attempted", not "succeeded" — `error` already carries the
+        // success/failure distinction for anything that cares. Every call site guards a refetch
+        // on `if (!loaded) load()`, so leaving `loaded` false forever on a failed attempt would
+        // refire the request on every subsequent visit instead of just once.
+        this.loaded = true;
       }
     },
     async create(name: string, waypoints: Waypoint[]) {

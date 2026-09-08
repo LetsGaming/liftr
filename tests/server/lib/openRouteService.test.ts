@@ -91,6 +91,25 @@ describe("fetchOrsRoute", () => {
     await expect(fetchOrsRoute([{ lat: 0, lon: 0 }])).rejects.toBeInstanceOf(OrsUnavailableError);
   });
 
+  it("distinguishes a timeout from other network failures via status \"timeout\"", async () => {
+    // fetchOrsRoute uses AbortSignal.timeout(8000), which rejects the fetch promise with a
+    // DOMException/Error named "TimeoutError" — that's the exact signal it checks (err.name) to
+    // tell a timeout apart from every other network failure (which falls back to "network").
+    const timeoutError = new Error("The operation timed out.");
+    timeoutError.name = "TimeoutError";
+    vi.mocked(fetch).mockRejectedValue(timeoutError);
+
+    let error: unknown;
+    try {
+      await fetchOrsRoute([{ lat: 0, lon: 0 }]);
+    } catch (err) {
+      error = err;
+    }
+
+    expect(error).toBeInstanceOf(OrsUnavailableError);
+    expect((error as OrsUnavailableError).status).toBe("timeout");
+  });
+
   it("throws OrsUnavailableError when the response body doesn't match the expected shape", async () => {
     vi.mocked(fetch).mockResolvedValue(fakeResponse(200, { unexpected: true }));
 
