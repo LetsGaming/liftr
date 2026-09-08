@@ -384,6 +384,10 @@ export const runs = sqliteTable(
     avgPaceSPerKm: real("avg_pace_s_per_km"),
     avgHr: real("avg_hr"),
     elevationGainM: real("elevation_gain_m"),
+    /** Set when this run was logged from a saved planned route's quick-start hand-off (see
+     *  useStartPlannedRoute.ts). Archiving/deleting the route never breaks this run's history —
+     *  a literal mirror of workouts.routineId's onDelete behavior. */
+    plannedRouteId: text("planned_route_id").references(() => plannedRoutes.id, { onDelete: "set null" }),
     clientId: text("client_id").notNull(), // unique per user (below)
   },
   (t) => [uniqueIndex("runs_user_client_idx").on(t.userId, t.clientId)],
@@ -407,6 +411,51 @@ export const runPoints = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.runId, t.idx] }),
     index("run_points_run_idx").on(t.runId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Planned routes ("Strecken") — pre-planned, re-runnable routes.
+// ---------------------------------------------------------------------------
+
+export const plannedRoutes = sqliteTable("planned_routes", {
+  id: id(),
+  userId: userId(),
+  name: text("name").notNull(),
+  orderIndex: integer("order_index").notNull().default(0),
+  /** JSON-encoded {lat,lon}[] — the user-placed waypoints, distinct from the (much denser)
+   *  road-snapped geometry stored in plannedRoutePoints below. Same JSON-text-column convention
+   *  as routineExercises.targetSets. */
+  waypoints: text("waypoints_json").notNull(),
+  distanceM: real("distance_m").notNull(),
+  elevationGainM: real("elevation_gain_m"),
+  /** "ors" when the last (re)compute got a real road-snapped geometry + elevation from
+   *  OpenRouteService; "straight" when it fell back to a straight line between waypoints (ORS
+   *  unset/unavailable) — drives the "≈"/"Höhe unbekannt" honesty marker in the UI. */
+  geometrySource: text("geometry_source", { enum: ["ors", "straight"] }).notNull(),
+  computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+  archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+  createdAt: createdAt(),
+});
+
+/** The road-snapped (or straight-line-fallback) geometry for a planned route — mirrors
+ *  run_points: never compressed to a polyline blob, kept as a full ordered point array so the
+ *  map renders the exact line the server computed. No userId of its own (child-via-parent, like
+ *  run_points). */
+export const plannedRoutePoints = sqliteTable(
+  "planned_route_points",
+  {
+    routeId: text("route_id")
+      .notNull()
+      .references(() => plannedRoutes.id, { onDelete: "cascade" }),
+    idx: integer("idx").notNull(),
+    lat: real("lat").notNull(),
+    lon: real("lon").notNull(),
+    ele: real("ele"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.routeId, t.idx] }),
+    index("planned_route_points_route_idx").on(t.routeId),
   ],
 );
 
@@ -484,12 +533,21 @@ export const setsRelations = relations(sets, ({ one, many }) => ({
   prs: many(prs),
 }));
 
-export const runsRelations = relations(runs, ({ many }) => ({
+export const runsRelations = relations(runs, ({ one, many }) => ({
   points: many(runPoints),
+  plannedRoute: one(plannedRoutes, { fields: [runs.plannedRouteId], references: [plannedRoutes.id] }),
 }));
 
 export const runPointsRelations = relations(runPoints, ({ one }) => ({
   run: one(runs, { fields: [runPoints.runId], references: [runs.id] }),
+}));
+
+export const plannedRoutesRelations = relations(plannedRoutes, ({ many }) => ({
+  points: many(plannedRoutePoints),
+}));
+
+export const plannedRoutePointsRelations = relations(plannedRoutePoints, ({ one }) => ({
+  route: one(plannedRoutes, { fields: [plannedRoutePoints.routeId], references: [plannedRoutes.id] }),
 }));
 
 export const ranksRelations = relations(ranks, ({ one }) => ({
