@@ -4,6 +4,8 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
+import RouteList from "../components/route/RouteList.vue";
+import RouteWizard from "../components/route-wizard/RouteWizard.vue";
 import AppIcon from "../components/ui/AppIcon.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
@@ -11,12 +13,37 @@ import { useConfirmTap } from "../composables/useConfirmTap";
 import { useToast } from "../composables/useToast";
 import { isHealthConnectAvailable } from "../health/healthConnect";
 import { validateManualEntry } from "../lib/runValidation";
+import { getRunDetail } from "../services/runService";
+import type { PlannedRoute } from "../services/plannedRouteService";
+import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
 const { toast } = useToast();
 const selectedRun = ref<RunDetail | null>(null);
 const deleting = ref(false);
+
+const activeSubTab = ref<"verlauf" | "strecken">("verlauf");
+const plannedRouteStore = usePlannedRouteStore();
+const showRouteWizard = ref(false);
+const editingRoute = ref<PlannedRoute | null>(null);
+const initialCenter = ref<{ lat: number; lon: number } | undefined>(undefined);
+
+async function openNewRouteWizard() {
+  editingRoute.value = null;
+  const gpsRun = runsStore.runs.find((r) => r.source !== "manual");
+  if (gpsRun) {
+    const detail = await getRunDetail(gpsRun.id);
+    initialCenter.value = detail.points[0] ? { lat: detail.points[0].lat, lon: detail.points[0].lon } : undefined;
+  } else {
+    initialCenter.value = undefined;
+  }
+  showRouteWizard.value = true;
+}
+function openEditRouteWizard(route: PlannedRoute) {
+  editingRoute.value = route;
+  showRouteWizard.value = true;
+}
 
 /** Deletes the selected run, tap-to-confirm. */
 const deleteConfirm = useConfirmTap(async () => {
@@ -44,6 +71,7 @@ const manualMinutes = ref("");
 onMounted(async () => {
   await runsStore.load();
   if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
+  await plannedRouteStore.load();
 });
 
 async function selectRun(id: string) {
@@ -124,6 +152,16 @@ function formatDuration(s: number) {
     </IonHeader>
     <IonContent class="ion-padding">
     <WorkoutRunsSwitcher active="runs" />
+    <div class="sub-switcher">
+      <button class="wr-pill" :class="{ 'wr-active': activeSubTab === 'verlauf' }" @click="activeSubTab = 'verlauf'">
+        Verlauf
+      </button>
+      <button class="wr-pill" :class="{ 'wr-active': activeSubTab === 'strecken' }" @click="activeSubTab = 'strecken'">
+        Strecken
+      </button>
+    </div>
+
+    <template v-if="activeSubTab === 'verlauf'">
     <div class="pagehead">
       <div>
         <p style="color: var(--dim)">Als Datei importiert · deine Daten, kein Drittanbieter-Konto</p>
@@ -204,11 +242,56 @@ function formatDuration(s: number) {
         </button>
       </div>
     </div>
+    </template>
+
+    <template v-if="activeSubTab === 'strecken'">
+      <button class="btn-primary btn-block" @click="openNewRouteWizard">+ Neue Strecke</button>
+      <RouteList @edit="openEditRouteWizard" @start="openEditRouteWizard" />
+      <RouteWizard
+        v-if="showRouteWizard"
+        :route="editingRoute"
+        :initial-center="initialCenter"
+        @saved="showRouteWizard = false"
+      />
+    </template>
     </IonContent>
   </IonPage>
 </template>
 
 <style scoped>
+/* Mirrors WorkoutRunsSwitcher.vue's own .wr-switcher/.wr-pill shape (scoped styles don't cross
+   SFC boundaries, so the class names are shared by convention but the rules are duplicated
+   here) — this switches between Verlauf (run history) and Strecken (planned routes) within the
+   /runs page itself, one level below the Workout/Läufe switcher above it. */
+.sub-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp4);
+}
+.sub-switcher .wr-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-weight: 700;
+  font-size: 13.5px;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.sub-switcher .wr-pill.wr-active {
+  background: var(--blue);
+  color: var(--bg);
+}
 .pagehead {
   display: flex;
   flex-wrap: wrap;
