@@ -20,11 +20,21 @@ describe("hashPassword / verifyPassword", () => {
     expect(await verifyPassword("same password", b)).toBe(true);
   });
 
-  it("stores the hash as salt:hash hex, colon-joined", async () => {
+  it("stores the hash as scrypt:N:r:p:salt:hash, colon-joined", async () => {
     const hash = await hashPassword("whatever");
     const parts = hash.split(":");
-    expect(parts).toHaveLength(2);
-    expect(parts[0]).toMatch(/^[0-9a-f]+$/);
-    expect(parts[1]).toMatch(/^[0-9a-f]+$/);
+    expect(parts).toHaveLength(6);
+    const [algo, n, r, p, salt, digest] = parts;
+    expect(algo).toBe("scrypt");
+    expect(n).toBe("131072");
+    expect(r).toBe("8");
+    expect(p).toBe("1");
+    expect(salt).toMatch(/^[0-9a-f]+$/);
+    expect(digest).toMatch(/^[0-9a-f]+$/);
+  });
+
+  it("returns false (does not throw) for a garbage/wrong-shaped stored value", async () => {
+    await expect(verifyPassword("whatever", "not-a-real-hash")).resolves.toBe(false);
+    await expect(verifyPassword("whatever", "scrypt:131072:8:1:deadbeef")).resolves.toBe(false);
   });
 });
