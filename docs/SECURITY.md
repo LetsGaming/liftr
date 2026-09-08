@@ -71,7 +71,8 @@ OpenRouteService (`LIFTR_ORS_BASE_URL`, default `https://api.openrouteservice.or
 self-hosted ORS instance, if `LIFTR_ORS_BASE_URL` points there instead — to resolve road-snapped
 distance and elevation. This is the first outbound runtime request this server makes anywhere;
 every other feature is either self-hosted or entirely offline (see
-[docs/features.md](features.md)'s "no third party in the loop" framing for running/logging).
+[docs/features.md](features.md)'s "PWA / offline" section, whose "no third party in the loop"
+framing for self-hosting carries the same caveat as this section).
 
 The key is opt-in: unset by default, and unset is a fully supported state (straight-line distance,
 no elevation), not a degraded error path. Self-hosting your own ORS instance and pointing

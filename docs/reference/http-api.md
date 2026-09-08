@@ -266,7 +266,8 @@ Response `200`:
 
 ## Planned Routes (`plannedRoutes.ts`)
 
-Source: [`packages/server/src/routes/plannedRoutes.ts`](../../packages/server/src/routes/plannedRoutes.ts)
+Source: [`packages/server/src/routes/plannedRoutes.ts`](../../packages/server/src/routes/plannedRoutes.ts) ·
+Tests: [`tests/server/routes/plannedRoutes.test.ts`](../../tests/server/routes/plannedRoutes.test.ts)
 
 Wegpunkte (waypoints) placed on a map, resolved into a real geometry (road-snapped distance +
 elevation via OpenRouteService, or a straight-line fallback) that a run can later be started

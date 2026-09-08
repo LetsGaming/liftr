@@ -77,7 +77,7 @@ read for today — an explicit heuristic, not a claim to know your physiology, s
 
 ## Running
 
-Runs are a first-class second discipline alongside lifting, with no third-party dependency:
+Runs are a first-class second discipline alongside lifting, with no third-party dependency\*:
 
 - **GPX/FIT file import** from any watch or app you already own — explicitly chosen over a Strava
   API integration, which was evaluated and rejected to avoid a load-bearing dependency on a
@@ -89,6 +89,12 @@ Runs are a first-class second discipline alongside lifting, with no third-party 
 - **Manual run entry** as a fallback when there's no file/device data, with real inline
   validation errors instead of just disabling the save button.
 - A combined **workout/runs switcher** so both disciplines live in one place in the UI.
+
+\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
+distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
+straight-line distance, and self-hostable via `LIFTR_ORS_BASE_URL` to remove the third party
+entirely. See [SECURITY.md](SECURITY.md#outbound-requests-openrouteservice) and
+[ADR 0007](adr/0007-openrouteservice-external-routing-exception.md).
 
 ## Routines and planning
 
@@ -141,7 +147,13 @@ real or derivable strength standards, each with:
   Service-worker caching keeps the app shell, exercise catalog/images, and other API reads
   available offline too.
 - **Self-hosted, single-user.** Runs on your own server, data lives in one SQLite file you can
-  back up or move, no cloud account, no analytics, no third party in the loop.
+  back up or move, no cloud account, no analytics, no third party in the loop\*\*.
+
+\*\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
+distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
+straight-line distance, and self-hostable via `LIFTR_ORS_BASE_URL` to remove the third party
+entirely. See [SECURITY.md](SECURITY.md#outbound-requests-openrouteservice) and
+[ADR 0007](adr/0007-openrouteservice-external-routing-exception.md).
 
 ## Stack, for reference
 
