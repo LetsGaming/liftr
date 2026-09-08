@@ -2,6 +2,8 @@ import { summarizeRun, type RunPoint } from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { parseFit } from "../fit.js";
 import { parseGpx } from "../gpx.js";
+import { NotFoundError } from "../lib/errors.js";
+import { findPlannedRouteById } from "../repositories/plannedRouteRepository.js";
 import { findRunByClientId, insertRun, insertRunPoints, type NewRun } from "../repositories/runRepository.js";
 import { creditStreak } from "../repositories/streakRepository.js";
 
@@ -101,11 +103,25 @@ export async function importHealthConnectRun(
 }
 
 /** POST /api/runs — manual fallback for runs without a file. */
-export function logManualRun(
+export async function logManualRun(
   db: LiftrDb,
   userId: string,
-  input: { name: string | null; startedAt: Date; distanceM: number; durationS: number },
+  input: {
+    name: string | null;
+    startedAt: Date;
+    distanceM: number;
+    durationS: number;
+    plannedRouteId?: string | null;
+    elevationGainM?: number | null;
+  },
 ) {
+  let elevationGainM = input.elevationGainM ?? null;
+  if (input.plannedRouteId) {
+    const route = await findPlannedRouteById(db, userId, input.plannedRouteId);
+    if (!route) throw new NotFoundError(); // prevents a cross-user FK write
+    if (elevationGainM == null) elevationGainM = route.elevationGainM;
+  }
+
   return persistRun(
     db,
     userId,
@@ -114,9 +130,11 @@ export function logManualRun(
       name: input.name,
       startedAt: input.startedAt,
       clientId: crypto.randomUUID(),
-      distanceM: input.distanceM,
+      distanceM: input.distanceM, // always from the body — adjusting the real result is the point
       durationS: input.durationS,
       avgPaceSPerKm: input.distanceM > 0 ? input.durationS / (input.distanceM / 1000) : null,
+      elevationGainM,
+      plannedRouteId: input.plannedRouteId ?? null,
     },
     [],
   );

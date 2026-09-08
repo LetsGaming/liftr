@@ -34,6 +34,7 @@ export interface NewRun {
   avgPaceSPerKm: number | null;
   avgHr?: number | null;
   elevationGainM?: number | null;
+  plannedRouteId?: string | null;
 }
 
 export async function insertRun(db: LiftrDb, userId: string, values: NewRun) {

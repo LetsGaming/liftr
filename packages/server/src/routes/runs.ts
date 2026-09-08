@@ -23,6 +23,8 @@ const manualRunInput = z.object({
   startedAt: z.coerce.date(),
   distanceM: z.number().positive(),
   durationS: z.number().positive(),
+  plannedRouteId: z.string().nullable().optional(),
+  elevationGainM: z.number().nullable().optional(),
 });
 
 // Health Connect import: the client (capacitor-health's queryWorkouts, called
@@ -59,6 +61,7 @@ const runResponse = z.object({
   avgPaceSPerKm: z.number().nullable(),
   avgHr: z.number().nullable(),
   elevationGainM: z.number().nullable(),
+  plannedRouteId: z.string().nullable(),
   clientId: z.string(),
 });
 
@@ -147,6 +150,8 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
       startedAt: req.body.startedAt,
       distanceM: req.body.distanceM,
       durationS: req.body.durationS,
+      plannedRouteId: req.body.plannedRouteId ?? null,
+      elevationGainM: req.body.elevationGainM ?? null,
     });
     reply.code(201);
     return run;

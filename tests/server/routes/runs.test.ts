@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import multipart from "@fastify/multipart";
-import { runPoints, runs, type LiftrDb } from "@liftr/db";
+import { plannedRoutes, runPoints, runs, type LiftrDb } from "@liftr/db";
 import { registerRunRoutes } from "~server/routes/runs.js";
 import { createTestApp } from "../helpers/testApp.js";
+import { insertTestUser } from "../helpers/testDb.js";
 
 /** Hand-builds a `multipart/form-data` body — the runs.ts import route parses the file inline
  *  via `req.file()` (no `schema.body`, see the route's own comment), so there's no JSON shortcut
@@ -243,5 +244,69 @@ describe("run routes", () => {
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: "no_file" });
     });
+  });
+});
+
+describe("POST /api/runs — planned route handoff", () => {
+  it("defaults elevationGainM from the route and stores plannedRouteId", async () => {
+    const { app, db } = createTestApp();
+    registerRunRoutes(app, db);
+    const [route] = await db
+      .insert(plannedRoutes)
+      .values({
+        name: "Tempelhof-Runde",
+        waypoints: "[]",
+        distanceM: 6400,
+        elevationGainM: 34,
+        geometrySource: "ors",
+        computedAt: new Date(),
+      })
+      .returning();
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/runs",
+      payload: { startedAt: new Date().toISOString(), distanceM: 6500, durationS: 1800, plannedRouteId: route!.id },
+    });
+
+    expect(res.statusCode).toBe(201);
+    const body = res.json();
+    expect(body.plannedRouteId).toBe(route!.id);
+    expect(body.elevationGainM).toBe(34);
+  });
+
+  it("rejects a plannedRouteId belonging to another user with 404", async () => {
+    const { app, db } = createTestApp();
+    registerRunRoutes(app, db);
+    const otherUser = await insertTestUser(db);
+    const [route] = await db
+      .insert(plannedRoutes)
+      .values({
+        userId: otherUser.id,
+        name: "Not mine",
+        waypoints: "[]",
+        distanceM: 100,
+        geometrySource: "straight",
+        computedAt: new Date(),
+      })
+      .returning();
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/runs",
+      payload: { startedAt: new Date().toISOString(), distanceM: 100, durationS: 60, plannedRouteId: route!.id },
+    });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it("keeps plannedRouteId null for a run logged without one — GET /api/runs still serializes the field", async () => {
+    const { app, db } = createTestApp();
+    registerRunRoutes(app, db);
+
+    await app.inject({ method: "POST", url: "/api/runs", payload: { startedAt: new Date().toISOString(), distanceM: 5000, durationS: 1500 } });
+    const list = await app.inject({ method: "GET", url: "/api/runs" });
+
+    expect(list.json()[0].plannedRouteId).toBeNull();
   });
 });
