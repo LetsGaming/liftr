@@ -18,6 +18,7 @@ export * from "./rank/decay.js";
 export * from "./rank/plausibility.js";
 export * from "./rank/tiers.js";
 export * from "./rank/defaultStandards.js";
+export * from "./rank/runStandards.js";
 export * from "./share/layout.js";
 export * from "./streak/streak.js";
 export * from "./workout/setKind.js";
