@@ -3,10 +3,9 @@
  * A −/+ control adjusting a number, in the two sizes the app actually uses: `lg` (SetEntry's
  * big card stepper — number on top, a row of two large buttons below) and `sm` (the routine
  * wizard's compact inline stepper — button/number/button in one row, also used for the
- * mesocycle-weeks input, which used to be a raw `<input type="number">` — a stepper is more
- * touch-friendly for a quick ±1 than triggering the OS numeric keyboard). Previously these
- * were two independently hand-rolled markup/CSS trees with inconsistent minus glyphs ("–" in
- * SetEntry vs "−" in ArrangeStep) — unified on "−" here.
+ * mesocycle-weeks input) — a stepper is more touch-friendly for a quick ±1 than triggering the
+ * OS numeric keyboard. One shared component keeps the minus glyph ("−") consistent everywhere
+ * it's used.
  *
  * Emits the delta (±1), not the new value — the caller owns clamping/rounding/step-size (e.g.
  * SetEntry's 1.25kg weight step vs. a plain ±1 rep step), since that varies per use.
@@ -32,9 +31,9 @@ const props = withDefaults(
 const emit = defineEmits<{ adjust: [delta: 1 | -1]; set: [value: number] }>();
 
 /**
- * Long-press repeat (critique finding: ±1-per-tap only, so going from a 20kg default to 100kg
- * is ~64 taps at a 1.25kg step). Holding a button fires the same 'adjust' delta the caller
- * already handles — no new event, no change to step size or clamping, both owned by the caller
+ * Long-press repeat — plain ±1-per-tap alone would take ~64 taps to go from a 20kg default to
+ * 100kg at a 1.25kg step. Holding a button fires the same 'adjust' delta the caller already
+ * handles — no new event, no change to step size or clamping, both owned by the caller
  * (activeWorkoutStore's adjustCurrentSet) exactly as before. A normal tap is unaffected: the
  * hold timer only starts accelerated repetition after `holdDelayMs`, and holdFired suppresses
  * the click handler's own emit so a completed hold never double-fires on release.
@@ -84,11 +83,10 @@ function onClick(delta: 1 | -1) {
   emit("adjust", delta);
 }
 
-/** Direct numeric entry (critique finding, same root cause as long-press) — tapping the big
- *  number itself (lg size only; the compact sm stepper has no room for this) opens a plain
- *  numeric input. Emits the caller's existing clamping path is NOT bypassed: the caller (e.g.
- *  SetEntry.vue) is expected to route this through the same validation adjustCurrentSet uses
- *  for deltas, not write the raw value straight to state. */
+/** Direct numeric entry — tapping the big number itself (lg size only; the compact sm stepper
+ *  has no room for this) opens a plain numeric input. The caller's existing clamping path is NOT
+ *  bypassed: the caller (e.g. SetEntry.vue) is expected to route this through the same
+ *  validation adjustCurrentSet uses for deltas, not write the raw value straight to state. */
 const editing = ref(false);
 const editValue = ref("");
 function startEdit() {
@@ -234,9 +232,8 @@ function commitEdit() {
   padding: 4px;
 }
 .stepper.sm .ctrls button {
-  /* Bumped 32px -> 44px (audit: touch-target floor, WCAG 2.5.5) — only ever used two-up
-     (mesocycle-weeks +/-), so there's room without crowding. Now reads --touch-target-min
-     (Foundation Task 1, 2026-09-03 plan) instead of the bare literal. */
+  /* 44px meets the WCAG 2.5.5 touch-target floor — only ever used two-up (mesocycle-weeks +/-),
+     so there's room without crowding. Reads --touch-target-min instead of a bare literal. */
   width: var(--touch-target-min);
   height: var(--touch-target-min);
   border-radius: var(--r-sm);

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { exerciseMuscles, muscles, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { exerciseMuscles, muscles, OWNER_USER_ID, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 import {
   findExercisesByIds,
@@ -83,7 +83,7 @@ describe("findExercisesByIds", () => {
 describe("findLastPerformedSet", () => {
   it("returns null when the exercise has never been logged", async () => {
     const ex = await insertTestExercise(db);
-    const result = await findLastPerformedSet(db, ex.id);
+    const result = await findLastPerformedSet(db, OWNER_USER_ID, ex.id);
     expect(result).toBeNull();
   });
 
@@ -114,7 +114,7 @@ describe("findLastPerformedSet", () => {
       },
     ]);
 
-    const result = await findLastPerformedSet(db, ex.id);
+    const result = await findLastPerformedSet(db, OWNER_USER_ID, ex.id);
 
     expect(result).toEqual({ weightKg: 100, reps: 5 });
   });
@@ -146,7 +146,7 @@ describe("findLastPerformedSet", () => {
       },
     ]);
 
-    const result = await findLastPerformedSet(db, ex.id);
+    const result = await findLastPerformedSet(db, OWNER_USER_ID, ex.id);
 
     expect(result).toEqual({ weightKg: 60, reps: 10 });
   });

@@ -1,4 +1,4 @@
-/** Streak display (plan Phase 2.4), backed by /api/streak. */
+/** Streak display, backed by /api/streak. */
 import { defineStore } from "pinia";
 import { getStreak } from "../services/streakService";
 
@@ -18,8 +18,8 @@ export const useStreakStore = defineStore("streak", {
         this.loaded = true;
         this.error = false;
       } catch {
-        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
-        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
+        // needs to tell "still fetching" from "failed" apart.
         this.error = true;
       }
     },

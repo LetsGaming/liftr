@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { exerciseMuscles, muscles, prs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { exerciseMuscles, muscles, OWNER_USER_ID, prs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 import { findPreviousFinishedWorkout, findPrimaryMuscleSlugsForWorkout, findWorkoutWithExercisesAndSets } from "~server/repositories/workoutRepository.js";
 
@@ -24,7 +24,7 @@ describe("findWorkoutWithExercisesAndSets", () => {
 
     await db.insert(prs).values({ exerciseId: ex.id, kind: "weight", value: 100, setId: prSet!.id, achievedAt: new Date() });
 
-    const result = await findWorkoutWithExercisesAndSets(db, workout!.id);
+    const result = await findWorkoutWithExercisesAndSets(db, OWNER_USER_ID, workout!.id);
 
     const returnedSets = result!.workoutExercises[0]!.sets;
     const returnedPrSet = returnedSets.find((s) => s.id === prSet!.id)!;
@@ -39,7 +39,7 @@ describe("findWorkoutWithExercisesAndSets", () => {
     const [we] = await db.insert(workoutExercises).values({ workoutId: workout!.id, exerciseId: ex.id, orderIndex: 0 }).returning();
     await db.insert(sets).values({ workoutExerciseId: we!.id, setIndex: 0, weightKg: 50, reps: 8, kind: "normal", isWarmup: false, loggedAt: new Date(), clientId: "s3" });
 
-    const result = await findWorkoutWithExercisesAndSets(db, workout!.id);
+    const result = await findWorkoutWithExercisesAndSets(db, OWNER_USER_ID, workout!.id);
 
     expect(result!.workoutExercises[0]!.sets[0]!.prs).toEqual([]);
   });
@@ -67,7 +67,7 @@ describe("findPreviousFinishedWorkout", () => {
       endedAt: new Date("2026-09-04T11:00:00Z"),
     });
 
-    const result = await findPreviousFinishedWorkout(db, current.id);
+    const result = await findPreviousFinishedWorkout(db, OWNER_USER_ID, current.id);
 
     expect(result?.id).toBe(earlier.id);
   });
@@ -79,7 +79,7 @@ describe("findPreviousFinishedWorkout", () => {
       endedAt: new Date("2026-09-04T11:00:00Z"),
     });
 
-    const result = await findPreviousFinishedWorkout(db, current.id);
+    const result = await findPreviousFinishedWorkout(db, OWNER_USER_ID, current.id);
 
     expect(result).toBeNull();
   });
@@ -102,7 +102,7 @@ describe("findPreviousFinishedWorkout", () => {
       endedAt: new Date("2026-09-04T11:00:00Z"),
     });
 
-    const result = await findPreviousFinishedWorkout(db, current.id);
+    const result = await findPreviousFinishedWorkout(db, OWNER_USER_ID, current.id);
 
     expect(result?.id).toBe(finished.id);
     expect(result?.id).not.toBe(unfinished.id);

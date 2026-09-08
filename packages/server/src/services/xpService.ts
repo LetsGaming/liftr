@@ -11,12 +11,12 @@ export interface XpSummary {
   progressPercent: number;
 }
 
-/** Total XP across every logged non-warmup set + the resulting level (plan §6.4). */
-export async function getXpSummary(db: LiftrDb): Promise<XpSummary> {
+/** Total XP across every logged non-warmup set + the resulting level. */
+export async function getXpSummary(db: LiftrDb, userId: string): Promise<XpSummary> {
   const [rows, rankRows, sessionBonusXp] = await Promise.all([
-    findAllSetsForXp(db),
-    findAllRanks(db),
-    findTotalSessionBonusXp(db),
+    findAllSetsForXp(db, userId),
+    findAllRanks(db, userId),
+    findTotalSessionBonusXp(db, userId),
   ]);
   const tierByExercise = new Map(rankRows.map((r) => [r.exerciseId, r.tier as Tier]));
 

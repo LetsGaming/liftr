@@ -13,6 +13,11 @@ unfinished large work.
 
 ## Open work
 
+- **Multi-user login itself.** The schema and backend are already hardened for it (every per-user
+  table scoped by `user_id`, every repository/service/route threading a resolved `userId` — see
+  [ADR 0006](adr/0006-multi-user-hardening.md)), but there's still no login UI, no passwords, and
+  no per-person bearer tokens. `packages/server/src/userContext.ts`'s `resolveCurrentUserId` is
+  the one place that needs to change (from a constant to a real session lookup) once that's built.
 - **`landmine-press` exercise photo.** The only sourced candidate is a CC BY-SA SVG illustration
   (`bryllim/workout-guide`), not a raster photo — the catalog's image pipeline assumes
   `start.jpg`-style raster files, and browsers won't reliably render an SVG saved with a `.jpg`
@@ -32,10 +37,8 @@ unfinished large work.
 These were considered and deliberately rejected, not overlooked — listed here so they don't get
 proposed as "obvious" additions without the context of why they aren't happening:
 
-- **Any social or multi-user feature** — leaderboards, friends, public profiles, percentile
-  comparisons against other people. Structurally incompatible with the single-bearer-token,
-  no-accounts backend (see `docs/adr/0002-single-bearer-token-auth.md`); Liftr is scoped as a
-  single-user app, forever.
+- **Social features** — leaderboards, friends, public profiles, percentile comparisons against
+  other people. Not planned regardless of how multi-user support itself evolves.
 - **Manipulative engagement patterns** — masked/near-miss reward targets, a currency/cosmetics
   economy, chrome-hiding celebration interstitials, gated onboarding quests. Each was weighed and
   rejected against the product owner's own stated line against that class of dark pattern.

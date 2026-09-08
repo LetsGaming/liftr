@@ -1,6 +1,6 @@
 /**
- * Feedback: "if a user made changes to the routine while in the workout (e.g. more weight/reps
- * than the routine default) it should ask to overwrite the routine." Pure comparison/rebuild
+ * Detects when a user made changes to the routine while in the workout (e.g. more weight/reps
+ * than the routine default) so the app can ask to overwrite the routine. Pure comparison/rebuild
  * logic, kept out of WorkoutPage.vue so it's testable without mounting the page — the litmus
  * test from this project's Vue conventions (domain logic doesn't need a component to run).
  */

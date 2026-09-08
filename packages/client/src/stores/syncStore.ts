@@ -1,5 +1,5 @@
 /**
- * The offline write queue (plan 1.3). Every mutation from activeWorkoutStore is written to
+ * The offline write queue. Every mutation from activeWorkoutStore is written to
  * IndexedDB first (optimistic, instant), then enqueued here. `flush()` POSTs the whole queue
  * to /api/sync and removes only the items the server confirms; anything that errors stays
  * queued for the next flush. This is what makes the logging loop survive a dead connection —
@@ -23,9 +23,9 @@ export type RankVerdict = NonNullable<SyncResult["ranks"]>[number];
 /** Server's `syncBody` schema (`routes/sync.ts`) caps a single request at 200 items — chunk
  *  comfortably under that so a batch built from a stale/slow-changing `items` snapshot (another
  *  item could enqueue mid-flush) never risks tipping over the server's own limit. An outbox this
- *  large only happens after an extended offline stretch (plan §2's "gym basement, no signal"),
- *  but when it does, sending the whole thing in one request meant every flush attempt 400'd
- *  forever — chunking is what keeps the queue draining instead of wedging permanently. */
+ *  large only happens after an extended offline stretch ("gym basement, no signal"), but when
+ *  it does, sending the whole thing in one request meant every flush attempt 400'd forever —
+ *  chunking is what keeps the queue draining instead of wedging permanently. */
 const SYNC_CHUNK_SIZE = 150;
 
 function chunk<T>(items: T[], size: number): T[][] {

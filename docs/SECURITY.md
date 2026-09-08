@@ -1,14 +1,19 @@
 # Security
 
-Liftr's security posture is scoped to what it actually is: a self-hosted, single-user tracker
-meant to sit behind your own reverse proxy on your own network. This document describes what's
-actually implemented, not an aspirational threat model.
+Liftr's security posture is scoped to what it actually is today: a self-hosted tracker meant to
+sit behind your own reverse proxy on your own network, currently with one shared identity for
+every request. This document describes what's actually implemented, not an aspirational threat
+model.
 
 ## Auth model
 
-There are no user accounts and no sessions. Access is gated by a single bearer token,
+There are no per-person accounts and no sessions yet. Access is gated by a single bearer token,
 `LIFTR_TOKEN`, checked on every `/api/*` request (`packages/server/src/app.ts`'s `onRequest`
-hook calls `requireAuth`, `packages/server/src/auth.ts`).
+hook calls `requireAuth`, `packages/server/src/auth.ts`), and every authenticated request
+resolves to the same owner identity (`packages/server/src/userContext.ts`). The schema and every
+repository/service/route are already scoped by `user_id` in preparation for real per-person login
+(see [ADR 0006](adr/0006-multi-user-hardening.md)) — but that scoping has nothing to differentiate
+yet, since only one identity currently exists.
 
 - The token is compared with `crypto.timingSafeEqual`, not `!==` — a plain string comparison
   exits as soon as one byte differs, so a closer-matching guess takes measurably longer to reject,

@@ -1,34 +1,28 @@
 /**
- * Per-workout plausibility gate (rank engine v2). Three independent, cheap heuristics — not a
- * fraud verdict, an honest heuristic in the same spirit as recovery.ts/decay.ts. Never used to
- * discard a workout or its sets, only to discount their XP/LP/peak contribution: computed once
- * per finished workout and applied by the caller (rankService.ts, syncService.ts).
+ * Per-workout plausibility gate. Three independent, cheap heuristics — not a fraud verdict, an
+ * honest heuristic in the same spirit as recovery.ts/decay.ts. Never used to discard a workout or
+ * its sets, only to discount their XP/LP/peak contribution: computed once per finished workout
+ * and applied by the caller (rankService.ts, syncService.ts).
  *
- * Engagement-audit-v3 Phase 3 considered a fourth "implausible single-set session" heuristic
- * (one suspiciously heavy set hiding inside an otherwise normal-paced workout). That gap turned
- * out to already exist in the *caller*, not here: the jump/ceiling heuristics below are unit-
- * agnostic ratio comparisons (they only ever compare a session value against a same-exercise
- * stored peak / apex threshold, never against absolute kg), so they already catch a single
- * implausible set for any `load_ratio` exercise regardless of the rest of the session's pace.
- * The actual gap was that `syncService.ts` was passing `null` for `sessionBestRatio`/
- * `storedPeakRatio`/`apexThreshold` on every `metric === "reps"` exercise (pull-ups, push-ups,
- * etc.) — a deliberate fix for a real prior bug (comparing a load ratio against a raw rep count),
- * but it over-corrected into skipping the jump/ceiling checks for that whole exercise class
- * entirely. Rep counts are just as ratio-comparable to a rep-based peak/apex as a load ratio is
- * to a load-ratio peak/apex, so `syncService.ts` now wires session-best-reps /
- * stored-peak-reps / apex-reps-threshold through the same two heuristics instead of nulling them
- * out — no new heuristic function needed, and no duplicate logic to keep in sync with this one.
+ * The jump/ceiling heuristics below are unit-agnostic ratio comparisons (they only ever compare a
+ * session value against a same-exercise stored peak / apex threshold, never against absolute kg),
+ * so they already catch a single implausible set for any `load_ratio` exercise regardless of the
+ * rest of the session's pace — no separate "implausible single-set session" heuristic is needed.
+ * `syncService.ts` wires session-best-reps / stored-peak-reps / apex-reps-threshold through these
+ * same two heuristics for `metric === "reps"` exercises (pull-ups, push-ups, etc.) too: rep counts
+ * are just as ratio-comparable to a rep-based peak/apex as a load ratio is to a load-ratio
+ * peak/apex, so no new heuristic function or duplicate logic is needed for that exercise class.
  */
 
 /** Below this many seconds/set, pace severity starts rising; at or below this floor, severity
  *  is maximal.
- *  Tightened (engagement-audit-v3 Phase 3, from 12/4) to 15/6: 12s/set as a whole-session average
- *  is already almost a full-body-no-rest pace, but it left a gap for a moderately-fast circuit
- *  session (rack changes, transitions between stations) to log completely clean. Pace is
- *  deliberately the *least* risky heuristic to tighten of the three — a genuinely heavy PR
- *  attempt needs real rest to recover between sets, so a real breakthrough set is essentially
- *  never also a fast-pace session; tightening this ramp doesn't put real PR sessions at risk the
- *  way tightening the jump heuristic below would. */
+ *  Set to 15/6 (up from 12/4): 12s/set as a whole-session average is already almost a
+ *  full-body-no-rest pace, but it left a gap for a moderately-fast circuit session (rack changes,
+ *  transitions between stations) to log completely clean. Pace is deliberately the *least* risky
+ *  heuristic to tighten of the three — a genuinely heavy PR attempt needs real rest to recover
+ *  between sets, so a real breakthrough set is essentially never also a fast-pace session;
+ *  tightening this ramp doesn't put real PR sessions at risk the way tightening the jump
+ *  heuristic below would. */
 export const PACE_FINE_THRESHOLD_S = 15;
 export const PACE_MAX_SEVERITY_THRESHOLD_S = 6;
 
@@ -44,20 +38,24 @@ export const PACE_MAX_SEVERITY_THRESHOLD_S = 6;
 export const JUMP_FINE_THRESHOLD = 0.4;
 export const JUMP_MAX_SEVERITY_THRESHOLD = 0.75;
 
-/** A load-ratio value beyond this multiple of the Apex entry threshold is maximally severe
- *  outright (not a gradient — this is a hard sanity ceiling, not a soft pace/jump signal).
- *  Tightened from 1.5 to 1.3 — the Apex threshold already represents the top of the modeled
- *  population; clearing it by 30% is already essentially unattested human performance for any
- *  natural lifter, so 1.5x was leaving real headroom for an implausible value to still read as
- *  merely "discounted" rather than "outright rejected." */
-export const CEILING_MULTIPLE = 1.3;
+/** A load-ratio value beyond `CEILING_FINE_MULTIPLE` of the Apex entry threshold starts rising in
+ *  severity, reaching maximal severity at `CEILING_MAX_SEVERITY_MULTIPLE` — same continuous ramp
+ *  technique as the pace/jump heuristics above (`severityRamp`), rather than the old hard 1.3x
+ *  binary cutoff. That hard cutoff sat right on top of where genuine post-Apex LP growth now
+ *  lives (`tiers.ts`'s `resolveRank` no longer freezes LP at the Apex threshold, so real strength
+ *  gains past it must be able to register as at least partially plausible, not maximally
+ *  implausible outright). FINE stays at 1.3 — the Apex threshold already represents the top of
+ *  the modeled population, so clearing it by 30% is still the point where *any* discount should
+ *  start. MAX_SEVERITY is set to 2.5x: comfortably past any near-term legitimate post-Apex climb,
+ *  while still catching genuinely implausible values. */
+export const CEILING_FINE_MULTIPLE = 1.3;
+export const CEILING_MAX_SEVERITY_MULTIPLE = 2.5;
 
 /** Never fully zero a session's contribution — a token amount still credits, same "still earns
- *  *something*, just progressively less" precedent as xp.ts's REPEAT_XP_FLOOR_MULTIPLIER. Left
- *  unchanged: this is a design floor on XP/LP credit (deliberately never zero), not a detection
- *  threshold — the actual "reject outright" behavior for badly-flagged sessions now lives in
- *  rankService.ts's PR-hard-block and peak-eligibility gates instead, which is where "zero
- *  credit" belongs per the audit's hybrid decision (Phase 3, decision 1). */
+ *  *something*, just progressively less" precedent as xp.ts's REPEAT_XP_FLOOR_MULTIPLIER. This is
+ *  a design floor on XP/LP credit (deliberately never zero), not a detection threshold — the
+ *  actual "reject outright" behavior for badly-flagged sessions lives in rankService.ts's
+ *  PR-hard-block and peak-eligibility gates instead, which is where "zero credit" belongs. */
 export const PLAUSIBILITY_FLOOR = 0.05;
 
 export interface PlausibilityExerciseInput {
@@ -106,11 +104,15 @@ function jumpSeverity(input: PlausibilityInput): number {
 }
 
 function ceilingSeverity(input: PlausibilityInput): number {
+  let worst = 0;
   for (const ex of input.exercises) {
     if (ex.sessionBestRatio == null || ex.apexThreshold == null || ex.apexThreshold <= 0) continue;
-    if (ex.sessionBestRatio > ex.apexThreshold * CEILING_MULTIPLE) return 1;
+    const ratio = ex.sessionBestRatio / ex.apexThreshold;
+    if (ratio <= 1) continue;
+    const severity = severityRamp(-ratio, -CEILING_FINE_MULTIPLE, -CEILING_MAX_SEVERITY_MULTIPLE);
+    worst = Math.max(worst, severity);
   }
-  return 0;
+  return worst;
 }
 
 export function computeWorkoutPlausibility(input: PlausibilityInput): PlausibilityResult {

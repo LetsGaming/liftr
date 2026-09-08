@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * "Rangaufstiege" — a Mo-So calendar strip showing how many rank-ups happened each weekday of
- * the current rolling week (engagement rework W8), backed by /api/rank-events. Visual pattern
- * copied from FinishSequence.vue's `.streak-strip`/`.streak-day`/`.dot`/`.dl` (round-1 W4 beat
- * 2) rather than inventing a second "week strip" look — same 32px circular dot + label-below
- * layout, just filled with a rank-up count instead of a streak flame.
+ * the current rolling week, backed by /api/rank-events. Visual pattern copied from
+ * FinishSequence.vue's `.streak-strip`/`.streak-day`/`.dot`/`.dl` rather than inventing a second
+ * "week strip" look — same 32px circular dot + label-below layout, just filled with a rank-up
+ * count instead of a streak flame.
  */
 import { computed, onMounted } from "vue";
 import { useRankEventsStore } from "../../stores/rankEventsStore";
@@ -27,8 +27,8 @@ const days = computed(() => {
       weekday,
       label: DAY_ABBR[weekday]!,
       count,
-      /** Workstream B task 3: a day where every logged rank-up was plausibility-flagged should
-       *  not render identically to a day with a genuine one (Global Constraint). */
+      /** A day where every logged rank-up was plausibility-flagged must not render identically
+       *  to a day with a genuine one. */
       hasGenuine: count > flaggedCount,
     };
   });
@@ -52,17 +52,11 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 </template>
 
 <style scoped>
-/* N3 adoption pass: swaps the flat --surface fill for the surface-hybrid bg/blur/shadow triad
-   (tokens.css, Foundation F3) so this analytics card reads as part of the same translucent
-   system as everything else on the page. Deliberately does NOT add the shared gradient-hairline
-   ::after here: this card already carries a real, meaningful border color
-   (`var(--tier-accent, var(--line))`, engagement-audit-v4 Phase 2B — a genuine rank-up this week
-   tints the border with the tier's own accent) and stacking the generic hairline gradient on top
-   would either fight or wash out that signal. Adopting the background half of the hybrid recipe
-   while keeping this component's own semantic border is the correct partial adoption, not a
-   shortcut — see RanksPage.vue's rank-card guardrail comment for the same kind of judgment call
-   applied to a different case (there: don't touch at all; here: adopt bg, keep the bespoke
-   border). */
+/* Uses the surface-hybrid bg/blur/shadow triad (tokens.css) so this analytics card reads as
+   part of the same translucent system as the rest of the page, but deliberately skips the
+   shared gradient-hairline ::after: this card's border (`var(--tier-accent, var(--line))`)
+   tints with the tier's own accent on a genuine rank-up this week, and stacking the generic
+   hairline gradient on top would fight or wash out that signal. */
 .rankup-calendar {
   background: var(--surface-hybrid-bg);
   backdrop-filter: blur(var(--surface-hybrid-blur));
@@ -102,27 +96,24 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
   color: var(--on-blue-lo);
 }
 .dot.active {
-  /* engagement-audit-v4 Phase 2B critique fix: was a flat --blue-hi/--blue gradient regardless
-     of tier — a rank-up is a tier event, so the dot should carry the tier's own accent. Keeps
-     --blue as the base stop rather than --tier-deep (b1 tones run near-black at low tiers,
-     which would read as a muddy dot at 32px) — only the bright stop picks up tier flavor. */
+  /* A rank-up is a tier event, so the dot carries the tier's own accent as the bright stop.
+     Keeps --blue as the base stop rather than --tier-deep, since b1 tones run near-black at
+     low tiers and would read as a muddy dot at 32px. */
   background: linear-gradient(160deg, var(--tier-accent, var(--blue-hi)), var(--blue));
 }
-/* Nebula dot (nebula-and-workplan-rework task 9) — a small accent marking which weekdays had at
-   least one rank-up this week; only present in the DOM for days with count > 0 (v-if above), not
-   just visually hidden. A real element (not .dot::after) since .dot is itself a grid/
-   place-items container for the count number — a pseudo-element there would become a second
-   grid item and fight the number for placement instead of sitting below it. */
+/* Small accent marking which weekdays had at least one rank-up this week; only present in the
+   DOM for days with count > 0 (v-if above), not just visually hidden. A real element rather
+   than .dot::after, since .dot is itself a grid/place-items container for the count number — a
+   pseudo-element there would become a second grid item and fight the number for placement. */
 .nebula-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--nebula-grad);
 }
-/* Workstream B task 3 (Global Constraint: a flagged rank-up must never look genuine) — a day
-   where every rank-up was plausibility-flagged gets a flat, unlit dot instead of the tier
-   gradient .dot.active uses; the count still shows (the day isn't hidden), just not celebrated.
-   No .nebula-dot accent for this state either (see the template's v-if="d.hasGenuine" above). */
+/* A day where every rank-up was plausibility-flagged gets a flat, unlit dot instead of the tier
+   gradient .dot.active uses; the count still shows, just not celebrated. No .nebula-dot accent
+   for this state either (see the template's v-if="d.hasGenuine" above). */
 .dot.flagged {
   background: var(--surface-3);
   opacity: 0.7;

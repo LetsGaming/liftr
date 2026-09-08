@@ -1,11 +1,11 @@
 /**
- * Current-rank decay and recovery (rank engine v2). A fixed-window heuristic, not physiology or
- * a real demotion system — same "honest heuristic" convention as recovery.ts. Current rank can
- * soften with inactivity, but is hard-floored at the bottom of the peak tier, so it never risks
- * losing all progress. Returning from a decayed state is a buffed multi-session climb (not an
- * instant snap) — see applySessionRecoveryGain below.
+ * Current-rank decay and recovery. A fixed-window heuristic, not physiology or a real demotion
+ * system — same "honest heuristic" convention as recovery.ts. Current rank can soften with
+ * inactivity, but is hard-floored at the bottom of the peak tier, so it never risks losing all
+ * progress. Returning from a decayed state is a buffed multi-session climb (not an instant snap)
+ * — see applySessionRecoveryGain below.
  */
-import { TIER_DIVISION_COUNT, ordinal, ordinalToBand, type Tier } from "./tiers.js";
+import { TIER_DIVISION_COUNT, ordinal, positionToBand, type Tier } from "./tiers.js";
 
 /** No decay before this many days since the exercise was last trained. */
 export const RANK_DECAY_GRACE_DAYS = 21;
@@ -30,28 +30,10 @@ function bandPosition(band: RankBand): number {
 }
 
 /**
- * Inverse of `bandPosition`. Uses `ordinalToBand` (centralized in tiers.ts) for the tier/division
- * lookup, but resolves the whole-number band via `Math.floor` rather than handing the raw
- * fractional position straight to `ordinalToBand`'s own rounding — `ordinalToBand` rounds to the
- * *nearest* ordinal (correct for its other callers, which only ever want a whole-band lookup),
- * but that would round e.g. position 2540 (ordinal 25.4) up to ordinal 25 fine, yet round a
- * position sitting exactly at a 100-multiple boundary (a band's own LP-100 top) up into the next
- * band entirely, discarding the "LP 100 of this division" reading in favor of "LP 0 of the next".
- * Flooring first keeps every position's home band the one it's actually inside.
- */
-function positionToBand(position: number): RankBand {
-  const clamped = Math.max(0, position);
-  const bandOrdinal = Math.floor(clamped / 100);
-  const { tier, division } = ordinalToBand(bandOrdinal);
-  const lp = ordinal(tier, division) === bandOrdinal ? clamped - bandOrdinal * 100 : 100;
-  return { tier, division, lp };
-}
-
-/**
  * Soften `peak` toward the floor (weakest division / 0 LP of the peak's own tier — never lower)
  * as a linear function of `daysSinceLastTrained`. Within the grace period, returns `peak`
- * unchanged. Past `grace + window` days, returns the floor exactly. Unchanged by rank engine v2
- * — this is the passive decay curve, not the return-from-decay path below.
+ * unchanged. Past `grace + window` days, returns the floor exactly. This is the passive decay
+ * curve, not the return-from-decay path below.
  */
 export function computeCurrentBand(peak: RankBand, daysSinceLastTrained: number): RankBand {
   if (daysSinceLastTrained <= RANK_DECAY_GRACE_DAYS) return peak;
@@ -66,8 +48,8 @@ export function computeCurrentBand(peak: RankBand, daysSinceLastTrained: number)
 }
 
 /**
- * Buffed multi-session climb-back (rank engine v2, replaces the old instant snap-to-peak). Called
- * once per finished workout session that touches this exercise, when the previously-stored
+ * Buffed multi-session climb-back, replacing the old instant snap-to-peak. Called once per
+ * finished workout session that touches this exercise, when the previously-stored
  * current band sits below peak. The buff is derived purely from *how far below peak you are right
  * now* — not from any remembered "how decayed were you when you started" state — so it's always
  * safe to call repeatedly across sessions without needing to track climb-back progress separately

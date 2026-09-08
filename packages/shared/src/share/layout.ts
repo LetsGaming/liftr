@@ -1,5 +1,5 @@
 /**
- * Pure layout math for shareable workout/run cards (plan Phase 4.5). No canvas, no DOM —
+ * Pure layout math for shareable workout/run cards. No canvas, no DOM —
  * unit-testable in CI, and reusable if a server-side renderer is ever added later without
  * rewriting the layout logic. The actual drawing (canvas + SVG data URIs) lives in the client
  * package; this module only decides *where things go* and *how text wraps/compresses*.
@@ -30,8 +30,8 @@ export interface ExerciseCardEntry {
   sets: SetChip[];
 }
 
-/** Phase 5 (share-card redesign): the overall rank badge to draw on the card, plus the level it
- *  was earned at — same shape `overallRankStore`/`xpStore` already carry client-side, kept
+/** The overall rank badge to draw on the card, plus the level it was earned at — same shape
+ *  `overallRankStore`/`xpStore` already carry client-side, kept
  *  string-typed here (not `Tier`) so @liftr/shared's share layer doesn't need a hard dependency
  *  on the rank engine's tier union just to describe what a caller hands it. */
 export interface WorkoutCardTier {
@@ -59,10 +59,10 @@ export interface WorkoutCardModel {
   setCount: number;
   prCount: number;
   exercises: ExerciseCardEntry[];
-  /** Feedback: "share image should also show the trained muscle groups" — same primary/
-   *  secondary muscle slugs MuscleFigure.vue renders everywhere else in the app, drawn onto the
-   *  card as the same anatomical silhouette (see client/src/lib/shareCard.ts) rather than a
-   *  second, differently-styled representation. */
+  /** Trained muscle groups for the card, using the same primary/secondary muscle slugs
+   *  MuscleFigure.vue renders everywhere else in the app, drawn onto the card as the same
+   *  anatomical silhouette (see client/src/lib/shareCard.ts) rather than a second,
+   *  differently-styled representation. */
   muscles: { primary: string[]; secondary: string[] };
   /** null when the caller has no rank context yet (e.g. offline, never loaded) — the card simply
    *  omits the badge rather than drawing a placeholder. */
@@ -101,13 +101,11 @@ export function renderExerciseLines(exercises: ExerciseCardEntry[]): RenderedExe
       const detail = ex.sets
         .map((s) => {
           const w = s.isWarmup ? "W " : "";
-          // reps×weight, not weight×reps (feedback: share card showed "7,5×8" for 7.5kg × 8
-          // reps — reps first is how every other set display in the app already reads it,
-          // e.g. WorkoutPage.vue's set rows show "7,5 kg · 8 Wdh.").
-          // Bodyweight sets (weightKg null) get an explicit "Wdh." suffix (critique finding,
-          // clarify): the bare number ("4  4  7") is legible only with the surrounding app's
-          // context, which a shared image doesn't have — an outside viewer had no way to read
-          // it as reps at all.
+          // reps×weight, not weight×reps — reps first is how every other set display in the app
+          // already reads it, e.g. WorkoutPage.vue's set rows show "7,5 kg · 8 Wdh.".
+          // Bodyweight sets (weightKg null) get an explicit "Wdh." suffix: the bare number
+          // ("4  4  7") is legible only with the surrounding app's context, which a shared image
+          // doesn't have — an outside viewer has no way to read it as reps otherwise.
           return s.weightKg != null ? `${w}${s.reps}×${formatKg(s.weightKg)}kg` : `${w}${s.reps} Wdh.`;
         })
         .join("  ");
@@ -126,8 +124,8 @@ function formatKg(kg: number): string {
   return Number.isInteger(kg) ? String(kg) : kg.toFixed(2).replace(/\.?0+$/, "").replace(".", ",");
 }
 
-/** How many 2-column exercise-grid rows a given number of rendered lines needs (Phase 5:
- *  exercise list redrawn as a 2-column grid of bordered rows instead of a single-column list). */
+/** How many 2-column exercise-grid rows a given number of rendered lines needs — the exercise
+ *  list draws as a 2-column grid of bordered rows instead of a single-column list. */
 export function exerciseGridRowCount(lineCount: number): number {
   return Math.ceil(lineCount / 2);
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { bodyweightLogs, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { bodyweightLogs, OWNER_USER_ID, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import {
   findAllBodyweightLogsForExport,
   findAllRunsForExport,
@@ -16,7 +16,7 @@ beforeEach(() => {
 
 describe("findAllWorkoutsForExport", () => {
   it("returns an empty array when there are no workouts", async () => {
-    const result = await findAllWorkoutsForExport(db);
+    const result = await findAllWorkoutsForExport(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -24,7 +24,7 @@ describe("findAllWorkoutsForExport", () => {
     await db.insert(workouts).values({ clientId: "w-early", startedAt: new Date("2026-08-01T10:00:00Z"), pausedSeconds: 0 });
     await db.insert(workouts).values({ clientId: "w-late", startedAt: new Date("2026-09-01T10:00:00Z"), pausedSeconds: 0 });
 
-    const result = await findAllWorkoutsForExport(db);
+    const result = await findAllWorkoutsForExport(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.clientId)).toEqual(["w-late", "w-early"]);
   });
@@ -32,7 +32,7 @@ describe("findAllWorkoutsForExport", () => {
 
 describe("findAllSetsForExport", () => {
   it("returns an empty array when there are no sets", async () => {
-    const result = await findAllSetsForExport(db);
+    const result = await findAllSetsForExport(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -45,7 +45,7 @@ describe("findAllSetsForExport", () => {
       { workoutExerciseId: we!.id, setIndex: 1, weightKg: 90, reps: 5, kind: "normal", isWarmup: false, loggedAt: new Date("2026-09-01T10:00:00Z"), clientId: "s-early" },
     ]);
 
-    const result = await findAllSetsForExport(db);
+    const result = await findAllSetsForExport(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.workoutId)).toEqual([workout!.id, workout!.id]);
     expect(result.every((r) => r.exerciseSlug === "bench-press")).toBe(true);
@@ -55,7 +55,7 @@ describe("findAllSetsForExport", () => {
 
 describe("findAllRunsForExport", () => {
   it("returns an empty array when there are no runs", async () => {
-    const result = await findAllRunsForExport(db);
+    const result = await findAllRunsForExport(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -63,7 +63,7 @@ describe("findAllRunsForExport", () => {
     await db.insert(runs).values({ source: "manual", startedAt: new Date("2026-08-01T10:00:00Z"), distanceM: 5000, durationS: 1800, clientId: "r-early" });
     await db.insert(runs).values({ source: "manual", startedAt: new Date("2026-09-01T10:00:00Z"), distanceM: 10000, durationS: 3600, clientId: "r-late" });
 
-    const result = await findAllRunsForExport(db);
+    const result = await findAllRunsForExport(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.clientId)).toEqual(["r-late", "r-early"]);
   });
@@ -71,7 +71,7 @@ describe("findAllRunsForExport", () => {
 
 describe("findAllBodyweightLogsForExport", () => {
   it("returns an empty array when there are no logs", async () => {
-    const result = await findAllBodyweightLogsForExport(db);
+    const result = await findAllBodyweightLogsForExport(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -79,7 +79,7 @@ describe("findAllBodyweightLogsForExport", () => {
     await db.insert(bodyweightLogs).values({ date: "2026-08-01", weightKg: 80 });
     await db.insert(bodyweightLogs).values({ date: "2026-09-01", weightKg: 81 });
 
-    const result = await findAllBodyweightLogsForExport(db);
+    const result = await findAllBodyweightLogsForExport(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.date)).toEqual(["2026-09-01", "2026-08-01"]);
   });

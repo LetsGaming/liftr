@@ -1,12 +1,10 @@
 <script setup lang="ts">
 /**
- * Routine Overview screen (Wave 0-B, task W1 —
- * docs/superpowers/specs/2026-09-05-workout-flow-redesign-design.md §3.2). Reached by tapping a
- * routine card instead of starting immediately (W2 rewires all three start call sites here).
- * Everything shown is already client-side once routineStore.load() has run — no new backend
- * endpoint, see the plan's W1 note. Mannequin muscle summary is a hard requirement per the spec
- * (never a text/tag list) — this copies the exact existing aggregation pattern verbatim from
- * RoutineList.vue/OverviewPage.vue rather than inventing a new one.
+ * Routine Overview screen. Reached by tapping a routine card instead of starting immediately —
+ * all three start call sites route here first. Everything shown is already client-side once
+ * routineStore.load() has run, no new backend endpoint needed. The trained-muscle summary is
+ * always the mannequin, never a text/tag list — this copies the exact existing aggregation
+ * pattern verbatim from RoutineList.vue/OverviewPage.vue rather than inventing a new one.
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, reactive } from "vue";
@@ -30,22 +28,22 @@ const { editingRoutine, showBuilder, editRoutine, onRoutineCreated } = useRoutin
 const routineId = computed(() => route.params.id as string);
 const routine = computed(() => routineStore.byId(routineId.value));
 
-/** Bug-list fix: no back button previously — this drill-in screen has no nav-bar entry of its
- *  own (forceActiveTo highlights "Workout" instead), so it needs an explicit way back rather
- *  than relying on the app's usual "tap the tab" convention. */
+/** This drill-in screen has no nav-bar entry of its own (forceActiveTo highlights "Workout"
+ *  instead), so it needs an explicit way back rather than relying on the app's usual "tap the
+ *  tab" convention. */
 function goBack() {
   router.back();
 }
 
-/** Bug-list fix: per-exercise set details collapsed by default to save vertical space, expandable
- *  per row. Keyed by routineExercise id so state doesn't shift if exercises reorder. */
+/** Per-exercise set details collapsed by default to save vertical space, expandable per row.
+ *  Keyed by routineExercise id so state doesn't shift if exercises reorder. */
 const expandedExercises = reactive<Record<string, boolean>>({});
 function toggleExpanded(routineExerciseId: string) {
   expandedExercises[routineExerciseId] = !expandedExercises[routineExerciseId];
 }
 
-/** Same aggregation as RoutineList.vue:39-41 / OverviewPage.vue:130-132 — hard requirement per
- *  the design spec: trained muscles are always the mannequin, never a text/tag list. */
+/** Same aggregation as RoutineList.vue:39-41 / OverviewPage.vue:130-132 — trained muscles are
+ *  always the mannequin, never a text/tag list. */
 const routineMuscles = computed(() =>
   aggregateMuscles((routine.value?.routineExercises ?? []).map((re) => catalog.byId(re.exerciseId)?.muscles ?? [])),
 );
@@ -57,9 +55,9 @@ function exerciseDisplayName(exerciseId: string, fallbackSlug: string, fallbackN
   return cat ? exerciseName(cat.slug, cat.name) : exerciseName(fallbackSlug, fallbackName);
 }
 
-/** "4 × 80 kg · 8 Wdh." (spec §3.2) — set count plus the first set's weight/reps as the
- *  representative target, same "first working set as the summary number" idiom ExerciseRail.vue
- *  already uses for its own per-exercise line. */
+/** "4 × 80 kg · 8 Wdh." — set count plus the first set's weight/reps as the representative
+ *  target, same "first working set as the summary number" idiom ExerciseRail.vue already uses
+ *  for its own per-exercise line. */
 function setSummary(targetSets: { reps: number; weightKg: number | null }[]): string {
   const first = targetSets[0];
   if (!first) return "";
@@ -88,7 +86,7 @@ async function jetztStarten() {
   // startRoutine()/store.start() itself never navigates (it only flips store.isActive and
   // WorkoutPage re-renders because of that) — this screen's own start button is responsible for
   // getting there. `replace`, not `push`: pressing back from the now-active workout must not
-  // land the user back on this now-stale overview (plan W2 navigation note).
+  // land the user back on this now-stale overview.
   await router.replace("/workout");
 }
 </script>
@@ -179,9 +177,9 @@ async function jetztStarten() {
             </li>
           </ul>
 
-          <!-- Sticky start button (spec §3.2 explicit requirement) — pinned to the bottom of the
-               viewport so it's reachable with zero scroll regardless of exercise count. Same
-               sticky-inside-ion-content pattern already proven by PickStep.vue's .continue-bar. -->
+          <!-- Sticky start button pinned to the bottom of the viewport so it's reachable with
+               zero scroll regardless of exercise count. Same sticky-inside-ion-content pattern
+               as PickStep.vue's .continue-bar. -->
           <div class="ro-start-bar">
             <button class="btn-primary btn-lg btn-block" :disabled="starting" @click="jetztStarten">
               <template v-if="starting">Wird gestartet…</template>

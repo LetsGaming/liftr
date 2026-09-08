@@ -1,7 +1,7 @@
 /**
- * GPS trackpoint math for run import (audit §5 / plan Phase 4.1): smoothing, distance,
- * and pause-gap detection over a stored per-point trackpoint array. Pure functions, no I/O —
- * used by the server on import and reusable by the client for replay math.
+ * GPS trackpoint math for run import: smoothing, distance, and pause-gap detection over a
+ * stored per-point trackpoint array. Pure functions, no I/O — used by the server on import
+ * and reusable by the client for replay math.
  */
 
 export interface RunPoint {

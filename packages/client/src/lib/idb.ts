@@ -1,8 +1,8 @@
 /**
- * IndexedDB layer for offline (plan 1.3). Two stores:
+ * IndexedDB layer for offline support. Two stores:
  *  - `outbox`: queued mutations, flushed to POST /api/sync on reconnect.
  *  - `activeWorkout`: the in-progress workout, written on every mutation so a crash or a
- *    locked phone mid-set loses nothing (plan 1.5).
+ *    locked phone mid-set loses nothing.
  * This is the only place raw IndexedDB access happens — everything else goes through the
  * Pinia stores in ./stores/.
  */

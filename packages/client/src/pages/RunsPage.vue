@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Läufe (plan Phase 4 / mockup #p-laeufe): GPX import, route map, and run replay built on the
-// stored run_points array — the whole point of keeping the full trackpoint array (audit §5).
+// Läufe: GPX import, route map, and run replay built on the stored run_points array — the
+// whole point of keeping the full trackpoint array.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
@@ -18,7 +18,7 @@ const { toast } = useToast();
 const selectedRun = ref<RunDetail | null>(null);
 const deleting = ref(false);
 
-/** Feedback: "not possible to delete past runs". */
+/** Deletes the selected run, tap-to-confirm. */
 const deleteConfirm = useConfirmTap(async () => {
   const id = selectedRun.value?.id;
   if (!id) return;
@@ -148,13 +148,9 @@ function formatDuration(s: number) {
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 
-    <!-- Audit fix (found while implementing workplan-v1 §1.10a, not previously tracked as its
-         own item — lens-3 §2.2 High flagged two identically-labeled "GPX/FIT importieren"
-         buttons on screen at once here; that finding was listed as in-scope in plan-b's own
-         evidence table but never got a phase write-up, so it never made it into this workplan
-         either). The .pagehead button above is the only one that's always present (it's the sole
-         import entry point once runs exist), so it — not this one — is the button to keep;
-         duplicating it here only when the list happens to be empty was the actual redundancy. -->
+    <!-- No import button in this empty state: the .pagehead button above is the only one that's
+         always present (it's the sole import entry point once runs exist), so duplicating it
+         here would just be two identically-labeled "GPX/FIT importieren" buttons on screen. -->
     <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty panel">
       <div class="eyebrow">Läufe</div>
       <p>
@@ -229,9 +225,9 @@ function formatDuration(s: number) {
   margin-top: var(--sp2);
   font-size: 13px;
 }
-/* Nebula N6 — manual-entry form adopts the shared .panel/surface-hybrid treatment (tokens.css)
-   instead of sitting flat on the page; padding/layout stay local since .panel itself only
-   supplies background/blur/shadow/hairline, not spacing. */
+/* Uses the shared .panel/surface-hybrid treatment (tokens.css) instead of sitting flat on the
+   page; padding/layout stay local since .panel itself only supplies background/blur/shadow/
+   hairline, not spacing. */
 .manual-form {
   display: flex;
   flex-wrap: wrap;
@@ -248,10 +244,9 @@ function formatDuration(s: number) {
   color: var(--text);
   font-size: 13.5px;
 }
-/* Nebula N6 — was a flat --surface card; now rides .panel (hybrid bg/blur/shadow/hairline).
-   border-radius stays --r-xl (larger than .panel's default --r-lg) to preserve this empty
-   state's original, deliberately roomier look; .panel's own background/box-shadow/backdrop-filter
-   declarations are otherwise reused as-is. */
+/* Rides .panel (hybrid bg/blur/shadow/hairline). border-radius stays --r-xl (larger than
+   .panel's default --r-lg) to preserve this empty state's deliberately roomier look; .panel's
+   own background/box-shadow/backdrop-filter declarations are otherwise reused as-is. */
 .runs-empty {
   border-radius: var(--r-xl);
   padding: var(--sp5);
@@ -260,8 +255,8 @@ function formatDuration(s: number) {
   flex-direction: column;
   justify-content: center;
   gap: var(--sp4);
-  /* Audit fix (workplan-v1 §1.10a): was a short card pinned right below .pagehead with a large
-     empty scroll area below it. Same reasoning as WorkoutPage.vue's .not-started fix. */
+  /* Fills the viewport instead of sitting as a short card with a large empty scroll area below
+     it. Same reasoning as WorkoutPage.vue's .not-started fix. */
   min-height: 40vh;
 }
 .runs-empty p {
@@ -275,8 +270,8 @@ function formatDuration(s: number) {
   gap: var(--sp5);
   margin-top: var(--sp5);
 }
-/* Same cramped-4-across fix as OverviewPage's .status-strip (engagement-audit-v3 Phase 2):
-   2x2 on mobile, widening to 4-across only once there's room (>=560px). */
+/* Same cramped-4-across fix as OverviewPage's .status-strip: 2x2 on mobile, widening to
+   4-across only once there's room (>=560px). */
 .stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -308,14 +303,13 @@ function formatDuration(s: number) {
   font-size: 15px;
   margin-bottom: var(--sp3);
 }
-/* Nebula N6 — was a flat --surface-2 card; now rides .panel (hybrid bg/blur/shadow + gradient
-   hairline edge via ::after). Per tokens.css's .panel/.surface-hybrid comment, a native <button>
-   needs its own explicit background (which .panel already sets) rather than relying on the
-   pseudo-element alone — this button already gets that from the .panel class in the template.
-   The old flat border-color active/hover cues no longer apply (there's no real border, just the
-   hairline gradient), so "active" and "hover" are re-expressed as an inset ring / brightness
-   tweak layered on top of .panel's own box-shadow instead of swapping backgrounds, which would
-   have broken translucency. */
+/* Rides .panel (hybrid bg/blur/shadow + gradient hairline edge via ::after). Per tokens.css's
+   .panel/.surface-hybrid comment, a native <button> needs its own explicit background (which
+   .panel already sets) rather than relying on the pseudo-element alone — this button already
+   gets that from the .panel class in the template. There's no real border here, just the
+   hairline gradient, so "active" and "hover" are expressed as an inset ring / brightness tweak
+   layered on top of .panel's own box-shadow instead of swapping backgrounds, which would break
+   translucency. */
 .run-row {
   width: 100%;
   display: flex;
@@ -328,7 +322,7 @@ function formatDuration(s: number) {
   transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), filter var(--dur-fast) var(--ease-out);
   /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
      (rank-up, PR, level-up) per motion.css's own convention — a run-list row entrance isn't
-     one of those (see commit 8c0f158 for the same fix elsewhere). */
+     one of those. */
   animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .run-row:active {

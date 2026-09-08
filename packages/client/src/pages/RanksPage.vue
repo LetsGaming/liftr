@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Ränge (plan Phase 2 / mockup #p-raenge): tiered rank cards + next-target, powered by
-// @liftr/shared's resolveRank/nextLoadTarget running server-side (see rankEngine.ts) and
-// cached into the `ranks` table. Never gated/paywalled (audit §3's explicit anti-pattern).
+// Ränge: tiered rank cards + next-target, powered by @liftr/shared's resolveRank/nextLoadTarget
+// running server-side (see rankEngine.ts) and cached into the `ranks` table. Never
+// gated/paywalled.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { ordinal, type Tier } from "@liftr/shared";
 import { computed, onMounted } from "vue";
@@ -29,11 +29,10 @@ onMounted(() => {
 const { exerciseName } = useExerciseName();
 const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
 
-/** Critique finding (layout, P3): a flat auto-fill grid with no sort left the exercise closest
- *  to a rank-up buried wherever it happened to fall alphabetically/by-load-date. LP already *is*
- *  "how close to the next rank-up" (0-100 within the current band, see rankService.ts), so
- *  surfacing it as the default sort turns the grid from a wall of cards into "what to train
- *  next" — no new UI chrome, no filter control, just the existing signal used as reading order.
+/** Sorted by LP descending so the exercise closest to a rank-up surfaces first, rather than
+ *  falling wherever it lands alphabetically or by load-date. LP already *is* "how close to the
+ *  next rank-up" (0-100 within the current band, see rankService.ts), so this turns the grid
+ *  from a wall of cards into "what to train next" using the existing signal as reading order.
  *  Higher tier/division breaks ties so two exercises at the same LP don't shuffle on reload. */
 const sortedRanks = computed(() =>
   ranksStore.ranks
@@ -41,13 +40,13 @@ const sortedRanks = computed(() =>
     .sort((a, b) => b.lp - a.lp || ordinal(b.tier as Tier, b.division) - ordinal(a.tier as Tier, a.division)),
 );
 
-/** "LP" and the ≈ trust marker were never explained anywhere reachable on touch — the ≈'s only
- *  explanation was a `title` attribute, which doesn't exist on touch, the app's entire platform
- *  (critique finding). RankProgress's card variant already sits inside RanksPage's own
- *  `.rank-card` <button>, so a second interactive element inside RankProgress itself would be a
- *  nested <button> (invalid HTML/ARIA) — this disclosure lives once, here, at the top of the one
- *  page every rank card is reached from, instead of duplicated per-card. Mechanics now shared
- *  via InfoToggle.vue with OverviewPage's own jargon explainer (same critique, different screen). */
+/** "LP" and the ≈ trust marker need an explanation reachable on touch — a `title` attribute
+ *  (the ≈'s only prior explanation) doesn't exist on touch, the app's entire platform.
+ *  RankProgress's card variant already sits inside RanksPage's own `.rank-card` <button>, so a
+ *  second interactive element inside RankProgress itself would be a nested <button> (invalid
+ *  HTML/ARIA) — this disclosure lives once, here, at the top of the one page every rank card is
+ *  reached from, instead of duplicated per-card. Shares InfoToggle.vue with OverviewPage's own
+ *  jargon explainer. */
 </script>
 
 <template>
@@ -58,10 +57,9 @@ const sortedRanks = computed(() =>
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-      <!-- Hero (rework Phase 3, critique finding: 36 tier tokens exist and reach exactly one
-           screen; nowhere could a user see their position on the whole 9-tier ladder, only an
-           isolated per-exercise band). Renders even with zero ranks yet — overallRank.current is
-           null pre-first-workout, and TierLadder's own fallback lights Initiate in that case. -->
+      <!-- Hero: shows the user's position on the whole 9-tier ladder, not just an isolated
+           per-exercise band. Renders even with zero ranks yet — overallRank.current is null
+           pre-first-workout, and TierLadder's own fallback lights Initiate in that case. -->
       <TierLadder
         :current-tier="overallRank.current?.tier ?? null"
         :current-division="overallRank.current?.division ?? null"
@@ -79,10 +77,9 @@ const sortedRanks = computed(() =>
         dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt.
       </InfoToggle>
 
-      <!-- Critique finding (harden, P1): all four data sources loaded with no skeleton/spinner —
-           between mount and the /api/ranks response, this section was just empty space with
-           nothing telling a user whether it was loading, genuinely empty, or broken. Same
-           shimmer technique as ErholungszoneCard.vue's skeleton, sized to this section's real
+      <!-- Skeleton for the gap between mount and the /api/ranks response, so this section never
+           reads as empty space with no indication of loading/empty/broken. Same shimmer
+           technique as ErholungszoneCard.vue's skeleton, sized to this section's real
            analytics-row + card-grid shape instead of one flat placeholder. -->
       <template v-if="!ranksStore.loaded && !ranksStore.error">
         <div class="rank-analytics" aria-hidden="true">
@@ -154,12 +151,12 @@ const sortedRanks = computed(() =>
   max-width: var(--content-w-wide);
   align-items: start;
 }
-/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep; N3 adoption pass adds
-   `.surface-hybrid` (tokens.css, Foundation F3) so a loading Ränge screen sits on the same
-   translucent/hairline system as the loaded content it stands in for, rather than reverting to
-   flat --surface-2 while data is in flight. `.surface-hybrid` supplies background/blur/shadow +
-   the ::after hairline; border-radius/sizing stay local since the utility deliberately doesn't
-   set border-radius (it needs to work on differently-shaped hosts). */
+/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep; `.surface-hybrid`
+   (tokens.css) puts a loading Ränge screen on the same translucent/hairline system as the loaded
+   content it stands in for, rather than reverting to flat --surface-2 while data is in flight.
+   `.surface-hybrid` supplies background/blur/shadow + the ::after hairline; border-radius/sizing
+   stay local since the utility deliberately doesn't set border-radius (it needs to work on
+   differently-shaped hosts). */
 .rank-skel-tile {
   padding: var(--sp4);
   border-radius: var(--r-lg);
@@ -182,10 +179,10 @@ const sortedRanks = computed(() =>
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sp3);
-  /* Audit finding: unlike OverviewPage's equivalent banner (bounded by .dashboard's own
-     max-width), this sits outside any width-constrained container — live-measured at 288
-     chars/line on a wide viewport. Capped to the same 60ch craft-floor measure as
-     InfoToggle.vue's .info-body, which had the identical bug. */
+  /* Unlike OverviewPage's equivalent banner (bounded by .dashboard's own max-width), this sits
+     outside any width-constrained container — unbounded, a wide viewport stretches this to
+     hundreds of characters per line. Capped to the same 60ch measure as InfoToggle.vue's
+     .info-body. */
   max-width: 60ch;
 }
 .load-error .btn-secondary {
@@ -194,11 +191,9 @@ const sortedRanks = computed(() =>
 .rank-card-wrap {
   display: flex;
   flex-direction: column;
-  /* Entrance stagger removed (motion audit, Phase 4 — 2026-09-02): matched the dashboard's, so
-     it inherited the same fate — mount-driven on every visit to Ränge, not event-driven (0c's
-     Q1), and a before/after screenshot shows nothing the static grid doesn't already convey
-     (Q3). See OverviewPage.vue's .dashboard for the fuller rationale; engagement-audit-v3.md
-     Phase 4. */
+  /* No entrance stagger here, same as OverviewPage.vue's .dashboard: mount-driven on every visit
+     to Ränge rather than event-driven, and a static grid already conveys everything the
+     animation would. */
 }
 .rank-card {
   display: flex;
@@ -207,11 +202,11 @@ const sortedRanks = computed(() =>
   width: 100%;
   padding: var(--sp4);
   border-radius: var(--r-lg);
-  /* Tier-accent rim, not a generic neutral hairline (visual-design fix: this border used to be
-     the flat var(--line) every other utility surface uses, which barely registers against a
-     saturated tier-gradient fill and reads as a leftover default rather than the medal's own
-     edge). Same border source as tokens.css's .panel-reward (var(--b3, ...)) — the reward
-     surface's rim is tier-colored everywhere else in the app; this card was the one holdout. */
+  /* Tier-accent rim, not a generic neutral hairline: the flat var(--line) every other utility
+     surface uses would barely register against a saturated tier-gradient fill and would read as
+     a generic default rather than the medal's own edge. Same border source as tokens.css's
+     .panel-reward (var(--b3, ...)) — the reward surface's rim is tier-colored everywhere else in
+     the app, and this card matches that. */
   border: 1px solid var(--b3, var(--line));
   text-align: left;
   position: relative;
@@ -236,27 +231,24 @@ const sortedRanks = computed(() =>
 .rank-card:active {
   transform: scale(0.98);
 }
-/* Was a bespoke flat-black box-shadow found nowhere else in the app — tokens.css's own
-   .panel-reward explicitly drops box-shadow on reward surfaces ("the reward surface doesn't
-   need the fake elevation cue... its own saturation already separates it from the page") and
-   the app's real hover language for a colored fill is a brightness lift (.btn-primary:hover
-   uses the same filter). Matching that instead of inventing a new elevation value here. */
+/* tokens.css's .panel-reward drops box-shadow on reward surfaces (their own saturation already
+   separates them from the page), and the app's hover language for a colored fill is a
+   brightness lift (.btn-primary:hover uses the same filter) — matching that here instead of
+   inventing a bespoke elevation shadow. */
 @media (hover: hover) {
   .rank-card:hover {
     filter: brightness(1.08);
   }
 }
-/* Full-card vivid tier gradient (UI/UX rework audit P0-C) — the reward screen should be the
-   most colourful surface in the app, not a dark card with a faint tint at the top. Fallbacks
-   only matter if .t-<tier> somehow isn't also applied; in practice it always is.
-   N3 guardrail (2026-09-05): this is the tier-badge/reward system, not a generic panel —
-   deliberately NOT converted to .surface-hybrid/the gradient-hairline recipe. Tier cards keep
-   their existing metal/medal-derived fill exactly as-is per the redesign spec's hard rule (rank
-   reads as earned status, never brand decoration). `.rank-card`'s own `background: transparent`
-   above (the documented <button>-opaque-default gotcha this ::after's comment already names)
-   was re-verified live after the sibling .chart-slot below picked up backdrop-filter: blur —
-   the tier gradient still paints correctly through this ::after with no opaque button fill
-   stomping it, in both themes. */
+/* Full-card vivid tier gradient — the reward screen should be the most colourful surface in the
+   app, not a dark card with a faint tint at the top. Fallbacks only matter if .t-<tier> somehow
+   isn't also applied; in practice it always is. This is the tier-badge/reward system, not a
+   generic panel, so it deliberately does not use .surface-hybrid/the gradient-hairline recipe —
+   tier cards keep their existing metal/medal-derived fill as-is: rank reads as earned status,
+   never brand decoration. `.rank-card`'s own `background: transparent` above (the documented
+   <button>-opaque-default gotcha this ::after's comment already names) is required for the tier
+   gradient to paint correctly through this ::after in both themes, even with the sibling
+   .chart-slot below using backdrop-filter: blur. */
 .rank-card::after {
   content: "";
   position: absolute;
@@ -269,24 +261,19 @@ const sortedRanks = computed(() =>
   font-weight: 800;
   color: var(--text);
 }
-/* N3 adoption pass: was flat --surface-2 + a real 1px --line border (border-top:none) that
-   relied on `margin-top: -1px` to visually fuse with .rank-card's own bottom border above it —
-   a real 1px flat line and the card's own 1px flat line lined up so the seam disappeared. Moving
-   to the surface-hybrid recipe (mask-composite gradient hairline via ::after, see tokens.css's
-   .surface-hybrid) breaks that fusion mechanically: the hairline ring is a *different* gradient
-   than .rank-card's plain --line border, and the generic .surface-hybrid/.panel utilities draw
-   that ring on all four edges uniformly — a ring across the top here would sit right on top of
-   the seam the -1px margin was built to hide, showing as a visible parting line instead of one
-   continuous card. Real fix (not a token swap that ignores the problem): give this element its
-   own ::after with asymmetric mask padding — 0 at the top, 1px on the other three sides. The
-   mask-composite technique subtracts a content-box inset from the border-box; a 0px inset on one
-   side makes content-box and border-box coincide there, so the ring's width degenerates to zero
-   exactly on that edge while staying a normal 1px hairline on the rest. The card above still
-   supplies the seam's only visible line (its own bottom border), so the fusion still works.
-   (A separate visual-design pass wanted to tint this panel toward the card's own tier color
-   instead of the neutral surface-hybrid fill — .rank-card-wrap now carries the tier class for
-   that purpose, but the asymmetric-mask hairline above already solves the seam problem that
-   pass was independently trying to work around, so the neutral surface-hybrid fill stays.) */
+/* This panel visually fuses with .rank-card's own bottom border above it via `margin-top: -1px`
+   (the seam disappears where the two flat 1px lines overlap). The generic .surface-hybrid/.panel
+   hairline (mask-composite gradient via ::after, see tokens.css's .surface-hybrid) would draw a
+   ring on all four edges uniformly, sitting right on top of that seam and showing as a visible
+   parting line — so this element gets its own ::after with asymmetric mask padding instead: 0 at
+   the top, 1px on the other three sides. The mask-composite technique subtracts a content-box
+   inset from the border-box; a 0px inset on one side makes content-box and border-box coincide
+   there, so the ring's width degenerates to zero exactly on that edge while staying a normal 1px
+   hairline on the rest. The card above still supplies the seam's only visible line (its own
+   bottom border), so the fusion still works. (`.rank-card-wrap` carries the tier class so this
+   panel could be tinted toward the card's own tier color instead of the neutral surface-hybrid
+   fill, but the neutral fill stays — the asymmetric-mask hairline above already solves the seam
+   problem on its own.) */
 .chart-slot {
   position: relative;
   padding: var(--sp3) var(--sp4);

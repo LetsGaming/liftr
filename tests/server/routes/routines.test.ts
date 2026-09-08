@@ -228,14 +228,13 @@ describe("PATCH /api/routines/:id", () => {
     expect(res.json()).toMatchObject({ error: "invalid_request" });
   });
 
-  it("returns ok for an id that doesn't exist — update affects zero rows rather than 404ing", async () => {
+  it("404s for an id that doesn't exist, rather than silently reporting ok for zero affected rows", async () => {
     const { app, db } = createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "PATCH", url: "/api/routines/does-not-exist", payload: { name: "New Name" } });
 
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true });
+    expect(res.statusCode).toBe(404);
   });
 });
 
@@ -254,13 +253,12 @@ describe("DELETE /api/routines/:id", () => {
     expect(listRes.json()).toEqual([]);
   });
 
-  it("returns ok for an id that doesn't exist", async () => {
+  it("404s for an id that doesn't exist", async () => {
     const { app, db } = createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "DELETE", url: "/api/routines/does-not-exist" });
 
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true });
+    expect(res.statusCode).toBe(404);
   });
 });

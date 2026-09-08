@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Profil & Einstellungen (mockup #p-profil). Bodyweight log lives here (not a dedicated Phase 6
-// UI yet, just enough to close the rank-engine's hardcoded-75kg fallback gap). Auth token entry
-// also lives here as a fallback path — the primary path is the AuthGate prompt on first 401.
+// Profil & Einstellungen. Bodyweight log lives here — enough to close the rank-engine's
+// hardcoded-75kg fallback gap. Auth token entry also lives here as a fallback path — the
+// primary path is the AuthGate prompt on first 401.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref, watch } from "vue";
 import AppIcon from "../components/ui/AppIcon.vue";
@@ -28,9 +28,9 @@ const { toast } = useToast();
 const weightInput = ref("");
 const saving = ref(false);
 
-// Trainingsprofil (feature: onboarding's answers, editable again later — "alles lässt sich
-// später im Profil ändern" from OnboardingGuide.vue's own hint text). Local drafts seeded from
-// the store once it's loaded, same pattern OnboardingGuide.vue itself uses.
+// Trainingsprofil — onboarding's answers, editable again later ("alles lässt sich später im
+// Profil ändern", per OnboardingGuide.vue's own hint text). Local drafts seeded from the store
+// once it's loaded, same pattern OnboardingGuide.vue itself uses.
 const settingsStore = useSettingsStore();
 const sex = ref<"male" | "female" | null>(null);
 const birthYearInput = ref("");
@@ -81,9 +81,9 @@ function toggleEquipment(slug: string) {
 // withImpliedPlates) — never a pickable chip here, same as onboarding's EquipmentStep.
 const supportEquipmentSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !== "plates");
 
-// Scheiben & Stange — feature: "specify which weight plates you have... showing the user how to
-// load the barbell." Onboarding-only settings that can't be edited again would be a trap, so
-// this mirrors the wizard's PlatesStep here on the settings page instead. Includes the
+// Scheiben & Stange — lets the user specify which weight plates they have, so the app can show
+// how to load the barbell. Onboarding-only settings that can't be edited again would be a trap,
+// so this mirrors the wizard's PlatesStep here on the settings page instead. Includes the
 // adjustable-dumbbell handle weight too (unlike onboarding's 3-type step) — a rarer setup,
 // better offered here where it doesn't add a 4th row to first-run onboarding.
 type BarType = "barbell" | "ez-bar" | "trap-bar" | "dumbbell";
@@ -163,9 +163,9 @@ async function saveEquipmentCard() {
   }
 }
 const tokenInput = ref(getToken());
-/** Audit fix (workplan-v1 §1.9a): this is a locally-generated bearer token the user must
- *  verify before saving, not a login credential shared across services — masking it with no way
- *  to reveal actively prevented confirming what was typed. Defaults masked. */
+/** This is a locally-generated bearer token the user must verify before saving, not a login
+ *  credential shared across services — masking it with no way to reveal would prevent confirming
+ *  what was typed. Defaults masked. */
 const tokenVisible = ref(false);
 
 onMounted(() => {
@@ -193,9 +193,9 @@ function saveToken() {
   setToken(tokenInput.value.trim());
 }
 
-// Health Connect import (plan Phase 5) — native-only (Android), so this whole card is hidden
-// on web/iOS builds rather than shown broken. One-time permission grant here; the actual
-// import check then happens automatically on every app resume (see syncStore.ts).
+// Health Connect import is native-only (Android), so this whole card is hidden on web/iOS
+// builds rather than shown broken. One-time permission grant here; the actual import check
+// then happens automatically on every app resume (see syncStore.ts).
 const healthConnectStatus = ref("");
 const healthConnectBusy = ref(false);
 async function connectHealthConnect() {
@@ -215,9 +215,9 @@ async function connectHealthConnect() {
   }
 }
 
-// CSV/ZIP backup (plan Phase 6.5) — "own your data" applied to leaving the app, not just
-// keeping the server offline-safe. Raw fetch + blob, same pattern as runsStore.importGpx,
-// since this needs the bearer header but isn't a JSON request/response.
+// CSV/ZIP backup — lets the user take their data with them, not just keep it offline-safe on
+// the server. Raw fetch + blob, same pattern as runsStore.importGpx, since this needs the
+// bearer header but isn't a JSON request/response.
 const exporting = ref(false);
 const exportError = ref("");
 async function exportData() {
@@ -407,12 +407,10 @@ async function exportData() {
         Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist — derselbe Wert, nach dem beim
         Start auch der Entsperren-Bildschirm fragt, falls der Server einen Token verlangt.
       </p>
-      <!-- Fixed to viewport width during the §1.9a implementation's live check: .bw-row's
-           2-item layout (input + one button) doesn't fit 3 items (input + reveal toggle + save)
-           at 390px — the row overflowed its card, clipping "Speichern" off-screen. wrap lets the
-           buttons flow to their own line instead of forcing three items into one row on narrow
-           viewports; the bodyweight row above (still 2 items) is unaffected since 2 items never
-           needs to wrap at this width. -->
+      <!-- .bw-row's 2-item layout (input + one button) doesn't fit 3 items (input + reveal
+           toggle + save) at narrow widths — wrap lets the buttons flow to their own line
+           instead of overflowing the card; the bodyweight row above (still 2 items) is
+           unaffected. -->
       <div class="bw-row token-row">
         <input
           v-model="tokenInput"
@@ -462,20 +460,18 @@ async function exportData() {
 </template>
 
 <style scoped>
-/* Nebula N5 — the flat --surface-2 fill + --line border that used to live here are replaced by
-   the shared .surface-hybrid utility (applied in the template alongside .card, tokens.css), so
-   every settings section reads as a translucent panel floating over the cosmic sweep instead of
-   an opaque box. border-radius stays local since .surface-hybrid doesn't set one (it's supposed
-   to be layered over whatever shape the host already uses). */
+/* .surface-hybrid (applied in the template alongside .card, tokens.css) gives every settings
+   section a translucent panel look over the cosmic sweep instead of an opaque box. border-radius
+   stays local since .surface-hybrid doesn't set one — it's layered over whatever shape the host
+   already uses. */
 .card {
   position: relative;
   border-radius: var(--r-lg);
   padding: var(--sp4);
   margin-top: var(--sp4);
-  /* Entrance stagger (feedback: the rest of the app was still missing the dashboard's
-     liveliness) — a single-column settings list, so a plain top-to-bottom cascade fits.
+  /* Entrance stagger — a single-column settings list, so a plain top-to-bottom cascade fits.
      --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
-     (rank-up, PR, level-up) per motion.css's own convention (see commit 8c0f158). */
+     (rank-up, PR, level-up) per motion.css's own convention. */
   animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 /* The 1px gradient hairline ring (tokens.css's .panel::after technique, reproduced here —
@@ -505,22 +501,19 @@ async function exportData() {
 .card:nth-of-type(n + 4) {
   animation-delay: 120ms;
 }
-/* UI/UX rework audit §6: settings are genuinely single-column here — centering the whole
-   column (not stretching any individual card) is the correct desktop fix, per the audit's
-   own note on this screen. */
+/* Settings are genuinely single-column here — centering the whole column (not stretching any
+   individual card) is the correct desktop fix. */
 @media (min-width: 900px) {
   .profile-content {
     max-width: var(--content-w-narrow);
     margin: 0 auto;
   }
 }
-/* Design pass (audit: page read as "indistinguishable from any generic settings screen" —
-   every other page uses .eyebrow, tokens.css's canonical small-caps section label, for its
-   card/section headers; this page was the one holdout still using a bare <h2>). Headings stay
-   semantic <h2> elements (a11y: still real headings, screen readers still get section
-   structure) but are visually demoted to the app's eyebrow treatment, same as
-   ErholungszoneCard/RankDistributionDonut/RunCard — the label names the section, the controls
-   underneath carry the visual weight, not the heading. */
+/* Every other page uses .eyebrow, tokens.css's canonical small-caps section label, for its
+   card/section headers. Headings stay semantic <h2> elements (a11y: still real headings, screen
+   readers still get section structure) but are visually demoted to the app's eyebrow treatment,
+   same as ErholungszoneCard/RankDistributionDonut/RunCard — the label names the section, the
+   controls underneath carry the visual weight, not the heading. */
 .card .eyebrow {
   display: block;
   margin-bottom: var(--sp2);
@@ -737,10 +730,8 @@ async function exportData() {
 .group-header:first-of-type {
   margin-top: var(--sp2);
 }
-/* Nebula N5 — was a distinct flat --surface/--surface-3 fill (lighter than .card's old
-   --surface-2) to read as visually quieter than the profile/equipment cards above; now that both
-   share the same .surface-hybrid fill, the reduced opacity alone still recedes it correctly
-   without needing a second surface color to fork on. */
+/* Shares the same .surface-hybrid fill as .card; reduced opacity alone recedes this section
+   relative to the profile/equipment cards above. */
 .card--quiet {
   opacity: 0.92;
 }

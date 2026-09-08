@@ -63,10 +63,25 @@ stopped having equal division counts.
 
 `resolveRank(value, thresholds)` is the core primitive. Given a metric value and a
 pre-sorted table of `StandardThreshold`s (tier/division/threshold/trust), it finds the highest
-threshold at or below the value, and computes LP (0–100) as the value's position between that
-threshold and the next one up. Below the lowest threshold, LP is measured as a raw fraction of
-that first threshold rather than clamped to 0 — so a genuinely weak first set doesn't just read
-as "0% of bottom tier" with no signal.
+threshold at or below the value, and computes LP as the value's position between that threshold
+and the next one up (normally 0–100). Below the lowest threshold, LP is measured as a raw
+fraction of that first threshold rather than clamped to 0 — so a genuinely weak first set doesn't
+just read as "0% of bottom tier" with no signal.
+
+Above the *top* threshold (i.e. once you're in Apex, which has no threshold above it), LP no
+longer freezes at 100 — it keeps growing, logarithmically, so continued genuine strength gains at
+the top of the ladder still register as real progress instead of going invisible the moment Apex
+is reached. Let `previous` be the division just below the top one and `intervalWidth` the gap
+between their thresholds; `x` measures how far past the top threshold `value` sits, in units of
+`intervalWidth`. Then `lp = 100 * (1 + log2(1 + x))`. At `x = 0` (right at the top threshold) this
+is exactly `100`, so there's no discontinuity at the old hard cap — each doubling of `(1 + x)`
+past that point is worth another flat +100 LP, with real diminishing returns per unit of raw
+overshoot. `positionToBand` (`tiers.ts`) is the corresponding inverse — given a continuous
+`ordinal * 100 + lp` position, it recovers tier/division/lp, and (unlike the ordinal-only
+`ordinalToBand`) preserves LP past Apex's ordinal instead of clamping it to 100. `decay.ts` and
+`aggregate.ts` both import it rather than keeping their own copies, so post-Apex LP survives
+decay, recovery-gain, and the overall-rank aggregate instead of being silently erased the moment
+it passes through any of them.
 
 The `value` fed into `resolveRank` is one of two things depending on the exercise's `metric`:
 
@@ -218,8 +233,13 @@ the same spirit as decay:
   `PACE_FINE_THRESHOLD_S`/`PACE_MAX_SEVERITY_THRESHOLD_S`, severity rises.
 - **improbable jump** — a same-session skill-score ratio far above the exercise's *own* stored
   peak ratio (`JUMP_FINE_THRESHOLD`/`JUMP_MAX_SEVERITY_THRESHOLD`).
-- **exceeds ceiling** — a value beyond `CEILING_MULTIPLE`× the Apex entry threshold: not a
-  gradient, an outright hard sanity ceiling.
+- **exceeds ceiling** — a value beyond `CEILING_FINE_MULTIPLE`× the Apex entry threshold starts
+  rising in severity, reaching maximal severity at `CEILING_MAX_SEVERITY_MULTIPLE`× — a continuous
+  ramp (via the same `severityRamp` helper the other two heuristics use), not the old hard binary
+  cutoff. That hard cutoff used to sit right on top of where genuine post-Apex LP growth (above)
+  now lives, so a real lifter climbing past Apex could get flagged as maximally implausible for
+  simply getting stronger; the ramp lets legitimate post-Apex values register as only partially
+  discounted instead.
 
 The **worst** of the three (not an average) determines the multiplier, so one badly-flagged
 signal can't be diluted by two clean ones. The multiplier floors at `PLAUSIBILITY_FLOOR` (never

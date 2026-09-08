@@ -10,6 +10,7 @@ import { requireAuth } from "./auth.js";
 import { db } from "./db.js";
 import { env } from "./env.js";
 import { ConflictError, NotFoundError } from "./lib/errors.js";
+import { registerUserContext } from "./userContext.js";
 import { registerBodyweightRoutes } from "./routes/bodyweight.js";
 import { registerExerciseRoutes } from "./routes/exercises.js";
 import { registerExportRoutes } from "./routes/export.js";
@@ -30,11 +31,10 @@ import { registerWorkoutRoutes } from "./routes/workouts.js";
 import { registerXpRoutes } from "./routes/xp.js";
 
 /**
- * Validation/serialization + the one error handler (fastify.md: "map typed failures to
- * responses here, never leak internals"). Factored out of buildApp() so tests can get a real,
- * isolated app instance (`registerXRoutes(app, testDb)` on a bare Fastify()) that exercises the
- * same validation/error behavior as production, without the singleton db/static-file wiring
- * below.
+ * Validation/serialization + the one error handler: typed failures map to responses here,
+ * nothing else leaks internals. Factored out of buildApp() so tests can get a real, isolated app
+ * instance (`registerXRoutes(app, testDb)` on a bare Fastify()) that exercises the same
+ * validation/error behavior as production, without the singleton db/static-file wiring below.
  */
 export function configureApp(app: FastifyInstance) {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();
@@ -58,6 +58,8 @@ export function configureApp(app: FastifyInstance) {
     request.log.error(error);
     return reply.code(500).send({ error: "internal_error" });
   });
+
+  registerUserContext(typedApp);
   return typedApp;
 }
 
@@ -74,7 +76,7 @@ export async function buildApp() {
   const imagesRoot = path.resolve(process.cwd(), env.imagesDir);
   const clientDistRoot = path.resolve(process.cwd(), env.clientDistDir);
 
-  // mirrored catalog images (plan 0.4: never hotlink third parties at runtime).
+  // Mirrored catalog images — never hotlink third parties at runtime.
   // Missing in a fresh checkout until `pnpm ingest --images` has run — don't fail startup.
   if (existsSync(imagesRoot)) {
     await app.register(staticFiles, { root: imagesRoot, prefix: "/images/", decorateReply: false });

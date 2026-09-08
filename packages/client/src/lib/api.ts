@@ -1,11 +1,11 @@
 /**
- * Thin fetch wrapper. The bearer token (plan 1.1's single-token auth) lives in localStorage,
+ * Thin fetch wrapper. The bearer token for the app's single-token auth lives in localStorage,
  * entered once via AuthGate.vue on the first 401 the app sees.
  *
- * `apiBase()` matters once the client runs inside a Capacitor WebView (Phase 5 migration):
- * there's no dev-server proxy on-device, so every request needs an absolute LAN server URL.
- * Empty string in the browser/dev-server case, so the existing Vite proxy keeps working
- * completely unchanged there — this only does something different on a native build.
+ * `apiBase()` matters once the client runs inside a Capacitor WebView: there's no dev-server
+ * proxy on-device, so every request needs an absolute LAN server URL. Empty string in the
+ * browser/dev-server case, so the existing Vite proxy keeps working unchanged there — this only
+ * does something different on a native build.
  */
 const TOKEN_KEY = "liftr.token";
 

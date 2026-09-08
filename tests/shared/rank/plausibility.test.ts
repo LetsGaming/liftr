@@ -6,7 +6,8 @@ import {
   PACE_MAX_SEVERITY_THRESHOLD_S,
   JUMP_FINE_THRESHOLD,
   JUMP_MAX_SEVERITY_THRESHOLD,
-  CEILING_MULTIPLE,
+  CEILING_FINE_MULTIPLE,
+  CEILING_MAX_SEVERITY_MULTIPLE,
 } from "@liftr/shared";
 
 const noExercises = { totalSetCount: 0, effectiveDurationSeconds: 0, exercises: [] };
@@ -116,34 +117,84 @@ describe("computeWorkoutPlausibility", () => {
     expect(result.multiplier).toBeCloseTo(PLAUSIBILITY_FLOOR, 6);
   });
 
-  it(`flags a value exceeding ${CEILING_MULTIPLE}x the apex threshold outright`, () => {
-    const result = computeWorkoutPlausibility({
-      totalSetCount: 5,
-      effectiveDurationSeconds: 600,
-      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 8.0, storedPeakRatio: 1.3, apexThreshold: 5 }],
-    });
-    expect(result.reason).toBe("exceeds_ceiling");
-    expect(result.multiplier).toBeCloseTo(PLAUSIBILITY_FLOOR, 6);
-  });
-
-  it("does not flag exceeds_ceiling just under the tightened ceiling multiple", () => {
+  it(`hits the floor at/beyond ${CEILING_MAX_SEVERITY_MULTIPLE}x the apex threshold`, () => {
     // storedPeakRatio: null isolates this from the jump heuristic, which would otherwise also
     // fire on a session-best this far above zero prior history and mask what's being tested.
+    const atMaxSeverity = computeWorkoutPlausibility({
+      totalSetCount: 5,
+      effectiveDurationSeconds: 600,
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * CEILING_MAX_SEVERITY_MULTIPLE, storedPeakRatio: null, apexThreshold: 5 }],
+    });
+    expect(atMaxSeverity.reason).toBe("exceeds_ceiling");
+    expect(atMaxSeverity.multiplier).toBeCloseTo(PLAUSIBILITY_FLOOR, 6);
+
+    const wellBeyond = computeWorkoutPlausibility({
+      totalSetCount: 5,
+      effectiveDurationSeconds: 600,
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * (CEILING_MAX_SEVERITY_MULTIPLE + 5), storedPeakRatio: null, apexThreshold: 5 }],
+    });
+    expect(wellBeyond.multiplier).toBeCloseTo(PLAUSIBILITY_FLOOR, 6);
+  });
+
+  it(`does not discount a value at/below ${CEILING_FINE_MULTIPLE}x the apex threshold`, () => {
+    // storedPeakRatio: null isolates this from the jump heuristic, which would otherwise also
+    // fire on a session-best this far above zero prior history and mask what's being tested.
+    const atFine = computeWorkoutPlausibility({
+      totalSetCount: 5,
+      effectiveDurationSeconds: 600,
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * CEILING_FINE_MULTIPLE, storedPeakRatio: null, apexThreshold: 5 }],
+    });
+    expect(atFine.reason).not.toBe("exceeds_ceiling");
+    expect(atFine.multiplier).toBe(1);
+
+    const belowFine = computeWorkoutPlausibility({
+      totalSetCount: 5,
+      effectiveDurationSeconds: 600,
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * CEILING_FINE_MULTIPLE - 0.01, storedPeakRatio: null, apexThreshold: 5 }],
+    });
+    expect(belowFine.reason).not.toBe("exceeds_ceiling");
+    expect(belowFine.multiplier).toBe(1);
+  });
+
+  it("mid-ramp between the fine and max-severity ceiling multiples is discounted but not floored", () => {
+    const midRatio = (CEILING_FINE_MULTIPLE + CEILING_MAX_SEVERITY_MULTIPLE) / 2;
     const result = computeWorkoutPlausibility({
       totalSetCount: 5,
       effectiveDurationSeconds: 600,
-      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * CEILING_MULTIPLE - 0.01, storedPeakRatio: null, apexThreshold: 5 }],
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * midRatio, storedPeakRatio: null, apexThreshold: 5 }],
     });
-    expect(result.reason).not.toBe("exceeds_ceiling");
-    expect(result.multiplier).toBe(1);
+    expect(result.reason).toBe("exceeds_ceiling");
+    expect(result.multiplier).toBeGreaterThan(PLAUSIBILITY_FLOOR);
+    expect(result.multiplier).toBeLessThan(1);
+  });
+
+  it("does not flag exceeds_ceiling at/below the apex threshold itself (ratio <= 1)", () => {
+    const atThreshold = computeWorkoutPlausibility({
+      totalSetCount: 5,
+      effectiveDurationSeconds: 600,
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5, storedPeakRatio: null, apexThreshold: 5 }],
+    });
+    expect(atThreshold.reason).not.toBe("exceeds_ceiling");
+    expect(atThreshold.multiplier).toBe(1);
+
+    const belowThreshold = computeWorkoutPlausibility({
+      totalSetCount: 5,
+      effectiveDurationSeconds: 600,
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 4, storedPeakRatio: null, apexThreshold: 5 }],
+    });
+    expect(belowThreshold.reason).not.toBe("exceeds_ceiling");
+    expect(belowThreshold.multiplier).toBe(1);
   });
 
   it("combines checks by taking the worst (lowest) resulting multiplier, not an average", () => {
-    // pace is borderline-fine, but the value ceiling check is maximally severe
+    // pace is borderline-fine, but the value ceiling check is maximally severe. sessionBestRatio
+    // is raised past CEILING_MAX_SEVERITY_MULTIPLE (a ratio of 1.6 was floor-severe under the old
+    // hard 1.3x cutoff but only lands mid-ramp under the new continuous ceiling, which would no
+    // longer be the "worst" check here) so the ceiling check is still the one driving the result.
     const result = computeWorkoutPlausibility({
       totalSetCount: 5,
       effectiveDurationSeconds: 300, // 60s/set, fine
-      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 8.0, storedPeakRatio: 1.3, apexThreshold: 5 }],
+      exercises: [{ exerciseId: "deadlift", sessionBestRatio: 5 * (CEILING_MAX_SEVERITY_MULTIPLE + 1), storedPeakRatio: 1.3, apexThreshold: 5 }],
     });
     expect(result.multiplier).toBeCloseTo(PLAUSIBILITY_FLOOR, 6);
   });

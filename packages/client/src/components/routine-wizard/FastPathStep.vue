@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * Engagement-audit-v4 Phase 1 fast path: when a routine is simple (≤4 exercises, still using the
- * default set/rep shape, no supersets — see RoutineWizard.vue's `isFastPathEligible`), Arrange
- * and Review collapse into one condensed screen instead of the full multi-step flow. This is
- * progressive disclosure, not a second parallel mode to maintain: the same eligibility check that
- * puts a routine here also drops it back into the full ArrangeStep the moment anything is
- * customized (a set added, weight changed, a superset linked) via "Alle Details anpassen" below.
- * The three review glance-checks (useRoutineReviewChecks) still run here — the fast path shortens
- * the *screens*, not the trust-gap fix itself.
+ * Fast path: when a routine is simple (≤4 exercises, still using the default set/rep shape, no
+ * supersets — see RoutineWizard.vue's `isFastPathEligible`), Arrange and Review collapse into
+ * one condensed screen instead of the full multi-step flow. This is progressive disclosure, not
+ * a second parallel mode to maintain: the same eligibility check that puts a routine here also
+ * drops it back into the full ArrangeStep the moment anything is customized (a set added, weight
+ * changed, a superset linked) via "Alle Details anpassen" below. The three review glance-checks
+ * (useRoutineReviewChecks) still run here — the fast path shortens the screens, not the review
+ * itself.
  */
 import { toRef } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
@@ -42,9 +42,9 @@ function setSummary(cfg: DraftExercise): string {
   return cfg.sets.map((s) => (s.weightKg !== null ? `${s.weightKg}×${s.reps}` : `${s.reps}`)).join(" / ");
 }
 
-/** "swapped because you don't own X" (Global Constraint) — names the actual equipment instead of
- *  a generic sentence. Falls back to the old generic copy only if the server didn't send a
- *  missing-equipment list (e.g. an older cached suggestion response). */
+/** Names the actual missing equipment instead of a generic sentence. Falls back to the generic
+ *  copy only if the server didn't send a missing-equipment list (e.g. an older cached
+ *  suggestion response). */
 function substituteReason(exerciseId: string): string {
   const missing = props.suggestionMeta[exerciseId]?.missingEquipment;
   if (!missing || missing.length === 0) {

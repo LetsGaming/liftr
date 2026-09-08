@@ -32,15 +32,13 @@ const { exerciseName } = useExerciseName();
 const search = ref("");
 const equipmentFilter = ref("");
 const muscleFilter = ref("");
-// Feature: "we don't want to show the user exercises they can't actually do with their
-// equipment" — defaults ON in "browse" mode (unlike the old single-tag version of this toggle),
-// since that's the actually-useful default for the accuracy this feature is about. Defaults OFF
-// in "select" mode (the routine wizard's manual picker) — manual picking stays deliberate, the
-// user might be at a different gym today, so an unusable exercise is marked + deprioritized in
-// the sort below rather than hidden outright. Either way, only offered/applied once there's
-// actually an owned-equipment list to filter by (an unset/empty list means "no restriction
-// configured", not "owns nothing"), and uses the full requiredEquipment list via canPerform, not
-// just the one primary `equipment` tag the old naive check compared.
+// Defaults ON in "browse" mode — hiding exercises the user can't do with their owned equipment
+// is the useful default there. Defaults OFF in "select" mode (the routine wizard's manual
+// picker) — manual picking stays deliberate, the user might be at a different gym today, so an
+// unusable exercise is marked + deprioritized in the sort below rather than hidden outright.
+// Either way, only offered/applied once there's actually an owned-equipment list to filter by
+// (an unset/empty list means "no restriction configured", not "owns nothing"), and uses the
+// full requiredEquipment list via canPerform, not just the one primary `equipment` tag.
 const onlyDoableEquipment = ref(props.mode !== "select");
 const hasEquipmentFilter = computed(() => !!settingsStore.ownedEquipment && settingsStore.ownedEquipment.length > 0);
 
@@ -51,9 +49,8 @@ function requirementsFor(e: CatalogExercise): TieredRequirement[] {
   if (list && list.length > 0) return list;
   return e.equipment ? [{ item: e.equipment as EquipmentRequirement, tier: "required" as const }] : [];
 }
-// Feature: "there should be tiers — this would allow exercises that only miss a mat to not be
-// filtered out." Only `required` misses gate the toggle/sort below; `recommended` misses are
-// shown as a lighter hint regardless of the toggle, since they never make the exercise undoable.
+// Only `required` misses gate the toggle/sort below; `recommended` misses are shown as a lighter
+// hint regardless of the toggle, since they never make the exercise undoable.
 function missingRequiredFor(e: CatalogExercise): EquipmentRequirement[] {
   return missingByTier(requirementsFor(e), settingsStore.ownedEquipment).required;
 }
@@ -88,11 +85,9 @@ function onCardClick(ex: CatalogExercise) {
   else emit("open", ex);
 }
 
-/** Was `{{ eq }}` (critique finding: raw English equipment slugs — "chest", "barbell" — rendered
- *  directly into a German-language UI). EQUIPMENT_LABEL_DE already exists and is used elsewhere
- *  (ExerciseInfoPanel, onboarding); this was simply never wired in here. `equipment` comes
- *  untyped (`string | null`) off the API boundary, so this falls back to the raw slug rather
- *  than throwing on an unrecognized value — a translation gap should degrade, not break. */
+/** `equipment` comes untyped (`string | null`) off the API boundary, so this falls back to the
+ *  raw slug rather than throwing on an unrecognized value — a translation gap should degrade,
+ *  not break. */
 function equipmentLabel(eq: string | null): string {
   if (!eq) return "—";
   return EQUIPMENT_LABEL_DE[eq as Equipment] ?? eq;
@@ -204,11 +199,9 @@ function equipmentLabel(eq: string | null): string {
   gap: var(--sp2);
 }
 .ex-card {
-  /* N4: adopted Foundation's .surface-hybrid utility (translucent fill + gradient hairline,
-     tokens.css) in place of the old flat --surface-2 fill + plain --line border — this is the
-     main card grid item for the exercise library and the wizard's exercise picker, the clearest
-     "card" surface in this file. .surface-hybrid already supplies position/background/
-     backdrop-filter/box-shadow; this block only adds the layout + interaction bits it doesn't. */
+  /* .surface-hybrid (tokens.css) supplies the translucent fill, gradient hairline, position,
+     backdrop-filter, and box-shadow; this block only adds the layout and interaction bits it
+     doesn't. */
   width: 100%;
   display: flex;
   align-items: center;
@@ -239,13 +232,9 @@ function equipmentLabel(eq: string | null): string {
   background: var(--blue-lo);
   border: 1px solid var(--blue);
 }
-/* Entrance stagger removed (motion audit, Phase 4 — 2026-09-02). This list re-renders on every
-   keystroke in the search input above (`filtered` is a computed keyed off `search`), so the
-   stagger replayed for the first screenful on every character typed — the worst offender found
-   in the audit against 0c's Q2 ("how often per session"), well past the >10x/session cut
-   threshold the old capped-delay comment tried to soften rather than actually fix. Mount/filter-
-   driven, not event-driven (Q1), and a before/after screenshot of the filtered list shows
-   nothing the motion added (Q3). See engagement-audit-v3.md Phase 4. */
+/* No entrance stagger: this list re-renders on every keystroke in the search input above
+   (`filtered` is a computed keyed off `search`), so a stagger would replay for the first
+   screenful on every character typed. */
 .equip {
   font-size: 11px;
   color: var(--dim);

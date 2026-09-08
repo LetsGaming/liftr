@@ -1,6 +1,6 @@
 /**
- * Floating "+N XP" chip shown right on the log-set button (engagement rework W3) — extracted
- * out of WorkoutPage.vue (QUAL-03). Purely a feel-good echo of the same number the server will
+ * Floating "+N XP" chip shown right on the log-set button — extracted out of WorkoutPage.vue.
+ * Purely a feel-good echo of the same number the server will
  * independently add to the real total; never authoritative.
  */
 import { ref } from "vue";
@@ -9,8 +9,8 @@ import { ref } from "vue";
  *  stays mounted for the whole float-and-fade instead of getting yanked mid-animation. */
 const CHIP_LIFETIME_MS = 1600;
 
-/** Motion audit fix (Phase 4): the 1600ms literal above bypasses motion.css's token collapse
- *  (it isn't a --dur-* var), which is exactly why WorkoutPage.vue's own
+/** The 1600ms literal above bypasses motion.css's token collapse (it isn't a --dur-* var),
+ *  which is exactly why WorkoutPage.vue's own
  *  `@media (prefers-reduced-motion: reduce)` block has to override `.xp-chip` explicitly —
  *  under that override the chip renders statically at full opacity instead of floating. This
  *  JS-side timer had no matching branch, so a reduced-motion user still sat looking at a static

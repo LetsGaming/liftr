@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { exerciseMuscles, muscles, type LiftrDb } from "@liftr/db";
+import { exerciseMuscles, muscles, OWNER_USER_ID, type LiftrDb } from "@liftr/db";
 import { recommendForChosenExercises, suggestExercisesForMuscles } from "~server/services/routineSuggestionService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 
@@ -24,7 +24,7 @@ describe("suggestExercisesForMuscles", () => {
     const bench = await insertTestExercise(db, { slug: "bench-press", movementPattern: "push" });
     await tagPrimary(bench.id, chest.id);
 
-    const [result] = await suggestExercisesForMuscles(db, {
+    const [result] = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["chest"],
       exercisesPerMuscle: 2,
       ownedEquipment: [],
@@ -51,7 +51,7 @@ describe("suggestExercisesForMuscles", () => {
     await tagPrimary(barbellBench.id, chest.id);
     await tagPrimary(pushup.id, chest.id);
 
-    const [result] = await suggestExercisesForMuscles(db, {
+    const [result] = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["chest"],
       exercisesPerMuscle: 1,
       ownedEquipment: ["dumbbell"], // owns something, but not a barbell — barbell-bench-press is unusable
@@ -78,7 +78,7 @@ describe("suggestExercisesForMuscles", () => {
     await tagPrimary(barbellBench.id, chest.id);
     await tagPrimary(pushup.id, chest.id);
 
-    const [result] = await suggestExercisesForMuscles(db, {
+    const [result] = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["chest"],
       exercisesPerMuscle: 1,
       ownedEquipment: ["dumbbell"],
@@ -93,7 +93,7 @@ describe("suggestExercisesForMuscles", () => {
     const bench = await insertTestExercise(db, { slug: "bench-press", movementPattern: "push" });
     await tagPrimary(bench.id, chest.id);
 
-    const [result] = await suggestExercisesForMuscles(db, {
+    const [result] = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["chest"],
       exercisesPerMuscle: 1,
       ownedEquipment: [],
@@ -112,7 +112,7 @@ describe("suggestExercisesForMuscles", () => {
     });
     await tagPrimary(barbellBench.id, chest.id);
 
-    const result = await suggestExercisesForMuscles(db, {
+    const result = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["chest"],
       exercisesPerMuscle: 1,
       ownedEquipment: ["dumbbell"], // no substitute candidates exist at all
@@ -122,7 +122,7 @@ describe("suggestExercisesForMuscles", () => {
   });
 
   it("returns an empty list for a muscle slug that doesn't exist", async () => {
-    const result = await suggestExercisesForMuscles(db, {
+    const result = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["not-a-real-muscle"],
       exercisesPerMuscle: 2,
       ownedEquipment: [],
@@ -135,7 +135,7 @@ describe("recommendForChosenExercises", () => {
   it("never sets matchedMuscleSlug or isSubstitute — those only apply to muscle-guided suggestions", async () => {
     const exercise = await insertTestExercise(db, { slug: "overhead-press", movementPattern: "push" });
 
-    const [result] = await recommendForChosenExercises(db, [exercise.id]);
+    const [result] = await recommendForChosenExercises(db, OWNER_USER_ID, [exercise.id]);
 
     expect(result?.exerciseId).toBe(exercise.id);
     expect(result?.matchedMuscleSlug).toBeUndefined();

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
- * Bodyweight trend tile (plan Phase 6.7, mockup's "52,5 kg · stabil · 30 Tage"). Inline SVG
- * sparkline of the raw log plus an EMA-smoothed trend label from @liftr/shared — no charting
- * library, same rule as ProgressChart.vue.
+ * Bodyweight trend tile. Inline SVG sparkline of the raw log plus an EMA-smoothed trend label
+ * from @liftr/shared — no charting library, same rule as ProgressChart.vue.
  */
 import { computeBodyweightTrend } from "@liftr/shared";
 import { computed } from "vue";

@@ -4,6 +4,30 @@ Liftr is a self-hosted, single-maintainer project, but the workflow below is wha
 enforced by tooling — useful whether you're the maintainer coming back to this after a break or
 someone sending a PR.
 
+## Project stage: pre-v1, no legacy
+
+Liftr has never been deployed and has no real user data anywhere — there is no "existing
+database," no "old app version" a client might still be running, and no "prior format" anything
+was ever stored in. Until v1 actually ships, treat this as a hard rule:
+
+- **No backwards-compatibility code.** Don't write a fallback, a null-check, or a branch to
+  handle "what an older row/request/client looked like" — that state doesn't exist. If a schema
+  or API shape needs to change, change it directly; there's nothing to migrate around.
+- **No "legacy" framing in comments.** Don't justify code by referencing a prior version,
+  "before this feature existed," "used to be," or similar — describe *why the current behavior is
+  correct*, in the present tense. If you can't find a present-tense reason, the code is probably
+  dead and should be deleted, not commented as legacy.
+- **Migrations are squashed, not accumulated.** `packages/db/drizzle/` holds one baseline
+  migration generated straight from the current `schema.ts`, not an incremental history — see
+  [ADR 0006](adr/0006-multi-user-hardening.md) for the concrete example (a 16-migration history
+  collapsed back to one `0000_initial_schema.sql` once its ALTER-table workarounds no longer
+  served any real purpose). When `schema.ts` changes, regenerate the baseline
+  (`pnpm db:generate`) rather than layering another migration on top.
+
+This rule lapses the moment there's a real deployment with real data to preserve — at that point,
+migrations do need to accumulate and compatibility does start to matter. Until then, optimizing
+for hypothetical old state is pure waste.
+
 ## Repo layout
 
 A pnpm workspace (`pnpm-workspace.yaml`) with five packages under `packages/`:

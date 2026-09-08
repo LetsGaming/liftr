@@ -1,9 +1,8 @@
 /**
- * Equipment → icon glyphs (feedback: "no per-exercise icons; find if there's a public source").
- * There is no open icon set with 94 distinct exercise icons — that dataset doesn't exist — but
+ * Equipment → icon glyphs. There is no open icon set covering all ~94 distinct exercises, but
  * the catalog already carries an `equipment` field end-to-end (curated.yaml -> schema.ts ->
- * exercises.ts -> catalogStore.ts) with exactly 10 values, and it was rendered nowhere. This
- * maps those 10 values to icons instead of 94 exercises to icons.
+ * exercises.ts -> catalogStore.ts) with exactly 10 values. This maps those 10 values to icons
+ * instead of trying to cover every exercise individually.
  *
  * The `Equipment` type/vocabulary itself now lives in @liftr/shared (equipment/equipment.ts) —
  * it's also what packages/ingest's free-exercise-db/wger adapters normalize external equipment
@@ -76,9 +75,8 @@ export function equipmentIconSvg(equipment: string): string {
   return EQUIPMENT_ICON_PATH[equipment as Equipment] ?? SUPPORT_EQUIPMENT_ICON_PATH[equipment as SupportEquipment] ?? EQUIPMENT_ICON_PATH.machine;
 }
 
-/** German display names (feature: "allow the user to set equipment they own") — same
- *  fixed-noun-map convention as MUSCLE_LABEL_DE (lib/muscles.ts) rather than the full i18n
- *  machinery, since this app is German-only. */
+/** German display names — same fixed-noun-map convention as MUSCLE_LABEL_DE (lib/muscles.ts)
+ *  rather than the full i18n machinery, since this app is German-only. */
 export const EQUIPMENT_LABEL_DE: Record<Equipment, string> = {
   bodyweight: "Körpergewicht",
   dumbbell: "Kurzhanteln",

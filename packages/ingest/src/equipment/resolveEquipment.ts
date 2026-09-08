@@ -1,6 +1,6 @@
 /**
- * Orchestrates the equipment adapters (feedback: "map equipment to exercises without manually
- * adjusting the code every time"). curated.yaml's own `equipment:` stays authoritative when set
+ * Orchestrates the equipment adapters, so equipment doesn't need mapping to exercises by hand
+ * one at a time. curated.yaml's own `equipment:` stays authoritative when set
  * — this only fills in entries that leave it null, and cross-checks the rest so a hand-set value
  * that's drifted from what the upstreams now say gets surfaced instead of silently ignored.
  * Non-destructive by design: this never writes back into curated.yaml (that would blur "hand-
@@ -52,8 +52,8 @@ export async function resolveEquipmentForCatalog(
     const curated = entry.equipment as Equipment | null;
 
     // Conflict check runs regardless of whether curated.yaml already has a value — a hand-set
-    // value silently drifting from what every upstream now agrees on is exactly the kind of
-    // thing "don't manually adjust every time" is asking to catch, not just fill blanks.
+    // value silently drifting from what every upstream now agrees on is worth surfacing on its
+    // own, not just filling in blanks.
     for (const source of sources) {
       const index = indexes.get(source.name);
       const key = index ? joinKeyFor(source.name, entry) : null;

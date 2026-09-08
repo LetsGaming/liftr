@@ -2,12 +2,11 @@
 /**
  * Round demo-photo thumbnail for an exercise, for the exercise library / dense pickers where
  * there's room for more than a bare equipment glyph (see ExerciseIcon.vue for that). Reuses
- * the same slug-convention image path ExerciseDemo.vue already proved
+ * the same slug-convention image path ExerciseDemo.vue already uses
  * (`${apiBase()}/images/<slug>/start.jpg`) rather than the dead `demoStartImage` DB column
  * (see lib/equipmentIcons.ts's sibling note — that column is always null, ingest never writes
  * it). 12 of 94 catalog slugs have no mirrored photo (no open-licensed source exists); those
- * fall back to the equipment icon instead of a broken-image frame. (Corrected from "11": see
- * audit/missing-photo-sourcing-research.md — curated.yaml's own header always said 12.)
+ * fall back to the equipment icon instead of a broken-image frame.
  */
 import { computed, ref } from "vue";
 import { apiBase } from "../../lib/api";
@@ -34,17 +33,15 @@ const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === fal
   flex: none;
   border-radius: 50%;
   overflow: hidden;
-  /* Audit fix (workplan-v1 §1.10c): a flat single-tone fill read as a visibly different "this
-     one's missing" treatment next to the photo rows around it. Real photos for these 11
-     catalog gaps aren't sourceable in this pass (needs actual photography/licensing, tracked as
-     open content work — see workplan-v1 §1.10c); this softens the fallback with the same
-     radial-highlight tonal variation a photo thumbnail naturally has, so the gap reads as a
-     quieter, more deliberate icon slot rather than a stark placeholder.
-     N4 Nebula pass: deliberately EXEMPT from .surface-hybrid, verified live (both themes,
-     390px/1024px) sitting inside ExerciseList.vue's now-hybrid .ex-card and ExerciseRow's row
-     layout. This is an image-placeholder fill (photo missing -> icon fallback), not a content
-     surface — a translucent/blurred treatment on it would read as a see-through image slot,
-     which makes no sense next to the real opaque photo thumbnails beside it. Stays opaque. */
+  /* A flat single-tone fill would read as a visibly different "this one's missing" treatment
+     next to the photo rows around it. These catalog gaps aren't sourceable yet (needs actual
+     photography/licensing), so this softens the fallback with the same radial-highlight tonal
+     variation a photo thumbnail naturally has, making the gap read as a quieter, deliberate
+     icon slot rather than a stark placeholder.
+     Deliberately exempt from .surface-hybrid — this is an image-placeholder fill (photo missing
+     -> icon fallback), not a content surface. A translucent/blurred treatment here would read
+     as a see-through image slot, which makes no sense next to the real opaque photo thumbnails
+     beside it. Stays opaque. */
   background: radial-gradient(circle at 35% 30%, var(--surface-2), var(--surface-3) 70%);
   display: grid;
   place-items: center;

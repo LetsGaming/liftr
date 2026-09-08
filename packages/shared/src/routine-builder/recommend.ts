@@ -1,7 +1,7 @@
 /**
- * Feature: "quickly create new routines based on the user's past experience and a selection of
- * muscle groups they want to train" — the system analyzes their stats (best/last performed set
- * per candidate exercise) and recommends sets/reps/weight. Pure function, no DB access, so it's
+ * Quickly creates a routine from the user's past performance and a selection of muscle groups
+ * they want to train, by analyzing their stats (best/last performed set per candidate exercise)
+ * and recommending sets/reps/weight. Pure function, no DB access, so it's
  * unit-testable and shared between server (the authoritative /api/routines/suggest response) and
  * any future client-side preview — same split as the rank engine (rankEngine.ts orchestrates,
  * @liftr/shared's tiers.ts does the math).
@@ -25,7 +25,7 @@ export interface LastPerformedSet {
   reps: number;
 }
 
-/** Feature: onboarding's "prior experience" question — shifts where along the standards ladder
+/** Onboarding's "prior experience" question — shifts where along the standards ladder
  *  a first-time recommendation for a *never-logged* exercise starts. Only matters when
  *  `lastPerformed` is null; a lifter's own history always wins regardless of this. */
 export type ExperienceLevel = "beginner" | "intermediate" | "advanced";

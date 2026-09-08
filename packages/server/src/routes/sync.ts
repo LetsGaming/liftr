@@ -4,15 +4,15 @@ import { applySyncBatch } from "../services/syncService.js";
 import type { ZodFastifyInstance } from "../types.js";
 
 /**
- * The heart of offline (plan 1.1/1.3) — see services/syncService.ts for the actual per-item
- * decisions. This route is just: validate the batch shape, call the service, return its results.
+ * The heart of offline support — see services/syncService.ts for the actual per-item decisions.
+ * This route is just: validate the batch shape, call the service, return its results.
  */
 
 /**
- * `id` here is *client-generated* (crypto.randomUUID() on-device, plan 1.5) — not server-
- * assigned. This is what makes "start today's routine" itself offline-capable (audit §3
- * must-have): the client never needs a round-trip just to get an id back before it can start
- * logging sets against workout_exercise rows that reference it. The server upserts on this id.
+ * `id` here is *client-generated* (crypto.randomUUID() on-device) — not server-assigned. This is
+ * what makes "start today's routine" itself offline-capable: the client never needs a round-trip
+ * just to get an id back before it can start logging sets against workout_exercise rows that
+ * reference it. The server upserts on this id.
  */
 const startWorkoutPayload = z.object({
   id: z.string().min(1),
@@ -22,11 +22,10 @@ const startWorkoutPayload = z.object({
 });
 
 /**
- * `kind` replaces the old standalone `isWarmup` boolean on the wire (feedback: "not possible
- * to set what kind of set this is") — `isWarmup` is still the column every rank/XP/history
- * query filters on (see schema.ts's comment), but it's now derived from `kind` in
- * syncService.ts rather than sent independently, so client and server can't disagree about
- * whether a "warmup" kind counts as isWarmup.
+ * `kind` replaces the old standalone `isWarmup` boolean on the wire — `isWarmup` is still the
+ * column every rank/XP/history query filters on (see schema.ts's comment), but it's now derived
+ * from `kind` in syncService.ts rather than sent independently, so client and server can't
+ * disagree about whether a "warmup" kind counts as isWarmup.
  */
 const logSetPayload = z.object({
   workoutExerciseId: z.string(),
@@ -43,15 +42,14 @@ const finishWorkoutPayload = z.object({
   workoutId: z.string(),
   endedAt: z.coerce.date(),
   pausedSeconds: z.number().int().min(0).default(0),
-  // Workout-level notes (feedback gap: the offline finish_workout payload had no notes field
-  // at all, unlike log_set — see activeWorkoutStore.ts's finish()). Rides the same offline-safe
+  // Workout-level notes — see activeWorkoutStore.ts's finish(). Rides the same offline-safe
   // outbox path rather than a second online-only PATCH call bolted onto the finish flow.
   notes: z.string().nullable().optional(),
 });
 
 /**
- * Mid-session "add exercise" (feedback gap: a busy squat rack / equipment swap had no path
- * but cancelling the whole workout). Same client-generated-id idempotency pattern as
+ * Mid-session "add exercise" — lets a user swap in a different exercise (e.g. a busy squat rack)
+ * without cancelling the whole workout. Same client-generated-id idempotency pattern as
  * start_workout's exercise rows — `id` is minted on-device so the client can start logging
  * sets against it immediately, before this has even synced.
  */
@@ -73,7 +71,7 @@ const syncBody = z.object({ items: z.array(syncItem).min(1).max(200) });
 
 export function registerSyncRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.post("/api/sync", { schema: { body: syncBody } }, async (req) => {
-    const results = await applySyncBatch(db, req.body.items);
+    const results = await applySyncBatch(db, req.userId, req.body.items);
     return { results };
   });
 }

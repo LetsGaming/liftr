@@ -28,5 +28,5 @@ const app = createApp(App);
 const pinia = createPinia();
 app.use(IonicVue).use(pinia).use(router).use(i18n).mount("#app");
 
-// starts flushing the offline write queue as soon as we're online (plan 1.3)
+// starts flushing the offline write queue as soon as we're online
 useSyncStore(pinia).startAutoFlush();

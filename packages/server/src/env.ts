@@ -1,4 +1,4 @@
-/** Minimal env config. Auth stays deliberately simple (plan 1.1 / audit §5: "present, not elaborate"). */
+/** Minimal env config. Auth stays deliberately simple — present, not elaborate. */
 export const env = {
   port: Number(process.env.PORT ?? 3001),
   dbPath: process.env.LIFTR_DB_PATH ?? "../../data/liftr.db",
@@ -11,7 +11,7 @@ export const env = {
    *  — low-risk today since auth is a bearer token in a header, not a cookie, so a malicious page
    *  gaining "permission" to call the API still can't read the token out of another origin's
    *  localStorage. Set this once the server is reachable beyond the reverse proxy's own trusted
-   *  network to lock it down for real (`fastify.md`'s "CORS locked to known origins"). */
+   *  network to lock CORS down to known origins for real. */
   allowedOrigins: process.env.LIFTR_ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? null,
 };
 

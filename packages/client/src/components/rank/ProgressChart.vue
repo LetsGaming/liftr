@@ -1,11 +1,10 @@
 <script setup lang="ts">
 /**
- * Progress chart per exercise (plan Phase 2.5): e1RM (or best reps, for bodyweight exercises)
- * over time. Deliberately a hand-drawn inline SVG polyline, not a charting library — the plan
- * is explicit about this ("lightweight inline SVG... do not pull in a charting library for
- * four chart types; it costs more bundle than the charts are worth on a PWA that must load in
- * a basement"). Reuses the already-existing /api/exercises/:id/history route — no new endpoint
- * needed, since it already returns exactly {weightKg, reps, loggedAt, isWarmup} per set.
+ * Progress chart per exercise: e1RM (or best reps, for bodyweight exercises) over time.
+ * Hand-drawn inline SVG polyline rather than a charting library — a full charting dependency
+ * costs more bundle size than four small sparklines are worth on a PWA. Reuses the existing
+ * /api/exercises/:id/history route, which already returns {weightKg, reps, loggedAt, isWarmup}
+ * per set.
  */
 import { computed } from "vue";
 import { estimateE1rm } from "@liftr/shared";
@@ -62,10 +61,8 @@ const trendUp = computed(() => {
   return s.length >= 2 && s[s.length - 1]!.value >= s[0]!.value;
 });
 
-/** Harden finding: unlike the donut chart (fully redundant with its own legend text), this
- *  sparkline's trajectory is real information not shown anywhere else — `latest` below is only
- *  the final point, not the shape of the trend. A screen-reader user got the number but not
- *  whether it was climbing or falling. */
+/** Screen-reader label for the sparkline: `latest` alone only conveys the final value, not the
+ *  trend shape, so the aria-label spells out direction and start/end values explicitly. */
 const trendLabel = computed(() => {
   const s = series.value;
   if (s.length < 2) return null;
@@ -80,10 +77,8 @@ const trendLabel = computed(() => {
 <template>
   <div class="progress-chart">
     <svg v-if="series.length >= 2" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" class="spark" role="img" :aria-label="trendLabel!">
-      <!-- A text-muted token must never be a chart stroke — --faint (even at its raised,
-           AA-passing value) reads as "barely there" for data, which is wrong; a downward
-           trend is still real data, just not the "good" color. Use --dim (readable, neutral)
-           instead of the accent when the trend isn't up. -->
+      <!-- Use --dim, not --faint, for a downward trend: it's still real data, just not the
+           "good" color, and --faint would read as barely-there. -->
       <polyline :points="points" fill="none" :stroke="trendUp ? 'var(--green)' : 'var(--dim)'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
     <p v-else class="empty">Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve.</p>

@@ -1,5 +1,5 @@
-/** All `/api/exercises*` HTTP calls — stores/composables call these, never `api.*` directly
- *  (vue.md: "route all external communication through a dedicated service module"). */
+/** All `/api/exercises*` HTTP calls. Stores and composables call these functions, never `api.*`
+ *  directly (see vue.md: external communication is routed through a dedicated service module). */
 import type { TieredRequirement } from "@liftr/shared";
 import { api } from "../lib/api";
 
@@ -20,12 +20,11 @@ export interface CatalogExercise {
   demoStartImage: string | null;
   demoEndImage: string | null;
   howToKey: string | null;
-  /** Feedback: exercise-photo 404s (~11 catalog slugs have no mirrored demo photo) were
-   *  spamming the console — this tells ExerciseThumb.vue/ExerciseDemo.vue not to even attempt
-   *  the request instead of relying on the browser to fail it. Absent on a stale
-   *  localStorage-cached catalog from before this field existed; call sites treat "unknown" the
-   *  same as "assume it exists" (today's behavior) until the next successful /api/exercises
-   *  fetch refreshes the cache. */
+  /** Lets ExerciseThumb.vue/ExerciseDemo.vue skip requesting a demo photo that doesn't exist
+   *  (~11 catalog slugs have none) instead of letting the browser request and fail it. Absent on
+   *  a stale localStorage-cached catalog from before this field existed; call sites treat
+   *  "unknown" the same as "assume it exists" until the next /api/exercises fetch refreshes the
+   *  cache. */
   hasImage: boolean;
   muscles: { slug: string; role: "primary" | "secondary" }[];
 }

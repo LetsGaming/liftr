@@ -321,7 +321,7 @@ describe("rank balance: structural invariants over a long, realistic grind", () 
     // an actual outlandish jump — which is exactly what makes this a false positive, not a
     // correct catch.
     for (const e of flagged) {
-      expect(e.weightKg).toBeLessThan(70); // nowhere near CEILING_MULTIPLE territory
+      expect(e.weightKg).toBeLessThan(70); // nowhere near CEILING_FINE_MULTIPLE territory
     }
   });
 });

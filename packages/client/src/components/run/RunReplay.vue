@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Run replay (plan Phase 4.3): animates the stored trackpoint array back, not just a static
- * route line. Interpolates between points so the marker glides even with sparse/variable
- * sampling; time gaps (pauses, GPS loss) are collapsed to a short fixed pause in playback time
- * rather than either standing still for the real gap duration or teleporting across it.
- * HR/cadence readouts only render when the source file actually wrote those fields — audit §7
- * ties replay fidelity directly to what the watch/file provides, never fabricated.
+ * Run replay: animates the stored trackpoint array back, not just a static route line.
+ * Interpolates between points so the marker glides even with sparse/variable sampling; time
+ * gaps (pauses, GPS loss) are collapsed to a short fixed pause in playback time rather than
+ * either standing still for the real gap duration or teleporting across it. HR/cadence readouts
+ * only render when the source file actually wrote those fields, so replay fidelity tracks what
+ * the watch/file actually provides rather than fabricating values.
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import RunMap from "./RunMap.vue";
@@ -140,19 +140,19 @@ function fmtPace(sPerKm: number | null): string {
 
 <template>
   <div class="replay">
-    <!-- Nebula N6 — deliberately exempt from .surface-hybrid/.panel: this wraps RunMap, whose
-         Leaflet instance paints real map tiles onto its own canvas/DOM layer, outside the CSS
-         cascade. A translucent/blurred surface sitting behind opaque tile imagery is visually
-         meaningless (you'd either see nothing of the blur, since tiles are opaque, or — if the
-         map background peeked through gaps — tiles showing through a glass card, which isn't the
-         intent of this design). RunMap.vue's own `.run-map` background stays the plain `--bg`
-         solid fill it already was; this wrapper adds no surface treatment of its own either. -->
+    <!-- Deliberately exempt from .surface-hybrid/.panel: this wraps RunMap, whose Leaflet
+         instance paints real map tiles onto its own canvas/DOM layer, outside the CSS cascade.
+         A translucent/blurred surface sitting behind opaque tile imagery is visually meaningless
+         (you'd either see nothing of the blur, since tiles are opaque, or — if the map background
+         peeked through gaps — tiles showing through a glass card, which isn't the intent of this
+         design). RunMap.vue's own `.run-map` background stays the plain `--bg` solid fill it
+         already was; this wrapper adds no surface treatment of its own either. -->
     <div class="map-wrap">
       <RunMap ref="mapRef" :points="points" />
     </div>
 
-    <!-- Everything below is UI chrome (scrubber, speed toggle, live readouts), not the map itself
-         — this DOES adopt the hybrid surface per N6's scope. -->
+    <!-- Everything below is UI chrome (scrubber, speed toggle, live readouts), not the map
+         itself, so it does adopt the hybrid surface treatment. -->
     <div class="replay-chrome panel">
       <div class="controls">
         <button class="play-btn" @click="toggle"><AppIcon :name="playing ? 'pause' : 'play'" /></button>

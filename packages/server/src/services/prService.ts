@@ -1,5 +1,5 @@
 /**
- * Personal Records ledger (workplan-v1 §2). Reads the `prs` table — already fully populated on
+ * Personal Records ledger. Reads the `prs` table — already fully populated on
  * every workout finish per the rank-recompute pipeline — joined to the exercise's slug (for
  * display via the client's useExerciseName composable) and, where the originating set still
  * exists, the workout it belongs to (for a "jump to this workout" link). Purely additive read
@@ -21,7 +21,7 @@ export interface PrListItem {
   workoutId: string | null;
 }
 
-export async function getPrs(db: LiftrDb): Promise<PrListItem[]> {
+export async function getPrs(db: LiftrDb, userId: string): Promise<PrListItem[]> {
   const rows = await db
     .select({
       id: prs.id,
@@ -37,6 +37,7 @@ export async function getPrs(db: LiftrDb): Promise<PrListItem[]> {
     .innerJoin(exercises, eq(prs.exerciseId, exercises.id))
     .leftJoin(sets, eq(prs.setId, sets.id))
     .leftJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
+    .where(eq(prs.userId, userId))
     .orderBy(desc(prs.achievedAt));
 
   return rows.map((r) => ({

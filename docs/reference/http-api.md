@@ -34,9 +34,12 @@ wired up in `app.ts`'s `onRequest` hook for every request whose URL starts with 
   required at all. This is also why the route tests (`tests/server/routes/*.test.ts`) never send
   an `Authorization` header: `LIFTR_TOKEN` is unset under vitest.
 - On failure: `401 { "error": "unauthorized" }`.
-- There are no accounts, sessions, or per-user scoping anywhere in the API — Liftr is single-user
-  by design (see `env.ts`'s and `auth.ts`'s own comments). This token is "is this a request from
-  the app I trust", not "which user is this".
+- There are no accounts or sessions yet, so this token answers "is this a request from the app I
+  trust", not "which user is this" — every request currently resolves to the same owner identity
+  (`packages/server/src/userContext.ts`). Every per-user table/route is already scoped by a
+  resolved `userId` in preparation for real per-person login (see
+  [ADR 0006](../adr/0006-multi-user-hardening.md)); that plumbing just has one identity to resolve
+  to today.
 
 ## Error shapes
 

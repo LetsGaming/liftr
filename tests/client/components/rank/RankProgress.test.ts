@@ -27,11 +27,31 @@ describe("RankProgress", () => {
     [0, 0],
     [150, 100],
     [100, 100],
-  ])("clamps lp=%d to %d for both the readout and the bar-fill scaleX", (lp, expected) => {
+  ])("clamps lp=%d to %d for both the readout and the bar-fill scaleX below the top band", (lp, expected) => {
     const wrapper = mountWithProviders(RankProgress, { props: { tier: "initiate", division: 5, lp } });
 
     expect(wrapper.find(".rp-lp").text()).toBe(`${expected} LP`);
     expect(wrapper.find(".bar-fill").attributes("style")).toContain(`scaleX(${expected / 100})`);
+  });
+
+  it("shows an uncapped readout and a full bar for a top-band rank past 100 lp", () => {
+    const wrapper = mountWithProviders(RankProgress, { props: { tier: "apex", division: 1, lp: 250 } });
+
+    expect(wrapper.find(".rp-lp").text()).toBe("250 LP");
+    expect(wrapper.find(".bar-fill").attributes("style")).toContain("scaleX(1)");
+  });
+
+  it("shows a partially-filled bar for a decayed top-band rank (does not hardcode a full bar at apex)", () => {
+    const wrapper = mountWithProviders(RankProgress, { props: { tier: "apex", division: 1, lp: 40 } });
+
+    expect(wrapper.find(".rp-lp").text()).toBe("40 LP");
+    expect(wrapper.find(".bar-fill").attributes("style")).toContain("scaleX(0.4)");
+  });
+
+  it("rounds a fractional uncapped top-band lp for display", () => {
+    const wrapper = mountWithProviders(RankProgress, { props: { tier: "apex", division: 1, lp: 250.6 } });
+
+    expect(wrapper.find(".rp-lp").text()).toBe("251 LP");
   });
 
   it("shows no trust marker/caption for the default 'real' trust", () => {

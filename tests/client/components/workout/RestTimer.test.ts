@@ -34,20 +34,20 @@ afterEach(() => {
 
 describe("RestTimer", () => {
   it("shows the idle display (mm:ss of the configured seconds) before any trigger fires", () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 90 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 90, restKind: "between-sets" } });
 
     expect(wrapper.find(".ring i").text()).toBe("1:30");
     expect(wrapper.find(".meta span").text()).toBe("startet nach dem Satz");
   });
 
   it("defaults to 90 seconds when seconds is omitted", () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, restKind: "between-sets" } });
 
     expect(wrapper.find(".ring i").text()).toBe("1:30");
   });
 
   it("starts counting down when trigger increases past 0", async () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 10 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 10, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: 1 });
     expect(wrapper.find(".ring i").text()).toBe("0:10");
@@ -58,7 +58,7 @@ describe("RestTimer", () => {
   });
 
   it("does not start (or restart) when trigger is set to 0 or a non-positive value", async () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 10 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 10, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: -1 });
 
@@ -67,7 +67,7 @@ describe("RestTimer", () => {
 
   it("reaches zero, stops, marks justFinished (ring-done pulse), and fires a browser notification when permitted", async () => {
     stubNotification("granted");
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 3 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 3, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: 1 });
     await vi.advanceTimersByTimeAsync(3000);
@@ -82,7 +82,7 @@ describe("RestTimer", () => {
 
   it("does not fire a browser notification when permission was never granted", async () => {
     stubNotification("denied");
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 3 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 3, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: 1 });
     await vi.advanceTimersByTimeAsync(3000);
@@ -91,7 +91,7 @@ describe("RestTimer", () => {
   });
 
   it("clicking the skip button stops the countdown early", async () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 30 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 30, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: 1 });
     await vi.advanceTimersByTimeAsync(5000);
@@ -105,7 +105,7 @@ describe("RestTimer", () => {
   });
 
   it("re-reads the seconds prop fresh on every trigger, instead of caching the first value", async () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 60 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 60, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: 1 });
     expect(wrapper.find(".ring i").text()).toBe("1:00");
@@ -116,7 +116,7 @@ describe("RestTimer", () => {
   });
 
   it("a fresh trigger while already running restarts the countdown from the top", async () => {
-    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 10 } });
+    const wrapper = mountWithProviders(RestTimer, { props: { trigger: 0, seconds: 10, restKind: "between-sets" } });
 
     await wrapper.setProps({ trigger: 1 });
     await vi.advanceTimersByTimeAsync(5000);

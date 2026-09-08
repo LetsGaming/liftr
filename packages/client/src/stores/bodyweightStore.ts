@@ -1,4 +1,4 @@
-/** Bodyweight log (closes the rank-engine's hardcoded-75kg fallback gap). */
+/** Bodyweight log, used in place of the rank engine's hardcoded 75kg fallback. */
 import { defineStore } from "pinia";
 import { getBodyweightLogs, logBodyweight, type BodyweightEntry } from "../services/bodyweightService";
 
@@ -20,8 +20,8 @@ export const useBodyweightStore = defineStore("bodyweight", {
         this.loaded = true;
         this.error = false;
       } catch {
-        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
-        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
+        // needs to tell "still fetching" from "failed" apart.
         this.error = true;
       }
     },

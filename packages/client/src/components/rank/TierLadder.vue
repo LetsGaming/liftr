@@ -1,22 +1,19 @@
 <script setup lang="ts">
 /**
- * The full 9-tier ladder (rework Phase 3 — critique finding: 36 tier tokens exist, each
- * referenced exactly once, reaching only a single rank card; nowhere in the app could a user
- * see where they stand relative to the whole ladder, only their current band in isolation). One
- * shared component, two call sites: RanksPage's hero (real position) and OverviewPage's
- * first-run state (Initiate lit, nothing else known yet).
+ * The full 9-tier ladder, showing where a user stands relative to the whole ladder rather than
+ * just their current band. One shared component, two call sites: RanksPage's hero (real
+ * position) and OverviewPage's first-run state (Initiate lit, nothing else known yet).
  *
  * Divisions are NOT uniform across tiers (TIER_DIVISION_COUNT: 5/4/4/3/3/3/2/2/1 — more at the
  * bottom for frequent early rank-ups, fewer at the top since Apex is a single real milestone).
  * This only ever labels the *current* tier's division (via DIVISION_LABEL), so it never assumes
  * three divisions or any other fixed count.
  *
- * Click-to-expand (UI audit fix): a rung only ever showed its own current-tier division, with no
- * way to see any other tier's division breakdown at all — the ladder read as a flat list of tier
- * names, not a real ladder with per-tier structure. Purely client-side: TIER_DIVISION_COUNT
- * already gives every tier's division count, so expanding a rung just renders
- * `1..count` inline, no fetch needed. Only one rung expands at a time (an accordion, not
- * independent toggles) to keep the list from growing unbounded on a 9-tier ladder.
+ * Click-to-expand shows any tier's division breakdown, not just the current one. Purely
+ * client-side: TIER_DIVISION_COUNT already gives every tier's division count, so expanding a
+ * rung just renders `1..count` inline, no fetch needed. Only one rung expands at a time (an
+ * accordion, not independent toggles) to keep the list from growing unbounded on a 9-tier
+ * ladder.
  */
 import { computed, ref } from "vue";
 import { ordinal, TIER_DIVISION_COUNT, TIERS, type Division, type Tier } from "@liftr/shared";
@@ -25,11 +22,9 @@ import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from ".
 const props = defineProps<{
   currentTier: string | null;
   currentDivision?: number | null;
-  /** Rank engine redesign R1/R2 (critique finding, clarify P2): fetched by every caller
-   *  already, but never shown here — a demoted user saw a ladder identical to one who'd never
-   *  reached the higher tier. Naming it reuses RankProgress.vue's own per-exercise decay-caption
-   *  pattern ("Schon mal erreicht: ...") on the one element it was never applied to: the hero
-   *  ladder itself. Omit at call sites with no peak data (e.g. OverviewPage's first-run state). */
+  /** Without this, a demoted user saw a ladder identical to one who'd never reached the higher
+   *  tier. Reuses RankProgress.vue's per-exercise decay-caption pattern ("Schon mal erreicht:
+   *  ..."). Omit at call sites with no peak data (e.g. OverviewPage's first-run state). */
   peakTier?: string | null;
   peakDivision?: number | null;
 }>();
@@ -191,7 +186,7 @@ function toggleExpand(tier: Tier) {
   color: var(--tt, var(--text));
 }
 /* Same "second-loudest, name it, don't hide it" treatment as RankProgress.vue's per-exercise
-   .rp-decay — the account-level equivalent, on the one element that previously never showed it. */
+   .rp-decay — the account-level equivalent. */
 .rung-peak {
   font-size: 11px;
   font-weight: 700;

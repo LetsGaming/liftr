@@ -19,16 +19,16 @@ const rankResponse = z.object({
   trust: trustSchema,
   nextTargetWeightKg: z.number().nullable(),
   nextTargetReps: z.number().nullable(),
-  /** Peak snapshot (rank engine redesign R1/R2) — nullable only for rows never recomputed
-   *  since the R1 migration; a normal post-migration row always has all four set together. */
+  /** Peak snapshot — nullable only for a row never recomputed since peak tracking was added;
+   *  a normal row always has all four set together. */
   peakTier: tierSchema.nullable(),
   peakDivision: z.number().nullable(),
 });
 
-/** GET /api/ranks — every exercise with a computed rank (plan Phase 2.2, mockup #p-raenge). */
+/** GET /api/ranks — every exercise with a computed rank. */
 export function registerRankRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/ranks", { schema: { response: { 200: z.array(rankResponse) } } }, async () => {
-    const rows = await findAllRanksWithExercise(db);
+  app.get("/api/ranks", { schema: { response: { 200: z.array(rankResponse) } } }, async (request) => {
+    const rows = await findAllRanksWithExercise(db, request.userId);
     return rows
       .map((r) => ({
         exerciseId: r.exerciseId,

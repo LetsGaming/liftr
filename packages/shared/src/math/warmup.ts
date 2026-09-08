@@ -1,6 +1,6 @@
 /**
- * Warm-up ramp calculator (plan Phase 6.3): 40/60/80% x 5/3/2 of the working weight, rounded
- * to the client's stepper increment. Steps that would round to the bar weight or below are
+ * Warm-up ramp calculator: 40/60/80% x 5/3/2 of the working weight, rounded to the client's
+ * stepper increment. Steps that would round to the bar weight or below are
  * dropped — a "warm-up" at empty-bar-or-lighter isn't a meaningful set, it's noise.
  */
 import { DEFAULT_BAR_WEIGHT_KG } from "./plates.js";

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { computeLevel } from "@liftr/shared";
-import { sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 import { getXpSummary } from "~server/services/xpService.js";
 
@@ -12,7 +12,7 @@ beforeEach(() => {
 
 describe("getXpSummary", () => {
   it("returns zero XP and level 0 with no workouts logged", async () => {
-    const result = await getXpSummary(db);
+    const result = await getXpSummary(db, OWNER_USER_ID);
     expect(result.totalXp).toBe(0);
     expect(result.level).toBe(0);
   });
@@ -49,7 +49,7 @@ describe("getXpSummary", () => {
       clientId: "s-bonus",
     });
 
-    const result = await getXpSummary(db);
+    const result = await getXpSummary(db, OWNER_USER_ID);
 
     // per-set XP (300) + consistencyBonusXp (850) + varietyBonusXp (1500) = 2650
     const expectedTotalXp = 2650;
@@ -82,7 +82,7 @@ describe("getXpSummary", () => {
       clientId: "s-unfinished",
     });
 
-    const result = await getXpSummary(db);
+    const result = await getXpSummary(db, OWNER_USER_ID);
 
     // per-set XP only: BODYWEIGHT_NOMINAL_LOAD_KG (30) * reps (5) = 150; no bonus contribution
     // since the workout never finished (endedAt is null).

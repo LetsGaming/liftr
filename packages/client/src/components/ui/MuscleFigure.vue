@@ -1,13 +1,12 @@
 <script setup lang="ts">
 /**
- * Anatomical front+back muscle figure (plan Phase 3.1), rebuilt on wger's own real anatomical
- * assets (mirrored once by `pnpm ingest --muscles` into /images/muscles/, never hotlinked at
- * runtime). This replaced an earlier hand-drawn 9-region-per-side blob version: that approach
- * couldn't express which specific muscle (e.g. "Pectoralis major" vs. a generic "chest" blob)
- * was trained, and its region-to-class mapping had already drifted from what it was meant to
- * represent. wger's assets are a base body outline (Wikimedia Commons, CC-BY-SA 3.0) plus 15
- * individually-shaped, individually-named muscle overlays — exactly the "clear visible
- * distinction, wger-style" bar this was rebuilt to meet. See AttributionsPage.vue for credit.
+ * Anatomical front+back muscle figure, built on wger's own real anatomical assets (mirrored once
+ * by `pnpm ingest --muscles` into /images/muscles/, never hotlinked at runtime). This replaced an
+ * earlier hand-drawn 9-region-per-side blob version: that approach couldn't express which
+ * specific muscle (e.g. "Pectoralis major" vs. a generic "chest" blob) was trained, and its
+ * region-to-class mapping had already drifted from what it was meant to represent. wger's assets
+ * are a base body outline (Wikimedia Commons, CC-BY-SA 3.0) plus 15 individually-shaped,
+ * individually-named muscle overlays. See AttributionsPage.vue for credit.
  *
  * Rendering is plain layered <img> tags, not inlined/recolored SVG-in-DOM: the mirrored files
  * are pre-recolored once at ingest time (see packages/ingest/src/ingestMuscleAssets.ts), so no
@@ -21,10 +20,10 @@ const props = withDefaults(
   defineProps<{
     primary?: string[];
     secondary?: string[];
-    /** slug -> 0..1 readiness (engagement rework W5, readinessStore.heat). When set, this
-     *  overrides the primary/secondary trained-muscle rendering entirely and instead paints
-     *  every known muscle warm (fatigued) or cool (recovered) — the Erholungszone hero's mode,
-     *  not the "what did this session train" mode every other call site uses. */
+    /** slug -> 0..1 readiness (readinessStore.heat). When set, this overrides the
+     *  primary/secondary trained-muscle rendering entirely and instead paints every known
+     *  muscle warm (fatigued) or cool (recovered) — the Erholungszone hero's mode, not the
+     *  "what did this session train" mode every other call site uses. */
     heat?: Record<string, number>;
     /** Width in px of each front/back figure (default 96, matching the original hardcoded
      *  size) — routine-card / launchpad previews use a smaller size so the figure fits
@@ -114,15 +113,14 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
 .fig {
   position: relative;
   width: var(--fig-w, 96px);
-  /* Audit fix (workplan-v1 §1.6): was 200/362, the OVERLAY assets' own native ratio — but the
-     body-outline SVGs (front-body.svg/back-body.svg) are natively 200x369, ~1.9% taller. These
-     are <img> tags, not inlined SVG, so with the default object-fit:fill (below), that mismatch
-     stretched the body outline non-uniformly to fit a box sized for the overlays, distorting
-     its path geometry (visible as a stray dark artifact at the chest, muscle-4's more
-     geometrically complex region — same bug on every screen using this component, just only
-     visible where the geometry made it obvious). Using the BODY's own ratio as the shared box
-     — the outline is the thing every overlay must align to, not the reverse — fixes this at the
-     root cause. */
+  /* 200/369 is the body-outline SVGs' own native ratio (front-body.svg/back-body.svg), not the
+     overlay assets' ratio (200/362, ~1.9% shorter). These are <img> tags, not inlined SVG, so
+     with the default object-fit: fill (below), that mismatch stretched the body outline
+     non-uniformly to fit a box sized for the overlays, distorting its path geometry (visible as
+     a stray dark artifact at the chest, muscle-4's more geometrically complex region — the same
+     issue on every screen using this component, just only visible where the geometry made it
+     obvious). The body outline is what every overlay must align to, so its own ratio is the
+     shared box, not the reverse. */
   aspect-ratio: 200 / 369;
 }
 .fig img {
@@ -130,13 +128,11 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
   inset: 0;
   width: 100%;
   height: 100%;
-  /* Was implicitly `fill` (the CSS default) — non-uniform stretch to the box regardless of an
-     image's own aspect ratio, which is what produced the distortion above. `contain` scales
-     each image uniformly instead; the body outline (now matching the box exactly) is unaffected,
-     and the handful of overlay assets whose own crop is shorter than 369 (muscles 1-4, both
-     main/secondary variants — main-* also apply to the >=369-tall overlays, which already
-     matched closely enough that this changes nothing visible for them) get a small uniform
-     letterbox instead of a stretch-induced glitch. */
+  /* object-fit defaults to `fill`, which stretches each image non-uniformly to the box
+     regardless of its own aspect ratio — the cause of the distortion above. `contain` scales
+     each image uniformly instead: the body outline (now matching the box exactly) is unaffected,
+     and the overlay assets whose own crop is shorter than 369 (muscles 1-4, both main/secondary
+     variants) get a small uniform letterbox instead of a stretch-induced glitch. */
   object-fit: contain;
 }
 .fig .overlay {

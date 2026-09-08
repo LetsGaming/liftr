@@ -1,10 +1,10 @@
 /**
- * Streak tracking with protection (plan Phase 2.4, audit §2.2: "one missed day must never
- * destroy motivation"). Pure function over a set of activity dates — computed fresh each read,
- * not incrementally maintained, so it's always self-consistent with whatever's actually logged.
+ * Streak tracking with protection, so a single missed day doesn't wipe out the streak. Pure
+ * function over a set of activity dates — computed fresh each read, not incrementally
+ * maintained, so it's always self-consistent with whatever's actually logged.
  *
  * Known simplification: protection is a fixed pool per computation, not a true weekly-accrual
- * bank (the plan's "1 token per week, max 2 banked" isn't tracked across time — every walk just
+ * bank (there's no "1 token per week, max 2 banked" tracked across time — every walk just
  * starts with a fresh pool). Close enough for "a missed day doesn't wreck it" in practice;
  * flagged here rather than silently overclaiming precision.
  */

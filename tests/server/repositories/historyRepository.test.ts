@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { ranks, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, ranks, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import {
   findFinishedWorkoutsPage,
   findRanksByExerciseIds,
@@ -27,7 +27,7 @@ describe("findFinishedWorkoutsPage", () => {
     await insertWorkout({ clientId: "w-unfinished", startedAt: new Date("2026-09-01T10:00:00Z"), endedAt: null });
     const finished = await insertWorkout({ clientId: "w-finished", startedAt: new Date("2026-09-01T09:00:00Z"), endedAt: new Date("2026-09-01T09:30:00Z") });
 
-    const result = await findFinishedWorkoutsPage(db, new Date("2026-09-05T00:00:00Z"), 20);
+    const result = await findFinishedWorkoutsPage(db, OWNER_USER_ID, new Date("2026-09-05T00:00:00Z"), 20);
 
     expect(result.map((w) => w.id)).toEqual([finished.id]);
   });
@@ -37,7 +37,7 @@ describe("findFinishedWorkoutsPage", () => {
     await insertWorkout({ clientId: "w-at-cursor", startedAt: new Date("2026-09-05T10:00:00Z"), endedAt: new Date("2026-09-05T11:00:00Z") });
     await insertWorkout({ clientId: "w-after", startedAt: new Date("2026-09-06T10:00:00Z"), endedAt: new Date("2026-09-06T11:00:00Z") });
 
-    const result = await findFinishedWorkoutsPage(db, new Date("2026-09-05T10:00:00Z"), 20);
+    const result = await findFinishedWorkoutsPage(db, OWNER_USER_ID, new Date("2026-09-05T10:00:00Z"), 20);
 
     expect(result.map((w) => w.id)).toEqual([before.id]);
   });
@@ -48,7 +48,7 @@ describe("findFinishedWorkoutsPage", () => {
     const latest = await insertWorkout({ clientId: "w3", startedAt: new Date("2026-08-03T10:00:00Z"), endedAt: new Date("2026-08-03T11:00:00Z") });
     void earliest;
 
-    const result = await findFinishedWorkoutsPage(db, new Date("2026-09-05T00:00:00Z"), 2);
+    const result = await findFinishedWorkoutsPage(db, OWNER_USER_ID, new Date("2026-09-05T00:00:00Z"), 2);
 
     expect(result.map((w) => w.id)).toEqual([latest.id, middle.id]);
   });
@@ -59,7 +59,7 @@ describe("findFinishedWorkoutsPage", () => {
     const [we] = await db.insert(workoutExercises).values({ workoutId: workout.id, exerciseId: ex.id, orderIndex: 0 }).returning();
     await db.insert(sets).values({ workoutExerciseId: we!.id, setIndex: 0, weightKg: 100, reps: 5, kind: "normal", isWarmup: false, loggedAt: new Date(), clientId: "s-nested" });
 
-    const result = await findFinishedWorkoutsPage(db, new Date("2026-09-05T00:00:00Z"), 20);
+    const result = await findFinishedWorkoutsPage(db, OWNER_USER_ID, new Date("2026-09-05T00:00:00Z"), 20);
 
     expect(result[0]!.workoutExercises[0]!.exercise.slug).toBe("squat-hist");
     expect(result[0]!.workoutExercises[0]!.sets).toHaveLength(1);
@@ -79,7 +79,7 @@ describe("findRecentRunsPage", () => {
     const before = await insertRun({ clientId: "r-before", startedAt: new Date("2026-09-01T10:00:00Z") });
     await insertRun({ clientId: "r-after", startedAt: new Date("2026-09-06T10:00:00Z") });
 
-    const result = await findRecentRunsPage(db, new Date("2026-09-05T00:00:00Z"), 20);
+    const result = await findRecentRunsPage(db, OWNER_USER_ID, new Date("2026-09-05T00:00:00Z"), 20);
 
     expect(result.map((r) => r.id)).toEqual([before.id]);
   });
@@ -89,7 +89,7 @@ describe("findRecentRunsPage", () => {
     const latest = await insertRun({ clientId: "r2", startedAt: new Date("2026-08-02T10:00:00Z") });
     void earliest;
 
-    const result = await findRecentRunsPage(db, new Date("2026-09-05T00:00:00Z"), 1);
+    const result = await findRecentRunsPage(db, OWNER_USER_ID, new Date("2026-09-05T00:00:00Z"), 1);
 
     expect(result.map((r) => r.id)).toEqual([latest.id]);
   });
@@ -97,7 +97,7 @@ describe("findRecentRunsPage", () => {
 
 describe("findRanksByExerciseIds", () => {
   it("returns an empty array without querying when given no ids", async () => {
-    const result = await findRanksByExerciseIds(db, []);
+    const result = await findRanksByExerciseIds(db, OWNER_USER_ID, []);
     expect(result).toEqual([]);
   });
 
@@ -111,7 +111,7 @@ describe("findRanksByExerciseIds", () => {
       { exerciseId: ex3.id, tier: "trainee", division: 3, lp: 30, e1rm: 70, trust: "real", nextTargetWeightKg: null, nextTargetReps: null, computedAt: new Date() },
     ]);
 
-    const result = await findRanksByExerciseIds(db, [ex1.id, ex3.id]);
+    const result = await findRanksByExerciseIds(db, OWNER_USER_ID, [ex1.id, ex3.id]);
 
     expect(result.map((r) => r.exerciseId).sort()).toEqual([ex1.id, ex3.id].sort());
   });
@@ -131,7 +131,7 @@ describe("findSetHistoryForExercise", () => {
       { workoutExerciseId: otherWe!.id, setIndex: 0, weightKg: 50, reps: 8, kind: "normal", isWarmup: false, loggedAt: new Date("2026-09-03T10:00:00Z"), clientId: "s-other" },
     ]);
 
-    const result = await findSetHistoryForExercise(db, ex.id);
+    const result = await findSetHistoryForExercise(db, OWNER_USER_ID, ex.id);
 
     expect(result.map((r) => r.weightKg)).toEqual([95, 90]);
   });
@@ -145,7 +145,7 @@ describe("findSetHistoryForExercise", () => {
       { workoutExerciseId: we!.id, setIndex: 1, weightKg: 82, reps: 5, kind: "normal", isWarmup: false, loggedAt: new Date("2026-09-02T10:00:00Z"), clientId: "s2" },
     ]);
 
-    const result = await findSetHistoryForExercise(db, ex.id, 1);
+    const result = await findSetHistoryForExercise(db, OWNER_USER_ID, ex.id, 1);
 
     expect(result).toHaveLength(1);
     expect(result[0]!.weightKg).toBe(82);

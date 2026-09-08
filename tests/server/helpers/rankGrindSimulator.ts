@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ANCHOR_STANDARDS, TIERS, ordinal, rankRepMultiplier, type Tier } from "@liftr/shared";
-import { ranks, standards, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, ranks, standards, type LiftrDb } from "@liftr/db";
 import { applySyncBatch, type SyncItem, type RankVerdict } from "~server/services/syncService.js";
 
 /** Every anchor slug has a full, real 9-tier/27-division threshold ladder (the same numbers
@@ -92,9 +92,13 @@ export interface GrindTraceEntry {
 
 async function readPeak(
   db: LiftrDb,
+  userId: string,
   exerciseId: string,
 ): Promise<{ peakTier: Tier | null; peakDivision: number | null; peakLp: number | null }> {
-  const [row] = await db.select().from(ranks).where(eq(ranks.exerciseId, exerciseId));
+  const [row] = await db
+    .select()
+    .from(ranks)
+    .where(and(eq(ranks.userId, userId), eq(ranks.exerciseId, exerciseId)));
   return {
     peakTier: (row?.peakTier as Tier | null) ?? null,
     peakDivision: row?.peakDivision ?? null,
@@ -121,6 +125,7 @@ export async function runGrind(
   exerciseId: string,
   sessions: GrindSession[],
   startDate: Date,
+  userId: string = OWNER_USER_ID,
 ): Promise<GrindTraceEntry[]> {
   const trace: GrindTraceEntry[] = [];
   for (let i = 0; i < sessions.length; i++) {
@@ -157,7 +162,7 @@ export async function runGrind(
       },
     ];
 
-    const results = await applySyncBatch(db, items);
+    const results = await applySyncBatch(db, userId, items);
     const rejected = results.some((r) => r.status === "error");
     const finishResult = results[results.length - 1]!;
     const verdict = finishResult.ranks?.find((r) => r.exerciseId === exerciseId);
@@ -188,7 +193,7 @@ export async function runGrind(
       throw new Error(`no rank verdict for session ${i} — check standards are seeded for ${exerciseId}`);
     }
 
-    const peak = await readPeak(db, exerciseId);
+    const peak = await readPeak(db, userId, exerciseId);
     trace.push({
       sessionIndex: i,
       dayOffset: s.dayOffset,

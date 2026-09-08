@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { bodyweightLogs, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { bodyweightLogs, OWNER_USER_ID, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { buildExportZip } from "~server/services/exportService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 
@@ -18,7 +18,7 @@ function includesText(buf: Buffer, text: string): boolean {
 
 describe("buildExportZip", () => {
   it("produces a valid, non-empty zip with just CSV headers when nothing is logged", async () => {
-    const zip = await buildExportZip(db);
+    const zip = await buildExportZip(db, OWNER_USER_ID);
 
     expect(zip).toBeInstanceOf(Buffer);
     expect(zip.length).toBeGreaterThan(0);
@@ -47,7 +47,7 @@ describe("buildExportZip", () => {
       notes: "felt strong",
     });
 
-    const zip = await buildExportZip(db);
+    const zip = await buildExportZip(db, OWNER_USER_ID);
 
     expect(includesText(zip, startedAt.toISOString())).toBe(true);
     expect(includesText(zip, endedAt.toISOString())).toBe(true);
@@ -61,7 +61,7 @@ describe("buildExportZip", () => {
       pausedSeconds: 0,
     });
 
-    const zip = await buildExportZip(db);
+    const zip = await buildExportZip(db, OWNER_USER_ID);
 
     expect(includesText(zip, "null")).toBe(false);
     expect(includesText(zip, "undefined")).toBe(false);
@@ -90,7 +90,7 @@ describe("buildExportZip", () => {
       clientId: "s-export",
     });
 
-    const zip = await buildExportZip(db);
+    const zip = await buildExportZip(db, OWNER_USER_ID);
 
     expect(includesText(zip, "bench-press")).toBe(true);
     expect(includesText(zip, "82.5")).toBe(true);
@@ -112,7 +112,7 @@ describe("buildExportZip", () => {
       clientId: "r-export",
     });
 
-    const zip = await buildExportZip(db);
+    const zip = await buildExportZip(db, OWNER_USER_ID);
 
     expect(includesText(zip, "Morning run")).toBe(true);
     expect(includesText(zip, "5000")).toBe(true);
@@ -122,7 +122,7 @@ describe("buildExportZip", () => {
   it("includes a logged bodyweight entry", async () => {
     await db.insert(bodyweightLogs).values({ date: "2026-09-01", weightKg: 78.4 });
 
-    const zip = await buildExportZip(db);
+    const zip = await buildExportZip(db, OWNER_USER_ID);
 
     expect(includesText(zip, "2026-09-01")).toBe(true);
     expect(includesText(zip, "78.4")).toBe(true);

@@ -2,9 +2,8 @@
  * slug -> wger muscle id + which side it's drawn on. Single source of truth for the client;
  * mirrors packages/ingest/src/muscles.ts (the ingest-side copy that seeds exercise_muscles and
  * recolors the mirrored SVG assets — a separate package, so it can't import this one without a
- * build-order cycle). Previously this table was hand-duplicated a second time inline inside
- * MuscleFigure.vue with a comment admitting as much; that's fixed by having MuscleFigure.vue
- * and ExercisesPage.vue both import this one copy instead of drifting independently.
+ * build-order cycle). MuscleFigure.vue and ExercisesPage.vue both import this one copy so they
+ * can't drift independently.
  */
 export interface MuscleMeta {
   id: number;
@@ -51,11 +50,10 @@ export function aggregateMuscles(muscleLists: { slug: string; role: "primary" | 
   return { primary: [...primary], secondary: [...secondary] };
 }
 
-/** German display names (engagement rework W5, Erholungszone verdict line) — this app is
- *  German-only (see vue-i18n's single `de` locale), so a plain map here matches how every other
- *  short display-label lookup in this codebase is done (tierLabel/divisionLabel in
- *  RanksPage.vue, FinishSequence.vue, WorkoutPage.vue) rather than routing through the full
- *  i18n machinery for a handful of fixed nouns. */
+/** German display names — this app is German-only (see vue-i18n's single `de` locale), so a
+ *  plain map here matches how every other short display-label lookup in this codebase is done
+ *  (tierLabel/divisionLabel in RanksPage.vue, FinishSequence.vue, WorkoutPage.vue) rather than
+ *  routing through the full i18n machinery for a handful of fixed nouns. */
 export const MUSCLE_LABEL_DE: Record<string, string> = {
   biceps: "Bizeps",
   "front-delts": "vordere Schultern",

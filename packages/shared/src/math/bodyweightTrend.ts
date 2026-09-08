@@ -1,6 +1,6 @@
 /**
- * Bodyweight trend (plan Phase 6.7): the mockup's "52,5 kg · stabil · 30 Tage" tile. An
- * exponential moving average smooths day-to-day water-weight noise; the trend direction
+ * Bodyweight trend: the "52,5 kg · stabil · 30 Tage" tile. An exponential moving average
+ * smooths day-to-day water-weight noise; the trend direction
  * compares the current EMA against the EMA from ~`windowDays` ago, with a small dead zone so
  * normal fluctuation doesn't flip the label between "steigend"/"fallend" every other weigh-in.
  */

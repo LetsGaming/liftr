@@ -13,8 +13,8 @@
  * left with no id on purpose").
  *
  * Read-only against curated.yaml: prints a report + ready-to-paste `wgerId:` lines, doesn't
- * write the file itself (this is the one genuinely manual step in the equipment-tier feature —
- * see the project plan).
+ * write the file itself — pasting the matches in is the one genuinely manual step in the
+ * equipment-tier feature.
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Route map (plan Phase 4.2): Leaflet + public OSM tiles. Single-user, low-volume interactive
- * viewing is within OSM's tile usage policy (audit §4) — no bulk prefetch, attribution shown.
- * Also hosts the replay marker (plan 4.3): `setMarkerPosition` is called every animation frame
- * by RunReplay.vue, kept as an imperative method rather than a reactive prop so replay doesn't
- * pay Vue's reactivity/diffing cost on every frame.
+ * Route map: Leaflet + public OSM tiles. Single-user, low-volume interactive viewing is within
+ * OSM's tile usage policy — no bulk prefetch, attribution shown. Also hosts the replay marker:
+ * `setMarkerPosition` is called every animation frame by RunReplay.vue, kept as an imperative
+ * method rather than a reactive prop so replay doesn't pay Vue's reactivity/diffing cost on
+ * every frame.
  */
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -22,10 +22,10 @@ let osmLayer: L.TileLayer | null = null;
 
 /** Leaflet draws to its own canvas/SVG layer, outside the page's CSS cascade — `var(--fire)`
  *  can't be written directly into a Leaflet color option the way it can into a stylesheet.
- *  Reading the resolved custom property off :root at draw time (critique finding: this file
- *  re-hardcoded 5 hexes that already exist as tokens.css tokens, one of which — #0e1826 — matched
- *  no token at all, so the map couldn't follow any future palette change) keeps this file on the
- *  same palette as everything else without needing a build-time color pipeline. */
+ *  Reading the resolved custom property off :root at draw time (this file previously
+ *  re-hardcoded 5 hexes that already exist as tokens.css tokens, one of which — #0e1826 —
+ *  matched no token at all, so the map couldn't follow any future palette change) keeps this
+ *  file on the same palette as everything else without needing a build-time color pipeline. */
 function cssVar(name: string, fallback: string): string {
   if (typeof document === "undefined") return fallback;
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();

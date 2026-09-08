@@ -15,8 +15,8 @@ export interface MuscleLastTrained {
  * A real decision (the "most recent per muscle" reduction), not just a fetch — that's what
  * makes this a service rather than something the route calls straight off the repository.
  */
-export async function computeMuscleLastTrained(db: LiftrDb): Promise<MuscleLastTrained[]> {
-  const [allMuscles, rows] = await Promise.all([findAllMuscles(db), findMuscleTrainingLog(db)]);
+export async function computeMuscleLastTrained(db: LiftrDb, userId: string): Promise<MuscleLastTrained[]> {
+  const [allMuscles, rows] = await Promise.all([findAllMuscles(db), findMuscleTrainingLog(db, userId)]);
 
   const latest = new Map<string, { loggedAt: Date; role: string }>();
   for (const r of rows) {

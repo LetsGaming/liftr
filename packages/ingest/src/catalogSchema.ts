@@ -1,7 +1,7 @@
 /**
- * Shape of tools/catalog/curated.yaml (plan 0.3) — the hand-curated ~90-exercise source of
+ * Shape of tools/catalog/curated.yaml — the hand-curated ~90-exercise source of
  * truth. wgerId/freeExerciseDbId are the pre-verified join keys into the two upstream
- * datasets (audit §4); the ingest pipeline fetches those once and never again at runtime.
+ * datasets; the ingest pipeline fetches those once and never again at runtime.
  *
  * `equipment` no longer has to be hand-typed here: ingestCatalog.ts auto-resolves it from
  * free-exercise-db/wger by these same join keys when left null — see equipment/resolveEquipment.
@@ -15,9 +15,9 @@ export const catalogEntrySchema = z.object({
   wgerId: z.number().int().nullable().default(null),
   freeExerciseDbId: z.string().nullable().default(null),
   /** wger *exercise* id (not the numeric image id) whose main `/api/v2/exerciseimage/` photo
-   *  should be mirrored, for the handful of gaps free-exercise-db has no photo for at all (see
-   *  audit/missing-photo-sourcing-research.md §3). CC-BY-SA 4.0, not Unlicense like
-   *  freeExerciseDbId — ingestImages.ts only reaches for this when freeExerciseDbId is unset,
+   *  should be mirrored, for the handful of gaps free-exercise-db has no photo for at all.
+   *  CC-BY-SA 4.0, not Unlicense like freeExerciseDbId — ingestImages.ts only reaches for this
+   *  when freeExerciseDbId is unset,
    *  and AttributionsPage.vue names wger's image licence separately from its catalog-data one.
    *  Deliberately distinct from `wgerId` above (which some of these entries already use for
    *  equipment-tag resolution and can point at a *different* wger exercise with no photo of its

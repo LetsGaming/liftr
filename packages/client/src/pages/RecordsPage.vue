@@ -1,8 +1,6 @@
-<!-- packages/client/src/pages/RecordsPage.vue -->
 <script setup lang="ts">
-// Personal Records ledger (workplan-v1 §2 / nebula-design-layout.md §3). Reads `prs`, a table the
-// server already fully populates on every workout finish and, until this page, never displayed.
-// Honest empty state, no locked/teaser treatment (engagement-audit-v5.md §1.2's boundary).
+// Personal Records ledger. Reads `prs`, a table the server already fully populates on every
+// workout finish. Honest empty state, no locked/teaser treatment.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted } from "vue";
 import { useExerciseName } from "../composables/useExerciseName";
@@ -89,10 +87,10 @@ function formatDate(iso: string): string {
 .page-note {
   color: var(--dim);
 }
-/* Nebula N6 — error/empty-ledger states adopt the shared .panel/surface-hybrid treatment
-   (tokens.css) instead of sitting as bare page text, so they read as one system with the
-   populated .pr-row list below. .panel supplies background/blur/shadow/hairline; padding is
-   added locally since .panel itself is unopinionated about spacing. */
+/* Error/empty-ledger states use the shared .panel/surface-hybrid treatment (tokens.css) instead
+   of sitting as bare page text, so they read as one system with the populated .pr-row list
+   below. .panel supplies background/blur/shadow/hairline; padding is added locally since .panel
+   itself is unopinionated about spacing. */
 .load-error,
 .empty-note {
   padding: var(--sp4);

@@ -9,12 +9,9 @@ import type { ExperienceLevel } from "../../stores/settingsStore";
  * v-model props on each field.
  */
 /** The bar-family equipment types the onboarding plates step asks about — a barbell, EZ-bar,
- *  trap-bar, and adjustable-dumbbell handle all have meaningfully different empty weights
- *  (feedback: "usually a barbell has a different weight than a dumbbell"). Product-confirmed
- *  bug (2026-09-06): this step only asked for the barbell-family weight, never the dumbbell's —
- *  "dumbbell" is now a 4th row here too, same as ProfilePage.vue's later-editable copy of this
- *  same step (that file's own dumbbell row already existed; only onboarding's first pass was
- *  missing it, not a deliberate omission worth keeping). */
+ *  trap-bar, and adjustable-dumbbell handle all have meaningfully different empty weights, so
+ *  "dumbbell" is its own row here too, same as ProfilePage.vue's later-editable copy of this
+ *  same step. */
 export type BarType = "barbell" | "ez-bar" | "trap-bar" | "dumbbell";
 export const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar", "dumbbell"];
 export const DEFAULT_BAR_WEIGHTS_KG: Record<BarType, number> = { barbell: 20, "ez-bar": 10, "trap-bar": 25, dumbbell: 2.5 };

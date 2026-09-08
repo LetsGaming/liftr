@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 import { getHistoryPage } from "~server/services/historyService.js";
 
@@ -42,7 +42,7 @@ describe("getHistoryPage", () => {
       clientId: "s-bonus",
     });
 
-    const page = await getHistoryPage(db, undefined, 20);
+    const page = await getHistoryPage(db, OWNER_USER_ID, undefined, 20);
 
     const item = page.items.find((i) => i.id === workout!.id);
     // per-set XP (300) + consistencyBonusXp (850) + varietyBonusXp (1500) = 2650 — must equal
@@ -52,7 +52,7 @@ describe("getHistoryPage", () => {
     expect(item?.meta.xp).toBe(2650);
   });
 
-  it("treats a workout's null bonus columns (e.g. finished before this feature existed) as contributing 0, without throwing or producing NaN", async () => {
+  it("treats a workout's null bonus columns as contributing 0, without throwing or producing NaN", async () => {
     const exercise = await insertTestExercise(db);
     const [workout] = await db
       .insert(workouts)
@@ -79,7 +79,7 @@ describe("getHistoryPage", () => {
       clientId: "s-null-bonus",
     });
 
-    const page = await getHistoryPage(db, undefined, 20);
+    const page = await getHistoryPage(db, OWNER_USER_ID, undefined, 20);
 
     const item = page.items.find((i) => i.id === workout!.id);
     // per-set XP only: BODYWEIGHT_NOMINAL_LOAD_KG (30) * reps (5) = 150; null bonus columns must

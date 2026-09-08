@@ -9,6 +9,7 @@ import {
   resolveRank,
   ordinal,
   ordinalToBand,
+  positionToBand,
   rankRepMultiplier,
   type StandardThreshold,
 } from "@liftr/shared";
@@ -36,12 +37,51 @@ describe("resolveRank", () => {
     expect(r.lp).toBeLessThan(100);
   });
 
-  it("handles a value at/above the top threshold (lp = 100, no next target)", () => {
-    const r = resolveRank(1.5, loadThresholds);
+  it("lp = 100 exactly at the top threshold (no discontinuity at the old hard cap)", () => {
+    const r = resolveRank(1.1, loadThresholds); // exactly at the top threshold, x = 0
     expect(r.tier).toBe("apprentice");
     expect(r.division).toBe(5);
     expect(r.lp).toBe(100);
     expect(r.nextTarget).toBeNull();
+  });
+
+  it("grows lp past 100 (logarithmically, not clamped) once value exceeds the top threshold", () => {
+    const r = resolveRank(1.5, loadThresholds);
+    expect(r.tier).toBe("apprentice");
+    expect(r.division).toBe(5);
+    expect(r.lp).toBeGreaterThan(100);
+    expect(r.nextTarget).toBeNull();
+  });
+
+  it("doubling the overshoot (1 + x) past the top threshold adds exactly another 100 lp", () => {
+    // interval width below the top threshold is 1.1 - 0.9 = 0.2. x = 1 -> (1+x) = 2;
+    // x = 3 -> (1+x) = 4, i.e. exactly double.
+    const atX1 = resolveRank(1.1 + 1 * 0.2, loadThresholds); // x = 1, lp = 100*(1+log2(2)) = 200
+    const atX3 = resolveRank(1.1 + 3 * 0.2, loadThresholds); // x = 3, lp = 100*(1+log2(4)) = 300
+    expect(atX3.lp - atX1.lp).toBeCloseTo(100, 6);
+  });
+
+  it("lp growth past the top threshold is monotonic with diminishing increments", () => {
+    // Equal-sized steps in x (0, 1, 2, 3, 4) — the log curve's increments per step shrink as x grows.
+    const values = [0, 1, 2, 3, 4].map((x) => 1.1 + x * 0.2);
+    const lps = values.map((v) => resolveRank(v, loadThresholds).lp);
+    for (let i = 1; i < lps.length; i++) {
+      expect(lps[i]).toBeGreaterThan(lps[i - 1]!);
+    }
+    const increments = [];
+    for (let i = 1; i < lps.length; i++) increments.push(lps[i]! - lps[i - 1]!);
+    for (let i = 1; i < increments.length; i++) {
+      expect(increments[i]).toBeLessThan(increments[i - 1]!);
+    }
+  });
+
+  it("falls back sanely past a single-threshold table (interval width = the threshold itself)", () => {
+    const single: StandardThreshold[] = [{ tier: "apex", division: 1, threshold: 2.0, trust: "real" }];
+    const atThreshold = resolveRank(2.0, single);
+    expect(atThreshold.lp).toBe(100);
+    const beyond = resolveRank(4.0, single); // x = (4-2)/2 = 1
+    expect(beyond.lp).toBeCloseTo(100 * (1 + Math.log2(2)), 6);
+    expect(beyond.lp).toBeGreaterThan(100);
   });
 
   it("surfaces the trust tier of the current threshold", () => {
@@ -193,5 +233,31 @@ describe("9-tier ladder", () => {
 
   it("ordinalToBand clamps above MAX_ORDINAL to apex division 1", () => {
     expect(ordinalToBand(MAX_ORDINAL + 5)).toEqual({ tier: "apex", division: 1 });
+  });
+});
+
+describe("positionToBand", () => {
+  it("round-trips an ordinary mid-ladder position", () => {
+    // ordinal("trainee", 2) * 100 + 55 should resolve back to trainee/2/55.
+    const ord = ordinal("trainee", 2);
+    expect(positionToBand(ord * 100 + 55)).toEqual({ tier: "trainee", division: 2, lp: 55 });
+  });
+
+  it("a position sitting exactly at a band's top edge resolves as lp:0 of the next band, matching resolveRank's own >= threshold convention", () => {
+    const ord = ordinal("trainee", 2);
+    const nextBand = ordinalToBand(ord + 1);
+    expect(positionToBand(ord * 100 + 100)).toEqual({ ...nextBand, lp: 0 });
+  });
+
+  it("preserves excess lp past Apex instead of clamping to 100", () => {
+    expect(positionToBand(MAX_ORDINAL * 100 + 250)).toEqual({ tier: "apex", division: 1, lp: 250 });
+  });
+
+  it("the old clamp point (exactly Apex's own top) still resolves to exactly 100", () => {
+    expect(positionToBand(MAX_ORDINAL * 100 + 100)).toEqual({ tier: "apex", division: 1, lp: 100 });
+  });
+
+  it("floors a negative position at 0", () => {
+    expect(positionToBand(-50)).toEqual({ tier: "initiate", division: 5, lp: 0 });
   });
 });

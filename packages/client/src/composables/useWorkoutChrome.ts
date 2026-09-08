@@ -1,6 +1,6 @@
 /**
- * Audit fix (workplan-v1 §1.4/§1.5): the top-hud level/streak chips used to render unconditionally
- * on every screen, including (a) during active set-logging, where they compete with the lowest-
+ * The top-hud level/streak chips used to render unconditionally on every screen, including
+ * (a) during active set-logging, where they compete with the lowest-
  * density-tolerance screen in the app for space, and (b) during the finish-sequence recap, where
  * FinishSequence.vue's own "Fortschritt" beat already shows the same resolved Lv./XP number —
  * showing both at once with no visual link duplicated the same state twice. `finishedSummary` (the

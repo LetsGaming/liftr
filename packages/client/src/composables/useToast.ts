@@ -1,6 +1,6 @@
 /**
- * Feature: "saving/updating settings has no feedback" — a minimal, dependency-free toast
- * queue. Module-level reactive state (not a Pinia store — this has no persistence/async-load
+ * A minimal, dependency-free toast queue, so saving/updating settings gives visible feedback.
+ * Module-level reactive state (not a Pinia store — this has no persistence/async-load
  * concerns a store exists for, just a shared reactive array every caller pushes onto) rendered
  * by ToastHost.vue, mounted once in App.vue alongside OnboardingGuide.
  */

@@ -3,11 +3,11 @@ import { desc, eq } from "drizzle-orm";
 
 /** Every source table the data export pulls from — derived/cache tables (ranks, prs, streaks)
  *  are deliberately excluded, they're rebuildable from this data, not source-of-truth facts. */
-export function findAllWorkoutsForExport(db: LiftrDb) {
-  return db.query.workouts.findMany({ orderBy: desc(workouts.startedAt) });
+export function findAllWorkoutsForExport(db: LiftrDb, userId: string) {
+  return db.query.workouts.findMany({ where: eq(workouts.userId, userId), orderBy: desc(workouts.startedAt) });
 }
 
-export function findAllSetsForExport(db: LiftrDb) {
+export function findAllSetsForExport(db: LiftrDb, userId: string) {
   return db
     .select({
       id: sets.id,
@@ -24,13 +24,14 @@ export function findAllSetsForExport(db: LiftrDb) {
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
     .innerJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
+    .where(eq(sets.userId, userId))
     .orderBy(sets.loggedAt);
 }
 
-export function findAllRunsForExport(db: LiftrDb) {
-  return db.query.runs.findMany({ orderBy: desc(runs.startedAt) });
+export function findAllRunsForExport(db: LiftrDb, userId: string) {
+  return db.query.runs.findMany({ where: eq(runs.userId, userId), orderBy: desc(runs.startedAt) });
 }
 
-export function findAllBodyweightLogsForExport(db: LiftrDb) {
-  return db.query.bodyweightLogs.findMany({ orderBy: desc(bodyweightLogs.date) });
+export function findAllBodyweightLogsForExport(db: LiftrDb, userId: string) {
+  return db.query.bodyweightLogs.findMany({ where: eq(bodyweightLogs.userId, userId), orderBy: desc(bodyweightLogs.date) });
 }

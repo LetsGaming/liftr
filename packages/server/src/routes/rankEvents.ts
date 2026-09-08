@@ -1,6 +1,6 @@
 /**
- * GET /api/rank-events — rank-ups grouped by weekday over the current rolling week (engagement
- * rework W8). Feeds the Ränge page's "Rangaufstiege" calendar strip. Same shape as
+ * GET /api/rank-events — rank-ups grouped by weekday over the current rolling week. Feeds the
+ * Ränge page's "Rangaufstiege" calendar strip. Same shape as
  * `readiness.ts`: the route is a thin schema wrapper, the actual reduction (repository fetches
  * raw rows, service groups them) lives in `rankService.ts`'s `computeRankEventsByWeekday`.
  */
@@ -18,7 +18,7 @@ const rankEventsResponse = z.array(
 );
 
 export function registerRankEventsRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/rank-events", { schema: { response: { 200: rankEventsResponse } } }, async () => {
-    return computeRankEventsByWeekday(db);
+  app.get("/api/rank-events", { schema: { response: { 200: rankEventsResponse } } }, async (request) => {
+    return computeRankEventsByWeekday(db, request.userId);
   });
 }

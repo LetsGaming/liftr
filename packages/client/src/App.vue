@@ -28,12 +28,10 @@ onMounted(() => {
   void overallRank.load();
 });
 
-/** Rework Phase 2: the 9-tier ladder used to reach exactly one tab (RanksPage) — everywhere
- *  else in the app had no idea what tier the user is. Setting the tier class at the shell lets
- *  --tier-accent/--tier-deep (tokens.css) cascade down to the level bar, active nav indicator,
- *  and log-set focus ring without each of them needing its own rank lookup. Falls back to no
- *  class (tokens.css's own var() fallbacks take over) before the first load resolves or offline
- *  with nothing cached. */
+/** Setting the tier class at the shell lets --tier-accent/--tier-deep (tokens.css) cascade down
+ *  to the level bar, active nav indicator, and log-set focus ring without each of them needing
+ *  its own rank lookup. Falls back to no class (tokens.css's own var() fallbacks take over)
+ *  before the first load resolves or offline with nothing cached. */
 const overallTierClass = computed(() =>
   overallRank.current ? `t-${overallRank.current.tier}` : "",
 );
@@ -43,7 +41,7 @@ const overallTierClass = computed(() =>
  *  Ionic's real dismiss teardown completes), never a v-if reacting straight to a data change.
  *  `needsOnboarding` flips to false the instant OnboardingGuide's own save() resolves — if this
  *  component's v-if depended on that directly, the sheet would get yanked out from under Ionic
- *  mid-dismiss the same way the routine wizard/workout-delete crash (fixed elsewhere) did. */
+ *  mid-dismiss. */
 const showOnboarding = ref(false);
 watch(
   () => settingsStore.needsOnboarding,
@@ -52,9 +50,9 @@ watch(
   },
 );
 
-/** The nav chips were dead text (engagement rework W6) — a streak that just grew gets one pulse
- *  on its flame, rather than looking identical whether it was extended a second ago or a week
- *  ago. Only fires on an actual increase (not the initial load, and not a decrease/reset). */
+/** A streak that just grew gets one pulse on its flame, rather than looking identical whether
+ *  it was extended a second ago or a week ago. Only fires on an actual increase (not the
+ *  initial load, and not a decrease/reset). */
 const streakJustExtended = ref(false);
 watch(
   () => streak.streak,
@@ -70,10 +68,9 @@ watch(
 );
 
 /**
- * Per-section coloured icons (UI/UX rework audit P0-E) — restored from the mockup's exact SVG
- * paths and per-section accent (home=blue-hi, workout=blue, ränge=gold, läufe=fire,
- * profil=violet), which the Ionic port dropped to text-only nav. `svg` is static, hand-authored
- * markup we control (never user input), so `v-html` here carries no injection risk.
+ * Per-section coloured icons with a per-section accent (home=blue-hi, workout=blue, ränge=gold,
+ * läufe=fire, profil=violet). `svg` is static, hand-authored markup we control (never user
+ * input), so `v-html` here carries no injection risk.
  */
 const navItems = [
   {
@@ -109,22 +106,22 @@ const navItems = [
 ] as const;
 
 /**
- * Accessibility audit (P2): every page has a visible <IonTitle>, but ion-title renders as a
- * plain custom element with no heading role — screen-reader heading navigation never lands
- * anywhere. navItems' labels already track each page's real title, so reuse them for a
- * visually-hidden <h1> here rather than inventing per-page route-meta titles. Falls back to
- * the app name for routes not in navItems (e.g. /attributions).
+ * Every page has a visible <IonTitle>, but ion-title renders as a plain custom element with no
+ * heading role — screen-reader heading navigation never lands anywhere. navItems' labels
+ * already track each page's real title, so reuse them for a visually-hidden <h1> here rather
+ * than inventing per-page route-meta titles. Falls back to the app name for routes not in
+ * navItems (e.g. /attributions).
  */
 const route = useRoute();
 const pageTitle = computed(() => {
   const match = navItems.find((item) => item.to === route.path);
   if (match) return t(match.labelKey);
-  // Phase 2 (engagement-audit-v3): /runs dropped out of navItems when Läufe merged into the
-  // Workout tab (see the in-page switcher on WorkoutPage.vue/RunsPage.vue), but the route itself
-  // is unchanged and still needs a real heading here, not the "Liftr" fallback.
+  // /runs dropped out of navItems when Läufe merged into the Workout tab's in-page switcher
+  // (WorkoutPage.vue/RunsPage.vue), but the route itself is unchanged and still needs a real
+  // heading here, not the "Liftr" fallback.
   if (route.path === "/runs") return t("nav.runs");
-  // UI audit fix (2026-09-06): these two routes are drill-ins with no navItems entry (same
-  // reason /runs needed its own case above) — previously silently fell through to "Liftr" here.
+  // These two routes are drill-ins with no navItems entry, same reason /runs needs its own
+  // case above — otherwise they'd silently fall through to "Liftr".
   if (route.name === "records") return "Rekorde";
   if (route.name === "attributions") return "Quellen & Lizenzen";
   if (route.name === "routine-overview") {
@@ -135,33 +132,27 @@ const pageTitle = computed(() => {
 });
 
 /**
- * Audit fix (workplan-v1 §1.4/§1.5, fixed together since both gate the same condition): the
- * top-hud level/streak chips used to render unconditionally everywhere. §1.4 — they duplicated
- * the same Lv./XP number FinishSequence's own "Fortschritt" beat shows, with no visual link
- * between the two. §1.5 — they also competed for space on the active-logging screen, the app's
- * lowest-density-tolerance surface. Scoped to the Workout tab only; every other screen keeps the
- * chips exactly as before — the "ambient reminder" effect they buy is only being traded away
- * where a real cost was found, not everywhere.
+ * The top-hud level/streak chips are hidden on the Workout tab while a set is active or the
+ * finish recap is showing: they'd duplicate the same Lv./XP number FinishSequence's own
+ * "Fortschritt" beat shows, and compete for space on the app's lowest-density-tolerance screen.
+ * Every other screen keeps the chips as an ambient reminder.
  */
 const hideTopHud = computed(
   () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
 );
 
 /**
- * UI audit fix: /records (RecordsPage.vue's "Rang-Analyse" screen) isn't in navItems at all — it
- * lives behind the "Ränge" tab as a drill-in, not its own tab. RouterLink's automatic
- * router-link-active only matches on the routes it was actually given (/ranks), so navigating
- * into /records left every tab looking unselected, not "Ränge" as the parent-ish section still
- * showing active. No central route-to-tab map exists to patch (navItems is the only route list),
- * so this is a targeted override for the one known case rather than a generic ancestor-route
- * lookup.
+ * /records (RecordsPage.vue's "Rang-Analyse" screen) isn't in navItems at all — it lives behind
+ * the "Ränge" tab as a drill-in, not its own tab. RouterLink's automatic router-link-active only
+ * matches on the routes it was actually given (/ranks), so navigating into /records would leave
+ * every tab looking unselected instead of "Ränge" showing active as the parent section. No
+ * central route-to-tab map exists to patch (navItems is the only route list), so this is a
+ * targeted override rather than a generic ancestor-route lookup.
  *
- * UI audit fix (2026-09-06): two more of the same class of bug, found live — /runs (the "Läufe"
- * switcher tab on WorkoutPage.vue/RunsPage.vue) isn't in navItems either (it merged into the
- * Workout tab's in-page switcher, per the /runs case in pageTitle above, but the route itself is
- * still a separate path RouterLink's own active-matching never sees), and /routines/:id (the new
- * Routine Overview drill-in) is reached from a routine card on Übersicht/Workout, so it belongs
- * to "Workout" the same way /records belongs to "Ränge". */
+ * Same reasoning applies to /runs (merged into the Workout tab's in-page switcher, per the
+ * /runs case in pageTitle above, but still a separate path RouterLink's active-matching never
+ * sees) and /routines/:id (the Routine Overview drill-in, reached from a routine card on
+ * Übersicht/Workout, belonging to "Workout" the same way /records belongs to "Ränge"). */
 const forceActiveTo = computed(() => {
   if (route.name === "records") return "/ranks";
   if (route.name === "runs" || route.name === "routine-overview") return "/workout";
@@ -173,28 +164,19 @@ const forceActiveTo = computed(() => {
   <AuthGate>
     <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
     <ToastHost />
-    <!-- Accessibility audit (P2): a real <h1> heading landmark for screen-reader heading
-         navigation. Visually hidden. 2026-09-06 (top-hud redesign, direction C): each page's own
-         <IonTitle> is now ALSO hidden globally (ionic-theme.css) — the mobile header row became a
-         level/streak status readout instead of a title bar (see .top-hud below), so this sr-only
-         heading is the page's ONLY title anywhere right now, sighted or not. Lives once here (not
+    <!-- Real <h1> heading landmark for screen-reader heading navigation. Visually hidden.
+         Each page's own <IonTitle> is hidden globally (ionic-theme.css) — the mobile header row
+         is a level/streak status readout instead of a title bar (see .top-hud below), so this
+         sr-only heading is the page's only title anywhere, sighted or not. Lives once here (not
          per-page) so it survives every route transition without duplication. -->
     <h1 class="sr-only">{{ pageTitle }}</h1>
     <div class="app-shell" :class="overallTierClass">
-      <!-- Persistent top HUD (rework Phase 4). Was a full-width strip floating above every page's
-           header, then (2026-09-06 first pass) a trailing chip overlaid top-right on the toolbar
-           — both read as bolted-on per PO feedback ("looks like a bug, feels cheap, rethink
-           entirely"). Direction C (brainstormed with visual mockups, chosen over a nav-icon badge
-           and a floating corner pill): the header row itself BECOMES the status readout instead
-           of carrying a page title — a small XP-progress ring with the level number inside, plus
-           streak, spanning the toolbar's full width now that ion-title is hidden globally
-           (ionic-theme.css) and each page's real title lives only in the sr-only <h1> above. No
-           title text is shown anywhere sighted on mobile — the bottom tab bar's own labels
-           already say which screen you're on. Mobile only — >=900px still shows the fuller
-           level/streak chips (with the XP-amount text this compact ring deliberately drops) in
-           .side-nav. Still hidden on the Workout tab while a set is being logged (hideTopHud,
-           unchanged) — the header reads as intentionally quiet there, consistent with everything
-           else decluttered on that screen this session, rather than falling back to a title. -->
+      <!-- The header row itself is the status readout instead of carrying a page title — a
+           small XP-progress ring with the level number inside, plus streak, spanning the
+           toolbar's full width now that ion-title is hidden globally (ionic-theme.css) and each
+           page's real title lives only in the sr-only <h1> above. Mobile only — >=900px shows
+           the fuller level/streak chips (with the XP-amount text this compact ring drops) in
+           .side-nav instead. Hidden on the Workout tab while a set is being logged (hideTopHud). -->
       <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
         <div
           v-if="xp.showXp && xp.loaded"
@@ -209,7 +191,7 @@ const forceActiveTo = computed(() => {
           <AppIcon name="flame" /> {{ streak.streak }}
         </div>
       </div>
-      <!-- desktop sidebar / mobile tab bar: one route set, two layouts (plan 1.2) -->
+      <!-- desktop sidebar / mobile tab bar: one route set, two layouts -->
       <nav class="side-nav" aria-label="Hauptnavigation">
         <RouterLink
           v-for="item in navItems"
@@ -234,19 +216,17 @@ const forceActiveTo = computed(() => {
         </div>
       </nav>
       <main class="main-content">
-        <!-- App.vue had no route transition at all — a hard cut between tabs (engagement
-             rework W6). mode="out-in" so the incoming page doesn't overlap the outgoing one. -->
+        <!-- mode="out-in" so the incoming page doesn't overlap the outgoing one during the
+             cross-fade. -->
         <RouterView v-slot="{ Component }">
           <Transition name="route-fade" mode="out-in">
             <component :is="Component" />
           </Transition>
         </RouterView>
       </main>
-      <!-- Now just the tab bar — the level/streak status row that used to stack above it moved
-           to .top-hud (see the comment up top explaining why, and preserving the same "one
-           fixed element, one solid backdrop" discipline the original P0 fix established). Kept
-           as its own fixed element (not folded into .top-hud) since it's still the primary
-           navigation surface, needed even when there's no XP/streak to show. -->
+      <!-- Just the tab bar — the level/streak status row lives in .top-hud instead. Kept as its
+           own fixed element (not folded into .top-hud) since it's still the primary navigation
+           surface, needed even when there's no XP/streak to show. -->
       <div class="bottom-chrome">
         <nav class="tab-bar" aria-label="Hauptnavigation">
           <RouterLink
@@ -268,9 +248,9 @@ const forceActiveTo = computed(() => {
 </template>
 
 <style scoped>
-/* Accessibility audit (P2) — standard visually-hidden pattern: present and readable to
-   assistive tech (unlike display:none/visibility:hidden), invisible and takes no layout space
-   for sighted users. No existing sr-only utility was found elsewhere in the codebase's CSS. */
+/* Standard visually-hidden pattern: present and readable to assistive tech (unlike
+   display:none/visibility:hidden), invisible and takes no layout space for sighted users. No
+   existing sr-only utility elsewhere in the codebase's CSS. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -296,14 +276,13 @@ const forceActiveTo = computed(() => {
   position: relative;
   padding: var(--sp6);
 }
-/* Route cross-fade (engagement rework W6) — was a hard cut between tabs since there's no
-   ion-router-outlet here for Ionic's own page transitions to hook into (see the position:
-   relative comment above). Each ion-page is already absolute+inset:0, so the two pages
-   stacking during the fade doesn't shift layout. */
-/* mode="out-in" runs leave then enter back-to-back, so the perceived duration is roughly double
-   a single phase — --dur-slow (420ms/phase, ~840ms total) read as sluggish for something as
-   frequent as a tab switch (feedback). --dur-fast keeps the cut from feeling instant/jarring
-   without lingering. */
+/* Route cross-fade: there's no ion-router-outlet here for Ionic's own page transitions to hook
+   into (see the position: relative comment above), so this drives the fade directly. Each
+   ion-page is already absolute+inset:0, so the two pages stacking during the fade doesn't shift
+   layout. mode="out-in" runs leave then enter back-to-back, so the perceived duration is roughly
+   double a single phase — --dur-slow (420ms/phase, ~840ms total) reads as sluggish for something
+   as frequent as a tab switch. --dur-fast keeps the cut from feeling instant/jarring without
+   lingering. */
 .route-fade-enter-active,
 .route-fade-leave-active {
   transition: opacity var(--dur-fast) var(--ease-out);
@@ -312,13 +291,13 @@ const forceActiveTo = computed(() => {
 .route-fade-leave-to {
   opacity: 0;
 }
-/* Nebula Foundation F5 — nav hybrid (complete-redesign spec §3.5). Translucent + blurred, same
-   tokens as every other hybrid surface, so the sweep bleeds through subtly instead of the nav
-   reading as opaque chrome floating on top of the scene. Kept the existing solid border-right
-   (rather than F3's full mask-composite ring) since a ring reads oddly on a straight edge-to-
-   edge bar with no rounded corners — translucency+blur is what "hybrid" buys a full-bleed nav,
-   the ring is specifically a card/panel affordance. See the F5 regression-check comment on
-   .bottom-chrome below for the live clipping/legibility re-verification this required. */
+/* Translucent + blurred, same tokens as every other hybrid surface, so the sweep bleeds through
+   subtly instead of the nav reading as opaque chrome floating on top of the scene. Kept the
+   existing solid border-right rather than the full mask-composite hairline ring other hybrid
+   surfaces use, since a ring reads oddly on a straight edge-to-edge bar with no rounded corners
+   — translucency+blur is what "hybrid" buys a full-bleed nav, the ring is specifically a
+   card/panel affordance. See the comment on .bottom-chrome below for the clipping/legibility
+   implications of a translucent fixed bar. */
 .side-nav {
   display: none;
   flex-direction: column;
@@ -341,15 +320,14 @@ const forceActiveTo = computed(() => {
 .tab-bar {
   display: flex;
   justify-content: space-around;
-  /* F5: .tab-bar and its fixed ancestor .bottom-chrome (below) independently painted
-     var(--surface) — both switched to the hybrid fill together so there's no opaque layer
-     hiding behind the translucent one. */
+  /* .tab-bar and its fixed ancestor .bottom-chrome (below) both need the hybrid fill together —
+     otherwise an opaque layer would hide behind the translucent one. */
   background: var(--surface-hybrid-bg);
   border-top: 1px solid var(--line);
-  /* Vertical padding moved onto .tab-link itself (was here) so an active tab's fill block can
-     reach the bar's full height edge-to-edge (0a's active-tab redesign, see .tab-link.router-
-     link-active below) — .tab-bar only keeps the safe-area clearance, which sits below the
-     visible bar and has nothing to fill anyway. */
+  /* Vertical padding lives on .tab-link itself, not here, so an active tab's fill block can
+     reach the bar's full height edge-to-edge (see .tab-link.router-link-active below) —
+     .tab-bar only keeps the safe-area clearance, which sits below the visible bar and has
+     nothing to fill anyway. */
   padding: 0 2px env(safe-area-inset-bottom, 0px);
 }
 .nav-link {
@@ -365,29 +343,26 @@ const forceActiveTo = computed(() => {
   min-height: var(--touch-target-min);
 }
 .tab-link {
-  /* Bug fix (PO: "nav button highlight is still not fixed, especially on mobile"): this was
-     content-sized (`.tab-bar`'s `justify-content: space-around` only spaces gaps evenly, it
-     doesn't equalize width), so five tabs rendered five different widths (measured 56/51/37/51/
-     33px live) and the "whole tab cell" active-fill below (0a's redesign) filled a different,
-     oddly-shaped box per tab instead of a uniform column. flex: 1 makes every tab an equal-width
-     column edge-to-edge, matching the equal-width fix already applied to WorkoutRunsSwitcher.vue
-     and ExerciseInfoPanel.vue's tab strip for the same complaint. */
+  /* `.tab-bar`'s `justify-content: space-around` only spaces gaps evenly, it doesn't equalize
+     width — without this, five tabs render five different widths (measured 56/51/37/51/33px),
+     so the "whole tab cell" active-fill below fills a different, oddly-shaped box per tab
+     instead of a uniform column. flex: 1 makes every tab an equal-width column edge-to-edge,
+     matching WorkoutRunsSwitcher.vue and ExerciseInfoPanel.vue's tab strips. */
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  /* Was --faint — desktop's .nav-link rested at --dim for no stated reason, so the two nav
-     surfaces had different resting label colors (critique finding). --dim also has more
-     contrast, which matters more here since the label is smaller (11.5px vs 13.5px). */
+  /* --dim, matching desktop's .nav-link resting color, and with more contrast — which matters
+     more here since the label is smaller (11.5px vs 13.5px). */
   color: var(--dim);
   text-decoration: none;
   padding: 9px 3px 12px;
   border-radius: var(--r-sm);
   font-weight: 700;
-  /* Was 10px (9px below 380px) — a live audit measured every bottom-nav label below the 11px
-     readable-text floor on all 6 routes. Bumped both sizes; icons shrink instead below 380px
-     to keep 6 items fitting without wrapping/clipping (verified at 360px and 390px). */
+  /* 11.5px (10.5px below 380px, see the breakpoint below) — every bottom-nav label measured
+     below the 11px readable-text floor at the previous 10px size on all 6 routes. Icons shrink
+     instead below 380px so 6 items keep fitting without wrapping/clipping. */
   font-size: 11.5px;
   white-space: nowrap;
   min-height: var(--touch-target-min);
@@ -402,15 +377,14 @@ const forceActiveTo = computed(() => {
     height: 18px;
   }
 }
-/* Reflow audit (P1, WCAG 1.4.10): at extreme zoom-equivalent widths (measured 195px, the
-   standard 400% "reflow" test point derived from 390px @ 200%) six items no longer fit even at
-   the shrunk 380px sizing above — "Läufe" and "Profil" clipped off the right edge of this
-   `position: fixed` bar with no way to reach them (page-level scroll doesn't reach a fixed
-   element). Below 300px (well under any real layout — 360/390px devices never hit this), let the
-   bar scroll horizontally instead of clipping: `flex: none` stops items shrinking to 0 so they
-   stay tappable, `justify-content: flex-start` avoids space-around fighting the scroll, and the
-   scrollbar is hidden (still touch/wheel scrollable) so it doesn't eat into the already-tight
-   9px vertical padding. */
+/* At extreme zoom-equivalent widths (measured 195px, the standard 400% "reflow" test point per
+   WCAG 1.4.10, derived from 390px @ 200%) six items no longer fit even at the shrunk 380px sizing
+   above — "Läufe" and "Profil" clip off the right edge of this `position: fixed` bar with no way
+   to reach them (page-level scroll doesn't reach a fixed element). Below 300px (well under any
+   real layout — 360/390px devices never hit this), let the bar scroll horizontally instead of
+   clipping: `flex: none` stops items shrinking to 0 so they stay tappable, `justify-content:
+   flex-start` avoids space-around fighting the scroll, and the scrollbar is hidden (still
+   touch/wheel scrollable) so it doesn't eat into the already-tight 9px vertical padding. */
 @media (max-width: 300px) {
   .tab-bar {
     justify-content: flex-start;
@@ -427,11 +401,9 @@ const forceActiveTo = computed(() => {
     padding-right: 8px;
   }
 }
-/* 0a's Liftoff tab-bar finding (engagement-audit-v3 Phase 1, resolved decision — see the
-   doc's "Decisions already made" #... section): icons stay full-colour ALWAYS, at rest and
-   active alike. The prior session's dimmed-at-rest/full-on-active treatment (opacity 0.55->1)
-   is gone; recognisability now comes from the icon's own permanent section color, and "active"
-   is signalled by the surrounding block instead of the icon changing at all. */
+/* Icons stay full-colour always, at rest and active alike — no dimmed-at-rest/full-on-active
+   opacity toggle. Recognisability comes from the icon's own permanent section color; "active" is
+   signalled by the surrounding block instead. */
 .nav-icon {
   width: 20px;
   height: 20px;
@@ -442,14 +414,12 @@ const forceActiveTo = computed(() => {
   width: 23px;
   height: 23px;
 }
-/* Active-tab treatment, redesigned per 0a (replacing the prior session's color-mix tinted
-   background on desktop and 2px inset bottom underline on mobile — both read as "cheap" per the
-   user's own critique). Liftoff's actual pattern, matched here exactly rather than tweaked:
-   a filled rectangular block covering the WHOLE tab cell (mobile: the full tab-bar height too,
-   via .tab-bar's default flex `align-items: stretch` making .tab-link already fill that height —
-   no extra sizing needed) at one surface-lightness step up, a 2px accent rule across the block's
-   TOP edge only, and the label going grey -> white. Square corners (border-radius: 0 overrides
-   the resting .nav-link/.tab-link radius), no pill, no glow, no scale, no icon recolor. */
+/* Active-tab treatment: a filled rectangular block covering the WHOLE tab cell (mobile: the full
+   tab-bar height too, via .tab-bar's default flex `align-items: stretch` making .tab-link already
+   fill that height — no extra sizing needed) at one surface-lightness step up, a 2px accent rule
+   across the block's TOP edge only, and the label going grey -> white. Square corners
+   (border-radius: 0 overrides the resting .nav-link/.tab-link radius), no pill, no glow, no
+   scale, no icon recolor. */
 .nav-link.router-link-active,
 .tab-link.router-link-active {
   background: var(--surface-2);
@@ -469,21 +439,13 @@ const forceActiveTo = computed(() => {
   background: var(--surface-2);
   border-radius: var(--r-sm);
 }
-/* F6 (Nebula Foundation light-mode contrast pass) — found by the required automated audit
-   (Lighthouse/axe color-contrast), pre-existing and unrelated to the sweep/hybrid surfaces this
-   task otherwise targets, but caught here because it lives in App.vue, which no later phase in
-   this plan ever touches again (see the plan's file-boundary table) — leaving it would orphan a
-   known AA failure permanently. --fire-hi/--surface-2 measured at 1.82:1 in light mode (need
-   4.5:1); mechanically darkened via color-mix rather than inventing a new brand hex (measured
-   ~5.3:1 against --surface-2 light). --blue-hi/--surface-2 similarly measured at 2.38:1;
-   --blue-lo is an existing token already used elsewhere for "the darker blue" and measures
-   ~5.25:1 here. OverviewPage.vue's two separate eyebrow-color contrast failures found by the
-   same audit are NOT fixed here — that file is owned by Wave 0-B/N1, not Foundation. */
+/* --fire-hi/--surface-2 measured at 1.82:1 in light mode (need 4.5:1 for AA); darkened via
+   color-mix rather than inventing a new brand hex (measures ~5.3:1 against --surface-2 light). */
 :root[data-theme="light"] .streak-chip {
   color: color-mix(in srgb, var(--fire-hi) 55%, black);
 }
-/* One-shot pulse the moment the streak actually grows (engagement rework W6) — was dead text
-   regardless of whether it just changed or has looked the same for a week. */
+/* One-shot pulse the moment the streak actually grows, rather than looking identical whether it
+   just changed or has looked the same for a week. */
 .streak-pulse {
   animation: streak-pulse var(--dur-cele) var(--ease-spring);
   box-shadow: 0 0 0 1px var(--nebula-glow), 0 8px 20px -8px var(--nebula-glow-strong);
@@ -530,9 +492,9 @@ const forceActiveTo = computed(() => {
   font-weight: 700;
   font-size: 11.5px;
 }
-/* F6 — see the .streak-chip light-mode override above for the full rationale; same audit finding
-   (--blue-hi/--surface-2 measured 2.38:1 in light mode), same fix approach (reuse an existing
-   token rather than inventing a color: --blue-lo measures ~5.25:1 here). */
+/* --blue-hi/--surface-2 measures 2.38:1 in light mode, below AA — same fix approach as the
+   .streak-chip override above: reuse an existing token rather than inventing a color, --blue-lo
+   measures ~5.25:1 here. */
 :root[data-theme="light"] .xp-amount {
   color: var(--blue-lo);
 }
@@ -557,18 +519,16 @@ const forceActiveTo = computed(() => {
      moved — real content silently rendered underneath the fixed HUD. Caught by measuring the
      live layout (getBoundingClientRect), not by reading the CSS. */
   .app-shell {
-    /* UI audit fix: was calc(52px + safe-area) to reserve a whole separate band above every
-       page's header for the old full-width .top-hud strip. Now that the HUD overlays the header
-       itself (see .top-hud below) instead of pushing content down, no extra clearance is needed
-       here — .main-content still reads this var (0px = no-op) so nothing else has to change. */
+    /* The HUD overlays the header itself (see .top-hud below) instead of pushing content down,
+       so no extra clearance is needed — .main-content still reads this var (0px = no-op) so
+       nothing else has to change if that ever does. */
     --top-hud-h: 0px;
-    /* Foundation Task 2 (2026-09-03 plan) — needed so any fixed-position element can know how
-       much space the fixed .bottom-chrome tab bar reserves at the bottom of the viewport, the
-       same way .main-content already needs --top-hud-h for the top. Measured content height is
-       ~55-61px depending on the <380px icon/font shrink breakpoint (9px+ icon(18-23px)+3px
-       gap+label line(~13-14px)+12px, see .tab-link above) — 64px is a deliberate small margin
-       over the tallest measured case, not a re-measurement per breakpoint, since consumers only
-       need "enough clearance," not pixel-exact clearance. */
+    /* Lets any fixed-position element know how much space the fixed .bottom-chrome tab bar
+       reserves at the bottom of the viewport, the same way .main-content needs --top-hud-h for
+       the top. Measured content height is ~55-61px depending on the <380px icon/font shrink
+       breakpoint (9px+ icon(18-23px)+3px gap+label line(~13-14px)+12px, see .tab-link above) —
+       64px is a small margin over the tallest measured case, not pixel-exact per breakpoint,
+       since consumers only need "enough clearance". */
     --bottom-chrome-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   .main-content {
@@ -586,25 +546,18 @@ const forceActiveTo = computed(() => {
        for the tab bar. */
     margin-top: var(--top-hud-h, 0px);
   }
-  /* Persistent top HUD (rework Phase 4) — UI audit fix (2026-09-06, first pass, see the template
-     comment above for the full rationale): was a full-width, borderless bar floating in its own
-     reserved band above every page's IonHeader/IonToolbar, reading as an unstyled rendering glitch
-     rather than an intentional element. Now a small trailing chip overlaid top-right ON TOP of
-     that toolbar (every page shares the identical header skeleton — see ionic-theme.css's
-     ion-toolbar rule for its height/background) instead of a separate strip: no reserved
-     clearance needed (--top-hud-h is 0 above), just a fixed overlay positioned within the header's
-     own vertical band. IonTitle is centered with nothing docked to its trailing edge on any of
-     these pages, so this doesn't collide with any existing header content at the widths tested
-     (360-430px). Left deliberately simple (one line, no XP bar/streak-day label) per the "compact
-     trailing element, first reasonable pass" scope — further visual iteration (matching the
-     toolbar's exact hybrid fill/edge treatment, tap target to open a details sheet, etc.) is
-     expected in a follow-up pass with the product owner, not attempted here. */
+  /* Overlays the header (every page shares the identical header skeleton — see ionic-theme.css's
+     ion-toolbar rule for height/background) instead of reserving a separate band: no extra
+     clearance needed (--top-hud-h is 0 above), just a fixed overlay positioned within the
+     header's own vertical band. IonTitle is centered with nothing docked to its trailing edge on
+     any page, so this doesn't collide with existing header content at the widths tested
+     (360-430px). */
   .top-hud {
     display: flex;
     align-items: center;
-    /* Was gap:6px + right:var(--sp3) (a trailing chip pair). Direction C spans the whole toolbar
-       now that no title shares the row with it, ring on the left edge, streak on the right — the
-       same "level first, streak second" reading order the fuller side-nav chips already use. */
+    /* Spans the whole toolbar since no title shares the row with it — ring on the left edge,
+       streak on the right, the same "level first, streak second" reading order the fuller
+       side-nav chips use. */
     justify-content: space-between;
     position: fixed;
     top: env(safe-area-inset-top, 0px);
@@ -628,10 +581,9 @@ const forceActiveTo = computed(() => {
   }
   /* The XP-progress ring — level number centered inside a conic-gradient ring sized to
      xp.progressPercent (0-100 -> 0-360deg). Deliberately compact/quiet: this replaces a title,
-     it shouldn't out-shout one. --nebula-1 (not the full 3-stop --nebula-grad) for the same
-     "restrained, precise glow, never a bloom" discipline the rest of this redesign holds to —
-     a full brand gradient spinning around a tiny ring read as busier in testing than a single
-     hue. The unfilled remainder uses --line-2 (an existing neutral token) rather than a new one. */
+     it shouldn't out-shout one. --nebula-1 (not the full 3-stop --nebula-grad) keeps the glow
+     restrained — a full brand gradient spinning around a tiny ring reads busier. The unfilled
+     remainder uses --line-2 (an existing neutral token) rather than a new one. */
   .level-ring {
     --progress: 0;
     flex: none;
@@ -658,21 +610,12 @@ const forceActiveTo = computed(() => {
     font-weight: 800;
     font-size: 11px;
   }
-  /* Single fixed element for the tab bar — see the P0 fix comment above the template markup for
-     the history here (it used to also carry the status row now in .top-hud).
-
-     F5 regression check (2026-09-05): this bar's own opacity was never what the P0 clipping fix
-     depended on — that bug (content rendering unreachable behind the fixed bar) was fixed
-     structurally via ion-content's --padding-bottom (ionic-theme.css) and .main-content's
-     reserved --bottom-chrome-h, both independent of this element's background. Re-verified live
-     with the same technique already used to clear .top-hud (Playwright scroll-to-end +
-     elementFromPoint hit-testing along the bar's midline) after switching to the translucent
-     fill below: on all 8 routes at 390px, the last content element still fully clears the bar at
-     scroll end, and elementFromPoint at the bar's midline mid-scroll still resolves to the bar
-     itself (or its children), never to content rendering through/behind it. Legibility (the
-     other real risk — text sitting on the sweep bleeding through a translucent, 100%-of-the-
-     time-visible bar) was also checked live and read clearly in both themes, so this stays
-     translucent per the spec's default rather than being reverted to opaque. */
+  /* Single fixed element for the tab bar. Content clipping behind it is prevented structurally
+     via ion-content's --padding-bottom (ionic-theme.css) and .main-content's reserved
+     --bottom-chrome-h, both independent of this element's own background — so the translucent
+     fill below never leaves content unreachable underneath it. Text sitting on the sweep behind
+     this always-visible translucent bar was checked for legibility in both themes and reads
+     clearly, so it stays translucent rather than opaque. */
   .bottom-chrome {
     display: flex;
     flex-direction: column;

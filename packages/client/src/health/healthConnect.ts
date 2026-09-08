@@ -1,12 +1,11 @@
 /**
- * Health Connect import (plan Phase 5). Runs entirely in the app itself via `capacitor-health`
- * (mley/capacitor-health) — its `queryWorkouts({includeRoute, includeHeartRate})` genuinely
- * reads Health Connect's real `ExerciseSessionRecord.exerciseRouteResult` API (verified by
- * reading its native Kotlin source, not just its TypeScript types), which is the one thing that
- * ruled out the two other Capacitor Health Connect plugins checked first. No separate companion
- * app, no WorkManager background job: this checks for new workouts on app resume instead, which
- * is enough to remove the manual GPX/FIT export ritual without the complexity (and
- * untestability, in this dev environment) of a true background service.
+ * Health Connect import. Runs entirely in the app itself via `capacitor-health`
+ * (mley/capacitor-health) — its `queryWorkouts({includeRoute, includeHeartRate})` reads Health
+ * Connect's real `ExerciseSessionRecord.exerciseRouteResult` API (verified against its native
+ * Kotlin source, not just its TypeScript types), unlike other Capacitor Health Connect plugins.
+ * No separate companion app, no WorkManager background job: this checks for new workouts on app
+ * resume instead, which is enough to remove the manual GPX/FIT export step without the
+ * complexity of a true background service.
  */
 import { Capacitor } from "@capacitor/core";
 import { Health } from "capacitor-health";

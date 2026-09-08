@@ -1,7 +1,7 @@
 /**
  * Per-routine action menu (⋮ → edit / duplicate / delete) plus the routine-builder modal's
  * open/edit state — coupled because editing opens the same builder "+ Neue Routine" does, just
- * pre-filled. Extracted out of WorkoutPage.vue (QUAL-03).
+ * pre-filled. Extracted out of WorkoutPage.vue.
  */
 import { onUnmounted, ref } from "vue";
 import { useConfirmTap } from "./useConfirmTap";
@@ -22,8 +22,8 @@ export function useRoutineManagement(routineStore: ReturnType<typeof useRoutineS
     openMenuId.value = openMenuId.value === routineId ? null : routineId;
   }
 
-  /** Click-outside + Escape dismissal (audit finding: an open ⋮ menu previously had no way to
-   *  dismiss it besides its own trigger/action buttons). Clicks inside any routine card's menu
+  /** Click-outside + Escape dismissal — an open ⋮ menu previously had no way to dismiss it
+   *  besides its own trigger/action buttons. Clicks inside any routine card's menu
    *  wrapper (trigger button or the menu itself) are left alone so the trigger's own toggle and
    *  the menu's action buttons keep working unchanged; everything else closes the menu. */
   function onDocumentClick(event: MouseEvent) {

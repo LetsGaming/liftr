@@ -1,8 +1,8 @@
 /**
- * GPX parser (plan Phase 4.1). Extracts the full per-point trackpoint array — never just a
- * summary — because that array is what makes run replay possible later (audit §5). Handles
- * the Garmin TrackPointExtension namespace for heart rate/cadence when present; both are
- * optional per the GPX spec, so most watches/apps will have some but not all fields.
+ * GPX parser. Extracts the full per-point trackpoint array — never just a summary — because
+ * that array is what makes run replay possible later. Handles the Garmin TrackPointExtension
+ * namespace for heart rate/cadence when present; both are optional per the GPX spec, so most
+ * watches/apps will have some but not all fields.
  */
 import { XMLParser } from "fast-xml-parser";
 import type { RunPoint } from "@liftr/shared";

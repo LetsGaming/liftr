@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { exerciseMuscles, muscles, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { exerciseMuscles, muscles, OWNER_USER_ID, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { computeMuscleLastTrained } from "~server/services/readinessService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 
@@ -41,13 +41,13 @@ async function logSet(exerciseId: string, loggedAt: Date) {
 
 describe("computeMuscleLastTrained", () => {
   it("returns an empty array when no muscles are modeled", async () => {
-    expect(await computeMuscleLastTrained(db)).toEqual([]);
+    expect(await computeMuscleLastTrained(db, OWNER_USER_ID)).toEqual([]);
   });
 
   it("reports lastTrainedAt null and wasPrimary true for a muscle never trained", async () => {
     await insertMuscle("chest");
 
-    const result = await computeMuscleLastTrained(db);
+    const result = await computeMuscleLastTrained(db, OWNER_USER_ID);
 
     expect(result).toEqual([{ slug: "chest", lastTrainedAt: null, wasPrimary: true }]);
   });
@@ -59,7 +59,7 @@ describe("computeMuscleLastTrained", () => {
     const loggedAt = new Date("2026-09-01T10:00:00Z");
     await logSet(exercise.id, loggedAt);
 
-    const result = await computeMuscleLastTrained(db);
+    const result = await computeMuscleLastTrained(db, OWNER_USER_ID);
 
     expect(result).toEqual([{ slug: "chest", lastTrainedAt: loggedAt.toISOString(), wasPrimary: true }]);
   });
@@ -77,7 +77,7 @@ describe("computeMuscleLastTrained", () => {
     const laterLoggedAt = new Date("2026-09-03T10:00:00Z");
     await logSet(secondaryExercise.id, laterLoggedAt);
 
-    const result = await computeMuscleLastTrained(db);
+    const result = await computeMuscleLastTrained(db, OWNER_USER_ID);
 
     expect(result).toEqual([{ slug: "triceps", lastTrainedAt: laterLoggedAt.toISOString(), wasPrimary: false }]);
   });
@@ -89,7 +89,7 @@ describe("computeMuscleLastTrained", () => {
     await linkExerciseMuscle(exercise.id, trained.id, "primary");
     await logSet(exercise.id, new Date("2026-09-01T10:00:00Z"));
 
-    const result = await computeMuscleLastTrained(db);
+    const result = await computeMuscleLastTrained(db, OWNER_USER_ID);
 
     expect(result).toHaveLength(2);
     const bySlug = Object.fromEntries(result.map((r) => [r.slug, r]));

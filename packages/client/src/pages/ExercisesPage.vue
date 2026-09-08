@@ -1,12 +1,11 @@
 <script setup lang="ts">
 /**
- * Übungen — the exercise library (feedback: "no tab or way to just go through the exercises
- * and see how they're done and what muscles are being trained"). Every exercise's demo photos,
- * how-to text, and muscle figure already existed in ExerciseInfoPanel.vue, but it was reachable
- * only from inside an active workout, on that workout's current exercise (WorkoutPage.vue's ⓘ
- * button). This page opens the same panel standalone, browsable any time, via the shared
- * ExerciseList.vue in "browse" mode (the routine wizard's picker step reuses the same list in
- * "select" mode — one filterable/searchable implementation, not two).
+ * Übungen — the exercise library, browsable any time. Every exercise's demo photos, how-to
+ * text, and muscle figure already exist in ExerciseInfoPanel.vue, otherwise only reachable from
+ * inside an active workout on that workout's current exercise (WorkoutPage.vue's ⓘ button). This
+ * page opens the same panel standalone via the shared ExerciseList.vue in "browse" mode (the
+ * routine wizard's picker step reuses the same list in "select" mode — one filterable/searchable
+ * implementation, not two).
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
@@ -21,13 +20,11 @@ onMounted(() => catalog.load());
 
 const openExercise = ref<CatalogExercise | null>(null);
 
-// Add-custom-exercise sheet (Plan C §3 Phase 3, Task 9). Per SheetModal.vue's own header
-// comment ("every close path here and in every caller was just emitting close/flipping the
-// parent's own v-if straight away... yanking the element out from under it via Vue unmount
-// races that teardown and null-derefs"), the form's created/cancel actions call dismiss() via
-// this ref rather than flipping `showAddForm` directly — only SheetModal's own @close (fired
-// after Ionic's real dismiss teardown finishes) unmounts the sheet. Mirrors
-// RoutineWizard.vue's sheetRef/dismiss() pattern.
+// Add-custom-exercise sheet: the form's created/cancel actions call dismiss() via this ref
+// rather than flipping `showAddForm` directly, so only SheetModal's own @close (fired after
+// Ionic's real dismiss teardown finishes) unmounts the sheet — flipping the v-if straight away
+// yanks the element out from under Vue's unmount, causing teardown races and null-derefs (see
+// SheetModal.vue's own header comment). Mirrors RoutineWizard.vue's sheetRef/dismiss() pattern.
 const showAddForm = ref(false);
 const addFormSheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 function onExerciseCreated() {
@@ -59,19 +56,17 @@ function onExerciseCreated() {
 
 <style scoped>
 .ex-page {
-  /* Was --content-w-standard (720px) despite being a responsive card grid like Ränge/Workout's
-     routine list (both --content-w-wide) — the odd one out was left noticeably narrower on
-     desktop with no reason tied to its actual content shape (feedback: tabs should feel
-     coherent). Matches the grid-content tier it actually belongs to. */
+  /* Matches the responsive card grid width tier used by Ränge/Workout's routine list
+     (--content-w-wide), since this page is the same grid-content shape. */
   max-width: var(--content-w-wide);
   margin: 0 auto;
 }
 .add-custom-btn {
-  /* N4: adopted .surface-hybrid (translucent fill + gradient hairline, tokens.css) in place of
-     the flat --surface-2 fill. Kept its own dashed `border` on top — .surface-hybrid's hairline
-     lives on a separate ::after ring, so this doesn't fight it; the dashed line is this button's
-     own "insertion point" affordance (matches the app's other add-new dashed-border pattern,
-     e.g. FastPathStep.vue/ArrangeStep.vue), independent of the surface treatment underneath it. */
+  /* Uses .surface-hybrid (translucent fill + gradient hairline, tokens.css) with its own dashed
+     `border` on top — .surface-hybrid's hairline lives on a separate ::after ring, so this
+     doesn't fight it; the dashed line is this button's own "insertion point" affordance (matches
+     the app's other add-new dashed-border pattern, e.g. FastPathStep.vue/ArrangeStep.vue),
+     independent of the surface treatment underneath it. */
   display: block;
   width: 100%;
   margin-top: var(--sp4);

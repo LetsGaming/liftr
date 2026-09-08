@@ -1,18 +1,17 @@
 <script setup lang="ts">
 /**
- * Exercise info slide-over/bottom sheet (plan Phase 3.2, mockup's #dInfo / #mSheet). Opening
- * this must never leave the workout screen — it's a sheet layered on top, not a navigation.
- * Built on the shared SheetModal.vue (IonModal + header + close button), which this component
- * and WorkoutDetail.vue used to duplicate independently.
+ * Exercise info slide-over/bottom sheet. Opening this must never leave the workout screen — it's
+ * a sheet layered on top, not a navigation. Built on the shared SheetModal.vue (IonModal + header
+ * + close button), which this component and WorkoutDetail.vue used to duplicate independently.
  *
- * Engagement rework W7: grew from a single scrolling body into a 4-tab sheet (Über / Rang /
- * Statistiken / Verlauf) — the tab strip + close button live in SheetModal's `#header` slot so
- * they stay pinned while each tab's content scrolls independently in the body below. Always
- * defaults to the Über tab on open (never remembers the last-viewed tab, per plan) — this sheet
- * is opened mid-set from the workout screen, and the how-to/muscle info is the common case;
- * anything that made getting back to it cost a tap would be a regression. History (used by the
- * Rang/Statistiken/Verlauf tabs) is fetched lazily on first switch to one of those tabs, not on
- * mount, for the same reason — the common "just check the how-to" open shouldn't cost a request.
+ * A 4-tab sheet (Über / Rang / Statistiken / Verlauf) — the tab strip + close button live in
+ * SheetModal's `#header` slot so they stay pinned while each tab's content scrolls independently
+ * in the body below. Always defaults to the Über tab on open (never remembers the last-viewed
+ * tab) — this sheet is opened mid-set from the workout screen, and the how-to/muscle info is the
+ * common case; anything that made getting back to it cost a tap would be a regression. History
+ * (used by the Rang/Statistiken/Verlauf tabs) is fetched lazily on first switch to one of those
+ * tabs, not on mount, for the same reason — the common "just check the how-to" open shouldn't
+ * cost a request.
  */
 import { estimateE1rm, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, ref } from "vue";
@@ -86,19 +85,18 @@ const totalSetsLogged = computed(() => historySets.value.length);
 const primary = props.exercise.muscles.filter((m) => m.role === "primary").map((m) => m.slug);
 const secondary = props.exercise.muscles.filter((m) => m.role === "secondary").map((m) => m.slug);
 
-// Feature: "the Exercise info should show the used equipment" — falls back to just the primary
-// `equipment` tag for a legacy/custom row with no requiredEquipment set yet, so this section is
-// never simply empty.
+// Falls back to just the primary `equipment` tag for a custom (user-created) exercise, which
+// never gets a `requiredEquipment` value (the custom-exercise creation form only collects a
+// single `equipment` string), so this section is never simply empty.
 const requirements = computed<TieredRequirement[]>(() => {
   const list = props.exercise.requiredEquipment;
   if (list && list.length > 0) return list;
   return props.exercise.equipment ? [{ item: props.exercise.equipment as EquipmentRequirement, tier: "required" as const }] : [];
 });
 const ownedEquipment = computed(() => settingsStore.ownedEquipment);
-// Feature: "there should be tiers to it (required, recommended, optional) — this would allow
-// exercises that only miss a mat to not be filtered out." Only a `required` miss gets the hard
-// red "fehlt" treatment here; recommended/optional misses get a softer "empfohlen"/"optional"
-// note — informative, never alarming, since the exercise is still fully doable without them.
+// Only a `required` miss gets the hard red "fehlt" treatment here; recommended/optional misses
+// get a softer "empfohlen"/"optional" note — informative, never alarming, since the exercise is
+// still fully doable without them.
 const missing = computed(() => missingByTier(requirements.value, ownedEquipment.value));
 function missingBadge(req: TieredRequirement): string | null {
   if (!missing.value[req.tier].includes(req.item)) return null;
@@ -206,12 +204,10 @@ function missingBadge(req: TieredRequirement): string | null {
 .sheet-head b {
   font-size: 17px;
 }
-/* Audit fix: was 4 content-sized pills (`flex: none`) left-packed with empty space on the
-   right — since the active pill's own background is what shows "selected" (not a separate
-   underline), a narrower pill also meant a narrower highlight than its neighbors, so switching
-   tabs visibly changed the highlight's width for no reason tied to what's selected. `flex: 1`
-   makes every tab the same width, same segmented-control pattern as WorkoutRunsSwitcher.vue's
-   Workout/Läufe pills — the highlight now always spans one full, equal-width tab slot. */
+/* Every tab pill uses `flex: 1` so they're equal width — the active pill's own background is
+   what shows "selected" (not a separate underline), so unequal pill widths would mean the
+   highlight visibly changes width when switching tabs, for no reason tied to what's selected.
+   Same segmented-control pattern as WorkoutRunsSwitcher.vue's Workout/Läufe pills. */
 .tab-strip {
   display: flex;
   gap: var(--sp2);
@@ -241,20 +237,16 @@ function missingBadge(req: TieredRequirement): string | null {
   font-size: 13px;
 }
 
-/* Contrast audit (2026-09-05): <RankProgress variant="card"> is built to sit on a dark
-   tier-gradient card — its .rp-tier label reads `var(--tt, ...)`, the per-tier accent token,
-   which is always a light/near-white value tuned for a dark tier fill (tokens.css's t-<tier>
-   blocks). RanksPage.vue supplies that fill via its own `.rank-card` wrapper; this sheet's
-   "Rang" tab rendered <RankProgress variant="card"> bare on the panel's plain (light-in-light-
-   mode) background, so the tier label came out near-white-on-near-white — effectively invisible
-   in light mode (measured ~1:1; "ANFÄNGER VI" was unreadable). Same root cause and same fix as
-   RanksPage.vue's `.rank-card`: paint the true tier gradient and locally re-pin
-   --text/--dim/--faint to light-on-dark, same pattern as tokens.css's .panel-reward. */
-/* N4 Nebula pass: deliberately NOT converted to .surface-hybrid. This frame paints the real
-   tier-color gradient fill (see ::after below) as its whole background — a reward/rank surface,
-   not a neutral panel — same category as RanksPage.vue's .rank-card, which N3's own hard
-   guardrail keeps on the tier metal/medal system rather than the translucent Nebula treatment.
-   Making rank read as earned status (not brand decoration) applies here too. */
+/* <RankProgress variant="card"> is built to sit on a dark tier-gradient card — its .rp-tier
+   label reads `var(--tt, ...)`, the per-tier accent token, which is always a light/near-white
+   value tuned for a dark tier fill (tokens.css's t-<tier> blocks). Without a matching background
+   here, the tier label would render near-white on the panel's plain (light-in-light-mode)
+   background and become unreadable. So this frame paints the true tier gradient (see ::after
+   below) and locally re-pins --text/--dim/--faint to light-on-dark, same pattern as
+   RanksPage.vue's `.rank-card` and tokens.css's .panel-reward. */
+/* Deliberately not using .surface-hybrid: this frame paints the real tier-color gradient fill
+   as its whole background — a reward/rank surface, not a neutral panel, same category as
+   RanksPage.vue's .rank-card. Rank should read as earned status, not brand decoration. */
 .rank-card-frame {
   border-radius: var(--r-lg);
   border: 1px solid var(--line);
@@ -277,9 +269,9 @@ function missingBadge(req: TieredRequirement): string | null {
   margin-bottom: var(--sp4);
 }
 /* ProgressChart.vue's own scoped layout is a compact flex row (fixed 140px spark + inline
-   latest-value label) sized for the Ränge grid's card slot. Full sheet width (plan requirement)
-   needs the spark to actually grow — stack chart-above-label instead of forcing the label to
-   share a row it no longer fits. */
+   latest-value label) sized for the Ränge grid's card slot. Full sheet width needs the spark to
+   actually grow — stack chart-above-label instead of forcing the label to share a row it no
+   longer fits. */
 .wide-chart :deep(.progress-chart) {
   flex-direction: column;
   align-items: stretch;
@@ -363,10 +355,8 @@ function missingBadge(req: TieredRequirement): string | null {
   background: var(--blue-hi);
 }
 .legend .sec {
-  /* N4 fix: was a second hardcoded #5f7fd6 copy of tokens.css's .mm-sec fill (confirmed by
-     ingestMuscleAssets.ts's own comment: that hex "matches the app's existing --mm-sec token").
-     Non-theme-aware because it never went through a var() in the first place — now references
-     the single --muscle-secondary token both this swatch and .mm-sec draw from. */
+  /* References the single --muscle-secondary token that .mm-sec also draws from, instead of a
+     hardcoded color, so both stay in sync across themes. */
   background: var(--muscle-secondary);
 }
 </style>

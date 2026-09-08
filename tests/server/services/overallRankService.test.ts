@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { ordinal } from "@liftr/shared";
-import { sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { getOverallRank } from "~server/services/overallRankService.js";
 import { recomputeRankForExercise } from "~server/services/rankService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
@@ -44,7 +44,7 @@ async function establishCorroboratedPeak(exerciseId: string, weightKg: number, r
 
 describe("getOverallRank", () => {
   it("returns null current/peak when nothing has been ranked yet", async () => {
-    const result = await getOverallRank(db);
+    const result = await getOverallRank(db, OWNER_USER_ID);
     expect(result.current).toBeNull();
     expect(result.peak).toBeNull();
   });
@@ -53,12 +53,12 @@ describe("getOverallRank", () => {
     const ranked = await insertTestExercise(db);
     await seedStandards(ranked.id);
     await logSet(ranked.id, 90, 8); // clears the athlete threshold at the 75kg fallback bodyweight
-    await recomputeRankForExercise(db, ranked.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ranked.id);
 
     // A second, never-logged exercise exists in the catalog but has no rank row at all.
     await insertTestExercise(db);
 
-    const result = await getOverallRank(db);
+    const result = await getOverallRank(db, OWNER_USER_ID);
     expect(result.current).not.toBeNull();
     expect(result.current!.tier).toBe("athlete"); // reflects only the one ranked exercise, not diluted
   });
@@ -67,18 +67,18 @@ describe("getOverallRank", () => {
     const major = await insertTestExercise(db);
     await seedStandards(major.id, "real");
     await logSet(major.id, 20, 8); // weak: stays apprentice
-    await recomputeRankForExercise(db, major.id);
-    const before = (await getOverallRank(db)).current!;
+    await recomputeRankForExercise(db, OWNER_USER_ID, major.id);
+    const before = (await getOverallRank(db, OWNER_USER_ID)).current!;
 
     const synthetic = await insertTestExercise(db);
     await seedStandards(synthetic.id, "synthetic");
     await logSet(synthetic.id, 20, 8); // also weak/apprentice, synthetic-trust
-    await recomputeRankForExercise(db, synthetic.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, synthetic.id);
 
     // Now rank the major (real-trust) exercise up into athlete.
     await logSet(major.id, 90, 8);
-    await recomputeRankForExercise(db, major.id);
-    const after = (await getOverallRank(db)).current!;
+    await recomputeRankForExercise(db, OWNER_USER_ID, major.id);
+    const after = (await getOverallRank(db, OWNER_USER_ID)).current!;
 
     const beforePos = ordinal(before.tier as never, before.division as never) * 100 + before.lp;
     const afterPos = ordinal(after.tier as never, after.division as never) * 100 + after.lp;
@@ -94,9 +94,9 @@ describe("getOverallRank", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await establishCorroboratedPeak(ex.id, 90, 8);
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
 
-    const result = await getOverallRank(db);
+    const result = await getOverallRank(db, OWNER_USER_ID);
     expect(result.peak).not.toBeNull();
     expect(result.peak!.tier).toBe("athlete");
   });

@@ -1,19 +1,17 @@
 <script setup lang="ts">
-/** Clickable exercise list with done/active states (plan 1.5, mockup .wk-exlist).
- *  Despite this file's former "desktop-only" framing, none of this component's own CSS was ever
- *  gated behind a viewport media query — WorkoutPage.vue's mobile layout already rendered this
- *  as a full vertical list (identical markup to desktop), just stacked above the focus column
- *  with no responsive treatment. `variant="horizontal"` (Task 6) is the actual mobile-parity fix:
- *  a compact scroll-snap strip so the rail doesn't push the current exercise below the fold on
- *  narrow viewports. Desktop keeps the default vertical variant unchanged. */
+/** Clickable exercise list with done/active states. None of this component's own CSS is gated
+ *  behind a viewport media query — WorkoutPage.vue's mobile layout renders this as a full
+ *  vertical list (identical markup to desktop), just stacked above the focus column with no
+ *  responsive treatment. `variant="horizontal"` is the mobile-parity fix: a compact scroll-snap
+ *  strip so the rail doesn't push the current exercise below the fold on narrow viewports.
+ *  Desktop keeps the default vertical variant unchanged. */
 import AppIcon from "../ui/AppIcon.vue";
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
 
 withDefaults(defineProps<{ variant?: "vertical" | "horizontal" }>(), { variant: "vertical" });
-/** Wave 0-B W4: emitted alongside store.jumpToExercise(i) so a caller rendering this rail inside
- *  a dismissible sheet (WorkoutPage.vue's exercise-overview sheet, replacing the old always-on
- *  horizontal strip) can close itself once a jump happens, without this component needing to
- *  know anything about sheets. */
+/** Emitted alongside store.jumpToExercise(i) so a caller rendering this rail inside a dismissible
+ *  sheet (WorkoutPage.vue's exercise-overview sheet) can close itself once a jump happens,
+ *  without this component needing to know anything about sheets. */
 const emit = defineEmits<{ jump: [index: number] }>();
 
 const store = useActiveWorkoutStore();
@@ -68,18 +66,11 @@ function workingReps(ex: ActiveExercise): number | null {
   text-align: left;
   /* Every row is a real dark surface, always — state is expressed by accent (active fill,
      done dimming), never by flipping to a lighter background. A bare native <button> falls
-     back to the browser's own light chrome if you don't set this explicitly, which is exactly
-     the bug this replaced: every upcoming/idle row rendered on a near-white default button
-     background with default-black text, while only .active had a background at all.
-     N8 adoption-audit fix (2026-09-06): this file sat between two owners on the file-boundary
-     table (0-B built the rail, N2 was meant to adopt it) and fell through — N2's actual commits
-     never touched it, so every row here stayed flat --surface-2/-3 even after W4 moved this
-     component from an always-visible strip into the workout screen's "Alle Übungen anzeigen"
-     sheet, sitting right next to hybrid siblings (.next-ex-row, .rest-timer, .skip-btn) that
-     already got the N2 treatment. `.surface-hybrid` (template) now supplies the base
-     background/blur/shadow/hairline; `.active`'s own fill below is re-derived the same way
-     WorkoutPage.vue's `.rank-toggle-btn.active` re-derives its "on" state against
-     --surface-hybrid-bg — color-mix over the hybrid base, not a special-cased opaque fill. */
+     back to the browser's own light chrome if you don't set this explicitly.
+     `.surface-hybrid` (template) supplies the base background/blur/shadow/hairline; `.active`'s
+     own fill below is re-derived the same way WorkoutPage.vue's `.rank-toggle-btn.active`
+     re-derives its "on" state against --surface-hybrid-bg — color-mix over the hybrid base, not
+     a special-cased opaque fill. */
   color: var(--dim);
   transition: background var(--dur-base) var(--ease-out);
 }
@@ -95,8 +86,7 @@ function workingReps(ex: ActiveExercise): number | null {
 }
 /* Was opacity:0.65 — fading a whole row (including its now-more-readable --faint text and
    the green done-check) reads as "disabled," and it's not; it's finished. Express "done" with
-   color instead, same rule as the exercise-rail white-card fix: state via accent, not by
-   knocking down contrast on the surface itself. */
+   color instead of knocking down contrast on the surface itself. */
 .rail-item.done {
   color: var(--faint);
 }
@@ -130,8 +120,8 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item.done .n {
   background: var(--green);
   color: #04120a;
-  /* Draws in rather than snapping (engagement rework W3) — an exercise going from "3/4" to a
-     green check is the row's own small reward moment. */
+  /* Draws in rather than snapping — an exercise going from "3/4" to a green check is the row's
+     own small reward moment. */
   animation: pop-in var(--dur-base) var(--ease-spring) both;
 }
 .rail-item .meta {
@@ -144,8 +134,8 @@ function workingReps(ex: ActiveExercise): number | null {
   font-size: 11.5px;
 }
 
-/* Mobile jump-to-exercise parity (Task 6): same buttons, same store.jumpToExercise(i) handler,
-   same active/done/superset states — only the container's flex-direction and item sizing change,
+/* Mobile jump-to-exercise parity: same buttons, same store.jumpToExercise(i) handler, same
+   active/done/superset states — only the container's flex-direction and item sizing change,
    so this reuses the template/logic above rather than duplicating the component. A horizontal
    scroll-snap strip keeps the rail reachable without the vertical list's full-height cost on
    narrow viewports (which otherwise pushes the focus column below the fold). */

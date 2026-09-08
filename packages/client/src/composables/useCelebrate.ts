@@ -1,5 +1,5 @@
 /**
- * Timed "beat" sequencer (engagement rework W1). Used by FinishSequence's three beats
+ * Timed "beat" sequencer. Used by FinishSequence's three beats
  * (Rangaufstiege / Serie / Fortschritt). Deliberately a plain
  * async step-runner, not an animation library — each beat is just "show this, wait, allow an
  * early tap to skip." Respects prefers-reduced-motion by collapsing every wait to effectively
@@ -40,7 +40,7 @@ function wait(ms: number, skip: { requested: boolean }): Promise<void> {
 
 export interface CelebrateBeat {
   /** Skips this beat entirely — used to omit e.g. "Rangaufstiege" when a session had none,
-   *  rather than showing an empty beat (the plan explicitly says: don't manufacture a reward). */
+   *  rather than showing an empty beat: never manufacture a reward. */
   show?: boolean;
   holdMs?: number;
 }

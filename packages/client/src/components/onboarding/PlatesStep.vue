@@ -1,8 +1,7 @@
 <script setup lang="ts">
-/** Feature: "specify which weight plates you have (e.g. 4x1kg, 2x5kg, 4x2kg)... showing the user
- *  how to load the barbell to achieve the desired weight." Fixed common plate sizes rather than
- *  a free-form add/remove list — faster to fill in on a phone, and covers what actually ships in
- *  a home-gym plate set; @liftr/shared's calculatePlatesFromInventory only needs the counts. */
+/** Fixed common plate sizes rather than a free-form add/remove list — faster to fill in on a
+ *  phone, and covers what actually ships in a home-gym plate set; @liftr/shared's
+ *  calculatePlatesFromInventory only needs the counts. */
 import { BAR_TYPES, DEFAULT_BAR_WEIGHTS_KG, MAX_BAR_WEIGHT_KG, MIN_BAR_WEIGHT_KG, useOnboardingDraft, type BarType } from "./OnboardingDraft";
 
 const draft = useOnboardingDraft();
@@ -17,9 +16,9 @@ const BAR_LABEL_DE: Record<BarType, string> = {
 };
 const ownedBarTypes = BAR_TYPES.filter((t) => draft.equipment.has(t));
 // Loadable-plate inventory only applies to the barbell family — a dumbbell handle's own plates
-// are covered by the same PLATE_SIZES_KG count below (feedback didn't ask for a separate
-// dumbbell-plate tally), but a dumbbell-only user (no barbell-family bar) has nothing to load
-// onto a "bar" beyond the handle itself, so the plate-count section stays scoped to that case.
+// are covered by the same PLATE_SIZES_KG count below, but a dumbbell-only user (no barbell-family
+// bar) has nothing to load onto a "bar" beyond the handle itself, so the plate-count section
+// stays scoped to that case.
 const ownedBarbellFamilyTypes = ownedBarTypes.filter((t) => t !== "dumbbell");
 
 function barWeight(type: BarType): number {
@@ -49,8 +48,6 @@ function adjust(weightKg: number, delta: number) {
       vorgeschlagen. Ohne Angabe wird von einem Standard-Satz ausgegangen.
     </p>
 
-    <!-- Feedback: "a barbell usually has a different weight than a dumbbell [bar]" — one row
-         per bar-family item the user actually owns, not one generic "Stangengewicht". -->
     <section class="field">
       <label>Stangengewicht</label>
       <div class="plate-rows">

@@ -16,9 +16,9 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Single-bearer-token check (plan 1.1). No accounts, no sessions — the homelab reverse proxy
- * is the outer perimeter, this is just enough to stop an open LAN port being an open API.
- * Skipped entirely when LIFTR_TOKEN is unset, e.g. local dev.
+ * Single-bearer-token check. No accounts, no sessions — the homelab reverse proxy is the outer
+ * perimeter, this is just enough to stop an open LAN port being an open API. Skipped entirely
+ * when LIFTR_TOKEN is unset, e.g. local dev.
  */
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {
   if (!env.token) return; // dev mode: no token configured
