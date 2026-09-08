@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { haversineM, summarizeRun, type RunPoint } from "@liftr/shared";
+import { haversineM, summarizeRun, elevationGainFrom, pathDistanceM, type RunPoint } from "@liftr/shared";
 
 describe("haversineM", () => {
   it("returns ~0 for identical points", () => {
@@ -51,5 +51,42 @@ describe("summarizeRun", () => {
   it("returns null avgHr when no points carry HR", () => {
     const points = fixtureRun().map(({ hr: _hr, ...rest }) => rest);
     expect(summarizeRun(points).avgHr).toBeNull();
+  });
+});
+
+describe("pathDistanceM", () => {
+  it("returns 0 for fewer than 2 points", () => {
+    expect(pathDistanceM([])).toBe(0);
+    expect(pathDistanceM([{ lat: 52.5, lon: 13.4 }])).toBe(0);
+  });
+
+  it("sums haversine distance over consecutive waypoints", () => {
+    const points = [
+      { lat: 52.4732, lon: 13.4021 },
+      { lat: 52.475, lon: 13.4021 },
+      { lat: 52.475, lon: 13.405 },
+    ];
+    const total = pathDistanceM(points);
+    expect(total).toBeGreaterThan(0);
+    expect(total).toBeCloseTo(
+      haversineM(points[0]!, points[1]!) + haversineM(points[1]!, points[2]!),
+      3,
+    );
+  });
+});
+
+describe("elevationGainFrom", () => {
+  it("returns null when no point carries elevation", () => {
+    expect(elevationGainFrom([{}, {}])).toBeNull();
+  });
+
+  it("sums only positive deltas between consecutive points", () => {
+    const gain = elevationGainFrom([{ ele: 10 }, { ele: 15 }, { ele: 12 }, { ele: 20 }]);
+    expect(gain).toBe(5 + 8); // 10->15 (+5), 15->12 (skip, descent), 12->20 (+8)
+  });
+
+  it("treats a missing ele on either side of a pair as a gap, not a drop", () => {
+    const gain = elevationGainFrom([{ ele: 10 }, {}, { ele: 20 }]);
+    expect(gain).toBe(0);
   });
 });
