@@ -28,12 +28,59 @@ const createdAt = () =>
  *  resolves to today, via `userContext.ts`'s `resolveCurrentUserId`. */
 export const OWNER_USER_ID = "00000000-0000-4000-8000-000000000001";
 
-export const users = sqliteTable("users", {
-  id: id(),
-  name: text("name").notNull(),
-  role: text("role", { enum: ["owner", "member"] }).notNull(),
-  createdAt: createdAt(),
-});
+export const users = sqliteTable(
+  "users",
+  {
+    id: id(),
+    /** Login handle, distinct from `name` (the display name shown in the UI). Lowercase-only,
+     *  enforced by the route layer's validation, not a DB-level CHECK. */
+    username: text("username").notNull(),
+    /** `salt:hash` hex, both scrypt-derived. Null until first-run setup (the owner) or invite
+     *  redemption (a member) sets it — a user row can briefly exist without a usable password
+     *  mid-invite-flow. */
+    passwordHash: text("password_hash"),
+    name: text("name").notNull(),
+    role: text("role", { enum: ["owner", "member"] }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("users_username_idx").on(t.username)],
+);
+
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** SHA-256 hex digest of the bearer token — the raw token is never stored, only ever held
+     *  by the client and hashed on arrival to look this row up. */
+    tokenHash: text("token_hash").notNull(),
+    createdAt: createdAt(),
+    lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('subsec') * 1000)`),
+  },
+  (t) => [uniqueIndex("sessions_token_hash_idx").on(t.tokenHash)],
+);
+
+export const inviteCodes = sqliteTable(
+  "invite_codes",
+  {
+    id: id(),
+    /** Stored uppercase; redemption normalizes the submitted code to uppercase before lookup. */
+    code: text("code").notNull(),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    /** Null until redeemed. A code is single-use: the register route checks this is null before
+     *  accepting it, then sets it in the same operation that creates the new user. */
+    usedByUserId: text("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("invite_codes_code_idx").on(t.code)],
+);
 
 /** Every per-user table's owner column. Defaults to `OWNER_USER_ID` so a caller that doesn't
  *  (yet) resolve a real user — a direct `db.insert(...)` in a test fixture, a maintenance script —
