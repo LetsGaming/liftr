@@ -59,6 +59,44 @@ Fastify server on port 3001. This means the client code never needs to know the 
 (in dev or in production, where the server serves the built client directly — see
 `clientDistDir` in `env.ts`), and there's no CORS dance to worry about locally.
 
+## Isolated dev sessions & mock data
+
+`pnpm dev` above is the single-instance flow — one server, one client, one `data/liftr.db`. If you
+want an isolated backend + dashboard pair on its own ports with its own disposable database (useful
+for multiple agents/people working in the same checkout at once, or for trying something risky
+without touching your main dev database), use the two scripts under `scripts/` instead:
+
+```bash
+node scripts/dev-up.mjs --id my-session     # start
+node scripts/dev-down.mjs --id my-session   # stop + clean up when done
+```
+
+`dev-up.mjs`:
+
+1. Picks two free ports and starts the server (`PORT`, `LIFTR_DB_PATH` pointed at
+   `data/agent-<id>/liftr.db`, `LIFTR_TOKEN` unset so auth is open — no login screen) and the
+   client dev server (`BACKEND_PORT` env var, which `vite.config.ts`'s proxy target reads, so it
+   talks to *this* session's backend instead of the default `:3001`).
+2. Ingests the exercise catalog into that fresh database (`tools/catalog/curated.yaml`) — always,
+   since a new database starts empty. Catalog *images* are the one part of this that's shared, not
+   per-session: they're static, network-fetched, and identical across every session, so they live
+   in the ordinary `data/images/` dir (same one `pnpm dev`'s bootstrap uses) and are only fetched
+   once per machine, the first session that needs them.
+3. Seeds realistic mock data via `scripts/seed-mock-data.ts` — an onboarded profile, owned
+   equipment + gym/plate setup, a bodyweight trend, a custom exercise, three routines (one with a
+   mesocycle), and ~4 weeks of finished workouts, fed through the real sync pipeline
+   (`applySyncBatch`) so ranks, PRs, streaks, and XP are all correctly derived rather than
+   hand-computed. Plus two finished runs — one GPS-tracked (route + replay) and one logged
+   manually (no route/HR/elevation, matching the real manual-entry contract) — so both what a
+   run can and can't show are covered, not just the GPS happy path.
+
+`dev-down.mjs --id my-session` stops exactly the two processes that id's `dev-up.mjs` started (by
+recorded PID, never a broad kill) and deletes `data/agent-<id>/` + `logs/agent-<id>/` — never the
+shared `data/images/` cache, and never another session's `--id`.
+
+Session state (PIDs, ports, paths) is recorded in `data/agent-<id>/dev-session.json` while a
+session is up.
+
 ## Bootstrap: first-run data seeding
 
 `pnpm bootstrap` (`packages/ingest/src/bootstrap.ts`) is what turns an empty checkout into a

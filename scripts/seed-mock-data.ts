@@ -16,7 +16,10 @@
  *     streaks, and XP all come out correctly derived rather than hand-computed here. Deliberately
  *     varied: some exercises get a corroborated (locked-in) peak, one is left uncorroborated on
  *     purpose, and one (chin-up) is trained early and then never again, so the current-vs-peak
- *     rank decay UI has something real to show too. Plus one finished run.
+ *     rank decay UI has something real to show too. Plus two finished runs — one GPS-tracked (a
+ *     real route with map + replay) and one logged manually (no route/HR/elevation, per POST
+ *     /api/runs' actual manual-entry contract) — so both the presence and the absence of
+ *     GPS-derived features are covered, not just the happy path.
  */
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -361,7 +364,7 @@ async function seedWorkoutHistory(db: LiftrDb, routineIds: Record<RoutineName, s
 }
 
 /** A short synthetic loop near Berlin-Tempelhof so /runs has a real route + replay to show. */
-async function seedRun(db: LiftrDb) {
+async function seedGpsRun(db: LiftrDb) {
   const startedAt = daysAgo(1, 7, 30);
   const pointCount = 20;
   const points = Array.from({ length: pointCount }, (_, i) => {
@@ -389,7 +392,29 @@ async function seedRun(db: LiftrDb) {
     elevationGainM: 18,
   });
   await insertRunPoints(db, run.id, points);
-  console.log(`  1 run seeded (${(5200 / 1000).toFixed(1)} km, ${pointCount} route points).`);
+  console.log(`  GPS run seeded (${(5200 / 1000).toFixed(1)} km, ${pointCount} route points, map + replay).`);
+}
+
+/** Mirrors POST /api/runs' manual-entry path (runImportService.ts's logManualRun): no
+ *  RunPoint rows at all (no map, no replay, no HR/elevation), pace derived from distance/duration
+ *  — the "what a manual entry can't do that a GPS import can" feature-coverage counterpart to
+ *  seedGpsRun. Name left null on purpose: a real manual entry has no title unless the user types
+ *  one, so this also exercises the unnamed-run display state. */
+async function seedManualRun(db: LiftrDb) {
+  const startedAt = daysAgo(3, 6, 45);
+  const distanceM = 8000;
+  const durationS = 2460; // 41 min
+
+  await insertRun(db, USER_ID, {
+    source: "manual",
+    name: null,
+    startedAt,
+    clientId: randomUUID(),
+    distanceM,
+    durationS,
+    avgPaceSPerKm: durationS / (distanceM / 1000),
+  });
+  console.log(`  Manual run seeded (${(distanceM / 1000).toFixed(1)} km, no route/HR/elevation — manual-entry fallback).`);
 }
 
 async function main() {
@@ -422,8 +447,9 @@ async function main() {
   console.log("[seed] workout history (via the real sync pipeline)...");
   await seedWorkoutHistory(db, routineIds, customExercise.id);
 
-  console.log("[seed] run...");
-  await seedRun(db);
+  console.log("[seed] runs (GPS + manual entry)...");
+  await seedGpsRun(db);
+  await seedManualRun(db);
 
   console.log("[seed] done.");
 }
