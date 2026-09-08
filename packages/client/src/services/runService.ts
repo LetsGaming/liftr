@@ -20,6 +20,7 @@ export interface RunSummary {
   avgPaceSPerKm: number | null;
   avgHr: number | null;
   elevationGainM: number | null;
+  plannedRouteId: string | null;
 }
 
 export interface RunDetail extends RunSummary {
@@ -53,7 +54,14 @@ export async function importRunFile(file: File): Promise<RunSummary> {
   return (await res.json()) as RunSummary;
 }
 
-export function logManualRun(input: { name: string | null; startedAt: string; distanceM: number; durationS: number }): Promise<RunSummary> {
+export function logManualRun(input: {
+  name: string | null;
+  startedAt: string;
+  distanceM: number;
+  durationS: number;
+  plannedRouteId?: string | null;
+  elevationGainM?: number | null;
+}): Promise<RunSummary> {
   return api.post("/api/runs", input);
 }
 

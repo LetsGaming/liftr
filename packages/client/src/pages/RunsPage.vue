@@ -2,7 +2,7 @@
 // Läufe: GPX import, route map, and run replay built on the stored run_points array — the
 // whole point of keeping the full trackpoint array.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 import RunReplay from "../components/run/RunReplay.vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
@@ -10,6 +10,7 @@ import AppIcon from "../components/ui/AppIcon.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
+import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
 import { isHealthConnectAvailable } from "../health/healthConnect";
 import { validateManualEntry } from "../lib/runValidation";
@@ -68,6 +69,19 @@ const manualDate = ref(new Date().toISOString().slice(0, 10));
 const manualDistanceKm = ref("");
 const manualMinutes = ref("");
 
+const { activeRoute, start: startFromRoute, dismiss: dismissRouteBanner } = useStartPlannedRoute();
+const minutesInputRef = ref<HTMLInputElement | null>(null);
+
+watch(activeRoute, (route) => {
+  if (!route) return;
+  activeSubTab.value = "verlauf";
+  showManualForm.value = true;
+  manualName.value = route.name;
+  manualDistanceKm.value = (route.distanceM / 1000).toFixed(2).replace(".", ",");
+  manualDate.value = new Date().toISOString().slice(0, 10);
+  nextTick(() => minutesInputRef.value?.focus());
+});
+
 onMounted(async () => {
   await runsStore.load();
   if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
@@ -113,12 +127,15 @@ async function submitManual() {
       startedAt: new Date(manualDate.value + "T12:00:00").toISOString(),
       distanceM: km * 1000,
       durationS: min * 60,
+      plannedRouteId: activeRoute.value?.id ?? null,
+      elevationGainM: activeRoute.value?.elevationGainM ?? null,
     });
     manualError.value = null;
     showManualForm.value = false;
     manualName.value = "";
     manualDistanceKm.value = "";
     manualMinutes.value = "";
+    dismissRouteBanner();
     if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
     toast("Lauf gespeichert.");
   } catch (err) {
@@ -177,11 +194,29 @@ function formatDuration(s: number) {
 
     <p v-if="importError" class="error">{{ importError }}</p>
 
+    <div v-if="activeRoute" class="route-banner panel">
+      <span>
+        Strecke: {{ activeRoute.name }} · {{ (activeRoute.distanceM / 1000).toFixed(2).replace(".", ",") }} km{{
+          activeRoute.geometrySource === "straight" ? " ≈" : ""
+        }}{{
+          activeRoute.elevationGainM != null ? " · " + Math.round(activeRoute.elevationGainM) + " hm" : ""
+        }} — nur noch Dauer eintragen
+      </span>
+      <button aria-label="Schließen" @click="dismissRouteBanner">×</button>
+    </div>
+
     <div v-if="showManualForm" class="manual-form panel pop-in">
       <input v-model="manualName" type="text" placeholder="Name (optional)" aria-label="Name des Laufs" />
       <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
       <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
-      <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
+      <input
+        ref="minutesInputRef"
+        v-model="manualMinutes"
+        type="text"
+        inputmode="decimal"
+        placeholder="Minuten"
+        aria-label="Dauer in Minuten"
+      />
       <button class="btn-primary" @click="submitManual">Speichern</button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
@@ -206,11 +241,19 @@ function formatDuration(s: number) {
         <template v-if="selectedRun">
           <RunReplay v-if="selectedRun.points.length > 0" :points="selectedRun.points" />
           <p v-else style="color: var(--dim)">Manuell erfasster Lauf — keine Route verfügbar.</p>
+          <div v-if="selectedRun.plannedRouteId && plannedRouteStore.byId(selectedRun.plannedRouteId)" class="route-chip">
+            Strecke: {{ plannedRouteStore.byId(selectedRun.plannedRouteId)?.name }}
+          </div>
           <div class="stats">
             <StatTile :value="`${(selectedRun.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
             <StatTile :value="formatDuration(selectedRun.durationS)" label="Dauer" />
             <StatTile :value="formatPace(selectedRun.avgPaceSPerKm)" label="Pace ø" />
             <StatTile :value="selectedRun.avgHr != null ? Math.round(selectedRun.avgHr) + ' bpm' : '–'" label="Puls ø" />
+            <StatTile
+              v-if="selectedRun.elevationGainM != null"
+              :value="Math.round(selectedRun.elevationGainM) + ' hm'"
+              label="Höhenmeter"
+            />
           </div>
           <button
             class="btn-secondary delete-run-btn"
@@ -246,7 +289,7 @@ function formatDuration(s: number) {
 
     <template v-if="activeSubTab === 'strecken'">
       <button class="btn-primary btn-block" @click="openNewRouteWizard">+ Neue Strecke</button>
-      <RouteList @edit="openEditRouteWizard" @start="openEditRouteWizard" />
+      <RouteList @edit="openEditRouteWizard" @start="(route) => { activeSubTab = 'verlauf'; startFromRoute(route); }" />
       <RouteWizard
         v-if="showRouteWizard"
         :route="editingRoute"
@@ -370,8 +413,36 @@ function formatDuration(s: number) {
 }
 @media (min-width: 560px) {
   .stats {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   }
+}
+.route-chip {
+  display: inline-block;
+  margin-top: var(--sp2);
+  padding: 4px 10px;
+  border-radius: var(--r-full, 999px);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.route-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp3);
+  margin-top: var(--sp3);
+  padding: var(--sp3) var(--sp4);
+  font-size: 13.5px;
+}
+.route-banner button {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
 }
 .delete-run-btn {
   margin-top: var(--sp4);
