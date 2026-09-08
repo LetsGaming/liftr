@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { runPoints, runs, streaks, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, runPoints, runs, streaks, type LiftrDb } from "@liftr/db";
 import {
   importHealthConnectRun,
   importRunFile,
@@ -49,19 +49,19 @@ const VALID_GPX = `<?xml version="1.0" encoding="UTF-8"?>
 
 describe("importRunFile", () => {
   it("throws UnsupportedFileFormatError for a filename that isn't .gpx or .fit", async () => {
-    await expect(importRunFile(db, "run.txt", Buffer.from("whatever"))).rejects.toBeInstanceOf(UnsupportedFileFormatError);
+    await expect(importRunFile(db, OWNER_USER_ID, "run.txt", Buffer.from("whatever"))).rejects.toBeInstanceOf(UnsupportedFileFormatError);
   });
 
   it("throws RunParseError when the .gpx file's content doesn't parse as GPX", async () => {
-    await expect(importRunFile(db, "run.gpx", Buffer.from("<xml>not a gpx file</xml>"))).rejects.toBeInstanceOf(RunParseError);
+    await expect(importRunFile(db, OWNER_USER_ID, "run.gpx", Buffer.from("<xml>not a gpx file</xml>"))).rejects.toBeInstanceOf(RunParseError);
   });
 
   it("throws RunParseError when the .fit file's content isn't a valid FIT binary", async () => {
-    await expect(importRunFile(db, "run.fit", Buffer.from("not a real fit file"))).rejects.toBeInstanceOf(RunParseError);
+    await expect(importRunFile(db, OWNER_USER_ID, "run.fit", Buffer.from("not a real fit file"))).rejects.toBeInstanceOf(RunParseError);
   });
 
   it("parses a valid GPX file, persists the run + every trackpoint, and credits the run streak", async () => {
-    const result = await importRunFile(db, "Morning Run.gpx", Buffer.from(VALID_GPX, "utf-8"));
+    const result = await importRunFile(db, OWNER_USER_ID, "Morning Run.gpx", Buffer.from(VALID_GPX, "utf-8"));
 
     expect(result.source).toBe("gpx");
     expect(result.name).toBe("Morning Run"); // .gpx extension stripped
@@ -85,8 +85,8 @@ describe("importRunFile", () => {
   });
 
   it("generates a distinct clientId for each GPX import, so re-importing the same file doesn't collide", async () => {
-    const first = await importRunFile(db, "run1.gpx", Buffer.from(VALID_GPX, "utf-8"));
-    const second = await importRunFile(db, "run2.gpx", Buffer.from(VALID_GPX, "utf-8"));
+    const first = await importRunFile(db, OWNER_USER_ID, "run1.gpx", Buffer.from(VALID_GPX, "utf-8"));
+    const second = await importRunFile(db, OWNER_USER_ID, "run2.gpx", Buffer.from(VALID_GPX, "utf-8"));
     expect(first.clientId).not.toBe(second.clientId);
   });
 });
@@ -98,7 +98,7 @@ describe("importHealthConnectRun", () => {
   ];
 
   it("persists a new run keyed by a healthconnect: prefixed clientId and credits the streak", async () => {
-    const result = await importHealthConnectRun(db, "platform-123", "HC Run", points);
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, "platform-123", "HC Run", points);
 
     expect(result.source).toBe("healthconnect");
     expect(result.clientId).toBe("healthconnect:platform-123");
@@ -109,8 +109,8 @@ describe("importHealthConnectRun", () => {
   });
 
   it("is idempotent: importing the same platformId twice returns the existing run instead of duplicating it", async () => {
-    const first = await importHealthConnectRun(db, "platform-abc", "First", points);
-    const second = await importHealthConnectRun(db, "platform-abc", "Second name ignored", points);
+    const first = await importHealthConnectRun(db, OWNER_USER_ID, "platform-abc", "First", points);
+    const second = await importHealthConnectRun(db, OWNER_USER_ID, "platform-abc", "Second name ignored", points);
 
     expect(second.id).toBe(first.id);
     const allRuns = await db.select().from(runs).where(eq(runs.clientId, "healthconnect:platform-abc"));
@@ -121,7 +121,7 @@ describe("importHealthConnectRun", () => {
 describe("logManualRun", () => {
   it("persists a manual run with a computed pace and credits the streak", async () => {
     const startedAt = new Date("2026-09-03T07:00:00Z");
-    const result = await logManualRun(db, { name: "Manual 5k", startedAt, distanceM: 5000, durationS: 1500 });
+    const result = await logManualRun(db, OWNER_USER_ID, { name: "Manual 5k", startedAt, distanceM: 5000, durationS: 1500 });
 
     expect(result.source).toBe("manual");
     expect(result.name).toBe("Manual 5k");
@@ -137,7 +137,7 @@ describe("logManualRun", () => {
   });
 
   it("leaves avgPaceSPerKm null when distanceM is zero, rather than dividing by zero", async () => {
-    const result = await logManualRun(db, {
+    const result = await logManualRun(db, OWNER_USER_ID, {
       name: "Treadmill (no distance logged)",
       startedAt: new Date("2026-09-04T07:00:00Z"),
       distanceM: 0,

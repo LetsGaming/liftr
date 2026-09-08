@@ -30,20 +30,8 @@ const exerciseResponse = z.object({
   muscles: z.array(z.object({ slug: z.string(), role: z.enum(["primary", "secondary"]) })),
 });
 
-/** Same tolerant parse as routineSuggestionService.ts — a legacy row ingested before the
- *  requiredEquipment column existed (or before it moved to a tiered shape) is null/malformed,
- *  which just means "no requirements known" rather than an error. */
-function parseRequiredEquipment(raw: string | null): TieredRequirement[] {
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as TieredRequirement[];
-  } catch {
-    return [];
-  }
-}
-
 const customExerciseSchema = z.object({
-  // Constrained to the same slug shape every catalog entry already follows (SEC-02): closes a
+  // Constrained to the same slug shape every catalog entry already follows: closes a
   // path-traversal-shaped gap, since `slug` is later joined into a filesystem path unmodified
   // (`hasImage` below) — a `../` sequence with no format check would probe outside `imagesRoot`.
   slug: z.string().regex(EXERCISE_SLUG_PATTERN, "slug must be lowercase, alphanumeric, hyphen-separated"),
@@ -56,10 +44,10 @@ const customExerciseSchema = z.object({
 
 /**
  * `imagesRoot` (already resolved once in app.ts) lets this route tell the client up front
- * whether an exercise's demo photo actually exists — feedback: image 404s for the catalog
- * slugs with no mirrored photo (documented in ExerciseThumb.vue: no open-licensed source exists
- * for them) were spamming the console, because the client had no way to know except by
- * attempting the request and catching the failure. `demoStartImage`/`demoEndImage` are separate,
+ * whether an exercise's demo photo actually exists — without it, image 404s for catalog slugs
+ * with no mirrored photo (documented in ExerciseThumb.vue: no open-licensed source exists for
+ * them) were spamming the console, because the client had no way to know except by attempting
+ * the request and catching the failure. `demoStartImage`/`demoEndImage` are separate,
  * still-unused DB columns (ingest never writes them) — not repurposed here since fixing that
  * would mean also changing ingestImages.ts's write path; a live existsSync check against the
  * already-mirrored files is simpler and can't drift from what's actually on disk.
@@ -74,7 +62,7 @@ export function registerExerciseRoutes(app: ZodFastifyInstance, db: AppDb, image
       slug: ex.slug,
       name: ex.name,
       equipment: ex.equipment,
-      requiredEquipment: parseRequiredEquipment(ex.requiredEquipment),
+      requiredEquipment: JSON.parse(ex.requiredEquipment) as TieredRequirement[],
       movementPattern: ex.movementPattern,
       isBodyweight: ex.isBodyweight,
       isCustom: ex.isCustom,
@@ -86,9 +74,9 @@ export function registerExerciseRoutes(app: ZodFastifyInstance, db: AppDb, image
     }));
   });
 
-  // POST /api/exercises — custom user-added exercise (audit §3 must-have: catalog extensibility).
+  // POST /api/exercises — custom user-added exercise, for catalog extensibility.
   app.post("/api/exercises", { schema: { body: customExerciseSchema } }, async (req, reply) => {
-    const row = await insertCustomExercise(db, req.body);
+    const row = await insertCustomExercise(db, req.userId, req.body);
     reply.code(201);
     return row;
   });

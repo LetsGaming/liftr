@@ -1,5 +1,5 @@
 /**
- * Per-muscle readiness (engagement rework W5), backed by /api/readiness. The server returns raw
+ * Per-muscle readiness, backed by /api/readiness. The server returns raw
  * last-trained facts; the 0-1 readiness number itself is computed here with @liftr/shared's
  * computeReadiness so it's always evaluated against "now" at render time rather than a value
  * that goes stale the moment the page has been open a while.
@@ -17,8 +17,8 @@ export const useReadinessStore = defineStore("readiness", {
   }),
   getters: {
     /** slug -> 0..1 readiness, recomputed against the current time on every access. `birthYear`
-     *  (QUAL-04) only ever widens the recovery window, never shortens it — see
-     *  @liftr/shared's computeReadiness for the (deliberately modest, capped) adjustment. */
+     *  only ever widens the recovery window, never shortens it — see @liftr/shared's
+     *  computeReadiness for the (deliberately modest, capped) adjustment. */
     heat(state): Record<string, number> {
       const now = new Date();
       const birthYear = useSettingsStore().profile?.birthYear;
@@ -44,8 +44,8 @@ export const useReadinessStore = defineStore("readiness", {
         this.loaded = true;
         this.error = false;
       } catch {
-        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
-        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
+        // needs to tell "still fetching" from "failed" apart.
         this.error = true;
       }
     },

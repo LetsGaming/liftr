@@ -1,6 +1,6 @@
 /**
- * GET /api/readiness — last-trained timestamp per muscle, primary vs. secondary (engagement
- * rework W5). Feeds the Übersicht "Erholungszone" hero — the actual 0-1 readiness math lives
+ * GET /api/readiness — last-trained timestamp per muscle, primary vs. secondary. Feeds the
+ * Übersicht "Erholungszone" hero — the actual 0-1 readiness math lives
  * in @liftr/shared's computeReadiness (recovery/recovery.ts) and runs client-side against
  * these raw timestamps, same "server returns facts, shared computes the derived number"
  * split every other route in this app already follows (rankEngine.ts computes server-side
@@ -22,7 +22,7 @@ const readinessResponse = z.array(
 );
 
 export function registerReadinessRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/readiness", { schema: { response: { 200: readinessResponse } } }, async () => {
-    return computeMuscleLastTrained(db);
+  app.get("/api/readiness", { schema: { response: { 200: readinessResponse } } }, async (request) => {
+    return computeMuscleLastTrained(db, request.userId);
   });
 }

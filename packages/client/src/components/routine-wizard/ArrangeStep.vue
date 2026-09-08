@@ -146,9 +146,9 @@ function kindOf(kind: SetKind | undefined): SetKind {
           </div>
         </div>
 
-        <!-- Feedback: "adjust the pause, per set and per exercise" — two independent rest
-             durations per exercise: between its own sets, and once after its last set (before
-             the next exercise starts). Wired through activeWorkoutStore into RestTimer.vue. -->
+        <!-- Two independent rest durations per exercise: between its own sets, and once after
+             its last set (before the next exercise starts). Wired through activeWorkoutStore
+             into RestTimer.vue. -->
         <div class="rest-rows">
           <div class="rest-row">
             <span class="rest-label">Pause zwischen Sätzen</span>

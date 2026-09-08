@@ -1,11 +1,11 @@
 /**
- * `pnpm ingest --catalog` also generates a short "how do I log this" cue per exercise
- * (plan Phase 3.2 — the mockup's "Wie protokollieren?" text). Templated from movementPattern +
- * primary muscle, not hand-written per exercise: audit §2.8 explicitly budgets translation
- * effort at ~zero, and 89 individually hand-written German cues would blow well past that.
- * Honest tradeoff, documented rather than hidden — see the DIFFERENCE from free-exercise-db's
- * `instructions` field (a *possible* richer source, English-only, not used here since
- * translating 89 multi-step instructions is exactly the effort audit §2.8 says to skip).
+ * `pnpm ingest --catalog` also generates a short "how do I log this" cue per exercise (the
+ * mockup's "Wie protokollieren?" text). Templated from movementPattern + primary muscle, not
+ * hand-written per exercise: translation budget is effectively zero, and 89 individually
+ * hand-written German cues would blow well past that. Honest tradeoff, documented rather than
+ * hidden — see the DIFFERENCE from free-exercise-db's `instructions` field (a *possible* richer
+ * source, English-only, not used here since translating 89 multi-step instructions is exactly
+ * the effort this approach is meant to skip).
  */
 import type { CatalogEntry } from "./catalogSchema.js";
 

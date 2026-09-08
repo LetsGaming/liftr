@@ -21,12 +21,12 @@ export function findExercisesByIds(db: LiftrDb, ids: string[]) {
 }
 
 /** The lifter's most recent non-warmup set for one exercise, or none if never logged. */
-export async function findLastPerformedSet(db: LiftrDb, exerciseId: string) {
+export async function findLastPerformedSet(db: LiftrDb, userId: string, exerciseId: string) {
   const rows = await db
     .select({ weightKg: sets.weightKg, reps: sets.reps })
     .from(sets)
     .innerJoin(workoutExercises, eq(sets.workoutExerciseId, workoutExercises.id))
-    .where(and(eq(workoutExercises.exerciseId, exerciseId), eq(sets.isWarmup, false)))
+    .where(and(eq(workoutExercises.exerciseId, exerciseId), eq(sets.isWarmup, false), eq(sets.userId, userId)))
     .orderBy(desc(sets.loggedAt))
     .limit(1);
   return rows[0] ?? null;

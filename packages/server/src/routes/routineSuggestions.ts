@@ -20,16 +20,16 @@ const recommendInput = z.object({
  *  logic — this route is just: validate, call the service, shape the response. */
 export function registerRoutineSuggestionRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   app.post("/api/routines/suggest", { schema: { body: suggestInput } }, async (req) => {
-    const exercises = await suggestExercisesForMuscles(db, req.body);
+    const exercises = await suggestExercisesForMuscles(db, req.userId, req.body);
     return { exercises };
   });
 
   // POST /api/routines/recommend — sets/reps/weight for exercises the user already picked
   // (manual routine-wizard selection, Quick Start), reusing the same recommendation engine as
   // the muscle-group suggester above instead of the hardcoded "8 reps, 0 kg" default those two
-  // paths used to fall back to (QUAL-04).
+  // paths used to fall back to.
   app.post("/api/routines/recommend", { schema: { body: recommendInput } }, async (req) => {
-    const exercises = await recommendForChosenExercises(db, req.body.exerciseIds, req.body.experienceLevel);
+    const exercises = await recommendForChosenExercises(db, req.userId, req.body.exerciseIds, req.body.experienceLevel);
     return { exercises };
   });
 }

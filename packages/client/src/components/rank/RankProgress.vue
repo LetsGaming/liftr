@@ -1,20 +1,17 @@
 <script setup lang="ts">
 /**
- * Tier badge + LP bar + next-target line (engagement rework W2). Extracted out of
- * RanksPage.vue's card markup so the exact same unit renders in three places: the Ränge grid
- * (where it always lived), the active-workout focus column (new — the mockup's "ZUM NÄCHSTEN
- * RANG ▓▓▓░░" lives *inside the exercise card, mid-session*, ../../examples/
- * Screenshot_20260824-175421.png), and the finish sequence's first beat. One implementation,
- * not three that can drift.
+ * Tier badge + LP bar + next-target line. Extracted out of RanksPage.vue's card markup so the
+ * exact same unit renders in three places: the Ränge grid, the active-workout focus column, and
+ * the finish sequence's first beat — one implementation, not three that can drift.
  *
  * LP is 0-100 within the current tier/division band. `.bar-fill` (styles/motion.css) animates
  * its width whenever `lp` changes — in the active-workout column that's a static read of the
- * session's starting rank (recompute now runs once at finish, not per set, so it doesn't move
+ * session's starting rank (recompute runs once at finish, not per set, so it doesn't move
  * mid-session); on the Ränge grid and in the finish sequence it animates whenever the
  * underlying data actually updates.
  */
 import { computed } from "vue";
-import { ordinal, type Division, type Tier } from "@liftr/shared";
+import { MAX_ORDINAL, ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 
 const props = withDefaults(
@@ -28,19 +25,19 @@ const props = withDefaults(
     /** "card" — badge left, stacked text right (Ränge grid). "inline" — compact single row
      *  for the active-workout focus column, where vertical space is scarce. */
     variant?: "card" | "inline";
-    /** Peak snapshot (rank engine redesign R2) — when the displayed (possibly decayed) tier/
-     *  division sits below peak, a low-friction caption names it instead of silently showing a
-     *  lower number: never hide *why* the rank moved. Omit at call sites that don't have peak
-     *  data (e.g. the in-session focus column, which never decays mid-workout). */
+    /** When the displayed (possibly decayed) tier/division sits below peak, a caption names the
+     *  peak instead of silently showing a lower number — never hide why the rank moved. Omit at
+     *  call sites that don't have peak data (e.g. the in-session focus column, which never
+     *  decays mid-workout). */
     peakTier?: string | null;
     peakDivision?: number | null;
-    /** Rank engine v2: set by the caller right after a workout that applied a buffed recovery
-     *  gain to this exercise (e.g. "+18 LP"). Purely a one-time celebratory caption, not
-     *  persisted — the caller (RanksPage.vue or the finish-sequence flow) is responsible for
-     *  only passing this immediately after the relevant recompute, not on every render. */
+    /** Set by the caller right after a workout that applied a buffed recovery gain to this
+     *  exercise (e.g. "+18 LP"). A one-time celebratory caption, not persisted — the caller is
+     *  responsible for only passing this immediately after the relevant recompute, not on every
+     *  render. */
     recoveryGainLabel?: string | null;
-    /** Rank engine v2: a short, honest note when this exercise's rank/XP gain from the most
-     *  recent session was reduced by the plausibility gate. Never shows exact thresholds. */
+    /** A short, honest note when this exercise's rank/XP gain from the most recent session was
+     *  reduced by the plausibility gate. Never shows exact thresholds. */
     plausibilityNote?: string | null;
   }>(),
   {
@@ -63,12 +60,11 @@ const decayCaption = computed(() => {
   return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision]}`;
 });
 
-/** Critique finding (clarify, P1): which trust level applies to *this* badge was locked behind
- *  a `title` attribute — invisible on touch (the app's only platform) and to screen readers.
- *  The page-level LP-explainer already teaches what "≈" means in general; this names the
- *  specific case per card, as a normal visible caption alongside the existing decay/recovery/
- *  plausibility lines below, instead of a second interactive element (which would nest inside
- *  RanksPage's own <button class="rank-card">). */
+/** Visible caption rather than a `title` attribute — a tooltip is invisible on touch (the app's
+ *  only platform) and to screen readers. The page-level LP-explainer already teaches what "≈"
+ *  means in general; this names the specific case per card as a normal caption alongside the
+ *  decay/recovery/plausibility lines below, rather than a second interactive element (which
+ *  would nest inside RanksPage's own <button class="rank-card">). */
 const trustLabel = computed(() => {
   if (props.trust === "derived") return "Abgeleiteter Standard";
   if (props.trust === "synthetic") return "Geschätzter Standard";
@@ -76,17 +72,23 @@ const trustLabel = computed(() => {
 });
 
 const nextLabel = computed(() => {
-  // Curiosity framing (engagement rework W8): both targets null means the top of the currently-
-  // modeled standards has been reached — "???" invites "what's next?" instead of flatly stating
-  // there's nothing left, which reads as a dead end. Only this genuinely-exhausted case changes;
-  // a real next target still renders normally below.
+  // Both targets null means the top of the currently-modeled standards has been reached —
+  // "???" invites "what's next?" instead of flatly stating there's nothing left, which reads as
+  // a dead end. A real next target still renders normally below.
   if (props.nextTargetReps == null) return "Nächstes Ziel: ???";
   return props.nextTargetWeightKg != null
     ? `Nächstes Ziel: ${props.nextTargetWeightKg} kg × ${props.nextTargetReps}`
     : `Nächstes Ziel: ${props.nextTargetReps} Wdh.`;
 });
 
-const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))));
+const isTopBand = computed(() => ordinal(props.tier as Tier, props.division as Division) === MAX_ORDINAL);
+/** Feeds the bar's scaleX only — a plain [0,100] clamp so a decayed apex peak (which can
+ *  legitimately sit anywhere between 0 and 100 LP) still shows a true partial fill instead of
+ *  always reading as full just because the tier is apex. */
+const lpBarPercent = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))));
+/** Feeds the numeric readout only — uncapped once truly in the top band (lp can grow past 100
+ *  there), clamped everywhere else (LP genuinely cannot exceed 100 below Apex). */
+const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props.lp)) : lpBarPercent.value));
 </script>
 
 <template>
@@ -100,10 +102,10 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
           {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
           <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
         </span>
-        <span class="rp-lp tnum">{{ lpClamped }} LP</span>
+        <span class="rp-lp tnum">{{ lpDisplay }} LP</span>
       </div>
       <div class="rankbar rp-bar">
-        <i class="bar-fill" :style="{ transform: `scaleX(${lpClamped / 100})` }" />
+        <i class="bar-fill" :style="{ transform: `scaleX(${lpBarPercent / 100})` }" />
       </div>
       <div class="rp-next">{{ nextLabel }}</div>
       <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
@@ -149,12 +151,10 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-size: 11.5px;
   color: var(--dim);
 }
-/* This is text (the "≈" trust marker), always sitting on a dark tier fill (the .card variant's
-   parent .rank-card gradient, or the .inline variant's .panel-reward) — light-mode bug fix:
-   was a hardcoded rgba(255,255,255,0.6) with no theme awareness. --dim is now pinned to a
-   light-on-dark value by both of those ancestors (RanksPage.vue's .rank-card,
-   tokens.css's .panel-reward), so a plain token reference tracks the fix automatically instead
-   of duplicating an untracked literal. */
+/* The "≈" trust marker always sits on a dark tier fill (the .card variant's parent .rank-card
+   gradient, or the .inline variant's .panel-reward). Both ancestors pin --dim to a
+   light-on-dark value, so referencing the token here tracks theme changes automatically instead
+   of hardcoding a literal. */
 .trust-marker {
   color: var(--dim);
   font-weight: 600;
@@ -168,9 +168,8 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
   font-weight: 700;
   color: var(--dim);
 }
-/* Was font-size:11px/--dim/opacity:0.75 — the faintest text on the card for the loudest event a
-   rank ladder can produce (critique finding). A rank loss is now the second-loudest thing on the
-   card after the tier name itself. */
+/* A rank loss is the second-loudest thing on the card after the tier name — deliberately not
+   faint text, since it's the loudest event a rank ladder can produce. */
 .rp-decay {
   font-size: 12.5px;
   font-weight: 700;
@@ -201,12 +200,10 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 .rank-progress.card .rp-tier {
   font-size: 12px;
 }
-/* This is text, sitting on the .card variant's parent tier-gradient card. On the full-card tier
-   gradient, --dim doesn't clear AA (audit P0-C), so this intentionally uses the brighter --text
-   token instead of --dim. Light-mode bug fix: was a hardcoded rgba(255,255,255,0.85) with no
-   theme awareness — RanksPage.vue's .rank-card now locally pins --text to a light-on-dark value
-   (mirroring tokens.css's .panel-reward), so a plain token reference tracks that fix
-   automatically instead of duplicating an untracked literal. */
+/* Sits on the .card variant's parent tier-gradient card, where --dim doesn't clear AA contrast —
+   uses the brighter --text token instead. RanksPage.vue's .rank-card pins --text to a
+   light-on-dark value (mirroring tokens.css's .panel-reward), so referencing the token here
+   tracks theme changes automatically instead of hardcoding a literal. */
 .rank-progress.card .rp-lp,
 .rank-progress.card .rp-next,
 .rank-progress.card .rp-trust {
@@ -218,9 +215,8 @@ const lpClamped = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))
 
 /* inline variant (active-workout focus column, finish-sequence beat) — compact, sits on the
    app's normal dark surface rather than a tier gradient, so text uses the standard tokens
-   rather than --tt. Uses .panel-reward (tokens.css), not the flat .panel recipe — this is the
-   one progress readout visible for most of a session, and it's showing the thing the whole app
-   is about (critique finding: it used to share its recipe with plain utility panels). */
+   rather than --tt. Uses .panel-reward (tokens.css), not the flat .panel recipe, since this is
+   the one progress readout visible for most of a session. */
 .rank-progress.inline {
   border-radius: var(--r-lg);
   padding: var(--sp3) var(--sp4);

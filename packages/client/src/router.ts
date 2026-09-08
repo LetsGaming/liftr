@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 /**
- * Five destinations, matching the mockup's setPanel()/mGo() targets exactly (plan 1.2).
  * One codebase, two layouts: AppShell renders SideNav above the md breakpoint, TabBar below —
  * these routes are shared by both.
  */
@@ -14,9 +13,8 @@ export const router = createRouter({
       path: "/routines/:id",
       name: "routine-overview",
       component: () => import("./pages/RoutineOverviewPage.vue"),
-      // Wave 0-B W1: this repo's first route param. Follows /records's beforeEnter precedent —
-      // kick the routine fetch off as soon as navigation starts (routineStore.load() is cheap to
-      // call again; it always re-fetches the full list) so data is in flight while the chunk
+      // Kicks the routine fetch off as soon as navigation starts (routineStore.load() is cheap
+      // to call again; it always re-fetches the full list) so data is in flight while the chunk
       // resolves, rather than waiting for onMounted after the leave-transition already started.
       beforeEnter: () => {
         void import("./stores/routineStore").then(({ useRoutineStore }) => useRoutineStore().load());

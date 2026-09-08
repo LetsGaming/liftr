@@ -21,7 +21,7 @@ export interface CustomExerciseInput {
   muscleSlugs?: { slug: string; role: "primary" | "secondary" }[];
 }
 
-export async function insertCustomExercise(db: LiftrDb, input: CustomExerciseInput) {
+export async function insertCustomExercise(db: LiftrDb, userId: string, input: CustomExerciseInput) {
   const { muscleSlugs, ...exerciseFields } = input;
   const requiredEquipment = deriveRequirements({
     slug: exerciseFields.slug,
@@ -30,7 +30,7 @@ export async function insertCustomExercise(db: LiftrDb, input: CustomExerciseInp
   });
   const [row] = await db
     .insert(exercises)
-    .values({ ...exerciseFields, isCustom: true, requiredEquipment: JSON.stringify(requiredEquipment) })
+    .values({ ...exerciseFields, isCustom: true, createdByUserId: userId, requiredEquipment: JSON.stringify(requiredEquipment) })
     .returning();
 
   if (muscleSlugs && muscleSlugs.length > 0) {

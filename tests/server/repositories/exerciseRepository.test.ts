@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { muscles, type LiftrDb } from "@liftr/db";
+import { muscles, OWNER_USER_ID, type LiftrDb } from "@liftr/db";
 import { insertCustomExercise } from "~server/repositories/exerciseRepository.js";
 import { createTestDb } from "../helpers/testDb.js";
 
@@ -16,7 +16,7 @@ async function insertMuscle(slug: string) {
 
 describe("insertCustomExercise", () => {
   it("creates the exercise with no muscle tags when none are given", async () => {
-    const row = await insertCustomExercise(db, {
+    const row = await insertCustomExercise(db, OWNER_USER_ID, {
       slug: "my-custom-move",
       name: "My Custom Move",
       movementPattern: "push-horizontal",
@@ -34,7 +34,7 @@ describe("insertCustomExercise", () => {
     // exercise rendered its machine slug everywhere (list, detail sheet, API response), not what
     // the user typed. Slug transliteration (ü→ue) already worked; the missing name field is the
     // part that was actually broken.
-    const row = await insertCustomExercise(db, {
+    const row = await insertCustomExercise(db, OWNER_USER_ID, {
       slug: "ueberkopfdruecken-test",
       name: "Überkopfdrücken Test",
       movementPattern: "push-vertical",
@@ -49,7 +49,7 @@ describe("insertCustomExercise", () => {
     const chest = await insertMuscle("chest");
     const triceps = await insertMuscle("triceps");
 
-    const row = await insertCustomExercise(db, {
+    const row = await insertCustomExercise(db, OWNER_USER_ID, {
       slug: "my-custom-press",
       name: "My Custom Press",
       movementPattern: "push-horizontal",
@@ -69,7 +69,7 @@ describe("insertCustomExercise", () => {
   it("silently skips an unknown muscle slug rather than throwing", async () => {
     const chest = await insertMuscle("chest");
 
-    const row = await insertCustomExercise(db, {
+    const row = await insertCustomExercise(db, OWNER_USER_ID, {
       slug: "my-custom-fly",
       name: "My Custom Fly",
       movementPattern: "isolation",

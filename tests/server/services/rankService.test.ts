@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { bodyweightLogs, prs, ranks, rankEvents, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { bodyweightLogs, OWNER_USER_ID, prs, ranks, rankEvents, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { ordinal, type Tier } from "@liftr/shared";
 import { writeJsonSetting } from "~server/repositories/settingsRepository.js";
 import { computeRankEventsByWeekday, getCurrentBodyweightKg, getUserSex, recomputeRankForExercise } from "~server/services/rankService.js";
@@ -60,13 +60,13 @@ describe("recomputeRankForExercise", () => {
   it("returns null when the exercise has no logged sets", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    expect(await recomputeRankForExercise(db, ex.id)).toBeNull();
+    expect(await recomputeRankForExercise(db, OWNER_USER_ID, ex.id)).toBeNull();
   });
 
   it("returns null when no standards are modeled for the exercise (e.g. plank)", async () => {
     const ex = await insertTestExercise(db);
     await logSet(ex.id, 60, 8);
-    expect(await recomputeRankForExercise(db, ex.id)).toBeNull();
+    expect(await recomputeRankForExercise(db, OWNER_USER_ID, ex.id)).toBeNull();
   });
 
   it("resolves a tier from the best logged set's e1RM / bodyweight ratio", async () => {
@@ -77,7 +77,7 @@ describe("recomputeRankForExercise", () => {
     // when there's no peak yet (see the dedicated corroboration tests below) — only the stored
     // *peak* requires a second corroborating day.
     await logSet(ex.id, 60, 8);
-    const result = await recomputeRankForExercise(db, ex.id);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(result).not.toBeNull();
     expect(result!.tier).toBe("apprentice");
   });
@@ -86,7 +86,7 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 60, 8);
-    const result = await recomputeRankForExercise(db, ex.id);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     // rankedUp requires a corroborated peak (a second day) and is false here — see the dedicated
     // corroboration tests below — but PR detection doesn't depend on peak/corroboration at all.
     expect(result!.rankedUp).toBe(false);
@@ -97,9 +97,9 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 60, 8);
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     await logSet(ex.id, 40, 5);
-    const second = await recomputeRankForExercise(db, ex.id);
+    const second = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(second!.newPr).toBeNull();
   });
 
@@ -116,7 +116,7 @@ describe("recomputeRankForExercise", () => {
     // away from — e1rm ~76, ratio ~1.01 at the 75kg fallback bodyweight.
     await establishCorroboratedPeak(ex.id, 60, 8);
 
-    const maleResult = await recomputeRankForExercise(db, ex.id);
+    const maleResult = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(maleResult!.tier).toBe("apprentice"); // 1.01 is below the male athlete threshold of 5.0
 
     // Same logged history, switch the stored profile to female, recompute again. The *peak*
@@ -129,8 +129,8 @@ describe("recomputeRankForExercise", () => {
     // recovery-gain throttle correctly does not engage even though this is a same-day recompute;
     // only a genuine backlog (current sitting below the OLD peak) should throttle the climb (see
     // the dedicated decay/recovery tests below for that case).
-    await writeJsonSetting(db, "profile", { sex: "female" });
-    const femaleResult = await recomputeRankForExercise(db, ex.id);
+    await writeJsonSetting(db, OWNER_USER_ID, "profile", { sex: "female" });
+    const femaleResult = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const femaleRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(femaleRow!.peakTier).toBe("athlete");
     expect(femaleResult!.tier).toBe("athlete"); // reflected immediately: no backlog to throttle
@@ -146,7 +146,7 @@ describe("recomputeRankForExercise", () => {
     // First day: apprentice-level set. Uncorroborated yet — no peak, no event.
     const day1 = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
     await logSet(ex.id, 60, 8, day1);
-    let result = await recomputeRankForExercise(db, ex.id);
+    let result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(result!.rankedUp).toBe(false);
     let rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(0);
@@ -154,7 +154,7 @@ describe("recomputeRankForExercise", () => {
     // Second day, same performance: now corroborated -> peak establishes -> one event row.
     const day2 = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     await logSet(ex.id, 60, 8, day2);
-    result = await recomputeRankForExercise(db, ex.id);
+    result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(result!.rankedUp).toBe(true);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
@@ -163,7 +163,7 @@ describe("recomputeRankForExercise", () => {
     // A third, weaker set doesn't change the candidate (apprentice from day1/2 is still best) ->
     // no new row.
     await logSet(ex.id, 40, 5);
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
 
@@ -171,7 +171,7 @@ describe("recomputeRankForExercise", () => {
     // -> peak stays at apprentice, no new row yet.
     const day4 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
     await logSet(ex.id, 90, 8, day4);
-    result = await recomputeRankForExercise(db, ex.id);
+    result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(result!.rankedUp).toBe(false);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
@@ -179,7 +179,7 @@ describe("recomputeRankForExercise", () => {
     // A second day at the same athlete-level performance corroborates it -> genuine rank-up.
     const day5 = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
     await logSet(ex.id, 90, 8, day5);
-    result = await recomputeRankForExercise(db, ex.id);
+    result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(result!.rankedUp).toBe(true);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(2);
@@ -195,7 +195,7 @@ describe("recomputeRankForExercise", () => {
     // Two corroborating days establish the peak.
     await db.insert(bodyweightLogs).values({ date: "2026-01-01", weightKg: 75 });
     await establishCorroboratedPeak(ex.id, 85, 8, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
-    const first = await recomputeRankForExercise(db, ex.id);
+    const first = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(first!.rankedUp).toBe(true);
     const firstRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(firstRow!.tier).toBe("athlete");
@@ -209,7 +209,7 @@ describe("recomputeRankForExercise", () => {
     // the *displayed* current rank doesn't regress either, since it's peak-derived and this
     // recompute happens with zero days since last trained (no decay yet).
     await db.insert(bodyweightLogs).values({ date: "2026-02-01", weightKg: 130 });
-    const second = await recomputeRankForExercise(db, ex.id);
+    const second = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(second!.tier).toBe(firstRow!.tier); // fixed: no longer regresses
     const secondRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(`${secondRow!.peakTier}-${secondRow!.peakDivision}`).toBe(firstPeakOrdinal);
@@ -221,12 +221,12 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
     // A stronger performance, also corroborated on a second day, clears the athlete threshold.
     await establishCorroboratedPeak(ex.id, 90, 8, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const after = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
     expect(after!.peakTier).toBe("athlete");
@@ -261,7 +261,7 @@ describe("recomputeRankForExercise", () => {
     // and the peak is confirmed.
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
     await establishCorroboratedPeak(ex.id, 90, 8, longAgo);
-    const result = await recomputeRankForExercise(db, ex.id);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
 
     const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(row!.peakTier).toBe("athlete");
@@ -285,14 +285,14 @@ describe("recomputeRankForExercise", () => {
 
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
     await establishCorroboratedPeak(ex.id, 90, 8, longAgo);
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const decayed = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(decayed!.division).not.toBe(decayed!.peakDivision);
 
     // A fresh set today (even a weak one) resets daysSinceLastTrained to 0 -> a buffed
     // recovery-gain climb (rank engine v2), not the old instant full snap-back to peak.
     await logSet(ex.id, 10, 5);
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const afterReturn = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(afterReturn!.tier).toBe("athlete");
 
@@ -309,13 +309,13 @@ describe("recomputeRankForExercise", () => {
 
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
     await establishCorroboratedPeak(ex.id, 90, 8, longAgo);
-    await recomputeRankForExercise(db, ex.id); // corroborated peak establishes: genuine rank-up, 1 row
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id); // corroborated peak establishes: genuine rank-up, 1 row
     let rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
 
     // Recompute again with no new set (simulating "time passed, decay applied on next
     // recompute") — the current band moved, but peak did not, so no new event.
-    const result = await recomputeRankForExercise(db, ex.id);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(result!.rankedUp).toBe(false);
     rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(1);
@@ -332,7 +332,7 @@ describe("recomputeRankForExercise", () => {
     // or a more-recent one would mask the decay entirely.
     const longAgo = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
     await establishCorroboratedPeak(ex.id, 90, 8, longAgo); // 90kg x 8 at 75kg fallback -> ratio ~1.52 -> athlete/I
-    const decayed = await recomputeRankForExercise(db, ex.id);
+    const decayed = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(decayed).not.toBeNull();
     const decayedRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(decayedRow!.peakTier).toBe("athlete");
@@ -343,7 +343,7 @@ describe("recomputeRankForExercise", () => {
 
     // Now return: log a fresh, unremarkable set today (same weight, not a new peak).
     await logSet(ex.id, 90, 8);
-    const afterReturn = await recomputeRankForExercise(db, ex.id);
+    const afterReturn = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     expect(afterReturn).not.toBeNull();
     const returnedRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
@@ -363,11 +363,11 @@ describe("recomputeRankForExercise", () => {
     await seedStandards(ex.id);
     // Establish a normal, corroborated peak (bodyweight-relative exercise, ratio-based).
     await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 3 * 24 * 60 * 60 * 1000));
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
 
     await logSet(ex.id, 400, 5); // a huge, implausible jump
-    const result = await recomputeRankForExercise(db, ex.id, 0.02); // simulated flagged multiplier, below the peak-eligibility floor
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.02); // simulated flagged multiplier, below the peak-eligibility floor
     expect(result).not.toBeNull();
     const rank = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     // peak must not have advanced to reflect the 400kg set
@@ -380,12 +380,12 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 60, 8); // establishes a normal PR (PR detection is independent of peak corroboration)
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
     const before = await db.query.prs.findFirst({ where: eq(prs.exerciseId, ex.id) });
     expect(before).not.toBeUndefined();
 
     await logSet(ex.id, 90, 8); // a genuinely higher e1RM, would otherwise be a new PR
-    const result = await recomputeRankForExercise(db, ex.id, 0.02); // far below PR_ELIGIBILITY_FLOOR
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.02); // far below PR_ELIGIBILITY_FLOOR
     expect(result!.newPr).toBeNull();
     const after = await db.query.prs.findFirst({
       where: eq(prs.exerciseId, ex.id),
@@ -399,7 +399,7 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
 
     // Genuinely higher e1RM, corroborated across two days so the peak-advance itself isn't what's
     // under test here — only whether the moderate flag still blocks the PR while letting a
@@ -407,7 +407,7 @@ describe("recomputeRankForExercise", () => {
     await establishCorroboratedPeak(ex.id, 90, 8, new Date(Date.now() - 2 * 24 * 60 * 60 * 1000));
     // 0.4 sits between PEAK_ELIGIBILITY_FLOOR (0.3) and PR_ELIGIBILITY_FLOOR (0.5): peak-eligible,
     // PR-ineligible — this is exactly the gap the stricter PR floor is meant to create.
-    const result = await recomputeRankForExercise(db, ex.id, 0.4);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.4);
     expect(result!.newPr).toBeNull(); // PR blocked
     const rank = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(rank!.peakTier).toBe("athlete"); // peak still advanced
@@ -417,7 +417,7 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 60, 8);
-    const result = await recomputeRankForExercise(db, ex.id, 0.5); // == PR_ELIGIBILITY_FLOOR
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.5); // == PR_ELIGIBILITY_FLOOR
     expect(result!.newPr).not.toBeNull();
   });
 
@@ -425,7 +425,7 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 60, 8);
-    const result = await recomputeRankForExercise(db, ex.id, 0.5);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.5);
     expect(result).not.toBeNull(); // still recomputes, just discounted — never a no-op/error
   });
 
@@ -438,7 +438,7 @@ describe("recomputeRankForExercise", () => {
     // even fire, so the ceiling check is the only safeguard. Peak must stay unestablished rather
     // than being seeded from this flagged data. (It also wouldn't be corroborated yet either way.)
     await logSet(ex.id, 400, 5); // huge, implausible for a brand-new exercise
-    const result = await recomputeRankForExercise(db, ex.id, 0.02); // below PEAK_ELIGIBILITY_FLOOR
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.02); // below PEAK_ELIGIBILITY_FLOOR
     expect(result).not.toBeNull();
 
     const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
@@ -456,7 +456,7 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await logSet(ex.id, 400, 5);
-    const result = await recomputeRankForExercise(db, ex.id, 0.02);
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.02);
     expect(result!.rankedUp).toBe(false);
     const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(rows).toHaveLength(0);
@@ -466,7 +466,7 @@ describe("recomputeRankForExercise", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000));
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
 
     // Genuinely higher e1RM, corroborated across two days -> a real peak advance.
     const day = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
@@ -474,7 +474,7 @@ describe("recomputeRankForExercise", () => {
     await logSet(ex.id, 90, 8, new Date(day.getTime() + 24 * 60 * 60 * 1000));
     // 0.4 is peak-eligible (>= PEAK_ELIGIBILITY_FLOOR 0.3) so this still fires rankedUp, but it
     // carries a reason — exactly the gap this task closes.
-    const result = await recomputeRankForExercise(db, ex.id, 0.4, "improbable_jump");
+    const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id, 0.4, "improbable_jump");
     expect(result!.rankedUp).toBe(true);
 
     const rows = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
@@ -488,7 +488,7 @@ describe("recomputeRankForExercise", () => {
       const ex = await insertTestExercise(db);
       await seedStandards(ex.id);
       await logSet(ex.id, 60, 8);
-      const result = await recomputeRankForExercise(db, ex.id); // default multiplier = 1, fully plausible
+      const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id); // default multiplier = 1, fully plausible
       expect(result!.rankedUp).toBe(false);
       const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
       expect(row!.peakTier).toBeNull();
@@ -502,7 +502,7 @@ describe("recomputeRankForExercise", () => {
       const ex = await insertTestExercise(db);
       await seedStandards(ex.id);
       await establishCorroboratedPeak(ex.id, 60, 8, new Date(Date.now() - 24 * 60 * 60 * 1000));
-      const result = await recomputeRankForExercise(db, ex.id);
+      const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
       expect(result!.rankedUp).toBe(true);
       const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
       expect(row!.peakTier).not.toBeNull();
@@ -521,7 +521,7 @@ describe("recomputeRankForExercise", () => {
       midday.setUTCHours(12, 0, 0, 0);
       await logSet(ex.id, 60, 8, midday);
       await logSet(ex.id, 60, 8, new Date(midday.getTime() + 60 * 60 * 1000)); // same day, an hour later
-      const result = await recomputeRankForExercise(db, ex.id);
+      const result = await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
       expect(result!.rankedUp).toBe(false);
       const row = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
       expect(row!.peakTier).toBeNull();
@@ -531,13 +531,13 @@ describe("recomputeRankForExercise", () => {
       const ex = await insertTestExercise(db);
       await seedStandards(ex.id);
       await establishCorroboratedPeak(ex.id, 90, 8, new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)); // athlete
-      await recomputeRankForExercise(db, ex.id);
+      await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
       const before = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
       expect(before!.peakTier).toBe("athlete");
 
       // A weaker set doesn't touch the peak at all — it isn't even the new candidate.
       await logSet(ex.id, 40, 5);
-      await recomputeRankForExercise(db, ex.id);
+      await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
       const after = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
       expect(after!.peakTier).toBe("athlete");
       expect(after!.peakDivision).toBe(before!.peakDivision);
@@ -547,7 +547,7 @@ describe("recomputeRankForExercise", () => {
 
 describe("computeRankEventsByWeekday", () => {
   it("returns all 7 weekdays, zero-filled when nothing has happened", async () => {
-    const result = await computeRankEventsByWeekday(db);
+    const result = await computeRankEventsByWeekday(db, OWNER_USER_ID);
     expect(result).toHaveLength(7);
     expect(result.every((r) => r.count === 0)).toBe(true);
     expect(result.map((r) => r.weekday).sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
@@ -557,9 +557,9 @@ describe("computeRankEventsByWeekday", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await establishCorroboratedPeak(ex.id, 60, 8);
-    await recomputeRankForExercise(db, ex.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
 
-    const result = await computeRankEventsByWeekday(db);
+    const result = await computeRankEventsByWeekday(db, OWNER_USER_ID);
     const todayWeekday = new Date().getDay();
     const total = result.reduce((sum, r) => sum + r.count, 0);
     expect(total).toBe(1);
@@ -570,14 +570,14 @@ describe("computeRankEventsByWeekday", () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
     await establishCorroboratedPeak(ex.id, 60, 8);
-    await recomputeRankForExercise(db, ex.id); // clean rank-up #1
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex.id); // clean rank-up #1
 
     const ex2 = await insertTestExercise(db);
     await seedStandards(ex2.id);
     await establishCorroboratedPeak(ex2.id, 60, 8);
-    await recomputeRankForExercise(db, ex2.id, 0.4, "pace"); // flagged rank-up #2
+    await recomputeRankForExercise(db, OWNER_USER_ID, ex2.id, 0.4, "pace"); // flagged rank-up #2
 
-    const result = await computeRankEventsByWeekday(db);
+    const result = await computeRankEventsByWeekday(db, OWNER_USER_ID);
     const todayWeekday = new Date().getDay();
     const today = result.find((r) => r.weekday === todayWeekday)!;
     expect(today.count).toBe(2);
@@ -587,17 +587,17 @@ describe("computeRankEventsByWeekday", () => {
 
 describe("getCurrentBodyweightKg", () => {
   it("falls back to the hardcoded default when nothing is logged", async () => {
-    expect(await getCurrentBodyweightKg(db)).toBe(75);
+    expect(await getCurrentBodyweightKg(db, OWNER_USER_ID)).toBe(75);
   });
 });
 
 describe("getUserSex", () => {
   it("defaults to male when the profile is unset", async () => {
-    expect(await getUserSex(db)).toBe("male");
+    expect(await getUserSex(db, OWNER_USER_ID)).toBe("male");
   });
 
   it("reads the stored profile's sex once set", async () => {
-    await writeJsonSetting(db, "profile", { sex: "female" });
-    expect(await getUserSex(db)).toBe("female");
+    await writeJsonSetting(db, OWNER_USER_ID, "profile", { sex: "female" });
+    expect(await getUserSex(db, OWNER_USER_ID)).toBe("female");
   });
 });

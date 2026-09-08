@@ -1,8 +1,8 @@
 /**
  * The finish-workout flow: snapshot the session, await the server's rank verdicts, build the
  * finish-sequence's reward beats, and offer to update the routine if the session out-performed
- * its targets. Extracted out of WorkoutPage.vue (QUAL-03: that file was the largest in the app,
- * 1280 LOC mixing session orchestration, sharing, mesocycle UI, and this finish flow together).
+ * its targets. Extracted out of WorkoutPage.vue — that file was the largest in the app, 1280 LOC
+ * mixing session orchestration, sharing, mesocycle UI, and this finish flow together.
  */
 import { computed, ref, watch, type ComputedRef } from "vue";
 import { buildRoutineUpdate, findRoutineBeats, type RoutineBeat } from "./useRoutineBeat";
@@ -29,16 +29,16 @@ export interface FinishedSummary {
  *  getDay()-indexed (0 = Sunday). */
 const DAY_ABBR = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
-/** Rank engine v2 (task 10): honest, threshold-free German copy for each plausibility-gate
- *  reason a finish-workout verdict can carry. Never states the exact numbers that tripped it. */
+/** Honest, threshold-free German copy for each plausibility-gate reason a finish-workout verdict
+ *  can carry. Never states the exact numbers that tripped it. */
 const PLAUSIBILITY_NOTE_DE: Record<string, string> = {
   pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
   improbable_jump: "Dieser Sprung war ungewöhnlich groß — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
   exceeds_ceiling: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
 };
 
-/** Rank engine v2 (task 10): a one-time post-workout caption for an exercise's rank card,
- *  surfaced only when there's something worth saying (a same-band recovery-style LP gain, or a
+/** A one-time post-workout caption for an exercise's rank card, surfaced only when there's
+ *  something worth saying (a same-band recovery-style LP gain, or a
  *  plausibility-gate note). Purely presentational — nothing here is persisted. */
 export interface SessionCaption {
   exerciseId: string;
@@ -55,8 +55,8 @@ interface Stores {
   xpStore: ReturnType<typeof useXpStore>;
   historyStore: ReturnType<typeof useHistoryStore>;
   catalogStore: ReturnType<typeof useCatalogStore>;
-  /** Phase 5 (share-card redesign): the finish flow needs the *post*-session overall tier for
-   *  the share card's badge — a rank-up mid-session can move it, so it's reloaded alongside
+  /** The finish flow needs the *post*-session overall tier for the share card's badge — a
+   *  rank-up mid-session can move it, so it's reloaded alongside
    *  streak/XP below rather than trusted from whatever it was at session start. */
   overallRankStore: ReturnType<typeof useOverallRankStore>;
 }
@@ -73,7 +73,7 @@ export function useWorkoutFinish(
 
   /**
    * Session-earned signals, accumulated live as sets are logged so finishWorkout() can hand them
-   * to FinishSequence instead of the old hardcoded prCount:0/rankUps:[] (engagement rework W4).
+   * to FinishSequence instead of the old hardcoded prCount:0/rankUps:[].
    * Reset whenever the active workoutId actually changes — a session resumed after an app reload
    * (store.restore()) gets a fresh workoutId only if it differs from whatever was here before,
    * so a crash-recovered session under-counts whatever XP/rank-ups it earned in the previous app
@@ -82,15 +82,14 @@ export function useWorkoutFinish(
    */
   const sessionXp = ref(0);
   const sessionRankUps = ref<RankUpSummary[]>([]);
-  /** Task 10: unlike sessionRankUps (filtered to rankedUp/newPr, for the celebration beat), this
-   *  covers every touched exercise's verdict — a same-band recovery LP gain or a plausibility
-   *  note is exactly the case that never trips rankedUp/newPr, so it needs its own list. */
+  /** Unlike sessionRankUps (filtered to rankedUp/newPr, for the celebration beat), this covers
+   *  every touched exercise's verdict — a same-band recovery LP gain or a plausibility note is
+   *  exactly the case that never trips rankedUp/newPr, so it needs its own list. */
   const sessionCaptions = ref<SessionCaption[]>([]);
   /**
-   * Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md,
-   * §2/§3): unlike sessionXp above (accumulated client-side, live, per logged set), these two
-   * bonuses only exist server-side and are computed once at finish time — they arrive in
-   * store.finish()'s result and are populated in finishWorkout() below, not accumulated here.
+   * Unlike sessionXp above (accumulated client-side, live, per logged set), these two bonuses
+   * only exist server-side and are computed once at finish time — they arrive in store.finish()'s
+   * result and are populated in finishWorkout() below, not accumulated here.
    */
   const consistencyBonusXp = ref(0);
   const varietyBonusXp = ref(0);
@@ -116,9 +115,9 @@ export function useWorkoutFinish(
    *  moment the post-finish reload lands. */
   const finishXpSnapshot = ref<{ levelBefore: number; progressBefore: number } | null>(null);
 
-  /** Feedback: "if a user made changes to the routine while in the workout (more weight/reps
-   *  than the default) it should ask to overwrite the routine." Populated in finishWorkout(),
-   *  before store.finish() resets the session. */
+  /** If a user made changes to the routine while in the workout (more weight/reps than the
+   *  default), the app should ask to overwrite the routine. Populated in finishWorkout(), before
+   *  store.finish() resets the session. */
   const routineBeats = ref<RoutineBeat[]>([]);
   const beatRoutine = ref<Routine | null>(null);
   const beatActiveExercises = ref<ActiveExercise[]>([]);
@@ -173,8 +172,8 @@ export function useWorkoutFinish(
       sets: ex.sets.filter((s) => s.logged).map((s) => ({ weightKg: s.weightKg, reps: s.reps, isWarmup: s.isWarmup })),
     }));
 
-    // Feedback: "if a user made changes to the routine while in the workout (more weight/reps
-    // than the default) it should ask to overwrite the routine." Snapshotted here — before
+    // If a user made changes to the routine while in the workout (more weight/reps than the
+    // default), the app should ask to overwrite the routine. Snapshotted here — before
     // store.finish() resets the session — since that's the last point store.exercises still
     // reflects what was actually logged. JSON round-trip strips Pinia's reactive Proxy, same
     // reason persist() does it in activeWorkoutStore.ts, so the plain snapshot survives past
@@ -217,13 +216,12 @@ export function useWorkoutFinish(
       ranksStore.applyVerdict(r.exerciseId, { tier: r.tier, division: r.division, lp: r.lp });
     }
 
-    // Task 10: recovery-gain / plausibility captions for the post-finish summary panel. A
-    // recovery gain is exactly a same-band LP increase with no tier/division change — this is
-    // deliberately not restricted to "was this specifically a decay-recovery climb", since the
-    // server doesn't return that distinction; a normal (non-decayed) session that simply logs a
-    // better set and gains LP in the same band also satisfies this and will show the same label.
-    // Known, accepted simplification (rank-engine-v2 plan, task 10) rather than scope creep to
-    // add a new server field for it.
+    // Recovery-gain / plausibility captions for the post-finish summary panel. A recovery gain
+    // is exactly a same-band LP increase with no tier/division change — this is deliberately not
+    // restricted to "was this specifically a decay-recovery climb", since the server doesn't
+    // return that distinction; a normal (non-decayed) session that simply logs a better set and
+    // gains LP in the same band also satisfies this and will show the same label. Known,
+    // accepted simplification rather than scope creep to add a new server field for it.
     sessionCaptions.value = ranks
       .map((r) => {
         const recoveryGainLabel =

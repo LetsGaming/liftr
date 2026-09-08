@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { bodyweightLogs, type LiftrDb } from "@liftr/db";
+import { bodyweightLogs, OWNER_USER_ID, type LiftrDb } from "@liftr/db";
 import { findLatestBodyweightLog, findRecentBodyweightLogs, upsertBodyweightLog } from "~server/repositories/bodyweightRepository.js";
 import { createTestDb } from "../helpers/testDb.js";
 
@@ -16,7 +16,7 @@ async function insertLog(date: string, weightKg: number) {
 
 describe("findRecentBodyweightLogs", () => {
   it("returns an empty array when there are no logs", async () => {
-    const result = await findRecentBodyweightLogs(db);
+    const result = await findRecentBodyweightLogs(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -25,7 +25,7 @@ describe("findRecentBodyweightLogs", () => {
     await insertLog("2026-09-05", 81);
     await insertLog("2026-09-03", 80.5);
 
-    const result = await findRecentBodyweightLogs(db);
+    const result = await findRecentBodyweightLogs(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.date)).toEqual(["2026-09-05", "2026-09-03", "2026-09-01"]);
   });
@@ -35,7 +35,7 @@ describe("findRecentBodyweightLogs", () => {
     await insertLog("2026-09-02", 80);
     await insertLog("2026-09-03", 80);
 
-    const result = await findRecentBodyweightLogs(db, 2);
+    const result = await findRecentBodyweightLogs(db, OWNER_USER_ID, 2);
 
     expect(result).toHaveLength(2);
     expect(result.map((r) => r.date)).toEqual(["2026-09-03", "2026-09-02"]);
@@ -47,7 +47,7 @@ describe("findRecentBodyweightLogs", () => {
       await insertLog(date, 80);
     }
 
-    const result = await findRecentBodyweightLogs(db);
+    const result = await findRecentBodyweightLogs(db, OWNER_USER_ID);
 
     expect(result).toHaveLength(60);
   });
@@ -55,7 +55,7 @@ describe("findRecentBodyweightLogs", () => {
 
 describe("findLatestBodyweightLog", () => {
   it("returns undefined when there are no logs", async () => {
-    const result = await findLatestBodyweightLog(db);
+    const result = await findLatestBodyweightLog(db, OWNER_USER_ID);
     expect(result).toBeUndefined();
   });
 
@@ -63,7 +63,7 @@ describe("findLatestBodyweightLog", () => {
     await insertLog("2026-08-01", 79);
     await insertLog("2026-09-01", 82);
 
-    const result = await findLatestBodyweightLog(db);
+    const result = await findLatestBodyweightLog(db, OWNER_USER_ID);
 
     expect(result?.date).toBe("2026-09-01");
     expect(result?.weightKg).toBe(82);
@@ -72,7 +72,7 @@ describe("findLatestBodyweightLog", () => {
 
 describe("upsertBodyweightLog", () => {
   it("inserts a new row when no log exists for that date", async () => {
-    const row = await upsertBodyweightLog(db, "2026-09-07", 78.5);
+    const row = await upsertBodyweightLog(db, OWNER_USER_ID, "2026-09-07", 78.5);
 
     expect(row.date).toBe("2026-09-07");
     expect(row.weightKg).toBe(78.5);
@@ -82,9 +82,9 @@ describe("upsertBodyweightLog", () => {
   });
 
   it("overwrites the existing row's weight for that date rather than inserting a duplicate", async () => {
-    const first = await upsertBodyweightLog(db, "2026-09-07", 78.5);
+    const first = await upsertBodyweightLog(db, OWNER_USER_ID, "2026-09-07", 78.5);
 
-    const second = await upsertBodyweightLog(db, "2026-09-07", 79.2);
+    const second = await upsertBodyweightLog(db, OWNER_USER_ID, "2026-09-07", 79.2);
 
     expect(second.id).toBe(first.id);
     expect(second.weightKg).toBe(79.2);
@@ -95,8 +95,8 @@ describe("upsertBodyweightLog", () => {
   });
 
   it("does not affect a log on a different date", async () => {
-    await upsertBodyweightLog(db, "2026-09-06", 78);
-    await upsertBodyweightLog(db, "2026-09-07", 79);
+    await upsertBodyweightLog(db, OWNER_USER_ID, "2026-09-06", 78);
+    await upsertBodyweightLog(db, OWNER_USER_ID, "2026-09-07", 79);
 
     const all = await db.query.bodyweightLogs.findMany();
     expect(all).toHaveLength(2);

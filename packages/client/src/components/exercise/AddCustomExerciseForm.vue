@@ -1,22 +1,14 @@
 <script setup lang="ts">
 /**
- * Feature: add-custom-exercise (Plan C §3 Phase 3 — "add-custom-exercise form"). POST
- * /api/exercises already existed server-side with zero client consumer; this is that consumer's
- * first build. A slug is derived from the typed display name (lowercased, non-alphanumeric runs
- * collapsed to single hyphens) — used only as the exercise's stable identifier/lookup key. The
- * typed `displayName` itself is sent as `name` and persisted verbatim (WS2 fix): earlier versions
- * of this form sent the slug as `nameKey` instead, and since no display code ever actually read
- * `nameKey`, every custom exercise rendered its raw slug everywhere in the app. That's fixed now
- * — the exercises table has a real `name` column and `useExerciseName.ts` prefers it over the
- * i18n/slug fallback that catalog exercises still use.
+ * The slug is derived from the typed display name (lowercased, non-alphanumeric runs collapsed to
+ * hyphens) and used only as the exercise's stable lookup key — the typed `displayName` is sent as
+ * `name` and displayed verbatim (see useExerciseName.ts).
  *
- * EXERCISE_SLUG_PATTERN is exported from @liftr/shared (packages/shared/src/catalog/slug.ts, via
- * the package's `export *` index) and already used the same way server-side in
- * routes/exercises.ts, so it's reused here directly for inline validation feedback rather than
- * hand-copied — avoids the exact regex-drift risk this codebase's own conventions warn against.
- * The derived slug above already only produces lowercase-alphanumeric-hyphen output, so this
- * pattern check only meaningfully rejects an edge case (e.g. an all-symbol name collapsing to an
- * empty or malformed slug); the server's own 400 response remains the final authority either way.
+ * EXERCISE_SLUG_PATTERN is reused from @liftr/shared (packages/shared/src/catalog/slug.ts), the
+ * same pattern the server validates against in routes/exercises.ts, to avoid regex drift. The
+ * slug computed below is already lowercase-alphanumeric-hyphen, so this check only catches an
+ * edge case like an all-symbol name collapsing to an empty slug; the server's 400 response
+ * remains the final authority.
  */
 import { computed, ref, watch } from "vue";
 import { EXERCISE_SLUG_PATTERN } from "@liftr/shared";
@@ -46,10 +38,10 @@ const MOVEMENT_PATTERNS: { value: string; label: string }[] = [
   { value: "pull-horizontal", label: "Ziehen, horizontal" },
   { value: "pull-vertical", label: "Ziehen, vertikal" },
   { value: "carry", label: "Tragen" },
-  /* Final-review finding: the catalog's real movement-pattern vocabulary for isolation work is
-     these six muscle-group-qualified values (tools/catalog/curated.yaml), never a bare
-     "isolation" — that value matched zero catalog exercises, permanently excluding every custom
-     isolation exercise from findSubstitute's identical-movement-pattern matching. */
+  /* The catalog's movement-pattern vocabulary for isolation work uses these six
+     muscle-group-qualified values (tools/catalog/curated.yaml); a bare "isolation" value matches
+     no catalog exercise, which would exclude custom isolation exercises from findSubstitute's
+     movement-pattern matching. */
   { value: "isolation-arms", label: "Isolation (Arme)" },
   { value: "isolation-core", label: "Isolation (Rumpf)" },
   { value: "isolation-shoulders", label: "Isolation (Schultern)" },
@@ -58,11 +50,10 @@ const MOVEMENT_PATTERNS: { value: string; label: string }[] = [
   { value: "isolation-back", label: "Isolation (Rücken)" },
 ];
 
-/* Final-review finding: German umlauts/ß have no transliteration step before the
-   non-alphanumeric collapse below, so e.g. "Bankdrücken" became "bankdr-cken" and "Übung" became
-   "bung". The slug is only the lookup key now (the typed name itself is sent verbatim as `name`,
-   see save() below) but it's still permanent with no edit path, so a mangled slug is still worth
-   avoiding on its own — this keeps that transliteration step. */
+/* German umlauts and ß have no transliteration before the non-alphanumeric collapse below, so
+   e.g. "Bankdrücken" would become "bankdr-cken". The slug is only a lookup key (the typed name is
+   sent verbatim as `name`, see save() below), but since it's permanent with no edit path, this
+   step avoids a mangled slug. */
 function transliterateGerman(s: string): string {
   return s
     .replace(/ä/gi, (m) => (m === "Ä" ? "Ae" : "ae"))
@@ -82,10 +73,9 @@ const canSave = computed(
   () => slug.value.length > 0 && EXERCISE_SLUG_PATTERN.test(slug.value) && primaryMuscle.value !== "" && !saving.value,
 );
 
-/* Final-review finding (5b): equipment wasn't cleared when isBodyweight was checked, so a user
-   who picked e.g. "Langhantel" and then checked "Eigengewichtsübung" afterward would submit
-   equipment: "barbell" alongside isBodyweight: true — a bodyweight exercise with stale barbell
-   requirements. "" is the existing "no equipment" sentinel (the select's own default option). */
+/* Clear equipment when isBodyweight is checked, so a bodyweight exercise doesn't submit stale
+   equipment (e.g. "barbell" picked earlier). "" is the "no equipment" sentinel — the select's own
+   default option. */
 watch(isBodyweight, (bodyweight) => {
   if (bodyweight) equipment.value = "";
 });

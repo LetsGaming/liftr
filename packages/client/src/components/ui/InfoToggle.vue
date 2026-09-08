@@ -2,10 +2,9 @@
 /**
  * A lightweight, always-reachable "what does this mean?" disclosure — tap-to-reveal, not a
  * hover tooltip (this app has no hover surface) and not gated behind a one-time onboarding
- * modal that can't be reopened. Originated on RanksPage.vue's LP/trust explainer (critique
- * finding: "LP"/"≈" were explained only via `title`); extracted here so OverviewPage's own
- * jargon (Gesamtrang, Division, LP in the Top-Ränge tile — same critique, different screen)
- * gets the identical mechanism instead of a second hand-rolled copy that can drift.
+ * modal that can't be reopened. Used for jargon like LP/≈/Gesamtrang/Division on both
+ * RanksPage.vue and OverviewPage.vue instead of a `title` attribute (not discoverable) or a
+ * second hand-rolled explainer that could drift between the two screens.
  */
 import { ref } from "vue";
 import AppIcon from "./AppIcon.vue";
@@ -29,8 +28,8 @@ const open = ref(false);
   display: flex;
   align-items: center;
   gap: 6px;
-  /* Audit finding: inherited the button UA-default line-height (1.0, below the 1.3 craft
-     floor) and a sub-24px tap height — both fixed here with one padding/line-height pair. */
+  /* Buttons default to line-height: 1 and a tap height under 24px; this padding/line-height
+     pair fixes both. */
   padding: 4px 0;
   line-height: 1.4;
   text-align: left;
@@ -45,8 +44,8 @@ const open = ref(false);
   flex: none;
 }
 .info-body {
-  /* Audit finding: no measure constraint at all — live-measured at 332 chars/line inside
-     RanksPage's wide content column. Capped to the 45-75ch craft-floor range. */
+  /* Without a max-width this ran to ~332 chars/line inside RanksPage's wide content column;
+     capped to the 45-75ch readable range. */
   max-width: 60ch;
   margin-top: var(--sp2);
   font-size: 12.5px;

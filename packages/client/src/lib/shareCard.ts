@@ -1,39 +1,23 @@
 /**
- * Draws a @liftr/shared WorkoutCardModel onto a <canvas> and shares/downloads it (plan §4.5,
- * "shareable workout & run cards"). The layout math (CARD_DIMENSIONS, renderExerciseLines,
- * wrapText, the >10-exercise compression rule, and the Phase-5 sizing helpers below) already
- * existed in @liftr/shared, fully unit-tested; this module is the missing half: the actual
- * drawing + navigator.share() call the layout module's own header comment always pointed at
- * ("the actual drawing... lives in the client package").
+ * Draws a @liftr/shared WorkoutCardModel onto a <canvas> and shares/downloads it. The layout
+ * math (CARD_DIMENSIONS, renderExerciseLines, wrapText, the >10-exercise compression rule, and
+ * the sizing helpers below) lives in @liftr/shared, fully unit-tested; this module is the other
+ * half: the actual drawing + navigator.share() call.
  *
  * Colors are hardcoded rather than read from tokens.css custom properties: canvas 2D drawing
  * happens off the DOM render path, and hardcoding a fixed small palette here is simpler and
  * more reliable than resolving CSS vars at draw time, at the cost of needing a manual update
- * if the brand palette in tokens.css ever changes materially. Phase 5 (2026-09-02): re-synced
- * every value below against the live tokens.css — the previous palette/font pair had drifted to
- * pre-Phase-1 values and a font tokens.css had already removed app-wide. Updated again the same
- * day once Phase 1's layered medal rebuild (extrusion plate, bevel rim, per-tier --face-grad,
- * specular streaks) landed on master — drawTierBadge below now mirrors *that* CSS, not the flat
- * 2-stop gradient it originally shipped against.
+ * if the brand palette in tokens.css ever changes materially.
  *
- * 2026-09-04: adopted "Nebula Halo" (audit/share-card-design-variations.md variation 1) — the
- * background glow, wordmark fill, and two of four stat accents now use the app's Nebula brand
- * gradient instead of plain blue, closing workplan-v1 open question 8. Combined with a product
- * decision to demote the tier medal: it moves from a centered, ~254px-tall section in the main
- * content flow to a small top-right corner stamp (closer in spirit to that doc's variation 8),
- * so "rank and level" read as a badge, not the headline — the vertical space that freed up goes
- * to the trained-muscle figures and the exercise grid, both drawn larger than before.
- *
- * 2026-09-05 (Nebula complete-redesign, N3): the background wash is re-synced against
- * tokens.css's new `--nebula-sweep-*` layer (Foundation F2) — same diagonal-base +
- * three-wide-radial-wash recipe every live screen now sits on, not a separate one-off "Nebula
- * Halo" look. Per the redesign spec §3.3, this file is explicitly allowed a *stronger*,
- * non-settling version of that recipe (roughly 2x the live tokens' wash opacities): a static
- * share PNG has no "settling back" concept the live app's celebratory glow does, so there's no
- * reason to cap it at the same restrained baseline intensity. Canvas has no `mix-blend-mode`,
- * but `globalCompositeOperation = "screen"` is the same blend mode under a different name, so the
- * three washes below screen-composite onto the base gradient exactly like the CSS layer does.
- * The corner-badge demotion and glyph/glow sizing above are untouched by this pass.
+ * The background wash mirrors tokens.css's `--nebula-sweep-*` layer: the same diagonal-base +
+ * three-wide-radial-wash recipe every live screen sits on, but at roughly 2x the live tokens'
+ * wash opacities — a static share PNG has no "settling back" concept the live app's celebratory
+ * glow does, so there's no reason to cap it at the same restrained baseline intensity. Canvas has
+ * no `mix-blend-mode`, but `globalCompositeOperation = "screen"` is the same blend mode under a
+ * different name, so the three washes below screen-composite onto the base gradient exactly like
+ * the CSS layer does. The tier medal is drawn as a small top-right corner stamp rather than a
+ * centered headline section, so "rank and level" reads as a badge, not the headline — freeing
+ * vertical space for the trained-muscle figures and exercise grid.
  */
 import {
   CARD_DIMENSIONS,
@@ -48,9 +32,8 @@ import { apiBase } from "./api";
 import { MUSCLE_META } from "./muscles";
 import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "./tierIcons";
 
-/** tokens.css's live palette (post-Phase-1 ramp widen), not the pre-Phase-1 values this file had
- *  drifted to. See this file's header comment for why these are hardcoded copies, not CSS-var
- *  reads. */
+/** Hardcoded copy of tokens.css's live palette — see this file's header comment for why these
+ *  are copies, not CSS-var reads. Keep in sync manually if tokens.css's palette changes. */
 const COLORS = {
   bg: "#0a0c14", // --bg
   surface: "#212a42", // --surface-2
@@ -63,14 +46,12 @@ const COLORS = {
   fireHi: "#ffa04d", // --fire-hi
   pr: "#ffd23f", // --pr — tokens.css's dedicated PR-accent token, not an invented "gold"
   line: "rgba(255,255,255,0.14)", // --line
-  // Nebula brand gradient (tokens.css --nebula-1/-m/-2) — "Nebula Halo" variation, 2026-09-04.
+  // Nebula brand gradient (tokens.css --nebula-1/-m/-2)
   nebula1: "#2f9fe0",
   nebulaM: "#8a6dff",
   nebula2: "#d63aff",
-  // tokens.css's dark-mode `--nebula-sweep-base-1..4` (Foundation F2, 2026-09-05) — the same
-  // diagonal 155deg base gradient every live screen's body::before now sits on. See the header
-  // comment's 2026-09-05 note for why the share card re-syncs against this instead of its own
-  // one-off "Nebula Halo" bg/surface 2-stop.
+  // tokens.css's dark-mode `--nebula-sweep-base-1..4` — the same diagonal 155deg base gradient
+  // every live screen's body::before sits on.
   sweepBase1: "#0a0c14",
   sweepBase2: "#0b0d19",
   sweepBase3: "#0e0d20",
@@ -78,14 +59,11 @@ const COLORS = {
 };
 
 /**
- * Feedback: "the main stats should be single colored stats — not childish, but engaging to look
- * at." Each of the 4 stats gets one accent from the app's own restrained palette (tokens.css's
- * tier/brand hues). Phase 5 redesigns *how* each stat is drawn (a full colored card, not just
- * colored text — see drawStatCard below) but keeps this same per-stat accent assignment: PRs
- * echoes --pr, the token the rest of the app already uses for achievement moments. 2026-09-04
- * ("Nebula Halo"): Dauer and Volumen move from --violet/--blue-hi to the Nebula gradient's own
- * two end stops (--nebula-m/--nebula-1), so the card's headline color story matches the app's
- * brand identity instead of a plain blue that predates it.
+ * Each of the 4 stats gets one accent from the app's own restrained palette (tokens.css's
+ * tier/brand hues) rather than plain colored text — see drawStatCard below for the full colored
+ * card treatment. PRs echoes --pr, the token the rest of the app uses for achievement moments.
+ * Dauer and Volumen use the Nebula gradient's own two end stops (--nebula-m/--nebula-1) so the
+ * card's headline color story matches the app's brand identity.
  */
 const STAT_COLORS = [COLORS.nebulaM, COLORS.nebula1, COLORS.fireHi, COLORS.pr];
 
@@ -105,12 +83,10 @@ const TIER_COLORS: Record<RankTier, { b1: string; b2: string; b3: string; tt: st
   apex: { b1: "#152449", b2: "#3b5fd0", b3: "#8fb4ff", tt: "#dbe7ff" },
 };
 
-/** tokens.css removed "Plus Jakarta Sans" app-wide (design critique: an "overused font,
- *  category-interchangeable with any other AI-generated UI") in favor of a two-face system —
- *  Hanken Grotesk for body copy, Unbounded for display/numeral treatment (tier labels, .tnum
- *  stat numbers, celebratory numbers). The share-card never got that update; every ctx.font call
- *  now goes through one of these two helpers instead of repeating a font-family literal 7+ times
- *  (the exact drift this phase is fixing). */
+/** tokens.css uses a two-face type system — Hanken Grotesk for body copy, Unbounded for
+ *  display/numeral treatment (tier labels, .tnum stat numbers, celebratory numbers). Every
+ *  ctx.font call goes through one of these two helpers instead of repeating a font-family
+ *  literal, so the two can't drift apart. */
 const FONT_BODY = "'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 const FONT_DISPLAY = "'Unbounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 function font(weight: number, size: number, display = false): string {
@@ -148,9 +124,8 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 
 /**
  * One headline stat as its own full, solid-colored rounded card — a small label pill near the
- * top, a larger dark inset box below holding the value. Liftoff-inspired structure (Phase 5:
- * "each headline stat is its own full, solid-colored rounded card... not colored text on a
- * shared dark background"), Liftr's own palette (STAT_COLORS), not Liftoff's specific hues.
+ * top, a larger dark inset box below holding the value — rather than colored text on a shared
+ * dark background. Uses Liftr's own palette (STAT_COLORS).
  */
 function drawStatCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: string, label: string, accent: string): void {
   roundRectPath(ctx, x, y, w, h, 22);
@@ -186,11 +161,10 @@ function drawStatCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
 }
 
 /**
- * One exercise as its own bordered pill row inside the 2-column grid (Phase 5: "borrow the row
- * treatment, not the content it holds" — Liftoff's rows show a bare set count, Liftr's own
- * `renderExerciseLines` detail string is kept verbatim inside this new container, not regressed
- * to a count). `detail` is pre-wrapped to at most 2 lines by the caller (measurement needs the
- * real font, which only exists here in the draw step).
+ * One exercise as its own bordered pill row inside the 2-column grid. Keeps `renderExerciseLines`'
+ * full per-set detail string verbatim rather than collapsing it to a bare set count. `detail` is
+ * pre-wrapped to at most 2 lines by the caller (measurement needs the real font, which only
+ * exists here in the draw step).
  */
 function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, name: string, detailLines: string[]): void {
   roundRectPath(ctx, x, y, w, h, 18);
@@ -201,15 +175,14 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   roundRectPath(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 18);
   ctx.stroke();
 
-  const pad = 20; // was 16, then 18 (2026-09-04) — grown alongside EXERCISE_ROW_H
-  const iconSize = 46; // was 34, then 42 (2026-09-04)
+  const pad = 20;
+  const iconSize = 46;
   const iconX = x + pad;
   const iconY = y + pad;
   roundRectPath(ctx, iconX, iconY, iconSize, iconSize, 12);
   ctx.fillStyle = COLORS.surface2;
   ctx.fill();
-  // Generic dumbbell glyph — one shared icon for every row (Phase 5 asks for "icon + name", not
-  // a full per-exercise icon set; Liftoff's own reference reuses one generic glyph too).
+  // Generic dumbbell glyph — one shared icon for every row rather than a full per-exercise icon set.
   ctx.strokeStyle = COLORS.dim;
   ctx.lineWidth = 2.8;
   ctx.beginPath();
@@ -227,7 +200,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   const textX = iconX + iconSize + 14;
   const textW = x + w - pad - textX;
   ctx.fillStyle = COLORS.text;
-  ctx.font = font(700, 28, false); // was 21, 23, then 25 — text size is the priority lever here, not just the box
+  ctx.font = font(700, 28, false);
   ctx.textBaseline = "middle";
   let displayName = name;
   while (ctx.measureText(displayName).width > textW && displayName.length > 1) {
@@ -238,11 +211,11 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   ctx.textBaseline = "alphabetic";
 
   ctx.fillStyle = COLORS.dim;
-  ctx.font = font(600, 22, false); // was 17, 18, then 20
-  let detailY = iconY + iconSize + 30; // was +22, +26, then +28
+  ctx.font = font(600, 22, false);
+  let detailY = iconY + iconSize + 30;
   for (const line of detailLines) {
     ctx.fillText(line, x + pad, detailY);
-    detailY += 28; // was 22, 24, then 26
+    detailY += 28;
   }
 }
 
@@ -251,7 +224,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
  *  card (long set lists on a narrow half-width column). Font size must match drawExerciseCell's
  *  own detail-line font exactly — this measures the wrap, that one renders it. */
 function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  ctx.font = font(600, 22, false); // was 17, 18, then 20 — keep in sync with drawExerciseCell above
+  ctx.font = font(600, 22, false); // keep in sync with drawExerciseCell's own detail-line font
   const words = text.split(/\s+/);
   const lines: string[] = [];
   let current = "";
@@ -311,9 +284,9 @@ function cssAngleGradient(ctx: CanvasRenderingContext2D, angleDeg: number, x: nu
 }
 
 /** Per-tier `--face-grad` stop lists, ported verbatim from tokens.css's `.t-<tier>` blocks (all
- *  at the same 155deg the CSS uses) — three shapes grouped the same way 0a's medal research
- *  named them: bronze-equivalent (broad/soft), silver-equivalent (compressed/polished), gold
- *  (non-monotonic double-bright), and iridescent (hue-rotating via each tier's own --tt tint). */
+ *  at the same 155deg the CSS uses) — three visual finishes: bronze-equivalent (broad/soft),
+ *  silver-equivalent (compressed/polished), gold (non-monotonic double-bright), and iridescent
+ *  (hue-rotating via each tier's own --tt tint). */
 type FaceKey = "b1" | "b2" | "b3" | "tt";
 const FACE_GRAD_STOPS: Record<RankTier, [number, FaceKey][]> = {
   initiate: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
@@ -328,30 +301,26 @@ const FACE_GRAD_STOPS: Record<RankTier, [number, FaceKey][]> = {
 };
 
 /**
- * Redraws tokens.css's current layered `.badge` medal (Phase 1's 0a-informed rebuild, merged
- * after this phase's branch point — re-read directly off `tokens.css` rather than the older flat
- * 2-stop gradient this function originally mirrored) as canvas primitives, since `<canvas>` can't
- * reuse the CSS. Same three conceptual layers tokens.css's own `.badge` comment describes,
+ * Redraws tokens.css's current layered `.badge` medal as canvas primitives, since `<canvas>`
+ * can't reuse the CSS. Same three conceptual layers tokens.css's own `.badge` comment describes,
  * folded the same way: `::after` (extrusion plate, solid `b1`, offset further down than up —
  * material thickness), `::before` (bevel rim, gradient running the *opposite* direction from the
- * face — the strongest metal cue per 0a), then the face itself (per-tier `--face-grad` plus two
- * hard 35deg specular streak bands on top). Drawn back-to-front, unclipped-to-clipped, matching
- * the CSS z-index stacking (-2, -1, then the element).
+ * face — the strongest metal cue), then the face itself (per-tier `--face-grad` plus two hard
+ * 35deg specular streak bands on top). Drawn back-to-front, unclipped-to-clipped, matching the
+ * CSS z-index stacking (-2, -1, then the element).
  */
 function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
   const c = TIER_COLORS[tier];
   const left = cx - size / 2;
   const midY = topY + size / 2;
 
-  // Tier-hued halo, small and tight (2026-09-05 correction: the original 1.6x/30%-alpha halo
-  // was sized to "win the first glance" — the wrong goal now that the badge itself is a demoted
-  // corner stamp, not the headline. A halo that big visually re-centers attention on the badge
-  // regardless of where it's positioned, which is exactly the "still feels like the middle"
-  // feedback this shrink addresses. Kept faint and close so the hex still reads as a coherent
-  // object at thumbnail scale without competing with the muscle figures/exercise grid below.
+  // Tier-hued halo, small and tight: since the badge itself is a corner stamp rather than the
+  // headline, a large/bright halo would visually re-center attention on it regardless of where
+  // it sits. Kept faint and close so the hex still reads as a coherent object at thumbnail scale
+  // without competing with the muscle figures/exercise grid below.
   const haloR = size * 1.1;
   const halo = ctx.createRadialGradient(cx, midY, 0, cx, midY, haloR);
-  halo.addColorStop(0, `${c.b3}26`); // ~15% alpha, was ~30%
+  halo.addColorStop(0, `${c.b3}26`); // ~15% alpha
   halo.addColorStop(1, `${c.b3}00`);
   ctx.fillStyle = halo;
   ctx.fillRect(cx - haloR, midY - haloR, haloR * 2, haloR * 2);
@@ -403,8 +372,8 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
   ctx.fillRect(left, topY, size, size);
   ctx.restore();
 
-  // Glyph — the tier's own lighter --tt tint (never white, per 0a's material-read finding),
-  // drop-shadow lifts it proud of the face.
+  // Glyph — the tier's own lighter --tt tint (never white, so it reads as part of the metal
+  // rather than a flat overlay), drop-shadow lifts it proud of the face.
   const glyph = new Path2D(TIER_BADGE_PATH[tier]);
   ctx.save();
   ctx.translate(cx - size * 0.26, topY + size * 0.26);
@@ -419,14 +388,12 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
 }
 
 /**
- * 2026-09-04: the tier medal + "Tier Division" / "Level N" / rank-up caption, demoted from the
- * card's centered headline section to a small top-right corner stamp — "less in the foreground"
- * than a 168px medal with its own 254-300px section, without hiding rank/level entirely (the
- * medal's own material — halo, bevel, face gradient, specular streaks — is still drawn in full at
- * `size`, just smaller). Drawn independently of the header/stats/muscles/exercise cursorY flow:
- * its position is fixed relative to the top-right corner, so it can never push later sections
- * down the way the old in-flow badge section did. Returns nothing — callers don't need its
- * bottom edge, since nothing else in the layout is positioned relative to it anymore.
+ * Draws the tier medal + "Tier Division" / "Level N" / rank-up caption as a small top-right
+ * corner stamp, so rank/level stays visible without dominating the card (the medal's own
+ * material — halo, bevel, face gradient, specular streaks — is still drawn in full at `size`,
+ * just smaller). Drawn independently of the header/stats/muscles/exercise cursorY flow: its
+ * position is fixed relative to the top-right corner, so it never pushes later sections down.
+ * Returns nothing — nothing else in the layout is positioned relative to it.
  */
 function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: number, size: number, model: WorkoutCardModel): void {
   if (!model.tier) return;
@@ -438,17 +405,17 @@ function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: numb
   let labelY = badgeTopY + size + 22;
   ctx.textAlign = "center";
   ctx.fillStyle = COLORS.text;
-  ctx.font = font(800, 19, true); // was 26 in the old centered headline treatment
+  ctx.font = font(800, 19, true);
   ctx.fillText(`${TIER_LABEL_DE[tier]} ${DIVISION_LABEL[model.tier.division] ?? ""}`.trim(), badgeCx, labelY);
   labelY += 22;
   ctx.fillStyle = COLORS.dim;
-  ctx.font = font(600, 15, false); // was 20
+  ctx.font = font(600, 15, false);
   ctx.fillText(`Level ${model.tier.level}`, badgeCx, labelY);
 
   if (model.topRankUp) {
     labelY += 22;
     ctx.fillStyle = COLORS.fireHi;
-    ctx.font = font(700, 14, false); // was 19 — compact corner stack, not a headline
+    ctx.font = font(700, 14, false); // compact corner stack, not a headline
     const headline = model.topRankUp.isPr
       ? `${model.topRankUp.exerciseName}: neuer Rekord`
       : `${model.topRankUp.exerciseName}: ${TIER_LABEL_DE[model.topRankUp.tier as RankTier]} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
@@ -537,38 +504,26 @@ async function drawMuscleFigures(
 const PAD = 64;
 const STAT_CARD_H = 176;
 const STAT_GAP = 20;
-// 2026-09-04 ("less in the foreground"): the medal moved out of the main content flow entirely,
-// into a small top-right corner stamp drawn independently of the header/stats/muscles/exercise
-// cursor (see drawCornerBadge below) — so it no longer needs a reserved section height, a fill
-// slot, or a rank-up-caption growth allowance the way the old centered ~254-300px badge section
-// did. The vertical space that freed up was handed to MUSCLE_FIG_H and EXERCISE_ROW_H below.
-// 2026-09-05 correction: live review of the shipped 2026-09-04 sizes found the split too even —
-// direction was "mainly the muscle groups, the rest the exercise cards" — so this pass widens
-// the gap between the two rather than growing both roughly the same amount, and grows the
-// exercise cell's own fonts/icon (not just its box) so the extra height actually reads as more
-// legible content, not just more padding.
-// 2026-09-05, second pass (visual markup review): the header->stat gap was reading as dead
-// space above the stat row rather than as breathing room, so that slot no longer gets any of the
-// distributed fill (stats sit right after the fixed post-date gap, "pulled up"). Likewise the
-// muscle->divider gap no longer gets fill, so the exercise grid sits snug against the muscle
-// section instead of drifting down on a short routine ("exercise grid moving up a bit"). The
-// space that both of those slots used to soak up goes instead into MUSCLE_FIG_H directly (a real
-// size increase, not just surrounding whitespace) and a modest EXERCISE_ROW_H bump — with the
-// exercise cell's own text sized up further still, called out explicitly as the priority over the
-// box size itself.
+// The tier medal is drawn as a small top-right corner stamp (see drawCornerBadge below),
+// independent of the header/stats/muscles/exercise cursor, so it needs no reserved section
+// height, fill slot, or rank-up-caption growth allowance — the vertical space that would have
+// gone to an in-flow badge section is spent on MUSCLE_FIG_H and EXERCISE_ROW_H instead.
+// Only the stats->muscles gap absorbs the fillGap surplus below; the header->stats and
+// muscles->divider gaps stay fixed so the stat row and exercise grid don't drift with unrelated
+// whitespace — that space goes directly into MUSCLE_FIG_H/EXERCISE_ROW_H (and the exercise
+// cell's own font sizes) as real content size instead.
 const CORNER_BADGE_SIZE = 110;
-const MUSCLE_FIG_H = 470; // was 300, then 360, then 420 (2026-09-04/05) — takes the freed space directly
+const MUSCLE_FIG_H = 470;
 const MUSCLE_SECTION_H = 34 + 24 + MUSCLE_FIG_H + 40;
 const DIVIDER_GAP = 40;
-const EXERCISE_ROW_H = 164; // was 118, then 136, then 152 — modest bump; text size is the real lever
+const EXERCISE_ROW_H = 164;
 const EXERCISE_ROW_GAP = 16;
 const EXERCISE_COL_GAP = 20;
 
 export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutCardModel): Promise<void> {
   // tokens.css's @font-face blocks are declared app-wide, but the browser only actually fetches
   // a face once something on the page requests it — waiting here avoids the first share ever
-  // drawn in a session silently falling back to a system font (the exact class of drift this
-  // phase is fixing, just at font-*load* time instead of font-*name* time).
+  // drawn in a session silently falling back to a system font.
   if (typeof document !== "undefined" && document.fonts?.ready) {
     try {
       await document.fonts.ready;
@@ -606,28 +561,19 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   if (!ctx) return;
   ctx.scale(scale, scale);
 
-  // A short routine leaves real dead space in a fixed-size card (Phase 5, confirmed bug) —
-  // spread whatever's unused across the gaps between major sections instead of leaving it all
-  // silently at the bottom. `overflowsStory` (too many exercises even for the taller format)
-  // means there's no surplus to distribute; rows get capped by maxRows below instead.
-  //
-  // 2026-09-05, second pass: this used to spread across three slots (header->stats,
-  // stats->muscles, muscles->divider). Visual review flagged the header->stats slot as reading
-  // like dead space above the stat row rather than breathing room ("pull the stats up"), and the
-  // muscles->divider slot as pushing the exercise grid down on a short routine when it should sit
-  // snug against the muscle section instead ("exercise grid moving up a bit"). Both are gone now
-  // — only the stats->muscles slot still absorbs surplus, and MUSCLE_FIG_H/EXERCISE_ROW_H above
-  // were grown directly to take up the space those two removed slots used to.
+  // A short routine leaves real dead space in a fixed-size card — spread whatever's unused into
+  // the stats->muscles gap rather than leaving it all silently at the bottom. `overflowsStory`
+  // (too many exercises even for the taller format) means there's no surplus to distribute; rows
+  // get capped by maxRows below instead.
   const available = height - PAD * 2;
   const fillSlots = 1;
   const fillGap = overflowsStory ? 0 : distributeFillGap(naturalTotal, available, fillSlots, 150);
 
-  // background — re-synced 2026-09-05 against tokens.css's live `--nebula-sweep-*` recipe
-  // (Foundation F2's body::before): the same diagonal 155deg base gradient, plus the same three
-  // wide radial washes (violet top, magenta bottom-right, blue left), screen-composited so hues
-  // melt into each other instead of reading as separate patches — but at roughly 2x the live
-  // tokens' wash opacities, the "stronger, non-settling" version the redesign spec §3.3
-  // explicitly allows here since a share PNG has no in-app settle-back to protect.
+  // background — mirrors tokens.css's live `--nebula-sweep-*` recipe (body::before): the same
+  // diagonal 155deg base gradient, plus the same three wide radial washes (violet top, magenta
+  // bottom-right, blue left), screen-composited so hues melt into each other instead of reading
+  // as separate patches — but at roughly 2x the live tokens' wash opacities, since a share PNG
+  // has no in-app settle-back to protect the way the live celebratory glow does.
   const bgGrad = cssAngleGradient(ctx, 155, 0, 0, width, height);
   bgGrad.addColorStop(0, COLORS.sweepBase1);
   bgGrad.addColorStop(0.3, COLORS.sweepBase2);
@@ -669,8 +615,8 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
 
   const pad = PAD;
 
-  // wordmark — gradient-filled with the Nebula brand gradient across its own text box (matching
-  // --nebula-grad's 120deg exactly), replacing the old solid --blue-hi fill.
+  // wordmark — gradient-filled with the Nebula brand gradient across its own text box, matching
+  // --nebula-grad's 120deg exactly.
   ctx.font = font(800, 30, true);
   const wordmarkW = ctx.measureText("LIFTR").width;
   const wordmarkGrad = cssAngleGradient(ctx, 120, pad, pad - 22, wordmarkW, 30);
@@ -740,8 +686,8 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.stroke();
   cursorY += DIVIDER_GAP;
 
-  // ---- Exercise grid: 2 columns of bordered rows (Phase 5 — was a single-column plain list).
-  // Keeps renderExerciseLines' full per-set detail string, just in a different container. ----
+  // ---- Exercise grid: 2 columns of bordered rows, keeping renderExerciseLines' full per-set
+  // detail string. ----
   const colW = (width - pad * 2 - EXERCISE_COL_GAP) / 2;
   const remainingH = height - pad - cursorY;
   const maxRows = overflowsStory ? Math.max(1, Math.floor((remainingH + EXERCISE_ROW_GAP) / (EXERCISE_ROW_H + EXERCISE_ROW_GAP))) : naturalRows;
@@ -789,8 +735,8 @@ type WindowWithSavePicker = Window & { showSaveFilePicker?: (opts?: SaveFilePick
  * build, so that's the primary target). Desktop has no such share sheet, but Chromium desktop
  * does support the File System Access API's showSaveFilePicker() — a real "Save As" dialog with
  * a destination picker, instead of always silently dropping into the browser's default downloads
- * folder (feedback: "on desktop it does not allow us to save it to a destination"). Falls back to
- * the plain `<a download>` blob-click for anything without either API (Firefox, Safari).
+ * folder. Falls back to the plain `<a download>` blob-click for anything without either API
+ * (Firefox, Safari).
  */
 export async function shareOrDownloadBlob(blob: Blob, filename: string, shareTitle: string): Promise<void> {
   const file = new File([blob], filename, { type: blob.type });
@@ -833,10 +779,9 @@ export async function shareOrDownloadBlob(blob: Blob, filename: string, shareTit
 }
 
 /**
- * "In Zwischenablage kopieren" (feedback: "copying also does not work correctly" — there wasn't
- * a copy feature at all until now). Feature-detected: needs a secure context (implicit on this
- * PWA's own https/localhost origins) plus ClipboardItem + navigator.clipboard.write support,
- * neither guaranteed (older Safari, some Android WebViews). Returns false rather than throwing on
+ * "In Zwischenablage kopieren". Feature-detected: needs a secure context (implicit on this PWA's
+ * own https/localhost origins) plus ClipboardItem + navigator.clipboard.write support, neither
+ * guaranteed (older Safari, some Android WebViews). Returns false rather than throwing on
  * anything unsupported/denied so the caller can react (grey out the button, show a toast) instead
  * of crashing the share flow.
  */

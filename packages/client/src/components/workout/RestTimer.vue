@@ -18,21 +18,20 @@ async function fireRestOverNotification() {
   }
 }
 
-// Task 3 (three distinct rest states): `restKind` discriminates why `trigger` fired. Defaults to
-// 'between-sets' for backward compatibility with any caller that doesn't pass it (pre-Task-3
-// behaviour — ring+countdown+skip). 'superset-continue' renders a distinct compact
+// `restKind` discriminates why `trigger` fired: 'between-sets' and 'after-exercise' both render
+// the normal ring+countdown+skip state; 'superset-continue' renders a distinct compact
 // "acknowledged, move on" state with no ring/countdown/skip, since there is genuinely nothing to
 // count down mid-superset (logCurrentSet() returned null — round not yet complete, no rest).
 const props = defineProps<{
   trigger: number;
   seconds?: number;
-  restKind?: "between-sets" | "after-exercise" | "superset-continue";
+  restKind: "between-sets" | "after-exercise" | "superset-continue";
 }>();
-// `total` used to be a plain const captured once from props.seconds at setup — since RestTimer
-// is one persistent instance for the whole workout, a later change to the `seconds` prop (e.g.
-// moving to an exercise with a different configured rest duration, feedback: "adjust the pause,
-// per set and per exercise") silently had no effect. Re-read the prop fresh on every start()
-// instead, into a ref so progressPercent's denominator stays correct too.
+// RestTimer is one persistent instance for the whole workout, so `currentTotal` must be a ref
+// re-read fresh on every start() rather than a plain const captured once from props.seconds —
+// otherwise moving to an exercise with a different configured rest duration ("adjust the pause,
+// per set and per exercise") would silently have no effect. Keeping it in a ref also lets
+// progressPercent's denominator stay correct.
 const currentTotal = ref(props.seconds ?? 90);
 const left = ref(currentTotal.value);
 const running = ref(false);

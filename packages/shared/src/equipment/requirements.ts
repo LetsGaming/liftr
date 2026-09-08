@@ -23,10 +23,10 @@ export const SUPPORT_EQUIPMENT_SLUGS: SupportEquipment[] = [
 export type EquipmentRequirement = Equipment | SupportEquipment;
 
 /**
- * Feature: "instead of taking all equipment for an exercise as required there should be tiers —
- * this would allow exercises that are only missing a mat to not be filtered out." `required`
- * blocks (canPerform below), `recommended`/`optional` never do — they're surfaced as a softer
- * hint in the UI (ExerciseInfoPanel.vue, ExerciseList.vue) instead.
+ * Not all equipment for an exercise is equally required — an exercise only missing a mat
+ * shouldn't be filtered out entirely. `required` blocks (canPerform below), `recommended`/
+ * `optional` never do — they're surfaced as a softer hint in the UI (ExerciseInfoPanel.vue,
+ * ExerciseList.vue) instead.
  */
 export type RequirementTier = "required" | "recommended" | "optional";
 
@@ -55,8 +55,8 @@ function addRequirement(map: Map<EquipmentRequirement, RequirementTier>, item: E
 
 /**
  * Rule-based full requirement list, derived from data already in the catalog rather than
- * hand-typed per exercise (curated.yaml's own stated goal: "map equipment to exercises without
- * manually adjusting the code every time"). A `requiresEquipment` override in curated.yaml wins
+ * hand-typed per exercise, so equipment can be mapped without manually adjusting code for every
+ * new exercise. A `requiresEquipment` override in curated.yaml wins
  * over this for the handful of cases these rules get wrong, and a joined wger exercise's own
  * multi-item equipment tags win over this too where available (see ingestCatalog.ts /
  * equipment.ts's mapWgerEquipmentToRequirement) — this is the fallback for everything else.

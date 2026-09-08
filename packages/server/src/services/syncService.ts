@@ -29,7 +29,7 @@ import {
 import { getCurrentBodyweightKg, getUserSex, recomputeRankForExercise } from "./rankService.js";
 
 /**
- * The heart of offline (plan 1.1/1.3). The client queues mutations locally while offline, each
+ * The heart of offline support. The client queues mutations locally while offline, each
  * stamped with a `clientId` generated on-device, and flushes them here in a batch once
  * connectivity returns. Every mutation type below is upserted keyed on `clientId`, so replaying
  * the same batch twice (e.g. a retry after a flaky connection) is always a no-op the second time
@@ -84,8 +84,8 @@ export interface RankVerdict {
   division: number;
   lp: number;
   prevLp: number;
-  /** Rank engine v2 — set when this workout's plausibility gate discounted the recompute that
-   *  produced this verdict, null when the workout was fully plausible. */
+  /** Set when this workout's plausibility gate discounted the recompute that produced this
+   *  verdict, null when the workout was fully plausible. */
   plausibilityReason: "pace" | "improbable_jump" | "exceeds_ceiling" | null;
 }
 
@@ -94,17 +94,15 @@ export interface SyncResult {
   status: "created" | "already_synced" | "error";
   serverId?: string;
   error?: string;
-  /** Set only on finish_workout results — rank recompute moved from per-set to per-workout
-   *  (engagement rework): a session with many sets on the same exercise previously paid a
-   *  recompute after every one of them, and rank-ups fired mid-set instead of reading as one
-   *  end-of-workout moment. One verdict per exercise that had at least one non-warmup set
-   *  logged in this workout. */
+  /** Set only on finish_workout results — rank recompute runs per-workout rather than per-set: a
+   *  session with many sets on the same exercise would otherwise pay a recompute after every one
+   *  of them, and rank-ups would fire mid-set instead of reading as one end-of-workout moment.
+   *  One verdict per exercise that had at least one non-warmup set logged in this workout. */
   ranks?: RankVerdict[];
-  /** Set only on finish_workout results — the streak/XP mechanics redesign
-   *  (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md, §2/§3): the two session-level
-   *  XP bonuses frozen onto this workout's row, plus which muscles actually earned the variety bonus
-   *  so the client's Finish Sequence can name them (e.g. "Schultern zum ersten Mal seit letztem
-   *  Training") instead of showing a bare count. */
+  /** Set only on finish_workout results — the two session-level XP bonuses frozen onto this
+   *  workout's row, plus which muscles actually earned the variety bonus so the client's Finish
+   *  Sequence can name them (e.g. "Schultern zum ersten Mal seit letztem Training") instead of
+   *  showing a bare count. */
   consistencyBonusXp?: number;
   varietyBonusXp?: number;
   /** Primary-role muscle slugs trained this session that were NOT trained in the immediately-
@@ -115,11 +113,11 @@ export interface SyncResult {
   newMuscleSlugs?: string[];
 }
 
-async function applyStartWorkout(db: LiftrDb, item: StartWorkoutItem): Promise<SyncResult> {
-  const existing = await findWorkoutById(db, item.payload.id);
+async function applyStartWorkout(db: LiftrDb, userId: string, item: StartWorkoutItem): Promise<SyncResult> {
+  const existing = await findWorkoutById(db, userId, item.payload.id);
   if (existing) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
 
-  await insertWorkout(db, {
+  await insertWorkout(db, userId, {
     id: item.payload.id,
     clientId: item.clientId,
     routineId: item.payload.routineId ?? null,
@@ -134,8 +132,8 @@ async function applyStartWorkout(db: LiftrDb, item: StartWorkoutItem): Promise<S
 }
 
 /**
- * Plausibility ceiling (feedback: "pretty easy to swindle the system to gain XP and ranks") —
- * rank/XP are computed straight from weightKg/reps with no upper bound otherwise. MAX_PLAUSIBLE_*
+ * Plausibility ceiling — without it, rank/XP are computed straight from weightKg/reps with no
+ * upper bound otherwise. MAX_PLAUSIBLE_*
  * live in @liftr/shared so the client can clamp its steppers to the same ceiling (a normal UI
  * flow should never actually hit this branch); this check is defense-in-depth against a request
  * that didn't go through the client — direct API use or tampered local data. Checked here rather
@@ -143,19 +141,20 @@ async function applyStartWorkout(db: LiftrDb, item: StartWorkoutItem): Promise<S
  * schema-level `.max()` would fail every item in the batch (including an unrelated
  * finish_workout) over one bad set.
  */
-async function applyLogSet(db: LiftrDb, item: LogSetItem): Promise<SyncResult> {
-  const existing = await findSetByClientId(db, item.clientId);
+async function applyLogSet(db: LiftrDb, userId: string, item: LogSetItem): Promise<SyncResult> {
+  const existing = await findSetByClientId(db, userId, item.clientId);
   if (existing) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
 
-  // guard: the referenced workout_exercise must exist, or this is a stale/bad queue entry
-  const parent = await findWorkoutExerciseById(db, item.payload.workoutExerciseId);
+  // guard: the referenced workout_exercise must exist AND belong to this user, or this is a
+  // stale/bad queue entry (or another user's id, once accounts exist)
+  const parent = await findWorkoutExerciseById(db, userId, item.payload.workoutExerciseId);
   if (!parent) return { clientId: item.clientId, status: "error", error: "unknown_workout_exercise" };
 
   if ((item.payload.weightKg ?? 0) > MAX_PLAUSIBLE_WEIGHT_KG || item.payload.reps > MAX_PLAUSIBLE_REPS) {
     return { clientId: item.clientId, status: "error", error: "implausible_set" };
   }
 
-  const row = await insertSet(db, {
+  const row = await insertSet(db, userId, {
     ...item.payload,
     isWarmup: item.payload.kind === "warmup",
     clientId: item.clientId,
@@ -165,43 +164,45 @@ async function applyLogSet(db: LiftrDb, item: LogSetItem): Promise<SyncResult> {
   return { clientId: item.clientId, status: "created", serverId: row.id };
 }
 
-async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise<SyncResult> {
-  const existing = await findWorkoutById(db, item.payload.workoutId);
+async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorkoutItem): Promise<SyncResult> {
+  const existing = await findWorkoutById(db, userId, item.payload.workoutId);
   if (existing?.endedAt) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
 
-  await patchWorkout(db, item.payload.workoutId, {
+  await patchWorkout(db, userId, item.payload.workoutId, {
     endedAt: item.payload.endedAt,
     pausedSeconds: item.payload.pausedSeconds,
     notes: item.payload.notes ?? null,
   });
 
-  // Streak credit (plan §2.4) — the day the workout finished counts, which is what matters for
+  // Streak credit — the day the workout finished counts, which is what matters for
   // "did you train today", not when the sync happened to reach the server.
   const dateStr = item.payload.endedAt.toISOString().slice(0, 10);
-  await creditStreak(db, dateStr, "workout");
+  await creditStreak(db, userId, dateStr, "workout");
 
-  // Consistency bonus (streak/XP mechanics redesign, spec §2) — `creditStreak` above already
+  // Consistency bonus — `creditStreak` above already
   // recorded today's date, so `computeStreak` here already reflects this session: do NOT add +1
   // or credit again. Uses `item.payload.endedAt` (not `new Date()`, unlike the live GET /api/streak
   // route) as "now" so a delayed/replayed sync flush computes the same streak the user actually
   // earned on the day they finished, not whatever day the batch happens to reach the server.
-  const [streakDates, profile] = await Promise.all([findAllStreakDates(db), readJsonSetting<Profile>(db, "profile")]);
+  const [streakDates, profile] = await Promise.all([
+    findAllStreakDates(db, userId),
+    readJsonSetting<Profile>(db, userId, "profile"),
+  ]);
   const streakDays = computeStreak(streakDates, item.payload.endedAt, profile?.workoutsPerWeek).streak;
   const consistencyBonusXp = computeConsistencyBonus(streakDays);
 
-  // Variety bonus (spec §3) — a plain factual diff between this session's own primary-muscle set
+  // Variety bonus — a plain factual diff between this session's own primary-muscle set
   // and the single immediately-preceding *finished* session's, never a recovery/readiness model.
   // `findPrimaryMuscleSlugsForWorkout` naturally returns [] for a workout with zero logged sets
   // (no sets to join against), so the zero-sets edge case falls out of this without a special case:
   // newMuscleSlugs ends up [] and varietyBonusXp ends up 0.
   const thisSessionMuscles = await findPrimaryMuscleSlugsForWorkout(db, item.payload.workoutId);
   const thisSessionSlugs = thisSessionMuscles.map((m) => m.muscleSlug);
-  const previousWorkout = await findPreviousFinishedWorkout(db, item.payload.workoutId);
+  const previousWorkout = await findPreviousFinishedWorkout(db, userId, item.payload.workoutId);
   let newMuscleSlugs: string[];
   if (!previousWorkout) {
     // First-ever finished session: nothing to compare against, so every muscle trained today
-    // counts as "new" — intentional per the spec (a brand-new user gets the full variety bonus
-    // on day one).
+    // counts as "new" — intentional; a brand-new user gets the full variety bonus on day one.
     newMuscleSlugs = thisSessionSlugs;
   } else {
     const previousMuscles = await findPrimaryMuscleSlugsForWorkout(db, previousWorkout.id);
@@ -210,9 +211,9 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   }
   const varietyBonusXp = computeVarietyBonus(newMuscleSlugs.length);
 
-  const touched = await findTouchedExerciseIds(db, item.payload.workoutId);
+  const touched = await findTouchedExerciseIds(db, userId, item.payload.workoutId);
 
-  // Plausibility gate (rank engine v2): computed once per finished workout, before the
+  // Plausibility gate: computed once per finished workout, before the
   // per-exercise recompute loop, from the full set of sets just logged in this session. The
   // jump/ceiling checks need a load-ratio value in the same units as `apexThreshold`/
   // `storedPeakRatio` (both load-ratio = e1RM/bodyweight) — using raw weight-kg directly (ignoring
@@ -221,7 +222,7 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   // mirrors rankService.ts's own per-set e1RM/bodyweight-leverage loop, so the two never drift.
   // Note that `ranks.peakE1rm` is stored as a raw e1RM value (see rankService.ts's `bestE1rm`),
   // not a ratio, so it must also be divided by bodyweight here before comparison.
-  const workoutWithSets = await findWorkoutWithExercisesAndSets(db, item.payload.workoutId);
+  const workoutWithSets = await findWorkoutWithExercisesAndSets(db, userId, item.payload.workoutId);
 
   let plausibility: { multiplier: number; reason: "pace" | "improbable_jump" | "exceeds_ceiling" | null } = {
     multiplier: 1,
@@ -231,12 +232,12 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
     const allSets = workoutWithSets.workoutExercises.flatMap((we) => we.sets);
     const effectiveDurationSeconds =
       (item.payload.endedAt.getTime() - workoutWithSets.startedAt.getTime()) / 1000 - item.payload.pausedSeconds;
-    const bodyweightKg = await getCurrentBodyweightKg(db);
-    const sex = await getUserSex(db);
+    const bodyweightKg = await getCurrentBodyweightKg(db, userId);
+    const sex = await getUserSex(db, userId);
 
     const exerciseInputs: PlausibilityInput["exercises"] = [];
     for (const { exerciseId } of touched) {
-      const rank = await findRankByExerciseId(db, exerciseId);
+      const rank = await findRankByExerciseId(db, userId, exerciseId);
       const exerciseSets = workoutWithSets.workoutExercises
         .filter((we) => we.exerciseId === exerciseId)
         .flatMap((we) => we.sets)
@@ -250,10 +251,10 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
       // plausibility.ts are unit-agnostic ratio comparisons — they only ever compare a session
       // value against the *same exercise's own* stored peak / apex threshold, so a rep count
       // compared against a rep-count peak and a rep-count apex threshold is just as valid an
-      // input as a load ratio compared against a load-ratio peak/threshold (engagement-audit-v3
-      // Phase 3: closes the gap where a rep-based exercise, e.g. pull-ups/push-ups, had zero
+      // input as a load ratio compared against a load-ratio peak/threshold. This closes the gap
+      // where a rep-based exercise, e.g. pull-ups/push-ups, would otherwise have zero
       // jump/ceiling protection — a single suspiciously large rep count would sail through
-      // undetected as long as the rest of the session's pace looked normal). The pace check is
+      // undetected as long as the rest of the session's pace looked normal. The pace check is
       // metric-agnostic either way and always runs regardless.
       const metric = standards[0]?.metric;
       let sessionBestRatio: number | null = null;
@@ -291,11 +292,11 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   }
 
   // Single write for every value this handler computes at finish-time (plausibility multiplier +
-  // the two session-level XP bonuses) — matches the existing `plausibilityMultiplier` precedent of
-  // freezing a value once at finish-time rather than re-deriving it on every read (spec's "Data
-  // model" section). `plausibilityMultiplier` is only set when `workoutWithSets` was found (the
-  // pre-existing guard); the two bonuses are always set, including the zero-sets edge case.
-  await patchWorkout(db, item.payload.workoutId, {
+  // the two session-level XP bonuses) — freezes each value once at finish-time rather than
+  // re-deriving it on every read. `plausibilityMultiplier` is only set when `workoutWithSets` was
+  // found (the pre-existing guard); the two bonuses are always set, including the zero-sets edge
+  // case.
+  await patchWorkout(db, userId, item.payload.workoutId, {
     ...(workoutWithSets ? { plausibilityMultiplier: plausibility.multiplier } : {}),
     consistencyBonusXp,
     varietyBonusXp,
@@ -307,7 +308,7 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   // instead of one popping mid-set.
   const ranks: RankVerdict[] = [];
   for (const { exerciseId } of touched) {
-    const result = await recomputeRankForExercise(db, exerciseId, plausibility.multiplier, plausibility.reason);
+    const result = await recomputeRankForExercise(db, userId, exerciseId, plausibility.multiplier, plausibility.reason);
     if (result) ranks.push({ exerciseId, ...result, plausibilityReason: plausibility.reason });
   }
 
@@ -322,9 +323,15 @@ async function applyFinishWorkout(db: LiftrDb, item: FinishWorkoutItem): Promise
   };
 }
 
-async function applyAddExercise(db: LiftrDb, item: AddExerciseItem): Promise<SyncResult> {
-  const existing = await findWorkoutExerciseById(db, item.payload.id);
+async function applyAddExercise(db: LiftrDb, userId: string, item: AddExerciseItem): Promise<SyncResult> {
+  const existing = await findWorkoutExerciseById(db, userId, item.payload.id);
   if (existing) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
+
+  // Ownership guard: the workout this exercise would attach to must belong to this user, or a
+  // (guessed, replayed, or cross-user) workoutId could otherwise attach an exercise to someone
+  // else's session.
+  const parentWorkout = await findWorkoutById(db, userId, item.payload.workoutId);
+  if (!parentWorkout) return { clientId: item.clientId, status: "error", error: "unknown_workout" };
 
   const row = await insertWorkoutExercise(db, {
     id: item.payload.id,
@@ -339,24 +346,24 @@ async function applyAddExercise(db: LiftrDb, item: AddExerciseItem): Promise<Syn
  *  (those are `status: "error"` results, retried by the client next flush); an unexpected
  *  exception here is caught by the route and turned into an `"error"` result for that one item
  *  only, so one bad item in a batch doesn't fail its siblings. */
-export async function applySyncItem(db: LiftrDb, item: SyncItem): Promise<SyncResult> {
+export async function applySyncItem(db: LiftrDb, userId: string, item: SyncItem): Promise<SyncResult> {
   switch (item.type) {
     case "start_workout":
-      return applyStartWorkout(db, item);
+      return applyStartWorkout(db, userId, item);
     case "log_set":
-      return applyLogSet(db, item);
+      return applyLogSet(db, userId, item);
     case "finish_workout":
-      return applyFinishWorkout(db, item);
+      return applyFinishWorkout(db, userId, item);
     case "add_exercise":
-      return applyAddExercise(db, item);
+      return applyAddExercise(db, userId, item);
   }
 }
 
-export async function applySyncBatch(db: LiftrDb, items: SyncItem[]): Promise<SyncResult[]> {
+export async function applySyncBatch(db: LiftrDb, userId: string, items: SyncItem[]): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
   for (const item of items) {
     try {
-      results.push(await applySyncItem(db, item));
+      results.push(await applySyncItem(db, userId, item));
     } catch (err) {
       results.push({ clientId: item.clientId, status: "error", error: (err as Error).message });
     }

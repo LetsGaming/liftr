@@ -60,9 +60,9 @@ const hasPlates = computed(() => needsPlatesStep(draft) && [...draft.plates.valu
   width: 100%;
   margin-top: var(--sp2);
 }
-/* Nebula N5 — .surface-hybrid (tokens.css) applied in the template alongside this class replaces
-   the flat --surface-2 fill + --line border with the shared translucent panel treatment; this
-   rule now only supplies layout (padding/radius/type), same split as ProfilePage.vue's .card. */
+/* .surface-hybrid (tokens.css), applied in the template alongside this class, supplies the
+   translucent panel fill and border; this rule only supplies layout (padding/radius/type), same
+   split as ProfilePage.vue's .card. */
 .unlocks li {
   padding: var(--sp3);
   border-radius: var(--r-md);

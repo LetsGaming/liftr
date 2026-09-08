@@ -1,13 +1,13 @@
 /**
- * `pnpm ingest --catalog` (plan 0.4). Reads tools/catalog/curated.yaml, upserts muscles +
+ * `pnpm ingest --catalog`. Reads tools/catalog/curated.yaml, upserts muscles +
  * exercises + exercise_muscles. Idempotent: re-running with an unchanged file is a no-op;
  * re-running after editing curated.yaml updates existing rows rather than duplicating them.
  *
- * Equipment (feedback: "map equipment to exercises without manually adjusting the code every
- * time") is resolved via resolveEquipment.ts before insert: curated.yaml's own `equipment:`
- * wins when set, otherwise it's auto-filled from free-exercise-db/wger by freeExerciseDbId /
- * wgerId — see equipment/ for the adapters and the normalization mapping into this app's
- * closed 10-value vocabulary (@liftr/shared's Equipment type).
+ * Equipment is resolved via resolveEquipment.ts before insert, so exercises don't need equipment
+ * hand-mapped in code one at a time: curated.yaml's own `equipment:` wins when set, otherwise
+ * it's auto-filled from free-exercise-db/wger by freeExerciseDbId / wgerId — see equipment/ for
+ * the adapters and the normalization mapping into this app's closed 10-value vocabulary
+ * (@liftr/shared's Equipment type).
  */
 import { exerciseMuscles, exercises, muscles, type LiftrDb } from "@liftr/db";
 import { eq, notInArray } from "drizzle-orm";
@@ -48,10 +48,10 @@ export async function ingestMuscles(db: LiftrDb) {
 }
 
 /**
- * Feature: "research what public sources we could use to get the best equipment-per-exercise
- * results and don't need to hand-audit it for every exercise." wger tags each exercise with its
- * full equipment list (not just one priority-collapsed value) — this is the join, by wgerId
- * (populated once via matchWgerIds.ts). Degrades to an empty map on failure (offline, wger down,
+ * Sources the best available public equipment data per exercise, instead of hand-auditing it
+ * one exercise at a time. wger tags each exercise with its full equipment list (not just one
+ * priority-collapsed value) — this is the join, by wgerId (populated once via matchWgerIds.ts).
+ * Degrades to an empty map on failure (offline, wger down,
  * rate-limited), same "don't abort the whole ingest over one flaky upstream" rule
  * resolveEquipmentForCatalog already follows — every entry just falls back to deriveRequirements.
  */

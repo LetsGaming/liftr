@@ -1,5 +1,5 @@
 /**
- * Exercise catalog (plan 1.2/1.3). The Workbox CacheFirst rule in vite.config.ts already
+ * Exercise catalog. The Workbox CacheFirst rule in vite.config.ts already
  * caches the raw /api/exercises response for offline GETs; this store additionally keeps the
  * parsed result in memory for the session and in localStorage as a synchronous fallback so the
  * workout screen has something to render even before the first fetch resolves on a cold offline

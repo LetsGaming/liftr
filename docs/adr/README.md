@@ -41,3 +41,4 @@ What does this cost or foreclose? What does it buy?
 | [0003](0003-offline-first-outbox-sync.md) | Offline-first sync via an IndexedDB outbox queue |
 | [0004](0004-peak-current-rank-split-with-decay.md) | Peak/current rank split with decay |
 | [0005](0005-corroboration-required-for-peak.md) | Corroboration required before a result becomes peak |
+| [0006](0006-multi-user-hardening.md) | Harden the schema and backend for multi-user, ahead of building it |

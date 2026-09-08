@@ -20,14 +20,14 @@ const mesocycleResponse = z.object({
 
 const okResponse = z.object({ ok: z.literal(true) });
 
-/** Periodization / mesocycle (plan §6.8): attach/advance/end a week-by-week intensity curve on a routine. */
+/** Periodization / mesocycle: attach/advance/end a week-by-week intensity curve on a routine. */
 export function registerMesocycleRoutes(app: ZodFastifyInstance, db: AppDb) {
   // POST /api/routines/:id/mesocycle — attach a new cycle, replacing any existing one for this routine.
   app.post(
     "/api/routines/:id/mesocycle",
     { schema: { params: routineIdParams, body: startMesocycleInput, response: { 200: mesocycleResponse } } },
     async (req) => {
-      return startMesocycle(db, req.params.id, req.body.totalWeeks);
+      return startMesocycle(db, req.userId, req.params.id, req.body.totalWeeks);
     },
   );
 
@@ -36,7 +36,7 @@ export function registerMesocycleRoutes(app: ZodFastifyInstance, db: AppDb) {
     "/api/routines/:id/mesocycle",
     { schema: { params: routineIdParams, response: { 200: okResponse } } },
     async (req) => {
-      await endMesocycle(db, req.params.id);
+      await endMesocycle(db, req.userId, req.params.id);
       return { ok: true as const };
     },
   );
@@ -47,7 +47,7 @@ export function registerMesocycleRoutes(app: ZodFastifyInstance, db: AppDb) {
     "/api/routines/:id/mesocycle/advance",
     { schema: { params: routineIdParams, response: { 200: mesocycleResponse } } },
     async (req) => {
-      return advanceMesocycle(db, req.params.id);
+      return advanceMesocycle(db, req.userId, req.params.id);
     },
   );
 }

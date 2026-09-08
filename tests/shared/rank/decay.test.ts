@@ -48,6 +48,17 @@ describe("computeCurrentBand", () => {
     expect(decayed).not.toEqual(peak);
     expect(computeCurrentBand(peak, 0)).toEqual(peak);
   });
+
+  it("decays a post-Apex peak (lp: 300) toward apex/1/0 without flattening mid-decay to 100", () => {
+    const apexPeak = { tier: "apex" as const, division: 1, lp: 300 };
+    const midway = computeCurrentBand(apexPeak, RANK_DECAY_GRACE_DAYS + RANK_DECAY_WINDOW_DAYS / 2);
+    expect(midway.tier).toBe("apex");
+    expect(midway.division).toBe(1);
+    // apex's floor is its own single division at lp 0, so mid-decay must sit strictly between
+    // the floor (0) and the full post-Apex peak (300) — never flattened to the old 100 clamp.
+    expect(midway.lp).toBeGreaterThan(0);
+    expect(midway.lp).toBeLessThan(300);
+  });
 });
 
 describe("applySessionRecoveryGain", () => {
@@ -87,6 +98,21 @@ describe("applySessionRecoveryGain", () => {
     expect(ordinal(result.tier, result.division) * 100 + result.lp).toBeLessThanOrEqual(
       ordinal(peak.tier, peak.division) * 100 + peak.lp,
     );
+  });
+
+  it("climbs back toward a post-Apex peak (lp: 300) without collapsing to 100 along the way", () => {
+    const apexPeak = { tier: "apex" as const, division: 1, lp: 300 };
+    let current: RankBand = { tier: "apex", division: 1, lp: 0 }; // fully floored
+    for (let session = 0; session < 3; session++) {
+      current = applySessionRecoveryGain(apexPeak, current);
+      expect(current.tier).toBe("apex");
+      expect(current.division).toBe(1);
+      // Never flattened to the old 100 clamp mid-climb, and never overshoots the real peak.
+      const pos = ordinal(current.tier, current.division) * 100 + current.lp;
+      const peakPos = ordinal(apexPeak.tier, apexPeak.division) * 100 + apexPeak.lp;
+      expect(pos).toBeLessThanOrEqual(peakPos);
+    }
+    expect(current.lp).toBeGreaterThan(0);
   });
 
   it("gives a smaller absolute gain for a smaller initial gap than for the worst case", () => {

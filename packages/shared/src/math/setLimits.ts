@@ -1,7 +1,7 @@
 /**
- * Plausibility ceiling for a single logged set (engagement rework: "pretty easy to swindle the
- * system to gain XP and ranks" — rank/XP were computed straight from weightKg/reps with no
- * upper bound). Shared so the client can clamp the stepper (the UI simply can't construct an
+ * Plausibility ceiling for a single logged set. Rank/XP are computed straight from weightKg/reps
+ * with no other upper bound, so without this a typo'd or fabricated value could inflate both
+ * indefinitely. Shared so the client can clamp the stepper (the UI simply can't construct an
  * implausible value) and the server can still reject one server-side, as defense-in-depth
  * against a request that didn't go through the normal UI — a client-only clamp doesn't stop a
  * direct API call or tampered local data.

@@ -1,5 +1,19 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createDb, exercises, muscles, runMigrations, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import {
+  createDb,
+  exercises,
+  muscles,
+  OWNER_USER_ID,
+  ranks,
+  runMigrations,
+  settings,
+  sets,
+  users,
+  workoutExercises,
+  workouts,
+  type LiftrDb,
+} from "@liftr/db";
 
 let db: LiftrDb;
 
@@ -100,5 +114,78 @@ describe("runMigrations", () => {
         clientId: "client-set-2",
       }),
     ).resolves.not.toThrow();
+  });
+
+  it("seeds exactly one owner user and leaves the fk graph consistent (multi-user hardening)", async () => {
+    runMigrations(db);
+
+    const violations = db.$client.pragma("foreign_key_check") as unknown[];
+    expect(violations).toEqual([]);
+
+    const allUsers = await db.query.users.findMany();
+    expect(allUsers).toHaveLength(1);
+    expect(allUsers[0]).toMatchObject({ id: OWNER_USER_ID, role: "owner" });
+  });
+
+  it("defaults per-user rows onto the owner user and enforces composite primary keys (multi-user hardening)", async () => {
+    runMigrations(db);
+
+    const [exercise] = await db
+      .insert(exercises)
+      .values({ slug: "front-squat", movementPattern: "squat" })
+      .returning();
+
+    const [rank] = await db
+      .insert(ranks)
+      .values({
+        exerciseId: exercise!.id,
+        tier: "initiate",
+        division: 1,
+        lp: 0,
+        e1rm: 0,
+        trust: "synthetic",
+        computedAt: new Date(),
+      })
+      .returning();
+    expect(rank?.userId).toBe(OWNER_USER_ID);
+
+    // Composite PK (userId, exerciseId) must reject a duplicate for the same owner user.
+    await expect(
+      db.insert(ranks).values({
+        exerciseId: exercise!.id,
+        tier: "initiate",
+        division: 1,
+        lp: 0,
+        e1rm: 0,
+        trust: "synthetic",
+        computedAt: new Date(),
+      }),
+    ).rejects.toThrow();
+
+    const [setting] = await db.insert(settings).values({ key: "units", value: "metric" }).returning();
+    expect(setting?.userId).toBe(OWNER_USER_ID);
+
+    await expect(db.insert(settings).values({ key: "units", value: "imperial" })).rejects.toThrow();
+  });
+
+  it("cascades a deleted user onto their own rows without touching the shared exercise catalog (multi-user hardening)", async () => {
+    runMigrations(db);
+
+    const [otherUser] = await db.insert(users).values({ name: "Member", role: "member" }).returning();
+    const [exercise] = await db
+      .insert(exercises)
+      .values({ slug: "incline-press", movementPattern: "push" })
+      .returning();
+    await db.insert(workouts).values({ startedAt: new Date(), clientId: "member-client-1", userId: otherUser!.id });
+
+    await db.delete(users).where(eq(users.id, otherUser!.id));
+
+    const remainingWorkouts = await db.query.workouts.findMany({
+      where: (w, { eq: eqOp }) => eqOp(w.userId, otherUser!.id),
+    });
+    expect(remainingWorkouts).toHaveLength(0);
+
+    const stillCataloged = await db.query.exercises.findFirst({ where: (e, { eq: eqOp }) => eqOp(e.id, exercise!.id) });
+    expect(stillCataloged).toBeDefined();
   });
 });

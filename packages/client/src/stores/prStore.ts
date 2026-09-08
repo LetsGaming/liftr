@@ -1,4 +1,4 @@
-/** Personal Records ledger (workplan-v1 §2), backed by /api/prs. */
+/** Personal Records ledger, backed by /api/prs. */
 import { defineStore } from "pinia";
 import { getPrs, type PrListItem } from "../services/prService";
 

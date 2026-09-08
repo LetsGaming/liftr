@@ -1,11 +1,11 @@
 /**
- * `pnpm ingest --standards` (plan 0.4). Fully offline: seeds Tier-A anchor thresholds from
+ * `pnpm ingest --standards`. Fully offline: seeds Tier-A anchor thresholds from
  * @liftr/shared's ANCHOR_STANDARDS/REP_STANDARDS defaults, then derives every Tier B/C
- * exercise's thresholds from its declared anchor x ratio (audit §7 "synthetic-standard
- * method"). No network call — OpenPowerlifting/ExRx calibration already lives in the shared
+ * exercise's thresholds from its declared anchor x ratio (the synthetic-standard method).
+ * No network call — OpenPowerlifting/ExRx calibration already lives in the shared
  * constants; re-run any time curated.yaml's ratios change to re-derive the long tail.
  *
- * Writes one row set per sex (QUAL-04): male rows from ANCHOR_STANDARDS (the OPL-competition-
+ * Writes one row set per sex: male rows from ANCHOR_STANDARDS (the OPL-competition-
  * scale data this app was already calibrated against), female rows from
  * FEMALE_ANCHOR_STANDARDS (the same anchors run through a sourced male:female ratio — see that
  * constant's own doc for exactly what's sourced vs. inferred-by-analogy). Bodyweight rep norms

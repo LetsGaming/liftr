@@ -1,5 +1,5 @@
 /**
- * Routine (template) CRUD (plan 1.4). This is the one place friction is acceptable — you
+ * Routine (template) CRUD. This is the one place friction is acceptable — you
  * build a routine once, then "one-tap start" reuses it forever. Talks to /api/routines
  * directly (not through the offline sync queue): building/editing a routine is a planning
  * activity done at a desk with signal, not part of the gym-basement logging loop.
@@ -28,8 +28,8 @@ export const useRoutineStore = defineStore("routine", {
     error: false,
   }),
   getters: {
-    /** Wave 0-B W1 (Routine Overview screen): resolves a single routine by id for the new
-     *  `/routines/:id` route — everything the overview screen needs (exercises, targetSets,
+    /** Resolves a single routine by id for the `/routines/:id` Routine Overview route —
+     *  everything the overview screen needs (exercises, targetSets,
      *  weights/reps) is already present on the hydrated `Routine` objects `load()` returns, so
      *  this is a pure lookup, no new fetch. Returns `undefined` for an unknown id (bogus deep
      *  link), which the page renders as its not-found state rather than a crash. */
@@ -42,8 +42,8 @@ export const useRoutineStore = defineStore("routine", {
         this.loaded = true;
         this.error = false;
       } catch {
-        // See xpStore.ts's load() for why `error` exists (harden, P0: OverviewPage's
-        // stalled-load banner needs to tell "still fetching" from "failed" apart).
+        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
+        // needs to tell "still fetching" from "failed" apart.
         this.error = true;
       }
     },
@@ -96,17 +96,17 @@ export const useRoutineStore = defineStore("routine", {
       await this.load();
     },
 
-    /** Called once a finished workout's routine has an active cycle (plan §6.8) — fire-and-forget from finishWorkout(). */
+    /** Called once a finished workout's routine has an active cycle — fire-and-forget from finishWorkout(). */
     async advanceMesocycle(routineId: string) {
       await advanceMesocycle(routineId);
       await this.load();
     },
 
     /**
-     * Routine-list drag-reorder (plan C §3 Phase 3). Persists every routine whose position
-     * changed as a result of one drag, then reloads so the server's own orderIndex-sorted GET
-     * stays the single source of truth for display order (no client-side re-sort of the
-     * in-memory list — avoids the two ever disagreeing after a failed/partial request).
+     * Routine-list drag-reorder. Persists every routine whose position changed as a result of
+     * one drag, then reloads so the server's own orderIndex-sorted GET stays the single source
+     * of truth for display order (no client-side re-sort of the in-memory list — avoids the
+     * two ever disagreeing after a failed/partial request).
      */
     async reorder(orderedIds: string[]) {
       const updates = orderedIds
@@ -116,10 +116,10 @@ export const useRoutineStore = defineStore("routine", {
       await this.load();
     },
 
-    /** Feature: "quickly create new routines based on past experience and a selection of
-     *  muscle groups" — server analyzes stats (or falls back to entry-level standards for a
-     *  brand-new lifter) and returns a draft exercise list + recommended sets/reps/weight for
-     *  the wizard to prefill, never saved until the user reviews and taps save themselves. */
+    /** Quickly create a routine from past training stats and a selection of muscle groups —
+     *  server analyzes stats (or falls back to entry-level standards for a brand-new lifter)
+     *  and returns a draft exercise list + recommended sets/reps/weight for the wizard to
+     *  prefill, never saved until the user reviews and taps save themselves. */
     async suggest(muscleSlugs: string[], exercisesPerMuscle?: number): Promise<SuggestedExercise[]> {
       return suggestExercises(muscleSlugs, exercisesPerMuscle);
     },

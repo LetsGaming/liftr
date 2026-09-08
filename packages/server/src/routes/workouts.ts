@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AppDb } from "../db.js";
 import { NotFoundError } from "../lib/errors.js";
 import {
+  findWorkoutById,
   findWorkoutByClientId,
   findWorkoutWithExercisesAndSets,
   insertWorkout,
@@ -28,14 +29,14 @@ const workoutIdParams = z.object({ id: z.string() });
 const okResponse = z.object({ ok: z.literal(true) });
 
 export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
-  // POST /api/workouts — start a session. Idempotent on clientId, same as /api/sync (plan 1.1).
+  // POST /api/workouts — start a session. Idempotent on clientId, same as /api/sync.
   app.post("/api/workouts", { schema: { body: startWorkoutInput } }, async (req, reply) => {
     const body = req.body;
 
-    const existing = await findWorkoutByClientId(db, body.clientId);
+    const existing = await findWorkoutByClientId(db, req.userId, body.clientId);
     if (existing) return existing;
 
-    const workout = await insertWorkout(db, {
+    const workout = await insertWorkout(db, req.userId, {
       clientId: body.clientId,
       routineId: body.routineId ?? null,
       startedAt: body.startedAt,
@@ -55,20 +56,19 @@ export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
     "/api/workouts/:id",
     { schema: { params: workoutIdParams, body: patchWorkoutInput, response: { 200: okResponse } } },
     async (req) => {
-      await patchWorkout(db, req.params.id, req.body);
+      const existing = await findWorkoutById(db, req.userId, req.params.id);
+      if (!existing) throw new NotFoundError();
+      await patchWorkout(db, req.userId, req.params.id, req.body);
       return { ok: true as const };
     },
   );
 
-  // GET /api/workouts/:id — full detail for the history detail view (plan 1.6) and share cards (4.5).
+  // GET /api/workouts/:id — full detail for the history detail view and share cards.
   app.get("/api/workouts/:id", { schema: { params: workoutIdParams } }, async (req) => {
-    const workout = await findWorkoutWithExercisesAndSets(db, req.params.id);
+    const workout = await findWorkoutWithExercisesAndSets(db, req.userId, req.params.id);
     if (!workout) throw new NotFoundError();
     // Collapse the joined `prs` rows (fetched only to detect existence) into a boolean per set,
-    // matching the isPr flag FinishSequence.vue already shows for the live finish flow — the
-    // history detail view and share card previously hardcoded this to false/0 (per-set PR flags
-    // "aren't computed for history detail yet"), which broadcast a false "0 PRs" on shares of
-    // workouts that did contain one.
+    // matching the isPr flag FinishSequence.vue already shows for the live finish flow.
     return {
       ...workout,
       workoutExercises: workout.workoutExercises.map((we) => ({
@@ -83,7 +83,7 @@ export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
     "/api/workouts/:id",
     { schema: { params: workoutIdParams, response: { 200: okResponse } } },
     async (req) => {
-      await deleteWorkoutAndRecomputeRanks(db, req.params.id);
+      await deleteWorkoutAndRecomputeRanks(db, req.userId, req.params.id);
       return { ok: true as const };
     },
   );

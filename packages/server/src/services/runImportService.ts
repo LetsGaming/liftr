@@ -6,17 +6,17 @@ import { findRunByClientId, insertRun, insertRunPoints, type NewRun } from "../r
 import { creditStreak } from "../repositories/streakRepository.js";
 
 /**
- * Running (plan Phase 4): import a GPX you own, or log a run manually with no file. All three
- * write paths below converge on the same `runs` + `run_points` tables and the same
- * history/streak plumbing — a manual entry and an imported one are indistinguishable downstream
- * (plan 4.4). Factored here (not left as three near-identical route handlers) because that
- * convergence is exactly the kind of duplicated-across-a-boundary shape that drifts if repeated.
+ * Running: import a GPX you own, or log a run manually with no file. All three write paths below
+ * converge on the same `runs` + `run_points` tables and the same history/streak plumbing — a
+ * manual entry and an imported one are indistinguishable downstream. Factored here (not left as
+ * three near-identical route handlers) because that convergence is exactly the kind of
+ * duplicated-across-a-boundary shape that drifts if repeated.
  */
-async function persistRun(db: LiftrDb, run: NewRun, points: (RunPoint & { idx: number })[]) {
-  const inserted = await insertRun(db, run);
+async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (RunPoint & { idx: number })[]) {
+  const inserted = await insertRun(db, userId, run);
   await insertRunPoints(db, inserted.id, points);
   const dateStr = run.startedAt.toISOString().slice(0, 10);
-  await creditStreak(db, dateStr, "run");
+  await creditStreak(db, userId, dateStr, "run");
   return inserted;
 }
 
@@ -24,7 +24,7 @@ export class UnsupportedFileFormatError extends Error {}
 export class RunParseError extends Error {}
 
 /** POST /api/runs/import — GPX or FIT file bytes in, a stored run + full point array out. */
-export async function importRunFile(db: LiftrDb, filename: string, buffer: Buffer) {
+export async function importRunFile(db: LiftrDb, userId: string, filename: string, buffer: Buffer) {
   const lower = filename.toLowerCase();
   const isGpx = lower.endsWith(".gpx");
   const isFit = lower.endsWith(".fit");
@@ -42,6 +42,7 @@ export async function importRunFile(db: LiftrDb, filename: string, buffer: Buffe
 
   return persistRun(
     db,
+    userId,
     {
       source: isGpx ? "gpx" : "fit",
       name: filename.replace(/\.(gpx|fit)$/i, ""),
@@ -65,10 +66,16 @@ export interface HealthConnectPoint {
   hr?: number | null;
 }
 
-/** POST /api/runs/healthconnect — native in-app import via capacitor-health (plan Phase 5). */
-export async function importHealthConnectRun(db: LiftrDb, platformId: string, name: string | null, rawPoints: HealthConnectPoint[]) {
+/** POST /api/runs/healthconnect — native in-app import via capacitor-health. */
+export async function importHealthConnectRun(
+  db: LiftrDb,
+  userId: string,
+  platformId: string,
+  name: string | null,
+  rawPoints: HealthConnectPoint[],
+) {
   const clientId = `healthconnect:${platformId}`;
-  const existing = await findRunByClientId(db, clientId);
+  const existing = await findRunByClientId(db, userId, clientId);
   if (existing) return existing; // already imported this workout — idempotent, not an error
 
   const points = rawPoints.map((p) => ({ t: p.t.getTime(), lat: p.lat, lon: p.lon, ele: p.ele ?? undefined, hr: p.hr ?? undefined }));
@@ -77,6 +84,7 @@ export async function importHealthConnectRun(db: LiftrDb, platformId: string, na
 
   return persistRun(
     db,
+    userId,
     {
       source: "healthconnect",
       name,
@@ -92,10 +100,15 @@ export async function importHealthConnectRun(db: LiftrDb, platformId: string, na
   );
 }
 
-/** POST /api/runs — manual fallback for runs without a file (plan 4.4). */
-export function logManualRun(db: LiftrDb, input: { name: string | null; startedAt: Date; distanceM: number; durationS: number }) {
+/** POST /api/runs — manual fallback for runs without a file. */
+export function logManualRun(
+  db: LiftrDb,
+  userId: string,
+  input: { name: string | null; startedAt: Date; distanceM: number; durationS: number },
+) {
   return persistRun(
     db,
+    userId,
     {
       source: "manual",
       name: input.name,

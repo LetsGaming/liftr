@@ -57,8 +57,8 @@ export function logManualRun(input: { name: string | null; startedAt: string; di
   return api.post("/api/runs", input);
 }
 
-/** Feedback: "not possible to delete past runs". Runs don't feed XP/LP (only logged sets do),
- *  so unlike workout deletion there's nothing to recompute server-side. */
+/** Runs don't feed XP/LP (only logged sets do), so unlike workout deletion there's nothing to
+ *  recompute server-side. */
 export function deleteRun(id: string): Promise<void> {
   return api.del(`/api/runs/${id}`);
 }

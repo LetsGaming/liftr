@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { sets, type LiftrDb } from "@liftr/db";
 
-export function findSetByClientId(db: LiftrDb, clientId: string) {
-  return db.query.sets.findFirst({ where: eq(sets.clientId, clientId) });
+export function findSetByClientId(db: LiftrDb, userId: string, clientId: string) {
+  return db.query.sets.findFirst({ where: and(eq(sets.userId, userId), eq(sets.clientId, clientId)) });
 }
 
 export interface NewSet {
@@ -18,8 +18,11 @@ export interface NewSet {
   clientId: string;
 }
 
-export async function insertSet(db: LiftrDb, values: NewSet) {
-  const [row] = await db.insert(sets).values(values).returning();
+export async function insertSet(db: LiftrDb, userId: string, values: NewSet) {
+  const [row] = await db
+    .insert(sets)
+    .values({ ...values, userId })
+    .returning();
   if (!row) throw new Error("set insert failed");
   return row;
 }

@@ -1,9 +1,8 @@
 /**
- * Drizzle schema (plan Phase 0.2). Routine (template) vs Workout (session) is a deliberate,
- * load-bearing split — do not collapse them. `run_points` is kept in full per point (never
- * compressed to a polyline blob) because it is what makes run replay possible (audit §5).
- * Every derived/cache table (`ranks`, `prs`, streak state) must be reconstructible from the
- * raw tables below via a `recompute` pass — see plan "Cross-cutting requirements".
+ * Drizzle schema. Routine (template) vs Workout (session) is a deliberate, load-bearing split —
+ * do not collapse them. `run_points` is kept in full per point (never compressed to a polyline
+ * blob) because it is what makes run replay possible. Every derived/cache table (`ranks`, `prs`,
+ * streak state) must be reconstructible from the raw tables below via a `recompute` pass.
  */
 import { relations, sql } from "drizzle-orm";
 import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
@@ -19,14 +18,14 @@ const createdAt = () =>
     .default(sql`(unixepoch('subsec') * 1000)`);
 
 // ---------------------------------------------------------------------------
-// Users (multi-user hardening groundwork — see docs/adr/0006-per-user-data-scoping.md)
+// Users (multi-user hardening groundwork — see docs/adr/0006-multi-user-hardening.md)
 // ---------------------------------------------------------------------------
 
-/** The single seeded owner, created by migration 0015. Deterministic (not `crypto.randomUUID()`)
- *  so every fresh db — including every in-memory test db, which runs the same migrations — gets
- *  a known user id for free, and so the migration's seed INSERT can be plain static SQL. Real
- *  per-user login doesn't exist yet; this is the one row every request resolves to today, via
- *  `userContext.ts`'s `resolveCurrentUserId`. */
+/** The single seeded owner, created by the initial migration. Deterministic (not
+ *  `crypto.randomUUID()`) so every fresh db — including every in-memory test db, which runs the
+ *  same migration — gets a known user id for free, and so the migration's seed INSERT can be
+ *  plain static SQL. Real per-user login doesn't exist yet; this is the one row every request
+ *  resolves to today, via `userContext.ts`'s `resolveCurrentUserId`. */
 export const OWNER_USER_ID = "00000000-0000-4000-8000-000000000001";
 
 export const users = sqliteTable("users", {
@@ -36,13 +35,13 @@ export const users = sqliteTable("users", {
   createdAt: createdAt(),
 });
 
-/** Every per-user table's owner column. Defaults to `OWNER_USER_ID` — not because there's
- *  legacy data to preserve (there isn't; this is v1, no deployments exist yet), but because
- *  SQLite can't `ALTER TABLE ADD COLUMN ... NOT NULL` without a default, and because the default
- *  is what keeps every existing `db.insert(...)` test fixture across the codebase compiling and
- *  correctly attributing to the owner throughout the staged rollout to real per-user scoping,
- *  instead of forcing one simultaneous change across every repository/service/route/test file at
- *  once. Real per-user login removes this default in a later pass. */
+/** Every per-user table's owner column. Defaults to `OWNER_USER_ID` so a caller that doesn't
+ *  (yet) resolve a real user — a direct `db.insert(...)` in a test fixture, a maintenance script —
+ *  attributes to the one identity that actually exists today, rather than needing to pass it
+ *  explicitly everywhere. Every repository/service/route that serves a real request already
+ *  threads a resolved `userId` through explicitly instead of relying on this default; real
+ *  per-user login replaces `resolveCurrentUserId`'s constant with a session lookup and this
+ *  default stops mattering in practice, without needing a schema change. */
 const userId = () =>
   text("user_id")
     .notNull()
@@ -73,9 +72,10 @@ export const exercises = sqliteTable("exercises", {
   equipment: text("equipment"),
   /** JSON-encoded EquipmentRequirement[] (@liftr/shared) — the full physical requirement list
    *  (e.g. bench-press: barbell + plates + bench), distinct from `equipment` above which is
-   *  just the one primary/icon-driving item. Null for legacy rows before this column existed;
-   *  callers treat null the same as an empty list. */
-  requiredEquipment: text("required_equipment"),
+   *  just the one primary/icon-driving item. Both write paths (catalog ingest, custom-exercise
+   *  creation) always compute and store a real array — defaults to `'[]'` rather than being
+   *  nullable, so callers never need a null case for "no requirements known". */
+  requiredEquipment: text("required_equipment").notNull().default("[]"),
   /** push | pull | squat | hinge | carry | isolation-* — what synthetic derivation joins on. */
   movementPattern: text("movement_pattern").notNull(),
   isBodyweight: integer("is_bodyweight", { mode: "boolean" }).notNull().default(false),
@@ -88,7 +88,7 @@ export const exercises = sqliteTable("exercises", {
    *  uniqueness). This column exists now so scoping custom-exercise visibility per creator later
    *  is a query change, not another schema migration. */
   createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
-  /** wger CC-BY-SA attribution string, required for the attributions page (plan 3.3). */
+  /** wger CC-BY-SA attribution string, required for the attributions page. */
   sourceAttribution: text("source_attribution"),
   demoStartImage: text("demo_start_image"),
   demoEndImage: text("demo_end_image"),
@@ -146,11 +146,10 @@ export const routineExercises = sqliteTable(
      *  at all during logging. Replaced the earlier reps-only targetRepsPerSet: number[] (no
      *  way to plan a weight target, or "extra kg" for a bodyweight movement, at all). */
     targetSets: text("target_sets_json").notNull().default('[{"reps":8,"weightKg":null},{"reps":8,"weightKg":null},{"reps":8,"weightKg":null}]'),
-    /** nullable now so Phase 6 superset/circuit grouping isn't a later migration. */
+    /** nullable now so superset/circuit grouping isn't a later migration. */
     supersetGroup: integer("superset_group"),
-    /** Feedback: "it should be possible to adjust the pause, per set and per exercise (e.g. 30s
-     *  pause for pushups and 3 minutes after the push up exercise, then 1.5m pause per set of
-     *  the next exercise)". Both nullable — null means "use RestTimer's built-in 90s default",
+    /** Lets rest time be tuned per set and per exercise (e.g. 30s between pushup sets, then 3
+     *  minutes before the next exercise). Both nullable — null means "use RestTimer's built-in 90s default",
      *  same fallback behaviour a routine had before either column existed, so old rows and rows
      *  that never touch the rest-time UI stay exactly as before. */
     restBetweenSetsSeconds: integer("rest_between_sets_seconds"),
@@ -160,7 +159,7 @@ export const routineExercises = sqliteTable(
 );
 
 /**
- * Periodization / mesocycle (plan §6.8): at most one active cycle per routine. `weekPercents`
+ * Periodization / mesocycle: at most one active cycle per routine. `weekPercents`
  * is a JSON-encoded number[] (generated once by @liftr/shared's generateMesocycleWeekPercents,
  * not hand-edited per week) — storing the whole curve rather than recomputing it lets the
  * built-in ramp/deload shape change in code later without silently reshaping a cycle already
@@ -187,14 +186,13 @@ export const workouts = sqliteTable(
     startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
     endedAt: integer("ended_at", { mode: "timestamp_ms" }),
     pausedSeconds: integer("paused_seconds").notNull().default(0),
-    /** Plausibility gate multiplier (rank engine v2) — computed once at finish-workout time from
+    /** Plausibility gate multiplier — computed once at finish-workout time from
      *  session pace / improbable-jump / unrealistic-value checks (see @liftr/shared's
      *  plausibility.ts). Null until the workout finishes (matches endedAt's own nullability);
      *  application code treats a null/missing value as 1 (fully plausible) rather than using a SQL
      *  default, since a workout with no endedAt has no plausibility verdict yet either. */
     plausibilityMultiplier: real("plausibility_multiplier"),
-    /** Streak/XP mechanics redesign (docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md)
-     *  — the session's consistency and variety XP bonuses, computed once at finish-workout time
+    /** The session's consistency and variety XP bonuses, computed once at finish-workout time
      *  (same nullable/frozen-at-finish convention as plausibilityMultiplier above, since both depend
      *  on that session's temporal context — the streak-as-of-that-date, the previous session's
      *  muscle set — which is awkward/expensive to re-derive on every read). Null until the workout
@@ -250,15 +248,14 @@ export const sets = sqliteTable(
      *  (routes/sync.ts derives it from `kind`, single source of truth there), never
      *  independently — so the two can't drift even though both exist. */
     isWarmup: integer("is_warmup", { mode: "boolean" }).notNull().default(false),
-    /** Set classification (feedback: "not possible to set what kind of set this is") — purely
-     *  descriptive metadata layered on top of the existing warmup/working split above. Doesn't
+    /** Set classification — purely descriptive metadata layered on top of the existing warmup/working split above. Doesn't
      *  change what counts toward rank/XP (still governed by isWarmup alone, as before this
      *  column existed): a drop-set or a partially-failed set still represents real effort at a
      *  real weight, same as any other working set. */
     kind: text("kind", { enum: ["normal", "warmup", "failure", "dropset"] }).notNull().default("normal"),
     notes: text("notes"),
     loggedAt: integer("logged_at", { mode: "timestamp_ms" }).notNull(),
-    /** offline write-queue idempotency key (plan 1.3) — POST /api/sync dedupes on this, unique
+    /** offline write-queue idempotency key — POST /api/sync dedupes on this, unique
      *  per user (below). */
     clientId: text("client_id").notNull(),
   },
@@ -314,7 +311,7 @@ export const ranks = sqliteTable(
     nextTargetWeightKg: real("next_target_weight_kg"),
     nextTargetReps: integer("next_target_reps"),
     computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
-    /** Ratchet-only "best ever" snapshot (rank engine redesign R1) — locked in the moment it's
+    /** Ratchet-only "best ever" snapshot — locked in the moment it's
      *  achieved and never recomputed retroactively (e.g. against today's bodyweight). Nullable:
      *  existing rows are backfilled to `peak* = current *` on their first post-migration
      *  recompute (see `recomputeRankForExercise`), not by the migration itself. */
@@ -343,9 +340,9 @@ export const prs = sqliteTable(
   (t) => [index("prs_exercise_idx").on(t.exerciseId)],
 );
 
-/** Append-only history of every rank-up (engagement rework W8) — read-only log of an event
+/** Append-only history of every rank-up — read-only log of an event
  *  `ranks` (the derived single-row-per-exercise cache above) already detects; not a new reward
- *  mechanic. Shape copied verbatim from `prs` above per the round-2 plan's reuse rule. */
+ *  mechanic. Shape copied verbatim from `prs` above. */
 export const rankEvents = sqliteTable(
   "rank_events",
   {
@@ -357,7 +354,7 @@ export const rankEvents = sqliteTable(
     tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
-    /** Rank engine v2 gap fix (workstream B, task 1): null when the workout that produced this
+    /** Null when the workout that produced this
      *  rank-up was fully plausible, otherwise the same reason plausibility.ts attached to that
      *  workout. Lets the weekday aggregation (rankService.ts's computeRankEventsByWeekday) and
      *  RankUpCalendar.vue mute a flagged-but-still-peak-eligible rank-up's dot instead of
@@ -392,7 +389,7 @@ export const runs = sqliteTable(
   (t) => [uniqueIndex("runs_user_client_idx").on(t.userId, t.clientId)],
 );
 
-/** The replay-enabling table (audit §5) — never discard points after computing the summary. */
+/** The replay-enabling table — never discard points after computing the summary. */
 export const runPoints = sqliteTable(
   "run_points",
   {

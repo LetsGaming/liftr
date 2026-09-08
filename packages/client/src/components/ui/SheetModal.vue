@@ -16,35 +16,26 @@
  *     scrolling `.sheet-scroll` body — what a multi-step flow actually wants (the step
  *     indicator shouldn't scroll away).
  *
- * Two desktop shapes, chosen by `desktopVariant` (feedback: ExerciseInfoPanel and WorkoutDetail
- * "still differ" and WorkoutDetail "doesn't use enough width" — both used to fight this base's
- * own desktop rounded-corner default with their own `::part(content)` overrides, one becoming a
+ * Two desktop shapes, chosen by `desktopVariant`. Both used to be fought out per-caller with a
+ * `::part(content)` override on this base's own desktop rounded-corner default, one becoming a
  * right-drawer, the other a centered card at a narrower fixed width, for no reason tied to their
  * actual content. Centralizing both shapes here means a caller picks one by name instead of
- * hand-rolling `::part()` CSS, and the two info/detail sheets can now deliberately share the
- * same drawer treatment instead of drifting independently):
+ * hand-rolling `::part()` CSS, and the info/detail sheets can now deliberately share the same
+ * drawer treatment instead of drifting independently:
  *   - "card" (default): rounded on every side, centered — a floating panel.
  *   - "drawer": square corners, pinned to the right edge, left border, full height — a
  *     reference panel meant to sit alongside the page behind it, not float over it.
  *
- * N8 cross-branch adoption audit (2026-09-06): this shell's own `background` default was still
- * `var(--surface)` — flat, opaque — through every one of N1-N6, because it sits one file outside
- * each of their boundaries (SetKindPicker.vue's own N2-era comment on `.kind-row` names this
- * exact gap: its rows adopted `.surface-hybrid` but "this sheet's own backdrop ... still defaults
- * to an opaque --surface fill, so the backdrop-blur this utility adds has no visible effect
- * here"). Every sheet built on the default background — RpeCapture, NoteCapture, SetKindPicker,
- * ExerciseInfoPanel, WorkoutDetail, the exercise-overview sheet, the custom-exercise-add form —
- * inherited that flat backdrop while nested `.surface-hybrid` rows sat uselessly on top of it.
- * Fixed here: default background is now `var(--surface-hybrid-bg)`, and `::part(content)` below
- * adds the blur/shadow half of the recipe for every sheet *except* `.full-modal` ones (the
- * `sheet: false` full-bleed flows — RoutineWizard.vue, OnboardingGuide.vue — which already pass
- * their own `background="var(--bg)"` deliberately, so they show the page's own sweep instead of
- * a floating card; skipping them here isn't an oversight, it's this same fix not re-fighting a
- * choice those two callers already made explicitly). Also carries the same gradient-hairline
- * `::after` every other `.surface-hybrid`/`.panel` consumer gets — live-verified that chaining a
- * pseudo-element off a shadow part (`::part(content)::after`) does render, positioned against
- * that part's own box, in this app's target Chromium; the mask-composite ring lines up on the
- * modal's real edges exactly like the light-DOM version.
+ * Default background is `var(--surface-hybrid-bg)`, and `::part(content)` below adds the
+ * blur/shadow half of the surface-hybrid recipe for every sheet *except* `.full-modal` ones (the
+ * `sheet: false` full-bleed flows — RoutineWizard.vue, OnboardingGuide.vue — which pass their own
+ * `background="var(--bg)"` deliberately, so they show the page's own sweep instead of a floating
+ * card; skipping them here isn't an oversight, it's this same rule not re-fighting a choice those
+ * two callers already made explicitly). Also carries the same gradient-hairline `::after` every
+ * other `.surface-hybrid`/`.panel` consumer gets — chaining a pseudo-element off a shadow part
+ * (`::part(content)::after`) does render, positioned against that part's own box, in this app's
+ * target Chromium; the mask-composite ring lines up on the modal's real edges exactly like the
+ * light-DOM version.
  *
  * `desktopWidth`/`desktopHeight` are optional overrides of `width`/`height` for the ≥900px
  * breakpoint (falling back to the base value when unset) — implemented as a plain CSS custom-
@@ -54,25 +45,24 @@
  * an inline style always wins that fight, so that pattern (what ExerciseInfoPanel used to do)
  * silently doesn't do anything.
  *
- * Closing (feedback: routine create/edit crashed with "Cannot read properties of null (reading
- * 'insertBefore')", and the workout-delete confirm got stuck). Root cause: every close path
- * here and in every caller was just emitting `close`/flipping the parent's own v-if straight
- * away, which unmounts this whole component — including the live `<ion-modal>` custom element —
- * while `:is-open` was still `true` and Ionic hadn't been told to close. Ionic's own dismiss()
- * does real async teardown (finishes any animation, detaches itself from the DOM in a
- * controlled order); yanking the element out from under it via Vue unmount races that teardown
- * and null-derefs. `@ionic/vue`'s `<IonModal>` doesn't expose a `dismiss()` method on its own
- * component instance (confirmed against the installed 9.0.0: no `defineExpose` anywhere in its
+ * Closing. Every close path here and in every caller used to just emit `close`/flip the parent's
+ * own v-if straight away, which unmounts this whole component — including the live
+ * `<ion-modal>` custom element — while `:is-open` was still `true` and Ionic hadn't been told to
+ * close. Ionic's own dismiss() does real async teardown (finishes any animation, detaches itself
+ * from the DOM in a controlled order); yanking the element out from under it via Vue unmount
+ * races that teardown and null-derefs — this produced a real "Cannot read properties of null
+ * (reading 'insertBefore')" crash in routine create/edit, and left the workout-delete confirm
+ * stuck. `@ionic/vue`'s `<IonModal>` doesn't expose a `dismiss()` method on its own component
+ * instance (confirmed against the installed 9.0.0: no `defineExpose` anywhere in its
  * `defineOverlayContainer`) — the real method lives on the underlying custom element, reached
  * via the template ref's `.$el`. So: nothing in this file or its callers unmounts anything
  * directly. Every close path calls `dismiss()` below, which calls the *real* Ionic dismiss;
  * only its `@did-dismiss` callback (guaranteed to fire after Ionic's own teardown finishes)
  * emits `close`, and only *that* event is what callers use to actually unmount/reset state.
  *
- * 2026-09-05: `@did-dismiss` firing "after Ionic's own teardown finishes" turned out not to mean
- * "after Ionic's internal overlay-stack bookkeeping has fully detached the DOM subtree" — live
- * production-build investigation (`audit/workplan-v1.md` §3.6) captured a real
- * `insertBefore`-on-null crash happening *synchronously inside* the `did-dismiss` handler's own
+ * `@did-dismiss` firing "after Ionic's own teardown finishes" turned out not to mean "after
+ * Ionic's internal overlay-stack bookkeeping has fully detached the DOM subtree" — a real
+ * `insertBefore`-on-null crash happened *synchronously inside* the `did-dismiss` handler's own
  * call stack: emitting `close` here triggers the caller's reactive unmount in the same tick,
  * which can race Ionic's own cleanup of that same subtree. `requestAnimationFrame` (not
  * `nextTick`, which can still land in the same microtask queue Ionic's teardown promise resolves
@@ -127,8 +117,8 @@ const modalRef = ref<InstanceType<typeof IonModal> | null>(null);
 function dismiss() {
   void (modalRef.value as unknown as { $el?: { dismiss: () => Promise<boolean> } } | null)?.$el?.dismiss();
 }
-/** See this file's header comment (2026-09-05 update) for why `close` is deferred a frame past
- *  `did-dismiss` instead of emitted directly from the template. */
+/** See this file's header comment for why `close` is deferred a frame past `did-dismiss`
+ *  instead of emitted directly from the template. */
 function onDidDismiss() {
   window.requestAnimationFrame(() => emit("close"));
 }
@@ -188,10 +178,10 @@ defineExpose({ dismiss });
      shouldn't have rounded corners either. */
   border-radius: 0;
 }
-/* N8 adoption fix (see header comment): every sheet except the full-bleed flows gets the full
-   surface-hybrid recipe on its actual painted box. `--background` above only sets fill color (an
-   Ionic-internal custom property); backdrop-filter and the gradient hairline both have to target
-   the real shadow-DOM node via ::part(content) instead — plain scoped CSS can't reach in there. */
+/* Every sheet except the full-bleed flows gets the full surface-hybrid recipe on its actual
+   painted box (see header comment). `--background` above only sets fill color (an Ionic-internal
+   custom property); backdrop-filter and the gradient hairline both have to target the real
+   shadow-DOM node via ::part(content) instead — plain scoped CSS can't reach in there. */
 .sheet-modal:not(.full-modal)::part(content) {
   backdrop-filter: blur(var(--surface-hybrid-blur));
   -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * Past-run detail (UI audit fix: "Letzte Aktivität" run rows on OverviewPage.vue were permanently
- * `disabled` — the only feed row that visibly did nothing when tapped, unlike workout rows which
- * already open WorkoutDetail.vue). Mirrors WorkoutDetail.vue's exact pattern: a sheet built on the
+ * Past-run detail sheet — "Letzte Aktivität" run rows on OverviewPage.vue were permanently
+ * `disabled`, the only feed row that visibly did nothing when tapped, unlike workout rows which
+ * already open WorkoutDetail.vue. Mirrors WorkoutDetail.vue's exact pattern: a sheet built on the
  * shared SheetModal.vue, loading full detail on mount via a store action that already existed
  * (runsStore.loadDetail()/getRunDetail — built for RunsPage.vue's inline layout, never reused from
  * a modal before). Reuses RunReplay.vue (which itself wraps RunMap.vue) for the route visualization

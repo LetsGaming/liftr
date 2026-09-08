@@ -1,18 +1,18 @@
 <script setup lang="ts">
 /**
- * RPE capture (Task 4, workstream A — plan §"RPE capture: new UI, off the primary tap path").
- * Explicitly speculative per workplan-v1.md §4 — no prior pattern to anchor this on, so kept as
- * small and reversible as possible: a single sheet, a row of tappable numbers, no required state.
+ * RPE capture, off the primary tap path. Explicitly speculative — no prior pattern to anchor
+ * this on, so kept as small and reversible as possible: a single sheet, a row of tappable
+ * numbers, no required state.
  *
  * A row of 10 discrete tap targets, not a slider — a slider adds drag-precision friction to
  * something meant to be a 1-tap afterthought, and matches this app's existing preference for
  * discrete tap targets over continuous controls (e.g. NumberStepper) over the whole active-
  * workout screen.
  *
- * Global Constraint 4: this component only ever writes into store.currentSet.rpe (via
- * setCurrentSetRpe() in the caller), which rides along in the next logCurrentSet() sync payload —
- * it never blocks or gates "Satz speichern", and closing without picking is a silent no-op, not a
- * dismissed-warning state.
+ * This component only ever writes into store.currentSet.rpe (via setCurrentSetRpe() in the
+ * caller), which rides along in the next logCurrentSet() sync payload — it never blocks or
+ * gates "Satz speichern", and closing without picking is a silent no-op, not a dismissed-warning
+ * state.
  *
  * Picking a number closes this sheet via sheetRef.dismiss(), not by having the caller flip its
  * own v-if straight away — see SheetModal.vue's header comment for why that crashes

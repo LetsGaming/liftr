@@ -31,9 +31,9 @@ function jaccard(a: string[], b: string[]): number {
 const MIN_SCORE = 0.35;
 
 /**
- * Feature: "if there is a similar exercise that uses equipment the user actually has, that
- * should be used instead" of just dropping an unusable exercise from suggestions. Scored, not
- * hand-authored (curated.yaml already carries movementPattern + muscles for every exercise, so
+ * Suggests a similar exercise using equipment the user actually has, instead of just dropping an
+ * unusable exercise from suggestions. Scored, not hand-authored (curated.yaml already carries
+ * movementPattern + muscles for every exercise, so
  * a substitute graph would just be a second, driftable copy of the same information).
  *
  * Same movement pattern dominates the score — a substitute for a horizontal press should still

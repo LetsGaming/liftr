@@ -1,10 +1,12 @@
 import { z } from "zod";
 import type { AppDb } from "../db.js";
+import { NotFoundError } from "../lib/errors.js";
 import {
   archiveRoutine,
   deleteRoutineExercises,
   findActiveRoutinesWithExercises,
   findMesocyclesByRoutineIds,
+  findRoutineById,
   insertRoutine,
   insertRoutineExercises,
   updateRoutineMeta,
@@ -27,16 +29,15 @@ const routineExerciseInput = z.object({
   exerciseId: z.string(),
   orderIndex: z.number().int().default(0),
   // One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid, optionally with weight targets
-  // too) — replaced the reps-only targetRepsPerSet per feedback that there was no way to plan
-  // a weight target (or added weight for a bodyweight movement) at all. Set count is this
-  // array's length.
+  // too) — replaced the reps-only targetRepsPerSet, which had no way to plan a weight target
+  // (or added weight for a bodyweight movement) at all. Set count is this array's length.
   targetSets: z.array(setTargetInput).min(1).default([{ reps: 8, weightKg: null }, { reps: 8, weightKg: null }, { reps: 8, weightKg: null }]),
   supersetGroup: z.number().int().nullable().optional(),
-  // Per-exercise rest overrides (feedback: adjustable pause per set / per exercise). Null = fall
+  // Per-exercise rest overrides (adjustable pause per set / per exercise). Null = fall
   // back to RestTimer's built-in default, same as before either column existed. 0 is a real,
   // legitimate value ("no rest") — the wizard's steppers (ArrangeStep.vue) allow reaching it, so
   // this must accept it too; `.positive()` (>0) rejected a value the client UI itself produces,
-  // silently failing the whole routine save (BUG-02).
+  // silently failing the whole routine save.
   restBetweenSetsSeconds: z.number().int().nonnegative().nullable().optional(),
   restAfterExerciseSeconds: z.number().int().nonnegative().nullable().optional(),
 });
@@ -51,10 +52,10 @@ const routineIdParams = z.object({ id: z.string() });
 const okResponse = z.object({ ok: z.literal(true) });
 
 export function registerRoutineRoutes(app: ZodFastifyInstance, db: AppDb) {
-  // GET /api/routines — list, with their exercises + any active mesocycle (plan §6.8), for the
+  // GET /api/routines — list, with their exercises + any active mesocycle, for the
   // routine builder + "start today's routine".
-  app.get("/api/routines", async () => {
-    const rows = await findActiveRoutinesWithExercises(db);
+  app.get("/api/routines", async (req) => {
+    const rows = await findActiveRoutinesWithExercises(db, req.userId);
     const mesoRows = await findMesocyclesByRoutineIds(db, rows.map((r) => r.id));
     const mesoByRoutine = new Map(mesoRows.map((m) => [m.routineId, m]));
 
@@ -64,9 +65,9 @@ export function registerRoutineRoutes(app: ZodFastifyInstance, db: AppDb) {
     }));
   });
 
-  // POST /api/routines — create a routine + its exercise list in one call (routine builder, plan 1.4).
+  // POST /api/routines — create a routine + its exercise list in one call (routine builder).
   app.post("/api/routines", { schema: { body: routineInput } }, async (req, reply) => {
-    const routine = await insertRoutine(db, req.body.name, req.body.orderIndex);
+    const routine = await insertRoutine(db, req.userId, req.body.name, req.body.orderIndex);
     await insertRoutineExercises(db, routine.id, req.body.exercises);
     reply.code(201);
     return routine;
@@ -79,8 +80,10 @@ export function registerRoutineRoutes(app: ZodFastifyInstance, db: AppDb) {
     async (req) => {
       const { id } = req.params;
       const body = req.body;
+      const existing = await findRoutineById(db, req.userId, id);
+      if (!existing) throw new NotFoundError();
       if (body.name !== undefined || body.orderIndex !== undefined) {
-        await updateRoutineMeta(db, id, { name: body.name, orderIndex: body.orderIndex });
+        await updateRoutineMeta(db, req.userId, id, { name: body.name, orderIndex: body.orderIndex });
       }
       if (body.exercises) {
         await deleteRoutineExercises(db, id);
@@ -95,7 +98,9 @@ export function registerRoutineRoutes(app: ZodFastifyInstance, db: AppDb) {
     "/api/routines/:id",
     { schema: { params: routineIdParams, response: { 200: okResponse } } },
     async (req) => {
-      await archiveRoutine(db, req.params.id);
+      const existing = await findRoutineById(db, req.userId, req.params.id);
+      if (!existing) throw new NotFoundError();
+      await archiveRoutine(db, req.userId, req.params.id);
       return { ok: true as const };
     },
   );

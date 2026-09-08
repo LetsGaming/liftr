@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { mesocycles, routineExercises, routines, type LiftrDb } from "@liftr/db";
+import { mesocycles, OWNER_USER_ID, routineExercises, routines, type LiftrDb } from "@liftr/db";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 import {
   archiveRoutine,
@@ -29,7 +29,7 @@ describe("findActiveRoutinesWithExercises", () => {
       targetSets: JSON.stringify([{ reps: 5, weightKg: 100 }]),
     });
 
-    const result = await findActiveRoutinesWithExercises(db);
+    const result = await findActiveRoutinesWithExercises(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.name)).toEqual(["Routine A", "Routine B"]);
     expect(result[0]!.routineExercises).toHaveLength(1);
@@ -42,13 +42,13 @@ describe("findActiveRoutinesWithExercises", () => {
     await db.insert(routines).values({ name: "Archived", orderIndex: 0, archivedAt: new Date() });
     const [active] = await db.insert(routines).values({ name: "Active", orderIndex: 1 }).returning();
 
-    const result = await findActiveRoutinesWithExercises(db);
+    const result = await findActiveRoutinesWithExercises(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.id)).toEqual([active!.id]);
   });
 
   it("returns an empty array when there are no routines at all", async () => {
-    const result = await findActiveRoutinesWithExercises(db);
+    const result = await findActiveRoutinesWithExercises(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 });
@@ -85,7 +85,7 @@ describe("findMesocyclesByRoutineIds", () => {
 
 describe("insertRoutine", () => {
   it("creates and returns the new routine row", async () => {
-    const row = await insertRoutine(db, "Push Day", 2);
+    const row = await insertRoutine(db, OWNER_USER_ID, "Push Day", 2);
 
     expect(row.name).toBe("Push Day");
     expect(row.orderIndex).toBe(2);
@@ -96,7 +96,7 @@ describe("insertRoutine", () => {
 describe("insertRoutineExercises", () => {
   it("inserts each exercise with its targetSets JSON-stringified", async () => {
     const ex = await insertTestExercise(db);
-    const routine = await insertRoutine(db, "Pull Day", 0);
+    const routine = await insertRoutine(db, OWNER_USER_ID, "Pull Day", 0);
 
     await insertRoutineExercises(db, routine.id, [
       { exerciseId: ex.id, orderIndex: 0, targetSets: [{ reps: 10, weightKg: null }] },
@@ -108,7 +108,7 @@ describe("insertRoutineExercises", () => {
   });
 
   it("is a no-op when given an empty exercises array", async () => {
-    const routine = await insertRoutine(db, "Empty Day", 0);
+    const routine = await insertRoutine(db, OWNER_USER_ID, "Empty Day", 0);
 
     await insertRoutineExercises(db, routine.id, []);
 
@@ -119,9 +119,9 @@ describe("insertRoutineExercises", () => {
 
 describe("updateRoutineMeta", () => {
   it("patches only the given fields, leaving others untouched", async () => {
-    const routine = await insertRoutine(db, "Old Name", 0);
+    const routine = await insertRoutine(db, OWNER_USER_ID, "Old Name", 0);
 
-    await updateRoutineMeta(db, routine.id, { name: "New Name" });
+    await updateRoutineMeta(db, OWNER_USER_ID, routine.id, { name: "New Name" });
 
     const updated = await db.query.routines.findFirst({ where: (r, { eq }) => eq(r.id, routine.id) });
     expect(updated!.name).toBe("New Name");
@@ -132,8 +132,8 @@ describe("updateRoutineMeta", () => {
 describe("deleteRoutineExercises", () => {
   it("removes only the exercises belonging to the given routine", async () => {
     const ex = await insertTestExercise(db);
-    const routine = await insertRoutine(db, "R1", 0);
-    const otherRoutine = await insertRoutine(db, "R2", 1);
+    const routine = await insertRoutine(db, OWNER_USER_ID, "R1", 0);
+    const otherRoutine = await insertRoutine(db, OWNER_USER_ID, "R2", 1);
     await insertRoutineExercises(db, routine.id, [{ exerciseId: ex.id, orderIndex: 0, targetSets: [] }]);
     await insertRoutineExercises(db, otherRoutine.id, [{ exerciseId: ex.id, orderIndex: 0, targetSets: [] }]);
 
@@ -148,14 +148,14 @@ describe("deleteRoutineExercises", () => {
 
 describe("archiveRoutine", () => {
   it("sets archivedAt so the routine no longer shows up as active", async () => {
-    const routine = await insertRoutine(db, "To Archive", 0);
+    const routine = await insertRoutine(db, OWNER_USER_ID, "To Archive", 0);
 
-    await archiveRoutine(db, routine.id);
+    await archiveRoutine(db, OWNER_USER_ID, routine.id);
 
     const updated = await db.query.routines.findFirst({ where: (r, { eq }) => eq(r.id, routine.id) });
     expect(updated!.archivedAt).not.toBeNull();
 
-    const active = await findActiveRoutinesWithExercises(db);
+    const active = await findActiveRoutinesWithExercises(db, OWNER_USER_ID);
     expect(active.find((r) => r.id === routine.id)).toBeUndefined();
   });
 });

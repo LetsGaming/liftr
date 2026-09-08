@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
- * Emoji-to-SVG consistency pass (design audit 2026-09): centralizes every small functional
- * icon that used to be a raw emoji/unicode glyph (🔥 🏆 ✦ 🏋 🏃 🗑 ✎ 🔗 👁 🙈 📤 📋 ⏭ ▶ ⏸ ⚠ 🎯
- * ⚖️ ✓ ✕) into one component, matching App.vue's `navItems` convention exactly: 24x24 viewBox,
+ * Centralizes every small functional icon (fire, trophy, star, dumbbell, run, trash, edit, link,
+ * eye/eye-off, share, copy, skip, play/pause, warning, target, scale, check, close, ...) as one
+ * component, matching App.vue's `navItems` convention exactly: 24x24 viewBox,
  * `fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
  * stroke-linejoin="round"`, hand-authored static path data (never user input, so v-html here
  * carries no injection risk — same justification as App.vue's nav icons). `currentColor` means
  * every icon inherits the surrounding text color automatically in both themes.
  *
  * Sizing: the icon is `1em` square by default so it scales with the font-size of whatever text
- * it sits next to (matches how the emoji it replaces used to size itself) and is nudged onto the
- * text baseline via `vertical-align`. Pass `size` (px) for icon-only contexts (buttons with no
- * adjacent text, badges) where a fixed size reads better than font-relative sizing.
+ * it sits next to, and is nudged onto the text baseline via `vertical-align`. Pass `size` (px)
+ * for icon-only contexts (buttons with no adjacent text, badges) where a fixed size reads better
+ * than font-relative sizing.
  */
 export type AppIconName =
   | "check"

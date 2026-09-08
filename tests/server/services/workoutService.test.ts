@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { ranks, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, ranks, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { NotFoundError } from "~server/lib/errors.js";
 import { deleteWorkoutAndRecomputeRanks } from "~server/services/workoutService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
@@ -43,7 +43,7 @@ async function insertWorkoutWithSet(exerciseId: string, weightKg: number, reps: 
 
 describe("deleteWorkoutAndRecomputeRanks", () => {
   it("throws NotFoundError for a workout id that doesn't exist", async () => {
-    await expect(deleteWorkoutAndRecomputeRanks(db, "nonexistent-id")).rejects.toThrow(NotFoundError);
+    await expect(deleteWorkoutAndRecomputeRanks(db, OWNER_USER_ID, "nonexistent-id")).rejects.toThrow(NotFoundError);
   });
 
   it("removes the workout row and cascades to its workout_exercises/sets", async () => {
@@ -53,7 +53,7 @@ describe("deleteWorkoutAndRecomputeRanks", () => {
     const weBefore = await db.select().from(workoutExercises).where(eq(workoutExercises.workoutId, workout.id));
     expect(weBefore).toHaveLength(1);
 
-    await deleteWorkoutAndRecomputeRanks(db, workout.id);
+    await deleteWorkoutAndRecomputeRanks(db, OWNER_USER_ID, workout.id);
 
     const remainingWorkout = await db.select().from(workouts).where(eq(workouts.id, workout.id));
     expect(remainingWorkout).toHaveLength(0);
@@ -69,7 +69,7 @@ describe("deleteWorkoutAndRecomputeRanks", () => {
     // this is the exercise's only workout -- deleting it leaves no sets to recompute a rank from
     const workout = await insertWorkoutWithSet(exercise.id, 60, 8);
 
-    await deleteWorkoutAndRecomputeRanks(db, workout.id);
+    await deleteWorkoutAndRecomputeRanks(db, OWNER_USER_ID, workout.id);
 
     const rank = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, exercise.id) });
     expect(rank).toBeUndefined();
@@ -84,7 +84,7 @@ describe("deleteWorkoutAndRecomputeRanks", () => {
     // 60kg x 8 -> ratio ~1.01 -> apprentice; this workout stays.
     await insertWorkoutWithSet(exercise.id, 60, 8);
 
-    await deleteWorkoutAndRecomputeRanks(db, strongWorkout.id);
+    await deleteWorkoutAndRecomputeRanks(db, OWNER_USER_ID, strongWorkout.id);
 
     const rank = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, exercise.id) });
     expect(rank).toBeDefined();
@@ -116,7 +116,7 @@ describe("deleteWorkoutAndRecomputeRanks", () => {
     await insertWorkoutWithSet(exerciseA.id, 60, 8);
     await insertWorkoutWithSet(exerciseB.id, 60, 8);
 
-    await deleteWorkoutAndRecomputeRanks(db, workout!.id);
+    await deleteWorkoutAndRecomputeRanks(db, OWNER_USER_ID, workout!.id);
 
     const rankA = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, exerciseA.id) });
     const rankB = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, exerciseB.id) });
@@ -139,6 +139,6 @@ describe("deleteWorkoutAndRecomputeRanks", () => {
     await insertWorkoutWithSet(exercise.id, 60, 8); // kept, so a rank recompute has something to work with
 
     // must not throw even though the exercise is touched by two sets within the same workout
-    await expect(deleteWorkoutAndRecomputeRanks(db, workout!.id)).resolves.toBeUndefined();
+    await expect(deleteWorkoutAndRecomputeRanks(db, OWNER_USER_ID, workout!.id)).resolves.toBeUndefined();
   });
 });

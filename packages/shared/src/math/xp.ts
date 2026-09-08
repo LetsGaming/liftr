@@ -1,8 +1,8 @@
 /**
- * XP / level system (plan Phase 6.4) — purely additive, never gates or replaces the rank
- * system. Per-set XP scales with the exercise's current rank tier so raw volume on an easy
- * lift doesn't outweigh real strength progress on a hard one; bodyweight sets (no logged
- * weight) use a nominal implied load rather than earning zero.
+ * XP / level system — purely additive, never gates or replaces the rank system. Per-set XP
+ * scales with the exercise's current rank tier so raw volume on an easy lift doesn't outweigh
+ * real strength progress on a hard one; bodyweight sets (no logged weight) use a nominal
+ * implied load rather than earning zero.
  */
 import type { Tier } from "../rank/tiers.js";
 
@@ -20,9 +20,9 @@ export const TIER_XP_MULTIPLIER: Record<Tier, number> = {
 
 export const BODYWEIGHT_NOMINAL_LOAD_KG = 30;
 
-/** Feedback: "doing the same exact exercise (same reps, same weight) should give less and less
- *  xp... it should engage the user to get further and further in their training." Decays toward
- *  a floor rather than to zero — grinding the identical numbers still earns *something*, it just
+/** Doing the exact same exercise (same reps, same weight) repeatedly earns less each time, to
+ *  nudge the user toward progression instead of repeating identical workouts. Decays toward a
+ *  floor rather than to zero — grinding the identical numbers still earns *something*, it just
  *  earns progressively less, which is what nudges someone toward more weight or more reps instead
  *  of feeling punished for repeating a workout at all. */
 export const REPEAT_XP_DECAY_STEP = 0.15;
@@ -120,7 +120,7 @@ export interface LevelInfo {
 }
 
 /**
- * Level curve (XP/rank balancing redesign, `docs/superpowers/specs/2026-09-06-xp-rank-balancing-design.md` §1).
+ * Level curve.
  *
  * `level = floor((totalXp / LEVEL_XP_SCALE) ^ LEVEL_CURVE_EXPONENT)`.
  *
@@ -174,9 +174,8 @@ export function computeLevel(totalXp: number): LevelInfo {
   };
 }
 
-/** Fires once per finished workout (see the streak/XP mechanics redesign spec,
- *  `docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md`, §2). Structurally
- *  un-fabricable: requires genuine, calendar-spread finished workouts via the existing
+/** Fires once per finished workout. Structurally un-fabricable: requires genuine,
+ *  calendar-spread finished workouts via the existing
  *  `computeStreak` mechanism (unchanged, token-protected). Deliberately monotonic and
  *  milestone-free — `Math.sqrt` of a capped streak length means the curve rises fast early
  *  (satisfying "day 1 already feels like a real reward") and flattens smoothly, never dips, and
@@ -184,9 +183,9 @@ export function computeLevel(totalXp: number): LevelInfo {
  *  at least as good as breaking and rebuilding one. */
 export const CONSISTENCY_BASE = 300;
 export const CONSISTENCY_SCALE = 550;
-/** ~75 days: in the 60-90 day range the spec calls for (roughly 5-7.5 months at 3
- *  sessions/week) — a beginner sees this term visibly climbing through their entire early
- *  habit-forming period, not a multi-year plateau. */
+/** ~75 days: sits in the 60-90 day range (roughly 5-7.5 months at 3 sessions/week) — a beginner
+ *  sees this term visibly climbing through their entire early habit-forming period, not a
+ *  multi-year plateau. */
 export const CONSISTENCY_STREAK_CAP = 75;
 
 export function computeConsistencyBonus(streakDays: number): number {
@@ -194,7 +193,7 @@ export function computeConsistencyBonus(streakDays: number): number {
   return CONSISTENCY_BASE + CONSISTENCY_SCALE * Math.sqrt(cappedDays);
 }
 
-/** Fires once per finished workout (see the redesign spec §3). Additive-only by construction —
+/** Fires once per finished workout. Additive-only by construction —
  *  `newMuscleCount` can never be negative and the result is a plain non-negative product, so this
  *  term can never read as a penalty. Purely a count of muscles trained this session that weren't
  *  trained in the immediately-preceding finished session — never punishes specialization, since
@@ -208,8 +207,8 @@ export function computeVarietyBonus(newMuscleCount: number): number {
 }
 
 /**
- * Worked sizing table (for product-owner review before this workstream merges), a hypothetical
- * consistent 3x/week user. Per-set XP is a rough estimate for a ~10-set typical session — early
+ * Worked sizing table for a hypothetical consistent 3x/week user. Per-set XP is a rough estimate
+ * for a ~10-set typical session — early
  * on, sets are mostly first-occurrence (no repeat-decay, since `computeSetXp` no longer scales
  * with weight, only with reps/tier/decay); by month 1+, repeated weekly combos accrue meaningful
  * repeat-decay, which is why per-set XP is *highest* right at day 1 and settles lower afterward,
@@ -231,7 +230,7 @@ export function computeVarietyBonus(newMuscleCount: number): number {
  * curve fixes: the old `floor(sqrt(totalXp/100))` put day 1 at level 6), and growth decelerates
  * smoothly instead of reaching level 69 by month 6.
  *
- * Ordering check (binding per the spec, "past their first month"): at Month 1/3/6, per-set XP
+ * Ordering check, required to hold past a user's first month: at Month 1/3/6, per-set XP
  * (1390/1380/1440) < variety bonus (1500) < consistency bonus (3312/5063/5063) — consistency is
  * the largest single contributor, per-set is the smallest, variety sits between. The Month 3 vs.
  * Month 6 rows also demonstrate the required flat-past-cap property directly: the consistency

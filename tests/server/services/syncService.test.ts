@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { computeConsistencyBonus, computeTotalXp, computeVarietyBonus, type Tier } from "@liftr/shared";
-import { exerciseMuscles, muscles, ranks, standards, workouts, type LiftrDb } from "@liftr/db";
+import { exerciseMuscles, muscles, OWNER_USER_ID, ranks, standards, workouts, type LiftrDb } from "@liftr/db";
 import { applySyncBatch, type SyncItem } from "~server/services/syncService.js";
 import { getXpSummary } from "~server/services/xpService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
@@ -54,20 +54,20 @@ function startWorkoutItem(overrides: Partial<SyncItem & { type: "start_workout" 
 
 describe("applySyncBatch — start_workout", () => {
   it("creates a workout and its exercises", async () => {
-    const [result] = await applySyncBatch(db, [startWorkoutItem()]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     expect(result).toMatchObject({ clientId: "client-start-1", status: "created", serverId: "workout-1" });
   });
 
   it("is idempotent on the client-generated workout id — replaying the same batch is a no-op", async () => {
-    await applySyncBatch(db, [startWorkoutItem()]);
-    const [result] = await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     expect(result).toMatchObject({ status: "already_synced", serverId: "workout-1" });
   });
 });
 
 describe("applySyncBatch — log_set", () => {
   async function withStartedWorkout() {
-    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
   }
 
   function logSetItem(payloadOverrides: Record<string, unknown> = {}, clientId = "client-set-1"): SyncItem {
@@ -88,37 +88,37 @@ describe("applySyncBatch — log_set", () => {
 
   it("creates a set for a real workout_exercise", async () => {
     await withStartedWorkout();
-    const [result] = await applySyncBatch(db, [logSetItem()]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem()]);
     expect(result!.status).toBe("created");
   });
 
   it("is idempotent on clientId — a retried flush never duplicates a set", async () => {
     await withStartedWorkout();
-    await applySyncBatch(db, [logSetItem()]);
-    const [result] = await applySyncBatch(db, [logSetItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [logSetItem()]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem()]);
     expect(result!.status).toBe("already_synced");
   });
 
   it("rejects a set referencing a workout_exercise that doesn't exist (stale/bad queue entry)", async () => {
-    const [result] = await applySyncBatch(db, [logSetItem({ workoutExerciseId: "no-such-id" })]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ workoutExerciseId: "no-such-id" })]);
     expect(result).toMatchObject({ status: "error", error: "unknown_workout_exercise" });
   });
 
   it("rejects an implausible weight (defense-in-depth against a request that skipped the client's own clamp)", async () => {
     await withStartedWorkout();
-    const [result] = await applySyncBatch(db, [logSetItem({ weightKg: 5000 })]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ weightKg: 5000 })]);
     expect(result).toMatchObject({ status: "error", error: "implausible_set" });
   });
 
   it("rejects implausible reps the same way", async () => {
     await withStartedWorkout();
-    const [result] = await applySyncBatch(db, [logSetItem({ reps: 999 })]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ reps: 999 })]);
     expect(result).toMatchObject({ status: "error", error: "implausible_set" });
   });
 
   it("a rejected item doesn't fail its siblings in the same batch", async () => {
     await withStartedWorkout();
-    const results = await applySyncBatch(db, [
+    const results = await applySyncBatch(db, OWNER_USER_ID, [
       logSetItem({ weightKg: 5000 }, "bad"),
       logSetItem({}, "good"),
     ]);
@@ -129,8 +129,8 @@ describe("applySyncBatch — log_set", () => {
 
 describe("applySyncBatch — finish_workout", () => {
   it("marks the workout ended and credits the day's streak", async () => {
-    await applySyncBatch(db, [startWorkoutItem()]);
-    const [result] = await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "client-finish-1",
         type: "finish_workout",
@@ -143,8 +143,8 @@ describe("applySyncBatch — finish_workout", () => {
   });
 
   it("persists workout-level notes sent in the finish_workout payload (Task 2)", async () => {
-    await applySyncBatch(db, [startWorkoutItem()]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "client-finish-notes-1",
         type: "finish_workout",
@@ -162,8 +162,8 @@ describe("applySyncBatch — finish_workout", () => {
   });
 
   it("stores notes as null when the finish_workout payload omits it", async () => {
-    await applySyncBatch(db, [startWorkoutItem()]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "client-finish-notes-2",
         type: "finish_workout",
@@ -176,14 +176,14 @@ describe("applySyncBatch — finish_workout", () => {
   });
 
   it("is idempotent — finishing an already-finished workout returns already_synced", async () => {
-    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const finishItem: SyncItem = {
       clientId: "client-finish-1",
       type: "finish_workout",
       payload: { workoutId: "workout-1", endedAt: new Date("2026-01-01T11:00:00Z"), pausedSeconds: 0 },
     } as SyncItem;
-    await applySyncBatch(db, [finishItem]);
-    const [result] = await applySyncBatch(db, [finishItem]);
+    await applySyncBatch(db, OWNER_USER_ID, [finishItem]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [finishItem]);
     expect(result!.status).toBe("already_synced");
   });
 
@@ -204,7 +204,7 @@ describe("applySyncBatch — finish_workout", () => {
 
   it("flags a workout with an unrealistic sets-per-minute pace and discounts its rank verdicts", async () => {
     await seedStandards(db, exerciseId);
-    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const startedAt = new Date("2026-01-01T10:00:00Z");
     // 20 sets crammed into the ~60-second window between startedAt and endedAt below — no human
     // logs 20 sets a minute apart, so this should trip the pace heuristic (severity maxes out at
@@ -212,9 +212,9 @@ describe("applySyncBatch — finish_workout", () => {
     const setItems: SyncItem[] = Array.from({ length: 20 }, (_, i) =>
       logSetItemAt(new Date(startedAt.getTime() + i * 3000), `client-pace-set-${i}`),
     );
-    await applySyncBatch(db, setItems);
+    await applySyncBatch(db, OWNER_USER_ID, setItems);
 
-    const [result] = await applySyncBatch(db, [
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-1",
         type: "finish_workout",
@@ -234,13 +234,13 @@ describe("applySyncBatch — finish_workout", () => {
     // getXpSummary actually returns a discounted total for those sets, not the full undiscounted
     // amount a normal, unflagged session of the exact same sets would produce.
     await seedStandards(db, exerciseId);
-    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const startedAt = new Date("2026-01-01T10:00:00Z");
     const setLoggedAts = Array.from({ length: 20 }, (_, i) => new Date(startedAt.getTime() + i * 3000));
     const setItems: SyncItem[] = setLoggedAts.map((loggedAt, i) => logSetItemAt(loggedAt, `client-xp-set-${i}`));
-    await applySyncBatch(db, setItems);
+    await applySyncBatch(db, OWNER_USER_ID, setItems);
 
-    const [result] = await applySyncBatch(db, [
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-xp-1",
         type: "finish_workout",
@@ -272,21 +272,21 @@ describe("applySyncBatch — finish_workout", () => {
       })),
     );
 
-    const summary = await getXpSummary(db);
+    const summary = await getXpSummary(db, OWNER_USER_ID);
     expect(summary.totalXp).toBeLessThan(Math.round(undiscountedXp));
   });
 
   it("does not flag a normally-paced workout", async () => {
     await seedStandards(db, exerciseId);
-    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const startedAt = new Date("2026-01-01T10:00:00Z");
     // 5 sets spread across 30 minutes — a realistic pace (well above the 15s/set fine threshold).
     const setItems: SyncItem[] = Array.from({ length: 5 }, (_, i) =>
       logSetItemAt(new Date(startedAt.getTime() + i * 6 * 60_000), `client-normal-set-${i}`),
     );
-    await applySyncBatch(db, setItems);
+    await applySyncBatch(db, OWNER_USER_ID, setItems);
 
-    const [result] = await applySyncBatch(db, [
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-2",
         type: "finish_workout",
@@ -311,21 +311,21 @@ describe("applySyncBatch — finish_workout", () => {
 
     // Session 1: bodyweight-only set (no added weight) establishes a peak ratio of ~1.167
     // (e1RM(75kg, 5 reps) / 75kg bodyweight).
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-bw-1",
         type: "start_workout",
         payload: { id: "workout-bw-1", startedAt: new Date("2026-01-01T10:00:00Z"), exercises: [{ id: "we-bw-1", exerciseId: bwExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-bw-1",
         type: "log_set",
         payload: { workoutExerciseId: "we-bw-1", setIndex: 0, weightKg: 0, reps: 5, kind: "normal", loggedAt: new Date("2026-01-01T10:05:00Z") },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-bw-1",
         type: "finish_workout",
@@ -337,21 +337,21 @@ describe("applySyncBatch — finish_workout", () => {
     // redesign §3) requires a second day at/above a result before it's confirmed as the stored
     // peak — without this, session 1 alone would leave `peakE1rm` null, and the improbable-jump
     // check below (which compares against a *stored* peak) could never fire at all.
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-bw-1b",
         type: "start_workout",
         payload: { id: "workout-bw-1b", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-bw-1b", exerciseId: bwExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-bw-1b",
         type: "log_set",
         payload: { workoutExerciseId: "we-bw-1b", setIndex: 0, weightKg: 0, reps: 5, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-bw-1b",
         type: "finish_workout",
@@ -365,21 +365,21 @@ describe("applySyncBatch — finish_workout", () => {
     // bodyweight ~= 1.33 vs. peak ratio ~1.167, only a ~0.14 fractional jump) would NOT have
     // tripped this check — the bodyweight-adjusted math is what makes this exercise's real jump
     // detectable at all.
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-bw-2",
         type: "start_workout",
         payload: { id: "workout-bw-2", startedAt: new Date("2026-01-03T10:00:00Z"), exercises: [{ id: "we-bw-2", exerciseId: bwExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-bw-2",
         type: "log_set",
         payload: { workoutExerciseId: "we-bw-2", setIndex: 0, weightKg: 100, reps: 5, kind: "normal", loggedAt: new Date("2026-01-03T10:05:00Z") },
       } as SyncItem,
     ]);
-    const [result] = await applySyncBatch(db, [
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-bw-2",
         type: "finish_workout",
@@ -400,21 +400,21 @@ describe("applySyncBatch — finish_workout", () => {
 
     // Session 1 establishes a peak: rankService.ts stores the rep count itself (8) as `peakE1rm`
     // for a reps-metric exercise — it is not an e1RM at all.
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-reps-1",
         type: "start_workout",
         payload: { id: "workout-reps-1", startedAt: new Date("2026-01-01T10:00:00Z"), exercises: [{ id: "we-reps-1", exerciseId: repsExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-reps-1",
         type: "log_set",
         payload: { workoutExerciseId: "we-reps-1", setIndex: 0, weightKg: null, reps: 8, kind: "normal", loggedAt: new Date("2026-01-01T10:05:00Z") },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-reps-1",
         type: "finish_workout",
@@ -429,21 +429,21 @@ describe("applySyncBatch — finish_workout", () => {
     // audit-v3 Phase 3 fix instead compares rep count directly (session-best reps vs. stored-peak
     // reps), ignoring `weightKg` for a reps-metric exercise entirely — same rep count (8) both
     // sessions here, so this correctly reports no jump even with a wildly different weightKg.
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-reps-2",
         type: "start_workout",
         payload: { id: "workout-reps-2", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-reps-2", exerciseId: repsExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-reps-2",
         type: "log_set",
         payload: { workoutExerciseId: "we-reps-2", setIndex: 0, weightKg: 100, reps: 8, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
       } as SyncItem,
     ]);
-    const [result] = await applySyncBatch(db, [
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-reps-2",
         type: "finish_workout",
@@ -470,21 +470,21 @@ describe("applySyncBatch — finish_workout", () => {
     ]);
 
     // Session 1 establishes a candidate of 8 reps.
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-repjump-1",
         type: "start_workout",
         payload: { id: "workout-repjump-1", startedAt: new Date("2026-01-01T10:00:00Z"), exercises: [{ id: "we-repjump-1", exerciseId: repsExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-repjump-1",
         type: "log_set",
         payload: { workoutExerciseId: "we-repjump-1", setIndex: 0, weightKg: null, reps: 8, kind: "normal", loggedAt: new Date("2026-01-01T10:05:00Z") },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-repjump-1",
         type: "finish_workout",
@@ -496,21 +496,21 @@ describe("applySyncBatch — finish_workout", () => {
     // peak (XP/rank balancing redesign §3) — without this, session 1 alone leaves `peakE1rm`
     // null and the improbable-jump check below (which compares against a *stored* peak) could
     // never fire.
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-repjump-1b",
         type: "start_workout",
         payload: { id: "workout-repjump-1b", startedAt: new Date("2026-01-02T10:00:00Z"), exercises: [{ id: "we-repjump-1b", exerciseId: repsExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-repjump-1b",
         type: "log_set",
         payload: { workoutExerciseId: "we-repjump-1b", setIndex: 0, weightKg: null, reps: 8, kind: "normal", loggedAt: new Date("2026-01-02T10:05:00Z") },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-repjump-1b",
         type: "finish_workout",
@@ -520,21 +520,21 @@ describe("applySyncBatch — finish_workout", () => {
 
     // Session 2: a single set at 25 reps — a >200% jump over the 8-rep stored peak, with an
     // otherwise unremarkable single-set session (no pace red flag).
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-repjump-2",
         type: "start_workout",
         payload: { id: "workout-repjump-2", startedAt: new Date("2026-01-03T10:00:00Z"), exercises: [{ id: "we-repjump-2", exerciseId: repsExerciseId, orderIndex: 0 }] },
       } as SyncItem,
     ]);
-    await applySyncBatch(db, [
+    await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "set-repjump-2",
         type: "log_set",
         payload: { workoutExerciseId: "we-repjump-2", setIndex: 0, weightKg: null, reps: 25, kind: "normal", loggedAt: new Date("2026-01-03T10:05:00Z") },
       } as SyncItem,
     ]);
-    const [result] = await applySyncBatch(db, [
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "finish-repjump-2",
         type: "finish_workout",
@@ -571,9 +571,9 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
   it("a first-ever session gets the full variety bonus (all its own muscles are 'new') and a non-zero consistency bonus", async () => {
     await linkPrimaryMuscle(db, exerciseId, "shoulders");
     const day1 = new Date("2026-01-01T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
-    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
-    const [result] = await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [setItem("workout-1-we", day1, "set1")]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
 
     expect(result!.status).toBe("created");
     expect(result!.newMuscleSlugs).toEqual(["shoulders"]);
@@ -585,14 +585,14 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
   it("a session whose muscles fully overlap the immediately-preceding session scores 0 variety, without affecting its own consistency bonus", async () => {
     await linkPrimaryMuscle(db, exerciseId, "shoulders");
     const day1 = new Date("2026-01-01T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
-    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
-    await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [setItem("workout-1-we", day1, "set1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
 
     const day2 = new Date("2026-01-02T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-2", exerciseId, day2, "s2")]);
-    await applySyncBatch(db, [setItem("workout-2-we", day2, "set2")]);
-    const [result] = await applySyncBatch(db, [finishItem("workout-2", new Date("2026-01-02T11:00:00Z"), "f2")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-2", exerciseId, day2, "s2")]);
+    await applySyncBatch(db, OWNER_USER_ID, [setItem("workout-2-we", day2, "set2")]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-2", new Date("2026-01-02T11:00:00Z"), "f2")]);
 
     expect(result!.status).toBe("created");
     expect(result!.newMuscleSlugs).toEqual([]);
@@ -610,14 +610,14 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
     await linkPrimaryMuscle(db, otherExerciseId, "chest");
 
     const day1 = new Date("2026-01-01T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
-    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
-    await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [setItem("workout-1-we", day1, "set1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
 
     const day2 = new Date("2026-01-02T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-2", otherExerciseId, day2, "s2")]);
-    await applySyncBatch(db, [setItem("workout-2-we", day2, "set2")]);
-    const [result] = await applySyncBatch(db, [finishItem("workout-2", new Date("2026-01-02T11:00:00Z"), "f2")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-2", otherExerciseId, day2, "s2")]);
+    await applySyncBatch(db, OWNER_USER_ID, [setItem("workout-2-we", day2, "set2")]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-2", new Date("2026-01-02T11:00:00Z"), "f2")]);
 
     expect(result!.status).toBe("created");
     expect(result!.newMuscleSlugs).toEqual(["chest"]);
@@ -627,9 +627,9 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
   it("persists consistencyBonusXp and varietyBonusXp on the workouts row, not just in the returned result", async () => {
     await linkPrimaryMuscle(db, exerciseId, "shoulders");
     const day1 = new Date("2026-01-01T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
-    await applySyncBatch(db, [setItem("workout-1-we", day1, "set1")]);
-    const [result] = await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [setItem("workout-1-we", day1, "set1")]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
 
     const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
     expect(workoutRow!.consistencyBonusXp).toBe(result!.consistencyBonusXp);
@@ -640,9 +640,9 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
 
   it("a workout with zero logged sets finishes without throwing and produces zero bonuses", async () => {
     const day1 = new Date("2026-01-01T10:00:00Z");
-    await applySyncBatch(db, [startItem("workout-1", exerciseId, day1, "s1")]);
+    await applySyncBatch(db, OWNER_USER_ID, [startItem("workout-1", exerciseId, day1, "s1")]);
     // No log_set items at all.
-    const [result] = await applySyncBatch(db, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [finishItem("workout-1", new Date("2026-01-01T11:00:00Z"), "f1")]);
 
     expect(result!.status).toBe("created");
     expect(result!.newMuscleSlugs).toEqual([]);
@@ -657,15 +657,15 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
 
 describe("applySyncBatch — add_exercise", () => {
   it("creates a mid-session workout_exercise and is idempotent on its id", async () => {
-    await applySyncBatch(db, [startWorkoutItem()]);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const item: SyncItem = {
       clientId: "client-add-1",
       type: "add_exercise",
       payload: { id: "we-2", workoutId: "workout-1", exerciseId, orderIndex: 1 },
     } as SyncItem;
-    const [first] = await applySyncBatch(db, [item]);
+    const [first] = await applySyncBatch(db, OWNER_USER_ID, [item]);
     expect(first!.status).toBe("created");
-    const [second] = await applySyncBatch(db, [item]);
+    const [second] = await applySyncBatch(db, OWNER_USER_ID, [item]);
     expect(second!.status).toBe("already_synced");
   });
 });

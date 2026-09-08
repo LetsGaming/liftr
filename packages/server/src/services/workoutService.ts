@@ -4,9 +4,9 @@ import { deleteWorkout, findWorkoutWithExercises } from "../repositories/workout
 import { recomputeRankForExercise } from "./rankService.js";
 
 /**
- * DELETE /api/workouts/:id (feedback: "not possible to delete past workout/runs, this should
- * also remove the gained XP and LP"). Deleting the row cascades to workout_exercises → sets
- * (FK cascade, enabled via `PRAGMA foreign_keys = ON` in db/src/client.ts) — that alone fixes
+ * DELETE /api/workouts/:id — deleting a workout also removes the XP and LP it earned. Deleting
+ * the row cascades to workout_exercises → sets (FK cascade, enabled via
+ * `PRAGMA foreign_keys = ON` in db/src/client.ts) — that alone fixes
  * XP, since /api/xp is never cached, just summed fresh from whatever sets currently exist.
  * LP *is* cached (the `ranks` table), so every exercise this workout touched gets an explicit
  * recompute afterward to bring its rank back down to what the remaining history actually
@@ -18,15 +18,15 @@ import { recomputeRankForExercise } from "./rankService.js";
  * The one real decision in this file (cascade-then-recompute, not just a delete) — why this
  * isn't just a repository call.
  */
-export async function deleteWorkoutAndRecomputeRanks(db: LiftrDb, id: string): Promise<void> {
-  const workout = await findWorkoutWithExercises(db, id);
+export async function deleteWorkoutAndRecomputeRanks(db: LiftrDb, userId: string, id: string): Promise<void> {
+  const workout = await findWorkoutWithExercises(db, userId, id);
   if (!workout) throw new NotFoundError();
 
   const exerciseIds = [...new Set(workout.workoutExercises.map((we) => we.exerciseId))];
 
-  await deleteWorkout(db, id);
+  await deleteWorkout(db, userId, id);
 
   for (const exerciseId of exerciseIds) {
-    await recomputeRankForExercise(db, exerciseId);
+    await recomputeRankForExercise(db, userId, exerciseId);
   }
 }

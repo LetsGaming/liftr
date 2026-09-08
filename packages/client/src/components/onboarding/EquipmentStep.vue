@@ -10,11 +10,11 @@ const draft = useOnboardingDraft();
 // sizes, how many) is its own dedicated step, not this coarse ownership picker.
 const supportSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !== "plates");
 
-// Product-confirmed bug (2026-09-06): bodyweight training isn't optional equipment the way a
-// barbell or dumbbell is — every user can do bodyweight exercises regardless of what else they
-// own, so it starts pre-selected (createOnboardingDraft) and must stay that way; deselecting it
-// would leave a user with zero equipment able to see zero exercise suggestions. Locked instead of
-// just "always re-added on toggle" so the chip visibly communicates why the click did nothing.
+// Bodyweight training isn't optional equipment the way a barbell or dumbbell is — every user can
+// do bodyweight exercises regardless of what else they own, so it starts pre-selected
+// (createOnboardingDraft) and must stay that way; deselecting it would leave a user with zero
+// equipment able to see zero exercise suggestions. Locked instead of just "always re-added on
+// toggle" so the chip visibly communicates why the click did nothing.
 function toggle(slug: string) {
   if (slug === "bodyweight") return;
   if (draft.equipment.has(slug)) draft.equipment.delete(slug);
@@ -101,20 +101,19 @@ function toggle(slug: string) {
 .equip-chip-label {
   flex: 1;
 }
-/* Selected state: the same Nebula CTA gradient .btn-primary uses (tokens.css), not a flat
-   --blue-lo fill (audit: "the selected option is a flat solid blue fill with no relationship to
-   the app's Nebula gradient system"). --nebula-ink-on-fill is the app's proven AA-safe ink for
-   this exact gradient (worst stop ~5:1, see tokens.css's .btn-primary comment). */
+/* Selected state uses the same CTA gradient .btn-primary uses (tokens.css), not a flat --blue-lo
+   fill. --nebula-ink-on-fill is the app's proven AA-safe ink for this exact gradient (worst stop
+   ~5:1, see tokens.css's .btn-primary comment). */
 .equip-chip.active {
   background: var(--nebula-grad-cta);
   border-color: transparent;
   color: var(--nebula-ink-on-fill);
   font-weight: 800;
 }
-/* Bodyweight is always-on, not optional equipment (product-confirmed bug fix) — a lock cue plus
-   a non-interactive cursor communicates why the click did nothing, rather than the chip silently
-   ignoring taps like a broken toggle would. Stays on the active/nebula fill (never grayed out):
-   it's not disabled functionality, it's a permanently-true fact about the user. */
+/* Bodyweight is always-on, not optional equipment — a lock cue plus a non-interactive cursor
+   communicates why the click did nothing, rather than the chip silently ignoring taps like a
+   broken toggle would. Stays on the active/gradient fill (never grayed out): it's not disabled
+   functionality, it's a permanently-true fact about the user. */
 .equip-chip.locked {
   cursor: default;
 }

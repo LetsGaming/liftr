@@ -1,9 +1,9 @@
 /**
- * FIT parser (plan Phase 4.1). Uses the official `@garmin/fitsdk` rather than hand-rolling a
- * binary decoder — FIT's definition-message/base-type/developer-field machinery is real
- * complexity that an official, actively-maintained SDK already gets right. Extracts the full
- * per-record trackpoint array, same as gpx.ts, for the same reason: replay needs every point,
- * not just the file's own summary (audit §5).
+ * FIT parser. Uses the official `@garmin/fitsdk` rather than hand-rolling a binary decoder —
+ * FIT's definition-message/base-type/developer-field machinery is real complexity that an
+ * official, actively-maintained SDK already gets right. Extracts the full per-record trackpoint
+ * array, same as gpx.ts, for the same reason: replay needs every point, not just the file's own
+ * summary.
  */
 import { Decoder, Stream } from "@garmin/fitsdk";
 import type { RunPoint } from "@liftr/shared";

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// Attributions (plan Phase 3.3) — required by license for every ingested third-party source
-// (audit §4). Static content; nothing here is fetched at runtime, matching the ingest-once rule.
+// Attributions page — required by license for every ingested third-party source. Static
+// content; nothing here is fetched at runtime, matching the ingest-once rule.
 //
-// First page migrated onto Ionic Vue (Phase 5's larger migration) — the pattern every other
-// page follows: IonPage/IonHeader/IonToolbar/IonTitle/IonContent instead of a bare <div>, with
-// tokens.css (via ionic-theme.css) still the source of the actual visual design.
+// Uses the same IonPage/IonHeader/IonToolbar/IonTitle/IonContent pattern every other page
+// follows instead of a bare <div>, with tokens.css (via ionic-theme.css) still the source of
+// the actual visual design.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 </script>
 
@@ -65,8 +65,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 </template>
 
 <style scoped>
-/* Was the one page with no top-level content width/centering at all — every other tab
-   standardized on one of the four --content-w-* tiers (see tokens.css); this is genuinely a
+/* Every tab standardizes on one of the four --content-w-* tiers (see tokens.css); this is a
    single-column reading list, same shape as Profil's settings column, so it gets the same
    "narrow" tier. */
 .attributions-content {
@@ -80,11 +79,8 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
   gap: var(--sp3);
   margin-top: var(--sp5);
 }
-/* N8 cross-branch adoption audit (2026-09-06): this page was never claimed by any N1-N6
-   workstream (it's not in the plan's per-area list at all — a static licenses page, out of
-   every phase's assigned scope) and so never adopted Foundation's surface-hybrid recipe; these
-   rows were still flat --surface-2 cards. `.surface-hybrid` (template, tokens.css) now supplies
-   background/blur/shadow/hairline; only radius/padding stay local here. */
+/* `.surface-hybrid` (template, tokens.css) supplies background/blur/shadow/hairline for these
+   rows; only radius/padding stay local here. */
 .sources li {
   border-radius: var(--r-lg);
   padding: var(--sp4);

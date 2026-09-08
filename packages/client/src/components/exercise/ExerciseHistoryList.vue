@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * Verlauf tab of ExerciseInfoPanel.vue (engagement rework W7). Reverse-chronological list of a
- * single exercise's logged sets, grouped by calendar day. Pure presentational — props-in, no
- * fetching of its own (matches useExerciseHistoryCache.ts's "a component does not fetch"
- * convention); the parent sheet owns the lazy fetch and passes the resulting sets array down.
+ * Verlauf tab of ExerciseInfoPanel.vue. Reverse-chronological list of a single exercise's logged
+ * sets, grouped by calendar day. Pure presentational — props-in, no fetching of its own (matches
+ * useExerciseHistoryCache.ts's "a component does not fetch" convention); the parent sheet owns
+ * the lazy fetch and passes the resulting sets array down.
  */
 import { computed } from "vue";
 
@@ -22,8 +22,8 @@ interface DayGroup {
   sets: HistorySet[];
 }
 
-/** Grouped by `loggedAt.slice(0, 10)` (calendar day, per plan), newest day first, sets within a
- *  day newest-first too. */
+/** Grouped by `loggedAt.slice(0, 10)` (calendar day), newest day first, sets within a day
+ *  newest-first too. */
 const groups = computed<DayGroup[]>(() => {
   const byDay = new Map<string, HistorySet[]>();
   for (const s of props.sets) {
@@ -86,9 +86,8 @@ const groups = computed<DayGroup[]>(() => {
   gap: 6px;
 }
 .set-row {
-  /* N4: adopted Foundation's .surface-hybrid utility in place of the flat --surface-2 fill +
-     plain --line border — same reasoning as ExerciseList.vue's .ex-card. .surface-hybrid
-     already supplies the fill/blur/shadow/hairline; this block only adds layout + type. */
+  /* .surface-hybrid supplies the fill/blur/shadow/hairline (same as ExerciseList.vue's .ex-card);
+     this block only adds layout and type. */
   display: flex;
   align-items: center;
   justify-content: space-between;

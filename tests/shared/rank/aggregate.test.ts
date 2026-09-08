@@ -53,4 +53,17 @@ describe("computeOverallPeak", () => {
     const input: RankInput[] = [{ tier: "expert", division: 2, lp: 55, trust: "derived" }];
     expect(computeOverallPeak(input)).toEqual({ tier: "expert", division: 2, lp: 55 });
   });
+
+  it("preserves post-Apex lp instead of clamping it to 100 when aggregating", () => {
+    const a: RankInput = { tier: "apex", division: 1, lp: 400, trust: "real" };
+    const b: RankInput = { tier: "apex", division: 1, lp: 200, trust: "real" };
+    // Equal-weight average of 400 and 200 is 300, not the old clamped-to-100 result.
+    expect(computeOverallPeak([a, b])).toEqual({ tier: "apex", division: 1, lp: 300 });
+  });
+
+  it("below-Apex inputs are unaffected by the post-Apex lp change (regression guard)", () => {
+    const a: RankInput = { tier: "trainee", division: 2, lp: 40, trust: "real" };
+    const b: RankInput = { tier: "trainee", division: 2, lp: 60, trust: "real" };
+    expect(computeOverallPeak([a, b])).toEqual({ tier: "trainee", division: 2, lp: 50 });
+  });
 });

@@ -1,12 +1,11 @@
 /**
- * `pnpm --filter @liftr/ingest bootstrap` (or root `pnpm bootstrap`). Feedback: "deleting the
- * data folder has caused a lot of the third-party data to be removed and apparently it is not
- * being ingested again — this WILL break once we move into prod." Migrations already run
- * automatically on server boot (see @liftr/db's runMigrations, wired into buildApp); this
- * covers the rest of "starting from scratch" — the catalog/standards/images/muscle assets that
- * only ever come from this CLI (index.ts's own "never run from the running server" rule for the
- * network-bound steps still holds; this script is still the CLI, just auto-invoked at the start
- * of `pnpm dev` and meant to run once as part of a prod deploy too).
+ * `pnpm --filter @liftr/ingest bootstrap` (or root `pnpm bootstrap`). Wiping the data/ folder
+ * removes the third-party catalog/standards/images/muscle assets along with it, and nothing
+ * re-ingests them on its own. Migrations already run automatically on server boot (see
+ * @liftr/db's runMigrations, wired into buildApp); this covers the rest of "starting from
+ * scratch" — the assets that only ever come from this CLI (index.ts's own "never run from the
+ * running server" rule for the network-bound steps still holds; this script is still the CLI,
+ * just auto-invoked at the start of `pnpm dev` and meant to run once as part of a prod deploy too).
  *
  * Guarded on the exercises table being empty, so this is a no-op (fast) on every normal
  * `pnpm dev` once the environment is already seeded — it doesn't re-hit the network or re-walk

@@ -4,8 +4,8 @@ import { findRecentBodyweightLogs, upsertBodyweightLog } from "../repositories/b
 import type { ZodFastifyInstance } from "../types.js";
 
 /**
- * Bodyweight log (plan Phase 6 "nice-to-have", pulled forward). Not just a stats feature —
- * `rankEngine.ts` needs a current bodyweight to compute load_ratio ranks and falls back to a
+ * Bodyweight log. Not just a stats feature — `rankEngine.ts` needs a current bodyweight to
+ * compute load_ratio ranks and falls back to a
  * hardcoded 75kg guess when no entry exists, which silently makes every loaded-lift rank wrong
  * for anyone who isn't close to that weight. This closes that gap.
  */
@@ -21,15 +21,15 @@ const bodyweightLogResponse = z.object({
 });
 
 export function registerBodyweightRoutes(app: ZodFastifyInstance, db: LiftrDb) {
-  app.get("/api/bodyweight", { schema: { response: { 200: z.array(bodyweightLogResponse) } } }, async () => {
-    return findRecentBodyweightLogs(db);
+  app.get("/api/bodyweight", { schema: { response: { 200: z.array(bodyweightLogResponse) } } }, async (req) => {
+    return findRecentBodyweightLogs(db, req.userId);
   });
 
   app.post(
     "/api/bodyweight",
     { schema: { body: logBodyweightInput, response: { 201: bodyweightLogResponse } } },
     async (req, reply) => {
-      const row = await upsertBodyweightLog(db, req.body.date, req.body.weightKg);
+      const row = await upsertBodyweightLog(db, req.userId, req.body.date, req.body.weightKg);
       reply.code(201);
       return row;
     },

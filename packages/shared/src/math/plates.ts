@@ -1,7 +1,7 @@
 /**
- * Plate calculator (plan Phase 6.2): target weight -> plates per side, greedy from largest
- * to smallest. Pure function so the client can show the breakdown instantly on every stepper
- * tap with no server round-trip.
+ * Plate calculator: target weight -> plates per side, greedy from largest to smallest. Pure
+ * function so the client can show the breakdown instantly on every stepper tap with no server
+ * round-trip.
  */
 export const DEFAULT_BAR_WEIGHT_KG = 20;
 export const DEFAULT_PLATES_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
@@ -48,9 +48,10 @@ export interface PlateInventory {
 const SCALE = 100;
 
 /**
- * Inventory-aware version of calculatePlates (feature: "specify which weight plates you have...
- * showing the user how to load the barbell"). Unlike the unlimited-supply greedy algorithm
- * above, a bounded plate count breaks pure greedy — owning 4x1.25kg but no 2.5kg plate means the
+ * Inventory-aware version of calculatePlates, for users who specify exactly which plates they
+ * own so the app can show how to load the barbell from real inventory. Unlike the
+ * unlimited-supply greedy algorithm above, a bounded plate count breaks pure greedy — owning
+ * 4x1.25kg but no 2.5kg plate means the
  * greedy pick of "always take the biggest plate that fits" can strand weight the smaller plates
  * could have covered. This runs a 0/1 subset-sum DP over each physical plate *pair* (plates load
  * symmetrically, so only whole pairs are usable — floor(count / 2) pairs per size), maximizing

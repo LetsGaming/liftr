@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * "Satzart auswählen" — feedback: "not possible to set what kind of set this is (warmup,
- * normal, drop, etc)". A small sheet, not inlined into WorkoutPage.vue (already the largest
- * file in the app): pick a kind for the given set, or remove it. Both actions only apply to
- * unlogged sets — see activeWorkoutStore.ts's setSetKind()/removeSet() for why.
+ * "Satzart auswählen" — lets the lifter set what kind a set is (warmup, normal, drop, etc.). A
+ * small sheet, not inlined into WorkoutPage.vue (already the largest file in the app): pick a
+ * kind for the given set, or remove it. Both actions only apply to unlogged sets — see
+ * activeWorkoutStore.ts's setSetKind()/removeSet() for why.
  */
 import { SET_KIND_LABEL, type SetKind } from "../../stores/activeWorkoutStore";
 import AppIcon from "../ui/AppIcon.vue";
@@ -41,12 +41,11 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   flex-direction: column;
   gap: var(--sp2);
 }
-/* N2 (Nebula adoption): was a flat --surface-2 fill + 1px --line border — .surface-hybrid
-   instead (see template), same recipe as every other row/card this workstream converted. This
-   sheet's own backdrop (SheetModal.vue, out of this workstream's file boundary) still defaults
-   to an opaque --surface fill, so the backdrop-blur this utility adds has no visible effect here
-   — kept anyway for the translucent bg + gradient hairline, so this row still reads as "in the
-   system" rather than needing a second, sheet-specific treatment. */
+/* Was a flat --surface-2 fill + 1px --line border — .surface-hybrid instead (see template), same
+   recipe as every other row/card converted to it. This sheet's own backdrop (SheetModal.vue)
+   still defaults to an opaque --surface fill, so the backdrop-blur this utility adds has no
+   visible effect here — kept anyway for the translucent bg + gradient hairline, so this row
+   still reads as "in the system" rather than needing a second, sheet-specific treatment. */
 .kind-row {
   display: flex;
   align-items: center;

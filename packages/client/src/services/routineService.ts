@@ -6,11 +6,10 @@ export interface SetTarget {
   /** null = no weight target for this set (plain bodyweight movement); 0/positive = tracked,
    *  including "extra kg" added on top of bodyweight (weighted dips/pull-ups). */
   weightKg: number | null;
-  /** Feature: "not possible to set what kind of set this is (warmup, normal, drop) when
-   *  creating/editing a routine, not mid workout" — pre-plans a set's kind in the template.
-   *  Absent/undefined means "normal", same as an old saved routine with no kind field at all
-   *  (activeWorkoutStore.ts's session-start seeding treats the two identically). Still fully
-   *  reclassifiable live via SetKindPicker.vue before a set is actually logged. */
+  /** Pre-plans a set's kind (warmup, normal, drop) in the routine template rather than only
+   *  mid-workout. Absent/undefined means "normal", same as an old saved routine with no kind
+   *  field at all (activeWorkoutStore.ts's session-start seeding treats the two identically).
+   *  Still fully reclassifiable live via SetKindPicker.vue before a set is actually logged. */
   kind?: SetKind;
 }
 
@@ -21,8 +20,8 @@ export interface RoutineExercise {
   /** One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid) — set count is this array's length. */
   targetSets: SetTarget[];
   supersetGroup: number | null;
-  /** Per-exercise rest overrides (feedback: adjustable pause per set / per exercise) — null
-   *  falls back to RestTimer's built-in default. `restBetweenSetsSeconds` applies between sets
+  /** Per-exercise rest overrides — null falls back to RestTimer's built-in default.
+   *  `restBetweenSetsSeconds` applies between sets
    *  of this exercise; `restAfterExerciseSeconds` applies once after its last set, before moving
    *  to the next exercise. */
   restBetweenSetsSeconds: number | null;
@@ -85,7 +84,7 @@ export function deleteRoutine(id: string): Promise<void> {
 }
 
 /** `exercises` replaces the full list; omit it to only rename. `orderIndex` repositions the
- *  routine within the routine list (drag-to-reorder, plan C §3 Phase 3). */
+ *  routine within the routine list (drag-to-reorder). */
 export function updateRoutine(
   id: string,
   payload: { name?: string; exercises?: RoutineExerciseInput[]; orderIndex?: number },
@@ -105,10 +104,9 @@ export function advanceMesocycle(routineId: string): Promise<Mesocycle> {
   return api.post(`/api/routines/${routineId}/mesocycle/advance`, {});
 }
 
-/** Feature: "quickly create new routines based on past experience and a selection of muscle
- *  groups" — server analyzes stats (or falls back to entry-level standards for a brand-new
- *  lifter) and returns a draft exercise list + recommended sets/reps/weight for the wizard to
- *  prefill, never saved until the user reviews and taps save themselves. */
+/** Server analyzes the user's stats (or falls back to entry-level standards for a brand-new
+ *  lifter) and returns a draft exercise list plus recommended sets/reps/weight for the wizard to
+ *  prefill. Nothing is saved until the user reviews and taps save. */
 export async function suggestExercises(muscleSlugs: string[], exercisesPerMuscle?: number): Promise<SuggestedExercise[]> {
   const { exercises } = await api.post<{ exercises: SuggestedExercise[] }>("/api/routines/suggest", {
     muscleSlugs,
@@ -119,7 +117,7 @@ export async function suggestExercises(muscleSlugs: string[], exercisesPerMuscle
 
 /** Sets/reps/weight for exercises already picked (manual routine-wizard selection, Quick Start)
  *  — same recommendation engine as suggestExercises above, just skipping the muscle-candidate
- *  selection step since the caller already knows which exercises it wants (QUAL-04). */
+ *  selection step since the caller already knows which exercises it wants. */
 export async function recommendExercises(exerciseIds: string[], experienceLevel?: string): Promise<SuggestedExercise[]> {
   const { exercises } = await api.post<{ exercises: SuggestedExercise[] }>("/api/routines/recommend", {
     exerciseIds,

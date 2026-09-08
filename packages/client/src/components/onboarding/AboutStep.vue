@@ -57,14 +57,11 @@ const draft = useOnboardingDraft();
   font-size: 13px;
   font-weight: 700;
 }
-/* Nebula "surface-hybrid" input treatment (tokens.css §F3) — same recipe .panel/.surface-hybrid
-   use elsewhere (blurred translucent fill + gradient-hairline edge), reapplied here via a wrapper
-   div rather than tokens.css's utility classes directly: ::after (which paints the hairline ring)
+/* "surface-hybrid" input treatment (tokens.css §F3) — same recipe .panel/.surface-hybrid use
+   elsewhere (blurred translucent fill + gradient-hairline edge), reapplied here via a wrapper div
+   rather than tokens.css's utility classes directly: ::after (which paints the hairline ring)
    doesn't render on a replaced form control like <input> in any browser, so the wrapper carries
-   the surface + ::after ring and the input itself becomes a transparent, borderless layer on top.
-   Was a flat --surface-2 box with a 1px --line border — the one input pattern in onboarding that
-   never got the redesign's visual language at all (audit: "input fields... look like plain flat
-   dark boxes"). */
+   the surface + ::after ring and the input itself becomes a transparent, borderless layer on top. */
 .input-shell {
   position: relative;
   border-radius: var(--r-md);
@@ -123,11 +120,10 @@ const draft = useOnboardingDraft();
   font-size: 14px;
   font-weight: 600;
 }
-/* Selected state: the same Nebula CTA gradient .btn-primary uses (tokens.css), not a flat
-   --blue-lo fill — audit: "the selected option is a flat solid blue fill with no relationship to
-   the app's Nebula gradient system." --nebula-ink-on-fill on every stop of --nebula-grad-cta is
-   already the app's proven AA-safe combination (worst stop ~5:1, see tokens.css's .btn-primary
-   comment), so this reuses it verbatim rather than inventing a new pairing. */
+/* Selected state uses the same CTA gradient .btn-primary uses (tokens.css), not a flat --blue-lo
+   fill. --nebula-ink-on-fill on every stop of --nebula-grad-cta is already the app's proven
+   AA-safe combination (worst stop ~5:1, see tokens.css's .btn-primary comment), so this reuses
+   it verbatim rather than inventing a new pairing. */
 .chip.active {
   background: var(--nebula-grad-cta);
   border-color: transparent;

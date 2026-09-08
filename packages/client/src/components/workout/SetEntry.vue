@@ -21,7 +21,7 @@ const catalog = useCatalogStore();
 // Feedback: "usually a barbell has a different weight than a dumbbell" — the bar weight is
 // looked up per the current exercise's own equipment (barbell/ez-bar/trap-bar/dumbbell), not one
 // flat number; anything else (machine, cable, bodyweight, ...) has no "bar" of its own and just
-// uses the barbell default, same as before this feature existed.
+// uses the barbell default.
 const currentEquipment = computed(() => {
   const exerciseId = store.currentExercise?.exerciseId;
   return exerciseId ? (catalog.byId(exerciseId)?.equipment ?? null) : null;

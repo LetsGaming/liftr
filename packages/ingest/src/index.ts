@@ -1,5 +1,5 @@
 /**
- * Ingest-once CLI (plan 0.4): `pnpm ingest --all` / `--catalog` / `--images` / `--muscles` /
+ * Ingest-once CLI: `pnpm ingest --all` / `--catalog` / `--images` / `--muscles` /
  * `--standards`. Run manually, never from the running server. Every step is idempotent — safe
  * to re-run after editing tools/catalog/curated.yaml.
  */

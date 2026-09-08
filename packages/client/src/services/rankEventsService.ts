@@ -5,8 +5,7 @@ export interface RankEventsByWeekday {
   weekday: number;
   count: number;
   /** Count of this weekday's rank-ups whose originating workout was flagged by the
-   *  plausibility gate (workstream B task 1) — see RankUpCalendar.vue for how this mutes a
-   *  day's dot. */
+   *  plausibility gate — see RankUpCalendar.vue for how this mutes a day's dot. */
   flaggedCount: number;
 }
 

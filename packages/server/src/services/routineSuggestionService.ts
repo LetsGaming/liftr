@@ -30,21 +30,8 @@ import { readJsonSetting } from "../repositories/settingsRepository.js";
 import { getCurrentBodyweightKg, getUserSex } from "./rankService.js";
 import type { Profile } from "../routes/settings.js";
 
-/** `exercises.requiredEquipment` is a JSON-encoded TieredRequirement[] column; older rows
- *  ingested before that column existed (or before it moved to a tiered shape) are null/malformed,
- *  treated as "no requirements known" (never filters them out — better to show a possibly-
- *  inaccurate suggestion than silently hide every legacy row). */
-function parseRequiredEquipment(raw: string | null): TieredRequirement[] {
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as TieredRequirement[];
-  } catch {
-    return [];
-  }
-}
-
 function toSubstituteCandidate(row: {
-  exercise: { id: string; movementPattern: string; requiredEquipment: string | null; isCustom: boolean };
+  exercise: { id: string; movementPattern: string; requiredEquipment: string; isCustom: boolean };
   muscleId: string;
 }): SubstituteCandidate {
   return {
@@ -55,7 +42,7 @@ function toSubstituteCandidate(row: {
     // for the overlap score to work, not the exercise's full muscle tag set.
     primaryMuscles: [row.muscleId],
     secondaryMuscles: [],
-    requiredEquipment: parseRequiredEquipment(row.exercise.requiredEquipment),
+    requiredEquipment: JSON.parse(row.exercise.requiredEquipment) as TieredRequirement[],
     isCustom: row.exercise.isCustom,
   };
 }
@@ -78,9 +65,9 @@ export interface SuggestedExercise {
   targetSets: { reps: number; weightKg: number | null }[];
   /** Muscle-guided suggestions only: which requested muscle slug produced this pick. Absent for
    *  recommendForChosenExercises (manual picks, Quick Start) — there's no "requested muscle" to
-   *  attribute those to. Engagement-audit-v4 Phase 1: surfaces the muscle→exercise mapping the
-   *  suggester already computes internally so the wizard's Review step can show real coverage
-   *  instead of discarding this and leaving the user to guess. */
+   *  attribute those to. Surfaces the muscle-to-exercise mapping the suggester already computes
+   *  internally so the wizard's Review step can show real coverage instead of discarding this
+   *  and leaving the user to guess. */
   matchedMuscleSlug?: string;
   /** True when this pick replaced a preferred candidate the user couldn't perform with their
    *  owned equipment (see findSubstitute below) — surfaced so Review can flag it instead of
@@ -95,10 +82,10 @@ export interface SuggestedExercise {
 /** POST /api/routines/suggest's logic — muscle groups in, a draft exercise list + recommended
  *  sets out. Never writes anything; the client feeds the result into the routine wizard for the
  *  user to review/edit before actually saving, same as any other draft in that flow. */
-export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExercisesInput): Promise<SuggestedExercise[]> {
+export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, input: SuggestExercisesInput): Promise<SuggestedExercise[]> {
   const [storedEquipment, storedProfile] = await Promise.all([
-    input.ownedEquipment ? null : readJsonSetting<string[]>(db, "ownedEquipment"),
-    input.experienceLevel ? null : readJsonSetting<Profile>(db, "profile"),
+    input.ownedEquipment ? null : readJsonSetting<string[]>(db, userId, "ownedEquipment"),
+    input.experienceLevel ? null : readJsonSetting<Profile>(db, userId, "profile"),
   ]);
   const ownedEquipment = input.ownedEquipment ?? storedEquipment;
   const experienceLevel: ExperienceLevel = input.experienceLevel ?? storedProfile?.experienceLevel ?? "beginner";
@@ -145,7 +132,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
       if (addedForMuscle >= input.exercisesPerMuscle) break;
       if (chosenExerciseIds.has(c.exercise.id)) continue;
 
-      const requirements = parseRequiredEquipment(c.exercise.requiredEquipment);
+      const requirements = JSON.parse(c.exercise.requiredEquipment) as TieredRequirement[];
       if (!restrictingEquipment || canPerform(requirements, restrictingEquipment)) {
         chosenExerciseIds.add(c.exercise.id);
         pickMeta.set(c.exercise.id, { muscleSlug, isSubstitute: false });
@@ -171,7 +158,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
     }
   }
 
-  return recommendForExercises(db, [...chosenExerciseIds], experienceLevel, pickMeta);
+  return recommendForExercises(db, userId, [...chosenExerciseIds], experienceLevel, pickMeta);
 }
 
 /**
@@ -182,18 +169,19 @@ export async function suggestExercisesForMuscles(db: LiftrDb, input: SuggestExer
  */
 async function recommendForExercises(
   db: LiftrDb,
+  userId: string,
   exerciseIds: string[],
   experienceLevel: ExperienceLevel,
   pickMeta?: Map<string, { muscleSlug: string; isSubstitute: boolean; missingEquipment?: string[] }>,
 ): Promise<SuggestedExercise[]> {
   const chosenExercises = await findExercisesByIds(db, exerciseIds);
-  const [bodyweightKg, sex] = await Promise.all([getCurrentBodyweightKg(db), getUserSex(db)]);
+  const [bodyweightKg, sex] = await Promise.all([getCurrentBodyweightKg(db, userId), getUserSex(db, userId)]);
 
   const result: SuggestedExercise[] = [];
   for (const exercise of chosenExercises) {
     const thresholdRows = await findStandardsForExercise(db, exercise.id, sex);
     const metric: RankMetric | null = (thresholdRows[0]?.metric as RankMetric | undefined) ?? null;
-    const lastPerformed = await findLastPerformedSet(db, exercise.id);
+    const lastPerformed = await findLastPerformedSet(db, userId, exercise.id);
 
     const targetSets = recommendExerciseSets({
       isBodyweight: exercise.isBodyweight,
@@ -219,12 +207,17 @@ async function recommendForExercises(
 /**
  * Recommendation for exercises the user has already chosen — manual routine-wizard picks and
  * Quick Start's first-4-catalog-exercises fallback both used to hardcode `reps: 8, weightKg: 0`
- * regardless of the lifter's stated experience level or history (QUAL-04); this reuses the exact
- * same engine the muscle-group suggester already uses instead of adding a second, simpler one.
+ * regardless of the lifter's stated experience level or history; this reuses the exact same
+ * engine the muscle-group suggester already uses instead of adding a second, simpler one.
  * No equipment filtering here — the exercises are already explicitly chosen, not candidates to
  * narrow down.
  */
-export async function recommendForChosenExercises(db: LiftrDb, exerciseIds: string[], experienceLevel?: ExperienceLevel): Promise<SuggestedExercise[]> {
-  const resolvedLevel = experienceLevel ?? (await readJsonSetting<Profile>(db, "profile"))?.experienceLevel ?? "beginner";
-  return recommendForExercises(db, exerciseIds, resolvedLevel);
+export async function recommendForChosenExercises(
+  db: LiftrDb,
+  userId: string,
+  exerciseIds: string[],
+  experienceLevel?: ExperienceLevel,
+): Promise<SuggestedExercise[]> {
+  const resolvedLevel = experienceLevel ?? (await readJsonSetting<Profile>(db, userId, "profile"))?.experienceLevel ?? "beginner";
+  return recommendForExercises(db, userId, exerciseIds, resolvedLevel);
 }

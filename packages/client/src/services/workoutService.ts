@@ -33,9 +33,8 @@ export function getWorkout(id: string): Promise<WorkoutDetail> {
   return api.get<WorkoutDetail>(`/api/workouts/${id}`);
 }
 
-/** Feedback: "not possible to delete past workouts" — the server cascades sets and recomputes
- *  rank for every touched exercise (server's routes/workouts.ts), so LP/XP are already correct
- *  by the time this resolves. */
+/** The server cascades sets and recomputes rank for every touched exercise (server's
+ *  routes/workouts.ts), so LP/XP are already correct by the time this resolves. */
 export function deleteWorkout(id: string): Promise<void> {
   return api.del(`/api/workouts/${id}`);
 }

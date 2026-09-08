@@ -1,5 +1,5 @@
 /**
- * Unified workout+run feed (plan 1.6), backed by the already-working /api/history route.
+ * Unified workout+run feed, backed by /api/history.
  * Read-only, online-only for now — the offline story for history is "you see what was synced
  * last time you had signal," which is fine: history is a review surface, not the logging loop.
  */
@@ -59,10 +59,10 @@ export const useHistoryStore = defineStore("history", {
       }
     },
 
-    /** Feedback: "not possible to delete past workouts" — the server cascades sets and
-     *  recomputes rank for every touched exercise (server's routes/workouts.ts), so LP/XP are
-     *  already correct by the time this resolves; this just drops the row from local state so
-     *  the feed and detail cache don't show a workout that no longer exists. */
+    /** The server cascades sets and recomputes rank for every touched exercise
+     *  (server's routes/workouts.ts), so LP/XP are already correct by the time this resolves;
+     *  this just drops the row from local state so the feed and detail cache don't show a
+     *  workout that no longer exists. */
     async deleteWorkout(id: string) {
       await deleteWorkoutOnServer(id);
       this.items = this.items.filter((i) => !(i.kind === "workout" && i.id === id));

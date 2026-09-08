@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Notes capture (Task 5, workstream A) — shared shape for both set- and workout-level notes,
- * parameterized rather than two near-duplicate components (set notes: WorkoutPage.vue's per-set
+ * Notes capture — shared shape for both set- and workout-level notes, parameterized rather than
+ * two near-duplicate components (set notes: WorkoutPage.vue's per-set
  * affordance writing store.currentSet.notes; workout notes: the rail-column affordance writing
  * store.workoutNotes). Same "explicitly speculative, off the primary path" framing as
  * RpeCapture.vue — no required state, closing without saving is a silent no-op.

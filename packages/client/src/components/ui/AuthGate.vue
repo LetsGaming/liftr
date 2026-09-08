@@ -1,10 +1,9 @@
 <script setup lang="ts">
 /**
- * Auth entry screen (closes the "no UI to enter the bearer token" gap, plan 1.1/audit §5).
- * The server enforces a single bearer token when LIFTR_TOKEN is set; this component checks
- * once on boot, and shows a blocking prompt only if that check comes back 401. In dev, where
- * LIFTR_TOKEN is unset, the health check succeeds with no token and this never shows —
- * matches the "present, not elaborate" design intent, not a login wall for its own sake.
+ * Auth entry screen. The server enforces a single bearer token when LIFTR_TOKEN is set; this
+ * component checks once on boot, and shows a blocking prompt only if that check comes back 401.
+ * In dev, where LIFTR_TOKEN is unset, the health check succeeds with no token and this never
+ * shows — a check, not a login wall for its own sake.
  */
 import { onMounted, ref } from "vue";
 import { ApiError, api, setToken } from "../../lib/api";
@@ -14,8 +13,8 @@ const status = ref<"checking" | "ok" | "needs-token" | "offline">("checking");
 const tokenInput = ref("");
 const submitting = ref(false);
 const error = ref<string | null>(null);
-/** Audit fix (workplan-v1 §1.9a): same reasoning as ProfilePage.vue's token field — a bearer
- *  token to verify before submitting, not a login credential worth blanket-masking. */
+/** Same reasoning as ProfilePage.vue's token field — a bearer token to verify before submitting,
+ *  not a login credential worth blanket-masking. */
 const tokenVisible = ref(false);
 
 async function check() {
@@ -28,7 +27,7 @@ async function check() {
       status.value = "needs-token";
     } else {
       // offline on first load with no cached auth state — let the app through; the PWA
-      // shell + cached catalog still work, and API calls will retry once online (plan 1.3).
+      // shell + cached catalog still work, and API calls will retry once online.
       status.value = "offline";
     }
   }
@@ -87,22 +86,18 @@ async function submit() {
 </template>
 
 <style scoped>
-/* Nebula N5 — this element used to paint an opaque `background: var(--bg)` here, which fully
-   covered the viewport and blocked tokens.css's `body::before` cosmic sweep from ever reaching
-   the unauthenticated login screen (the sweep sits at z-index 0 behind body's own children, so
-   any opaque child painted on top of it hides it completely). Since this is the very first
-   screen a locked-down server shows, that meant the "every screen, not just hero moments"
-   pervasive-background promise silently failed on this one — confirmed live during N5's
-   adoption pass, not a hypothetical. No background here now: the sweep shows straight through,
-   same as every other screen. */
+/* No background here: an opaque fill would sit in front of tokens.css's `body::before` cosmic
+   sweep, which paints at z-index 0 behind body's children and gets fully hidden by any opaque
+   child painted on top of it. This is the first screen a locked-down server shows, so it needs
+   to let the sweep show through like every other screen. */
 .gate {
   min-height: 100vh;
   display: grid;
   place-items: center;
 }
-/* Nebula N5 — adopts the shared .surface-hybrid utility (tokens.css) in place of the old flat
-   --surface-2 fill + --line border, so this card reads as a translucent object floating over
-   the sweep instead of an opaque box painted over it. */
+/* Uses the shared .surface-hybrid utility (tokens.css) instead of a flat --surface-2 fill +
+   --line border, so this card reads as a translucent object floating over the sweep instead of
+   an opaque box painted over it. */
 .card {
   border-radius: var(--r-xl);
   padding: var(--sp8);

@@ -1,5 +1,5 @@
-/** Rank-ups by weekday (engagement rework W8), backed by /api/rank-events. Feeds the Ränge
- *  page's "Rangaufstiege" calendar strip. */
+/** Rank-ups by weekday, backed by /api/rank-events. Feeds the Ränge page's "Rangaufstiege"
+ *  calendar strip. */
 import { defineStore } from "pinia";
 import { getRankEvents, type RankEventsByWeekday } from "../services/rankEventsService";
 

@@ -1,15 +1,14 @@
 <script setup lang="ts">
 /** Step 1 (and the "+ Übung hinzufügen" return trip from step 2): pick exercises either by hand
- *  via the shared ExerciseList in select mode, or — feature: "quickly create new routines based
- *  on past experience and a selection of muscle groups" — by picking target muscle groups and
- *  letting the server suggest a fitting exercise list with recommended sets/reps/weight. Both
- *  paths land in the same place: the wizard's `selected` draft, reviewable/editable on the next
- *  step, never saved directly from here.
+ *  via the shared ExerciseList in select mode, or by picking target muscle groups and letting
+ *  the server suggest a fitting exercise list with recommended sets/reps/weight, based on past
+ *  training history. Both paths land in the same place: the wizard's `selected` draft,
+ *  reviewable/editable on the next step, never saved directly from here.
  *
- *  `mode` used to be an internal toggle here — engagement-audit-v4 Phase 1 moved that choice up
- *  to PathChooser.vue's step-0 screen, so by the time this component renders the choice is
- *  already made (the "+ Übung hinzufügen" re-entry from Arrange always forces "manual" — adding
- *  one more exercise mid-build is never a re-run of the muscle-group suggester). */
+ *  `mode` is decided by PathChooser.vue's step-0 screen, so by the time this component renders
+ *  the choice is already made (the "+ Übung hinzufügen" re-entry from Arrange always forces
+ *  "manual" — adding one more exercise mid-build is never a re-run of the muscle-group
+ *  suggester). */
 import { computed, ref } from "vue";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
 import ExerciseList from "../exercise/ExerciseList.vue";

@@ -2,9 +2,8 @@
 /**
  * Setup wizard ("a setup guide that asks the user basic questions... use these stats across the
  * platform"). Shown once, from App.vue, when settingsStore.needsOnboarding is true (profile
- * fetched and confirmed null). Rebuilt as a real multi-step wizard (feedback: "update the
- * setup/intro/interview page to be a wizard and more engaging to use") — one focused question
- * per screen instead of the original flat scrolling form, following the same shell shape as
+ * fetched and confirmed null). A real multi-step wizard — one focused question per screen,
+ * more engaging than the original flat scrolling form — following the same shell shape as
  * RoutineWizard.vue: SheetModal with a custom #header carrying a step indicator, one `step`
  * index, thin step components mutating a shared reactive draft (OnboardingDraft.ts).
  *
@@ -103,12 +102,11 @@ async function finish() {
 
     const plateEntries = [...draft.plates.entries()].filter(([, count]) => count > 0).map(([weightKg2, count]) => ({ weightKg: weightKg2, count }));
     const barWeights = Object.fromEntries(draft.barWeightsKg.entries());
-    // Bug fix, found while wiring up the new dumbbell-weight row: this used to require
-    // plateEntries.length > 0 as well, so a user who only adjusted a bar/handle weight (e.g. a
-    // dumbbell-only owner, who has no "Scheiben pro Größe" section to touch at all — see
-    // PlatesStep.vue's ownedBarbellFamilyTypes gate) had that edit silently discarded on save,
-    // reverting to @liftr/shared's flat default the moment they left onboarding. Either signal
-    // (a changed bar weight OR a plate count) is reason enough to persist gym setup.
+    // Either signal (a changed bar weight OR a plate count) is reason enough to persist gym
+    // setup. Requiring plateEntries.length > 0 as well would silently discard a dumbbell-only
+    // owner's bar/handle-weight edit on save — they have no "Scheiben pro Größe" section to
+    // touch at all (see PlatesStep.vue's ownedBarbellFamilyTypes gate), reverting to
+    // @liftr/shared's flat default the moment they left onboarding.
     if (needsPlatesStep(draft) && (plateEntries.length > 0 || Object.keys(barWeights).length > 0)) {
       await settingsStore.saveGymSetup({ barWeights, plates: plateEntries });
     }
@@ -206,8 +204,8 @@ async function skip() {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--blue), var(--blue-hi));
-  /* transform, not width (audit finding: layout-property animation) — always full width,
-     scales from the track's start via transform-origin. */
+  /* transform, not width — animating width triggers layout on every frame. Always renders full
+     width and scales from the track's start via transform-origin instead. */
   transform-origin: left;
   transition: transform var(--dur-base) var(--ease-out);
 }
@@ -217,17 +215,17 @@ async function skip() {
   overflow-y: auto;
   padding: var(--sp5) var(--sp4);
 }
-/* Bug fix (product-confirmed, 2026-09-06): SheetModal.vue wraps this whole component's default
-   slot — .wizard-body AND .wizard-actions together — in one scrolling `.sheet-scroll` container
-   (see that file's template: `<div class="sheet-scroll"><slot /></div>`). That means the
-   continue/back bar was never actually a fixed footer; it scrolled away with .wizard-body's
-   content on any step tall enough to need scrolling, so the primary CTA could go completely
-   off-screen. `position: sticky; bottom: 0` inside that same scrolling container pins it to the
-   bottom of the viewport without touching SheetModal.vue (a shared shell other flows also use) —
-   the sticky element still scrolls into view initially, then holds at the bottom edge for the
-   rest of the scroll range. Needs its own opaque background (the modal's own --bg, matching
-   SheetModal's `background="var(--bg)"` prop above) so scrolled-past content doesn't show
-   through underneath it, plus a z-index above .wizard-body's content. */
+/* SheetModal.vue wraps this whole component's default slot — .wizard-body AND .wizard-actions
+   together — in one scrolling `.sheet-scroll` container (see that file's template:
+   `<div class="sheet-scroll"><slot /></div>`). That means the continue/back bar was never
+   actually a fixed footer; it scrolled away with .wizard-body's content on any step tall enough
+   to need scrolling, so the primary CTA could go completely off-screen. `position: sticky;
+   bottom: 0` inside that same scrolling container pins it to the bottom of the viewport without
+   touching SheetModal.vue (a shared shell other flows also use) — the sticky element still
+   scrolls into view initially, then holds at the bottom edge for the rest of the scroll range.
+   Needs its own opaque background (the modal's own --bg, matching SheetModal's
+   `background="var(--bg)"` prop above) so scrolled-past content doesn't show through underneath
+   it, plus a z-index above .wizard-body's content. */
 .wizard-actions {
   flex: none;
   position: sticky;

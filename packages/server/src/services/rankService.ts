@@ -1,10 +1,9 @@
 /**
- * Server-side rank recompute (plan Phase 2.2 / audit §5 "rank engine runs server-side so it's
- * consistent and cheap to re-derive"). Pure orchestration — all the actual math (e1RM, tier
- * resolution, next-target search) lives in @liftr/shared and is unit-tested there; this file
- * only fetches the rows (via rankRepository.ts) and calls it. Always safe to re-run: `ranks` and
- * `prs` are derived caches, never the source of truth (plan's "every derived table is
- * rebuildable").
+ * Server-side rank recompute, run here so results are consistent and cheap to re-derive. Pure
+ * orchestration — all the actual math (e1RM, tier resolution, next-target search) lives in
+ * @liftr/shared and is unit-tested there; this file only fetches the rows (via
+ * rankRepository.ts) and calls it. Always safe to re-run: `ranks` and `prs` are derived caches,
+ * never the source of truth.
  */
 import type { LiftrDb } from "@liftr/db";
 import {
@@ -14,7 +13,7 @@ import {
   nextLoadTarget,
   nextTargetAtOrdinal,
   ordinal,
-  ordinalToBand,
+  positionToBand,
   ratchetPeak,
   computeCurrentBand,
   applySessionRecoveryGain,
@@ -36,42 +35,27 @@ import {
 import { readJsonSetting } from "../repositories/settingsRepository.js";
 import type { Profile } from "../routes/settings.js";
 
-/** No bodyweight-tracking UI exists yet (plan Phase 6) — fall back to a configurable default. */
+/** No bodyweight-tracking UI exists yet — fall back to a configurable default. */
 const FALLBACK_BODYWEIGHT_KG = 75;
 
-/**
- * Inverse of "ordinal*100 + lp" continuous position, including a real `lp`. Mirrors
- * @liftr/shared's rank/decay.ts `positionToBand` (unexported there) — needed here because
- * `ordinalToBand` alone only recovers the whole-number tier/division (it rounds to the *nearest*
- * ordinal, appropriate for its other callers, but loses the fractional LP entirely), and the
- * plausibility-scaled recovery-gain position below is fractional by construction.
- */
-function scaledPositionToBand(position: number): { tier: ReturnType<typeof ordinalToBand>["tier"]; division: number; lp: number } {
-  const clamped = Math.max(0, position);
-  const bandOrdinal = Math.floor(clamped / 100);
-  const { tier, division } = ordinalToBand(bandOrdinal);
-  const lp = ordinal(tier, division) === bandOrdinal ? clamped - bandOrdinal * 100 : 100;
-  return { tier, division, lp };
-}
-
-export async function getCurrentBodyweightKg(db: LiftrDb): Promise<number> {
-  const latest = await findLatestBodyweightLog(db);
+export async function getCurrentBodyweightKg(db: LiftrDb, userId: string): Promise<number> {
+  const latest = await findLatestBodyweightLog(db, userId);
   if (latest) return latest.weightKg;
 
-  const defaultKg = await readJsonSetting<number>(db, "defaultBodyweightKg");
+  const defaultKg = await readJsonSetting<number>(db, userId, "defaultBodyweightKg");
   if (defaultKg != null) return Number(defaultKg);
 
   return FALLBACK_BODYWEIGHT_KG;
 }
 
 /**
- * QUAL-04: which standards population to rank against. Defaults to "male" when the onboarding
- * profile question is unanswered — the same population ANCHOR_STANDARDS was calibrated against
- * before FEMALE_ANCHOR_STANDARDS existed, so an unset profile keeps today's behavior rather than
+ * Which standards population to rank against. Defaults to "male" when the onboarding profile
+ * question is unanswered — the same population ANCHOR_STANDARDS was calibrated against before
+ * FEMALE_ANCHOR_STANDARDS existed, so an unset profile keeps today's behavior rather than
  * silently guessing.
  */
-export async function getUserSex(db: LiftrDb): Promise<"male" | "female"> {
-  const profile = await readJsonSetting<Profile>(db, "profile");
+export async function getUserSex(db: LiftrDb, userId: string): Promise<"male" | "female"> {
+  const profile = await readJsonSetting<Profile>(db, userId, "profile");
   return profile?.sex ?? "male";
 }
 
@@ -80,9 +64,9 @@ export interface RecomputeResult {
   newPr: { kind: string; value: number } | null;
   tier: string;
   division: number;
-  /** LP within the current tier/division band, 0-100 (engagement rework W2) — returned on
-   *  every recompute, not just rank-ups, so the client can animate the in-session rank bar on
-   *  every logged set, not only the rare moment it crosses a division. */
+  /** LP within the current tier/division band, 0-100 — returned on every recompute, not just
+   *  rank-ups, so the client can animate the in-session rank bar on every logged set, not only
+   *  the rare moment it crosses a division. */
   lp: number;
   /** LP before this set, so the client knows how far to animate from. Only meaningful when
    *  compared against `lp` for the *same* tier/division — a rank-up resets the band, so the
@@ -96,6 +80,7 @@ export interface RecomputeResult {
  */
 export async function recomputeRankForExercise(
   db: LiftrDb,
+  userId: string,
   exerciseId: string,
   plausibilityMultiplier = 1,
   plausibilityReason: PlausibilityReason | null = null,
@@ -103,7 +88,7 @@ export async function recomputeRankForExercise(
   const exercise = await findExerciseById(db, exerciseId);
   if (!exercise) return null;
 
-  const sex = await getUserSex(db);
+  const sex = await getUserSex(db, userId);
   const thresholdRows = await findStandardsForExercise(db, exerciseId, sex);
   if (thresholdRows.length === 0) return null; // e.g. plank/side-plank — no metric modeled yet
 
@@ -114,29 +99,29 @@ export async function recomputeRankForExercise(
     trust: t.trust,
   }));
 
-  const loggedSets = await findLoggedSetsForExercise(db, exerciseId);
+  const loggedSets = await findLoggedSetsForExercise(db, userId, exerciseId);
   if (loggedSets.length === 0) return null;
 
   const metric = thresholdRows[0]!.metric;
-  const bodyweightKg = await getCurrentBodyweightKg(db);
+  const bodyweightKg = await getCurrentBodyweightKg(db, userId);
 
   let bestValue = -Infinity;
   let bestSet: (typeof loggedSets)[number] | null = null;
   let bestE1rm = 0;
   let preferredReps = 8;
-  // Peak corroboration (XP/rank balancing redesign §3): every set's resolved value + calendar day
-  // is recorded here in the same pass, so the corroboration check below can re-scan history
-  // without recomputing the load/rankSkillScore formula a second time.
+  // Peak corroboration: every set's resolved value + calendar day is recorded here in the same
+  // pass, so the corroboration check below can re-scan history without recomputing the
+  // load/rankSkillScore formula a second time.
   const dailyBest = new Map<string, number>(); // day key -> that day's best `value`
 
   for (const s of loggedSets) {
     // `value` drives tier/rank resolution (resolveRank below) and picks which set is "best" —
-    // it uses rank's own skill-score curve (XP/rank balancing redesign §2), NOT Epley. `e1rm`
-    // is the separate, unchanged Epley estimate stored for display and PR tracking
-    // (rankRepository's `ranks.e1rm`/`peakE1rm`, and the `prs` table below) — deliberately kept
-    // on Epley per the redesign's decision to scope the new curve to rank scoring only. The two
-    // can diverge (a high-rep set can be the rank-best set while a different, heavier set holds
-    // the higher Epley PR); that's expected, not a bug — see rankSkillScore's doc comment.
+    // it uses rank's own skill-score curve, NOT Epley. `e1rm` is the separate, unchanged Epley
+    // estimate stored for display and PR tracking (rankRepository's `ranks.e1rm`/`peakE1rm`, and
+    // the `prs` table below) — rank scoring and PR/e1RM tracking are deliberately independent
+    // measures. The two can diverge (a high-rep set can be the rank-best set while a different,
+    // heavier set holds the higher Epley PR); that's expected, not a bug — see rankSkillScore's
+    // doc comment.
     let value: number;
     let e1rm: number;
     if (metric === "reps") {
@@ -184,13 +169,12 @@ export async function recomputeRankForExercise(
     }
   }
 
-  const previousRank = await findRankByExerciseId(db, exerciseId);
+  const previousRank = await findRankByExerciseId(db, userId, exerciseId);
 
-  // Ratchet-only peak snapshot (rank engine redesign R1) — fixes the bodyweight-ratio
-  // regression bug: peak is locked in at the moment it's achieved and never recomputed
-  // retroactively against today's bodyweight, so a legitimate bodyweight increase alone can
-  // never erase a peak. `storedPeak` is null on the first recompute after the R1 migration (or
-  // for a brand-new exercise) — `ratchetPeak`'s own corroboration gate applies here exactly like
+  // Ratchet-only peak snapshot: peak is locked in at the moment it's achieved and never
+  // recomputed retroactively against today's bodyweight, so a legitimate bodyweight increase
+  // alone can never erase a peak. `storedPeak` is null for a brand-new exercise (or one with no
+  // prior peak yet) — `ratchetPeak`'s own corroboration gate applies here exactly like
   // everywhere else (`if (!isCorroborated) return storedPeak`), so a genuinely first-ever session
   // does NOT seed a peak by itself; it stays null until a second, separate day matches or exceeds
   // it (see the corroboration block below and tests/server/services/rankAntiCheat.test.ts).
@@ -209,7 +193,7 @@ export async function recomputeRankForExercise(
         }
       : null;
 
-  // Plausibility gate (rank engine v2): a badly-flagged session's sets are excluded from peak
+  // Plausibility gate: a badly-flagged session's sets are excluded from peak
   // advancement entirely, not just discounted — the peak ratchet is the one thing in this system
   // meant to be un-fakeable. PEAK_ELIGIBILITY_FLOOR intentionally matches the plausibility module's
   // own PLAUSIBILITY_FLOOR-adjacent low end; a session has to be quite badly flagged to lose peak
@@ -217,27 +201,26 @@ export async function recomputeRankForExercise(
   const PEAK_ELIGIBILITY_FLOOR = 0.3;
   const peakEligible = plausibilityMultiplier >= PEAK_ELIGIBILITY_FLOOR;
 
-  // PR hard-block (engagement-audit-v3 Phase 3, decision 1): stricter than peak eligibility on
-  // purpose. A PR is the single highest-trust, highest-stakes artifact this system produces — it
-  // is a permanent, individually-displayed claim ("you hit X on this exact date"), not a
-  // continuously-recomputable derived value the way `peak`/`currentBand` are. Peak eligibility is
-  // deliberately forgiving (0.3 — only the most badly flagged sessions lose it) because most
-  // flagged sessions should still discount rather than block; a PR gets zero credit at a much
-  // milder degree of flagging instead of a discount, per the hybrid decision. With the tightened
-  // plausibility.ts thresholds above, PR_ELIGIBILITY_FLOOR = 0.5 works out to roughly: a
-  // same-session e1RM jump beyond ~58% over the stored peak, a whole-session pace at/under
-  // ~10.5s/set, or (the ceiling check is a hard 0/1, not a gradient) exceeding the value ceiling
-  // at all, which always zeroes PR eligibility outright. That leaves a normal
-  // ~40-55% single-session breakthrough — the exact "short rest, good day" case the audit calls
-  // out to protect — still eligible for a PR, while a session flagged enough to already be
-  // trending toward the peak-eligibility floor loses PR credit well before it gets there.
+  // PR hard-block: stricter than peak eligibility on purpose. A PR is the single highest-trust,
+  // highest-stakes artifact this system produces — it is a permanent, individually-displayed
+  // claim ("you hit X on this exact date"), not a continuously-recomputable derived value the
+  // way `peak`/`currentBand` are. Peak eligibility is deliberately forgiving (0.3 — only the most
+  // badly flagged sessions lose it) because most flagged sessions should still discount rather
+  // than block; a PR gets zero credit at a much milder degree of flagging instead of a discount.
+  // With the plausibility.ts thresholds this works out to roughly: a same-session e1RM jump
+  // beyond ~58% over the stored peak, a whole-session pace at/under ~10.5s/set, or (the ceiling
+  // check is a hard 0/1, not a gradient) exceeding the value ceiling at all, which always zeroes
+  // PR eligibility outright. That leaves a normal ~40-55% single-session breakthrough — a
+  // legitimate "short rest, good day" case — still eligible for a PR, while a session flagged
+  // enough to already be trending toward the peak-eligibility floor loses PR credit well before
+  // it gets there.
   const PR_ELIGIBILITY_FLOOR = 0.5;
   const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
 
   // `peak` is `null` when either of two independent gates hasn't cleared yet — a badly flagged
   // session with no `storedPeak` yet (the improbable-jump check can't fire without a prior peak
   // to compare against, so a flagged first-ever session must not quietly seed one), OR a
-  // genuinely plausible result that simply hasn't been corroborated on a second day yet (§3
+  // genuinely plausible result that simply hasn't been corroborated on a second day yet (see
   // above). Either way, a later session is what gets to establish/advance the peak — `ratchetPeak`
   // itself returns `storedPeak` unchanged (possibly still `null`) whenever `isCorroborated` is
   // false, so this is no longer unconditionally non-null once `peakEligible` is true.
@@ -251,7 +234,7 @@ export async function recomputeRankForExercise(
         )
       : storedPeak;
 
-  // A genuine rank-up (R2) is a *peak* advancing, not the displayed current band changing —
+  // A genuine rank-up is a *peak* advancing, not the displayed current band changing —
   // decay softening or reversing current must never register as a rank-up, only a real new
   // best. `rankedUp` was previously defined against the naive current value; redefining it
   // against peak also fixes a latent bug decay would otherwise introduce: without this, a
@@ -260,7 +243,7 @@ export async function recomputeRankForExercise(
   // No peak at all (see above) means nothing to log a rank-up for.
   const rankedUp = peak != null && (!storedPeak || storedPeak.tier !== peak.tier || storedPeak.division !== peak.division);
 
-  // Current-rank recovery (rank engine v2). Two paths, applied in sequence:
+  // Current-rank recovery. Two paths, applied in sequence:
   //  1. Passive decay (unchanged pure day-based curve) always runs first, using the same
   //     daysSinceLastTrained this function already computes below.
   //  2. If this recompute was triggered by a session logged *today* (daysSinceLastTrained === 0 —
@@ -269,9 +252,9 @@ export async function recomputeRankForExercise(
   //     climbed in prior sessions (the *previously stored* current band), not on top of the
   //     freshly-passively-decayed value — discounted by this session's plausibility multiplier.
   // `pnpm recompute`'s maintenance/rebuild path also calls this function and will also apply
-  // path 2 whenever it happens to run on the same day an exercise was trained — an accepted,
-  // precedented simplification (the peak ratchet already has the same "not fully re-derivable
-  // from a single from-scratch pass" property, see spec §2.2).
+  // path 2 whenever it happens to run on the same day an exercise was trained — an accepted
+  // simplification (the peak ratchet already has the same "not fully re-derivable from a single
+  // from-scratch pass" property).
   const lastTrainedAtMs = loggedSets.reduce((max, s) => Math.max(max, s.loggedAt.getTime()), 0);
   const daysSinceLastTrained = Math.floor((Date.now() - lastTrainedAtMs) / (24 * 60 * 60 * 1000));
 
@@ -312,7 +295,7 @@ export async function recomputeRankForExercise(
       const prevPos = ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp;
       const rawGainPos = ordinal(rawGainBand.tier, rawGainBand.division) * 100 + rawGainBand.lp;
       const scaledPos = prevPos + (rawGainPos - prevPos) * plausibilityMultiplier;
-      currentBand = scaledPositionToBand(scaledPos);
+      currentBand = positionToBand(scaledPos);
     } else {
       currentBand = passivelyDecayedBand;
     }
@@ -334,12 +317,12 @@ export async function recomputeRankForExercise(
         ? (decayedNextTarget?.threshold ?? null)
         : null;
 
-  // Read-only history of this rank-up (engagement rework W8) — not a new reward mechanic, just
-  // a log of the event `rankedUp` above already detects. Fires exactly once per genuine peak
+  // Read-only history of this rank-up — not a new reward mechanic, just a log of the event
+  // `rankedUp` above already detects. Fires exactly once per genuine peak
   // tier/division change, never per set logged and never on a decay-only recompute (decay can
   // only move `currentBand`, which `rankedUp` no longer depends on).
   if (rankedUp && peak) {
-    await insertRankEvent(db, {
+    await insertRankEvent(db, userId, {
       exerciseId,
       tier: peak.tier,
       division: peak.division,
@@ -348,7 +331,7 @@ export async function recomputeRankForExercise(
     });
   }
 
-  await upsertRank(db, {
+  await upsertRank(db, userId, {
     exerciseId,
     tier: currentBand.tier,
     division: currentBand.division,
@@ -370,10 +353,10 @@ export async function recomputeRankForExercise(
   // discounted (unlike XP/LP), so without this gate a fabricated or mis-entered set would still
   // write a permanent PR row even while its XP/LP contribution was heavily reduced.
   const prKind = metric === "reps" ? "reps" : "e1rm";
-  const existingPr = await findBestPrByKind(db, exerciseId, prKind);
+  const existingPr = await findBestPrByKind(db, userId, exerciseId, prKind);
   let newPr: RecomputeResult["newPr"] = null;
   if (prEligible && (!existingPr || bestE1rm > existingPr.value)) {
-    await insertPr(db, {
+    await insertPr(db, userId, {
       exerciseId,
       kind: prKind,
       value: bestE1rm,
@@ -399,22 +382,21 @@ export interface RankEventsByWeekday {
    *  has to remap between the two. */
   weekday: number;
   count: number;
-  /** Count of this weekday's rank-ups whose originating workout was plausibility-flagged
-   *  (workstream B task 1) — lets the client mute a day's dot when every rank-up logged that
-   *  day was discounted, without omitting the day's existence outright the way dropping it from
-   *  `count` entirely would. */
+  /** Count of this weekday's rank-ups whose originating workout was plausibility-flagged — lets
+   *  the client mute a day's dot when every rank-up logged that day was discounted, without
+   *  omitting the day's existence outright the way dropping it from `count` entirely would. */
   flaggedCount: number;
 }
 
 /**
- * Rank-ups grouped by weekday over the current rolling week (engagement rework W8's
- * "Rangaufstiege" calendar strip) — repository fetches the raw rows, this reduces them, the
- * same split `readinessService.ts`'s `computeMuscleLastTrained` already uses. Always returns
- * all 7 weekdays (zero-filled), so the client can render a fixed 7-cell strip without gaps.
+ * Rank-ups grouped by weekday over the current rolling week, for the "Rangaufstiege" calendar
+ * strip — repository fetches the raw rows, this reduces them, the same split
+ * `readinessService.ts`'s `computeMuscleLastTrained` already uses. Always returns all 7 weekdays
+ * (zero-filled), so the client can render a fixed 7-cell strip without gaps.
  */
-export async function computeRankEventsByWeekday(db: LiftrDb, days = 7): Promise<RankEventsByWeekday[]> {
+export async function computeRankEventsByWeekday(db: LiftrDb, userId: string, days = 7): Promise<RankEventsByWeekday[]> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  const rows = await findRankEventsSince(db, since);
+  const rows = await findRankEventsSince(db, userId, since);
 
   const counts = new Array<number>(7).fill(0);
   const flagged = new Array<number>(7).fill(0);

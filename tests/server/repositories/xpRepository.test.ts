@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, workouts, type LiftrDb } from "@liftr/db";
 import { createTestDb } from "../helpers/testDb.js";
 import { findTotalSessionBonusXp } from "~server/repositories/xpRepository.js";
 
@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe("findTotalSessionBonusXp", () => {
   it("returns zero sums when there are no workouts at all", async () => {
-    const result = await findTotalSessionBonusXp(db);
+    const result = await findTotalSessionBonusXp(db, OWNER_USER_ID);
     expect(result).toEqual({ totalConsistencyBonusXp: 0, totalVarietyBonusXp: 0 });
   });
 
@@ -26,7 +26,9 @@ describe("findTotalSessionBonusXp", () => {
       varietyBonusXp: 1500,
     });
 
-    // Finished workout with null bonus values (e.g. finished before this feature shipped).
+    // Finished workout with null bonus values — the columns are nullable at the schema level,
+    // even though the real finish-workout write path always sets them; this exercises that
+    // type-level null case directly.
     await db.insert(workouts).values({
       clientId: "w-finished-no-bonus",
       startedAt: new Date("2026-09-02T10:00:00Z"),
@@ -43,7 +45,7 @@ describe("findTotalSessionBonusXp", () => {
       pausedSeconds: 0,
     });
 
-    const result = await findTotalSessionBonusXp(db);
+    const result = await findTotalSessionBonusXp(db, OWNER_USER_ID);
 
     expect(result.totalConsistencyBonusXp).toBe(850);
     expect(result.totalVarietyBonusXp).toBe(1500);

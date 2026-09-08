@@ -1,4 +1,4 @@
-/** Runs (plan Phase 4), backed by /api/runs. */
+/** Runs, backed by /api/runs. */
 import { defineStore } from "pinia";
 import {
   deleteRun as deleteRunOnServer,

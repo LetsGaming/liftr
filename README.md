@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="self-hosted" src="https://img.shields.io/badge/self--hosted-5ba0ff?style=flat-square" />
   <img alt="offline-first PWA" src="https://img.shields.io/badge/offline--first-PWA-1e5fd0?style=flat-square" />
-  <img alt="no accounts" src="https://img.shields.io/badge/accounts-none-8fb4ff?style=flat-square" />
+  <img alt="no accounts (yet)" src="https://img.shields.io/badge/accounts-none-8fb4ff?style=flat-square" />
   <img alt="stack" src="https://img.shields.io/badge/stack-Vue%203%20%2B%20Fastify%20%2B%20SQLite-1c2233?style=flat-square" />
 </p>
 

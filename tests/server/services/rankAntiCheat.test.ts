@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { OWNER_USER_ID } from "@liftr/db";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 import { upsertBodyweightLog } from "~server/repositories/bodyweightRepository.js";
 import {
@@ -26,7 +27,7 @@ async function setupGrindExercise(db: Awaited<ReturnType<typeof createTestDb>>) 
   await seedRealAnchorStandards(db, ex.id, "back-squat");
   // Explicit, so every test's ratio math matches BODYWEIGHT_KG exactly rather than silently
   // falling back to rankService.ts's FALLBACK_BODYWEIGHT_KG (75, not 80) when no log exists.
-  await upsertBodyweightLog(db, "2024-01-01", BODYWEIGHT_KG);
+  await upsertBodyweightLog(db, OWNER_USER_ID, "2024-01-01", BODYWEIGHT_KG);
   return ex;
 }
 
@@ -201,7 +202,7 @@ describe("anti-cheat: bodyweight/ratio manipulation", () => {
 
     // Same lifted weight as the established baseline — only bodyweight changes, and blatantly:
     // an 80kg -> 30kg (62.5%) drop, nowhere near a subtle understatement.
-    await upsertBodyweightLog(db, "2024-01-06", 30);
+    await upsertBodyweightLog(db, OWNER_USER_ID, "2024-01-06", 30);
     const [manipulated] = await runGrind(db, ex.id, [{ dayOffset: 5, weightKg: baseWeight, reps: 5 }], START_DATE);
 
     expect(
@@ -210,7 +211,7 @@ describe("anti-cheat: bodyweight/ratio manipulation", () => {
     ).toBeNull();
   });
 
-  it("only an obviously-fake bodyweight (near the exercise's ceiling-crossing point) still gets caught, and only via the ceiling check, not because manipulation itself is detected", async () => {
+  it("only an obviously-fake bodyweight (well past the ceiling's max-severity point) still gets caught, and only via the ceiling check, not because manipulation itself is detected", async () => {
     const db = createTestDb();
     const ex = await setupGrindExercise(db);
     const baseWeight = weightConfidentlyIn("trainee", BODYWEIGHT_KG);
@@ -224,9 +225,12 @@ describe("anti-cheat: bodyweight/ratio manipulation", () => {
       START_DATE,
     );
 
-    // Bodyweight low enough that even the SAME lifted weight now reads as exceeding this
-    // exercise's Apex-threshold-based ceiling (found empirically for this scenario: ~18kg).
-    await upsertBodyweightLog(db, "2024-01-06", 12);
+    // Bodyweight low enough that even the SAME lifted weight now reads as past this exercise's
+    // Apex-threshold-based ceiling's CEILING_MAX_SEVERITY_MULTIPLE point, not just its
+    // CEILING_FINE_MULTIPLE start (found empirically for this scenario: ~6kg) — the ceiling is a
+    // continuous ramp now (plausibility.ts), so a milder manipulation only partially discounts
+    // rather than fully blocking peak eligibility; this case needs to clear the ramp's far end.
+    await upsertBodyweightLog(db, OWNER_USER_ID, "2024-01-06", 6);
     const [manipulated] = await runGrind(db, ex.id, [{ dayOffset: 5, weightKg: baseWeight, reps: 5 }], START_DATE);
 
     expect(manipulated!.plausibilityReason).toBe("exceeds_ceiling");

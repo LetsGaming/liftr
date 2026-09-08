@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, sets, standards, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import type { FastifyInstance } from "fastify";
 import { registerOverallRankRoutes } from "~server/routes/overallRank.js";
 import { recomputeRankForExercise } from "~server/services/rankService.js";
@@ -59,7 +59,7 @@ describe("GET /api/overall-rank", () => {
     const exercise = await insertTestExercise(db);
     await seedStandards(exercise.id);
     await logSet(exercise.id, 90, 8); // clears the athlete threshold at the 75kg fallback bodyweight
-    await recomputeRankForExercise(db, exercise.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, exercise.id);
 
     const res = await app.inject({ method: "GET", url: "/api/overall-rank" });
 
@@ -75,7 +75,7 @@ describe("GET /api/overall-rank", () => {
     const exercise = await insertTestExercise(db);
     await seedStandards(exercise.id);
     await establishCorroboratedPeak(exercise.id, 90, 8);
-    await recomputeRankForExercise(db, exercise.id);
+    await recomputeRankForExercise(db, OWNER_USER_ID, exercise.id);
 
     const res = await app.inject({ method: "GET", url: "/api/overall-rank" });
 

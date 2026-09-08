@@ -1,6 +1,6 @@
 /**
- * `pnpm ingest --muscles` — mirrors wger's real anatomical muscle-map assets (plan Phase 3.1,
- * rebuilt on real anatomy rather than hand-drawn blobs). Source: wger's own static assets,
+ * `pnpm ingest --muscles` — mirrors wger's real anatomical muscle-map assets, built on real
+ * anatomy rather than hand-drawn blobs. Source: wger's own static assets,
  * which are themselves a CC-BY-SA 3.0 derivative of Wikimedia Commons illustrations
  * ("Muscular_system.svg" / "Muscular_system-back.svg" by Termininja) — see
  * wger/core/static/images/muscles/SOURCES in the wger repo. Mirrored once, recolored once,
@@ -21,7 +21,7 @@ import { MUSCLES } from "./muscles.js";
 const RAW_BASE = "https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/muscles";
 
 const PRIMARY_FROM = "#fc0000";
-/* UI audit fix (mannequin contrast, 2026-09-06 screenshot review): was #5ba0ff (--blue-hi) — too
+/* Mannequin contrast fix: was #5ba0ff (--blue-hi) — too
  * close in lightness to the recolored body outline's own lightest shade (BODY_LIGHT below,
  * #4f5c82) and to the surrounding dark-panel backgrounds this figure renders on (StatTile/panel
  * hybrid surfaces), so a "recovered" region barely read as highlighted at all, especially at the
@@ -38,7 +38,7 @@ const PRIMARY_TO = "#8fd0ff";
 const SECONDARY_FROM = "#f57900";
 const SECONDARY_TO = "#5f7fd6"; // matches the app's existing --mm-sec token
 
-// Readiness hero (engagement rework W5) — a third, local-only recolor pass reading the
+// Readiness hero — a third, local-only recolor pass reading the
 // already-mirrored `main/` overlays (no network fetch, no re-download) and swapping the blue
 // highlight for the app's fire-orange token, so MuscleFigure.vue's `heat` mode can render a
 // fatigued muscle warm and a recovered one in its normal cool blue. Deterministic string swap,

@@ -1,6 +1,6 @@
 /**
- * Canonical equipment vocabulary (plan 0.4 follow-up: "map equipment to exercises without
- * manually adjusting the code every time"). Single source of truth for what "equipment" means
+ * Canonical equipment vocabulary, so exercises can be mapped to equipment without manually
+ * adjusting code for every new exercise. Single source of truth for what "equipment" means
  * in this app — the client's icon/label maps (equipmentIcons.ts) and the ingest pipeline's
  * external-source normalizers (packages/ingest/src/equipment/) both key off this list instead
  * of each inventing/duplicating it. Deliberately a closed, curated set (not "whatever the

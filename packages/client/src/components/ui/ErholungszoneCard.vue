@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * "Erholungszone" — a reason to open the app on a rest day (engagement rework W5). A muscle-
- * recovery heat map plus a one-line verdict naming what's actually ready, styled after
- * Liftoff's own recovery-zone screen (examples/Screenshot_20260824-175320.png). A training-
- * decision aid, not a score — deliberately adds no new currency, per the project audit's "don't
- * stack badges/streaks/points into noise" rule; this is the one genuinely new surface, and it's
- * a suggestion, not something to chase.
+ * "Erholungszone" — a reason to open the app on a rest day. A muscle-recovery heat map plus a
+ * one-line verdict naming what's actually ready, styled after Liftoff's own recovery-zone screen
+ * (examples/Screenshot_20260824-175320.png). A training-decision aid, not a score — deliberately
+ * adds no new currency, since stacking badges/streaks/points into noise undermines the other
+ * progression systems; this is the one genuinely new surface, and it's a suggestion, not
+ * something to chase.
  */
 import { computed } from "vue";
 import { MUSCLE_LABEL_DE } from "../../lib/muscles";
@@ -26,22 +26,18 @@ const verdict = computed(() => {
 </script>
 
 <template>
-  <!-- Reserves this card's rough footprint while /api/readiness is still loading (feedback: fix
-       layout shift) — this is the first section on the dashboard, so without a placeholder here
-       every section below it jumps down the moment the request resolves. Shaped roughly like
-       the real content instead of one flat rectangle, per the same shimmer technique
-       WorkoutPage.vue's rank skeleton uses. -->
+  <!-- This is the first dashboard section — without a placeholder, everything below jumps down
+       when /api/readiness resolves. Shaped like the real content instead of a flat rectangle,
+       using the same shimmer technique as WorkoutPage.vue's rank skeleton. -->
   <section v-if="loaded" class="erholungszone surface-hybrid">
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
     <div class="ez-status">
       <span class="ez-pill">DEIN STATUS</span>
       <p>{{ verdict }}</p>
-      <!-- Bug fix (product owner report): this button silently no-op'd when there was no
-           routine yet (suggestedRoutine was null, so startFromReadiness had nothing to route
-           to). The launchpad card right below already owns the "no routine yet" empty state
-           ("Erste Routine anlegen") — rather than duplicate that guidance here, just hide this
-           CTA until there's actually a routine to jump into. -->
+      <!-- Hides this CTA until there's a routine to start — the launchpad card below already
+           owns the "no routine yet" empty state, so a no-op button here would duplicate that
+           guidance instead of routing anywhere. -->
       <button v-if="canStart" class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>
   </section>

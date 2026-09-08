@@ -1,6 +1,6 @@
 /**
- * Muscle-readiness heuristic (engagement rework W5) for the Übersicht "Erholungszone" hero —
- * answers "what should I train today?" as a training-decision aid, not a score. Deliberately
+ * Muscle-readiness heuristic for the Übersicht "Erholungszone" hero — answers "what should I
+ * train today?" as a training-decision aid, not a score. Deliberately
  * simple: a fixed recovery window per muscle group, not physiology (no volume/intensity/sleep
  * inputs) — same honesty posture as streak.ts's own "known simplification" note. Muscle-group
  * recovery time varies enormously by person, load, and sleep; this is a reasonable default
@@ -36,7 +36,7 @@ export const DEFAULT_RECOVERY_HOURS = 48;
 export const SECONDARY_RECOVERY_FACTOR = 0.6;
 
 /**
- * QUAL-04: a modest age adjustment to the recovery window, not a rank/score input (deliberately
+ * A modest age adjustment to the recovery window, not a rank/score input (deliberately
  * kept out of the rank-tier badge — see @liftr/shared's rank/defaultStandards.ts for where a
  * sourced, precise adjustment like the sex ratio belongs instead). The literature here is
  * genuinely mixed — some studies find meaningfully slower recovery past middle age, others find

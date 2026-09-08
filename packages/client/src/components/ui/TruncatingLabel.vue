@@ -1,9 +1,7 @@
 <script setup lang="ts">
 /**
- * Foundation primitive (2026-09-03 Foundation plan, Task 3) — flex + min-width:0 + ellipsis
- * truncation for exercise names and other user/content-controlled strings, closing lens-3's
- * High-severity finding of text wrapping mid-word in an undersized column
- * (audit/plan-c-new-ui-rebuild.md §3 Phase 0, lens-3 §2.2).
+ * flex + min-width:0 + ellipsis truncation for exercise names and other user/content-controlled
+ * strings, so text doesn't wrap mid-word in an undersized column.
  *
  * Deliberately a separate component from tokens.css's `.eyebrow` rule (which also sets
  * `overflow-wrap: break-word`) — that rule solves a different problem: a short, fixed-vocabulary

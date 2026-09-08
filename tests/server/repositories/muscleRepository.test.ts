@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { exerciseMuscles, muscles, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { exerciseMuscles, muscles, OWNER_USER_ID, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { findAllMuscles, findMuscleTrainingLog } from "~server/repositories/muscleRepository.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 
@@ -32,7 +32,7 @@ describe("findAllMuscles", () => {
 
 describe("findMuscleTrainingLog", () => {
   it("returns an empty array when nothing has been logged", async () => {
-    const result = await findMuscleTrainingLog(db);
+    const result = await findMuscleTrainingLog(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -52,7 +52,7 @@ describe("findMuscleTrainingLog", () => {
       { workoutExerciseId: we!.id, setIndex: 1, weightKg: 65, reps: 6, kind: "normal", isWarmup: false, loggedAt: new Date("2026-09-02T10:00:00Z"), clientId: "s-mr-new" },
     ]);
 
-    const result = await findMuscleTrainingLog(db);
+    const result = await findMuscleTrainingLog(db, OWNER_USER_ID);
 
     // 2 sets x 2 tagged muscles = 4 rows.
     expect(result).toHaveLength(4);
@@ -70,7 +70,7 @@ describe("findMuscleTrainingLog", () => {
     const [we] = await db.insert(workoutExercises).values({ workoutId: workout!.id, exerciseId: untagged.id, orderIndex: 0 }).returning();
     await db.insert(sets).values({ workoutExerciseId: we!.id, setIndex: 0, weightKg: 40, reps: 10, kind: "normal", isWarmup: false, loggedAt: new Date(), clientId: "s-untagged" });
 
-    const result = await findMuscleTrainingLog(db);
+    const result = await findMuscleTrainingLog(db, OWNER_USER_ID);
 
     expect(result).toEqual([]);
   });

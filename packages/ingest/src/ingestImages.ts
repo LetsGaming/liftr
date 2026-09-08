@@ -1,19 +1,19 @@
 /**
- * `pnpm ingest --images` (plan 0.4). Downloads free-exercise-db (Unlicense) start/end photos
+ * `pnpm ingest --images`. Downloads free-exercise-db (Unlicense) start/end photos
  * for every curated exercise that declares a freeExerciseDbId, and mirrors them into
  * data/images/<slug>/. This is the one ingest step that touches the network — it must never
- * run outside this CLI (audit's "ingest once" rule) and the server must never hotlink these
+ * run outside this CLI (the "ingest once" rule) and the server must never hotlink these
  * URLs at request time.
  *
- * Fallback path (audit/missing-photo-sourcing-research.md §3): a handful of entries have no
- * free-exercise-db photo at all but do have a wger photo (`wgerImageId`) — CC-BY-SA 4.0, single
- * frame only, mirrored to start.jpg via the same "ingest once, never hotlink" rule. Checked only
- * when freeExerciseDbId is unset, so a slug never mixes frames from two different sources.
+ * Fallback path: a handful of entries have no free-exercise-db photo at all but do have a wger
+ * photo (`wgerImageId`) — CC-BY-SA 4.0, single frame only, mirrored to start.jpg via the same
+ * "ingest once, never hotlink" rule. Checked only when freeExerciseDbId is unset, so a slug
+ * never mixes frames from two different sources.
  *
- * NOTE: images are saved as-downloaded (jpg/png). WebP re-encoding (plan 0.4's "two widths,
- * WebP") needs an image library (e.g. sharp) — deferred to keep this step dependency-light
- * while the local native-build toolchain is still being set up; swap in a resize pass later
- * without touching the rest of the pipeline.
+ * NOTE: images are saved as-downloaded (jpg/png). WebP re-encoding at two widths needs an
+ * image library (e.g. sharp) — deferred to keep this step dependency-light while the local
+ * native-build toolchain is still being set up; swap in a resize pass later without touching
+ * the rest of the pipeline.
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";

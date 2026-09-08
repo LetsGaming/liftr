@@ -9,17 +9,16 @@ import {
 import { buildZip } from "../zip.js";
 
 /**
- * Data export / backup (plan Phase 6.5): every logged fact — workouts, sets, runs, bodyweight —
- * as plain CSVs in a zip. This is the "own your data" principle applied to leaving the app: no
- * proprietary format, readable in a spreadsheet with zero tooling, works even if Liftr itself
- * is gone.
+ * Data export / backup: every logged fact — workouts, sets, runs, bodyweight — as plain CSVs in
+ * a zip. This is the "own your data" principle applied to leaving the app: no proprietary
+ * format, readable in a spreadsheet with zero tooling, works even if Liftr itself is gone.
  */
-export async function buildExportZip(db: LiftrDb): Promise<Buffer> {
+export async function buildExportZip(db: LiftrDb, userId: string): Promise<Buffer> {
   const [workoutRows, setRows, runRows, bodyweightRows] = await Promise.all([
-    findAllWorkoutsForExport(db),
-    findAllSetsForExport(db),
-    findAllRunsForExport(db),
-    findAllBodyweightLogsForExport(db),
+    findAllWorkoutsForExport(db, userId),
+    findAllSetsForExport(db, userId),
+    findAllRunsForExport(db, userId),
+    findAllBodyweightLogsForExport(db, userId),
   ]);
 
   const workoutsCsv = toCsv(

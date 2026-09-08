@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, type LiftrDb } from "@liftr/db";
 import { createTestDb } from "../helpers/testDb.js";
 import {
   deleteRun,
@@ -33,7 +33,7 @@ function newRun(overrides: Partial<NewRun> = {}): NewRun {
 
 describe("insertRun", () => {
   it("creates and returns the new run row", async () => {
-    const row = await insertRun(db, newRun({ clientId: "r1", distanceM: 10000 }));
+    const row = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r1", distanceM: 10000 }));
 
     expect(row.clientId).toBe("r1");
     expect(row.distanceM).toBe(10000);
@@ -43,75 +43,75 @@ describe("insertRun", () => {
 
 describe("findRecentRuns", () => {
   it("orders runs by startedAt descending", async () => {
-    await insertRun(db, newRun({ clientId: "r-earlier", startedAt: new Date("2026-09-01T10:00:00Z") }));
-    await insertRun(db, newRun({ clientId: "r-later", startedAt: new Date("2026-09-05T10:00:00Z") }));
+    await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-earlier", startedAt: new Date("2026-09-01T10:00:00Z") }));
+    await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-later", startedAt: new Date("2026-09-05T10:00:00Z") }));
 
-    const result = await findRecentRuns(db);
+    const result = await findRecentRuns(db, OWNER_USER_ID);
 
     expect(result.map((r) => r.clientId)).toEqual(["r-later", "r-earlier"]);
   });
 
   it("respects the limit argument", async () => {
-    await insertRun(db, newRun({ clientId: "r1", startedAt: new Date("2026-09-01T10:00:00Z") }));
-    await insertRun(db, newRun({ clientId: "r2", startedAt: new Date("2026-09-02T10:00:00Z") }));
-    await insertRun(db, newRun({ clientId: "r3", startedAt: new Date("2026-09-03T10:00:00Z") }));
+    await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r1", startedAt: new Date("2026-09-01T10:00:00Z") }));
+    await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r2", startedAt: new Date("2026-09-02T10:00:00Z") }));
+    await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r3", startedAt: new Date("2026-09-03T10:00:00Z") }));
 
-    const result = await findRecentRuns(db, 2);
+    const result = await findRecentRuns(db, OWNER_USER_ID, 2);
 
     expect(result).toHaveLength(2);
     expect(result.map((r) => r.clientId)).toEqual(["r3", "r2"]);
   });
 
   it("returns an empty array when there are no runs", async () => {
-    const result = await findRecentRuns(db);
+    const result = await findRecentRuns(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 });
 
 describe("findRunById", () => {
   it("returns the matching run", async () => {
-    const row = await insertRun(db, newRun({ clientId: "r-by-id" }));
+    const row = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-by-id" }));
 
-    const result = await findRunById(db, row.id);
+    const result = await findRunById(db, OWNER_USER_ID, row.id);
 
     expect(result?.id).toBe(row.id);
   });
 
   it("returns undefined for an unknown id", async () => {
-    const result = await findRunById(db, "nonexistent-id");
+    const result = await findRunById(db, OWNER_USER_ID, "nonexistent-id");
     expect(result).toBeUndefined();
   });
 });
 
 describe("findRunByClientId", () => {
   it("returns the run matching the given clientId", async () => {
-    await insertRun(db, newRun({ clientId: "r-client-1" }));
+    await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-client-1" }));
 
-    const result = await findRunByClientId(db, "r-client-1");
+    const result = await findRunByClientId(db, OWNER_USER_ID, "r-client-1");
 
     expect(result?.clientId).toBe("r-client-1");
   });
 
   it("returns undefined when no run has that clientId", async () => {
-    const result = await findRunByClientId(db, "nonexistent-client-id");
+    const result = await findRunByClientId(db, OWNER_USER_ID, "nonexistent-client-id");
     expect(result).toBeUndefined();
   });
 });
 
 describe("deleteRun", () => {
   it("removes the run so it can no longer be found", async () => {
-    const row = await insertRun(db, newRun({ clientId: "r-to-delete" }));
+    const row = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-to-delete" }));
 
-    await deleteRun(db, row.id);
+    await deleteRun(db, OWNER_USER_ID, row.id);
 
-    const result = await findRunById(db, row.id);
+    const result = await findRunById(db, OWNER_USER_ID, row.id);
     expect(result).toBeUndefined();
   });
 });
 
 describe("insertRunPoints and findRunPoints", () => {
   it("inserts points and returns them ordered by idx", async () => {
-    const run = await insertRun(db, newRun({ clientId: "r-points" }));
+    const run = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-points" }));
 
     await insertRunPoints(db, run.id, [
       { idx: 1, t: 1000, lat: 52.1, lon: 13.1 },
@@ -128,7 +128,7 @@ describe("insertRunPoints and findRunPoints", () => {
   });
 
   it("defaults optional ele/hr/cadence to null when not given", async () => {
-    const run = await insertRun(db, newRun({ clientId: "r-points-minimal" }));
+    const run = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-points-minimal" }));
 
     await insertRunPoints(db, run.id, [{ idx: 0, t: 0, lat: 52.0, lon: 13.0 }]);
 
@@ -140,7 +140,7 @@ describe("insertRunPoints and findRunPoints", () => {
   });
 
   it("is a no-op when given an empty points array", async () => {
-    const run = await insertRun(db, newRun({ clientId: "r-no-points" }));
+    const run = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-no-points" }));
 
     await insertRunPoints(db, run.id, []);
 
@@ -149,10 +149,10 @@ describe("insertRunPoints and findRunPoints", () => {
   });
 
   it("cascades point deletion when the parent run is deleted", async () => {
-    const run = await insertRun(db, newRun({ clientId: "r-cascade" }));
+    const run = await insertRun(db, OWNER_USER_ID, newRun({ clientId: "r-cascade" }));
     await insertRunPoints(db, run.id, [{ idx: 0, t: 0, lat: 52.0, lon: 13.0 }]);
 
-    await deleteRun(db, run.id);
+    await deleteRun(db, OWNER_USER_ID, run.id);
 
     const result = await findRunPoints(db, run.id);
     expect(result).toEqual([]);

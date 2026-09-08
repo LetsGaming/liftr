@@ -2,8 +2,8 @@
  * Feature: onboarding setup guide ("gender, age, weight, prior experience... workouts per
  * week") + owned-equipment filtering. Backed by the existing generic `settings` k/v table
  * (already used for defaultBodyweightKg) rather than dedicated tables — this is a single-user,
- * no-accounts app (plan 1.1 / audit §5), so there's exactly one profile and one equipment set,
- * which is exactly what a k/v row already models with no schema change needed.
+ * no-accounts app, so there's exactly one profile and one equipment set, which is exactly what a
+ * k/v row already models with no schema change needed.
  */
 import type { LiftrDb } from "@liftr/db";
 import { z } from "zod";
@@ -44,11 +44,10 @@ const equipmentResponse = z.object({ equipment: z.array(z.string()).nullable() }
 /** Feature: "specify which weight plates you have (e.g. 4x1kg, 2x5kg)... showing the user how
  *  to load the barbell" — same single-user k/v pattern as profile/equipment above.
  *
- * Feedback: "usually a barbell has a different weight than a dumbbell [handle]" — one flat
- * barWeightKg was wrong for mixed equipment (a barbell, EZ-bar, trap-bar, and an adjustable-
- * dumbbell handle are all meaningfully different empty weights). Each is optional: a user who
- * only owns a barbell has no reason to also configure an EZ-bar weight, and SetEntry.vue falls
- * back to @liftr/shared's DEFAULT_BAR_WEIGHT_KG for whichever type isn't set. */
+ * A barbell, an EZ-bar, a trap-bar, and an adjustable-dumbbell handle are all meaningfully
+ * different empty weights, so one flat barWeightKg was wrong for mixed equipment. Each is
+ * optional: a user who only owns a barbell has no reason to also configure an EZ-bar weight, and
+ * SetEntry.vue falls back to @liftr/shared's DEFAULT_BAR_WEIGHT_KG for whichever type isn't set. */
 const plateInventoryEntry = z.object({ weightKg: z.number().positive(), count: z.number().int().min(0) });
 const barWeightsInput = z.object({
   barbell: z.number().positive().max(50).optional(),
@@ -68,8 +67,8 @@ const gymSetupResponse = gymSetupInput.nullable();
 
 export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   // GET /api/settings/profile — null until the onboarding guide has been completed once.
-  app.get("/api/settings/profile", { schema: { response: { 200: profileResponse.nullable() } } }, async () => {
-    return readJsonSetting<Profile>(db, PROFILE_KEY);
+  app.get("/api/settings/profile", { schema: { response: { 200: profileResponse.nullable() } } }, async (req) => {
+    return readJsonSetting<Profile>(db, req.userId, PROFILE_KEY);
   });
 
   // PUT /api/settings/profile — onboarding guide's save, and ProfilePage.vue's later edits.
@@ -79,13 +78,13 @@ export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
     async (req) => {
       const { currentWeightKg, ...profile } = req.body;
 
-      const existing = await readJsonSetting<Profile>(db, PROFILE_KEY);
+      const existing = await readJsonSetting<Profile>(db, req.userId, PROFILE_KEY);
       const merged: Profile = { ...existing, ...profile };
-      await writeJsonSetting(db, PROFILE_KEY, merged);
+      await writeJsonSetting(db, req.userId, PROFILE_KEY, merged);
 
       if (currentWeightKg != null) {
         const today = new Date().toISOString().slice(0, 10);
-        await upsertBodyweightLog(db, today, currentWeightKg);
+        await upsertBodyweightLog(db, req.userId, today, currentWeightKg);
       }
 
       return merged;
@@ -94,15 +93,15 @@ export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
 
   // GET /api/settings/equipment — null (not []) until the user has actually set anything, so
   // the client can tell "never configured, don't filter" apart from "configured to own nothing".
-  app.get("/api/settings/equipment", { schema: { response: { 200: equipmentResponse } } }, async () => {
-    return { equipment: await readJsonSetting<string[]>(db, EQUIPMENT_KEY) };
+  app.get("/api/settings/equipment", { schema: { response: { 200: equipmentResponse } } }, async (req) => {
+    return { equipment: await readJsonSetting<string[]>(db, req.userId, EQUIPMENT_KEY) };
   });
 
   app.put(
     "/api/settings/equipment",
     { schema: { body: equipmentInput, response: { 200: equipmentInput } } },
     async (req) => {
-      await writeJsonSetting(db, EQUIPMENT_KEY, req.body.equipment);
+      await writeJsonSetting(db, req.userId, EQUIPMENT_KEY, req.body.equipment);
       return req.body;
     },
   );
@@ -110,12 +109,12 @@ export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   // GET/PUT /api/settings/gym — bar weight + owned plate counts. Null until configured, same
   // "not yet set" vs "set to nothing" distinction as equipment above (plates.ts callers fall
   // back to the unlimited-standard-set calculator while this is null).
-  app.get("/api/settings/gym", { schema: { response: { 200: gymSetupResponse } } }, async () => {
-    return readJsonSetting<GymSetup>(db, GYM_KEY);
+  app.get("/api/settings/gym", { schema: { response: { 200: gymSetupResponse } } }, async (req) => {
+    return readJsonSetting<GymSetup>(db, req.userId, GYM_KEY);
   });
 
   app.put("/api/settings/gym", { schema: { body: gymSetupInput, response: { 200: gymSetupInput } } }, async (req) => {
-    await writeJsonSetting(db, GYM_KEY, req.body);
+    await writeJsonSetting(db, req.userId, GYM_KEY, req.body);
     return req.body;
   });
 }

@@ -59,10 +59,11 @@ the point:
 - **Privacy.** Workout and body data is personal. There's no reason a set logged in a home gym
   needs to leave that gym's network, sit in a third party's database, or feed an analytics
   pipeline. Self-hosting means the only copy of your data is the one you control.
-- **No accounts, ever.** There's nothing to sign up for and nothing to lose access to. Auth is a
+- **No accounts, today.** There's nothing to sign up for and nothing to lose access to. Auth is a
   single bearer token gating API access on a network you already trust (see
-  [`docs/SECURITY.md`](SECURITY.md) for the actual mechanism) — not an identity system, because
-  there's no multi-user problem to solve here.
+  [`docs/SECURITY.md`](SECURITY.md) for the actual mechanism). The schema and backend are already
+  hardened for multiple people sharing one instance (Home Assistant-style — see
+  [ADR 0006](adr/0006-multi-user-hardening.md)), but per-person login itself hasn't been built yet.
 - **No third parties in the loop.** Run imports read GPX/FIT files you already have from any
   watch or app — no Strava account or third-party API required to get your own data into your own
   tracker. Catalog images are mirrored at ingest time rather than hotlinked at runtime, so the app

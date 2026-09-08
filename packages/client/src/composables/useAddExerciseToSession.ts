@@ -1,7 +1,6 @@
 /**
- * Mid-session "add exercise" (feedback gap: no way to change what a session includes once
- * started — a busy squat rack or a piece of equipment in use dead-ended the workout, or forced
- * cancelling it entirely). Extracted out of WorkoutPage.vue (QUAL-03).
+ * Mid-session "add exercise" — a busy squat rack or a piece of equipment in use would otherwise
+ * dead-end the workout or force cancelling it entirely. Extracted out of WorkoutPage.vue.
  */
 import { computed, ref } from "vue";
 import type { useActiveWorkoutStore } from "../stores/activeWorkoutStore";

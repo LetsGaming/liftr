@@ -1,8 +1,7 @@
 /**
- * Overall Lifter Rank (rank engine redesign R3) — a single account-level "how good a lifter am
- * I, overall" number, aggregated across every exercise with a computed rank. Liftr otherwise
- * has ~15+ *independent* per-exercise ladders and nothing answering that question; this is the
- * one genuinely new, single-player-safe idea from the redesign's competitive-games study.
+ * Overall Lifter Rank — a single account-level "how good a lifter am I, overall" number,
+ * aggregated across every exercise with a computed rank. Liftr otherwise has ~15+
+ * *independent* per-exercise ladders and nothing answering that question directly.
  *
  * Weighted by trust tier so the long-tail synthetic catalog can't dilute or inflate the
  * headline number: `real` and `derived` standards count fully, `synthetic` at half weight.
@@ -10,7 +9,7 @@
  * per-exercise "no rank yet" empty-state philosophy — a brand-new catalog addition can't drag
  * the aggregate down the moment it's added.
  */
-import { MAX_ORDINAL, ordinal, ordinalToBand, type Division, type Tier, type TrustTier } from "./tiers.js";
+import { ordinal, positionToBand, type Division, type Tier, type TrustTier } from "./tiers.js";
 
 export interface RankInput {
   tier: Tier;
@@ -44,11 +43,7 @@ function weightedAverageBand(inputs: RankInput[]): OverallRank | null {
   }
   if (totalWeight === 0) return null;
 
-  const position = Math.max(0, weightedSum / totalWeight);
-  const bandOrdinal = Math.floor(position / 100);
-  const { tier, division } = ordinalToBand(bandOrdinal);
-  const lp = bandOrdinal > MAX_ORDINAL ? 100 : position - bandOrdinal * 100;
-  return { tier, division, lp };
+  return positionToBand(weightedSum / totalWeight);
 }
 
 export function computeOverallRank(perExerciseCurrent: RankInput[]): OverallRank | null {

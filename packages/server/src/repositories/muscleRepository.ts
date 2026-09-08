@@ -7,7 +7,7 @@ export function findAllMuscles(db: LiftrDb) {
 
 /** One row per logged set that touched a muscle, most recent first — the raw material
  *  `readinessService.ts` reduces down to "last trained per muscle." */
-export function findMuscleTrainingLog(db: LiftrDb) {
+export function findMuscleTrainingLog(db: LiftrDb, userId: string) {
   return db
     .select({
       muscleSlug: muscles.slug,
@@ -19,5 +19,6 @@ export function findMuscleTrainingLog(db: LiftrDb) {
     .innerJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
     .innerJoin(exerciseMuscles, eq(exerciseMuscles.exerciseId, exercises.id))
     .innerJoin(muscles, eq(exerciseMuscles.muscleId, muscles.id))
+    .where(eq(sets.userId, userId))
     .orderBy(desc(sets.loggedAt));
 }

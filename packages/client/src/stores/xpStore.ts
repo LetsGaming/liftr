@@ -1,4 +1,4 @@
-/** XP / level (plan Phase 6.4), backed by /api/xp. Purely additive display — never gates anything. */
+/** XP / level, backed by /api/xp. Purely additive display — never gates anything. */
 import { defineStore } from "pinia";
 import { getXp } from "../services/xpService";
 
@@ -29,9 +29,9 @@ export const useXpStore = defineStore("xp", {
         const res = await getXp();
         this.$patch({ ...res, loaded: true, error: false });
       } catch {
-        // Critique finding (harden, P0): a failed load used to leave `loaded` false forever
-        // with no signal distinguishing "still fetching" from "never going to arrive" — the
-        // caller (OverviewPage's stalled-load banner) reads `error` to tell the two apart.
+        // A failed load used to leave `loaded` false forever with no signal distinguishing
+        // "still fetching" from "never going to arrive" — the caller (OverviewPage's
+        // stalled-load banner) reads `error` to tell the two apart.
         this.error = true;
       }
     },

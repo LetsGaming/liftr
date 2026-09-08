@@ -1,10 +1,9 @@
 <script setup lang="ts">
-/** Step 3 — quick summary + save, plus (engagement-audit-v4 Phase 1) three additive glance-checks
- *  that make this worth actually looking at instead of a rubber-stamp: does the routine cover the
- *  muscles you asked for, did the generator swap in a substitute because you lack equipment, and
- *  does one exercise carry a lopsided share of the routine's sets. None of them block Save — they
- *  inform, they don't gate (audit's explicit "no compliance-theater" constraint). Name stays
- *  editable via the wizard's persistent header field. */
+/** Step 3 — quick summary + save, plus three additive glance-checks that make this worth
+ *  actually looking at instead of a rubber-stamp: does the routine cover the muscles you asked
+ *  for, did the generator swap in a substitute because you lack equipment, and does one exercise
+ *  carry a lopsided share of the routine's sets. None of them block Save — they inform, they
+ *  don't gate. Name stays editable via the wizard's persistent header field. */
 import { computed, toRef } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";

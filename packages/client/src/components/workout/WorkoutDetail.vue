@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Past-workout detail (feedback: "not possible to look into past workouts"). Opens as a sheet
- * from a dashboard/history row rather than a new route. Built on the shared SheetModal.vue
+ * Past-workout detail. Opens as a sheet from a dashboard/history row rather than a new route.
+ * Built on the shared SheetModal.vue
  * (IonModal + header + close button), which this component and ExerciseInfoPanel.vue used to
  * duplicate independently.
  *
@@ -47,9 +47,9 @@ const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
  * rank) and XP is never cached in the first place — reload both here so the rest of the app
  * (nav chips, Ränge tab) reflects the loss immediately instead of on next natural refresh.
  *
- * Closes via sheetRef.dismiss(), not `emit("close")` directly (feedback: "deleting a past
- * workout gets stuck at the delete screen") — see SheetModal.vue's header comment for why a
- * direct emit/unmount here raced Ionic's own modal teardown instead of cleanly finishing it.
+ * Closes via sheetRef.dismiss(), not `emit("close")` directly — a direct emit/unmount here used
+ * to race Ionic's own modal teardown instead of cleanly finishing it, leaving the delete screen
+ * stuck. See SheetModal.vue's header comment for why.
  */
 const deleteConfirm = useConfirmTap(async () => {
   deleting.value = true;
@@ -146,8 +146,8 @@ async function share() {
 </script>
 
 <template>
-  <!-- Was a 420px floating card, on mobile too (feedback: "doesn't use enough width", and it
-       differed from ExerciseInfoPanel's right-drawer for no content-driven reason) — now the
+  <!-- Was a 420px floating card, on mobile too — it didn't use enough width, and it
+       differed from ExerciseInfoPanel's right-drawer for no content-driven reason — now the
        same drawer shape as the exercise-info sheet, full-width on mobile like every other sheet
        in the app, and wider than the info drawer on desktop since this view's content (a stat
        grid, muscle figure, exercise list) is denser. -->
@@ -185,7 +185,7 @@ async function share() {
             <template #meta>
               <span class="tnum set-chips">
                 <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
-                  <!-- reps×weight, matching shareCard.ts's same fix (feedback: "8x7,5kg" not "7,5x8"). -->
+                  <!-- reps×weight, matching shareCard.ts's same convention. -->
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
                   <span v-if="s.isPr" aria-hidden="true"> <AppIcon name="trophy" /></span>
@@ -224,9 +224,9 @@ async function share() {
   font-weight: 700;
   margin-bottom: var(--sp4);
 }
-/* Audit fix: 4 tiles squeezed into one row left each card too narrow for its own value — e.g.
-   "1.658 kg" wrapped awkwardly inside the Volumen tile. 2x2 gives each tile real width instead
-   of fighting the other three for horizontal space; the row just grows a little taller. */
+/* 4 tiles squeezed into one row left each card too narrow for its own value — e.g. "1.658 kg"
+   wrapped awkwardly inside the Volumen tile. 2x2 gives each tile real width instead of fighting
+   the other three for horizontal space; the row just grows a little taller. */
 .stat-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

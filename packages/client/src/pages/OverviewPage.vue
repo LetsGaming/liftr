@@ -1,20 +1,16 @@
 <script setup lang="ts">
 /**
- * Übersicht (feedback: "dashboard is basically useless, no clear use case"). Was a flat,
- * non-interactive, reverse-chron feed of every row titled "Workout". Rebuilt per the decided
- * direction — launchpad (what do I do today) *and* progress board (am I getting stronger),
- * stacked — reusing the same stores every other page already has (no new backend beyond the
- * history-route title/duration fixes in historyStore.ts):
+ * Übersicht — both a launchpad (what do I do today) and a progress board (am I getting
+ * stronger), stacked, reusing the same stores every other page already has:
  *
  *   1. Launchpad card — resume an in-progress workout, or open the Routine Overview screen for
- *      the most recently used routine (Wave 0-B W2: all three start call sites route through
- *      there now, rather than calling useStartRoutine() directly, so a lifter always sees what
- *      they're about to do before it begins).
+ *      the most recently used routine. All three start call sites (here, RoutineList.vue's
+ *      routine card, ErholungszoneCard) route through there rather than calling
+ *      useStartRoutine() directly, so a lifter always sees what they're about to do first.
  *   2. Status strip — streak / level / this-week's workout count.
  *   3. Progress tiles — weekly volume (from already-loaded history), top ranks, bodyweight
- *      trend (BodyweightTrend.vue existed and was only ever wired into Profil).
- *   4. Recent activity — the old feed, now with real routine names (server fix), and workout
- *      rows open the past-workout detail modal instead of going nowhere.
+ *      trend.
+ *   4. Recent activity — a feed of past workouts and runs; rows open the past-item detail modal.
  */
 import { IonContent, IonHeader, IonPage, IonRefresher, IonRefresherContent, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
@@ -59,11 +55,10 @@ const router = useRouter();
 
 const openWorkoutId = ref<string | null>(null);
 const openWorkoutTitle = ref<string | undefined>(undefined);
-/** UI audit fix: "Letzte Aktivität" run rows used to be permanently `disabled` — the only
- *  interactive-looking element on the page that visibly did nothing when tapped. Workout rows
- *  already open WorkoutDetail.vue as a sheet; runs get the same treatment via RunDetail.vue
- *  (new, mirrors WorkoutDetail.vue's pattern exactly), reusing runsStore.loadDetail()/
- *  RunReplay.vue, which already existed but were only ever reachable from RunsPage.vue. */
+/** "Letzte Aktivität" run rows are tappable, opening RunDetail.vue as a sheet — the same
+ *  treatment workout rows get via WorkoutDetail.vue — so every row in the feed is a real
+ *  interactive element rather than an inert one. Reuses runsStore.loadDetail()/RunReplay.vue,
+ *  which RunsPage.vue also relies on for the same detail view. */
 const openRunId = ref<string | null>(null);
 
 onMounted(() => {
@@ -78,12 +73,9 @@ onMounted(() => {
 });
 
 const overallRankLabel = computed(() => {
-  // Phase 2 fix (engagement-audit-v3): used to drop the division ("SILBER III" -> "SILBER")
-  // because the full label didn't fit a quarter-width mobile stat tile. That was a truncation
-  // workaround, not a real fix — the division is real information (RankProgress.vue shows it
-  // everywhere else) and dropping it silently made this tile the one place in the app that lies
-  // by omission about the user's actual rank. The real fix was structural (.status-strip below:
-  // 2x2 grid + wrapping value text), so the full label can come back here.
+  // The division ("SILBER III") is real information (RankProgress.vue shows it everywhere
+  // else), so this shows the full label rather than dropping it to fit the tile — .status-strip
+  // below (2x2 grid + wrapping value text) handles the width instead.
   if (!overallRank.loaded || !overallRank.current) return "—";
   const { tier, division } = overallRank.current;
   const label = TIER_LABEL_DE[tier as RankTier];
@@ -91,12 +83,11 @@ const overallRankLabel = computed(() => {
   return div ? `${label} ${div}` : label;
 });
 
-/** Erholungszone's CTA now routes through the Routine Overview screen (Wave 0-B W2 resolved
- *  decision) instead of starting the workout directly — the same one-consistent-behavior reason
- *  the other two start sites do (launchpad card, RoutineList.vue's routine card). A smarter
- *  "start the routine that trains these specific recovered muscles" match would need
- *  routine-to-muscle cross-referencing this component doesn't have; scoped honestly to "get the
- *  user into the workout flow", not a claim of that precision. */
+/** Erholungszone's CTA routes through the Routine Overview screen instead of starting the
+ *  workout directly, the same as the other two start sites (launchpad card,
+ *  RoutineList.vue's routine card). A smarter "start the routine that trains these specific
+ *  recovered muscles" match would need routine-to-muscle cross-referencing this component
+ *  doesn't have; scoped honestly to "get the user into the workout flow", not that precision. */
 function startFromReadiness() {
   if (suggestedRoutine.value) void router.push(`/routines/${suggestedRoutine.value.id}`);
 }
@@ -181,12 +172,12 @@ function weekLabel(i: number) {
   return weeksAgo === 0 ? "Diese Woche" : weeksAgo === 1 ? "Letzte Woche" : `Vor ${weeksAgo} Wochen`;
 }
 
-/** Rework Phase 3 (critique finding: first launch renders six simultaneous empty states — four
- *  dashes, two "noch nicht genug Daten" — the first thing a gamified product shows is a wall of
- *  dashes). Once there's real history, the loaded dashboard (status strip, progress tiles,
- *  activity feed) is unchanged; before that, one first-run surface replaces all three: the
- *  Erholungszone card and launchpad CTA (already the app's best material) plus the full tier
- *  ladder as a single promise instead of eight negatives. */
+/** Without this, first launch renders six simultaneous empty states — four dashes, two "noch
+ *  nicht genug Daten" — a wall of dashes as the first thing a gamified product shows. Once
+ *  there's real history, the loaded dashboard (status strip, progress tiles, activity feed) is
+ *  unchanged; before that, one first-run surface replaces all three: the Erholungszone card and
+ *  launchpad CTA (already the app's best material) plus the full tier ladder as a single promise
+ *  instead of eight negatives. */
 const isFirstRun = computed(() => history.loaded && history.items.length === 0);
 
 const topRanks = computed(() =>
@@ -196,11 +187,11 @@ const topRanks = computed(() =>
     .slice(0, 3),
 );
 
-/** Critique finding (harden, P0): a failed store load used to leave its tile showing "—"
- *  forever, indistinguishable from "still fetching" — on a flaky connection, any subset of the
- *  status strip could go silently blank with zero indication anything was wrong. Each store now
- *  tracks its own `error` (see xpStore.ts's load()); this surfaces it as one page-level banner
- *  instead of restyling every individual tile into a three-state (loading/empty/failed) widget. */
+/** A failed store load would otherwise leave its tile showing "—" forever, indistinguishable
+ *  from "still fetching" — on a flaky connection, any subset of the status strip could go
+ *  silently blank with zero indication anything was wrong. Each store tracks its own `error`
+ *  (see xpStore.ts's load()); this surfaces it as one page-level banner instead of restyling
+ *  every individual tile into a three-state (loading/empty/failed) widget. */
 const hasLoadError = computed(
   () =>
     streak.error ||
@@ -244,10 +235,10 @@ function retryFailed() {
           <button type="button" class="btn-secondary" @click="retryFailed">Erneut versuchen</button>
         </div>
 
-        <!-- 0. Erholungszone — a reason to open the app on a rest day (engagement rework W5) -->
+        <!-- Erholungszone -->
         <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" :can-start="!!suggestedRoutine" @start="startFromReadiness" />
 
-        <!-- 1. Launchpad -->
+        <!-- Launchpad -->
         <section class="launchpad tile--priority surface-hybrid">
           <template v-if="activeWorkout.isActive">
             <div class="eyebrow lp-eyebrow">Weiter machen</div>
@@ -267,20 +258,13 @@ function retryFailed() {
                 <b>{{ suggestedRoutine.name }}</b>
                 <span>{{ suggestedRoutine.routineExercises.length }} {{ suggestedRoutine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</span>
               </div>
-              <!-- Muscle preview (feedback: show what a routine trains before starting it) —
-                   same aggregation WorkoutPage.vue's routine cards use, replacing the plain
-                   equipment-icon row which said nothing about what the routine actually trains. -->
               <MuscleFigure class="lp-muscles" :size="36" v-bind="suggestedRoutineMuscles" />
             </div>
-            <!-- Wave 0-B W2: routes through the Routine Overview screen instead of starting
-                 directly — one consistent start behavior across all three entry points. -->
             <button class="btn-primary btn-block" @click="router.push(`/routines/${suggestedRoutine.id}`)">
               <AppIcon name="play" /> Starten
             </button>
-            <!-- Critique finding (clarify, P2): suggestedRoutine is a stand-in for "last used"
-                 (no lastUsedAt tracking exists yet — real fix needs a migration, out of scope
-                 here), and the primary CTA started it with zero way to override. This is the
-                 escape hatch: only shown when there's actually something else to switch to. -->
+            <!-- suggestedRoutine is a stand-in for "last used" (no lastUsedAt tracking exists
+                 yet); shown only when there's actually something else to switch to. -->
             <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">Andere Routine wählen →</router-link>
           </template>
           <template v-else>
@@ -298,7 +282,7 @@ function retryFailed() {
         </section>
 
         <template v-else>
-          <!-- 2. Status strip -->
+          <!-- Status strip -->
           <section class="status-strip">
             <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'">
               <template #label><AppIcon name="flame" /> Tage Serie</template>
@@ -308,11 +292,6 @@ function retryFailed() {
             <StatTile reward :value="overallRankLabel" label="Gesamt&shy;rang" />
           </section>
 
-          <!-- Critique finding (clarify, P1): "LP", "Gesamtrang" and division labels ("SILBER
-               III") appeared with no in-context explanation, and the only onboarding hook fires
-               once at mount — once dismissed, a first-timer had no path back to "what do these
-               numbers mean." Same always-reachable mechanism as RanksPage.vue's own LP/trust
-               explainer (InfoToggle.vue), not a second one-off tooltip. -->
           <div class="rank-terms">
             <InfoToggle label="Was bedeutet mein Rang?">
               <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
@@ -321,7 +300,7 @@ function retryFailed() {
             </InfoToggle>
           </div>
 
-          <!-- 3. Progress tiles -->
+          <!-- Progress tiles -->
           <section class="progress-tiles">
             <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
@@ -360,9 +339,6 @@ function retryFailed() {
             <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Körpergewicht</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
-              <!-- Audit fix (workplan-v1 §1.10b): stated a threshold ("two entries") but never
-                   the action or where to take it — unlike the Läufe empty state's actionable
-                   pattern this now matches. -->
               <p v-else class="tile-empty">
                 Trag dein Körpergewicht in Profil ein — nach zwei Einträgen siehst du hier den
                 Verlauf.
@@ -371,15 +347,9 @@ function retryFailed() {
           </section>
         </template>
 
-        <!-- 4.5 Entdecken (engagement rework W9) — surfaces existing-but-buried features
-             instead of leaving them only discoverable by digging through Profil/Ränge.
-             Reuses the exact .progress-tiles/.tile card grid above, no new card styling.
-             Note: a plate calculator ("🏋 Scheiben anzeigen") also exists, but only as an
-             inline reveal inside SetEntry.vue tied to an in-progress set on WorkoutPage.vue
-             — there is no standalone page/modal for it to link to, so per this phase's own
-             anti-pattern guard ("don't build it if it doesn't already exist as a reachable
-             feature") it's intentionally left out of this grid rather than inventing a new
-             entry point for it. -->
+        <!-- Entdecken: surfaces existing-but-buried features, reusing the .progress-tiles/.tile
+             grid above. A plate calculator also exists as an inline reveal in SetEntry.vue, but
+             has no standalone page/modal to link to, so it's left out of this grid. -->
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
@@ -391,7 +361,7 @@ function retryFailed() {
           </div>
         </section>
 
-        <!-- 5. Recent activity -->
+        <!-- Recent activity -->
         <section v-if="!isFirstRun" class="activity">
           <div class="eyebrow tile-head">Letzte Aktivität</div>
 
@@ -439,13 +409,9 @@ function retryFailed() {
   max-width: var(--content-w-standard);
   margin: var(--sp4) auto 0;
 }
-/* Staggered entrance removed (motion audit, Phase 4 — 2026-09-02). Fired on every mount, i.e.
-   every navigation to this tab: fails the decision framework's Q1 (mount-driven, not
-   event-driven) and Q2 (an ambient tab you can revisit many times a session, not a <1x/session
-   earned moment). A before/after screenshot shows nothing the static layout doesn't already
-   convey (Q3), so per 0c's checklist this was decoration — cut entirely (0c's stated alternative,
-   opacity-only at --dur-fast, was passed over since even that residual motion has no state
-   change to communicate here) rather than retuned. See engagement-audit-v3.md Phase 4. */
+/* No entrance animation here deliberately: this fires on every mount, i.e. every navigation to
+   this tab — an ambient tab revisited many times a session, not a rare earned moment, so motion
+   here would be decoration rather than communicating a state change. */
 @media (min-width: 900px) {
   .dashboard {
     max-width: var(--content-w-wide);
@@ -455,12 +421,9 @@ function retryFailed() {
   }
 }
 
-/* Was a bespoke `linear-gradient(155deg, var(--surface-3), var(--surface-2))` predating Nebula
-   Foundation's .surface-hybrid utility (N1 adoption pass) — reconciled by dropping the bespoke
-   gradient/border entirely and adopting .surface-hybrid (see template) instead of stacking the
-   two. The "priority" highlight (this card + ErholungszoneCard) now layers as an outline on top
-   of the hybrid surface via the shared .tile--priority rule below, rather than overriding the
-   hybrid background with a flat one. */
+/* Uses .surface-hybrid (see template) for the background. The "priority" highlight (this card +
+   ErholungszoneCard) layers as an outline on top of the hybrid surface via the shared
+   .tile--priority rule below, rather than overriding the hybrid background with a flat one. */
 .launchpad {
   padding: var(--sp4);
   border-radius: var(--r-xl);
@@ -469,12 +432,11 @@ function retryFailed() {
   --eyebrow-color: var(--blue-hi);
   margin-bottom: var(--sp2);
 }
-/* N1 light-mode contrast fix (F6 finding, out of Foundation's file boundary): --blue-hi
-   (#5ba0ff) measured ~2.66:1 against the light-mode hybrid surface's near-white background —
-   well under the 4.5:1 AA floor for this 11px/800-weight eyebrow text (too small/light-weight to
-   qualify as "large text" at the lower 3:1 threshold). --nebula-ink is the token this codebase
-   already uses everywhere else for a light-on-light-mode accent (see .tile--priority's own
-   light-mode override above) — 6.34:1 against white, comfortably AA. */
+/* --blue-hi (#5ba0ff) measures ~2.66:1 against the light-mode hybrid surface's near-white
+   background — under the 4.5:1 AA floor for this 11px/800-weight eyebrow text (too
+   small/light-weight to qualify as "large text" at the lower 3:1 threshold). --nebula-ink is the
+   token this codebase uses everywhere else for a light-on-light-mode accent (see
+   .tile--priority's own light-mode override above) — 6.34:1 against white, comfortably AA. */
 [data-theme="light"] .lp-eyebrow {
   --eyebrow-color: var(--nebula-ink);
 }
@@ -534,17 +496,11 @@ function retryFailed() {
 .first-run-ladder {
   padding: var(--sp4);
 }
-/* Phase 2 fix (engagement-audit-v3): was a single 4-across row (grid-template-columns:
-   repeat(auto-fit, minmax(80px, 1fr))) with the value forced to font-size:20px + white-space:
-   nowrap — at a quarter-width ~90px mobile tile that guaranteed overflow for any tier label
-   longer than a couple of characters (measured live at 390px: "FORTGESCHRITTEN" via
-   overallRankLabel, TIER_LABEL_DE's longest entry, clipped hard past the tile edge). The prior
-   fix for this was to truncate the label itself (dropping the division number) — a workaround
-   that only bought headroom for shorter tier names, not the long ones. Real fix is structural:
-   2x2 on mobile (each tile gets ~2x the width a 4-across row gave it) widening back to 4-across
-   only once there's room (>=560px, comfortably past every phone width this app targets), plus
-   letting the value wrap onto a second line at a smaller, responsive size instead of forcing one
-   line that either fits or clips. */
+/* 2x2 on mobile so each tile gets ~2x the width a 4-across row would give it — a 4-across row at
+   ~90px per tile clips the longest tier label ("FORTGESCHRITTEN" via overallRankLabel,
+   TIER_LABEL_DE's longest entry). Widens back to 4-across only once there's room (>=560px,
+   comfortably past every phone width this app targets); the value also wraps onto a second line
+   at a smaller, responsive size instead of forcing one line that either fits or clips. */
 .status-strip {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -571,19 +527,16 @@ function retryFailed() {
   grid-template-columns: 1fr;
   gap: var(--sp3);
 }
-/* UI audit fix (Nebula gap): was a flat var(--surface-2) fill + var(--line) border — the one
-   card treatment on this page that never got the .panel/.surface-hybrid pass every other panel
-   (StatTile, RankProgress, TierLadder, launchpad, etc.) already has. `.panel` (tokens.css)
-   supplies the translucent hybrid background, blur, and gradient hairline; padding/layout below
-   is unchanged. */
+/* `.panel` (tokens.css) supplies the translucent hybrid background, blur, and gradient hairline
+   — the same treatment every other panel on this page (StatTile, RankProgress, TierLadder,
+   launchpad, etc.) uses; padding/layout below is local to this element. */
 .tile {
   padding: var(--sp4);
   border-radius: var(--r-lg);
 }
-/* Shared "priority" accent (ErholungszoneCard's root + .launchpad above) — was a flat
-   background/border override that fully replaced the hybrid surface underneath it (stacking two
-   surface systems). An outline composes on top of .surface-hybrid's own background/shadow/hairline
-   instead of competing with them for the same box-shadow/background property. */
+/* Shared "priority" accent (ErholungszoneCard's root + .launchpad above). An outline composes on
+   top of .surface-hybrid's own background/shadow/hairline instead of competing with them for the
+   same box-shadow/background property. */
 .tile--priority {
   outline: 1px solid var(--nebula-1);
   outline-offset: -1px;
@@ -688,7 +641,7 @@ function retryFailed() {
   flex-direction: column;
   gap: var(--sp2);
 }
-/* Same Nebula-gap fix as .tile above — was flat var(--surface-2)/var(--line). */
+/* Same .surface-hybrid treatment as .tile above. */
 .feed-btn {
   width: 100%;
   display: flex;
@@ -738,8 +691,7 @@ function retryFailed() {
   font-weight: 700;
   color: var(--blue-hi);
 }
-/* N1 light-mode contrast fix (F6 finding, second of two in this file) — same --blue-hi-on-white
-   failure as .lp-eyebrow above (~2.66:1), same fix. */
+/* Same --blue-hi-on-white contrast failure as .lp-eyebrow above (~2.66:1), same fix. */
 [data-theme="light"] .xp-sub {
   color: var(--nebula-ink);
 }

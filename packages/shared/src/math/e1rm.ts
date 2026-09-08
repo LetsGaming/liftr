@@ -4,7 +4,7 @@
  * so the two must never diverge; this file is the single source of truth for both.
  */
 
-/** Epley formula — primary estimator (per audit §5). */
+/** Epley formula — primary estimator. */
 export function epley(weightKg: number, reps: number): number {
   if (reps <= 0) return 0;
   return weightKg * (1 + reps / 30);
@@ -32,14 +32,12 @@ export function estimateE1rm(weightKg: number, reps: number): E1rmResult {
 }
 
 /**
- * Rank's skill-score rep multiplier (XP/rank balancing redesign,
- * `docs/superpowers/specs/2026-09-06-xp-rank-balancing-design.md` §2) — replaces Epley's
- * `1 + reps/30` for rank scoring specifically. `epley`/`estimateE1rm` above are UNCHANGED and stay
- * the honest 1RM estimate for PR tracking and UI display; this is a deliberately separate curve,
- * consumed only by `rankSkillScore`/`bestRankSkillRatio` below.
+ * Rank's skill-score rep multiplier — replaces Epley's `1 + reps/30` for rank scoring
+ * specifically. `epley`/`estimateE1rm` above are UNCHANGED and stay the honest 1RM estimate for
+ * PR tracking and UI display; this is a deliberately separate curve, consumed only by
+ * `rankSkillScore`/`bestRankSkillRatio` below.
  *
- * Three zones, per two research passes performed during design (see the spec for full citations):
- * hypertrophy shows no real "12-rep cliff" (the common claim is a myth), but the literature
+ * Three zones: hypertrophy shows no real "12-rep cliff" (the common claim is a myth), but the literature
  * supporting that relies entirely on failure-verified sets, and failure-dependency is asymmetric
  * by load — a heavy low-rep set's value barely depends on whether it was truly taken to failure,
  * while a high-rep set's value depends on it heavily. Since a logged set carries no failure signal,

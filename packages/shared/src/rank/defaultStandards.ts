@@ -1,15 +1,14 @@
 /**
- * Default anchor standards (plan Phase 2.2). These seed the `standards` table on ingest and
- * are the concrete answer to audit §7's open "rank tiers" / "synthetic-standard method"
- * questions. Tunable without code changes where possible — see OPL_POPULATION_SHIFT and the
- * per-exercise `ratio` in tools/catalog/curated.yaml for the derived/synthetic tiers.
+ * Default anchor standards. These seed the `standards` table on ingest. Tunable without code
+ * changes where possible — see OPL_POPULATION_SHIFT and the per-exercise `ratio` in
+ * tools/catalog/curated.yaml for the derived/synthetic tiers.
  */
 import { TIER_DIVISION_COUNT, TIERS, type StandardThreshold, type Tier } from "./tiers.js";
 
 /**
- * OpenPowerlifting is a competitive population and reads strong (audit §4). Shift percentile
- * mapping down so a recreational lifter's e1RM lands mid-Silver rather than Bronze. Single
- * tunable constant — recalibrate here, not scattered through the codebase.
+ * OpenPowerlifting is a competitive population and reads strong. Shift percentile mapping down
+ * so a recreational lifter's e1RM lands mid-Silver rather than Bronze. Single tunable constant —
+ * recalibrate here, not scattered through the codebase.
  */
 export const OPL_POPULATION_SHIFT = 0.75;
 
@@ -51,9 +50,9 @@ export function interpolateNineTierAnchors(
 
 /**
  * Widens the gap between each anchor tier and the entry (bronze/apprentice) tier, around that same
- * fixed entry point (XP/rank balancing redesign §5, the "tier curve reshaping" half of the
- * hammer-curl-reaches-Athlete-on-a-first-set fix — see `TIER_DIVISION_COUNT`'s doc comment for the
- * other half). Bronze itself never moves — it's already a real, sourced entry-level standard — but
+ * fixed entry point — the "tier curve reshaping" half of the hammer-curl-reaches-Athlete-on-a-
+ * first-set fix (see `TIER_DIVISION_COUNT`'s doc comment for the other half). Bronze itself never
+ * moves — it's already a real, sourced entry-level standard — but
  * every tier above it is pushed proportionally further away, on a log scale so the widening
  * compounds smoothly rather than distorting the low tiers vs. the high ones asymmetrically. The
  * higher a tier already sits above bronze, the more real strength this adds to reach it: at
@@ -98,8 +97,8 @@ function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"])
 }
 
 /** Anchor lifts with real external standards (OPL, shifted; ExRx for OHP/row). Tier A. Each
- *  5-anchor tuple passes through `widenAnchorSpread` (XP/rank balancing redesign §5) before
- *  interpolation — see that function's doc comment for what it does and why. */
+ *  5-anchor tuple passes through `widenAnchorSpread` before interpolation — see that function's
+ *  doc comment for what it does and why. */
 export const ANCHOR_STANDARDS: Record<string, StandardThreshold[]> = {
   "back-squat": expand(interpolateNineTierAnchors(widenAnchorSpread([0.75, 1.25, 1.75, 2.25, 2.75])), "real"),
   "bench-press": expand(interpolateNineTierAnchors(widenAnchorSpread([0.5, 0.9, 1.3, 1.75, 2.1])), "real"),
@@ -121,8 +120,8 @@ function expandRepStandard(old5: [number, number, number, number, number]): Stan
   }));
 }
 
-/** Rep-based (bodyweight, metric: 'reps') default norms — audit §7's explicit open question.
- *  Also widened per `widenAnchorSpread`'s doc comment, for the same "every exercise" reason. */
+/** Rep-based (bodyweight, metric: 'reps') default norms. Also widened per `widenAnchorSpread`'s
+ *  doc comment, for the same "every exercise" reason. */
 export const REP_STANDARDS: Record<string, StandardThreshold[]> = {
   pushup: expandRepStandard(widenAnchorSpread([5, 15, 30, 50, 75])),
   pullup: expandRepStandard(widenAnchorSpread([1, 5, 10, 16, 22])),
@@ -131,9 +130,9 @@ export const REP_STANDARDS: Record<string, StandardThreshold[]> = {
 };
 
 /**
- * Derive a Tier B/C exercise's thresholds from its anchor's thresholds x ratio (audit §7's
- * "synthetic-standard method"). `trust` downgrades to 'derived' or 'synthetic' regardless of
- * the anchor's own trust — a derived exercise is never more trustworthy than its derivation.
+ * Derive a Tier B/C exercise's thresholds from its anchor's thresholds x ratio. `trust`
+ * downgrades to 'derived' or 'synthetic' regardless of the anchor's own trust — a derived
+ * exercise is never more trustworthy than its derivation.
  */
 export function deriveStandards(
   anchorThresholds: StandardThreshold[],
@@ -150,8 +149,8 @@ export function deriveStandards(
  * Same trust discipline as deriveStandards() above: a number backed by a specific, citable
  * source is "derived", never "real" — only ANCHOR_STANDARDS's own figures keep "real".
  *
- * Sourcing (QUAL-04 — the app's onboarding asks for `sex` and claims it shapes rank calculation;
- * before this it was collected and never read):
+ * Sourcing (the app's onboarding asks for `sex` and claims it shapes rank calculation; before
+ * this it was collected and never read):
  * - squat/bench/deadlift: a peer-reviewed analysis of 809,986 competition entries from
  *   drug-tested, unequipped powerlifting meets (571,650 male / 238,336 female) — male:female
  *   ratio at the 90th percentile for lifters aged 18-35. Nuttall et al., "Normative data for the

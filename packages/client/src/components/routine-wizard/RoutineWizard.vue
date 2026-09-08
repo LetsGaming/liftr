@@ -167,14 +167,13 @@ function toggleSelect(exerciseId: string) {
 }
 
 /**
- * QUAL-04: the flat "8 reps, 0 kg" above used to be the final answer for a manually-picked
- * exercise, regardless of the lifter's stated experience level or history. The naive default
- * still appears instantly (selecting an exercise must stay a zero-latency tap, not wait on a
- * network round trip) — this fire-and-forget upgrade swaps in the same server-side
- * recommendation the muscle-group suggester uses, the moment it resolves. Never overwrites a
- * set the user has actually started editing (isUntouchedDefault), and silently no-ops offline
- * or if the exercise was deselected before the response came back — a background upgrade that
- * fails is a non-event, not an error.
+ * The flat "8 reps, 0 kg" set above appears instantly for a manually-picked exercise (selecting
+ * an exercise must stay a zero-latency tap, not wait on a network round trip); this
+ * fire-and-forget upgrade then swaps in the same server-side recommendation the muscle-group
+ * suggester uses, tailored to the lifter's stated experience level and history, the moment it
+ * resolves. Never overwrites a set the user has actually started editing (isUntouchedDefault),
+ * and silently no-ops offline or if the exercise was deselected before the response came back —
+ * a background upgrade that fails is a non-event, not an error.
  */
 async function upgradeToRecommendedDefaults(exerciseId: string) {
   try {

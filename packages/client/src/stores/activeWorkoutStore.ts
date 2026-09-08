@@ -1,8 +1,7 @@
 /**
- * The sacred loop's state machine (plan 1.5). Every mutation (log a set, pause, advance)
- * writes to IndexedDB immediately via persist(), so a crashed tab or a locked phone mid-set
- * loses nothing — on next load, restore() picks the workout back up exactly where it left off.
- * Weight/rep steps match the mockup exactly: 1.25kg, 1 rep (see dStep/mStep in the mockup JS).
+ * The active workout's state machine. Every mutation (log a set, pause, advance) writes to
+ * IndexedDB immediately via persist(), so a crashed tab or a locked phone mid-set loses
+ * nothing — on next load, restore() picks the workout back up exactly where it left off.
  */
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
@@ -12,9 +11,9 @@ import { clearActiveWorkout, loadActiveWorkout, saveActiveWorkout } from "../lib
 import { useSyncStore, type RankVerdict } from "./syncStore";
 
 // Re-exported for existing call sites (SetKindPicker.vue, WorkoutPage.vue) — the definitions
-// themselves now live in @liftr/shared/workout/setKind.ts so the server's routine zod schema
-// and routine-template SetTarget can reference the same vocabulary (feature: pre-plan a set's
-// kind when building a routine, not just reclassify it live).
+// themselves live in @liftr/shared/workout/setKind.ts so the server's routine zod schema and
+// routine-template SetTarget share the same vocabulary, letting a routine pre-plan a set's
+// kind rather than only reclassify it live.
 export { SET_KIND_LABEL, type SetKind };
 
 export const WEIGHT_STEP_KG = 1.25;
@@ -46,11 +45,11 @@ export interface ActiveExercise {
   name: string;
   isBodyweight: boolean;
   sets: ActiveSet[];
-  /** shared by every exercise in the same superset/circuit (plan §6.6); null for a standalone exercise. */
+  /** Shared by every exercise in the same superset/circuit; null for a standalone exercise. */
   supersetGroup: number | null;
-  /** Feedback: "adjust the pause, per set and per exercise" — copied from the routine at
-   *  start() (or DEFAULT_REST_SECONDS for a routine-less Quick Start / mid-session add). See
-   *  logCurrentSet() for how these two get picked between. */
+  /** Per-set and per-exercise rest, copied from the routine at start() (or DEFAULT_REST_SECONDS
+   *  for a routine-less Quick Start / mid-session add). See logCurrentSet() for how these two
+   *  get picked between. */
   restBetweenSetsSeconds: number;
   restAfterExerciseSeconds: number;
 }
@@ -64,7 +63,7 @@ interface ActiveWorkoutState {
   totalPausedMs: number;
   currentExerciseIndex: number;
   exercises: ActiveExercise[];
-  /** Free-text notes for the whole session (Task 2) — rides along in `finish()`'s
+  /** Free-text notes for the whole session — rides along in `finish()`'s
    *  `enqueueAndAwaitFlush` payload, the same offline-safe path as everything else in this
    *  loop, rather than a second online-only PATCH call after finish. */
   workoutNotes: string | null;
@@ -75,8 +74,8 @@ export interface StartSetTarget {
   /** null = no weight target for this set (plain bodyweight); 0/positive = tracked, including
    *  "extra kg" added on top of bodyweight (weighted dips/pull-ups). */
   weightKg: number | null;
-  /** Feature: pre-plan a set's kind in the routine, not just live via SetKindPicker.vue —
-   *  absent/undefined means "normal", same as before this field existed. */
+  /** Lets a routine pre-plan a set's kind instead of only reclassifying it live via
+   *  SetKindPicker.vue — absent/undefined means "normal", same as before this field existed. */
   kind?: SetKind;
 }
 
@@ -148,8 +147,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
 
     progressLabel: (state) => `Übung ${state.currentExerciseIndex + 1} von ${state.exercises.length}`,
 
-    /** Feedback: "a workout runs indefinitely if it wasn't cancelled or ended by the user" — a
-     *  workout left running for hours (phone locked, app backgrounded and forgotten, a crash
+    /** A workout left running for hours (phone locked, app backgrounded and forgotten, a crash
      *  that never got back to the app) has no natural end. This doesn't auto-end anything —
      *  silently discarding or finishing a session the user never actually confirmed would be
      *  its own bug — it just flags "this has been going a suspiciously long time" so
@@ -159,9 +157,9 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     },
 
     /**
-     * The warm-up ramp only makes sense before any real work has happened on this exercise
-     * (plan Phase 6.3) — offering it mid-exercise, or for bodyweight movements with no
-     * meaningful "working weight" yet, would just be clutter in the sacred logging path.
+     * The warm-up ramp only makes sense before any real work has happened on this exercise —
+     * offering it mid-exercise, or for bodyweight movements with no meaningful "working
+     * weight" yet, would just be clutter in the logging flow.
      */
     canInsertWarmup(): boolean {
       const ex = this.currentExercise;
@@ -171,7 +169,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
   },
 
   actions: {
-    /** Crash/lock recovery (plan 1.5): call once on app boot before rendering the workout page. */
+    /** Crash/lock recovery: call once on app boot before rendering the workout page. */
     async restore() {
       const saved = await loadActiveWorkout<ActiveWorkoutState>();
       if (saved?.workoutId) {
@@ -182,8 +180,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
         for (const ex of saved.exercises) {
           for (const s of ex.sets) {
             if (!s.kind) s.kind = s.isWarmup ? "warmup" : "normal";
-            // Same reasoning for rpe/notes (Task 1) — a session persisted before these fields
-            // existed loads back with them undefined, which would crash the RPE chip's render.
+            // Same reasoning for rpe/notes — a session persisted before these fields existed
+            // loads back with them undefined, which would crash the RPE chip's render.
             if (s.rpe === undefined) s.rpe = null;
             if (s.notes === undefined) s.notes = null;
           }
@@ -193,17 +191,16 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           if (ex.restBetweenSetsSeconds == null) ex.restBetweenSetsSeconds = DEFAULT_REST_SECONDS;
           if (ex.restAfterExerciseSeconds == null) ex.restAfterExerciseSeconds = DEFAULT_REST_SECONDS;
         }
-        // Workout-level notes (Task 2) — same undefined-backfill reasoning as above.
+        // Workout-level notes — same undefined-backfill reasoning as above.
         if (saved.workoutNotes === undefined) saved.workoutNotes = null;
         this.$patch(saved);
       }
     },
 
     async start(routineId: string | null, routineName: string, inputs: StartExerciseInput[]) {
-      // Requested lazily on the first real engagement (plan 1.5), not on page load — asking
-      // before the user has done anything is the "naggy popup" pattern audit §2.2 says to avoid.
-      // RestTimer.vue's Notification call was previously a dead branch since nothing requested
-      // this; closes that gap.
+      // Requested lazily on the first real engagement, not on page load, to avoid a naggy
+      // permission popup before the user has done anything. RestTimer.vue's Notification call
+      // was previously a dead branch since nothing requested this; closes that gap.
       if (Capacitor.isNativePlatform()) {
         void LocalNotifications.requestPermissions();
       } else if (typeof Notification !== "undefined" && Notification.permission === "default") {
@@ -241,13 +238,10 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
               return {
                 index: i,
                 weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-                // Bug fix (product owner report): reps always started at 0, forcing a manual
-                // entry on every single set even when there was a perfectly good "last time" or
-                // routine-target rep count to suggest — unlike weightKg just above, which
-                // already defaults sensibly. Same fallback shape as weight now: prefer last
-                // time's actual reps for this set index, then the routine's target reps. Still
-                // fully editable via the stepper before logging — this only changes the
-                // starting value, not whether the lifter can override it.
+                // Reps default to last time's actual value for this set index, then the
+                // routine's target reps — same fallback shape as weightKg above — instead of
+                // always starting at 0 and forcing a manual entry on every set. Still fully
+                // editable via the stepper before logging; this only changes the starting value.
                 reps: input.lastTime?.[i]?.reps ?? target.reps,
                 isWarmup: (target.kind ?? "normal") === "warmup",
                 kind: target.kind ?? "normal",
@@ -285,11 +279,11 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     adjustCurrentSet(field: "weightKg" | "reps", direction: 1 | -1) {
       const set = this.currentSet;
       if (!set) return;
-      // Clamped to the same MAX_PLAUSIBLE_* the server enforces (feedback: "easy to swindle the
-      // system to gain XP and ranks") — capping here means the normal stepper flow can never
-      // construct a value the server would reject, which matters beyond just UX: a rejected
-      // log_set stays queued and gets retried forever (see syncStore.ts's flush()), so letting
-      // the UI produce one at all would wedge the sync queue on a value that can never succeed.
+      // Clamped to the same MAX_PLAUSIBLE_* the server enforces, closing off inflating weight/reps
+      // for XP/ranks — capping here means the normal stepper flow can never construct a value the
+      // server would reject, which matters beyond just UX: a rejected log_set stays queued and
+      // gets retried forever (see syncStore.ts's flush()), so letting the UI produce one at all
+      // would wedge the sync queue on a value that can never succeed.
       if (field === "weightKg") {
         if (set.weightKg == null) return;
         set.weightKg = Math.min(MAX_PLAUSIBLE_WEIGHT_KG, Math.max(0, Math.round((set.weightKg + direction * WEIGHT_STEP_KG) * 100) / 100));
@@ -299,10 +293,10 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** Direct numeric entry (critique finding: ±1-per-tap-only made a 20kg->100kg change ~64
-     *  taps) — same clamps as adjustCurrentSet's delta path, so typing a value can never produce
-     *  a set the server would reject either. Reps rounds to a whole number; weight rounds to the
-     *  nearest step so an oddly-typed value (e.g. "83") doesn't silently ignore the app's own
+    /** Direct numeric entry — ±1-per-tap-only made a 20kg->100kg change take ~64 taps. Same
+     *  clamps as adjustCurrentSet's delta path, so typing a value can never produce a set the
+     *  server would reject either. Reps rounds to a whole number; weight rounds to the nearest
+     *  step so an oddly-typed value (e.g. "83") doesn't silently ignore the app's own
      *  plate-increment convention. */
     setCurrentSetValue(field: "weightKg" | "reps", value: number) {
       const set = this.currentSet;
@@ -317,9 +311,9 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** RPE capture (Task 4's UI writes here) — off the primary logging path per Global
-     *  Constraint 4: no sync enqueue here, the value rides along in `logCurrentSet()`'s own
-     *  `log_set` payload once the set is actually logged, same as weightKg/reps. */
+    /** RPE capture — off the primary logging path: no sync enqueue here, the value rides
+     *  along in `logCurrentSet()`'s own `log_set` payload once the set is actually logged,
+     *  same as weightKg/reps. */
     setCurrentSetRpe(rpe: number | null) {
       const set = this.currentSet;
       if (!set) return;
@@ -327,8 +321,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** Set-level notes capture (Task 5's UI writes here) — same fire-and-forget-free timing as
-     *  setCurrentSetRpe above. */
+    /** Set-level notes capture — same fire-and-forget-free timing as setCurrentSetRpe above. */
     setCurrentSetNotes(notes: string | null) {
       const set = this.currentSet;
       if (!set) return;
@@ -336,21 +329,19 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** Workout-level notes (Task 5's UI writes here) — captured during the session, sent as
-     *  part of `finish()`'s existing `enqueueAndAwaitFlush` payload (Task 2), not a separate
-     *  network call. */
+    /** Workout-level notes — captured during the session, sent as part of `finish()`'s existing
+     *  `enqueueAndAwaitFlush` payload, not a separate network call. */
     setWorkoutNotes(notes: string | null) {
       this.workoutNotes = notes;
       persist(this.$state);
     },
 
     /**
-     * Reclassifies a set ("Satzart auswählen" — feedback: "not possible to set what kind of
-     * set this is"). Scoped to sets that haven't been logged yet: a logged set is already
-     * synced server-side and this store has no update-in-place sync mutation (log_set is an
-     * idempotent insert keyed on clientId, not an upsert-by-content) — reclassifying history
-     * would need a real edit endpoint, which is a bigger change than this picker. Deciding what
-     * the *next* set will be is the actual use case anyway.
+     * Reclassifies a set ("Satzart auswählen"). Scoped to sets that haven't been logged yet: a
+     * logged set is already synced server-side and this store has no update-in-place sync
+     * mutation (log_set is an idempotent insert keyed on clientId, not an upsert-by-content) —
+     * reclassifying history would need a real edit endpoint, which is a bigger change than this
+     * picker. Deciding what the *next* set will be is the actual use case anyway.
      */
     setSetKind(workoutExerciseId: string, setIndex: number, kind: SetKind) {
       const ex = this.exercises.find((e) => e.workoutExerciseId === workoutExerciseId);
@@ -373,9 +364,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     },
 
     /**
-     * Returns the rest duration (seconds) that should fire after this set, or null for no rest
-     * (plan §6.6, plus feedback: "adjust the pause, per set and per exercise"). Standalone
-     * exercises always rest between sets, using the exercise's own restBetweenSetsSeconds —
+     * Returns the rest duration (seconds) that should fire after this set, or null for no rest.
+     * Standalone exercises always rest between sets, using the exercise's own restBetweenSetsSeconds —
      * except for its very last set, which uses restAfterExerciseSeconds instead (the pause
      * before the *next* exercise starts, not another set of this one). A superset/circuit
      * instead advances round-robin between its member exercises with **no** rest in between —
@@ -488,11 +478,11 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     },
 
     /**
-     * Mid-session add (feedback gap: no way to change what a session includes once started —
-     * a busy squat rack or a piece of equipment in use dead-ended the workout, or forced
-     * cancelling it entirely). Builds one exercise the same way start() does, appends it, and
-     * queues the matching "add_exercise" sync item so log_set for its sets has a real
-     * workout_exercise row to reference server-side (see sync.ts).
+     * Adds an exercise mid-session — a busy squat rack or a piece of equipment in use would
+     * otherwise dead-end the workout or force cancelling it entirely. Builds one exercise the
+     * same way start() does, appends it, and queues the matching "add_exercise" sync item so
+     * log_set for its sets has a real workout_exercise row to reference server-side (see
+     * sync.ts).
      */
     async addExercise(input: StartExerciseInput) {
       const workoutExerciseId = crypto.randomUUID();
@@ -511,9 +501,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           return {
             index: i,
             weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-            // Bug fix (product owner report) — same reps-defaulting fix as start() above,
-            // applied here too so a mid-session added exercise gets the same sensible default
-            // instead of always starting at 0.
+            // Same reps-defaulting as start() above, so a mid-session added exercise gets the
+            // same sensible default instead of always starting at 0.
             reps: input.lastTime?.[i]?.reps ?? target.reps,
             isWarmup: (target.kind ?? "normal") === "warmup",
             kind: target.kind ?? "normal",
@@ -580,8 +569,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
 
     /**
      * Returns this session's rank verdicts (one per exercise that had a non-warmup set logged)
-     * plus the streak/XP mechanics redesign's two session-level bonuses (spec §2/§3), so the
-     * caller can build the finish sequence's reward beat. Rank is now recomputed once here, when
+     * plus its two session-level XP bonuses (consistency and variety), so the caller can build
+     * the finish sequence's reward beat. Rank is recomputed once here, when
      * the workout actually finishes, not after every individual set — so unlike every other
      * mutation in this store, this one is awaited all the way through the network flush rather
      * than fire-and-forget: the caller needs the real verdicts/bonuses before it decides what to

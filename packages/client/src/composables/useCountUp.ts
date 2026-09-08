@@ -1,5 +1,5 @@
 /**
- * rAF number roll-up (engagement rework W1). Used by every stat that appears as a reward
+ * rAF number roll-up. Used by every stat that appears as a reward
  * (session XP, level bar, streak count) so the number visibly climbs instead of snapping —
  * a snap reads as "just a label," a roll-up reads as "you earned this." Under
  * prefers-reduced-motion, jumps straight to the target value.

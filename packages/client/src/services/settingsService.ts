@@ -37,9 +37,9 @@ export interface PlateInventoryEntry {
 }
 
 /** One empty-bar weight per bar-family equipment type — a barbell, EZ-bar, trap-bar, and an
- *  adjustable-dumbbell handle are all meaningfully different (feedback: "a barbell usually has a
- *  different weight than a dumbbell"). All optional: SetEntry.vue falls back to
- *  @liftr/shared's DEFAULT_BAR_WEIGHT_KG for whichever type isn't configured. */
+ *  adjustable-dumbbell handle each have a different typical empty weight. All optional:
+ *  SetEntry.vue falls back to @liftr/shared's DEFAULT_BAR_WEIGHT_KG for whichever type isn't
+ *  configured. */
 export interface BarWeights {
   barbell?: number;
   "ez-bar"?: number;

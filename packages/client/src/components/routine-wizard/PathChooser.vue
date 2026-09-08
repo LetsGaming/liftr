@@ -1,10 +1,8 @@
 <script setup lang="ts">
-/** Step 0 (create mode only) — engagement-audit-v4 Phase 1: the manual-vs-muscle-guided choice
- *  used to be a segmented toggle buried inside PickStep, easy to miss and easy to read as "one
- *  mode is the real one, the other is a fallback" (the interview's own complaint: the
- *  muscle-guided path "makes the other way of creating basically obsolete, even though it
- *  shouldn't"). Making it an explicit first decision gives both paths equal visual weight before
- *  either one starts, then both converge into the same Pick/Arrange/Review steps after. Edit mode
+/** Step 0 (create mode only): the manual-vs-muscle-guided choice gets its own explicit first
+ *  screen so both paths carry equal visual weight before either one starts — a toggle buried
+ *  inside a later step would read as "one mode is the real one, the other is a fallback," which
+ *  isn't true. Both paths converge into the same Pick/Arrange/Review steps after. Edit mode
  *  never reaches this screen — it jumps straight to Arrange since exercises already exist. */
 defineEmits<{ choose: [mode: "manual" | "muscles"] }>();
 </script>
@@ -30,9 +28,8 @@ defineEmits<{ choose: [mode: "manual" | "muscles"] }>();
   flex-direction: column;
   justify-content: center;
   gap: var(--sp3);
-  /* Audit fix (workplan-v1 §1.10a): the two choice cards were pinned at the top of the sheet
-     with a tall empty area below on most viewports. Same reasoning as WorkoutPage.vue's
-     .not-started fix. */
+  /* Prevents the two choice cards from pinning at the top of the sheet with a tall empty area
+     below on most viewports. Same reasoning as WorkoutPage.vue's .not-started fix. */
   min-height: 50vh;
 }
 .path-card {

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
- * "Rangverteilung" — a donut showing how many exercises sit in each tier (engagement rework
- * W8). Pure client-side aggregation of `ranksStore.ranks` (no new fetch) grouped by `tier`.
- * Hand-rolled inline SVG arc math, matching ProgressChart.vue's "no charting library" rule —
- * every chart in this app is inline SVG, this one draws its arcs with `stroke-dasharray` on a
- * single circle per segment rather than a `<path>` arc command, which is enough for a donut
- * (no partial-circle geometry needed) and keeps the math trivial.
+ * "Rangverteilung" — a donut showing how many exercises sit in each tier. Pure client-side
+ * aggregation of `ranksStore.ranks` grouped by `tier`, no separate fetch.
  *
- * Colors come from the same per-tier design tokens RanksPage.vue/RankProgress.vue already
- * use for tier fills (tokens.css) — read directly as CSS custom properties (e.g. `--advanced-3`)
- * rather than through the `.t-<tier>` class indirection, since this component needs to pick a
- * single accent color per legend row without mounting a `.t-<tier>`-classed element for each one.
+ * Every chart in this app is inline SVG rather than a charting library (see ProgressChart.vue).
+ * Segments are drawn with `stroke-dasharray` on stacked circles rather than `<path>` arcs —
+ * a donut needs no partial-circle geometry, so this keeps the math trivial.
+ *
+ * Colors come from the same per-tier tokens (tokens.css) RanksPage.vue/RankProgress.vue use
+ * for tier fills, read directly as CSS custom properties (e.g. `--advanced-3`) instead of via
+ * the `.t-<tier>` class, since each legend row needs a single accent color without mounting a
+ * `.t-<tier>`-classed element per row.
  */
 import { computed } from "vue";
 import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
@@ -68,9 +68,7 @@ const total = computed(() => ranksStore.ranks.length);
     <div class="eyebrow rd-eyebrow">Rangverteilung</div>
     <div class="rd-body">
       <svg viewBox="0 0 100 100" class="rd-svg">
-        <!-- Arcs are aria-hidden: fully redundant with .rd-legend's own per-tier counts below,
-           which already carry this data as real text (harden finding). The total/label <text>
-           nodes just below stay in the accessible tree — they're not duplicated elsewhere. -->
+        <!-- Arcs are aria-hidden: the legend below already carries this data as real text. -->
         <circle cx="50" cy="50" :r="RADIUS" fill="none" stroke="var(--surface-3)" stroke-width="14" aria-hidden="true" />
         <circle
           v-for="s in segments"
@@ -102,19 +100,13 @@ const total = computed(() => ranksStore.ranks.length);
 
 <style scoped>
 .rank-donut {
-  /* N8 adoption-audit fix: this sat right next to RankUpCalendar.vue in the same
-     `.rank-analytics` row on RanksPage.vue, which N3 already moved onto the surface-hybrid
-     bg/blur/shadow triad — leaving this one flat was an oversight (out of N3's own file
-     boundary, flagged by that agent), not a deliberate exemption. Same partial-adoption
-     judgment as RankUpCalendar.vue: adopt the hybrid background, keep this component's own
-     semantic border rather than adding the generic gradient-hairline ::after, since the border
-     already carries a real signal (the account's current overall tier) that a second ring would
-     compete with. engagement-audit-v4 Phase 2B critique fix (still applies): was a flat --line
-     border — this is an analytics card, not a reward, so it keeps a plain-ish fill rather than
-     .panel-reward's full tier gradient, but a bare neutral border sitting two scrolls above the
-     reference-quality .rank-card grid (RanksPage.vue) read as more generic than it needed to.
+  /* Shares the surface-hybrid bg/blur/shadow with RankUpCalendar.vue in the same
+     .rank-analytics row. Keeps its own semantic border instead of the generic gradient-hairline
+     ::after, since the border already signals the account's current overall tier and a second
+     ring would compete with it. This is an analytics card, not a reward, so it stays a plain
+     fill rather than .panel-reward's full tier gradient.
      --tier-accent falls back to --line for a brand-new account with no overall rank yet
-     (App.vue's overallTierClass is "" until then, so --tier-accent is genuinely unset). */
+     (App.vue's overallTierClass is "" until then, so --tier-accent is unset). */
   background: var(--surface-hybrid-bg);
   backdrop-filter: blur(var(--surface-hybrid-blur));
   -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));

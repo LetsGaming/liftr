@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { prs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, prs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { getPrs } from "~server/services/prService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 
@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe("getPrs", () => {
   it("returns an empty list when no PRs exist yet", async () => {
-    const result = await getPrs(db);
+    const result = await getPrs(db, OWNER_USER_ID);
     expect(result).toEqual([]);
   });
 
@@ -46,7 +46,7 @@ describe("getPrs", () => {
       achievedAt: new Date("2026-09-01T10:00:00Z"),
     });
 
-    const result = await getPrs(db);
+    const result = await getPrs(db, OWNER_USER_ID);
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       exerciseSlug: "bench-press",
@@ -66,7 +66,7 @@ describe("getPrs", () => {
       achievedAt: new Date("2026-09-01T10:00:00Z"),
     });
 
-    const result = await getPrs(db);
+    const result = await getPrs(db, OWNER_USER_ID);
     expect(result[0]!.workoutId).toBeNull();
   });
 
@@ -77,7 +77,7 @@ describe("getPrs", () => {
       { exerciseId: exercise.id, kind: "weight", value: 90, setId: null, achievedAt: new Date("2026-09-01T00:00:00Z") },
     ]);
 
-    const result = await getPrs(db);
+    const result = await getPrs(db, OWNER_USER_ID);
     expect(result.map((r) => r.value)).toEqual([90, 80]);
   });
 });

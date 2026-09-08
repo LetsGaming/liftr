@@ -1,1 +1,0 @@
-ALTER TABLE `rank_events` ADD `plausibility_reason` text;

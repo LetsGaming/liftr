@@ -1,6 +1,6 @@
 /**
- * GET /api/prs — Personal Records ledger (workplan-v1 §2). Same shape as `overallRank.ts`: the
- * route is a thin schema wrapper, the actual query lives in `prService.ts`.
+ * GET /api/prs — Personal Records ledger. Same shape as `overallRank.ts`: the route is a thin
+ * schema wrapper, the actual query lives in `prService.ts`.
  */
 import { z } from "zod";
 import type { AppDb } from "../db.js";
@@ -21,7 +21,7 @@ const prListResponse = z.array(
 );
 
 export function registerPrRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/prs", { schema: { response: { 200: prListResponse } } }, async () => {
-    return getPrs(db);
+  app.get("/api/prs", { schema: { response: { 200: prListResponse } } }, async (request) => {
+    return getPrs(db, request.userId);
   });
 }

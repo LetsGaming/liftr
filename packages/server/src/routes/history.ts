@@ -38,16 +38,16 @@ export function registerHistoryRoutes(app: ZodFastifyInstance, db: AppDb) {
     { schema: { querystring: historyQuery, response: { 200: historyResponse } } },
     async (req) => {
       const limit = Math.min(req.query.limit ?? 20, 50);
-      return getHistoryPage(db, req.query.cursor, limit);
+      return getHistoryPage(db, req.userId, req.query.cursor, limit);
     },
   );
 
-  // GET /api/exercises/:id/history — "last time" reference + chart series (plan 1.1, 2.5).
+  // GET /api/exercises/:id/history — "last time" reference + chart series.
   app.get(
     "/api/exercises/:id/history",
     { schema: { params: exerciseHistoryParams, response: { 200: exerciseHistoryResponse } } },
     async (req) => {
-      const rows = await findSetHistoryForExercise(db, req.params.id);
+      const rows = await findSetHistoryForExercise(db, req.userId, req.params.id);
       return { sets: rows };
     },
   );

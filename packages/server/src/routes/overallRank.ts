@@ -1,7 +1,7 @@
 /**
- * GET /api/overall-rank — the account-level "how good a lifter am I overall" aggregate (rank
- * engine redesign R3). Same shape as `readiness.ts`/`rankEvents.ts`: the route is a thin schema
- * wrapper, the actual aggregation lives in `overallRankService.ts`.
+ * GET /api/overall-rank — the account-level "how good a lifter am I overall" aggregate. Same
+ * shape as `readiness.ts`/`rankEvents.ts`: the route is a thin schema wrapper, the actual
+ * aggregation lives in `overallRankService.ts`.
  */
 import { z } from "zod";
 import type { AppDb } from "../db.js";
@@ -14,7 +14,7 @@ const bandSchema = z.object({ tier: tierSchema, division: z.number(), lp: z.numb
 const overallRankResponse = z.object({ current: bandSchema, peak: bandSchema });
 
 export function registerOverallRankRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/overall-rank", { schema: { response: { 200: overallRankResponse } } }, async () => {
-    return getOverallRank(db);
+  app.get("/api/overall-rank", { schema: { response: { 200: overallRankResponse } } }, async (request) => {
+    return getOverallRank(db, request.userId);
   });
 }
