@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { OWNER_USER_ID, plannedRoutePoints, plannedRoutes, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, plannedRoutes, type LiftrDb } from "@liftr/db";
 import { eq } from "drizzle-orm";
 import { createTestDb, insertTestUser } from "../helpers/testDb.js";
 import {

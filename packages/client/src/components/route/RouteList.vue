@@ -84,6 +84,11 @@ function thumbnailPath(route: PlannedRoute): string {
   stroke-dasharray: 4 4;
   opacity: 0.6;
 }
+.route-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .route-actions {
   display: flex;
   gap: 6px;

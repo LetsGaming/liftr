@@ -101,6 +101,19 @@ describe("GET /api/planned-routes/:id", () => {
 
     expect(res.statusCode).toBe(404);
   });
+
+  it("still resolves a soft-archived route by id, unlike the list endpoint", async () => {
+    const { app, db } = createTestApp();
+    registerPlannedRouteRoutes(app, db);
+    const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Tempelhof-Runde", waypoints: waypoints() } });
+    const id = created.json().id;
+    await app.inject({ method: "DELETE", url: `/api/planned-routes/${id}` });
+
+    const res = await app.inject({ method: "GET", url: `/api/planned-routes/${id}` });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ id, name: "Tempelhof-Runde" });
+  });
 });
 
 describe("PATCH /api/planned-routes/:id", () => {

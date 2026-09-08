@@ -31,6 +31,7 @@ function makeRun(overrides: Partial<RunSummary> = {}): RunSummary {
     avgPaceSPerKm: 300,
     avgHr: 150,
     elevationGainM: 40,
+    plannedRouteId: null,
     ...overrides,
   };
 }
