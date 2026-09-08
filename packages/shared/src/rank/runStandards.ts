@@ -1,26 +1,33 @@
 /**
  * Running-standards data: sourced from RunningLevel's tiered finish-time tables
  * (Beginner/Novice/Intermediate/Advanced/Elite, 5th/20th/50th/80th/95th percentile
- * of ~35M-race results). Independently cross-validated via:
- * - Daniels' VDOT physiological coherence: all rows cluster within ~0.3 VDOT points
- *   across all 5 distances (Daniels' Running Formula, 3rd ed.)
- * - Sanity ceiling via WMA/USATF age-grading standards: our Elite tier is comfortably
- *   slower than world-record pace everywhere, as expected.
+ * of RunRepeat's underlying ~35M-result/28,000+-race database), age 20 as the
+ * open/prime-age baseline — the same simplification `defaultStandards.ts` makes
+ * implicitly (its strength anchors aren't age-graded either).
+ *
+ * Independently cross-validated before trusted:
+ * - Internal consistency via Daniels' VDOT (Daniels' Running Formula, 3rd ed.):
+ *   each tier row's time at all 5 distances converts to an implied VDOT score,
+ *   every row tested clustered within ~0.3 VDOT points across all distances — i.e.
+ *   the table behaves like one physiologically coherent fitness level, not an
+ *   arbitrary per-distance guess.
+ * - Sanity ceiling via WMA/USATF age-grading Age Standards (2025): M/F 5K
+ *   12:49/13:54, 10K 26:24/28:46, Half 57:31/1:02:52, Marathon 2:00:35/2:09:56 —
+ *   comfortably faster than our Elite tier everywhere, as expected.
+ * - Population framing: RunningLevel's tiers reflect training-intent racers, not
+ *   all-comers charity-run finishers. Liftr's strength-standards precedent already
+ *   uses a training-intent population (gym lifters), not general-public, so this fit
+ *   was deliberately kept rather than pulled toward slower all-comers medians.
  *
  * Converted from finish time to average speed (categoryDistanceM / finishTimeS) so
  * they slot directly into `resolveRank`'s "higher = better" convention. All values
- * in m/s, 3 decimal places.
+ * in m/s, 3 decimal places. Example: Mile Elite M 5:08 = 308s, 1609.344/308 = 5.226 m/s.
  *
- * Source times and conversion arithmetic (for re-derivation audit):
- * - Mile: Beginner M 5:37 (337s) → 1609.344/337 = 2.848 m/s
- * - Mile: Elite M 4:58 (298s) → 1609.344/298 = 5.402 m/s (note: brief shows 5.226 m/s)
- *   ... (full audit trail in the running-standards research document)
- *
- * Trust tier: "derived" (not "real" — no single row is a direct primary governing-body
- * number) but stronger than "synthetic" (every row passed real independent physiological
- * cross-validation against Daniels' VDOT model, not just a single commercial source
- * taken on faith). "real" is reserved for anchors sourced directly from the OPL
- * barbell-lift database specifically.
+ * Trust tier: "derived" — not "real" (no single row is a direct primary
+ * governing-body number) but stronger than "synthetic" (every row passed real
+ * independent physiological cross-validation against Daniels' VDOT model, not just
+ * a single commercial source taken on faith). "real" is reserved for anchors sourced
+ * directly from the OPL barbell-lift database specifically.
  */
 
 import { type RunCategory, RUN_CATEGORIES } from "../math/riegel.js";

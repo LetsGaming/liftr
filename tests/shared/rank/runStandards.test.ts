@@ -88,11 +88,10 @@ describe("buildRunStandards", () => {
   it("Mile/female Beginner anchor is approximately 2.514 m/s", () => {
     const standards = buildRunStandards();
     const mileF = standards.filter(
-      (s) => s.category === "5k" && s.sex === "female" && s.tier === "apprentice" && s.division === TIER_DIVISION_COUNT.apprentice,
+      (s) => s.category === "mile" && s.sex === "female" && s.tier === "apprentice" && s.division === TIER_DIVISION_COUNT.apprentice,
     );
     expect(mileF).toHaveLength(1);
-    // Note: 5K is used here as a sanity check that the anchors are in place
-    expect(mileF[0]!.threshold).toBeCloseTo(2.351, 2);
+    expect(mileF[0]!.threshold).toBeCloseTo(2.514, 2);
   });
 });
 
