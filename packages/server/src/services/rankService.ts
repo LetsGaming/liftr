@@ -38,6 +38,22 @@ import type { Profile } from "../routes/settings.js";
 /** No bodyweight-tracking UI exists yet — fall back to a configurable default. */
 const FALLBACK_BODYWEIGHT_KG = 75;
 
+/**
+ * Peak-eligibility floor, hoisted to module scope (was function-local inside
+ * `recomputeRankForExercise` below) so `runRankService.ts`'s run-analog recompute can import the
+ * exact same value rather than re-declaring it — see that function's own gate for the full
+ * rationale (a session has to be quite badly flagged to lose peak eligibility outright).
+ */
+export const PEAK_ELIGIBILITY_FLOOR = 0.3;
+
+/**
+ * PR hard-block floor, hoisted to module scope for the same single-source-of-truth reason as
+ * `PEAK_ELIGIBILITY_FLOOR` above — see `recomputeRankForExercise`'s PR-detection block for the
+ * full rationale (a PR is a permanent, high-stakes claim and gets zero credit at a much milder
+ * degree of flagging than peak eligibility does).
+ */
+export const PR_ELIGIBILITY_FLOOR = 0.5;
+
 export async function getCurrentBodyweightKg(db: LiftrDb, userId: string): Promise<number> {
   const latest = await findLatestBodyweightLog(db, userId);
   if (latest) return latest.weightKg;
@@ -195,10 +211,10 @@ export async function recomputeRankForExercise(
 
   // Plausibility gate: a badly-flagged session's sets are excluded from peak
   // advancement entirely, not just discounted — the peak ratchet is the one thing in this system
-  // meant to be un-fakeable. PEAK_ELIGIBILITY_FLOOR intentionally matches the plausibility module's
-  // own PLAUSIBILITY_FLOOR-adjacent low end; a session has to be quite badly flagged to lose peak
-  // eligibility outright, since most flagged sessions should still discount rather than block.
-  const PEAK_ELIGIBILITY_FLOOR = 0.3;
+  // meant to be un-fakeable. PEAK_ELIGIBILITY_FLOOR (module-level, see above) intentionally
+  // matches the plausibility module's own PLAUSIBILITY_FLOOR-adjacent low end; a session has to be
+  // quite badly flagged to lose peak eligibility outright, since most flagged sessions should
+  // still discount rather than block.
   const peakEligible = plausibilityMultiplier >= PEAK_ELIGIBILITY_FLOOR;
 
   // PR hard-block: stricter than peak eligibility on purpose. A PR is the single highest-trust,
@@ -213,8 +229,7 @@ export async function recomputeRankForExercise(
   // PR eligibility outright. That leaves a normal ~40-55% single-session breakthrough — a
   // legitimate "short rest, good day" case — still eligible for a PR, while a session flagged
   // enough to already be trending toward the peak-eligibility floor loses PR credit well before
-  // it gets there.
-  const PR_ELIGIBILITY_FLOOR = 0.5;
+  // it gets there. (PR_ELIGIBILITY_FLOOR is module-level, see above.)
   const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
 
   // `peak` is `null` when either of two independent gates hasn't cleared yet — a badly flagged
