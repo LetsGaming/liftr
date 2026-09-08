@@ -102,6 +102,8 @@ Runs are a first-class second discipline alongside lifting, with no third-party 
   visual weight to the one-tap "start today's workout" path.
 - **Custom exercises** — add your own exercise (with muscle tags) alongside the curated catalog,
   with correct name display and slug transliteration (including non-ASCII names).
+- **Strecken planen** — Wegpunkte auf einer Karte setzen; die App berechnet automatisch Distanz und
+  Höhenmeter (via OpenRouteService, optional) und merkt sich die Strecke zum späteren Start.
 
 ## Exercise catalog
 
