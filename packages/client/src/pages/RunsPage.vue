@@ -2,7 +2,9 @@
 // Läufe: GPX import, route map, and run replay built on the stored run_points array — the
 // whole point of keeping the full trackpoint array.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { nearestRunCategory, type RunCategory } from "@liftr/shared";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import RunReplay from "../components/run/RunReplay.vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
@@ -13,16 +15,50 @@ import { useConfirmTap } from "../composables/useConfirmTap";
 import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
 import { isHealthConnectAvailable } from "../health/healthConnect";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { validateManualEntry } from "../lib/runValidation";
 import { getRunDetail } from "../services/runService";
 import { getPlannedRouteDetail, type PlannedRoute } from "../services/plannedRouteService";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
+import { useRunRankStore } from "../stores/runRankStore";
 import { useRunsStore, type RunDetail } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
+const runRankStore = useRunRankStore();
 const { toast } = useToast();
 const selectedRun = ref<RunDetail | null>(null);
 const deleting = ref(false);
+
+// Task 11: rank/PR chip on the selected run — same "5 km"/"Halbmarathon" German labels
+// RanksPage.vue/RecordsPage.vue already use for RunCategory (duplicated locally there too;
+// not worth centralizing for a 5-entry map used in three places).
+const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
+  mile: "Meile",
+  "5k": "5 km",
+  "10k": "10 km",
+  half_marathon: "Halbmarathon",
+  marathon: "Marathon",
+};
+
+// Manual runs never feed the rank engine (runImportService.ts only ranks GPS-tracked imports),
+// so they're excluded here explicitly rather than relying on runRanks/runPrs simply having no
+// matching rows — a manual run's distance could otherwise coincidentally nearest-match a
+// category some *other* real run of yours already has a rank/PR in.
+const selectedRunCategory = computed<RunCategory | null>(() => {
+  const run = selectedRun.value;
+  if (!run || run.source === "manual") return null;
+  return nearestRunCategory(run.distanceM);
+});
+const selectedRunRank = computed(() => {
+  const category = selectedRunCategory.value;
+  if (!category) return null;
+  return runRankStore.ranks.find((r) => r.category === category) ?? null;
+});
+const selectedRunIsPr = computed(() => {
+  const run = selectedRun.value;
+  if (!run || run.source === "manual") return false;
+  return runRankStore.prs.some((p) => p.runId === run.id);
+});
 
 // Same archived-route fallback as RunDetail.vue's chip: plannedRouteStore only ever holds active
 // (non-archived) routes, so a run referencing a since-deleted route falls back to a direct by-id
@@ -42,7 +78,16 @@ async function resolveRouteName(id: string) {
   }
 }
 
-const activeSubTab = ref<"verlauf" | "strecken">("verlauf");
+// In the URL instead of a bare ref (critique finding): gives the Verlauf/Strecken split
+// deep-linking and back-button support essentially for free, and survives the route
+// cross-fade's full unmount/remount of this page (App.vue's <RouterView> transitions
+// mode="out-in", so a plain ref would otherwise reset to "verlauf" on every re-entry anyway).
+const route = useRoute();
+const router = useRouter();
+const activeSubTab = computed<"verlauf" | "strecken">({
+  get: () => (route.query.tab === "strecken" ? "strecken" : "verlauf"),
+  set: (tab) => router.replace({ query: { ...route.query, tab: tab === "strecken" ? "strecken" : undefined } }),
+});
 const plannedRouteStore = usePlannedRouteStore();
 const showRouteWizard = ref(false);
 const editingRoute = ref<PlannedRoute | null>(null);
@@ -104,6 +149,10 @@ onMounted(async () => {
   await runsStore.load();
   if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
   if (!plannedRouteStore.loaded) await plannedRouteStore.load();
+  // Non-blocking, same as RanksPage.vue's own mount — the chip/badge above just render nothing
+  // until these resolve, no loading state worth gating the rest of the page on.
+  if (!runRankStore.ranksLoaded) void runRankStore.loadRanks();
+  if (!runRankStore.prsLoaded) void runRankStore.loadPrs();
 });
 
 async function selectRun(id: string) {
@@ -190,16 +239,42 @@ function formatDuration(s: number) {
     </IonHeader>
     <IonContent class="ion-padding">
     <WorkoutRunsSwitcher active="runs" />
-    <div class="sub-switcher">
-      <button class="wr-pill" :class="{ 'wr-active': activeSubTab === 'verlauf' }" @click="activeSubTab = 'verlauf'">
-        Verlauf
-      </button>
-      <button class="wr-pill" :class="{ 'wr-active': activeSubTab === 'strecken' }" @click="activeSubTab = 'strecken'">
-        Strecken
-      </button>
+    <!-- Was a second full-width boxed switcher stacked directly under WorkoutRunsSwitcher
+         (critique finding: 2 near-identical bars in a row read as one confusingly duplicated).
+         Now the app's shared sub-level tablist (.tab-strip/.tab-pill, promoted to tokens.css) —
+         auto-width, left-aligned pills instead of a second flex:1 boxed pair, so it visibly
+         reads as a *different kind* of control than the switcher above it, not a copy of it. -->
+    <div class="tab-row">
+      <div class="tab-strip" role="tablist" aria-label="Verlauf oder Strecken">
+        <button
+          role="tab"
+          class="tab-pill"
+          :class="{ active: activeSubTab === 'verlauf' }"
+          :aria-selected="activeSubTab === 'verlauf'"
+          aria-controls="runs-verlauf-panel"
+          @click="activeSubTab = 'verlauf'"
+        >
+          Verlauf
+        </button>
+        <button
+          role="tab"
+          class="tab-pill"
+          :class="{ active: activeSubTab === 'strecken' }"
+          :aria-selected="activeSubTab === 'strecken'"
+          aria-controls="runs-strecken-panel"
+          @click="activeSubTab = 'strecken'"
+        >
+          Strecken
+        </button>
+      </div>
+      <!-- Was its own full-width gradient bar below the switcher (critique finding: read as a
+           4th stacked bar). Now lives at the end of the tab row, only while Strecken is active —
+           mirrors the Verlauf branch's own right-aligned .pagehead action row below, making the
+           two sub-tabs structurally symmetric instead of one having an extra bar the other doesn't. -->
+      <button v-if="activeSubTab === 'strecken'" class="btn-primary" @click="openNewRouteWizard">+ Neue Strecke</button>
     </div>
 
-    <template v-if="activeSubTab === 'verlauf'">
+    <div v-if="activeSubTab === 'verlauf'" id="runs-verlauf-panel" role="tabpanel">
     <div class="pagehead">
       <div>
         <p style="color: var(--dim)">Als Datei importiert · deine Daten, kein Drittanbieter-Konto</p>
@@ -265,6 +340,16 @@ function formatDuration(s: number) {
           <div v-if="selectedRunRouteName" class="route-chip">
             Strecke: {{ selectedRunRouteName }}
           </div>
+          <!-- Task 11: current standing for the run's nearest category — not this run's own
+               performance specifically, just whether that category has a rank at all (see
+               selectedRunRank's comment). .pop-in gives it --ease-spring (motion.css): the one
+               place a run legitimately earns the overshoot easing — see .run-row's own comment
+               below for why the row entrance itself still doesn't. -->
+          <div v-if="selectedRunRank" class="route-chip rank-chip pop-in">
+            {{ RUN_CATEGORY_LABEL[selectedRunCategory!] }} · {{ TIER_LABEL_DE[selectedRunRank.tier as RankTier] }}
+            {{ DIVISION_LABEL[selectedRunRank.division] }}
+          </div>
+          <div v-if="selectedRunIsPr" class="route-chip pr-chip pop-in">Neuer Rekord</div>
           <div class="stats">
             <StatTile :value="`${(selectedRun.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
             <StatTile :value="formatDuration(selectedRun.durationS)" label="Dauer" />
@@ -306,55 +391,45 @@ function formatDuration(s: number) {
         </button>
       </div>
     </div>
-    </template>
+    </div>
 
-    <template v-if="activeSubTab === 'strecken'">
-      <button class="btn-primary btn-block" @click="openNewRouteWizard">+ Neue Strecke</button>
-      <RouteList @edit="openEditRouteWizard" @start="(route) => { activeSubTab = 'verlauf'; startFromRoute(route); }" />
+    <div v-if="activeSubTab === 'strecken'" id="runs-strecken-panel" role="tabpanel">
+      <RouteList
+        @edit="openEditRouteWizard"
+        @start="(route) => { activeSubTab = 'verlauf'; startFromRoute(route); }"
+        @create="openNewRouteWizard"
+      />
       <RouteWizard
         v-if="showRouteWizard"
         :route="editingRoute"
         :initial-center="initialCenter"
         @close="showRouteWizard = false"
       />
-    </template>
+    </div>
     </IonContent>
   </IonPage>
 </template>
 
 <style scoped>
-/* Mirrors WorkoutRunsSwitcher.vue's own .wr-switcher/.wr-pill shape (scoped styles don't cross
-   SFC boundaries, so the class names are shared by convention but the rules are duplicated
-   here) — this switches between Verlauf (run history) and Strecken (planned routes) within the
-   /runs page itself, one level below the Workout/Läufe switcher above it. */
-.sub-switcher {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  margin-bottom: var(--sp4);
-}
-.sub-switcher .wr-pill {
-  flex: 1;
+/* Verlauf/Strecken switcher: the global .tab-strip/.tab-pill (tokens.css) is auto-width and
+   left-aligned by default (that's what stops it reading as a second copy of the boxed, full-
+   width WorkoutRunsSwitcher above it) — overridden here from its promoted-from-
+   ExerciseInfoPanel.vue default of flex:1/equal-width, which is right for a full-bleed sheet
+   header but wrong for this page-level row that also carries the "+ Neue Strecke" action. */
+.tab-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  text-align: center;
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-weight: 700;
-  font-size: 13.5px;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  justify-content: space-between;
+  gap: var(--sp3);
+  margin-bottom: var(--sp4);
 }
-.sub-switcher .wr-pill.wr-active {
-  background: var(--blue);
-  color: var(--bg);
+.tab-row .tab-strip {
+  flex: 1 1 auto;
+}
+.tab-row .tab-pill {
+  flex: none;
+  min-height: var(--touch-target-min);
+  padding: 8px 16px;
 }
 .pagehead {
   display: flex;
@@ -448,6 +523,17 @@ function formatDuration(s: number) {
   font-size: 12.5px;
   font-weight: 700;
 }
+/* Sits next to the route chip (same visual pattern, reused rather than invented) when
+   consecutive chips wrap onto the same line. */
+.route-chip + .route-chip {
+  margin-left: var(--sp2);
+}
+/* Same --pr color token WorkoutDetail.vue's/WorkoutPage.vue's strength-side PR chip already
+   uses — this is that same "you earned this" accent, not a new color introduced for running. */
+.pr-chip {
+  color: var(--pr);
+  border-color: var(--pr);
+}
 .route-banner {
   display: flex;
   align-items: center;
@@ -497,7 +583,10 @@ function formatDuration(s: number) {
   transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), filter var(--dur-fast) var(--ease-out);
   /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
      (rank-up, PR, level-up) per motion.css's own convention — a run-list row entrance isn't
-     one of those. */
+     one of those. Task 11 narrows that exception from "never" to "not here specifically": the
+     rank/PR chip inside the detail panel above (.rank-chip/.pr-chip) does get --ease-spring, via
+     the shared .pop-in utility — that's the one place a run legitimately earns it. This row's
+     own entrance stays --ease-out regardless. */
   animation: pop-in var(--dur-base) var(--ease-out) both;
 }
 .run-row:active {

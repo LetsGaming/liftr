@@ -4,6 +4,7 @@
 // rendering is covered by RunReplay.test.ts/RunMap.test.ts; stubbed here so this file tests only
 // RunDetail's own loading/formatting logic).
 import { flushPromises } from "@vue/test-utils";
+import { reactive } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import RunDetail from "~client/components/run/RunDetail.vue";
 import type { RunDetail as RunDetailModel } from "~client/stores/runsStore";
@@ -13,6 +14,69 @@ const { loadDetailMock } = vi.hoisted(() => ({ loadDetailMock: vi.fn() }));
 vi.mock("~client/stores/runsStore", () => ({
   useRunsStore: () => ({ loadDetail: loadDetailMock }),
 }));
+
+interface RunRankRow {
+  category: string;
+  tier: string;
+  division: number;
+  lp: number;
+  bestSpeedMps: number | null;
+  trust: "real" | "derived" | "synthetic" | null;
+  nextTargetSpeedMps: number | null;
+  peakTier: string | null;
+  peakDivision: number | null;
+}
+
+interface RunPrListItem {
+  id: string;
+  category: string;
+  kind: "time" | "speed";
+  value: number;
+  runId: string;
+  achievedAt: string;
+}
+
+// Task 11: mocked the same way runsStore is above — the chip/badge logic is driven directly
+// instead of depending on real network calls (which fail silently in jsdom the way the
+// un-mocked plannedRouteStore already does elsewhere in this file).
+const runRankStore = reactive({
+  ranks: [] as RunRankRow[],
+  prs: [] as RunPrListItem[],
+  ranksLoaded: false,
+  prsLoaded: false,
+  loadRanks: vi.fn(),
+  loadPrs: vi.fn(),
+});
+vi.mock("~client/stores/runRankStore", () => ({
+  useRunRankStore: () => runRankStore,
+}));
+
+function makeRankRow(overrides: Partial<RunRankRow> = {}): RunRankRow {
+  return {
+    category: "5k",
+    tier: "advanced",
+    division: 3,
+    lp: 50,
+    bestSpeedMps: 4,
+    trust: "real",
+    nextTargetSpeedMps: null,
+    peakTier: null,
+    peakDivision: null,
+    ...overrides,
+  };
+}
+
+function makePr(overrides: Partial<RunPrListItem> = {}): RunPrListItem {
+  return {
+    id: "pr1",
+    category: "5k",
+    kind: "speed",
+    value: 4,
+    runId: "run-1",
+    achievedAt: "2026-03-15T07:00:00.000Z",
+    ...overrides,
+  };
+}
 
 const SheetModalStub = {
   props: ["title"],
@@ -50,6 +114,10 @@ function makeDetail(overrides: Partial<RunDetailModel> = {}): RunDetailModel {
 
 beforeEach(() => {
   loadDetailMock.mockReset();
+  runRankStore.ranks = [];
+  runRankStore.prs = [];
+  runRankStore.ranksLoaded = false;
+  runRankStore.prsLoaded = false;
 });
 
 describe("RunDetail", () => {
@@ -119,6 +187,76 @@ describe("RunDetail", () => {
     const loaded = mountDetail();
     await flushPromises();
     expect(loaded.find(".sheet-stub").attributes("data-title")).toBe("Sunday Long Run");
+  });
+
+  it("shows a rank/category chip for the run's nearest category when it's rank-eligible", async () => {
+    loadDetailMock.mockResolvedValue(makeDetail({ distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "5k", tier: "advanced", division: 3 })];
+
+    const wrapper = mountDetail();
+    await flushPromises();
+
+    const chip = wrapper.find(".rank-chip");
+    expect(chip.exists()).toBe(true);
+    expect(chip.text()).toContain("5 km");
+    expect(chip.text()).toContain("FORTGESCHRITTEN");
+    expect(chip.text()).toContain("III");
+  });
+
+  it("shows no rank chip when the run's category has no runRanks entry", async () => {
+    loadDetailMock.mockResolvedValue(makeDetail({ distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "marathon" })];
+
+    const wrapper = mountDetail();
+    await flushPromises();
+
+    expect(wrapper.find(".rank-chip").exists()).toBe(false);
+  });
+
+  it('shows "Neuer Rekord" when this run set a PR', async () => {
+    loadDetailMock.mockResolvedValue(makeDetail({ id: "run-1", distanceM: 5000 }));
+    runRankStore.prs = [makePr({ runId: "run-1" })];
+
+    const wrapper = mountDetail();
+    await flushPromises();
+
+    const prBadge = wrapper.find(".pr-chip");
+    expect(prBadge.exists()).toBe(true);
+    expect(prBadge.text()).toBe("Neuer Rekord");
+  });
+
+  it("does not show 'Neuer Rekord' when a different run holds the PR", async () => {
+    loadDetailMock.mockResolvedValue(makeDetail({ id: "run-1", distanceM: 5000 }));
+    runRankStore.prs = [makePr({ runId: "some-other-run" })];
+
+    const wrapper = mountDetail();
+    await flushPromises();
+
+    expect(wrapper.find(".pr-chip").exists()).toBe(false);
+  });
+
+  it("never shows a rank chip or PR badge for a manual run, even if the data would otherwise match", async () => {
+    loadDetailMock.mockResolvedValue(makeDetail({ id: "run-1", source: "manual", distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "5k" })];
+    runRankStore.prs = [makePr({ runId: "run-1" })];
+
+    const wrapper = mountDetail();
+    await flushPromises();
+
+    expect(wrapper.find(".rank-chip").exists()).toBe(false);
+    expect(wrapper.find(".pr-chip").exists()).toBe(false);
+  });
+
+  it("gives the rank chip and PR badge the earned-moment spring animation, not the plain row entrance", async () => {
+    loadDetailMock.mockResolvedValue(makeDetail({ id: "run-1", distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "5k" })];
+    runRankStore.prs = [makePr({ runId: "run-1" })];
+
+    const wrapper = mountDetail();
+    await flushPromises();
+
+    expect(wrapper.find(".rank-chip").classes()).toContain("pop-in");
+    expect(wrapper.find(".pr-chip").classes()).toContain("pop-in");
   });
 
   it("forwards the sheet's close event", async () => {
