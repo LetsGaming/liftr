@@ -28,6 +28,19 @@ export default defineConfig({
             handler: "StaleWhileRevalidate",
             options: { cacheName: "liftr-api" },
           },
+          // OSM route/run map tiles (RunMap.vue, RouteMapEditor.vue, RouteThumbnail.vue) were
+          // entirely uncached before this — every mount re-fetched every tile from
+          // tile.openstreetmap.org, with no offline story at all. Cross-origin, so the pattern
+          // matches the full URL rather than just a path.
+          {
+            urlPattern: /^https:\/\/tile\.openstreetmap\.org\//,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "osm-tiles",
+              expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 3600 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
       manifest: {

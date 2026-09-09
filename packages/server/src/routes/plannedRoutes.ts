@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { downsamplePolyline } from "@liftr/shared";
 import type { AppDb } from "../db.js";
 import { NotFoundError } from "../lib/errors.js";
 import {
@@ -6,6 +7,7 @@ import {
   findActivePlannedRoutes,
   findPlannedRouteById,
   findPlannedRoutePoints,
+  findPlannedRoutePointsForRoutes,
 } from "../repositories/plannedRouteRepository.js";
 import { createPlannedRoute, previewPlannedRoute, updatePlannedRoute } from "../services/plannedRouteService.js";
 import type { ZodFastifyInstance } from "../types.js";
@@ -44,10 +46,32 @@ const previewResponse = z.object({
   geometrySource: z.enum(["ors", "straight"]),
 });
 
+// List-only: adds a downsampled real polyline (the routed/road-snapped shape, not just the
+// waypoint corners) so a route card can draw an honest map-preview thumbnail without an extra
+// per-route detail fetch. Extends plannedRouteResponse rather than changing it, since that base
+// schema is shared with the detail/create/update handlers below, which already return the full
+// (non-downsampled) `points` array and have no use for this smaller field.
+const plannedRouteListResponse = plannedRouteResponse.extend({
+  polyline: z.array(waypointSchema),
+});
+
 export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/planned-routes", { schema: { response: { 200: z.array(plannedRouteResponse) } } }, async (req) => {
-    return findActivePlannedRoutes(db, req.userId);
-  });
+  app.get(
+    "/api/planned-routes",
+    { schema: { response: { 200: z.array(plannedRouteListResponse) } } },
+    async (req) => {
+      const routes = await findActivePlannedRoutes(db, req.userId);
+      const pointsByRoute = await findPlannedRoutePointsForRoutes(
+        db,
+        routes.map((r) => r.id),
+      );
+      return routes.map((route) => {
+        const points = pointsByRoute.get(route.id);
+        const source = points && points.length >= 2 ? points : route.waypoints;
+        return { ...route, polyline: downsamplePolyline(source.map((p) => ({ lat: p.lat, lon: p.lon }))) };
+      });
+    },
+  );
 
   app.get(
     "/api/planned-routes/:id",

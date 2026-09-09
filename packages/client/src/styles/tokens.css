@@ -464,6 +464,74 @@ textarea::placeholder {
   transform: scale(0.9);
 }
 
+/* Square icon-only action button (edit/more/menu-trigger glyphs, via AppIcon) — was locally
+   redefined per-file at five different sizes (28/32/40/44/44px) with no shared source, so any
+   one of them (RouteList.vue's being the worst offender: only min-width/min-height were set,
+   no background/color/border-radius, so it fell through to the unstyled browser default). One
+   canonical square, sized at the touch-target floor like .btn-close; a call site that genuinely
+   needs a smaller inline glyph (e.g. next to running text) still declares its own scoped rule
+   rather than adding a modifier here, since those are a different shape problem (auto-width,
+   inline with text) than this square/grid button. Not named `.icon-btn` — WorkoutClock.vue
+   already scopes that exact name, and a global class of the same name could silently leak
+   background/border into it. */
+.btn-icon {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  flex: none;
+  display: grid;
+  place-items: center;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.btn-icon:active {
+  transform: scale(0.9);
+}
+.btn-icon.danger {
+  color: var(--red);
+}
+/* Same armed-confirm-tap treatment as .cancel-btn/.delete-run-btn/.rc-menu's own delete row —
+   there is no --danger token in this palette, it's --red/--red-lo. */
+.btn-icon.confirming {
+  background: var(--red-lo);
+  border-color: var(--red);
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Sub-level tablist pills (role="tablist"/role="tab") — promoted from ExerciseInfoPanel.vue,
+   the only place in the app that had both the correct a11y semantics (aria-selected etc., still
+   declared at the call site) and a visual shape distinct from WorkoutRunsSwitcher.vue's boxed,
+   equal-width .wr-switcher/.wr-pill (that one stays local/scoped to WorkoutRunsSwitcher.vue —
+   it's shared between WorkoutPage.vue and RunsPage.vue as a top-level switcher, a different
+   "level" of navigation than this). Borderless pills, not a boxed container; each call site
+   still supplies its own layout modifiers (e.g. flex:1 vs auto-width) as needed. */
+.tab-strip {
+  display: flex;
+  gap: var(--sp2);
+}
+.tab-pill {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab-pill.active {
+  background: var(--surface-3, var(--surface-2));
+  border-color: var(--line-2);
+  color: var(--text);
+}
+
 /* Primary/secondary action buttons — were locally redefined in 12 files with six different
    padding/font-size combinations (drift, not intent). One canonical size each; a call site
    that genuinely needs a different size adds a small modifier (e.g. .btn-primary.btn-lg)

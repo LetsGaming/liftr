@@ -1,5 +1,5 @@
 import { plannedRoutePoints, plannedRoutes, type LiftrDb } from "@liftr/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 /** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx` —
  *  both expose the same query-builder methods these write helpers use, but `tx`'s concrete type
@@ -59,6 +59,28 @@ export function findPlannedRoutePoints(db: LiftrDb, routeId: string) {
     where: eq(plannedRoutePoints.routeId, routeId),
     orderBy: plannedRoutePoints.idx,
   });
+}
+
+/** Same child-via-parent authorization rule as findPlannedRoutePoints — callers must already
+ *  have resolved/authorized every id in `routeIds` (e.g. via findActivePlannedRoutes) before
+ *  calling this. Batches the points fetch for a whole route list into one query instead of one
+ *  round-trip per route, grouped back into a per-route map ordered by idx within each group. */
+export async function findPlannedRoutePointsForRoutes(
+  db: LiftrDb,
+  routeIds: string[],
+): Promise<Map<string, RoutePoint[]>> {
+  const byRoute = new Map<string, RoutePoint[]>();
+  if (routeIds.length === 0) return byRoute;
+  const rows = await db.query.plannedRoutePoints.findMany({
+    where: inArray(plannedRoutePoints.routeId, routeIds),
+    orderBy: [plannedRoutePoints.routeId, plannedRoutePoints.idx],
+  });
+  for (const row of rows) {
+    const list = byRoute.get(row.routeId);
+    if (list) list.push(row);
+    else byRoute.set(row.routeId, [row]);
+  }
+  return byRoute;
 }
 
 export async function insertPlannedRoute(db: LiftrDb, userId: string, values: NewPlannedRoute) {
