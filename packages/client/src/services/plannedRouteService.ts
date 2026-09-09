@@ -24,11 +24,13 @@ export interface PlannedRoute {
   geometrySource: GeometrySource;
   computedAt: string;
   createdAt: string;
+  /** Downsampled real (routed, not just waypoint-corner) shape — list-endpoint only, for drawing
+   *  an honest map-preview thumbnail without a per-route detail fetch. Not present on the detail
+   *  response, which already returns the full, non-downsampled `points` array instead. */
+  polyline: Waypoint[];
 }
 
-export interface PlannedRouteDetail extends PlannedRoute {
-  points: RoutePoint[];
-}
+export type PlannedRouteDetail = Omit<PlannedRoute, "polyline"> & { points: RoutePoint[] };
 
 export interface RoutePreview {
   points: RoutePoint[];

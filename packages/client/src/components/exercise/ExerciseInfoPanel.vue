@@ -204,34 +204,11 @@ function missingBadge(req: TieredRequirement): string | null {
 .sheet-head b {
   font-size: 17px;
 }
-/* Every tab pill uses `flex: 1` so they're equal width — the active pill's own background is
-   what shows "selected" (not a separate underline), so unequal pill widths would mean the
-   highlight visibly changes width when switching tabs, for no reason tied to what's selected.
-   Same segmented-control pattern as WorkoutRunsSwitcher.vue's Workout/Läufe pills. */
-.tab-strip {
-  display: flex;
-  gap: var(--sp2);
-  padding: var(--sp4) var(--sp5) 0;
-}
-.tab-pill {
-  flex: 1;
-  min-width: 0;
-  padding: 7px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  color: var(--dim);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.tab-pill.active {
-  background: var(--surface-3, var(--surface-2));
-  border-color: var(--line-2);
-  color: var(--text);
-}
+/* .tab-strip/.tab-pill now live globally in tokens.css (promoted from here — this was the
+   only correct-a11y implementation of the sub-level tablist pattern in the app, RunsPage.vue's
+   Verlauf/Strecken switcher having hand-duplicated a worse copy of a *different* pattern,
+   WorkoutRunsSwitcher.vue's boxed .wr-switcher). Markup here is unchanged (role="tablist" etc.
+   above); only the CSS moved. */
 .hint {
   color: var(--dim);
   font-size: 13px;
