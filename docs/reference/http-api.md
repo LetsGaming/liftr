@@ -697,7 +697,7 @@ Response `200` (not 201 — this is an idempotent upsert): `runResponse`.
 
 ### `DELETE /api/runs/:id`
 Cascades to `run_points` via FK. GPS-tracked runs *do* feed rank now (see
-[Run ranks](#run-ranks-runrankts) above), but deletion still doesn't trigger a live recompute here
+[Run ranks](#run-ranks-runranksts) above), but deletion still doesn't trigger a live recompute here
 — `runRanks`/`runPrs` are derived caches of the *current* best, not an append-only ledger that
 needs pruning, same reasoning as workout deletion not retroactively undoing past rank state. The
 next rank-eligible run logged in that category recomputes from whatever history remains.
