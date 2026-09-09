@@ -65,8 +65,11 @@ export function logManualRun(input: {
   return api.post("/api/runs", input);
 }
 
-/** Runs don't feed XP/LP (only logged sets do), so unlike workout deletion there's nothing to
- *  recompute server-side. */
+/** Runs *do* feed rank now (see server's `services/runRankService.ts`), but deleting one still
+ *  doesn't need a client-side recompute trigger, unlike logging one: `runRanks`/`runPrs` are
+ *  caches of the *current* best derived from the surviving history, not an append-only ledger
+ *  that needs pruning on delete. The next run logged in that category recomputes from whatever
+ *  history remains — see runRankStore.ts. */
 export function deleteRun(id: string): Promise<void> {
   return api.del(`/api/runs/${id}`);
 }
