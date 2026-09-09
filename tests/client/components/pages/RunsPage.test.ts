@@ -12,6 +12,27 @@ interface RunSummary {
   avgPaceSPerKm: number | null;
 }
 
+interface RunRankRow {
+  category: string;
+  tier: string;
+  division: number;
+  lp: number;
+  bestSpeedMps: number | null;
+  trust: "real" | "derived" | "synthetic" | null;
+  nextTargetSpeedMps: number | null;
+  peakTier: string | null;
+  peakDivision: number | null;
+}
+
+interface RunPrListItem {
+  id: string;
+  category: string;
+  kind: "time" | "speed";
+  value: number;
+  runId: string;
+  achievedAt: string;
+}
+
 // `reactive` isn't available inside vi.hoisted()'s factory (it runs before "vue" itself has been
 // linked, per this project's vi.mock hoisting) — declared as a plain top-of-file const instead,
 // and referenced only inside an uninvoked closure below (`() => runsStore`) so vi.mock's own
@@ -31,6 +52,22 @@ vi.mock("~client/stores/runsStore", () => ({
   useRunsStore: () => runsStore,
 }));
 
+// Task 11: rank/PR chip data — mocked the same way runsStore is above so the chip/badge logic
+// can be driven directly instead of depending on real network calls (which fail silently in
+// jsdom the way the un-mocked plannedRouteStore already does elsewhere in this file).
+const runRankStore = reactive({
+  ranks: [] as RunRankRow[],
+  prs: [] as RunPrListItem[],
+  ranksLoaded: false,
+  prsLoaded: false,
+  loadRanks: vi.fn(),
+  loadPrs: vi.fn(),
+});
+
+vi.mock("~client/stores/runRankStore", () => ({
+  useRunRankStore: () => runRankStore,
+}));
+
 // RunReplay renders a real Leaflet map (RunMap.vue) that throws on incomplete/fake point data
 // in jsdom — already covered at its own layer, so it's stubbed here; RunsPage's own job is just
 // to decide *whether* to render it.
@@ -42,6 +79,7 @@ function makeRun(overrides: Partial<RunSummary> = {}): RunSummary {
 function makeDetail(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: "run1",
+    source: "gpx",
     name: "Morgenlauf",
     startedAt: "2026-01-05T08:00:00.000Z",
     distanceM: 5000,
@@ -53,6 +91,33 @@ function makeDetail(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function makeRankRow(overrides: Partial<RunRankRow> = {}): RunRankRow {
+  return {
+    category: "5k",
+    tier: "advanced",
+    division: 3,
+    lp: 50,
+    bestSpeedMps: 4,
+    trust: "real",
+    nextTargetSpeedMps: null,
+    peakTier: null,
+    peakDivision: null,
+    ...overrides,
+  };
+}
+
+function makePr(overrides: Partial<RunPrListItem> = {}): RunPrListItem {
+  return {
+    id: "pr1",
+    category: "5k",
+    kind: "speed",
+    value: 4,
+    runId: "run1",
+    achievedAt: "2026-01-05T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   runsStore.runs = [];
@@ -60,6 +125,10 @@ beforeEach(() => {
   runsStore.load.mockImplementation(async () => {
     runsStore.loaded = true;
   });
+  runRankStore.ranks = [];
+  runRankStore.prs = [];
+  runRankStore.ranksLoaded = false;
+  runRankStore.prsLoaded = false;
 });
 
 describe("RunsPage", () => {
@@ -124,6 +193,82 @@ describe("RunsPage", () => {
     await wrapper.find(".delete-run-btn").trigger("click");
     await flushAsync();
     expect(runsStore.deleteRun).toHaveBeenCalledWith("run1");
+  });
+
+  it("shows a rank/category chip for the selected run's nearest category when it's rank-eligible", async () => {
+    runsStore.runs = [makeRun()];
+    runsStore.loadDetail.mockResolvedValue(makeDetail({ distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "5k", tier: "advanced", division: 3 })];
+
+    const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
+    await flushAsync();
+
+    const chip = wrapper.find(".rank-chip");
+    expect(chip.exists()).toBe(true);
+    expect(chip.text()).toContain("5 km");
+    expect(chip.text()).toContain("FORTGESCHRITTEN");
+    expect(chip.text()).toContain("III");
+  });
+
+  it("shows no rank chip when the run's category has no runRanks entry", async () => {
+    runsStore.runs = [makeRun()];
+    runsStore.loadDetail.mockResolvedValue(makeDetail({ distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "marathon" })];
+
+    const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
+    await flushAsync();
+
+    expect(wrapper.find(".rank-chip").exists()).toBe(false);
+  });
+
+  it('shows "Neuer Rekord" when the selected run set a PR', async () => {
+    runsStore.runs = [makeRun()];
+    runsStore.loadDetail.mockResolvedValue(makeDetail({ id: "run1", distanceM: 5000 }));
+    runRankStore.prs = [makePr({ runId: "run1" })];
+
+    const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
+    await flushAsync();
+
+    const prBadge = wrapper.find(".pr-chip");
+    expect(prBadge.exists()).toBe(true);
+    expect(prBadge.text()).toBe("Neuer Rekord");
+  });
+
+  it("does not show 'Neuer Rekord' when a different run holds the PR", async () => {
+    runsStore.runs = [makeRun()];
+    runsStore.loadDetail.mockResolvedValue(makeDetail({ id: "run1", distanceM: 5000 }));
+    runRankStore.prs = [makePr({ runId: "some-other-run" })];
+
+    const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
+    await flushAsync();
+
+    expect(wrapper.find(".pr-chip").exists()).toBe(false);
+  });
+
+  it("never shows a rank chip or PR badge for a manual run, even if the data would otherwise match", async () => {
+    runsStore.runs = [makeRun()];
+    runsStore.loadDetail.mockResolvedValue(makeDetail({ id: "run1", source: "manual", distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "5k" })];
+    runRankStore.prs = [makePr({ runId: "run1" })];
+
+    const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
+    await flushAsync();
+
+    expect(wrapper.find(".rank-chip").exists()).toBe(false);
+    expect(wrapper.find(".pr-chip").exists()).toBe(false);
+  });
+
+  it("gives the rank chip and PR badge the earned-moment spring animation, not the plain row entrance", async () => {
+    runsStore.runs = [makeRun()];
+    runsStore.loadDetail.mockResolvedValue(makeDetail({ id: "run1", distanceM: 5000 }));
+    runRankStore.ranks = [makeRankRow({ category: "5k" })];
+    runRankStore.prs = [makePr({ runId: "run1" })];
+
+    const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
+    await flushAsync();
+
+    expect(wrapper.find(".rank-chip").classes()).toContain("pop-in");
+    expect(wrapper.find(".pr-chip").classes()).toContain("pop-in");
   });
 
   it("surfaces a client-side validation error instead of submitting an invalid manual entry", async () => {
