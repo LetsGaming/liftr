@@ -22,19 +22,23 @@ node scripts/dev-up.mjs --id <your-session-id>
 Pick `<your-session-id>` yourself — something short and specific to this task/session (e.g.
 `rank-decay-bug`, `routine-wizard-copy`). This starts an isolated backend + dashboard pair with
 auth open (no `LIFTR_TOKEN` set, so there's no login screen), each on its own automatically-picked
-free port, backed by its own disposable SQLite database. It then ingests the exercise catalog into
-that database and seeds it with realistic mock data so the dashboard shows real content instead of
-empty states: an onboarded profile, owned equipment + gym/plate setup, a bodyweight trend, a custom
-exercise, three routines (Push/Pull/Bein Tag, one with a mesocycle) and ~4 weeks of finished
-workouts across 8 exercises — seeded through the real sync pipeline, not hand-faked, so ranks, PRs,
-streaks, and XP all come out correctly derived. The mock history is deliberately varied: most
-exercises get a locked-in (corroborated) peak rank, one is left intentionally uncorroborated, and
-one (chin-up) is trained early and then abandoned so current-vs-peak rank decay has something real
-to show too. Plus two finished runs — one GPS-tracked (route + replay) and one logged manually (no
-route/HR/elevation, matching the real manual-entry contract) — so both what a run can and can't
-show are covered, plus two planned routes (Tempelhof-Runde with full ORS-style geometry, a second
-left as an unresolved straight-line fallback), with the manual run linked back to the first. It
-prints the dashboard URL, backend URL, and log paths to use.
+free port, backed by its own disposable SQLite database. It then ingests the exercise catalog and
+the running-standards table into that database and seeds it with realistic mock data so the
+dashboard shows real content instead of empty states: an onboarded profile, owned equipment +
+gym/plate setup, a bodyweight trend, a custom exercise, three routines (Push/Pull/Bein Tag, one
+with a mesocycle) and ~4 weeks of finished workouts across 8 exercises — seeded through the real
+sync pipeline, not hand-faked, so ranks, PRs, streaks, and XP all come out correctly derived. The
+mock history is deliberately varied: most exercises get a locked-in (corroborated) peak rank, one
+is left intentionally uncorroborated, and one (chin-up) is trained early and then abandoned so
+current-vs-peak rank decay has something real to show too. Plus a short GPS-tracked run history —
+three 5k-category runs at varied paces on different days (corroborating a 5k rank) and one 8 km run
+that's off any category's exact distance, exercising the Riegel-adjustment path onto the 10k
+category, each run through the same plausibility-gate/rank-recompute pipeline a real GPX import
+uses — and one manually logged run (no route/HR/elevation, matching the real manual-entry contract,
+XP-only with no rank chip since it has no GPS points to rank-eligibility-check against). Plus two
+planned routes (Tempelhof-Runde with full ORS-style geometry, a second left as an unresolved
+straight-line fallback), with the manual run linked back to the first. It prints the dashboard URL,
+backend URL, and log paths to use.
 
 Exercise catalog *images* are the one thing **not** scoped to your session — they're static,
 network-fetched, and identical across every session, so they live in the ordinary shared
