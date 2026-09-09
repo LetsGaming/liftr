@@ -3,7 +3,7 @@
 // running server-side (see rankEngine.ts) and cached into the `ranks` table. Never
 // gated/paywalled.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { ordinal, type Tier } from "@liftr/shared";
+import { ordinal, RUN_CATEGORIES, type RunCategory, type Tier } from "@liftr/shared";
 import { computed, onMounted } from "vue";
 import { LP_EXPLAINER } from "../copy/rankCopy";
 import ProgressChart from "../components/rank/ProgressChart.vue";
@@ -18,12 +18,16 @@ import { useExerciseHistoryCache } from "../composables/useExerciseHistoryCache"
 import { useExerciseName } from "../composables/useExerciseName";
 import { useOverallRankStore } from "../stores/overallRankStore";
 import { useRanksStore } from "../stores/ranksStore";
+import { useRunRankStore, type RunRankRow } from "../stores/runRankStore";
 
 const ranksStore = useRanksStore();
 const overallRank = useOverallRankStore();
+const runRankStore = useRunRankStore();
 onMounted(() => {
   void ranksStore.load();
   void overallRank.load();
+  void runRankStore.loadRanks();
+  void runRankStore.loadOverallRank();
 });
 
 const { exerciseName } = useExerciseName();
@@ -39,6 +43,40 @@ const sortedRanks = computed(() =>
     .slice()
     .sort((a, b) => b.lp - a.lp || ordinal(b.tier as Tier, b.division) - ordinal(a.tier as Tier, a.division)),
 );
+
+// Task 13: Overall Runner Rank section — a second, independent summary sourced from Task 10's
+// runRankStore (/api/runs/ranks + /api/runs/overall-rank), visually parallel to but never merged
+// into the Overall Lifter Rank hero/grid above. RUN_CATEGORIES is a fixed 5-entry list (mile/5k/
+// 10k/half_marathon/marathon), same fixed-row convention RecordsPage.vue's running section
+// already uses — every category always renders, with an honest placeholder for one with no rank
+// yet, rather than a variable-length list like the per-exercise strength grid.
+const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
+  mile: "Meile",
+  "5k": "5 km",
+  "10k": "10 km",
+  half_marathon: "Halbmarathon",
+  marathon: "Marathon",
+};
+
+const runRankByCategory = computed(() => {
+  const out: Partial<Record<RunCategory, RunRankRow>> = {};
+  for (const r of runRankStore.ranks) out[r.category as RunCategory] = r;
+  return out;
+});
+
+/** RankProgress's built-in "next target" formatting assumes a weight×reps pair, which doesn't
+ *  fit a running category's next target (a pace). Formatted here and passed through
+ *  RankProgress's `nextTargetLabel` override instead of forking the component — see that prop's
+ *  own comment. Mirrors RunDetail.vue's/RunsPage.vue's own `formatPace` convention (mm:ss/km),
+ *  converting from the stored m/s speed the same way runRankService.ts's nextTargetSpeedMps is
+ *  defined. */
+function formatNextSpeedTarget(speedMps: number | null): string {
+  if (speedMps == null) return "Nächstes Ziel: ???";
+  const paceSecPerKm = Math.round(1000 / speedMps);
+  const mm = Math.floor(paceSecPerKm / 60);
+  const ss = String(paceSecPerKm % 60).padStart(2, "0");
+  return `Nächstes Ziel: ${mm}:${ss}/km`;
+}
 
 /** "LP" and the ≈ trust marker need an explanation reachable on touch — a `title` attribute
  *  (the ≈'s only prior explanation) doesn't exist on touch, the app's entire platform.
@@ -128,6 +166,57 @@ const sortedRanks = computed(() =>
         </div>
         </div>
       </template>
+
+      <!-- Overall Runner Rank (Task 13) — a second, independent summary, deliberately not merged
+           into the Overall Lifter Rank hero/grid above: its own heading, its own TierLadder
+           instance (fed from runRankStore's overall band instead of overallRankStore's), and its
+           own fixed 5-category grid below it. -->
+      <h2 class="eyebrow run-rank-heading">Lauf-Rang</h2>
+
+      <TierLadder
+        :current-tier="runRankStore.overallCurrent?.tier ?? null"
+        :current-division="runRankStore.overallCurrent?.division ?? null"
+        :peak-tier="runRankStore.overallPeak?.tier ?? null"
+        :peak-division="runRankStore.overallPeak?.division ?? null"
+      />
+
+      <template v-if="!runRankStore.ranksLoaded && !runRankStore.ranksError">
+        <div class="rank-grid run-rank-grid" aria-hidden="true">
+          <div v-for="i in 5" :key="i" class="shimmer run-rank-skel-card surface-hybrid" />
+        </div>
+      </template>
+
+      <p v-else-if="runRankStore.ranksError" class="page-note load-error run-rank-load-error" style="margin-top: var(--sp4)">
+        Lauf-Ränge konnten nicht geladen werden.
+        <button type="button" class="btn-secondary" @click="runRankStore.loadRanks()">Erneut versuchen</button>
+      </p>
+
+      <div v-else class="rank-grid run-rank-grid">
+        <div
+          v-for="category in RUN_CATEGORIES"
+          :key="category"
+          class="rank-card-wrap run-rank-card-wrap"
+          :class="runRankByCategory[category] ? `t-${runRankByCategory[category]!.tier}` : ''"
+        >
+          <div v-if="runRankByCategory[category]" class="rank-card run-rank-card" :class="`t-${runRankByCategory[category]!.tier}`">
+            <TruncatingLabel class="en">{{ RUN_CATEGORY_LABEL[category] }}</TruncatingLabel>
+            <RankProgress
+              variant="card"
+              :tier="runRankByCategory[category]!.tier"
+              :division="runRankByCategory[category]!.division"
+              :lp="runRankByCategory[category]!.lp"
+              :next-target-label="formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
+              :trust="runRankByCategory[category]!.trust ?? 'real'"
+              :peak-tier="runRankByCategory[category]!.peakTier"
+              :peak-division="runRankByCategory[category]!.peakDivision"
+            />
+          </div>
+          <div v-else class="rank-card run-rank-card run-rank-empty">
+            <TruncatingLabel class="en">{{ RUN_CATEGORY_LABEL[category] }}</TruncatingLabel>
+            <p class="run-rank-empty-note">Noch kein Rang — lauf diese Distanz, um zu starten.</p>
+          </div>
+        </div>
+      </div>
     </IonContent>
   </IonPage>
 </template>
@@ -283,6 +372,21 @@ const sortedRanks = computed(() =>
   box-shadow: var(--surface-hybrid-shadow);
   border-radius: 0 0 var(--r-lg) var(--r-lg);
   margin-top: -1px;
+}
+/* Overall Runner Rank section (Task 13) — reuses .rank-grid/.rank-card/.rank-card-wrap's
+   existing tier-gradient recipe wholesale (composed alongside these run-rank-* classes) rather
+   than duplicating that CSS, matching RecordsPage.vue's own "Lauf-" prefixed heading convention
+   for its parallel running section. */
+.run-rank-heading {
+  margin-top: var(--sp5);
+}
+.run-rank-skel-card {
+  height: 128px;
+  border-radius: var(--r-lg);
+}
+.run-rank-empty-note {
+  font-size: 12.5px;
+  color: var(--dim);
 }
 .chart-slot::after {
   content: "";

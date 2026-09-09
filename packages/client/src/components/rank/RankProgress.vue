@@ -21,6 +21,12 @@ const props = withDefaults(
     lp: number;
     nextTargetWeightKg?: number | null;
     nextTargetReps?: number | null;
+    /** Pre-formatted override for the "next target" line, for callers whose target isn't a
+     *  weight×reps pair (e.g. RanksPage.vue's running rows, where the next target is a pace).
+     *  Takes precedence over nextTargetWeightKg/nextTargetReps when set — this keeps the
+     *  weight/reps formatting (and its "???" fallback) as the strength-specific default while
+     *  letting a caller opt into fully custom wording instead of forking this component. */
+    nextTargetLabel?: string | null;
     trust?: "real" | "derived" | "synthetic";
     /** "card" — badge left, stacked text right (Ränge grid). "inline" — compact single row
      *  for the active-workout focus column, where vertical space is scarce. */
@@ -43,6 +49,7 @@ const props = withDefaults(
   {
     nextTargetWeightKg: null,
     nextTargetReps: null,
+    nextTargetLabel: null,
     trust: "real",
     variant: "card",
     peakTier: null,
@@ -72,6 +79,7 @@ const trustLabel = computed(() => {
 });
 
 const nextLabel = computed(() => {
+  if (props.nextTargetLabel != null) return props.nextTargetLabel;
   // Both targets null means the top of the currently-modeled standards has been reached —
   // "???" invites "what's next?" instead of flatly stating there's nothing left, which reads as
   // a dead end. A real next target still renders normally below.
