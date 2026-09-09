@@ -57,7 +57,7 @@ from the repo root; package-level scripts can be run either via `pnpm --filter <
 
 | Command | What it does |
 |---|---|
-| `pnpm ingest` | `pnpm --filter @liftr/ingest start` → `tsx src/index.ts`. Runs the exercise-catalog ingest (and, with `--images`, mirrors demo photos into `LIFTR_IMAGES_DIR` — see that route's notes in [http-api.md](./http-api.md#exercises-exercisests)). Reach for this after editing the catalog source data, or on a fresh checkout before the exercise list will show anything. |
+| `pnpm ingest` | `pnpm --filter @liftr/ingest start` → `tsx src/index.ts`. Runs the exercise-catalog ingest (and, with `--images`, mirrors demo photos into `LIFTR_IMAGES_DIR` — see that route's notes in [http-api.md](./http-api.md#exercises-exercisests); and, with `--run-standards`, (re)writes the whole `run_standards` table so running rank/PR recompute has thresholds to resolve against). Reach for this after editing the catalog source data, or on a fresh checkout before the exercise list will show anything. |
 | `pnpm bootstrap` | `pnpm --filter @liftr/ingest bootstrap` → `tsx src/bootstrap.ts`. First-run seed — also invoked automatically as the first step of `pnpm dev`, so you don't normally need to run it by hand. |
 
 ## Other

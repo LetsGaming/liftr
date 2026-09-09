@@ -77,21 +77,27 @@ node scripts/dev-down.mjs --id my-session   # stop + clean up when done
    `data/agent-<id>/liftr.db`, `LIFTR_TOKEN` unset so auth is open — no login screen) and the
    client dev server (`BACKEND_PORT` env var, which `vite.config.ts`'s proxy target reads, so it
    talks to *this* session's backend instead of the default `:3001`).
-2. Ingests the exercise catalog into that fresh database (`tools/catalog/curated.yaml`) — always,
-   since a new database starts empty. Catalog *images* are the one part of this that's shared, not
-   per-session: they're static, network-fetched, and identical across every session, so they live
-   in the ordinary `data/images/` dir (same one `pnpm dev`'s bootstrap uses) and are only fetched
-   once per machine, the first session that needs them.
+2. Ingests the exercise catalog *and* the running-standards table into that fresh database
+   (`tools/catalog/curated.yaml`, plus `ingestRunStandards`'s 270-row `run_standards` table) —
+   always, since a new database starts empty and running rank/PR recompute has nothing to resolve
+   against without it. Catalog *images* are the one part of this that's shared, not per-session:
+   they're static, network-fetched, and identical across every session, so they live in the
+   ordinary `data/images/` dir (same one `pnpm dev`'s bootstrap uses) and are only fetched once per
+   machine, the first session that needs them.
 3. Seeds realistic mock data via `scripts/seed-mock-data.ts` — an onboarded profile, owned
    equipment + gym/plate setup, a bodyweight trend, a custom exercise, three routines (one with a
    mesocycle), and ~4 weeks of finished workouts, fed through the real sync pipeline
    (`applySyncBatch`) so ranks, PRs, streaks, and XP are all correctly derived rather than
-   hand-computed. Plus two finished runs — one GPS-tracked (route + replay) and one logged
-   manually (no route/HR/elevation, matching the real manual-entry contract) — so both what a
-   run can and can't show are covered, not just the GPS happy path. Also two planned routes,
-   written straight through `plannedRouteRepository` (never via the OpenRouteService adapter, so
-   this stays fully offline): Tempelhof-Runde with full ORS-style geometry, and a second left as
-   an unresolved straight-line fallback — the manual run above is linked back to the first.
+   hand-computed. Plus a short GPS-tracked run history — three 5k-category runs at varied paces on
+   different days (corroborating a 5k rank) and one 8 km run that's off any category's exact
+   distance, exercising the Riegel-adjustment path onto the 10k category — each pushed through the
+   same plausibility-gate → rank-recompute pipeline a real GPX import uses, plus one manually
+   logged run (no route/HR/elevation, matching the real manual-entry contract, and — since a
+   manual run has no GPS points to rank-eligibility-check against — XP-only, no rank chip). So both
+   what a run can and can't show, rank-wise, are covered, not just the GPS happy path. Also two
+   planned routes, written straight through `plannedRouteRepository` (never via the OpenRouteService
+   adapter, so this stays fully offline): Tempelhof-Runde with full ORS-style geometry, and a second
+   left as an unresolved straight-line fallback — the manual run above is linked back to the first.
 
 `dev-down.mjs --id my-session` stops exactly the two processes that id's `dev-up.mjs` started (by
 recorded PID, never a broad kill) and deletes `data/agent-<id>/` + `logs/agent-<id>/` — never the
@@ -112,8 +118,10 @@ working instance. It:
      this is why `pnpm dev` can run it on every boot without slowing anything down.
    - **If no** (first run, or after wiping `data/`), it runs the full ingest chain: parses
      `tools/catalog/curated.yaml`, loads the exercise catalog + strength standards into the db,
-     generates the German exercise-name i18n file, and pulls in exercise photos and muscle-map
-     assets.
+     generates the German exercise-name i18n file, (re)writes the running-standards table
+     (`ingestRunStandards` — without this, every running rank/PR recompute silently returns
+     nothing, since it has no thresholds to resolve against), and pulls in exercise photos and
+     muscle-map assets.
 
 The very first `pnpm dev` you run will take noticeably longer (it's doing a real ingest, including
 some network fetches for images). Every run after that is fast, because the guard above

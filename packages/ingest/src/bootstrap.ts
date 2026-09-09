@@ -1,7 +1,7 @@
 /**
  * `pnpm --filter @liftr/ingest bootstrap` (or root `pnpm bootstrap`). Wiping the data/ folder
- * removes the third-party catalog/standards/images/muscle assets along with it, and nothing
- * re-ingests them on its own. Migrations already run automatically on server boot (see
+ * removes the third-party catalog/standards/run-standards/images/muscle assets along with it, and
+ * nothing re-ingests them on its own. Migrations already run automatically on server boot (see
  * @liftr/db's runMigrations, wired into buildApp); this covers the rest of "starting from
  * scratch" — the assets that only ever come from this CLI (index.ts's own "never run from the
  * running server" rule for the network-bound steps still holds; this script is still the CLI,
@@ -19,6 +19,7 @@ import { loadCatalog, ingestCatalog } from "./ingestCatalog.js";
 import { ingestImages } from "./ingestImages.js";
 import { ingestMuscleAssets } from "./ingestMuscleAssets.js";
 import { ingestStandards } from "./ingestStandards.js";
+import { ingestRunStandards } from "./ingestRunStandards.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../..");
@@ -37,11 +38,12 @@ async function main() {
     return;
   }
 
-  console.log("bootstrap: no exercises found — running full ingest (catalog, standards, images, muscle assets)...");
+  console.log("bootstrap: no exercises found — running full ingest (catalog, standards, run standards, images, muscle assets)...");
   const entries = await loadCatalog(CATALOG_PATH);
   await ingestCatalog(db, CATALOG_PATH);
   await generateExerciseI18n(entries, I18N_OUT_PATH);
   await ingestStandards(db, entries);
+  await ingestRunStandards(db);
   await ingestImages(entries, IMAGES_DIR);
   await ingestMuscleAssets(IMAGES_DIR);
   console.log("bootstrap: done.");

@@ -93,8 +93,8 @@ pnpm ingest --catalog
 
 This is the `@liftr/ingest` CLI's catalog step (see
 [`packages/ingest/src/index.ts`](../../packages/ingest/src/index.ts) for the full flag list —
-`--all`, `--catalog`, `--images`, `--muscles`, `--standards`; no flags at all is equivalent to
-`--all`). `--catalog` re-parses `curated.yaml`, upserts muscles + exercises +
+`--all`, `--catalog`, `--images`, `--muscles`, `--standards`, `--run-standards`; no flags at all is
+equivalent to `--all`). `--catalog` re-parses `curated.yaml`, upserts muscles + exercises +
 exercise-muscle links, resolves equipment, and regenerates the German exercise-name i18n file
 (`packages/client/src/locales/exercises.de.json`). It's idempotent — safe to re-run after further
 edits.
@@ -114,6 +114,12 @@ pnpm ingest --standards
 to regenerate that exercise's strength-standard thresholds (the catalog header calls this out
 directly: "adjust here and re-run `pnpm ingest --standards`"). When in doubt, running the whole
 chain (`pnpm ingest --all`, or the ingest step alone) is always safe — every step is idempotent.
+
+`--run-standards` is unrelated to this guide's catalog entries (running has no per-exercise
+standards) — it (re)writes the whole `run_standards` table from
+[`packages/shared/src/rank/runStandards.ts`](../../packages/shared/src/rank/runStandards.ts)'s
+`buildRunStandards()`. It's already covered by `--all`/`pnpm bootstrap`, so you only need it by
+hand if you edit that file's running-category anchor data directly.
 
 Note: never invoke ingest from the running server — it's a manual, standalone CLI (see the
 docblock at the top of `index.ts`).
