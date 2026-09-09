@@ -228,6 +228,70 @@ describe("recomputeRunRank", () => {
     expect(femaleResult!.tier).toBe("athlete"); // 3.333 clears the female athlete threshold of 3.0
   });
 
+  it("stores the Riegel-equivalent time (not the raw duration) for an off-distance best run", async () => {
+    await db.insert(runStandards).values([
+      { category: "10k", sex: "male", tier: "apprentice", division: 3, threshold: 3.0, trust: "real" },
+    ]);
+    // Same off-distance scenario as the reproduction found via the default dev seed: an
+    // 8000m/2480s run buckets into "10k" (nearest category) via non-trivial Riegel adjustment
+    // (ratio != 1), so a bug that stores the raw durationS instead of the category-equivalent
+    // time is only observable here, never on an exact-category-distance run.
+    const startedAt = new Date();
+    const run = await insertRun(db, OWNER_USER_ID, {
+      source: "gpx",
+      name: null,
+      startedAt,
+      clientId: "off-distance-run",
+      distanceM: 8000,
+      durationS: 2480,
+      avgPaceSPerKm: (2480 / 8000) * 1000,
+    });
+    await insertRunPoints(db, run.id, [
+      { idx: 0, t: startedAt.getTime(), lat: 52.0, lon: 13.0 },
+      { idx: 1, t: startedAt.getTime() + 2480 * 1000, lat: 52.01, lon: 13.01 },
+    ]);
+
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "10k");
+    expect(result!.newPr).not.toBeNull();
+
+    // Same formula runRankValue/riegelPredictedTimeS use internally (10k uses the 1.06 exponent).
+    const expectedEquivalentTimeS = 2480 * Math.pow(10000 / 8000, 1.06);
+    const timePrRow = await db.query.runPrs.findFirst({
+      where: and(eq(runPrs.userId, OWNER_USER_ID), eq(runPrs.category, "10k"), eq(runPrs.kind, "time")),
+    });
+    expect(timePrRow?.value).toBeCloseTo(expectedEquivalentTimeS, 0);
+    // The bug this regresses: storing the run's raw, un-normalized duration as if it were a real
+    // 10K time (2480s = "41:20" — a run that was never actually run at 10K).
+    expect(Math.abs((timePrRow?.value ?? 0) - 2480)).toBeGreaterThan(500);
+  });
+
+  it("skips a historical run with a non-finite Riegel speed (durationS<=0) instead of letting it poison the category's rank", async () => {
+    await seedStandards();
+    await logRun(1500); // valid apprentice/III run, 3.333 m/s
+
+    // A degenerate row (durationS=0) that could arise from a malformed GPX/FIT import — Riegel's
+    // division makes its speed Infinity, which would otherwise beat any real run and win as
+    // `bestRun`/`bestSpeedMps`, poisoning the persisted rank row with a non-finite value.
+    const degenerateStartedAt = new Date();
+    const degenerateRun = await insertRun(db, OWNER_USER_ID, {
+      source: "gpx",
+      name: null,
+      startedAt: degenerateStartedAt,
+      clientId: "degenerate-run",
+      distanceM: 5000,
+      durationS: 0,
+      avgPaceSPerKm: null,
+    });
+    await insertRunPoints(db, degenerateRun.id, [{ idx: 0, t: degenerateStartedAt.getTime(), lat: 52.0, lon: 13.0 }]);
+
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+
+    expect(result).not.toBeNull();
+    expect(Number.isFinite(result!.lp)).toBe(true);
+    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    expect(row?.bestSpeedMps).toBeCloseTo(3.333, 2);
+  });
+
   it("keeps separate rows per category (findAllRunRanks sanity)", async () => {
     await seedStandards();
     await db.insert(runStandards).values([

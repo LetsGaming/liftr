@@ -17,6 +17,7 @@ import {
   applySessionRecoveryGain,
   nextTargetAtOrdinal,
   runRankValue,
+  RUN_CATEGORY_DISTANCE_M,
   type StandardThreshold,
   type RunPlausibilityReason,
   type RunCategory,
@@ -66,6 +67,11 @@ export async function recomputeRunRank(
 
   for (const run of loggedRuns) {
     const { speedMps } = runRankValue(run.distanceM, run.durationS);
+    // A degenerate historical row (distanceM<=0 or durationS<=0, e.g. from a malformed GPX/FIT
+    // import that skipped manual-entry's `.positive()` validation) produces a non-finite speed via
+    // Riegel's division — skip it here so one bad row can't poison this category's whole rank with
+    // a NaN that would otherwise flow into resolveRank and get persisted on the runRanks row.
+    if (!Number.isFinite(speedMps)) continue;
     if (speedMps > bestSpeedMps) {
       bestSpeedMps = speedMps;
       bestRun = run;
@@ -215,16 +221,23 @@ export async function recomputeRunRank(
       newPr = { kind: "speed", value: bestSpeedMps };
     }
 
+    // The "time" PR must be the category-equivalent time at the category's exact distance — the
+    // exact reciprocal of the already-computed (Riegel-normalized) bestSpeedMps — not the run's raw
+    // wall-clock durationS. For an exact-category-distance run these are numerically identical (the
+    // Riegel adjustment is a no-op), but for an off-distance run storing the raw duration produces
+    // a materially false record (e.g. an 8000m run bucketed into "10k" would otherwise store its
+    // raw 8K time as a "10K" record).
+    const equivalentTimeS = RUN_CATEGORY_DISTANCE_M[category] / bestSpeedMps;
     const existingTimePr = await findBestRunPrByKind(db, userId, category, "time");
-    if (!existingTimePr || bestRun.durationS < existingTimePr.value) {
+    if (!existingTimePr || equivalentTimeS < existingTimePr.value) {
       await insertRunPr(db, userId, {
         category,
         kind: "time",
-        value: bestRun.durationS,
+        value: equivalentTimeS,
         runId: bestRun.id,
         achievedAt: bestRun.startedAt,
       });
-      if (!newPr) newPr = { kind: "time", value: bestRun.durationS };
+      if (!newPr) newPr = { kind: "time", value: equivalentTimeS };
     }
   }
 
