@@ -48,6 +48,41 @@ and applies `computeSetXp` with the right occurrence number. `GET /api/xp` and a
 computing a total must go through this rather than re-summing `computeSetXp` directly, or the
 repeat-decay silently stops applying.
 
+## Run XP
+
+`computeRunXp(runs)` in `packages/shared/src/math/runXp.ts` is the run-side sibling of
+`computeTotalXp` above — same anti-grinding philosophy (decay toward a floor on repetition, never
+to zero), adapted for the fact that, unlike a repeated identical set, two different run distances
+genuinely are different runs:
+
+- **Linear in distance, not flattened.** A single run's base XP is `(distanceM / 1000) *
+  RUN_XP_PER_KM` — unlike `computeSetXp`, which deliberately flattens out the weight typed, a run's
+  raw magnitude legitimately scales with how far it covered. The anti-grinding protection lives
+  entirely in the decay term below, not in the base formula.
+- **Repeat-distance decay keys on a rounded distance *bucket*, not an exact match.** Runs are
+  quantized to the nearest 500m (`quantizeDistanceForDecay`) before being tracked as an
+  "occurrence" of that bucket — a 5K, a 6K, and a 10K each get their own independent occurrence
+  counter, while cosmetic GPS-noise differences in an otherwise-repeated route (5.02 km vs.
+  4.98 km) collapse into the same bucket and correctly decay together. The decay curve itself
+  (`repeatRunMultiplier`) reuses the exact same shape and constants as `repeatSetMultiplier`.
+- **Manual runs are XP-only, always at full multiplier.** `plausibilityMultiplier` on
+  `RunXpInput` defaults to 1 — the run-specific plausibility gate
+  ([rank-engine.md](./rank-engine.md#running-ranks)) never runs against a manual entry, since there
+  are no `run_points` to independently check `distanceM` against. A GPS-tracked run's XP is
+  discounted by that same multiplier the same way its rank contribution is.
+- **Pure, no persistence.** `computeRunXp` sums a full run history fresh on every read (called by
+  `getRunXpSummary`, Task 10's server-side summary), matching the "no XP ledger table" invariant
+  `computeTotalXp` already established for strength.
+
+### One level, two disciplines
+
+Running and strength XP are **not** tracked as separate totals feeding separate level curves.
+Whatever `computeRunXp` returns is added straight into the same total that `computeTotalXp` feeds,
+and that combined total is what `computeLevel` converts into a level — there's exactly one global
+level, the same "no new reward currencies" principle the rest of this document already commits to.
+A lifter who never runs and a runner who never lifts climb the same curve; a lifter who does both
+just gets there from two directions at once.
+
 ## Session-level bonuses
 
 Two bonuses fire **once per finished workout**, computed in `syncService.ts`'s

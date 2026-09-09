@@ -54,6 +54,21 @@ For the full mechanics behind any of these, follow the link to the concept doc t
 - **Overall Lifter Rank** — the one account-level aggregate: a trust-weighted average of
   continuous ordinal position across every ranked exercise. The single number answering "how good
   a lifter am I, overall," on top of otherwise-independent per-exercise ladders.
+- **Category (running)** — one of five fixed running distances Liftr ranks against: Mile, 5K, 10K,
+  Half Marathon, Marathon. Every run is bucketed into whichever category its actual distance is
+  *nearest* to; a run's category is derived at read/recompute time, never stored as its own column.
+  Otherwise uses the same Tier/Division/LP/Peak/Corroboration/Decay/Plausibility vocabulary above —
+  see [rank-engine.md](./rank-engine.md#running-ranks).
+- **Riegel equivalence** — the power-law race-time-prediction formula used to normalize a run's
+  actual (distance, duration) onto its assigned category's exact distance before ranking it, so an
+  8km run and a "true" 10K aren't compared unfairly. See
+  [rank-engine.md](./rank-engine.md#running-ranks) and
+  `packages/shared/src/math/riegel.ts` for the exponents (not restated here since they're a tuning
+  value that could drift).
+- **Overall Runner Rank** — the running analog of Overall Lifter Rank: the same trust-weighted
+  ordinal-position average, computed over running categories instead of exercises. A genuinely
+  separate aggregate, not blended into Overall Lifter Rank. See
+  [rank-engine.md](./rank-engine.md#running-ranks).
 
 ### XP, levels, and streaks
 
