@@ -6,6 +6,7 @@
  */
 import { computeReadiness } from "@liftr/shared";
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getReadiness, type MuscleLastTrained } from "../services/readinessService";
 import { useSettingsStore } from "./settingsStore";
 
@@ -39,15 +40,11 @@ export const useReadinessStore = defineStore("readiness", {
   },
   actions: {
     async load() {
-      try {
-        this.rows = await getReadiness();
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
-        // needs to tell "still fetching" from "failed" apart.
-        this.error = true;
-      }
+      await withLoadState(getReadiness, {
+        apply: (rows) => (this.rows = rows),
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
   },
 });

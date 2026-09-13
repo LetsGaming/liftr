@@ -15,20 +15,10 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "./lib/parseArgs.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-
-function parseArgs(argv) {
-  const args = { id: "default" };
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--id" && argv[i + 1] !== undefined) args.id = argv[++i];
-  }
-  if (!/^[a-zA-Z0-9_-]+$/.test(args.id)) {
-    throw new Error(`--id must be alphanumeric/dash/underscore only, got: ${args.id}`);
-  }
-  return args;
-}
 
 /** Kills exactly this one PID (and, on Windows, its child processes) — never a pattern/name-based kill, so it can't touch an unrelated process that happens to share a port or process name. */
 function killPid(pid, label, log) {

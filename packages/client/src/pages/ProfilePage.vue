@@ -2,171 +2,57 @@
 // Profil & Einstellungen. Bodyweight log lives here — enough to close the rank-engine's
 // hardcoded-75kg fallback gap. Auth token entry also lives here as a fallback path — the
 // primary path is the AuthGate prompt on first 401.
+// Split into composables (each owns its own loading/error state) since this page used to mix
+// six+ unrelated concerns directly in its script setup — see composables/use{ProfileForm,
+// GymSetup,HealthConnectImport,DataExport}.ts.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import AppIcon from "../components/ui/AppIcon.vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import StatTile from "../components/ui/StatTile.vue";
-import { useToast } from "../composables/useToast";
-import {
-  importNewHealthConnectWorkouts,
-  isHealthConnectAvailable,
-  requestHealthConnectPermissions,
-} from "../health/healthConnect";
+import { useDataExport } from "../composables/useDataExport";
+import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
+import { useHealthConnectImport, isHealthConnectAvailable } from "../composables/useHealthConnectImport";
+import { useProfileForm } from "../composables/useProfileForm";
 import { getToken, setToken } from "../lib/api";
-import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE, SUPPORT_EQUIPMENT_SLUGS } from "../lib/equipmentIcons";
-import { fetchExportZip } from "../services/exportService";
+import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
 import { useBodyweightStore } from "../stores/bodyweightStore";
-import { useSettingsStore, type ExperienceLevel } from "../stores/settingsStore";
+import { useSettingsStore } from "../stores/settingsStore";
 import { useThemeStore } from "../stores/themeStore";
 import { useXpStore } from "../stores/xpStore";
 
 const bodyweight = useBodyweightStore();
 const theme = useThemeStore();
 const xp = useXpStore();
-const { toast } = useToast();
+const settingsStore = useSettingsStore();
 const weightInput = ref("");
 const saving = ref(false);
 
-// Trainingsprofil — onboarding's answers, editable again later ("alles lässt sich später im
-// Profil ändern", per OnboardingGuide.vue's own hint text). Local drafts seeded from the store
-// once it's loaded, same pattern OnboardingGuide.vue itself uses.
-const settingsStore = useSettingsStore();
-const sex = ref<"male" | "female" | null>(null);
-const birthYearInput = ref("");
-const experienceLevel = ref<ExperienceLevel | null>(null);
-const workoutsPerWeek = ref(3);
-// Defaults to bodyweight-owned even before the store loads (same default as onboarding's
-// OnboardingDraft.ts) — a profile with no saved equipment yet (server returns null, e.g. a
-// brand-new account) must never render as "nothing owned, not even your own body".
-const equipment = ref<Set<string>>(new Set(["bodyweight"]));
-const profileSaving = ref(false);
-const equipmentSaving = ref(false);
+const { sex, birthYearInput, experienceLevel, workoutsPerWeek, profileSaving, saveProfileCard } = useProfileForm(settingsStore);
+const {
+  equipment,
+  equipmentSaving,
+  toggleEquipment,
+  saveEquipmentCard,
+  ownedBarTypes,
+  gymSaving,
+  plateCount,
+  adjustPlateCount,
+  barWeight,
+  adjustBarWeight,
+  saveGymCard,
+} = useGymSetup(settingsStore);
+const { healthConnectStatus, healthConnectBusy, connectHealthConnect } = useHealthConnectImport();
+const { exporting, exportError, exportData } = useDataExport();
 
-watch(
-  () => settingsStore.profile,
-  (profile) => {
-    if (!profile) return;
-    sex.value = profile.sex ?? null;
-    birthYearInput.value = profile.birthYear ? String(profile.birthYear) : "";
-    experienceLevel.value = profile.experienceLevel ?? null;
-    workoutsPerWeek.value = profile.workoutsPerWeek ?? 3;
-  },
-  { immediate: true },
-);
-watch(
-  () => settingsStore.ownedEquipment,
-  (owned) => {
-    // Bodyweight is always available (everyone has a body) — force it into the set
-    // regardless of what the server has on record, same guarantee as onboarding's
-    // OnboardingDraft.ts default (`new Set(["bodyweight"])`), so a stored profile that
-    // predates this fix (or one saved without it, see the toggle guard below) still shows
-    // it as owned instead of silently reverting to "not selected".
-    if (owned) equipment.value = new Set([...owned, "bodyweight"]);
-  },
-  { immediate: true },
-);
-
-// Bodyweight can never be deselected — every user has a body, so unchecking it would just
-// break exercise suggestions for no real-world reason (same fix as onboarding's equipment
-// step is meant to have). Guard here rather than disabling the chip outright so it still
-// reads as "on" rather than as a dead control.
-function toggleEquipment(slug: string) {
-  if (slug === "bodyweight") return;
-  if (equipment.value.has(slug)) equipment.value.delete(slug);
-  else equipment.value.add(slug);
-}
-
-// "plates" is implied by owning a barbell/ez-bar/trap-bar (requirements.ts's
-// withImpliedPlates) — never a pickable chip here, same as onboarding's EquipmentStep.
-const supportEquipmentSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !== "plates");
-
-// Scheiben & Stange — lets the user specify which weight plates they have, so the app can show
-// how to load the barbell. Onboarding-only settings that can't be edited again would be a trap,
-// so this mirrors the wizard's PlatesStep here on the settings page instead. Includes the
-// adjustable-dumbbell handle weight too (unlike onboarding's 3-type step) — a rarer setup,
-// better offered here where it doesn't add a 4th row to first-run onboarding.
-type BarType = "barbell" | "ez-bar" | "trap-bar" | "dumbbell";
-const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar", "dumbbell"];
-const BAR_LABEL_DE: Record<BarType, string> = { barbell: "Langhantel", "ez-bar": "SZ-Stange", "trap-bar": "Trap-Bar", dumbbell: "Kurzhantel-Griff" };
-const DEFAULT_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 20, "ez-bar": 10, "trap-bar": 25, dumbbell: 2.5 };
-const ownedBarTypes = computed(() => BAR_TYPES.filter((t) => equipment.value.has(t)));
-
-const PLATE_SIZES_KG = [25, 20, 15, 10, 5, 2.5, 1.25, 1];
-const barWeightsKg = ref<Map<BarType, number>>(new Map());
-const plateCounts = ref<Map<number, number>>(new Map());
-const gymSaving = ref(false);
-
-watch(
-  () => settingsStore.gymSetup,
-  (gym) => {
-    if (!gym) return;
-    barWeightsKg.value = new Map(Object.entries(gym.barWeights) as [BarType, number][]);
-    plateCounts.value = new Map(gym.plates.map((p) => [p.weightKg, p.count]));
-  },
-  { immediate: true },
-);
-
-function plateCount(weightKg: number): number {
-  return plateCounts.value.get(weightKg) ?? 0;
-}
-function adjustPlateCount(weightKg: number, delta: number) {
-  const next = Math.max(0, plateCount(weightKg) + delta);
-  if (next === 0) plateCounts.value.delete(weightKg);
-  else plateCounts.value.set(weightKg, next);
-}
-function barWeight(type: BarType): number {
-  return barWeightsKg.value.get(type) ?? DEFAULT_BAR_WEIGHT_KG[type];
-}
-function adjustBarWeight(type: BarType, delta: number) {
-  barWeightsKg.value.set(type, Math.min(50, Math.max(1, barWeight(type) + delta)));
-}
-async function saveGymCard() {
-  gymSaving.value = true;
-  try {
-    const plates = [...plateCounts.value.entries()].filter(([, count]) => count > 0).map(([weightKg, count]) => ({ weightKg, count }));
-    const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
-    await settingsStore.saveGymSetup({ barWeights, plates });
-    toast("Scheiben & Stange gespeichert.");
-  } finally {
-    gymSaving.value = false;
-  }
-}
-
-const birthYear = computed(() => {
-  const v = Number(birthYearInput.value);
-  return Number.isInteger(v) && v >= 1900 && v <= new Date().getFullYear() ? v : undefined;
-});
-
-async function saveProfileCard() {
-  profileSaving.value = true;
-  try {
-    await settingsStore.saveProfile({
-      ...(sex.value ? { sex: sex.value } : {}),
-      ...(birthYear.value ? { birthYear: birthYear.value } : {}),
-      ...(experienceLevel.value ? { experienceLevel: experienceLevel.value } : {}),
-      workoutsPerWeek: workoutsPerWeek.value,
-    });
-    toast("Trainingsprofil gespeichert.");
-  } finally {
-    profileSaving.value = false;
-  }
-}
-
-async function saveEquipmentCard() {
-  equipmentSaving.value = true;
-  try {
-    await settingsStore.saveEquipment([...equipment.value]);
-    toast("Equipment gespeichert.");
-  } finally {
-    equipmentSaving.value = false;
-  }
-}
+// API-Token: a locally-generated bearer token the user must verify before saving, not a login
+// credential shared across services — masking it with no way to reveal would prevent confirming
+// what was typed. Defaults masked. Small enough to leave on the page rather than its own composable.
 const tokenInput = ref(getToken());
-/** This is a locally-generated bearer token the user must verify before saving, not a login
- *  credential shared across services — masking it with no way to reveal would prevent confirming
- *  what was typed. Defaults masked. */
 const tokenVisible = ref(false);
+function saveToken() {
+  setToken(tokenInput.value.trim());
+}
 
 onMounted(() => {
   void bodyweight.load();
@@ -186,55 +72,6 @@ async function saveWeight() {
     weightInput.value = "";
   } finally {
     saving.value = false;
-  }
-}
-
-function saveToken() {
-  setToken(tokenInput.value.trim());
-}
-
-// Health Connect import is native-only (Android), so this whole card is hidden on web/iOS
-// builds rather than shown broken. One-time permission grant here; the actual import check
-// then happens automatically on every app resume (see syncStore.ts).
-const healthConnectStatus = ref("");
-const healthConnectBusy = ref(false);
-async function connectHealthConnect() {
-  healthConnectBusy.value = true;
-  try {
-    const granted = await requestHealthConnectPermissions();
-    if (!granted) {
-      healthConnectStatus.value = "Health Connect hat nicht alle Freigaben bekommen — bitte in den Health-Connect-Einstellungen nachtragen.";
-      return;
-    }
-    const count = await importNewHealthConnectWorkouts();
-    healthConnectStatus.value = count > 0 ? `${count} Lauf/Läufe importiert.` : "Verbunden — keine neuen Läufe gefunden.";
-  } catch (err) {
-    healthConnectStatus.value = err instanceof Error ? err.message : "Verbindung fehlgeschlagen.";
-  } finally {
-    healthConnectBusy.value = false;
-  }
-}
-
-// CSV/ZIP backup — lets the user take their data with them, not just keep it offline-safe on
-// the server. Raw fetch + blob, same pattern as runsStore.importGpx, since this needs the
-// bearer header but isn't a JSON request/response.
-const exporting = ref(false);
-const exportError = ref("");
-async function exportData() {
-  exporting.value = true;
-  exportError.value = "";
-  try {
-    const blob = await fetchExportZip();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `liftr-export-${new Date().toISOString().slice(0, 10)}.zip`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    exportError.value = err instanceof Error ? err.message : "Export fehlgeschlagen";
-  } finally {
-    exporting.value = false;
   }
 }
 </script>

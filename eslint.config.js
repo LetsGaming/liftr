@@ -36,9 +36,18 @@ export default [
       "**/*.d.ts",
       "packages/client/src/locales/**",
       "fitness-tracker-mockups-v2.html",
+      ".claude/worktrees/**",
+      ".remember/**",
     ],
   },
   js.configs.recommended,
+  {
+    // scripts/*.mjs run directly under Node (never bundled/typechecked with the rest of the
+    // workspace), so — unlike every *.ts file above — no-undef here is real signal, not a
+    // type-unaware false positive; it just needs the Node globals to know about.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: { ...globals.node } },
+  },
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {

@@ -3,6 +3,7 @@
  * dead-end the workout or force cancelling it entirely. Extracted out of WorkoutPage.vue.
  */
 import { computed, ref } from "vue";
+import { DEFAULT_TARGET_SETS } from "@liftr/shared";
 import type { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
 import type { CatalogExercise } from "../stores/catalogStore";
 
@@ -25,11 +26,7 @@ export function useAddExerciseToSession(
       exerciseId: ex.id,
       name: exerciseName(ex.slug),
       isBodyweight: ex.isBodyweight,
-      targetSets: [
-        { reps: 8, weightKg: null },
-        { reps: 8, weightKg: null },
-        { reps: 8, weightKg: null },
-      ],
+      targetSets: DEFAULT_TARGET_SETS,
     });
     showAddExercise.value = false;
     addExerciseSearch.value = "";

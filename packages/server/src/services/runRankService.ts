@@ -9,19 +9,15 @@
  */
 import type { LiftrDb } from "@liftr/db";
 import {
-  resolveRank,
-  ordinal,
-  positionToBand,
-  ratchetPeak,
-  computeCurrentBand,
-  applySessionRecoveryGain,
   nextTargetAtOrdinal,
   runRankValue,
   RUN_CATEGORY_DISTANCE_M,
+  ordinal,
   type StandardThreshold,
   type RunPlausibilityReason,
   type RunCategory,
 } from "@liftr/shared";
+import { computeRankCore } from "./rankAlgorithm.js";
 import {
   findRunStandardsForCategory,
   findLoggedRunsForCategory,
@@ -82,22 +78,7 @@ export async function recomputeRunRank(
   }
   if (!bestRun) return null;
 
-  const rank = resolveRank(bestSpeedMps, thresholds);
-
-  // Corroboration: same band-position comparison as rankService.ts, not a raw-speed comparison —
-  // a different day only counts if it reaches an equal-or-stronger *band*.
   const bestDayKey = bestRun.startedAt.toISOString().slice(0, 10);
-  const candidatePosition = ordinal(rank.tier, rank.division) * 100 + rank.lp;
-  let isPeakCorroborated = false;
-  for (const [dayKey, dayBestSpeed] of dailyBest) {
-    if (dayKey === bestDayKey) continue;
-    const dayRank = resolveRank(dayBestSpeed, thresholds);
-    const dayPosition = ordinal(dayRank.tier, dayRank.division) * 100 + dayRank.lp;
-    if (dayPosition >= candidatePosition) {
-      isPeakCorroborated = true;
-      break;
-    }
-  }
 
   const previousRank = await findRunRankByCategory(db, userId, category);
 
@@ -124,20 +105,6 @@ export async function recomputeRunRank(
   const peakEligible = plausibilityMultiplier >= PEAK_ELIGIBILITY_FLOOR;
   const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
 
-  const peak = peakEligible
-    ? ratchetPeak(
-        { tier: rank.tier, division: rank.division, lp: rank.lp, e1rm: bestSpeedMps },
-        bestRun.startedAt.getTime(),
-        storedPeak,
-        isPeakCorroborated,
-      )
-    : storedPeak;
-
-  // A genuine rank-up is the *peak* advancing, not the displayed current band changing — same
-  // reasoning as rankService.ts (decay softening/reversing current must never register as a
-  // rank-up).
-  const rankedUp = peak != null && (!storedPeak || storedPeak.tier !== peak.tier || storedPeak.division !== peak.division);
-
   // Current-rank decay/recovery, using the run's own startedAt for "days since last trained" —
   // days since the most recent rank-eligible run in this category.
   const lastTrainedAtMs = loggedRuns.reduce((max, r) => Math.max(max, r.startedAt.getTime()), 0);
@@ -147,28 +114,23 @@ export async function recomputeRunRank(
     ? { tier: previousRank.tier, division: previousRank.division, lp: previousRank.lp }
     : null;
 
-  let currentBand: { tier: (typeof rank)["tier"]; division: number; lp: number };
-  if (peak == null) {
-    currentBand = { tier: rank.tier, division: rank.division, lp: rank.lp };
-  } else {
-    const passivelyDecayedBand = computeCurrentBand(peak, daysSinceLastTrained);
-
-    const storedPeakPos = storedPeak ? ordinal(storedPeak.tier, storedPeak.division) * 100 + storedPeak.lp : null;
-    const hadDecayBacklog =
-      previousCurrentBand != null &&
-      storedPeakPos != null &&
-      ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp < storedPeakPos;
-
-    if (hadDecayBacklog && previousCurrentBand && daysSinceLastTrained === 0) {
-      const rawGainBand = applySessionRecoveryGain(peak, previousCurrentBand);
-      const prevPos = ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp;
-      const rawGainPos = ordinal(rawGainBand.tier, rawGainBand.division) * 100 + rawGainBand.lp;
-      const scaledPos = prevPos + (rawGainPos - prevPos) * plausibilityMultiplier;
-      currentBand = positionToBand(scaledPos);
-    } else {
-      currentBand = passivelyDecayedBand;
-    }
-  }
+  // Resolve/corroborate/ratchet/decay — identical mechanics to rankService.ts's
+  // `recomputeRankForExercise`, factored out into rankAlgorithm.ts's `computeRankCore`. Running
+  // has a single metric (speed), so `bestValue` and `peakMetricValue` are the same number here,
+  // unlike strength where rank-score and e1RM diverge.
+  const { rank, peak, rankedUp, currentBand } = computeRankCore({
+    thresholds,
+    dailyBest,
+    bestValue: bestSpeedMps,
+    peakMetricValue: bestSpeedMps,
+    bestDayKey,
+    bestAchievedAtMs: bestRun.startedAt.getTime(),
+    storedPeak,
+    previousCurrentBand,
+    peakEligible,
+    plausibilityMultiplier,
+    daysSinceLastTrained,
+  });
 
   // Next-target prediction follows the decayed current band, same as rankService.ts. Running has
   // a single metric (speed) — no load_ratio/reps split, so no nextLoadTarget/nextRepTarget

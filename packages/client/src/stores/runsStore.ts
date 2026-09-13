@@ -1,5 +1,6 @@
 /** Runs, backed by /api/runs. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import {
   deleteRun as deleteRunOnServer,
   getRunDetail,
@@ -19,12 +20,11 @@ export const useRunsStore = defineStore("runs", {
   }),
   actions: {
     async load() {
-      try {
-        this.runs = await getRuns();
-        this.loaded = true;
-      } catch {
-        // offline — list stays whatever it was, no crash
-      }
+      // offline — list stays whatever it was, no crash
+      await withLoadState(getRuns, {
+        apply: (runs) => (this.runs = runs),
+        setLoaded: (v) => (this.loaded = v),
+      });
     },
 
     async loadDetail(id: string): Promise<RunDetail> {

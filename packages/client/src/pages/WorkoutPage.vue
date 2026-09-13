@@ -39,7 +39,7 @@ import { haptics } from "../lib/haptics";
 import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
 import { TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
-import { computeSetXp, TIERS, type Tier } from "@liftr/shared";
+import { TIERS, type Tier } from "@liftr/shared";
 import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
@@ -93,6 +93,8 @@ const {
   sessionXp,
   sessionRankUps,
   sessionCaptions,
+  captionRows,
+  logSetXp,
   consistencyBonusXp,
   varietyBonusXp,
   newMuscleSlugs,
@@ -154,21 +156,6 @@ const { finishedCanvas, sharingFinished, shareFinished, copyingFinished, copyFin
   topRankUp,
 );
 
-/** sessionCaptions (from useWorkoutFinish) carries the honest copy but not the badge/next-target
- *  data to render a RankProgress card — that lives on
- *  ranksStore's row for the exercise (already refreshed by applyVerdict() in finishWorkout()).
- *  Joined here rather than in the composable so ranksStore stays the single source of truth
- *  for "what's this exercise's rank right now" — the same pattern RanksPage.vue and
- *  ExerciseInfoPanel.vue already use. A caption whose exercise has no ranksStore row yet
- *  (shouldn't happen — applyVerdict() runs for every touched exercise before this — but kept
- *  defensive) is simply dropped rather than rendered with guessed data. */
-const captionRows = computed(() =>
-  sessionCaptions.value.flatMap((c) => {
-    const row = ranksStore.ranks.find((r) => r.exerciseId === c.exerciseId);
-    if (!row) return [];
-    return [{ ...c, tier: row.tier, division: row.division, lp: row.lp, nextTargetWeightKg: row.nextTargetWeightKg, nextTargetReps: row.nextTargetReps, trust: row.trust }];
-  }),
-);
 const { toast } = useToast();
 const canCopyShareImage = canCopyToClipboard();
 async function onCopyFinished() {
@@ -337,9 +324,7 @@ async function logSet() {
 
   if (set) {
     void haptics.tap();
-    const amount = Math.round(computeSetXp(weightKg, reps, tier));
-    sessionXp.value += amount;
-    triggerXpChip(amount);
+    triggerXpChip(logSetXp(weightKg, reps, tier));
     // One-shot pop-in trigger — see justLoggedIndex's declaration. 260ms gives --dur-base's
     // 220ms animation a little headroom to finish before the class clears.
     justLoggedIndex.value = set.index;

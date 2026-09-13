@@ -8,6 +8,7 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, SET_KIND_LABEL, warmupRamp, type SetKind } from "@liftr/shared";
 import { defineStore } from "pinia";
 import { clearActiveWorkout, loadActiveWorkout, saveActiveWorkout } from "../lib/idb";
+import { computeAdvanceAfterLog } from "../lib/supersetAdvance";
 import { useSyncStore, type RankVerdict } from "./syncStore";
 
 // Re-exported for existing call sites (SetKindPicker.vue, WorkoutPage.vue) — the definitions
@@ -105,6 +106,22 @@ function persist(state: ActiveWorkoutState) {
   void saveActiveWorkout(JSON.parse(JSON.stringify(state)));
 }
 
+/** Lightweight structural guard for loadActiveWorkout() — catches a persisted value from an
+ *  older app version whose shape has since drifted (a missing/renamed field, a value saved
+ *  before `exercises` was even an array) so restore() falls back to "nothing saved" instead of
+ *  crashing partway through backfilling it below. Doesn't validate every nested field (that's
+ *  what the backfills in restore() are for) — just enough to make iterating `exercises` and
+ *  `sets` safe. */
+function isActiveWorkoutState(value: unknown): value is ActiveWorkoutState {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    "workoutId" in v &&
+    Array.isArray(v.exercises) &&
+    v.exercises.every((ex) => ex && typeof ex === "object" && Array.isArray((ex as Record<string, unknown>).sets))
+  );
+}
+
 export const useActiveWorkoutStore = defineStore("activeWorkout", {
   state: (): ActiveWorkoutState => ({
     workoutId: null,
@@ -171,7 +188,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
   actions: {
     /** Crash/lock recovery: call once on app boot before rendering the workout page. */
     async restore() {
-      const saved = await loadActiveWorkout<ActiveWorkoutState>();
+      const saved = await loadActiveWorkout<ActiveWorkoutState>(isActiveWorkoutState);
       if (saved?.workoutId) {
         // Sets persisted before `kind` existed (an in-progress workout saved pre-upgrade) load
         // back with kind === undefined, which crashed WorkoutPage.vue's kind badge/label lookup
@@ -407,36 +424,9 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
         },
       });
 
-      let restSeconds: number | null = ex.restBetweenSetsSeconds;
-
-      if (ex.supersetGroup != null) {
-        const groupIndices = this.exercises
-          .map((e, i) => ({ e, i }))
-          .filter(({ e }) => e.supersetGroup === ex.supersetGroup);
-        const curPos = groupIndices.findIndex(({ i }) => i === this.currentExerciseIndex);
-        let advancedWithinGroup = false;
-        for (let step = 1; step < groupIndices.length; step++) {
-          const pos = (curPos + step) % groupIndices.length;
-          const candidate = groupIndices[pos]!;
-          if (candidate.e.sets.some((s) => !s.logged)) {
-            this.currentExerciseIndex = candidate.i;
-            advancedWithinGroup = true;
-            // wrapped back to an earlier/equal slot = round complete
-            restSeconds = pos <= curPos ? ex.restBetweenSetsSeconds : null;
-            break;
-          }
-        }
-        if (!advancedWithinGroup) {
-          const nextIndex = this.exercises.findIndex((e) => e.sets.some((s) => !s.logged));
-          if (nextIndex !== -1) this.currentExerciseIndex = nextIndex;
-          restSeconds = ex.restAfterExerciseSeconds;
-        }
-        persist(this.$state);
-      } else if (ex.sets.every((s) => s.logged)) {
-        // auto-advance to the next exercise with unlogged sets, mirroring the mockup's flow
-        const nextIndex = this.exercises.findIndex((e) => e.sets.some((s) => !s.logged));
-        if (nextIndex !== -1) this.currentExerciseIndex = nextIndex;
-        restSeconds = ex.restAfterExerciseSeconds;
+      const { nextIndex, restSeconds } = computeAdvanceAfterLog(this.exercises, this.currentExerciseIndex);
+      if (nextIndex !== this.currentExerciseIndex) {
+        this.currentExerciseIndex = nextIndex;
         persist(this.$state);
       }
 

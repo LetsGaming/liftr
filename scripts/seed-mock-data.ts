@@ -89,19 +89,48 @@ async function ensureCatalog(db: LiftrDb) {
   await ingestRunStandards(db);
   console.log(`  catalog + standards + run standards ingested (${entries.length} exercises).`);
 
-  const hasImages = fs.existsSync(IMAGES_DIR) && fs.readdirSync(IMAGES_DIR).length > 0;
-  if (hasImages) {
+  const hasImages = () => fs.existsSync(IMAGES_DIR) && fs.readdirSync(IMAGES_DIR).length > 0;
+  if (hasImages()) {
     console.log(`  ${IMAGES_DIR} already has content — skipping image/muscle-asset fetch.`);
     return;
   }
-  console.log("  data/images/ is empty (first run on this machine) — fetching catalog images + muscle assets, this can take a minute...");
+
+  // data/images/ is shared across every concurrent dev-up.mjs session (unlike the per-session DB),
+  // so two sessions starting at once can both see it empty and ingest concurrently, corrupting
+  // muscle SVGs that ingestMuscleAssets writes then immediately re-reads. This lock dir makes that
+  // a single-writer critical section. ponytail: fixed poll count, no cross-process notify — fine
+  // for a handful of local dev sessions, revisit if that stops being true.
+  const lockDir = path.join(IMAGES_DIR, ".lock");
+  fs.mkdirSync(IMAGES_DIR, { recursive: true });
+  let haveLock = false;
+  for (let i = 0; i < 120; i++) {
+    try {
+      fs.mkdirSync(lockDir);
+      haveLock = true;
+      break;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  if (!haveLock) {
+    console.warn(`  ! timed out waiting for ${lockDir} — proceeding without it (stale lock?).`);
+  }
+
   try {
+    if (hasImages()) {
+      console.log(`  ${IMAGES_DIR} was populated by another session while waiting — skipping fetch.`);
+      return;
+    }
+    console.log("  data/images/ is empty (first run on this machine) — fetching catalog images + muscle assets, this can take a minute...");
     await ingestImages(entries, IMAGES_DIR);
     await ingestMuscleAssets(IMAGES_DIR);
   } catch (err) {
     // Not fatal: exercises without a photo already fall back to the icon UI — a real, supported
     // state, not a broken one — so a flaky/offline network here shouldn't fail the whole session.
     console.warn(`  ! image/muscle-asset fetch failed (continuing without photos): ${(err as Error).message}`);
+  } finally {
+    if (haveLock) fs.rmSync(lockDir, { recursive: true, force: true });
   }
 }
 

@@ -78,6 +78,11 @@ const finish = {
   sessionXp: ref(0),
   sessionRankUps: ref<{ tier: string; plausibilityNote: string | null }[]>([]),
   sessionCaptions: ref<unknown[]>([]),
+  captionRows: ref<unknown[]>([]),
+  logSetXp: vi.fn((_weightKg: number | null, _reps: number, _tier: unknown) => {
+    finish.sessionXp.value += 5;
+    return 5;
+  }),
   consistencyBonusXp: ref(0),
   varietyBonusXp: ref(0),
   newMuscleSlugs: ref<string[]>([]),

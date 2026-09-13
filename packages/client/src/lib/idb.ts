@@ -58,9 +58,16 @@ export async function saveActiveWorkout(state: unknown) {
   await db.put("activeWorkout", state, "current");
 }
 
-export async function loadActiveWorkout<T>(): Promise<T | undefined> {
+/**
+ * `isValid` is a caller-supplied runtime shape guard, not just a type param — a stale/mid-migration
+ * persisted value (an older app version's shape) must not be trusted straight into typed state.
+ * The store type (ActiveWorkoutState) can't be imported here without a cycle, so the check lives
+ * with the caller; a value that fails it is treated the same as "not cached" rather than crashing.
+ */
+export async function loadActiveWorkout<T>(isValid: (value: unknown) => value is T): Promise<T | undefined> {
   const db = await getDb();
-  return db.get("activeWorkout", "current") as Promise<T | undefined>;
+  const value = await db.get("activeWorkout", "current");
+  return isValid(value) ? value : undefined;
 }
 
 export async function clearActiveWorkout() {

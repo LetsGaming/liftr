@@ -145,6 +145,8 @@ export const routineExercises = sqliteTable(
      *  plate) — that distinction is what drives whether SetEntry.vue shows a weight stepper
      *  at all during logging. Replaced the earlier reps-only targetRepsPerSet: number[] (no
      *  way to plan a weight target, or "extra kg" for a bodyweight movement, at all). */
+    // Must stay in sync with @liftr/shared's DEFAULT_TARGET_SETS (workout/setKind.ts) — a SQL
+    // column default can't reference a JS import, so this literal is hand-duplicated from there.
     targetSets: text("target_sets_json").notNull().default('[{"reps":8,"weightKg":null},{"reps":8,"weightKg":null},{"reps":8,"weightKg":null}]'),
     /** nullable now so superset/circuit grouping isn't a later migration. */
     supersetGroup: integer("superset_group"),

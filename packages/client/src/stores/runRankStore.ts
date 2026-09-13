@@ -5,6 +5,7 @@
  *  loaded/error pair and load action, same as its strength-side counterpart, so one section
  *  failing never blocks the others. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import {
   getRunOverallRank,
   getRunPrs,
@@ -31,37 +32,30 @@ export const useRunRankStore = defineStore("runRank", {
   }),
   actions: {
     async loadRanks() {
-      try {
-        this.ranks = await getRunRanks();
-        this.ranksLoaded = true;
-        this.ranksError = false;
-      } catch {
-        // See xpStore.ts's load() for why `error` exists — a stalled-load banner needs to tell
-        // "still fetching" from "failed" apart.
-        this.ranksError = true;
-      }
+      await withLoadState(getRunRanks, {
+        apply: (ranks) => (this.ranks = ranks),
+        setLoaded: (v) => (this.ranksLoaded = v),
+        setError: (v) => (this.ranksError = v),
+      });
     },
 
     async loadPrs() {
-      try {
-        this.prs = await getRunPrs();
-        this.prsLoaded = true;
-        this.prsError = false;
-      } catch {
-        this.prsError = true;
-      }
+      await withLoadState(getRunPrs, {
+        apply: (prs) => (this.prs = prs),
+        setLoaded: (v) => (this.prsLoaded = v),
+        setError: (v) => (this.prsError = v),
+      });
     },
 
     async loadOverallRank() {
-      try {
-        const result = await getRunOverallRank();
-        this.overallCurrent = result.current;
-        this.overallPeak = result.peak;
-        this.overallLoaded = true;
-        this.overallError = false;
-      } catch {
-        this.overallError = true;
-      }
+      await withLoadState(getRunOverallRank, {
+        apply: (result) => {
+          this.overallCurrent = result.current;
+          this.overallPeak = result.peak;
+        },
+        setLoaded: (v) => (this.overallLoaded = v),
+        setError: (v) => (this.overallError = v),
+      });
     },
 
     /** Convenience for callers that want all three sections at once (e.g. a run-rank overview
