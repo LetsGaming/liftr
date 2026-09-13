@@ -254,7 +254,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
   border-radius: var(--r-sm);
   background: var(--surface-3);
   border: 1px solid var(--line);
-  color: var(--red);
+  color: var(--danger);
   font-size: 13px;
 }
 .set-rows {
@@ -310,7 +310,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
   border: 1px solid var(--line);
 }
 .kind-badge.k-warmup {
-  background: var(--fire);
+  background: var(--warning);
   color: var(--k-warmup-text);
   border-color: transparent;
 }
@@ -319,7 +319,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
   color: var(--dim);
 }
 .kind-badge.k-failure {
-  background: var(--red);
+  background: var(--danger);
   color: var(--k-failure-text);
   border-color: transparent;
 }

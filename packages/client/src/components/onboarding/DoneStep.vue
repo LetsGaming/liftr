@@ -39,7 +39,7 @@ const hasPlates = computed(() => needsPlatesStep(draft) && [...draft.plates.valu
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--green), #1fa85c);
+  background: var(--success);
   color: #04220f;
   font-weight: 900;
   margin-bottom: var(--sp2);

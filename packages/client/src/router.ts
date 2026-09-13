@@ -20,6 +20,16 @@ export const router = createRouter({
         void import("./stores/routineStore").then(({ useRoutineStore }) => useRoutineStore().load());
       },
     },
+    {
+      path: "/routes/:id",
+      name: "route-overview",
+      component: () => import("./pages/RouteOverviewPage.vue"),
+      // Same eager-prefetch pattern as /routines/:id above — get the fetch in flight while the
+      // route's own chunk resolves, rather than waiting for onMounted.
+      beforeEnter: () => {
+        void import("./stores/plannedRouteStore").then(({ usePlannedRouteStore }) => usePlannedRouteStore().load());
+      },
+    },
     { path: "/ranks", name: "ranks", component: () => import("./pages/RanksPage.vue") },
     {
       path: "/records",

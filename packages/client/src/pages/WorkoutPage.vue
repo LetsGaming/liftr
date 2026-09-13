@@ -27,7 +27,6 @@ import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useAddExerciseToSession } from "../composables/useAddExerciseToSession";
-import { useConfirmTap } from "../composables/useConfirmTap";
 import { useMesocycleControls } from "../composables/useMesocycleControls";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { useWorkoutFinish } from "../composables/useWorkoutFinish";
@@ -172,13 +171,17 @@ async function onCopyFinished() {
  *  where it was. */
 const showWorkoutMenu = ref(false);
 
-const cancelConfirm = useConfirmTap(() => {
-  // Closes the overflow sheet on the *confirming* tap only (useConfirmTap's onConfirm callback
-  // fires exactly once, on the second tap) — the first ("Wirklich abbrechen?") tap must leave
-  // the sheet open so the user can see and complete the confirmation.
+/** "Workout abbrechen" confirmation: a visible inline banner the user must explicitly dismiss
+ *  or confirm — no auto-expiring timer. Was previously a silent tap-twice-within-3s pattern
+ *  (useConfirmTap), which only swapped a tiny icon-button's label with no dialog/banner and no
+ *  visible countdown; too easy to trigger by accident on a destructive, unrecoverable,
+ *  whole-workout-ending action (UX audit finding). */
+const showCancelConfirm = ref(false);
+function confirmCancelWorkout() {
+  showCancelConfirm.value = false;
   showWorkoutMenu.value = false;
   void store.cancelWorkout();
-});
+}
 
 const { activeMesocycle } = useMesocycleControls(store, routineStore);
 
@@ -485,22 +488,30 @@ async function logSet() {
              tappable button. Placing it as its own row directly above WorkoutClock guarantees no
              overlap by construction. -->
         <SyncIndicator />
-        <!-- Cancel sits right of the pause button so it reads as "same family of control,
-             different action" instead of an unrelated button off on its own. Same confirm-tap
-             behavior (useConfirmTap), restyled to match the pause button's shape/size with a
-             danger treatment instead of its neutral one. -->
+        <!-- Cancel sits right of the pause button, separated by a hairline divider (.cancel-divider)
+             so the destructive action doesn't read as "just another same-size icon button" next to
+             the safe Pause — plus its own red-outlined treatment (--danger/--danger-lo). Tapping it
+             no longer silently arms a tap-twice window; it opens the always-visible .cancel-confirm
+             banner below, which requires an explicit "Ja, abbrechen"/"Nein" tap and never
+             auto-expires. -->
         <WorkoutClock>
           <template #actions>
-            <button
-              class="cancel-btn"
-              :class="{ confirming: cancelConfirm.isArmed() }"
-              :aria-label="cancelConfirm.isArmed() ? 'Wirklich abbrechen?' : 'Workout abbrechen'"
-              @click="cancelConfirm.trigger()"
-            >
-              {{ cancelConfirm.isArmed() ? "Wirklich?" : "✕" }}
-            </button>
+            <span class="cancel-divider" aria-hidden="true" />
+            <button class="cancel-btn" aria-label="Workout abbrechen" @click="showCancelConfirm = true">✕</button>
           </template>
         </WorkoutClock>
+        <!-- Explicit, visible confirmation for cancelling the whole workout — replaces the old
+             useConfirmTap silent tap-twice-within-3s pattern (a destructive, unrecoverable,
+             whole-workout-ending action deserves more than a tiny label swap with no dialog and
+             no visible countdown). Never auto-dismisses; the user must tap one of the two
+             buttons below. -->
+        <div v-if="showCancelConfirm" class="cancel-confirm panel">
+          <p>Workout wirklich abbrechen? Der gesamte Fortschritt geht verloren.</p>
+          <div class="cancel-confirm-actions">
+            <button class="btn-secondary" @click="showCancelConfirm = false">Nein</button>
+            <button class="btn-cancel-confirm" @click="confirmCancelWorkout">Ja, abbrechen</button>
+          </div>
+        </div>
         <div class="progress-row">
           <div class="progress">
             <span>{{ store.progressLabel }}</span>
@@ -578,21 +589,26 @@ async function logSet() {
             <button v-if="store.exercises.length > 1" class="skip-btn surface-hybrid" @click="store.skipCurrentExercise()">
               Übung überspringen <AppIcon name="skip-forward" />
             </button>
-            <!-- Rank/XP display sits behind this deliberate-reveal toggle rather than always
-                 rendering RankProgress inline — a small, visually minimal tier-glyph chip, same
-                 footprint as the ⓘ info button next to it. Its `.active` (revealed) state gets a
-                 Nebula-tinted ring (see .rank-toggle-btn.active below) so "revealed" reads as an
-                 intentional interactive state. -->
-            <button
-              class="info-btn rank-toggle-btn surface-hybrid"
-              :class="{ active: showRank }"
-              :aria-pressed="showRank"
-              aria-label="Rang anzeigen"
-              @click="showRank = !showRank"
-            >
-              <AppIcon name="trophy" />
-            </button>
-            <button class="info-btn surface-hybrid" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
+            <!-- Rank/info icon buttons grouped in their own wrapper, pushed to the row's far end
+                 (margin-left: auto) — visually separates them from the unrelated "Übung
+                 überspringen" pill instead of all three reading as one undifferentiated group. -->
+            <div class="focus-head-info-group">
+              <!-- Rank/XP display sits behind this deliberate-reveal toggle rather than always
+                   rendering RankProgress inline — a small, visually minimal tier-glyph chip, same
+                   footprint as the ⓘ info button next to it. Its `.active` (revealed) state gets a
+                   Nebula-tinted ring (see .rank-toggle-btn.active below) so "revealed" reads as an
+                   intentional interactive state. -->
+              <button
+                class="info-btn rank-toggle-btn surface-hybrid"
+                :class="{ active: showRank }"
+                :aria-pressed="showRank"
+                aria-label="Rang anzeigen"
+                @click="showRank = !showRank"
+              >
+                <AppIcon name="trophy" />
+              </button>
+              <button class="info-btn surface-hybrid" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
+            </div>
           </div>
         </div>
 
@@ -861,7 +877,7 @@ async function logSet() {
   gap: 4px;
 }
 .beat-done {
-  color: var(--green);
+  color: var(--success);
   font-weight: 700;
 }
 /* `flex: 1` split the row 50/50, and at mobile widths that gave "Routine aktualisieren" too
@@ -1035,6 +1051,15 @@ async function logSet() {
   gap: var(--sp2);
   flex: none;
 }
+/* Law-of-Proximity fix (UX-08): groups the two icon-only affordances (rank/info) away from the
+   unrelated "Übung überspringen" pill instead of all three reading as one row of same-weight
+   controls — pushed to the row's far end so the skip pill and the info group visually separate. */
+.focus-head-info-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  margin-left: auto;
+}
 /* N2: was a flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). */
 .skip-btn {
   font-size: 11.5px;
@@ -1167,7 +1192,7 @@ async function logSet() {
 }
 .reps-hint {
   font-size: 11.5px;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
   text-align: center;
   min-height: 1.4em;
 }
@@ -1256,7 +1281,7 @@ async function logSet() {
    translucent family as the sibling (non-done) rows above instead of special-casing it back to a
    fully opaque fill. */
 .set-rows li.done {
-  background: color-mix(in srgb, var(--green) 20%, var(--surface-hybrid-bg));
+  background: color-mix(in srgb, var(--success) 20%, var(--surface-hybrid-bg));
 }
 .set-rows li.warmup:not(.done) {
   color: var(--dim);
@@ -1290,7 +1315,7 @@ button.sn:active {
   transform: scale(0.88);
 }
 .set-rows .sn.k-warmup {
-  background: var(--fire);
+  background: var(--warning);
   color: var(--k-warmup-text);
 }
 .set-rows .sn.k-normal {
@@ -1298,7 +1323,7 @@ button.sn:active {
   color: var(--text);
 }
 .set-rows .sn.k-failure {
-  background: var(--red);
+  background: var(--danger);
   color: var(--k-failure-text);
 }
 .set-rows .sn.k-dropset {
@@ -1359,14 +1384,54 @@ button.sn:active {
   border-radius: var(--r-md);
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--red);
+  color: var(--danger);
   background: transparent;
-  border: 1px solid var(--red-lo);
+  border: 1px solid var(--danger-lo);
 }
-.cancel-btn.confirming {
-  background: var(--red-lo);
-  border-color: var(--red);
+/* Law-of-Proximity fix (UX-07): a plain hairline between Pause and Workout-abbrechen so the
+   destructive action doesn't read as just another same-size icon button glued to the safe one —
+   on top of the red-outlined treatment .cancel-btn already carries. */
+.cancel-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line-2);
+  flex: none;
+}
+/* Visible, explicit cancel-workout confirmation — replaces the old silent tap-twice-within-3s
+   pattern (useConfirmTap). .panel (tokens.css) supplies background/border/radius. */
+.cancel-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp3);
+  padding: var(--sp4);
+}
+.cancel-confirm p {
+  font-size: 13.5px;
   color: var(--text);
+}
+.cancel-confirm-actions {
+  display: flex;
+  gap: var(--sp2);
+}
+.cancel-confirm-actions button {
+  flex: 1;
+}
+.btn-cancel-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  min-height: var(--touch-target-min);
+  border-radius: var(--r-md);
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--k-failure-text);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.btn-cancel-confirm:active {
+  transform: scale(0.97);
 }
 
 /* UI/UX rework audit P0-B: a fixed 260px rail + a capped-520px focus column inside a flex

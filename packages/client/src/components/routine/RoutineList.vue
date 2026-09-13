@@ -25,8 +25,16 @@ const catalog = useCatalogStore();
 const routineStore = useRoutineStore();
 const store = useActiveWorkoutStore();
 const { toast } = useToast();
-const { starting, quickStart, exerciseName } = useStartRoutine();
+const { starting, startRoutine, quickStart, exerciseName } = useStartRoutine();
 const router = useRouter();
+
+/** Mirrors RoutineOverviewPage.vue's jetztStarten(): startRoutine() itself never navigates, so
+ *  the card's own "Starten" button is responsible for getting to the workout screen once the
+ *  routine is actually active. `replace`, not `push` — see that page's own comment on why. */
+async function startFromCard(routine: Routine) {
+  await startRoutine(routine);
+  await router.replace("/workout");
+}
 
 /** Tapping a routine card opens the Routine Overview screen instead of starting the routine
  *  immediately — that screen's own sticky "Jetzt starten" button is the quick-start path, so
@@ -131,23 +139,11 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
               Woche {{ routine.mesocycle.currentWeek }}/{{ routine.mesocycle.totalWeeks }} ·
               {{ routine.mesocycle.weekPercents[routine.mesocycle.currentWeek - 1] }}%
             </span>
-          </div>
-          <!-- Exercise names + aggregated muscle figure — the same data the finish summary
-               shows, surfaced here so what a routine trains is visible before starting it. -->
-          <div class="rc-preview">
-            <ul class="rc-ex-list">
-              <li v-for="re in routine.routineExercises.slice(0, 4)" :key="re.id">{{ routineExerciseName(re.exerciseId) }}</li>
-              <li v-if="routine.routineExercises.length > 4" class="rc-ex-more">+{{ routine.routineExercises.length - 4 }} weitere</li>
-            </ul>
-            <MuscleFigure class="rc-muscles" :size="52" v-bind="routineMuscles(routine)" />
-          </div>
-          <span class="rc-count">{{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</span>
-
-          <!-- The card navigates to the Routine Overview screen on tap (openOverview() above),
-               whose sticky "Jetzt starten" button is the quick-start path. @click.stop below so
-               the ⋮ menu/edit/duplicate/mesocycle/delete controls don't also trigger it. -->
-          <div class="rc-actions" @click.stop>
-            <div class="rc-menu-wrap">
+            <!-- Overflow menu moved next to the title (Jakob's Law: most mobile apps put a
+                 card's contextual menu top-right by the title, not buried bottom-right away from
+                 it) — same trigger/menu, just relocated. @click.stop so opening/using the menu
+                 doesn't also fire the card's own navigate-to-overview tap. -->
+            <div class="rc-menu-wrap" @click.stop>
               <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)"><AppIcon name="more" /></button>
               <div v-if="openMenuId === routine.id" class="rc-menu">
                 <button @click="editRoutine(routine); openMenuId = null"><AppIcon name="edit" /> Bearbeiten</button>
@@ -165,6 +161,26 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
                 </button>
               </div>
             </div>
+          </div>
+          <!-- Exercise names + aggregated muscle figure — the same data the finish summary
+               shows, surfaced here so what a routine trains is visible before starting it. -->
+          <div class="rc-preview">
+            <ul class="rc-ex-list">
+              <li v-for="re in routine.routineExercises.slice(0, 4)" :key="re.id">{{ routineExerciseName(re.exerciseId) }}</li>
+              <li v-if="routine.routineExercises.length > 4" class="rc-ex-more">+{{ routine.routineExercises.length - 4 }} weitere</li>
+            </ul>
+            <MuscleFigure class="rc-muscles" :size="52" v-bind="routineMuscles(routine)" />
+          </div>
+          <span class="rc-count">{{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</span>
+
+          <!-- Explicit "Starten" CTA — same visual weight as RouteList.vue's own card-level
+               Starten button, so starting the common/primary action here isn't outranked by
+               WorkoutPage.vue's secondary "Ohne Routine loslegen" gradient CTA. The card still
+               navigates to the Routine Overview screen on tap (openOverview() above) for anyone
+               who wants to preview/edit sets first; @click.stop keeps this button from also
+               firing that navigation. -->
+          <div class="rc-actions" @click.stop>
+            <button class="btn-secondary" :disabled="starting" @click="startFromCard(routine)">Starten</button>
           </div>
 
           <div v-if="mesoFormRoutineId === routine.id" class="meso-form" @click.stop>
@@ -389,14 +405,16 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   font-size: 11px;
   flex: none;
 }
-/* The card itself navigates to the Routine Overview screen on tap; only the ⋮ menu lives here,
-   so it sits flush right. */
+/* The card itself navigates to the Routine Overview screen on tap; the explicit Starten CTA
+   lives here, full-width like RouteList.vue's own Starten button fills its actions row. */
 .rc-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--sp2);
   margin-top: var(--sp2);
+}
+.rc-actions .btn-secondary {
+  flex: 1;
 }
 .rc-menu-wrap {
   position: relative;
@@ -437,10 +455,10 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   background: var(--surface-2);
 }
 .rc-menu button.danger {
-  color: var(--red);
+  color: var(--danger);
 }
 .rc-menu button.danger.confirming {
-  background: var(--red-lo);
+  background: var(--danger-lo);
   color: var(--text);
   font-weight: 700;
 }

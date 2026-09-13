@@ -99,7 +99,7 @@ const plates = computed(() => {
   margin-top: 4px;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
   line-height: 1.4;
 }
 </style>

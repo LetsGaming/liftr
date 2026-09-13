@@ -290,8 +290,8 @@ function missingBadge(req: TieredRequirement): string | null {
   font-weight: 600;
 }
 .equipment-chip.missing {
-  border-color: var(--red);
-  background: var(--red-lo);
+  border-color: var(--danger);
+  background: var(--danger-lo);
 }
 .equipment-chip.missing .missing-badge {
   color: #ffd9db;

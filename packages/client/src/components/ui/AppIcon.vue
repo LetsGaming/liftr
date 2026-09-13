@@ -38,6 +38,7 @@ export type AppIconName =
   | "drag-handle"
   | "arrow-up"
   | "arrow-down"
+  | "chevron-left"
   | "info";
 
 const props = withDefaults(
@@ -52,6 +53,7 @@ const props = withDefaults(
 // Static, hand-authored SVG path data only — never derived from user input.
 const PATHS: Record<AppIconName, string> = {
   check: '<path d="M5 12l4 4L19 7"/>',
+  "chevron-left": '<polyline points="15 18 9 12 15 6"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   flame:
     '<path d="M12 3c-1.5 3-5 5-5 9a5 5 0 0010 0c0-1.5-.7-2.6-1.5-3.7.2 1.6-.6 2.7-1.5 2.7-1.2 0-1.6-1.2-1-2.3.7-1.3 1-3.2-1-5.7z"/>',

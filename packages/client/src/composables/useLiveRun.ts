@@ -86,7 +86,7 @@ export function useLiveRun() {
           return;
         }
       }
-      watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (pos, err) => {
+      watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (pos: Position | null, err?: Error) => {
         if (err) {
           error.value = "GPS-Signal verloren — Tracking läuft weiter, sobald es zurückkommt.";
           return;

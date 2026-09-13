@@ -288,18 +288,37 @@ describe("WorkoutPage", () => {
     expect(finish.finishWorkout).toHaveBeenCalledOnce();
   });
 
-  it("requires a second tap on the cancel button before actually cancelling the workout", async () => {
+  it("requires an explicit confirmation before actually cancelling the workout", async () => {
     store.isActive = true;
     store.currentExercise = makeExercise();
     const wrapper = mountWithProviders(WorkoutPage, { global: { stubs: STUBS } });
 
-    const cancelBtn = wrapper.find(".cancel-btn");
-    await cancelBtn.trigger("click");
-    expect(store.cancelWorkout).not.toHaveBeenCalled();
-    expect(wrapper.find(".cancel-btn").text()).toBe("Wirklich?");
+    expect(wrapper.find(".cancel-confirm").exists()).toBe(false);
 
     await wrapper.find(".cancel-btn").trigger("click");
+    expect(store.cancelWorkout).not.toHaveBeenCalled();
+
+    const confirmBanner = wrapper.find(".cancel-confirm");
+    expect(confirmBanner.exists()).toBe(true);
+
+    const confirmBtn = confirmBanner.findAll("button").find((b) => b.text() === "Ja, abbrechen")!;
+    await confirmBtn.trigger("click");
     expect(store.cancelWorkout).toHaveBeenCalledOnce();
+    expect(wrapper.find(".cancel-confirm").exists()).toBe(false);
+  });
+
+  it("dismisses the cancel-workout confirmation without cancelling when 'Nein' is tapped", async () => {
+    store.isActive = true;
+    store.currentExercise = makeExercise();
+    const wrapper = mountWithProviders(WorkoutPage, { global: { stubs: STUBS } });
+
+    await wrapper.find(".cancel-btn").trigger("click");
+    const confirmBanner = wrapper.find(".cancel-confirm");
+    const cancelDismissBtn = confirmBanner.findAll("button").find((b) => b.text() === "Nein")!;
+    await cancelDismissBtn.trigger("click");
+
+    expect(store.cancelWorkout).not.toHaveBeenCalled();
+    expect(wrapper.find(".cancel-confirm").exists()).toBe(false);
   });
 
   it("reveals the current exercise's cached rank card only after the rank-reveal toggle is tapped", async () => {

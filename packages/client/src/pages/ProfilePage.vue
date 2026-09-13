@@ -285,7 +285,7 @@ async function saveWeight() {
       <button class="btn-primary" :disabled="exporting" @click="exportData">
         {{ exporting ? "Wird erstellt…" : "Backup herunterladen" }}
       </button>
-      <p v-if="exportError" class="current" style="color: var(--red)">{{ exportError }}</p>
+      <p v-if="exportError" class="current" style="color: var(--danger)">{{ exportError }}</p>
     </section>
 
     <h2 class="group-header">Über</h2>

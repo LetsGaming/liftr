@@ -139,7 +139,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   color: var(--dim);
 }
 .coverage-chip.cov-covered {
-  border-color: var(--green);
+  border-color: var(--success);
   color: var(--text);
 }
 .coverage-chip.cov-partial {
@@ -147,8 +147,8 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   color: var(--dim);
 }
 .coverage-chip.cov-missing {
-  border-color: var(--fire);
-  color: var(--fire-hi);
+  border-color: var(--warning);
+  color: var(--warning-hi);
 }
 .ex-summary {
   list-style: none;

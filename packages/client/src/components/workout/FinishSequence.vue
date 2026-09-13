@@ -325,7 +325,7 @@ onBeforeUnmount(() => {
   animation-duration: var(--dur-cele);
 }
 .beat-eyebrow {
-  --eyebrow-color: var(--fire-hi);
+  --eyebrow-color: var(--warning-hi);
 }
 .rankup-list {
   width: 100%;
@@ -435,7 +435,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 .dot.active {
-  background: linear-gradient(160deg, var(--fire-hi), var(--fire));
+  background: var(--icon-fill-fire);
 }
 .dl {
   font-size: 11px;
