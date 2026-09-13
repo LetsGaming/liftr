@@ -4,7 +4,7 @@ import type { LiftrDb } from "@liftr/db";
 import { configureApp } from "~server/app.js";
 import { registerAuthRoutes } from "~server/routes/auth.js";
 import { requireAuth } from "~server/auth.js";
-import { createTestDb, insertTestUser } from "../helpers/testDb.js";
+import { createTestDb } from "../helpers/testDb.js";
 import { hashPassword } from "~server/lib/passwords.js";
 import { createInviteCode, setUserPassword } from "~server/repositories/authRepository.js";
 
