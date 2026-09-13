@@ -1,7 +1,6 @@
 /**
- * Live phone-GPS run tracking — the thing the app used to explicitly not have (the now-deleted
- * useStartPlannedRoute.ts's own doc comment: "the app has no live GPS tracking anywhere").
- * Records a run in real time via the device's own built-in GPS (`@capacitor/geolocation`'s
+ * Live phone-GPS run tracking, as opposed to the manual-entry quick-start in
+ * useStartPlannedRoute.ts. Records a run in real time via the device's own built-in GPS (`@capacitor/geolocation`'s
  * `watchPosition`), with zero dependency on a smartwatch: every requirement here (start/pause/
  * finish, live distance/pace, XP/LP on finish) has to work from phone GPS alone, since that's the
  * whole point — a watch is a bonus later (`reconcileWithHealthConnect` on the server), never a

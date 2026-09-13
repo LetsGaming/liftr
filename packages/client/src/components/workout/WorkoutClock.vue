@@ -41,10 +41,6 @@ onBeforeUnmount(() => {
       <small>Trainingszeit</small>
       <span class="tnum">{{ display }}</span>
     </div>
-    <!-- Row of same-family controls: pause/resume plus whatever the caller slots in next to it
-         (WorkoutPage.vue puts the cancel-workout confirm-tap button here — it used to live far
-         down the rail, disconnected from the clock it acts on, reading as an unrelated control
-         rather than "same family, different action"). -->
     <div class="clock-actions">
       <button class="icon-btn surface-hybrid" :aria-label="store.isPaused ? 'Fortsetzen' : 'Pausieren'" @click="store.togglePause()">
         <AppIcon :name="store.isPaused ? 'play' : 'pause'" />

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
- * Tap-to-place / drag-to-reposition waypoint editor. A new sibling to RunMap.vue (not an
- * extension of it) — RunMap is view-only and hosts a deliberately-imperative replay fast-path;
- * this component's whole job is click/drag interaction, a genuinely different concern.
+ * Tap-to-place / drag-to-reposition waypoint editor. Sibling to RunMap.vue rather than a
+ * variant of it — RunMap is view-only, this component's whole job is click/drag interaction.
  */
 import L from "leaflet";
 import { onBeforeUnmount, watch } from "vue";
@@ -77,9 +76,9 @@ function renderLine() {
   line.addTo(map);
 }
 
-// Persists the last geolocation fix we got (from the 📍 button below) so the map opens centered
-// on somewhere relevant to the user instead of a hardcoded Berlin coordinate next time — useful
-// both offline and while a fresh fix is still resolving.
+// Remembers the last geolocation fix (from the 📍 button below) so the map opens centered near
+// the user next time instead of the hardcoded Berlin fallback, even offline or before a fresh
+// fix resolves.
 const { getStoredLocation, locate: locateAndStore } = useLastKnownLocation();
 
 function locate() {
@@ -167,16 +166,13 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   border: 1px solid var(--line);
 }
 
-/* Waypoint marker badge: L.divIcon's `className: "route-waypoint-icon"` REPLACES DivIcon's
-   default `className: 'leaflet-div-icon'` option (Leaflet merges size/anchor but not the class
-   string), so the marker also loses leaflet.css's built-in box/border styling — this component
-   owns the full visual here, not just an addition to Leaflet's default look.
-   Leaflet also sets inline `width`/`height` on the outer div from `iconSize` (28px, chosen for
-   map density, not touch target), so the 44px touch-target convention used by .locate-btn/
-   .remove-last-btn above is applied to the inner <span> instead: it's unconstrained by Leaflet's
-   inline styles, and centering it in the (larger, unclipped) flex box keeps it anchored on the
-   same map coordinate while presenting a full 44px hit area. `:deep()` is required because
-   Leaflet injects this markup imperatively via innerHTML, outside Vue's scoped-CSS render tree. */
+/* Waypoint marker badge: L.divIcon's `className` REPLACES Leaflet's default class rather than
+   adding to it, so this component owns the full visual (no leaflet.css box/border styling).
+   Leaflet also sets inline width/height on the outer div from `iconSize` (28px, sized for map
+   density, not touch target), so the 44px touch target lives on the inner <span> instead —
+   centering it in the larger, unclipped flex box keeps it anchored on the same map coordinate
+   while presenting a full 44px hit area. `:deep()` is needed because Leaflet injects this markup
+   via innerHTML, outside Vue's scoped-CSS render tree. */
 :deep(.route-waypoint-icon) {
   display: flex;
   align-items: center;
@@ -195,9 +191,8 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   font-size: 14px;
   line-height: 1;
 }
-/* Armed-to-delete state (renderMarkers() adds this class while removeConfirm has this waypoint
-   armed) — mirrors WorkoutPage.vue's .cancel-btn.confirming treatment for the same tap-to-arm
-   delete pattern elsewhere in the app. */
+/* Armed-to-delete state, added by renderMarkers() while removeConfirm has this waypoint armed —
+   mirrors WorkoutPage.vue's .cancel-btn.confirming treatment for the same pattern elsewhere. */
 :deep(.route-waypoint-icon span.confirming) {
   background: var(--danger-lo);
   border-color: var(--danger);

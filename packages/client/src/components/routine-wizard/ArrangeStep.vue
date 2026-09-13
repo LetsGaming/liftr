@@ -89,9 +89,6 @@ function kindOf(kind: SetKind | undefined): SetKind {
           <div v-for="(set, si) in cfg.sets" :key="si" class="set-row">
             <div class="set-label-row">
               <span class="set-label">Satz {{ si + 1 }}</span>
-              <!-- Feature: "not possible to set what kind of set this is when creating/editing
-                   a routine, not mid workout" — cycles through normal/warmup/failure/dropset,
-                   same vocabulary + colors as the live SetKindPicker.vue. -->
               <button
                 type="button"
                 class="kind-badge"
@@ -130,9 +127,6 @@ function kindOf(kind: SetKind | undefined): SetKind {
           </div>
           <div class="set-actions">
             <button class="add-set-btn" @click="emit('addSet', exerciseId)">+ Satz</button>
-            <!-- Always available, not just for bodyweight exercises: a routine created before
-                 weight targets existed has weightKg: null on every set regardless of
-                 equipment, and this is the only way back to a weight stepper for those. -->
             <button
               v-if="cfg.sets[0]?.weightKg === null"
               class="weight-toggle-btn"
@@ -146,9 +140,6 @@ function kindOf(kind: SetKind | undefined): SetKind {
           </div>
         </div>
 
-        <!-- Two independent rest durations per exercise: between its own sets, and once after
-             its last set (before the next exercise starts). Wired through activeWorkoutStore
-             into RestTimer.vue. -->
         <div class="rest-rows">
           <div class="rest-row">
             <span class="rest-label">Pause zwischen Sätzen</span>
