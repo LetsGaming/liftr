@@ -3,7 +3,6 @@
 // hardcoded-75kg fallback gap.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref, watch } from "vue";
-import AppIcon from "../components/ui/AppIcon.vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import { useToast } from "../composables/useToast";

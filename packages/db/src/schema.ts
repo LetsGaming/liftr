@@ -24,8 +24,9 @@ const createdAt = () =>
 /** The single seeded owner, created by the initial migration. Deterministic (not
  *  `crypto.randomUUID()`) so every fresh db — including every in-memory test db, which runs the
  *  same migration — gets a known user id for free, and so the migration's seed INSERT can be
- *  plain static SQL. Real per-user login doesn't exist yet; this is the one row every request
- *  resolves to today, via `userContext.ts`'s `resolveCurrentUserId`. */
+ *  plain static SQL. `passwordHash` starts `NULL` on this row until first-run setup sets it
+ *  (see `routes/auth.ts`'s `/api/auth/setup`), which is what makes a fresh install report
+ *  `needsSetup: true`. */
 export const OWNER_USER_ID = "00000000-0000-4000-8000-000000000001";
 
 export const users = sqliteTable(
