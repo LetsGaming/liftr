@@ -85,13 +85,13 @@ describe("useRoutineManagement", () => {
     unmount();
   });
 
-  it("leaves the menu open when the click lands inside a .rc-menu-wrap", () => {
+  it("leaves the menu open when the click lands inside a .card-menu-wrap", () => {
     const store = makeStore();
     const { result, unmount } = withSetup(() => useRoutineManagement(store));
     result.toggleMenu("routine-1");
 
     const wrap = document.createElement("div");
-    wrap.className = "rc-menu-wrap";
+    wrap.className = "card-menu-wrap";
     const button = document.createElement("button");
     wrap.appendChild(button);
     document.body.appendChild(wrap);

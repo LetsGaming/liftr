@@ -10,7 +10,7 @@ describe("RankProgress", () => {
     });
 
     expect(wrapper.classes()).toContain("t-athlete");
-    expect(wrapper.classes()).toContain("card");
+    expect(wrapper.classes()).toContain("variant-card");
     expect(wrapper.find(".badge svg path").attributes("d")).toBe(TIER_BADGE_PATH.athlete);
     expect(wrapper.find(".rp-tier").text()).toContain(TIER_LABEL_DE.athlete);
     expect(wrapper.find(".rp-tier").text()).toContain(DIVISION_LABEL[2]);
@@ -157,9 +157,9 @@ describe("RankProgress", () => {
       props: { tier: "athlete", division: 2, lp: 40, variant: "inline" },
     });
 
-    expect(wrapper.classes()).toContain("inline");
+    expect(wrapper.classes()).toContain("variant-inline");
     expect(wrapper.classes()).toContain("panel-reward");
-    expect(wrapper.classes()).not.toContain("card");
+    expect(wrapper.classes()).not.toContain("variant-card");
   });
 
   it("does not add panel-reward for the default 'card' variant", () => {

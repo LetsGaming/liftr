@@ -26,9 +26,6 @@ const verdict = computed(() => {
 </script>
 
 <template>
-  <!-- This is the first dashboard section — without a placeholder, everything below jumps down
-       when /api/readiness resolves. Shaped like the real content instead of a flat rectangle,
-       using the same shimmer technique as WorkoutPage.vue's rank skeleton. -->
   <section v-if="loaded" class="erholungszone surface-hybrid">
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
@@ -39,9 +36,6 @@ const verdict = computed(() => {
     <div class="ez-status">
       <span class="ez-pill">DEIN STATUS</span>
       <p>{{ verdict }}</p>
-      <!-- Hides this CTA until there's a routine to start — the launchpad card below already
-           owns the "no routine yet" empty state, so a no-op button here would duplicate that
-           guidance instead of routing anywhere. -->
       <button v-if="canStart" class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>
   </section>

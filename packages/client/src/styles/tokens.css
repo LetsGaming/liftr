@@ -521,11 +521,11 @@ textarea::placeholder {
 
 /* Sub-level tablist pills (role="tablist"/role="tab") — promoted from ExerciseInfoPanel.vue,
    the only place in the app that had both the correct a11y semantics (aria-selected etc., still
-   declared at the call site) and a visual shape distinct from WorkoutRunsSwitcher.vue's boxed,
-   equal-width .wr-switcher/.wr-pill (that one stays local/scoped to WorkoutRunsSwitcher.vue —
-   it's shared between WorkoutPage.vue and RunsPage.vue as a top-level switcher, a different
-   "level" of navigation than this). Borderless pills, not a boxed container; each call site
-   still supplies its own layout modifiers (e.g. flex:1 vs auto-width) as needed. */
+   declared at the call site) and a visual shape distinct from TabSwitcher.vue's boxed,
+   equal-width .switcher/.switcher-pill (that one stays local/scoped to TabSwitcher.vue — it's
+   the reusable top-level/sub-tab switcher used by WorkoutPage.vue, RunsPage.vue and RanksPage.vue,
+   a different "level" of navigation than this). Borderless pills, not a boxed container; each
+   call site still supplies its own layout modifiers (e.g. flex:1 vs auto-width) as needed. */
 .tab-strip {
   display: flex;
   gap: var(--sp2);

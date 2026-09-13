@@ -160,7 +160,7 @@ function missingBadge(req: TieredRequirement): string | null {
     </div>
 
     <div v-else-if="activeTab === 'rang'">
-      <div v-if="rankRow" class="rank-card-frame" :class="`t-${rankRow.tier}`">
+      <div v-if="rankRow" class="rank-tier-frame" :class="`t-${rankRow.tier}`">
         <RankProgress
           variant="card"
           :tier="rankRow.tier"
@@ -207,7 +207,7 @@ function missingBadge(req: TieredRequirement): string | null {
 /* .tab-strip/.tab-pill now live globally in tokens.css (promoted from here — this was the
    only correct-a11y implementation of the sub-level tablist pattern in the app, RunsPage.vue's
    Verlauf/Strecken switcher having hand-duplicated a worse copy of a *different* pattern,
-   WorkoutRunsSwitcher.vue's boxed .wr-switcher). Markup here is unchanged (role="tablist" etc.
+   TabSwitcher.vue's boxed .switcher). Markup here is unchanged (role="tablist" etc.
    above); only the CSS moved. Unlike OverviewPage's usage, this strip sits directly in the
    unpadded #header slot (not inside a padded page container), so it needs its own horizontal
    padding here to keep the pills off the sheet edges and clear of the close button above. */
@@ -220,33 +220,11 @@ function missingBadge(req: TieredRequirement): string | null {
   font-size: 13px;
 }
 
-/* <RankProgress variant="card"> is built to sit on a dark tier-gradient card — its .rp-tier
-   label reads `var(--tt, ...)`, the per-tier accent token, which is always a light/near-white
-   value tuned for a dark tier fill (tokens.css's t-<tier> blocks). Without a matching background
-   here, the tier label would render near-white on the panel's plain (light-in-light-mode)
-   background and become unreadable. So this frame paints the true tier gradient (see ::after
-   below) and locally re-pins --text/--dim/--faint to light-on-dark, same pattern as
-   RanksPage.vue's `.rank-card` and tokens.css's .panel-reward. */
-/* Deliberately not using .surface-hybrid: this frame paints the real tier-color gradient fill
-   as its whole background — a reward/rank surface, not a neutral panel, same category as
-   RanksPage.vue's .rank-card. Rank should read as earned status, not brand decoration. */
-.rank-card-frame {
-  border-radius: var(--r-lg);
-  border: 1px solid var(--line);
-  padding: var(--sp4);
-  position: relative;
-  overflow: hidden;
-  --text: #eef2fb;
-  --dim: #b8c2e0;
-  --faint: #98a2c0;
-}
-.rank-card-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(155deg, var(--b3, var(--surface-3)), var(--b2, var(--surface-2)) 55%, var(--b1, var(--surface)));
-  z-index: -1;
-}
+/* <RankProgress variant="card">'s tier "medal plaque" — shared globally as `.rank-tier-frame`
+   (styles/rank-card.css) with the Ränge grid's own per-exercise/per-category cards, which used to
+   independently duplicate this exact recipe (this file's own former `.rank-card-frame`, and
+   RankLifterSection/RankRunnerSection's former `.rank-card`) with drifting details (border color,
+   missing sheen). One implementation now. */
 .wide-chart {
   width: 100%;
   margin-bottom: var(--sp4);

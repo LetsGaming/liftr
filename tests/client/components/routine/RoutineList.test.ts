@@ -146,17 +146,17 @@ describe("RoutineList", () => {
     const { wrapper } = mountRoutineList([]);
 
     expect(wrapper.find(".routine-empty").exists()).toBe(true);
-    expect(wrapper.find(".routine-grid").exists()).toBe(false);
+    expect(wrapper.find(".card-grid").exists()).toBe(false);
     expect(wrapper.text()).toContain("Noch keine Routine");
   });
 
   it("renders one card per routine with its name and singular exercise count", () => {
     const { wrapper } = mountRoutineList([makeRoutine({ id: "r1", name: "Push Day" })]);
 
-    const cards = wrapper.findAll(".routine-card");
+    const cards = wrapper.findAll(".card");
     expect(cards).toHaveLength(1);
-    expect(cards[0]!.find(".rc-head b").text()).toBe("Push Day");
-    expect(cards[0]!.find(".rc-count").text()).toBe("1 Übung");
+    expect(cards[0]!.find(".card-name").text()).toBe("Push Day");
+    expect(cards[0]!.find(".card-meta").text()).toBe("1 Übung");
   });
 
   it("uses the plural exercise-count label for 0 or 2+ exercises", () => {
@@ -168,9 +168,9 @@ describe("RoutineList", () => {
     });
     const { wrapper } = mountRoutineList([zero, two]);
 
-    const cards = wrapper.findAll(".routine-card");
-    expect(cards[0]!.find(".rc-count").text()).toBe("0 Übungen");
-    expect(cards[1]!.find(".rc-count").text()).toBe("2 Übungen");
+    const cards = wrapper.findAll(".card");
+    expect(cards[0]!.find(".card-meta").text()).toBe("0 Übungen");
+    expect(cards[1]!.find(".card-meta").text()).toBe("2 Übungen");
   });
 
   it("previews up to 4 exercise names and a '+N weitere' overflow line beyond that", () => {
@@ -207,7 +207,7 @@ describe("RoutineList", () => {
     const { wrapper, router } = mountRoutineList([makeRoutine({ id: "r1" })]);
     const pushSpy = vi.spyOn(router, "push");
 
-    await wrapper.find(".routine-card").trigger("click");
+    await wrapper.find(".card").trigger("click");
 
     expect(pushSpy).toHaveBeenCalledWith("/routines/r1");
   });
@@ -243,13 +243,13 @@ describe("RoutineList", () => {
 
   it("toggles the ⋮ action menu open and closed on repeated taps", async () => {
     const { wrapper } = mountRoutineList([makeRoutine({ id: "r1" })]);
-    expect(wrapper.find(".rc-menu").exists()).toBe(false);
+    expect(wrapper.find(".card-menu").exists()).toBe(false);
 
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    expect(wrapper.find(".rc-menu").exists()).toBe(true);
+    await wrapper.find(".btn-icon").trigger("click");
+    expect(wrapper.find(".card-menu").exists()).toBe(true);
 
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    expect(wrapper.find(".rc-menu").exists()).toBe(false);
+    await wrapper.find(".btn-icon").trigger("click");
+    expect(wrapper.find(".card-menu").exists()).toBe(false);
   });
 
   it("offers '+ Mesozyklus' for a routine without one, and 'Mesozyklus beenden' for one that has one", async () => {
@@ -259,33 +259,33 @@ describe("RoutineList", () => {
     });
     const { wrapper } = mountRoutineList([withMeso]);
 
-    await wrapper.find(".rc-menu-btn").trigger("click");
+    await wrapper.find(".btn-icon").trigger("click");
 
-    const menuText = wrapper.find(".rc-menu").text();
+    const menuText = wrapper.find(".card-menu").text();
     expect(menuText).toContain("Mesozyklus beenden");
     expect(menuText).not.toContain("+ Mesozyklus");
   });
 
   it("closes the open menu on Escape", async () => {
     const { wrapper } = mountRoutineList([makeRoutine({ id: "r1" })]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    expect(wrapper.find(".rc-menu").exists()).toBe(true);
+    await wrapper.find(".btn-icon").trigger("click");
+    expect(wrapper.find(".card-menu").exists()).toBe(true);
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find(".rc-menu").exists()).toBe(false);
+    expect(wrapper.find(".card-menu").exists()).toBe(false);
   });
 
   it("closes the open menu on an outside click", async () => {
     const { wrapper } = mountRoutineList([makeRoutine({ id: "r1" })]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    expect(wrapper.find(".rc-menu").exists()).toBe(true);
+    await wrapper.find(".btn-icon").trigger("click");
+    expect(wrapper.find(".card-menu").exists()).toBe(true);
 
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find(".rc-menu").exists()).toBe(false);
+    expect(wrapper.find(".card-menu").exists()).toBe(false);
   });
 
   it("opens the routine builder pre-filled with the routine when 'Bearbeiten' is chosen, and closes the menu", async () => {
@@ -293,14 +293,14 @@ describe("RoutineList", () => {
     const { wrapper } = mountRoutineList([routine]);
     expect(wrapper.find(".routine-wizard-stub").exists()).toBe(false);
 
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    const editBtn = wrapper.findAll(".rc-menu button").find((b) => b.text().includes("Bearbeiten"))!;
+    await wrapper.find(".btn-icon").trigger("click");
+    const editBtn = wrapper.findAll(".card-menu button").find((b) => b.text().includes("Bearbeiten"))!;
     await editBtn.trigger("click");
 
     const stub = wrapper.find(".routine-wizard-stub");
     expect(stub.exists()).toBe(true);
     expect(stub.attributes("data-routine-id")).toBe("r1");
-    expect(wrapper.find(".rc-menu").exists()).toBe(false);
+    expect(wrapper.find(".card-menu").exists()).toBe(false);
   });
 
   it("opens an empty routine builder from the '+ Neue Routine' buttons", async () => {
@@ -334,8 +334,8 @@ describe("RoutineList", () => {
     getRoutinesMock.mockResolvedValue([routine, duplicated]);
 
     const { wrapper } = mountRoutineList([routine]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    const dupBtn = wrapper.findAll(".rc-menu button").find((b) => b.text() === "Duplizieren")!;
+    await wrapper.find(".btn-icon").trigger("click");
+    const dupBtn = wrapper.findAll(".card-menu button").find((b) => b.text() === "Duplizieren")!;
     await dupBtn.trigger("click");
     await flushPromises();
 
@@ -350,15 +350,15 @@ describe("RoutineList", () => {
       },
     ]);
     expect(getRoutinesMock).toHaveBeenCalled();
-    expect(wrapper.findAll(".routine-card")).toHaveLength(2);
+    expect(wrapper.findAll(".card")).toHaveLength(2);
   });
 
   it("requires a second tap to confirm delete, then removes the routine from the list", async () => {
     const routine = makeRoutine({ id: "r1" });
     const { wrapper } = mountRoutineList([routine]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
+    await wrapper.find(".btn-icon").trigger("click");
 
-    const deleteBtn = () => wrapper.findAll(".rc-menu button.danger")[0]!;
+    const deleteBtn = () => wrapper.findAll(".card-menu button.danger")[0]!;
     expect(deleteBtn().text()).toBe("Löschen");
 
     await deleteBtn().trigger("click");
@@ -369,7 +369,7 @@ describe("RoutineList", () => {
     await flushPromises();
 
     expect(deleteRoutineMock).toHaveBeenCalledWith("r1");
-    expect(wrapper.findAll(".routine-card")).toHaveLength(0);
+    expect(wrapper.findAll(".card")).toHaveLength(0);
   });
 
   it("reveals the mesocycle form defaulted to 4 weeks, adjusts it, and starts the mesocycle", async () => {
@@ -382,8 +382,8 @@ describe("RoutineList", () => {
     getRoutinesMock.mockResolvedValue([started]);
 
     const { wrapper } = mountRoutineList([routine]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    const addMesoBtn = wrapper.findAll(".rc-menu button").find((b) => b.text() === "+ Mesozyklus")!;
+    await wrapper.find(".btn-icon").trigger("click");
+    const addMesoBtn = wrapper.findAll(".card-menu button").find((b) => b.text() === "+ Mesozyklus")!;
     await addMesoBtn.trigger("click");
 
     expect(wrapper.find(".meso-form").exists()).toBe(true);
@@ -402,8 +402,8 @@ describe("RoutineList", () => {
 
   it("clamps mesocycle-weeks adjustment to the 2-16 range", async () => {
     const { wrapper } = mountRoutineList([makeRoutine({ id: "r1" })]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    const addMesoBtn = wrapper.findAll(".rc-menu button").find((b) => b.text() === "+ Mesozyklus")!;
+    await wrapper.find(".btn-icon").trigger("click");
+    const addMesoBtn = wrapper.findAll(".card-menu button").find((b) => b.text() === "+ Mesozyklus")!;
     await addMesoBtn.trigger("click");
 
     const minus = () => wrapper.find(".meso-form button[aria-label='Weniger']");
@@ -422,8 +422,8 @@ describe("RoutineList", () => {
     getRoutinesMock.mockResolvedValue([ended]);
 
     const { wrapper } = mountRoutineList([withMeso]);
-    await wrapper.find(".rc-menu-btn").trigger("click");
-    const endBtn = wrapper.findAll(".rc-menu button").find((b) => b.text() === "Mesozyklus beenden")!;
+    await wrapper.find(".btn-icon").trigger("click");
+    const endBtn = wrapper.findAll(".card-menu button").find((b) => b.text() === "Mesozyklus beenden")!;
     await endBtn.trigger("click");
     await flushPromises();
 

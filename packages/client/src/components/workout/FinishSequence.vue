@@ -186,9 +186,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- celebrate.skip() only advances the CURRENTLY active beat (see useCelebrate.ts's run()
-       loop), not the whole sequence. aria-label reflects that; don't rename it back to
-       "Überspringen" — the two read very differently to a screen reader. -->
   <div
     class="finish-seq"
     :class="topTierClass"
