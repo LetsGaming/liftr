@@ -63,11 +63,6 @@ function onLiveRunFinished() {
         <IonTitle>{{ plannedRoute ? plannedRoute.name : "Strecke" }}</IonTitle>
       </IonToolbar>
     </IonHeader>
-    <!-- scroll-y off: the main content here is an interactive, pannable map — a scrollable page
-         wrapping it means dragging to scroll the page instead pans the map, trapping the
-         gesture. fillHeight (DrillInScreen) makes the layout fit the viewport without needing
-         scroll in the first place, same as RouteWizard.vue/LiveRunScreen.vue's SheetModal-based
-         screens already do for the same reason. -->
     <IonContent class="ion-padding" :scroll-y="false">
       <DrillInScreen
         fill-height
@@ -104,9 +99,6 @@ function onLiveRunFinished() {
           </div>
         </template>
 
-        <!-- Two actions instead of one: "Live tracken" needs no confirmation step (LiveRunScreen
-             has its own discard-confirm), "Manuell eintragen" toggles the inline form above
-             instead of navigating away. -->
         <template #start-bar>
           <button class="btn-primary btn-lg btn-block" @click="showLiveRun = true">
             <AppIcon name="play" /> Live tracken

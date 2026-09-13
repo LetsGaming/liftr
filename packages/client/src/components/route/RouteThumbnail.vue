@@ -67,10 +67,19 @@ function handleResize() {
 <style scoped>
 .route-thumb-map {
   width: 100%;
-  height: 88px;
+  /* Matches RoutineList.vue's .rc-preview row height (ex-list + MuscleFigure) at its typical
+     content length — was 88px, ~16px short of that row, which left RouteList's cards visibly
+     shorter than RoutineList's despite both grids sharing the same sizing recipe otherwise. */
+  height: 96px;
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-2);
+  /* Leaflet's tile/marker/popup panes carry their own z-index (200-700) that isn't scoped to
+     `.leaflet-container` unless something establishes a stacking context there — without this,
+     those panes leak past this thumbnail and paint over ListCard's ⋮ dropdown (styles/
+     list-card.css's `.card-menu`, z-index 2), which now sits in the same card, right above this
+     thumbnail in the head-first card layout. */
+  isolation: isolate;
 }
 .map-surface {
   width: 100%;

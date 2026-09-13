@@ -247,10 +247,8 @@ function retryFailed() {
           <button type="button" class="btn-secondary" @click="retryFailed">Erneut versuchen</button>
         </div>
 
-        <!-- Erholungszone -->
         <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" :can-start="!!suggestedRoutine" @start="startFromReadiness" />
 
-        <!-- Launchpad -->
         <section class="launchpad tile--priority surface-hybrid">
           <template v-if="activeWorkout.isActive">
             <div class="eyebrow lp-eyebrow">Weiter machen</div>
@@ -275,8 +273,6 @@ function retryFailed() {
             <button class="btn-primary btn-block" @click="router.push(`/routines/${suggestedRoutine.id}`)">
               <AppIcon name="play" /> Starten
             </button>
-            <!-- suggestedRoutine is a stand-in for "last used" (no lastUsedAt tracking exists
-                 yet); shown only when there's actually something else to switch to. -->
             <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">Andere Routine wählen →</router-link>
           </template>
           <template v-else>
@@ -285,16 +281,12 @@ function retryFailed() {
             <router-link to="/workout" class="btn-secondary btn-block">Erste Routine anlegen →</router-link>
           </template>
         </section>
-
-        <!-- First-run: one promise (the whole ladder, Initiate lit) instead of the loaded
-             dashboard's four stat dashes + two "noch nicht genug Daten" tiles at once. -->
         <section v-if="isFirstRun" class="first-run-ladder panel">
           <div class="eyebrow tile-head">Deine Rangleiter</div>
           <TierLadder :current-tier="null" :current-division="null" />
         </section>
 
         <template v-else>
-          <!-- Status strip -->
           <section class="status-strip">
             <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'">
               <template #label><AppIcon name="flame" /> Tage Serie</template>
@@ -312,7 +304,6 @@ function retryFailed() {
             </InfoToggle>
           </div>
 
-          <!-- Progress tiles -->
           <section class="progress-tiles">
             <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
@@ -359,9 +350,6 @@ function retryFailed() {
           </section>
         </template>
 
-        <!-- Entdecken: surfaces existing-but-buried features, reusing the .progress-tiles/.tile
-             grid above. A plate calculator also exists as an inline reveal in SetEntry.vue, but
-             has no standalone page/modal to link to, so it's left out of this grid. -->
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
@@ -372,8 +360,6 @@ function retryFailed() {
             </router-link>
           </div>
         </section>
-
-        <!-- Recent activity -->
         <section v-if="!isFirstRun" class="activity">
           <div class="eyebrow tile-head">Letzte Aktivität</div>
 

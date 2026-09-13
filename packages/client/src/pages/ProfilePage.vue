@@ -244,10 +244,6 @@ async function saveWeight() {
         Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist — derselbe Wert, nach dem beim
         Start auch der Entsperren-Bildschirm fragt, falls der Server einen Token verlangt.
       </p>
-      <!-- .bw-row's 2-item layout (input + one button) doesn't fit 3 items (input + reveal
-           toggle + save) at narrow widths — wrap lets the buttons flow to their own line
-           instead of overflowing the card; the bodyweight row above (still 2 items) is
-           unaffected. -->
       <div class="bw-row token-row">
         <input
           v-model="tokenInput"

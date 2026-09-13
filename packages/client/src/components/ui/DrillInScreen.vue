@@ -35,11 +35,6 @@ function goBack() {
 
 <template>
   <div class="drill-in" :class="{ 'fill-height': fillHeight }">
-    <!-- Back affordance lives in the page content, not the IonToolbar: on mobile the toolbar sits
-         directly underneath App.vue's fixed .top-hud status bar (different stacking contexts — a
-         toolbar button there gets visually collided with the level-ring/streak chip instead of
-         reliably rendered above them), the exact same reason the page title itself was relocated
-         out of the toolbar. -->
     <button class="ro-back-btn" aria-label="Zurück" @click="goBack">
       <AppIcon name="chevron-left" :size="18" />
       <span>Zurück</span>
@@ -63,11 +58,6 @@ function goBack() {
         <slot />
       </div>
       <slot v-else />
-
-      <!-- Sticky start bar pinned to the bottom of the viewport so it's reachable with zero
-           scroll regardless of content height. In fill-height mode there's no scroll container
-           for `sticky` to stick within, so it just renders as the flex column's last row —
-           already always-visible by construction there. -->
       <div class="ro-start-bar">
         <slot name="start-bar" />
       </div>

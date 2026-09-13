@@ -7,7 +7,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 import { nextTick, onMounted, ref, watch } from "vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
-import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
+import TabSwitcher from "../components/ui/TabSwitcher.vue";
 import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
@@ -97,6 +97,13 @@ async function onFileChosen(e: Event) {
 function saveManual() {
   void submitManual({ plannedRouteId: activeRoute.value?.id ?? null, elevationGainM: activeRoute.value?.elevationGainM ?? null });
 }
+
+// Same two tabs as WorkoutPage.vue's own TabSwitcher — kept as a literal here rather than a
+// shared constant since it's just two short { id, label, to } objects, not logic.
+const WORKOUT_RUNS_TABS = [
+  { id: "workout", label: "Workout", to: "/workout" },
+  { id: "runs", label: "Läufe", to: "/runs" },
+];
 </script>
 
 <template>
@@ -107,7 +114,7 @@ function saveManual() {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-    <WorkoutRunsSwitcher active="runs" />
+    <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
 
     <div class="pagehead">
       <div>

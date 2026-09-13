@@ -81,7 +81,7 @@ const navItems = [
   },
   {
     to: "/workout",
-    labelKey: "nav.workout",
+    labelKey: "nav.training",
     color: "var(--blue)",
     svg: '<path d="M4 9v6M20 9v6M7 7v10M17 7v10M9 12h6"/>',
   },
@@ -164,19 +164,8 @@ const forceActiveTo = computed(() => {
   <AuthGate>
     <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
     <ToastHost />
-    <!-- Real <h1> heading landmark for screen-reader heading navigation. Visually hidden.
-         Each page's own <IonTitle> is hidden globally (ionic-theme.css) — the mobile header row
-         is a level/streak status readout instead of a title bar (see .top-hud below), so this
-         sr-only heading is the page's only title anywhere, sighted or not. Lives once here (not
-         per-page) so it survives every route transition without duplication. -->
     <h1 class="sr-only">{{ pageTitle }}</h1>
     <div class="app-shell" :class="overallTierClass">
-      <!-- The header row itself is the status readout instead of carrying a page title — a
-           small XP-progress ring with the level number inside, plus streak, spanning the
-           toolbar's full width now that ion-title is hidden globally (ionic-theme.css) and each
-           page's real title lives only in the sr-only <h1> above. Mobile only — >=900px shows
-           the fuller level/streak chips (with the XP-amount text this compact ring drops) in
-           .side-nav instead. Hidden on the Workout tab while a set is being logged (hideTopHud). -->
       <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
         <div
           v-if="xp.showXp && xp.loaded"
@@ -191,7 +180,6 @@ const forceActiveTo = computed(() => {
           <AppIcon name="flame" /> {{ streak.streak }}
         </div>
       </div>
-      <!-- desktop sidebar / mobile tab bar: one route set, two layouts -->
       <nav class="side-nav" aria-label="Hauptnavigation">
         <RouterLink
           v-for="item in navItems"
@@ -216,17 +204,12 @@ const forceActiveTo = computed(() => {
         </div>
       </nav>
       <main class="main-content">
-        <!-- mode="out-in" so the incoming page doesn't overlap the outgoing one during the
-             cross-fade. -->
         <RouterView v-slot="{ Component }">
           <Transition name="route-fade" mode="out-in">
             <component :is="Component" />
           </Transition>
         </RouterView>
       </main>
-      <!-- Just the tab bar — the level/streak status row lives in .top-hud instead. Kept as its
-           own fixed element (not folded into .top-hud) since it's still the primary navigation
-           surface, needed even when there's no XP/streak to show. -->
       <div class="bottom-chrome">
         <nav class="tab-bar" aria-label="Hauptnavigation">
           <RouterLink
@@ -347,7 +330,7 @@ const forceActiveTo = computed(() => {
      width — without this, five tabs render five different widths (measured 56/51/37/51/33px),
      so the "whole tab cell" active-fill below fills a different, oddly-shaped box per tab
      instead of a uniform column. flex: 1 makes every tab an equal-width column edge-to-edge,
-     matching WorkoutRunsSwitcher.vue and ExerciseInfoPanel.vue's tab strips. */
+     matching TabSwitcher.vue and ExerciseInfoPanel.vue's tab strips. */
   flex: 1;
   display: flex;
   flex-direction: column;

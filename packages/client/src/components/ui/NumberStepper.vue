@@ -152,7 +152,6 @@ function commitEdit() {
         +
       </button>
     </div>
-    <!-- lg-only extra content below the controls (SetEntry's plate-calculator reveal) -->
     <slot />
   </div>
 </template>

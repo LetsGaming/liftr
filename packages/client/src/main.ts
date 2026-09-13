@@ -18,6 +18,8 @@ import "@ionic/vue/css/padding.css";
 import "./styles/tokens.css";
 import "./styles/motion.css";
 import "./styles/ionic-theme.css";
+import "./styles/list-card.css";
+import "./styles/rank-card.css";
 
 // Sets both `data-theme` and the theme-color meta tag (see themeStore.ts's applyTheme) before
 // first paint, so boot-time theme resolution (OS preference or a stored user choice) is reflected
