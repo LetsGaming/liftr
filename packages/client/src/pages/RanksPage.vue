@@ -99,6 +99,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
            per-exercise band. Renders even with zero ranks yet — overallRank.current is null
            pre-first-workout, and TierLadder's own fallback lights Initiate in that case. -->
       <TierLadder
+        class="ranks-tier-ladder"
         :current-tier="overallRank.current?.tier ?? null"
         :current-division="overallRank.current?.division ?? null"
         :peak-tier="overallRank.peak?.tier ?? null"
@@ -174,6 +175,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
       <h2 class="eyebrow run-rank-heading">Lauf-Rang</h2>
 
       <TierLadder
+        class="ranks-tier-ladder"
         :current-tier="runRankStore.overallCurrent?.tier ?? null"
         :current-division="runRankStore.overallCurrent?.division ?? null"
         :peak-tier="runRankStore.overallPeak?.tier ?? null"
@@ -387,6 +389,27 @@ function formatNextSpeedTarget(speedMps: number | null): string {
 .run-rank-empty-note {
   font-size: 12.5px;
   color: var(--dim);
+}
+/* UX-14: TierLadder's own division-chip only ever marks "current" — everything else (already
+   climbed past this tier's earlier divisions, or not reached the later ones yet) renders as the
+   same flat grey pill, unreadable at a glance. TierLadder.vue itself is out of scope here, so
+   this reaches into its rendered output via :deep() (same pattern as OverviewPage.vue's/
+   RunsPage.vue's `.wrapper :deep(.child)`) rather than forking its markup. Divisions list in DOM
+   order from worst (III) to best (I) — see TierLadder.vue's own `divisions()` comment — so a chip
+   with a later `.current` sibling was already climbed past, and one after `.current` hasn't been
+   reached yet. Borrows RankProgress.vue's own tier-accent-fill/opacity vocabulary rather than
+   inventing a new one. */
+.ranks-tier-ladder :deep(.division-chip:has(~ .division-chip.current)) {
+  background: var(--tier-accent, var(--nebula-1));
+  color: var(--tt, var(--text));
+  opacity: 0.55;
+}
+.ranks-tier-ladder :deep(.division-chip.current) {
+  box-shadow: 0 0 0 2px var(--tier-accent, var(--nebula-1));
+  font-weight: 800;
+}
+.ranks-tier-ladder :deep(.division-chip.current ~ .division-chip) {
+  opacity: 0.4;
 }
 .chart-slot::after {
   content: "";

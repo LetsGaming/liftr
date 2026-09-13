@@ -113,11 +113,11 @@ defineExpose({
 }
 
 :deep(.app-dropdown-menu button.danger) {
-  color: var(--red);
+  color: var(--danger);
 }
 
 :deep(.app-dropdown-menu button.danger.confirming) {
-  background: var(--red-lo);
+  background: var(--danger-lo);
   color: var(--text);
   font-weight: 700;
 }

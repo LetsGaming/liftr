@@ -212,7 +212,7 @@ function fmtPace(sPerKm: number | null): string {
   height: 44px;
   border-radius: 50%;
   /* Matches .btn-primary's fill (tokens.css) — bright gradient, dark ink, not the inverse. */
-  background: linear-gradient(160deg, var(--blue-hi), var(--blue));
+  background: var(--icon-fill-blue);
   color: var(--blue-ink);
   font-size: 15px;
   flex: none;

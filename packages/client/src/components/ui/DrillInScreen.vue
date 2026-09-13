@@ -7,6 +7,7 @@
  * being copied verbatim between the two pages a second time.
  */
 import { useRouter } from "vue-router";
+import AppIcon from "./AppIcon.vue";
 
 defineProps<{
   title: string;
@@ -33,9 +34,7 @@ function goBack() {
          reliably rendered above them), the exact same reason the page title itself was relocated
          out of the toolbar. -->
     <button class="ro-back-btn" aria-label="Zurück" @click="goBack">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6" />
-      </svg>
+      <AppIcon name="chevron-left" :size="18" />
       <span>Zurück</span>
     </button>
 

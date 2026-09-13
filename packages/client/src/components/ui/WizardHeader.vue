@@ -90,8 +90,8 @@ const title = defineModel<string>("title", { default: "" });
   width: auto;
   padding: 0 12px;
   border-radius: var(--r-md);
-  background: var(--red-lo);
-  border-color: var(--red);
+  background: var(--danger-lo);
+  border-color: var(--danger);
   font-size: 12px;
   font-weight: 700;
 }

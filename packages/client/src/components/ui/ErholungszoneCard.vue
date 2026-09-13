@@ -62,7 +62,7 @@ const verdict = computed(() => {
   gap: var(--sp4);
 }
 .ez-eyebrow {
-  --eyebrow-color: var(--fire-hi);
+  --eyebrow-color: var(--warning-hi);
 }
 .ez-status {
   display: flex;
@@ -71,7 +71,7 @@ const verdict = computed(() => {
 }
 .ez-pill {
   align-self: flex-start;
-  background: linear-gradient(135deg, var(--fire-hi), var(--fire));
+  background: var(--icon-fill-fire);
   color: var(--k-warmup-text);
   font-size: 11px;
   font-weight: 800;

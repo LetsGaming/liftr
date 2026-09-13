@@ -5,8 +5,9 @@
  * this component's whole job is click/drag interaction, a genuinely different concern.
  */
 import L from "leaflet";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { cssVar, createOsmTileLayer } from "../../lib/leafletTheme";
+import { onBeforeUnmount, watch } from "vue";
+import { cssVar } from "../../lib/leafletTheme";
+import LeafletMapBase from "../map/LeafletMapBase.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useLastKnownLocation } from "../../composables/useLastKnownLocation";
 import type { RoutePoint, Waypoint } from "../../services/plannedRouteService";
@@ -25,7 +26,6 @@ const emit = defineEmits<{
   remove: [index: number];
 }>();
 
-const container = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let markers: L.Marker[] = [];
 let line: L.Polyline | null = null;
@@ -86,22 +86,19 @@ function locate() {
   locateAndStore((coords) => map?.setView([coords.lat, coords.lon], 15));
 }
 
-onMounted(() => {
-  if (!container.value) return;
-  const center = props.waypoints[0] ?? props.initialCenter ?? getStoredLocation() ?? { lat: 52.52, lon: 13.405 };
-  map = L.map(container.value, { attributionControl: true, zoomControl: true }).setView([center.lat, center.lon], 14);
-  createOsmTileLayer().addTo(map);
+const initialCenter = props.waypoints[0] ?? props.initialCenter ?? getStoredLocation() ?? { lat: 52.52, lon: 13.405 };
+
+function handleReady(m: L.Map) {
+  map = m;
   map.on("click", (e: L.LeafletMouseEvent) => {
     if (props.readonly) return;
     emit("add", { lat: e.latlng.lat, lon: e.latlng.lng });
   });
-  requestAnimationFrame(() => map?.invalidateSize());
   renderMarkers();
   renderLine();
-});
+}
 
 onBeforeUnmount(() => {
-  map?.remove();
   map = null;
 });
 
@@ -114,7 +111,11 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
 
 <template>
   <div class="route-map-editor">
-    <div ref="container" class="map-surface" />
+    <LeafletMapBase
+      class="map-surface"
+      :initial-view="{ center: [initialCenter.lat, initialCenter.lon], zoom: 14 }"
+      @ready="handleReady"
+    />
     <button v-if="!readonly" type="button" class="locate-btn" aria-label="Meinen Standort verwenden" @click="locate">
       📍
     </button>
@@ -188,7 +189,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   height: 44px;
   border-radius: 50%;
   border: 2px solid var(--bg);
-  background: var(--fire);
+  background: var(--warning);
   color: var(--k-warmup-text);
   font-weight: 800;
   font-size: 14px;
@@ -198,8 +199,8 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
    armed) — mirrors WorkoutPage.vue's .cancel-btn.confirming treatment for the same tap-to-arm
    delete pattern elsewhere in the app. */
 :deep(.route-waypoint-icon span.confirming) {
-  background: var(--red-lo);
-  border-color: var(--red);
+  background: var(--danger-lo);
+  border-color: var(--danger);
   color: var(--text);
 }
 </style>

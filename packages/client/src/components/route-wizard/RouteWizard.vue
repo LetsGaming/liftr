@@ -6,10 +6,10 @@
  *
  * `SheetModal.vue` does not emit a `did-present` (or any `ionDidPresent`-forwarded) event — it
  * only ever emits `close`, deferred a frame past IonModal's own `did-dismiss` (see that file's
- * header comment). So there's nothing here to invalidate the map's size on modal-present; the
- * map itself already double-guards with its own `requestAnimationFrame(() => map?.invalidateSize())`
- * at mount, so a possibly-still-animating sheet degrades to "usually fine, occasionally a grey
- * box on a slow device," not broken.
+ * header comment). So there's nothing here to invalidate the map's size on modal-present;
+ * RouteMapEditor.vue now mounts on top of `LeafletMapBase.vue`, whose live `ResizeObserver` keeps
+ * calling `invalidateSize()` for as long as the map exists (not a one-shot check at mount), so a
+ * still-animating sheet settling into its final size is handled correctly regardless of timing.
  */
 import { computed, ref, watch } from "vue";
 import { pathDistanceM } from "@liftr/shared";
@@ -198,8 +198,8 @@ async function save() {
 /* Armed-to-discard state — mirrors WorkoutPage.vue's .cancel-btn.confirming and
    RouteMapEditor.vue's own waypoint .confirming treatment for the same tap-to-arm pattern. */
 .close-btn.confirming {
-  background: var(--red-lo);
-  border-color: var(--red);
+  background: var(--danger-lo);
+  border-color: var(--danger);
   color: var(--text);
 }
 .wizard-map {

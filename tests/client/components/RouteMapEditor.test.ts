@@ -27,11 +27,18 @@ vi.mock("leaflet", () => {
 });
 vi.mock("leaflet/dist/leaflet.css", () => ({}));
 
+class FakeResizeObserver {
+  observe = vi.fn();
+  disconnect = vi.fn();
+}
+
 import RouteMapEditor from "~client/components/route/RouteMapEditor.vue";
 
 beforeEach(() => {
   state.clickHandler = null;
   vi.stubGlobal("requestAnimationFrame", (cb: () => void) => cb());
+  vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  vi.stubGlobal("ResizeObserver", FakeResizeObserver);
 });
 
 describe("RouteMapEditor", () => {

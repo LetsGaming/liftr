@@ -89,9 +89,17 @@ async function ensureCatalog(db: LiftrDb) {
   await ingestRunStandards(db);
   console.log(`  catalog + standards + run standards ingested (${entries.length} exercises).`);
 
-  const hasImages = () => fs.existsSync(IMAGES_DIR) && fs.readdirSync(IMAGES_DIR).length > 0;
-  if (hasImages()) {
-    console.log(`  ${IMAGES_DIR} already has content — skipping image/muscle-asset fetch.`);
+  // ingestImages writes to <IMAGES_DIR>/<slug>/ and ingestMuscleAssets writes to
+  // <IMAGES_DIR>/muscles/ — two independent fetches sharing one directory. Checking "does
+  // IMAGES_DIR have any content at all" treats them as one atomic unit: a machine that got
+  // exercise photos but was interrupted before muscle assets (or vice versa) would skip the
+  // missing half forever. Check each independently instead.
+  const hasExerciseImages = () =>
+    fs.existsSync(IMAGES_DIR) &&
+    fs.readdirSync(IMAGES_DIR).some((name) => name !== "muscles" && name !== ".lock");
+  const hasMuscleAssets = () => fs.existsSync(path.join(IMAGES_DIR, "muscles", "front-body.svg"));
+  if (hasExerciseImages() && hasMuscleAssets()) {
+    console.log(`  ${IMAGES_DIR} already has exercise images and muscle assets — skipping fetch.`);
     return;
   }
 
@@ -118,13 +126,18 @@ async function ensureCatalog(db: LiftrDb) {
   }
 
   try {
-    if (hasImages()) {
-      console.log(`  ${IMAGES_DIR} was populated by another session while waiting — skipping fetch.`);
+    if (hasExerciseImages() && hasMuscleAssets()) {
+      console.log(`  ${IMAGES_DIR} was fully populated by another session while waiting — skipping fetch.`);
       return;
     }
-    console.log("  data/images/ is empty (first run on this machine) — fetching catalog images + muscle assets, this can take a minute...");
-    await ingestImages(entries, IMAGES_DIR);
-    await ingestMuscleAssets(IMAGES_DIR);
+    if (!hasExerciseImages()) {
+      console.log("  fetching catalog exercise images, this can take a minute...");
+      await ingestImages(entries, IMAGES_DIR);
+    }
+    if (!hasMuscleAssets()) {
+      console.log("  fetching muscle-map assets...");
+      await ingestMuscleAssets(IMAGES_DIR);
+    }
   } catch (err) {
     // Not fatal: exercises without a photo already fall back to the icon UI — a real, supported
     // state, not a broken one — so a flaky/offline network here shouldn't fail the whole session.
@@ -142,7 +155,22 @@ async function seedProfile(db: LiftrDb) {
     workoutsPerWeek: 4,
   });
 
-  await writeJsonSetting(db, USER_ID, "ownedEquipment", ["barbell", "dumbbell", "bodyweight", "cable", "machine"]);
+  // Must cover every support-equipment requirement the seeded routines/history actually trigger
+  // (deriveRequirements() in @liftr/shared/equipment/requirements.ts) — bench-press needs "bench",
+  // back-squat/overhead-press need "rack", pullup/chinup need "pullup-bar", dip needs "dip-bars".
+  // Omitting any of these makes "Nur machbare Übungen" hide exercises the seeded user actually
+  // has real logged history for (see UX-11).
+  await writeJsonSetting(db, USER_ID, "ownedEquipment", [
+    "barbell",
+    "dumbbell",
+    "bodyweight",
+    "cable",
+    "machine",
+    "bench",
+    "rack",
+    "pullup-bar",
+    "dip-bars",
+  ]);
 
   const gymSetup: GymSetup = {
     barWeights: { barbell: 20 },

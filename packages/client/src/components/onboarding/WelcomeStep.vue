@@ -32,7 +32,7 @@ import AppIcon from "../ui/AppIcon.vue";
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--blue-hi), var(--blue));
+  background: var(--icon-fill-blue);
   box-shadow: var(--glow-blue);
   margin-bottom: var(--sp2);
   color: #fff;

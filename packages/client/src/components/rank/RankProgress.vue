@@ -181,7 +181,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 .rp-decay {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
 }
 .rp-trust {
   font-size: 11px;

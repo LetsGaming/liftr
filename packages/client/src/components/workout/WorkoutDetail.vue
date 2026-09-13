@@ -278,11 +278,11 @@ async function share() {
 }
 .delete-btn {
   margin-top: var(--sp2);
-  color: var(--red);
+  color: var(--danger);
 }
 .delete-btn.confirming {
-  background: var(--red-lo);
-  border-color: var(--red);
+  background: var(--danger-lo);
+  border-color: var(--danger);
   color: var(--text);
 }
 .share-canvas {

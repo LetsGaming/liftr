@@ -10,6 +10,17 @@ export interface RunPoint {
   cadence: number | null;
 }
 
+/** One fix from useLiveRun.ts's live-tracking recorder — same shape as RunPoint minus the
+ *  server-assigned `idx` (ordering is implicit: array order === recording order). */
+export interface PhoneGpsRunPoint {
+  t: string;
+  lat: number;
+  lon: number;
+  ele: number | null;
+  hr: number | null;
+  cadence: number | null;
+}
+
 export interface RunSummary {
   id: string;
   source: "gpx" | "fit" | "manual" | "healthconnect";
@@ -52,6 +63,26 @@ export async function importRunFile(file: File): Promise<RunSummary> {
     throw new Error(body.detail ?? body.error ?? `import failed: ${res.status}`);
   }
   return (await res.json()) as RunSummary;
+}
+
+/** Turns a live-tracked point buffer into a minimal single-segment GPX 1.1 document, so a
+ *  phone-GPS live run can go through the exact same server-side import pipeline (parse ->
+ *  plausibility gate -> rank recompute) a real GPX file upload does, instead of a second,
+ *  parallel ingestion path that would need to re-implement all of that gating itself. */
+function buildGpxFromPoints(points: PhoneGpsRunPoint[]): string {
+  const trkpts = points
+    .map((p) => {
+      const ele = p.ele != null ? `<ele>${p.ele}</ele>` : "";
+      return `<trkpt lat="${p.lat}" lon="${p.lon}">${ele}<time>${p.t}</time></trkpt>`;
+    })
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="liftr"><trk><trkseg>${trkpts}</trkseg></trk></gpx>`;
+}
+
+export function submitLiveRun(input: { clientId: string; name: string | null; points: PhoneGpsRunPoint[] }): Promise<RunSummary> {
+  const gpx = buildGpxFromPoints(input.points);
+  const file = new File([gpx], `${input.name ?? "live-run"}-${input.clientId}.gpx`, { type: "application/gpx+xml" });
+  return importRunFile(file);
 }
 
 export function logManualRun(input: {

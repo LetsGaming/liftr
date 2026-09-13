@@ -419,7 +419,7 @@ function formatDuration(s: number) {
   gap: var(--sp2);
 }
 .error {
-  color: var(--red);
+  color: var(--danger);
   margin-top: var(--sp2);
   font-size: 13px;
 }
@@ -529,11 +529,11 @@ function formatDuration(s: number) {
 }
 .delete-run-btn {
   margin-top: var(--sp4);
-  color: var(--red);
+  color: var(--danger);
 }
 .delete-run-btn.confirming {
-  background: var(--red-lo);
-  border-color: var(--red);
+  background: var(--danger-lo);
+  border-color: var(--danger);
   color: var(--text);
 }
 .run-list h3 {

@@ -94,7 +94,7 @@ const navItems = [
   {
     to: "/exercises",
     labelKey: "nav.exercises",
-    color: "var(--green)",
+    color: "var(--success)",
     svg: '<path d="M6 4v16M18 4v16M6 12h12"/><circle cx="6" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="6" cy="16" r="1.4" fill="currentColor" stroke="none"/>',
   },
   {
@@ -435,14 +435,14 @@ const forceActiveTo = computed(() => {
   padding: var(--sp2) var(--sp3);
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
   background: var(--surface-2);
   border-radius: var(--r-sm);
 }
 /* --fire-hi/--surface-2 measured at 1.82:1 in light mode (need 4.5:1 for AA); darkened via
    color-mix rather than inventing a new brand hex (measures ~5.3:1 against --surface-2 light). */
 :root[data-theme="light"] .streak-chip {
-  color: color-mix(in srgb, var(--fire-hi) 55%, black);
+  color: color-mix(in srgb, var(--warning-hi) 55%, black);
 }
 /* One-shot pulse the moment the streak actually grows, rather than looking identical whether it
    just changed or has looked the same for a week. */
@@ -456,7 +456,7 @@ const forceActiveTo = computed(() => {
   }
   35% {
     transform: scale(1.12);
-    color: var(--fire);
+    color: var(--warning);
   }
   100% {
     transform: scale(1);

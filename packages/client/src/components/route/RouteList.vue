@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
+import { useRouter } from "vue-router";
 import AppIcon from "../ui/AppIcon.vue";
 import RouteThumbnail from "./RouteThumbnail.vue";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
@@ -10,6 +11,13 @@ const emit = defineEmits<{ edit: [route: PlannedRoute]; start: [route: PlannedRo
 
 const plannedRouteStore = usePlannedRouteStore();
 const deleteConfirm = useConfirmTap((id) => id && plannedRouteStore.remove(id));
+const router = useRouter();
+
+/** Tapping a route card opens its Route Overview/detail screen — same drill-in pattern as
+ *  RoutineList.vue's openOverview(), mirrored here for routes. */
+function openOverview(routeId: string) {
+  void router.push(`/routes/${routeId}`);
+}
 
 // Per-card ⋮ menu (Starten + Bearbeiten/Löschen), replacing the old 3-button row (Starten +
 // two raw-emoji icon buttons) that overflowed the card on a narrow 2-column grid (critique
@@ -46,18 +54,28 @@ function editFromMenu(route: PlannedRoute) {
 
 <template>
   <div v-if="plannedRouteStore.routes.length > 0" class="route-grid">
-    <div v-for="route in plannedRouteStore.routes" :key="route.id" class="route-card surface-hybrid">
+    <div
+      v-for="route in plannedRouteStore.routes"
+      :key="route.id"
+      class="route-card surface-hybrid"
+      role="button"
+      tabindex="0"
+      @click="openOverview(route.id)"
+      @keydown.enter="openOverview(route.id)"
+    >
       <RouteThumbnail :points="route.polyline" :approximate="route.geometrySource === 'straight'" />
-      <div class="route-info">
-        <b>{{ route.name }}</b>
-        <span>
-          {{ (route.distanceM / 1000).toFixed(2) }} km{{ route.geometrySource === "straight" ? " ≈" : "" }} ·
-          {{ route.elevationGainM != null ? Math.round(route.elevationGainM) + " hm" : "Höhe unbekannt" }}
-        </span>
-      </div>
-      <div class="route-actions">
-        <button class="btn-secondary" @click="emit('start', route)">Starten</button>
-        <div class="menu-wrap">
+      <div class="route-head">
+        <div class="route-info">
+          <b>{{ route.name }}</b>
+          <span>
+            {{ (route.distanceM / 1000).toFixed(2) }} km{{ route.geometrySource === "straight" ? " ≈" : "" }} ·
+            {{ route.elevationGainM != null ? Math.round(route.elevationGainM) + " hm" : "Höhe unbekannt" }}
+          </span>
+        </div>
+        <!-- Overflow menu sits top-right next to the title (Jakob's Law), not buried bottom-right
+             away from it. @click.stop so opening/using the menu doesn't also fire the card's own
+             navigate-to-overview tap. -->
+        <div class="menu-wrap" @click.stop>
           <button
             class="btn-icon"
             aria-label="Mehr"
@@ -78,6 +96,9 @@ function editFromMenu(route: PlannedRoute) {
             </button>
           </div>
         </div>
+      </div>
+      <div class="route-actions" @click.stop>
+        <button class="btn-secondary" @click="emit('start', route)">Starten</button>
       </div>
     </div>
   </div>
@@ -110,16 +131,29 @@ function editFromMenu(route: PlannedRoute) {
      NOT overflow:hidden here — the ⋮ dropdown below needs to escape the card's own bounds. */
   min-width: 0;
 }
+/* Outer radius (--r-lg, 22px) minus this card's own padding (10px) = 12px — the correct inner
+   radius for RouteThumbnail.vue's default (--r-md, 16px) nested this snugly. Local override for
+   this one nesting context only; the thumbnail's own default stays untouched for other callers. */
+.route-card :deep(.route-thumb-map) {
+  border-radius: 12px;
+}
 .map-credit {
   margin-top: var(--sp2);
   color: var(--faint);
   font-size: 11px;
+}
+.route-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp2);
 }
 .route-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 .route-info b {
   overflow-wrap: anywhere;
@@ -166,10 +200,10 @@ function editFromMenu(route: PlannedRoute) {
   background: var(--surface-2);
 }
 .route-menu button.danger {
-  color: var(--red);
+  color: var(--danger);
 }
 .route-menu button.danger.confirming {
-  background: var(--red-lo);
+  background: var(--danger-lo);
   color: var(--text);
   font-weight: 700;
 }
