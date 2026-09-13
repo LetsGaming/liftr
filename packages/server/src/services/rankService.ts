@@ -146,7 +146,11 @@ export async function recomputeRankForExercise(
       value = rankSkillScore(load, s.reps) / bodyweightKg;
       e1rm = estimateE1rm(load, s.reps).e1rm;
     }
-    if (value > bestValue) {
+    // Tie-break by recency: `findLoggedSetsForExercise` has no ORDER BY, so relying on row order
+    // to pick a winner among equal-value sets would be nondeterministic (and was — it silently
+    // dated rank-up events to whichever tied set the DB happened to return first, not the most
+    // recent one that actually corroborated the peak).
+    if (value > bestValue || (value === bestValue && s.loggedAt > bestSet!.loggedAt)) {
       bestValue = value;
       bestSet = s;
       bestE1rm = e1rm;
