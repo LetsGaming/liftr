@@ -74,16 +74,24 @@ describe("idb", () => {
     expect(putMock).toHaveBeenCalledWith("activeWorkout", state, "current");
   });
 
+  const alwaysValid = (value: unknown): value is unknown => value !== undefined;
+
   it("loadActiveWorkout reads the fixed 'current' key", async () => {
     getMock.mockResolvedValueOnce({ workoutId: "w1" });
-    const result = await loadActiveWorkout();
+    const result = await loadActiveWorkout(alwaysValid);
     expect(getMock).toHaveBeenCalledWith("activeWorkout", "current");
     expect(result).toEqual({ workoutId: "w1" });
   });
 
   it("loadActiveWorkout resolves undefined when nothing was saved", async () => {
     getMock.mockResolvedValueOnce(undefined);
-    const result = await loadActiveWorkout();
+    const result = await loadActiveWorkout(alwaysValid);
+    expect(result).toBeUndefined();
+  });
+
+  it("loadActiveWorkout resolves undefined when the saved value fails the shape guard", async () => {
+    getMock.mockResolvedValueOnce({ notWhatWeExpect: true });
+    const result = await loadActiveWorkout((value): value is unknown => typeof value === "string");
     expect(result).toBeUndefined();
   });
 

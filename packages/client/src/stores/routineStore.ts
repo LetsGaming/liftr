@@ -5,6 +5,7 @@
  * activity done at a desk with signal, not part of the gym-basement logging loop.
  */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import {
   advanceMesocycle,
   createRoutine,
@@ -37,15 +38,11 @@ export const useRoutineStore = defineStore("routine", {
   },
   actions: {
     async load() {
-      try {
-        this.routines = await getRoutines();
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
-        // needs to tell "still fetching" from "failed" apart.
-        this.error = true;
-      }
+      await withLoadState(getRoutines, {
+        apply: (routines) => (this.routines = routines),
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
 
     async create(name: string, exercises: RoutineExerciseInput[]) {

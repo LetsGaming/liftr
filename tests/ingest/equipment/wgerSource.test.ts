@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchWgerFullEquipmentIndex, wgerEquipmentSource } from "~ingest/equipment/wgerSource.js";
+import {
+  __resetFetchAllExercisesCacheForTests,
+  fetchWgerFullEquipmentIndex,
+  wgerEquipmentSource,
+} from "~ingest/equipment/wgerSource.js";
 
 function jsonResponse(body: unknown, ok = true) {
   return { ok, status: ok ? 200 : 500, statusText: ok ? "OK" : "Internal Server Error", json: async () => body };
@@ -13,6 +17,9 @@ const EQUIPMENT_TYPES = [
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  // fetchAllExercises() is memoized per-process (see wgerSource.ts); reset between tests so each
+  // one's `fetch` stub is actually exercised instead of a previous test's cached rows.
+  __resetFetchAllExercisesCacheForTests();
 });
 
 /** Two-page exercise listing (id -> equipment ids), stitched together across `next`. */
@@ -49,7 +56,7 @@ describe("wgerEquipmentSource.buildIndex", () => {
       vi.fn(async (url: string) => (url.includes("/equipment/") ? jsonResponse({ results: [] }) : jsonResponse(null, false))),
     );
 
-    await expect(wgerEquipmentSource.buildIndex()).rejects.toThrow(/wger fetch failed/);
+    await expect(wgerEquipmentSource.buildIndex()).rejects.toThrow(/fetch failed/);
   });
 });
 

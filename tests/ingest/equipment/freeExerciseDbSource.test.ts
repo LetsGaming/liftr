@@ -23,7 +23,9 @@ describe("freeExerciseDbEquipmentSource.buildIndex", () => {
 
     expect(index.get("Barbell_Curl")).toBe("barbell");
     expect(index.get("Cable_Row")).toBe("cable");
-    expect(fetchMock).toHaveBeenCalledWith("https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json");
+    // fetchJson (fetchWithTimeout.ts) always passes an options object with an AbortSignal for the
+    // timeout, so the call is asserted by URL only rather than an exact-equals on the full args.
+    expect(fetchMock.mock.calls[0]![0]).toBe("https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json");
   });
 
   it("normalizes a row with no vocabulary equivalent (e.g. 'bands') to null rather than guessing", async () => {
@@ -45,7 +47,7 @@ describe("freeExerciseDbEquipmentSource.buildIndex", () => {
   it("throws (rather than degrading itself) when the fetch is not ok — resolveEquipment.ts is what degrades this", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(null, false)));
 
-    await expect(freeExerciseDbEquipmentSource.buildIndex()).rejects.toThrow(/free-exercise-db fetch failed/);
+    await expect(freeExerciseDbEquipmentSource.buildIndex()).rejects.toThrow(/fetch failed/);
   });
 
   it("declares its adapter name as 'free-exercise-db'", () => {

@@ -21,6 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { catalogFileSchema } from "./catalogSchema.js";
+import { fetchJson } from "./lib/fetchWithTimeout.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATALOG_PATH = path.join(__dirname, "../../../tools/catalog/curated.yaml");
@@ -30,12 +31,6 @@ interface WgerTranslation {
   id: number;
   name: string;
   exercise: number;
-}
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`wger fetch failed: ${res.status} ${res.statusText} (${url})`);
-  return res.json() as Promise<T>;
 }
 
 async function fetchExactMatch(nameEn: string): Promise<number | null> {

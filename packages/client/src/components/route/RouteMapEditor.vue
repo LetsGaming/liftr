@@ -8,6 +8,7 @@ import L from "leaflet";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { cssVar, createOsmTileLayer } from "../../lib/leafletTheme";
 import { useConfirmTap } from "../../composables/useConfirmTap";
+import { useLastKnownLocation } from "../../composables/useLastKnownLocation";
 import type { RoutePoint, Waypoint } from "../../services/plannedRouteService";
 
 const props = defineProps<{
@@ -76,18 +77,18 @@ function renderLine() {
   line.addTo(map);
 }
 
+// Persists the last geolocation fix we got (from the 📍 button below) so the map opens centered
+// on somewhere relevant to the user instead of a hardcoded Berlin coordinate next time — useful
+// both offline and while a fresh fix is still resolving.
+const { getStoredLocation, locate: locateAndStore } = useLastKnownLocation();
+
 function locate() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(
-    (pos) => map?.setView([pos.coords.latitude, pos.coords.longitude], 15),
-    () => {}, // denied/unavailable — the parent's initialCenter fallback already covers this
-    { enableHighAccuracy: false, timeout: 5000 },
-  );
+  locateAndStore((coords) => map?.setView([coords.lat, coords.lon], 15));
 }
 
 onMounted(() => {
   if (!container.value) return;
-  const center = props.waypoints[0] ?? props.initialCenter ?? { lat: 52.52, lon: 13.405 };
+  const center = props.waypoints[0] ?? props.initialCenter ?? getStoredLocation() ?? { lat: 52.52, lon: 13.405 };
   map = L.map(container.value, { attributionControl: true, zoomControl: true }).setView([center.lat, center.lon], 14);
   createOsmTileLayer().addTo(map);
   map.on("click", (e: L.LeafletMouseEvent) => {

@@ -12,11 +12,11 @@ import AppIcon from "../components/ui/AppIcon.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useConfirmTap } from "../composables/useConfirmTap";
+import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
 import { isHealthConnectAvailable } from "../health/healthConnect";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
-import { validateManualEntry } from "../lib/runValidation";
 import { getRunDetail } from "../services/runService";
 import { getPlannedRouteDetail, type PlannedRoute } from "../services/plannedRouteService";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
@@ -123,17 +123,22 @@ const deleteConfirm = useConfirmTap(async () => {
 });
 const importing = ref(false);
 const importError = ref<string | null>(null);
-const manualError = ref<string | null>(null);
 const showManualForm = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-const manualName = ref("");
-const manualDate = ref(new Date().toISOString().slice(0, 10));
-const manualDistanceKm = ref("");
-const manualMinutes = ref("");
-
 const { activeRoute, start: startFromRoute, dismiss: dismissRouteBanner } = useStartPlannedRoute();
 const minutesInputRef = ref<HTMLInputElement | null>(null);
+
+const { manualName, manualDate, manualDistanceKm, manualMinutes, manualError, submitting, submitManual } =
+  useManualRunEntry(async () => {
+    showManualForm.value = false;
+    manualName.value = "";
+    manualDistanceKm.value = "";
+    manualMinutes.value = "";
+    dismissRouteBanner();
+    if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
+    toast("Lauf gespeichert.");
+  });
 
 watch(activeRoute, (route) => {
   if (!route) return;
@@ -183,37 +188,8 @@ async function onFileChosen(e: Event) {
   }
 }
 
-async function submitManual() {
-  const validationError = validateManualEntry(manualDistanceKm.value, manualMinutes.value, manualDate.value);
-  if (validationError) {
-    manualError.value = validationError;
-    return;
-  }
-  const km = Number(manualDistanceKm.value.replace(",", "."));
-  const min = Number(manualMinutes.value.replace(",", "."));
-  try {
-    await runsStore.logManual({
-      name: manualName.value || null,
-      startedAt: new Date(manualDate.value + "T12:00:00").toISOString(),
-      distanceM: km * 1000,
-      durationS: min * 60,
-      plannedRouteId: activeRoute.value?.id ?? null,
-      elevationGainM: activeRoute.value?.elevationGainM ?? null,
-    });
-    manualError.value = null;
-    showManualForm.value = false;
-    manualName.value = "";
-    manualDistanceKm.value = "";
-    manualMinutes.value = "";
-    dismissRouteBanner();
-    if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
-    toast("Lauf gespeichert.");
-  } catch (err) {
-    // Genuine server/network failure only — client-side validation is handled above and never
-    // reaches here (validateManualEntry() also guards the new Date(...) call above from ever
-    // throwing on a bad manualDate, so this catch only sees real request failures).
-    manualError.value = (err as Error).message;
-  }
+function saveManual() {
+  void submitManual({ plannedRouteId: activeRoute.value?.id ?? null, elevationGainM: activeRoute.value?.elevationGainM ?? null });
 }
 
 function formatDate(iso: string) {
@@ -313,7 +289,7 @@ function formatDuration(s: number) {
         placeholder="Minuten"
         aria-label="Dauer in Minuten"
       />
-      <button class="btn-primary" @click="submitManual">Speichern</button>
+      <button class="btn-primary" :disabled="submitting" @click="saveManual">Speichern</button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 

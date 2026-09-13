@@ -8,6 +8,7 @@
  * in flight).
  */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import {
   getGymSetup,
   getOwnedEquipment,
@@ -37,24 +38,21 @@ export const useSettingsStore = defineStore("settings", {
   },
   actions: {
     async load() {
-      try {
-        this.profile = await getProfile();
-        this.profileLoaded = true;
-      } catch {
-        // offline with nothing cached — leave profileLoaded false, don't prompt onboarding blind
-      }
-      try {
-        this.ownedEquipment = await getOwnedEquipment();
-        this.equipmentLoaded = true;
-      } catch {
-        // offline — equipment filtering just stays unavailable (treated as "no restriction")
-      }
-      try {
-        this.gymSetup = await getGymSetup();
-        this.gymLoaded = true;
-      } catch {
-        // offline — plate calculator falls back to the unlimited standard set
-      }
+      // No `error` flag on any of these three — a failed fetch just leaves its `xLoaded` flag
+      // false (offline with nothing cached: don't prompt onboarding blind, equipment filtering
+      // stays unavailable, plate calculator falls back to the unlimited standard set).
+      await withLoadState(getProfile, {
+        apply: (profile) => (this.profile = profile),
+        setLoaded: (v) => (this.profileLoaded = v),
+      });
+      await withLoadState(getOwnedEquipment, {
+        apply: (equipment) => (this.ownedEquipment = equipment),
+        setLoaded: (v) => (this.equipmentLoaded = v),
+      });
+      await withLoadState(getGymSetup, {
+        apply: (gymSetup) => (this.gymSetup = gymSetup),
+        setLoaded: (v) => (this.gymLoaded = v),
+      });
     },
 
     async saveProfile(input: ProfileInput) {

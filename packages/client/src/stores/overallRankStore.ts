@@ -1,5 +1,6 @@
 /** Overall Lifter Rank, backed by /api/overall-rank. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getOverallRank, type OverallRankBand } from "../services/overallRankService";
 
 export const useOverallRankStore = defineStore("overallRank", {
@@ -11,17 +12,14 @@ export const useOverallRankStore = defineStore("overallRank", {
   }),
   actions: {
     async load() {
-      try {
-        const result = await getOverallRank();
-        this.current = result.current;
-        this.peak = result.peak;
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
-        // needs to tell "still fetching" from "failed" apart.
-        this.error = true;
-      }
+      await withLoadState(getOverallRank, {
+        apply: (result) => {
+          this.current = result.current;
+          this.peak = result.peak;
+        },
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
   },
 });
