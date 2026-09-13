@@ -13,8 +13,11 @@ import { computed, onMounted, ref } from "vue";
 import { useRunsStore, type RunDetail as RunDetailModel } from "../../stores/runsStore";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
 import { useRunRankStore } from "../../stores/runRankStore";
-import { getPlannedRouteDetail } from "../../services/plannedRouteService";
+import { getPlannedRouteDetail, type Waypoint } from "../../services/plannedRouteService";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { useConfirmTap } from "../../composables/useConfirmTap";
+import AppIcon from "../ui/AppIcon.vue";
+import RouteWizard from "../route-wizard/RouteWizard.vue";
 import RunReplay from "./RunReplay.vue";
 import SheetModal from "../ui/SheetModal.vue";
 import StatTile from "../ui/StatTile.vue";
@@ -27,6 +30,23 @@ const plannedRouteStore = usePlannedRouteStore();
 const runRankStore = useRunRankStore();
 const loading = ref(true);
 const detail = ref<RunDetailModel | null>(null);
+const deleting = ref(false);
+const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
+
+/** Mirrors WorkoutDetail.vue's own delete pattern: refresh the rank/PR data this sheet itself
+ *  displays (deleting a run can change or remove a rank-up/PR it earned), close via
+ *  sheetRef.dismiss() rather than a direct emit — see SheetModal.vue's header comment for why a
+ *  direct emit/unmount here would race Ionic's own modal teardown. */
+const deleteConfirm = useConfirmTap(async () => {
+  deleting.value = true;
+  try {
+    await runsStore.deleteRun(props.runId);
+    await Promise.all([runRankStore.loadRanks(), runRankStore.loadPrs()]);
+    sheetRef.value?.dismiss();
+  } finally {
+    deleting.value = false;
+  }
+});
 
 // Rank/PR chip — same convention as RunsPage.vue's own selectedRunCategory/selectedRunRank/
 // selectedRunIsPr (see that file's comment for why manual runs are excluded explicitly rather
@@ -106,10 +126,30 @@ function formatPace(sPerKm: number | null) {
   const s = Math.round(sPerKm);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
 }
+
+// "Als Strecke speichern" — turns this run's recorded GPS track into a reusable planned route.
+// RouteWizard only ever takes user-placed waypoints, so the full point-by-point track (hundreds
+// of GPS fixes) is stride-sampled down to a manageable handful the user can still see/drag/edit
+// before saving, rather than dumping every fix onto the map as its own marker.
+const ROUTE_SEED_TARGET_WAYPOINTS = 20;
+const showRouteWizard = ref(false);
+const routeSeedWaypoints = computed<Waypoint[]>(() => {
+  const points = detail.value?.points ?? [];
+  if (points.length === 0) return [];
+  const stride = Math.max(1, Math.ceil(points.length / ROUTE_SEED_TARGET_WAYPOINTS));
+  const sampled = points.filter((_, i) => i % stride === 0).map((p) => ({ lat: p.lat, lon: p.lon }));
+  const last = points[points.length - 1]!;
+  if (sampled[sampled.length - 1]?.lat !== last.lat || sampled[sampled.length - 1]?.lon !== last.lon) {
+    sampled.push({ lat: last.lat, lon: last.lon });
+  }
+  return sampled;
+});
+const routeSeedName = computed(() => detail.value?.name ?? formatDate(detail.value?.startedAt ?? new Date().toISOString()));
 </script>
 
 <template>
   <SheetModal
+    ref="sheetRef"
     :title="detail?.name ?? 'Lauf-Details'"
     width="100%"
     max-width="94vw"
@@ -141,7 +181,30 @@ function formatPace(sPerKm: number | null) {
 
       <RunReplay v-if="detail.points.length > 0" :points="detail.points" />
       <p v-else class="hint">Manuell erfasster Lauf — keine Route verfügbar.</p>
+
+      <button v-if="detail.points.length > 0" class="btn-secondary btn-block save-route-btn" @click="showRouteWizard = true">
+        <AppIcon name="running" /> Als Strecke speichern
+      </button>
+
+      <button
+        class="btn-secondary btn-block delete-btn"
+        :class="{ confirming: deleteConfirm.isArmed() }"
+        :disabled="deleting"
+        @click="deleteConfirm.trigger()"
+      >
+        <template v-if="deleting">Wird gelöscht…</template>
+        <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen?</template>
+        <template v-else><AppIcon name="trash" /> Lauf löschen</template>
+      </button>
     </template>
+
+    <RouteWizard
+      v-if="showRouteWizard"
+      :seed-waypoints="routeSeedWaypoints"
+      :seed-name="routeSeedName"
+      @close="showRouteWizard = false"
+      @saved="showRouteWizard = false"
+    />
   </SheetModal>
 </template>
 
@@ -181,5 +244,17 @@ function formatPace(sPerKm: number | null) {
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: var(--sp2);
   margin-bottom: var(--sp5);
+}
+.save-route-btn {
+  margin-top: var(--sp4);
+}
+.delete-btn {
+  margin-top: var(--sp3);
+  color: var(--danger);
+}
+.delete-btn.confirming {
+  background: var(--danger-lo);
+  border-color: var(--danger);
+  color: var(--text);
 }
 </style>

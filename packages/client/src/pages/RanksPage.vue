@@ -3,9 +3,10 @@
 // running server-side (see rankEngine.ts) and cached into the `ranks` table. Never
 // gated/paywalled.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { ordinal, RUN_CATEGORIES, type RunCategory, type Tier } from "@liftr/shared";
-import { computed, onMounted } from "vue";
+import { ordinal, RUN_CATEGORIES, TIERS, type RunCategory, type Tier } from "@liftr/shared";
+import { computed, onMounted, ref } from "vue";
 import { LP_EXPLAINER } from "../copy/rankCopy";
+import { TIER_LABEL_DE } from "../lib/tierIcons";
 import ProgressChart from "../components/rank/ProgressChart.vue";
 import RankDistributionDonut from "../components/rank/RankDistributionDonut.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
@@ -42,6 +43,21 @@ const sortedRanks = computed(() =>
   ranksStore.ranks
     .slice()
     .sort((a, b) => b.lp - a.lp || ordinal(b.tier as Tier, b.division) - ordinal(a.tier as Tier, a.division)),
+);
+
+/** Tier filter — a flat "all ranks" list gets unwieldy once someone has trained a real number of
+ *  exercises (the seeded mock data only has 8, but a real gym history can easily have 30-40).
+ *  Tier is the one grouping already on every RankRow with no extra store/join needed (a
+ *  muscle-group filter would need catalogStore's per-exercise muscle data, which ranksStore
+ *  doesn't carry). Only tiers the user actually has a rank in render as options — same "every
+ *  option is real" rule OverviewPage's own tab-strip filter follows. */
+const tierFilter = ref<"alle" | Tier>("alle");
+const presentTiers = computed(() => {
+  const present = new Set(sortedRanks.value.map((r) => r.tier as Tier));
+  return TIERS.filter((t) => present.has(t)).reverse(); // highest tier first, matching the LP-desc reading order
+});
+const filteredRanks = computed(() =>
+  tierFilter.value === "alle" ? sortedRanks.value : sortedRanks.value.filter((r) => r.tier === tierFilter.value),
 );
 
 // Task 13: Overall Runner Rank section — a second, independent summary sourced from Task 10's
@@ -145,8 +161,31 @@ function formatNextSpeedTarget(speedMps: number | null): string {
           <RankUpCalendar />
         </div>
 
+        <div v-if="presentTiers.length > 1" class="tab-strip rank-tier-filter" role="tablist" aria-label="Nach Rang filtern">
+          <button
+            role="tab"
+            class="tab-pill"
+            :class="{ active: tierFilter === 'alle' }"
+            :aria-selected="tierFilter === 'alle'"
+            @click="tierFilter = 'alle'"
+          >
+            Alle
+          </button>
+          <button
+            v-for="t in presentTiers"
+            :key="t"
+            role="tab"
+            class="tab-pill"
+            :class="{ active: tierFilter === t }"
+            :aria-selected="tierFilter === t"
+            @click="tierFilter = t"
+          >
+            {{ TIER_LABEL_DE[t] }}
+          </button>
+        </div>
+
         <div v-if="ranksStore.ranks.length > 0" class="rank-grid">
-        <div v-for="r in sortedRanks" :key="r.exerciseId" class="rank-card-wrap" :class="`t-${r.tier}`">
+        <div v-for="r in filteredRanks" :key="r.exerciseId" class="rank-card-wrap" :class="`t-${r.tier}`">
           <button class="rank-card" :class="`t-${r.tier}`" @click="toggleExpand(r.exerciseId)">
             <TruncatingLabel class="en">{{ exerciseName(r.slug, r.name) }}</TruncatingLabel>
             <RankProgress
@@ -231,6 +270,10 @@ function formatNextSpeedTarget(speedMps: number | null): string {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--sp4);
+  margin: var(--sp4) auto 0;
+  max-width: var(--content-w-wide);
+}
+.rank-tier-filter {
   margin: var(--sp4) auto 0;
   max-width: var(--content-w-wide);
 }

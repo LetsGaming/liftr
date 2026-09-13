@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeRunXp,
+  HEALTHCONNECT_XP_BONUS_MULTIPLIER,
   quantizeDistanceForDecay,
   repeatRunMultiplier,
   RUN_XP_PER_KM,
@@ -72,6 +73,20 @@ describe("computeRunXp", () => {
       run({ runId: "a", distanceM: 5000, loggedAt: day1, plausibilityMultiplier: 1 }),
     ]);
     expect(withDefault).toBeCloseTo(withExplicit1, 6);
+  });
+
+  it("applies a small bonus for a healthconnect-sourced run", () => {
+    const day1 = new Date("2026-01-01T08:00:00Z");
+    const phoneOnly = computeRunXp([run({ runId: "a", distanceM: 5000, loggedAt: day1, source: "gpx" })]);
+    const watch = computeRunXp([run({ runId: "a", distanceM: 5000, loggedAt: day1, source: "healthconnect" })]);
+    expect(watch).toBeCloseTo(phoneOnly * HEALTHCONNECT_XP_BONUS_MULTIPLIER, 6);
+  });
+
+  it("applies no bonus when source is omitted or manual", () => {
+    const day1 = new Date("2026-01-01T08:00:00Z");
+    const noSource = computeRunXp([run({ runId: "a", distanceM: 5000, loggedAt: day1 })]);
+    const manual = computeRunXp([run({ runId: "a", distanceM: 5000, loggedAt: day1, source: "manual" })]);
+    expect(manual).toBeCloseTo(noSource, 6);
   });
 
   it("computes total XP as chronological order, regardless of input array order", () => {

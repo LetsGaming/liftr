@@ -53,6 +53,7 @@ export function findAllRunsForXp(db: LiftrDb, userId: string) {
       durationS: runs.durationS,
       startedAt: runs.startedAt,
       plausibilityMultiplier: runs.plausibilityMultiplier,
+      source: runs.source,
     })
     .from(runs)
     .where(eq(runs.userId, userId));

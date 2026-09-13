@@ -193,6 +193,12 @@ function fmtPace(sPerKm: number | null): string {
 .map-wrap {
   height: 320px;
 }
+/* .panel (tokens.css) supplies the surface fill/blur/border but no padding of its own — every
+   other .panel consumer adds its own, and this one never did, leaving the scrubber/controls/
+   stat readouts flush against the card edges. */
+.replay-chrome {
+  padding: var(--sp4);
+}
 .controls {
   display: flex;
   align-items: center;

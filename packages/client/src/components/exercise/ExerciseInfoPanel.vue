@@ -208,7 +208,13 @@ function missingBadge(req: TieredRequirement): string | null {
    only correct-a11y implementation of the sub-level tablist pattern in the app, RunsPage.vue's
    Verlauf/Strecken switcher having hand-duplicated a worse copy of a *different* pattern,
    WorkoutRunsSwitcher.vue's boxed .wr-switcher). Markup here is unchanged (role="tablist" etc.
-   above); only the CSS moved. */
+   above); only the CSS moved. Unlike OverviewPage's usage, this strip sits directly in the
+   unpadded #header slot (not inside a padded page container), so it needs its own horizontal
+   padding here to keep the pills off the sheet edges and clear of the close button above. */
+.tab-strip {
+  padding: 0 var(--sp5) var(--sp4);
+  margin-top: var(--sp3);
+}
 .hint {
   color: var(--dim);
   font-size: 13px;

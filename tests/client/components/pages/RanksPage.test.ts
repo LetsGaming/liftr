@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 import RankProgress from "~client/components/rank/RankProgress.vue";
 import RanksPage from "~client/pages/RanksPage.vue";
+import { TIER_LABEL_DE } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 vi.mock("~client/services/exerciseService", () => ({ getExerciseHistory: vi.fn().mockResolvedValue([]) }));
@@ -144,6 +145,42 @@ describe("RanksPage", () => {
     expect(wrapper.find(".chart-slot").exists()).toBe(false);
     await wrapper.find(".rank-card").trigger("click");
     expect(wrapper.find(".chart-slot").exists()).toBe(true);
+  });
+
+  describe("tier filter", () => {
+    it("hides the filter strip when only one tier is present", () => {
+      Object.assign(ranksState, {
+        loaded: true,
+        error: false,
+        ranks: [makeRank({ exerciseId: "a", tier: "athlete" }), makeRank({ exerciseId: "b", tier: "athlete" })],
+      });
+      const wrapper = mountWithProviders(RanksPage, { global: { stubs: STUBS } });
+
+      expect(wrapper.find(".rank-tier-filter").exists()).toBe(false);
+      expect(wrapper.findAll(".rank-grid .rank-card")).toHaveLength(2);
+    });
+
+    it("narrows the grid to the selected tier, and back to all on 'Alle'", async () => {
+      Object.assign(ranksState, {
+        loaded: true,
+        error: false,
+        ranks: [
+          makeRank({ exerciseId: "a", tier: "athlete", lp: 90 }),
+          makeRank({ exerciseId: "b", tier: "elite", lp: 10 }),
+        ],
+      });
+      const wrapper = mountWithProviders(RanksPage, { global: { stubs: STUBS } });
+
+      expect(wrapper.findAll(".rank-grid .rank-card")).toHaveLength(2);
+      const tabs = wrapper.findAll(".rank-tier-filter .tab-pill");
+      const eliteTab = tabs.find((t) => t.text() === TIER_LABEL_DE.elite)!;
+      await eliteTab.trigger("click");
+      expect(wrapper.findAll(".rank-grid .rank-card")).toHaveLength(1);
+
+      const allTab = tabs.find((t) => t.text() === "Alle")!;
+      await allTab.trigger("click");
+      expect(wrapper.findAll(".rank-grid .rank-card")).toHaveLength(2);
+    });
   });
 
   describe("Overall Runner Rank section (Task 13)", () => {

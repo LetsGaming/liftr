@@ -78,7 +78,7 @@ function onLiveRunFinished() {
         <template #not-found>
           <div class="eyebrow">Strecke nicht gefunden</div>
           <p>Diese Strecke existiert nicht (mehr). Vielleicht wurde sie gelöscht.</p>
-          <router-link to="/runs?tab=strecken" class="btn-secondary btn-block">Zu den Strecken →</router-link>
+          <router-link to="/runs" class="btn-secondary btn-block">Zu den Strecken →</router-link>
         </template>
 
         <template v-if="plannedRoute">

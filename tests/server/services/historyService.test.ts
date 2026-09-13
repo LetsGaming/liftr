@@ -22,9 +22,9 @@ describe("getHistoryPage", () => {
         // No exercise rank exists for this exercise, so tier is null (multiplier 1); this is the
         // only set ever logged, so repeat-decay occurrence is 1 (multiplier 1) and
         // plausibilityMultiplier defaults to 1. computeSetXp therefore reduces to
-        // BODYWEIGHT_NOMINAL_LOAD_KG (30) * reps (10) = 300, regardless of the weight typed here.
-        consistencyBonusXp: 850,
-        varietyBonusXp: 1500,
+        // BODYWEIGHT_NOMINAL_LOAD_KG (3) * reps (10) = 30, regardless of the weight typed here.
+        consistencyBonusXp: 85,
+        varietyBonusXp: 150,
       })
       .returning();
     const [we] = await db
@@ -45,11 +45,11 @@ describe("getHistoryPage", () => {
     const page = await getHistoryPage(db, OWNER_USER_ID, undefined, 20);
 
     const item = page.items.find((i) => i.id === workout!.id);
-    // per-set XP (300) + consistencyBonusXp (850) + varietyBonusXp (1500) = 2650 — must equal
+    // per-set XP (30) + consistencyBonusXp (85) + varietyBonusXp (150) = 265 — must equal
     // exactly what getXpSummary would report for this same finished session (see
     // xpService.test.ts's identically-shaped fixture), or the history feed and the Finish
     // Sequence would silently disagree about the same past session's XP.
-    expect(item?.meta.xp).toBe(2650);
+    expect(item?.meta.xp).toBe(265);
   });
 
   it("treats a workout's null bonus columns as contributing 0, without throwing or producing NaN", async () => {
@@ -82,9 +82,9 @@ describe("getHistoryPage", () => {
     const page = await getHistoryPage(db, OWNER_USER_ID, undefined, 20);
 
     const item = page.items.find((i) => i.id === workout!.id);
-    // per-set XP only: BODYWEIGHT_NOMINAL_LOAD_KG (30) * reps (5) = 150; null bonus columns must
+    // per-set XP only: BODYWEIGHT_NOMINAL_LOAD_KG (3) * reps (5) = 15; null bonus columns must
     // be treated as 0, not propagate as NaN.
-    expect(item?.meta.xp).toBe(150);
+    expect(item?.meta.xp).toBe(15);
     expect(Number.isNaN(item?.meta.xp)).toBe(false);
   });
 });

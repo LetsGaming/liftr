@@ -76,7 +76,7 @@ function spawnBackground(command, args, { cwd, env, logFile }) {
 }
 
 async function main() {
-  const { id } = parseArgs(process.argv.slice(2));
+  const { id, verbose } = parseArgs(process.argv.slice(2));
   const log = (msg) => console.log(`[dev-up:${id}] ${msg}`);
 
   const dataDir = path.join(repoRoot, "data", `agent-${id}`);
@@ -106,6 +106,10 @@ async function main() {
   // LIFTR_TOKEN is set, so deleting it (regardless of what the parent shell happens to have)
   // guarantees this session's dashboard never hits AuthGate's token prompt.
   delete env.LIFTR_TOKEN;
+  // Muted by default (see app.ts) — a dev/seed session otherwise logs a line per request for
+  // every asset/API call the dashboard makes, bloating logDir for no real benefit. --verbose
+  // restores full request logging when actually debugging server behavior.
+  if (verbose) env.LIFTR_LOG_VERBOSE = "1";
 
   log(`starting backend on :${backendPort} (db: ${dbPath})`);
   const backendLog = path.join(logDir, "backend.out.log");
@@ -183,7 +187,12 @@ async function main() {
   console.log(`  Auth:       open (no LIFTR_TOKEN set) — no login screen`);
   console.log(`  Logs:       ${logDir}`);
   console.log(`  When done:  node scripts/dev-down.mjs --id ${id}`);
-  process.exit(0);
+  // Deliberately no process.exit(0) here: both children are already detached + unref'd, so the
+  // event loop has nothing left keeping it alive and node exits on its own once this function
+  // returns. A forced process.exit() right after spawning detached children tears libuv down
+  // before their process handles finish detaching on Windows, which is what was producing
+  // `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c` after this
+  // script's own "ready." line — letting the loop drain naturally avoids that abrupt teardown.
 }
 
 main().catch((err) => {

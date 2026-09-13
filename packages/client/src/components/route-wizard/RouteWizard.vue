@@ -24,7 +24,17 @@ import {
   type Waypoint,
 } from "../../services/plannedRouteService";
 
-const props = defineProps<{ route?: PlannedRoute | null; initialCenter?: { lat: number; lon: number } }>();
+const props = defineProps<{
+  route?: PlannedRoute | null;
+  initialCenter?: { lat: number; lon: number };
+  /** Pre-fills a brand-new route (only used when `route` is unset) from an already-recorded
+   *  track — e.g. RunDetail.vue's "Als Strecke speichern" turning a finished run's GPS points
+   *  into a reusable route. Goes through the exact same waypoints/preview/save path as manually
+   *  placed points, so the ORS preview still runs and the user can still drag/add/remove points
+   *  before saving. */
+  seedWaypoints?: Waypoint[];
+  seedName?: string;
+}>();
 const emit = defineEmits<{ saved: []; close: [] }>();
 
 const plannedRouteStore = usePlannedRouteStore();
@@ -57,13 +67,15 @@ const canSave = computed(() => name.value.trim().length > 0 && waypoints.value.l
 
 async function hydrateFrom(route: PlannedRoute | null | undefined) {
   if (!route) {
-    name.value = "";
-    waypoints.value = [];
+    name.value = props.seedName ?? "";
+    waypoints.value = props.seedWaypoints ? [...props.seedWaypoints] : [];
     routedPoints.value = [];
     geometrySource.value = "straight";
     lastComputedDistanceM.value = 0;
     elevationGainM.value = null;
-    closeLoop.value = true;
+    // A seeded run track is a point-to-point path, not a loop back to its own start.
+    closeLoop.value = props.seedWaypoints ? false : true;
+    if (props.seedWaypoints && props.seedWaypoints.length >= 2) void runPreview();
     return;
   }
   name.value = route.name;
