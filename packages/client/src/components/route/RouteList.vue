@@ -13,19 +13,15 @@ const plannedRouteStore = usePlannedRouteStore();
 const deleteConfirm = useConfirmTap((id) => id && plannedRouteStore.remove(id));
 const router = useRouter();
 
-/** Tapping a route card opens its Route Overview/detail screen — same drill-in pattern as
- *  RoutineList.vue's openOverview(), mirrored here for routes. */
+/** Opens the route's detail screen — mirrors RoutineList.vue's openOverview() drill-in pattern. */
 function openOverview(routeId: string) {
   void router.push(`/routes/${routeId}`);
 }
 
-// Per-card ⋮ menu (Starten + Bearbeiten/Löschen), replacing the old 3-button row (Starten +
-// two raw-emoji icon buttons) that overflowed the card on a narrow 2-column grid (critique
-// finding: at 390px the row needed ~184px but only ~153px was available, spilling the delete
-// button outside the card and flush against the viewport edge). Same pattern as
-// RoutineList.vue's .rc-menu-wrap/.rc-menu, hand-rolled locally rather than pulling in
-// useRoutineManagement — that composable also bundles builder-modal state this component
-// doesn't have.
+// Per-card ⋮ menu (Starten + Bearbeiten/Löschen). Replaces a 3-button row (Starten + two raw-emoji
+// icon buttons) that overflowed a narrow 2-column grid. Same pattern as RoutineList.vue's
+// .rc-menu-wrap/.rc-menu, hand-rolled locally rather than pulling in useRoutineManagement — that
+// composable also bundles builder-modal state this component doesn't have.
 const openMenuId = ref<string | null>(null);
 function toggleMenu(routeId: string) {
   openMenuId.value = openMenuId.value === routeId ? null : routeId;
@@ -72,9 +68,7 @@ function editFromMenu(route: PlannedRoute) {
             {{ route.elevationGainM != null ? Math.round(route.elevationGainM) + " hm" : "Höhe unbekannt" }}
           </span>
         </div>
-        <!-- Overflow menu sits top-right next to the title (Jakob's Law), not buried bottom-right
-             away from it. @click.stop so opening/using the menu doesn't also fire the card's own
-             navigate-to-overview tap. -->
+        <!-- @click.stop so opening/using the menu doesn't also fire the card's own navigate tap. -->
         <div class="menu-wrap" @click.stop>
           <button
             class="btn-icon"
@@ -102,9 +96,8 @@ function editFromMenu(route: PlannedRoute) {
       </div>
     </div>
   </div>
-  <!-- Every RouteThumbnail runs with attributionControl:false (a real Leaflet attribution corner
-       doesn't fit an 88px-tall card) — this single credit line is what keeps the whole grid
-       compliant with OSM's tile usage policy instead of dropping attribution silently. -->
+  <!-- Every RouteThumbnail runs with attributionControl:false (no room in an 88px card); this
+       single credit line keeps the grid compliant with OSM's tile usage policy. -->
   <p v-if="plannedRouteStore.routes.length > 0" class="map-credit">Karten © OpenStreetMap contributors</p>
   <div v-else class="route-empty surface-hybrid">
     <div class="eyebrow">Noch keine Strecke</div>
@@ -125,15 +118,14 @@ function editFromMenu(route: PlannedRoute) {
   gap: 8px;
   padding: 10px;
   border-radius: var(--r-lg);
-  /* Long route names in a ~173px grid track had no wrap/ellipsis path before (critique
-     finding); min-width:0 lets the flex column actually shrink instead of the card growing
-     past its grid track, and .route-info's own overflow-wrap picks up from there. Deliberately
-     NOT overflow:hidden here — the ⋮ dropdown below needs to escape the card's own bounds. */
+  /* min-width:0 lets the flex column shrink instead of the card growing past its grid track,
+     so .route-info's overflow-wrap can kick in. Deliberately NOT overflow:hidden — the ⋮
+     dropdown below needs to escape the card's own bounds. */
   min-width: 0;
 }
-/* Outer radius (--r-lg, 22px) minus this card's own padding (10px) = 12px — the correct inner
-   radius for RouteThumbnail.vue's default (--r-md, 16px) nested this snugly. Local override for
-   this one nesting context only; the thumbnail's own default stays untouched for other callers. */
+/* Outer radius (--r-lg, 22px) minus this card's padding (10px) = 12px, so the thumbnail nests
+   snugly instead of using its own default (--r-md, 16px). Local override only; other callers
+   keep the thumbnail's default. */
 .route-card :deep(.route-thumb-map) {
   border-radius: 12px;
 }

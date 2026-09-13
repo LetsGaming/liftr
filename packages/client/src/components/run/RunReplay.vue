@@ -140,19 +140,10 @@ function fmtPace(sPerKm: number | null): string {
 
 <template>
   <div class="replay">
-    <!-- Deliberately exempt from .surface-hybrid/.panel: this wraps RunMap, whose Leaflet
-         instance paints real map tiles onto its own canvas/DOM layer, outside the CSS cascade.
-         A translucent/blurred surface sitting behind opaque tile imagery is visually meaningless
-         (you'd either see nothing of the blur, since tiles are opaque, or — if the map background
-         peeked through gaps — tiles showing through a glass card, which isn't the intent of this
-         design). RunMap.vue's own `.run-map` background stays the plain `--bg` solid fill it
-         already was; this wrapper adds no surface treatment of its own either. -->
     <div class="map-wrap">
       <RunMap ref="mapRef" :points="points" />
     </div>
 
-    <!-- Everything below is UI chrome (scrubber, speed toggle, live readouts), not the map
-         itself, so it does adopt the hybrid surface treatment. -->
     <div class="replay-chrome panel">
       <div class="controls">
         <button class="play-btn" @click="toggle"><AppIcon :name="playing ? 'pause' : 'play'" /></button>

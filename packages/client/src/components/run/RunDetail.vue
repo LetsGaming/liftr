@@ -28,11 +28,11 @@ const runRankStore = useRunRankStore();
 const loading = ref(true);
 const detail = ref<RunDetailModel | null>(null);
 
-// Task 11: rank/PR chip — same convention as RunsPage.vue's own selectedRunCategory/
-// selectedRunRank/selectedRunIsPr (see that file's comment for why manual runs are excluded
-// explicitly rather than relying on runRanks/runPrs simply having no matching rows), and the
-// same locally-duplicated RUN_CATEGORY_LABEL RanksPage.vue/RecordsPage.vue/RunsPage.vue each
-// already keep their own copy of.
+// Rank/PR chip — same convention as RunsPage.vue's own selectedRunCategory/selectedRunRank/
+// selectedRunIsPr (see that file's comment for why manual runs are excluded explicitly rather
+// than relying on runRanks/runPrs simply having no matching rows), and the same
+// locally-duplicated RUN_CATEGORY_LABEL RanksPage.vue/RecordsPage.vue/RunsPage.vue each already
+// keep their own copy of.
 const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
   mile: "Meile",
   "5k": "5 km",
@@ -126,10 +126,6 @@ function formatPace(sPerKm: number | null) {
       <div class="date-line tnum">{{ formatDate(detail.startedAt) }}</div>
 
       <div v-if="sourceRouteName" class="route-chip">Strecke: {{ sourceRouteName }}</div>
-      <!-- Task 11: current standing for the run's nearest category (not this run's own
-           performance) — see detailRank's comment. .pop-in gives it --ease-spring (motion.css),
-           the one place a run legitimately earns the overshoot easing; see RunsPage.vue's
-           .run-row comment for the narrower-exception writeup. -->
       <div v-if="detailRank" class="route-chip rank-chip pop-in">
         {{ RUN_CATEGORY_LABEL[detailCategory!] }} · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }}
         {{ DIVISION_LABEL[detailRank.division] }}

@@ -69,9 +69,8 @@ const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => 
   const ids = routineStore.routines.map((r) => r.id);
   const [moved] = ids.splice(from, 1);
   ids.splice(to, 0, moved!);
-  /* reorder()'s own `await this.load()` never runs if the Promise.all of PATCH requests inside
-     it rejects, so a failed request would leave the UI silently out of sync with the server with
-     no user feedback. Surface the failure and force a resync so the list can't stay stale. */
+  /* reorder()'s own reload never runs if its PATCH requests reject, which would leave the UI
+     silently out of sync. Surface the failure and force a resync so the list can't stay stale. */
   routineStore.reorder(ids).catch(() => {
     toast("Sortierung konnte nicht gespeichert werden.");
     void routineStore.load();
@@ -83,15 +82,12 @@ function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | nu
   onPointerDown(e, index, routineStore.routines.length, cardEl);
 }
 
-/** useDragReorder's own doc comment says it's built for "one list, vertical only" — its
- *  translateY math assumes a single itemHeight step per index, with no concept of column-wrap.
- *  .routine-grid switches from single-column to a genuine multi-column grid at the same 900px
- *  breakpoint used below (see the `@media (min-width: 900px)` rule on .routine-grid in <style>),
- *  so dragging across a row boundary at desktop widths would compute the wrong displaced-card
- *  offsets and resolve to the wrong target index. Rather than teaching the shared composable
- *  about column-wrap (it's also used by ArrangeStep.vue's single-column wizard list), gate the
- *  drag handle here: only render/wire it when the grid is single-column. All other card actions
- *  (start, ⋮ menu, mesocycle controls) are unaffected at any width. */
+/** useDragReorder is built for "one list, vertical only" — its translateY math assumes one
+ *  itemHeight step per index, with no concept of column-wrap. .routine-grid switches to a
+ *  multi-column grid at the same 900px breakpoint used below, so dragging across a row boundary
+ *  at desktop widths would resolve to the wrong target index. Rather than teaching the shared
+ *  composable about column-wrap (it's also used by ArrangeStep.vue's single-column list), gate
+ *  the drag handle here: only render/wire it when the grid is single-column. */
 const dragReorderBreakpoint = "(min-width: 900px)";
 const isDesktopGrid = ref(typeof window !== "undefined" ? window.matchMedia(dragReorderBreakpoint).matches : false);
 let dragBreakpointMql: MediaQueryList | null = null;
@@ -121,10 +117,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           @keydown.enter="openOverview(routine.id)"
         >
           <div class="rc-head">
-            <!-- Restricted to the single-column (mobile) layout — see canDragReorder above:
-                 useDragReorder's vertical-only math would misbehave once the grid wraps into
-                 multiple columns at >=900px. @click.stop so grabbing the handle doesn't also
-                 fire the card's own navigate-to-overview tap. -->
             <button
               v-if="canDragReorder"
               class="rc-drag-handle"
@@ -139,10 +131,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
               Woche {{ routine.mesocycle.currentWeek }}/{{ routine.mesocycle.totalWeeks }} ·
               {{ routine.mesocycle.weekPercents[routine.mesocycle.currentWeek - 1] }}%
             </span>
-            <!-- Overflow menu moved next to the title (Jakob's Law: most mobile apps put a
-                 card's contextual menu top-right by the title, not buried bottom-right away from
-                 it) — same trigger/menu, just relocated. @click.stop so opening/using the menu
-                 doesn't also fire the card's own navigate-to-overview tap. -->
             <div class="rc-menu-wrap" @click.stop>
               <button class="rc-menu-btn" aria-label="Mehr" @click="toggleMenu(routine.id)"><AppIcon name="more" /></button>
               <div v-if="openMenuId === routine.id" class="rc-menu">
@@ -162,8 +150,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
               </div>
             </div>
           </div>
-          <!-- Exercise names + aggregated muscle figure — the same data the finish summary
-               shows, surfaced here so what a routine trains is visible before starting it. -->
           <div class="rc-preview">
             <ul class="rc-ex-list">
               <li v-for="re in routine.routineExercises.slice(0, 4)" :key="re.id">{{ routineExerciseName(re.exerciseId) }}</li>
@@ -173,12 +159,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           </div>
           <span class="rc-count">{{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</span>
 
-          <!-- Explicit "Starten" CTA — same visual weight as RouteList.vue's own card-level
-               Starten button, so starting the common/primary action here isn't outranked by
-               WorkoutPage.vue's secondary "Ohne Routine loslegen" gradient CTA. The card still
-               navigates to the Routine Overview screen on tap (openOverview() above) for anyone
-               who wants to preview/edit sets first; @click.stop keeps this button from also
-               firing that navigation. -->
           <div class="rc-actions" @click.stop>
             <button class="btn-secondary" :disabled="starting" @click="startFromCard(routine)">Starten</button>
           </div>
@@ -190,8 +170,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           </div>
         </div>
       </div>
-      <!-- First-timer empty state: same bordered-surface pattern as ErholungszoneCard.vue
-           (eyebrow + primary CTA), not a bare sentence. -->
       <div v-else class="routine-empty surface-hybrid">
         <div class="eyebrow routine-empty-eyebrow">Noch keine Routine</div>
         <p class="routine-empty-copy">
@@ -205,9 +183,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
       <button v-if="routineStore.routines.length > 0" class="btn-secondary" @click="showBuilder = true">+ Neue Routine</button>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
 
-      <!-- `btn-block` matches this button's width to its siblings (the empty-state card,
-           "+ Neue Routine"), both `width: 100%`, inside `.not-started`'s `align-items:
-           flex-start` — without it this button would hug the left edge instead of aligning. -->
       <button class="btn-primary btn-lg btn-block" :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
         {{ starting ? "Wird gestartet…" : "Ohne Routine loslegen · die ersten 4 Übungen" }}
       </button>
@@ -220,16 +195,14 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   flex-direction: column;
   gap: var(--sp4);
   align-items: flex-start;
-  /* With few/no routines, unconstrained content pins at the top of the scroll area, leaving
-     primary CTAs (Starten / + Neue Routine) above the thumb-reachable lower half of the screen.
-     min-height + centering pulls a short list toward mid-screen; a long routine list simply
-     exceeds this min-height and scrolls as normal. */
+  /* With few/no routines, unconstrained content pins at the top, leaving primary CTAs above the
+     thumb-reachable lower half. min-height + centering pulls a short list toward mid-screen; a
+     long list simply exceeds this min-height and scrolls as normal. */
   min-height: 55vh;
   justify-content: center;
 }
-/* Zero-routine empty state — same bordered-surface treatment as ErholungszoneCard.vue's
-   .erholungszone, not a bare sentence. Width-capped and self-contained like .finished-summary
-   so it doesn't stretch edge-to-edge on wide viewports. */
+/* Same bordered-surface treatment as ErholungszoneCard.vue's .erholungszone. Width-capped and
+   self-contained like .finished-summary so it doesn't stretch edge-to-edge on wide viewports. */
 .routine-empty {
   width: 100%;
   max-width: var(--content-w-narrow);
@@ -270,27 +243,19 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   padding: var(--sp4);
   border-radius: var(--r-lg);
   /* Tier-accent border, same fallback idiom as RankDistributionDonut.vue/RankUpCalendar.vue/
-     RestTimer.vue — ties this high-frequency screen to the rank spine without misrepresenting
-     an unranked routine as an earned moment (no .panel-reward gradient, no muscle-derived color).
-     Layered as an `outline` on top of .surface-hybrid's own background/blur/shadow/hairline
-     rather than replacing them — falls back to transparent, not --line, since the hairline edge
-     already supplies the neutral case. */
+     RestTimer.vue — ties this screen to the rank spine without misrepresenting an unranked
+     routine as an earned moment. Layered as an `outline` on top of .surface-hybrid's own
+     background/blur/shadow/hairline rather than replacing them. */
   outline: 1px solid var(--tier-accent, transparent);
   outline-offset: -1px;
   position: relative;
-  /* Entrance stagger + hover lift — this is the "choose a workout" screen, so it gets the same
-     liveliness as the dashboard. Uses --ease-out, not --ease-spring: motion.css reserves the
-     overshoot easing for earned moments (rank-up, PR, level-up), and a routine list entrance
-     isn't one of those. */
-  /* Fill-mode `backwards`, not `both`: a CSS animation's fill state
-     takes precedence over the cascade, including inline `style` attributes, for as long as it
-     applies. `both` would keep applying pop-in's `to { transform: scale(1) }` forever after the
-     animation ends, permanently overriding useDragReorder's inline `transform: translateY(...)`
-     on this same element and making drag-reorder visually inert. `backwards` only fills the
-     *pre-start* state (opacity:0, scale:0.9) during the stagger delay above — once the animation
-     ends it applies nothing, so the element falls through to its own inline/cascade styles
-     exactly like the un-animated default (pop-in's `to` state is opacity:1/scale(1), i.e. no
-     lasting visual change either way, so this is safe). */
+  /* Entrance stagger + hover lift, like the dashboard. Uses --ease-out, not --ease-spring:
+     motion.css reserves the overshoot easing for earned moments (rank-up, PR, level-up).
+     Fill-mode `backwards`, not `both`: `both` would keep applying pop-in's final
+     `transform: scale(1)` forever after the animation ends, permanently overriding
+     useDragReorder's inline `transform: translateY(...)` on this same element and making
+     drag-reorder visually inert. `backwards` only fills the pre-start state during the stagger
+     delay, then falls through to the element's own inline/cascade styles. */
   animation: pop-in var(--dur-base) var(--ease-out) backwards;
   transition:
     box-shadow var(--dur-base) var(--ease-out),

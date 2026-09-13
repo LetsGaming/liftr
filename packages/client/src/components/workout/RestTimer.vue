@@ -87,9 +87,6 @@ function formatSeconds(s: number): string {
 </script>
 
 <template>
-  <!-- Task 3: third distinct rest state — mid-superset, no rest coming. No ring (nothing to
-       count down), no skip button (nothing to skip). Compact, "acknowledged, move on", not a
-       broken-looking timer. -->
   <div v-if="restKind === 'superset-continue'" class="rest-timer rest-timer-continue surface-hybrid">
     <div class="meta">
       <b>Weiter im Superset</b>
@@ -109,13 +106,10 @@ function formatSeconds(s: number): string {
 </template>
 
 <style scoped>
-/* N2 (Nebula adoption): this is the one surface visible in every state of the sacred logging
-   loop (idle "startet nach dem Satz" / running / just-finished / superset-continue) — was a flat
-   --surface-2 fill + 1px --line border, which is exactly the "leftover flat-surface UI bolted
-   onto a translucent screen" look the redesign is meant to remove. .surface-hybrid utility class
-   (see template) instead: translucent + blurred background, gradient hairline edge via ::after,
-   same recipe every other card/panel on this screen now uses. Border dropped in favor of the
-   hairline (same pattern as tokens.css's .panel conversion). */
+/* This is the one surface visible in every state of the logging loop (idle / running /
+   just-finished / superset-continue), so it uses .surface-hybrid (translucent + blurred
+   background, gradient hairline edge via ::after) rather than a flat fill + border, matching
+   every other card/panel on this screen. */
 .rest-timer {
   display: flex;
   align-items: center;
@@ -138,8 +132,7 @@ function formatSeconds(s: number): string {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  /* engagement-audit-v4 Phase 2B critique fix: was a flat --blue-hi regardless of tier — same
-     var(--tier-accent, var(--blue-hi)) fallback convention as App.vue's nav indicator and
+  /* Same var(--tier-accent, var(--blue-hi)) fallback convention as App.vue's nav indicator and
      log-set focus ring, so the ring picks up the user's rank tier where one is in scope. */
   background: conic-gradient(var(--tier-accent, var(--blue-hi)) var(--p, 0%), var(--surface-3) 0);
   flex: none;
@@ -184,9 +177,9 @@ function formatSeconds(s: number): string {
   font-size: 12px;
   color: var(--faint);
 }
-/* Task 3: compact "acknowledged, move on" state — lower visual weight than the ring+countdown
-   states (no ring, no skip button, smaller vertical footprint) so it reads as distinct rather
-   than as a stripped-down/broken timer. */
+/* Compact "acknowledged, move on" state — lower visual weight than the ring+countdown states
+   (no ring, no skip button, smaller vertical footprint) so it reads as distinct rather than as
+   a stripped-down/broken timer. */
 .rest-timer-continue {
   padding: var(--sp2) var(--sp4);
   opacity: 0.85;
@@ -194,7 +187,7 @@ function formatSeconds(s: number): string {
 .rest-timer-continue .meta span {
   color: var(--faint);
 }
-/* N2: was a flat --surface-3 fill — .surface-hybrid instead (see .rest-timer above). */
+/* .surface-hybrid, same as .rest-timer above. */
 .skip-btn {
   padding: 9px 14px;
   font-size: 13px;

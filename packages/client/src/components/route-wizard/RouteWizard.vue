@@ -4,12 +4,10 @@
  * input) → map filling the remaining height → pinned bottom bar with live stats + "Speichern".
  * No multi-step machine — a route only ever needs one screen.
  *
- * `SheetModal.vue` does not emit a `did-present` (or any `ionDidPresent`-forwarded) event — it
- * only ever emits `close`, deferred a frame past IonModal's own `did-dismiss` (see that file's
- * header comment). So there's nothing here to invalidate the map's size on modal-present;
- * RouteMapEditor.vue now mounts on top of `LeafletMapBase.vue`, whose live `ResizeObserver` keeps
- * calling `invalidateSize()` for as long as the map exists (not a one-shot check at mount), so a
- * still-animating sheet settling into its final size is handled correctly regardless of timing.
+ * `SheetModal.vue` emits no `did-present` event, so there's nothing here to invalidate the map's
+ * size on modal-present. That's fine: RouteMapEditor mounts on `LeafletMapBase.vue`, whose live
+ * `ResizeObserver` keeps calling `invalidateSize()` for as long as the map exists, so a
+ * still-animating sheet settling into its final size is handled regardless of timing.
  */
 import { computed, ref, watch } from "vue";
 import { pathDistanceM } from "@liftr/shared";
@@ -41,15 +39,13 @@ const lastComputedDistanceM = ref(0);
 const elevationGainM = ref<number | null>(null);
 const saving = ref(false);
 
-/** Whether the drawn path connects back to the starting waypoint — a loop (the historical,
- *  previously-unconditional behavior) vs. a point-to-point route. User-configurable so a walk
- *  from A to B doesn't get an unwanted closing leg back to A. */
+/** Whether the drawn path connects back to the starting waypoint (a loop) vs. a point-to-point
+ *  route. User-configurable so a walk from A to B doesn't get an unwanted closing leg back to A. */
 const closeLoop = ref(true);
 
 /** What actually gets routed/saved: the raw waypoints plus, when closeLoop is on, a synthetic
- *  final point back at the start — kept separate from `waypoints` itself so the map's editable
- *  markers (RouteMapEditor's :waypoints prop below) only ever show the points the user actually
- *  placed, never a synthetic one they didn't add and shouldn't be able to drag/delete. */
+ *  final point back at the start. Kept separate from `waypoints` so the map's editable markers
+ *  (RouteMapEditor's :waypoints prop below) only ever show points the user actually placed. */
 const effectiveWaypoints = computed(() =>
   closeLoop.value && waypoints.value.length >= 2 ? [...waypoints.value, { ...waypoints.value[0]! }] : waypoints.value,
 );
@@ -72,10 +68,9 @@ async function hydrateFrom(route: PlannedRoute | null | undefined) {
   }
   name.value = route.name;
   const savedWaypoints = route.waypoints.map((w) => ({ ...w }));
-  // A previously-saved closed loop persists its synthetic closing point as an ordinary waypoint
-  // (there's no separate "is this a loop" column) — strip it back off here so re-editing doesn't
-  // compound another one on top via effectiveWaypoints below, and re-derive the toggle's state
-  // from whether the route actually ends back at its start.
+  // A saved closed loop persists its synthetic closing point as an ordinary waypoint (there's no
+  // separate "is this a loop" column). Strip it back off so re-editing doesn't compound another
+  // one via effectiveWaypoints below, and re-derive the toggle from whether it ends at its start.
   const first = savedWaypoints[0];
   const last = savedWaypoints[savedWaypoints.length - 1];
   const wasClosedLoop =
@@ -85,10 +80,9 @@ async function hydrateFrom(route: PlannedRoute | null | undefined) {
   geometrySource.value = route.geometrySource;
   lastComputedDistanceM.value = route.distanceM;
   elevationGainM.value = route.elevationGainM;
-  // Populate the saved snapped geometry so distanceM (below) uses the route's real saved
-  // distance instead of falling back to a straight-line recompute, the ≈ marker stays accurate
-  // to geometrySource, and RouteMapEditor draws the actual saved line instead of a raw waypoint
-  // polyline. Same fetch RunDetail.vue already uses to resolve a route's detail.
+  // Populate the saved snapped geometry so distanceM uses the route's real saved distance
+  // instead of a straight-line recompute, and RouteMapEditor draws the saved line instead of a
+  // raw waypoint polyline. Same fetch RunDetail.vue uses to resolve a route's detail.
   routedPoints.value = [];
   try {
     const detail = await getPlannedRouteDetail(route.id);
@@ -169,9 +163,6 @@ async function save() {
 </script>
 
 <template>
-  <!-- @close only fires after Ionic's own dismiss teardown completes (see SheetModal.vue's header
-       comment) — it's the single place that tells the parent it's safe to unmount (RunsPage.vue
-       flips showRouteWizard to false there), never resolved here directly. -->
   <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="emit('close')">
     <template #header>
       <header class="wizard-head">

@@ -60,23 +60,21 @@ const pickMode = ref<"manual" | "muscles">("manual");
  *  simple, rather than snapping back to the condensed screen mid-edit. */
 const fastPathOverride = ref(false);
 
-/** Engagement-audit-v4 Phase 1: the rationale behind a muscle-guided pick — which requested
- *  muscle earned it a slot, whether it replaced a preferred exercise the user can't perform with
- *  their equipment — kept alongside the draft so ReviewStep can show it instead of the server
- *  computing it and this component throwing it away (the pre-Phase-1 behavior). Absent for
- *  manually-picked exercises; keyed by exerciseId, not nested in DraftExercise, so the manual
- *  path's type stays untouched. */
+/** The rationale behind a muscle-guided pick — which requested muscle earned it a slot, whether
+ *  it replaced a preferred exercise the user can't perform with their equipment — kept alongside
+ *  the draft so ReviewStep can show it instead of the server computing it and this component
+ *  throwing it away. Absent for manually-picked exercises; keyed by exerciseId, not nested in
+ *  DraftExercise, so the manual path's type stays untouched. */
 const suggestionMeta = reactive<Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean; missingEquipment?: string[] }>>({});
 /** Every muscle slug the user has asked "Übungen vorschlagen" for this session, across possibly
  *  multiple visits to the muscle-picker (e.g. via "+ Übung hinzufügen") — ReviewStep compares the
  *  final routine's actual muscle coverage against this to flag anything requested but not landed. */
 const requestedMuscleSlugs = ref<string[]>([]);
 
-/** Feature: "quickly create new routines based on past experience and a selection of muscle
- *  groups" — PickStep's muscle-group mode hands back the picked slugs; the server's
- *  recommendation (real stats, or a standards-based entry-level fallback for a brand-new
- *  lifter) becomes the draft directly, same shape toggleSelect() would have built by hand, then
- *  jumps to "arrange" so the user reviews/tweaks it before saving — never auto-saved. */
+/** PickStep's muscle-group mode hands back the picked slugs; the server's recommendation (real
+ *  stats, or a standards-based entry-level fallback for a brand-new lifter) becomes the draft
+ *  directly, same shape toggleSelect() would have built by hand, then jumps to "arrange" so the
+ *  user reviews/tweaks it before saving — never auto-saved. */
 async function applySuggestions(muscleSlugs: string[]) {
   if (suggesting.value) return;
   suggesting.value = true;
@@ -224,10 +222,9 @@ function adjustSetWeight(exerciseId: string, index: number, delta: number) {
   set.weightKg = Math.max(0, Math.round((set.weightKg + delta * WEIGHT_STEP_KG) * 100) / 100);
 }
 
-/** Feature: "not possible to set what kind of set this is when creating/editing a routine, not
- *  mid workout" — cycles a target set's kind, same four values SetKindPicker.vue offers live.
- *  Untouched sets stay "normal" (kind starts undefined, ArrangeStep's badge shows it as normal),
- *  so this is a strictly opt-in, additive control. */
+/** Cycles a target set's kind, same four values SetKindPicker.vue offers live. Untouched sets
+ *  stay "normal" (kind starts undefined, ArrangeStep's badge shows it as normal), so this is a
+ *  strictly opt-in, additive control. */
 const SET_KIND_CYCLE: SetKind[] = ["normal", "warmup", "failure", "dropset"];
 function cycleSetKind(exerciseId: string, index: number) {
   const cfg = selected.get(exerciseId);
@@ -303,9 +300,9 @@ const totalSets = computed(() => selectedOrder.value.reduce((sum, [, cfg]) => su
 const canSave = computed(() => name.value.trim().length > 0 && selected.size > 0);
 
 /**
- * Engagement-audit-v4 Phase 1 fast path: simple enough (few exercises, nothing customized, no
- * supersets) that Arrange+Review can collapse into one condensed screen (FastPathStep.vue)
- * instead of the full multi-step flow. Re-evaluated live as the draft changes, so adding a set or
+ * Fast path: simple enough (few exercises, nothing customized, no supersets) that Arrange+Review
+ * can collapse into one condensed screen (FastPathStep.vue) instead of the full multi-step flow.
+ * Re-evaluated live as the draft changes, so adding a set or
  * linking a superset drops a routine out of the fast path automatically — the escape hatch
  * (fastPathOverride) exists for the opposite direction, staying in the full flow on request even
  * while the draft still looks simple.
@@ -360,17 +357,14 @@ async function save() {
       }
     } catch {
       // Save can genuinely fail (e.g. a suggested exercise substitution produced an
-      // out-of-contract value the server rejects) — without this, the rejection was an
-      // unhandled promise rejection and the sheet just sat there looking unresponsive with
-      // zero feedback (audit: silent save-path failure on the muscle-guided suggestion flow).
+      // out-of-contract value the server rejects) — without this the rejection was an unhandled
+      // promise rejection and the sheet just sat there looking unresponsive with zero feedback.
       toast("Speichern fehlgeschlagen — bitte erneut versuchen.");
       return;
     }
-    // Closes via sheetRef.dismiss(), not emit("created") directly (feedback: "editing/creating
-    // a workout currently does not work" — a hard crash). See SheetModal.vue's header comment:
-    // every close here now goes through Ionic's real dismiss() first; the parent only actually
-    // unmounts this component once SheetModal's @close fires below, after that teardown
-    // finishes, instead of racing it by unmounting immediately on our own say-so.
+    // Closes via sheetRef.dismiss(), not emit("created") directly. Every close here goes through
+    // Ionic's real dismiss() first; the parent only unmounts this component once SheetModal's
+    // @close fires below, after that teardown finishes.
     sheetRef.value?.dismiss();
   } finally {
     saving.value = false;
@@ -414,16 +408,6 @@ function useFullArrange() {
 </script>
 
 <template>
-  <!-- Full-bleed, non-draggable shape (sheet=false) — same underlying IonModal shell as every
-       other modal in the app now (feedback: "every modal should reuse the same base"), with a
-       custom header via #header instead of the shell's default title+close bar, since a
-       three-step wizard needs a step indicator and name input up there, not a plain title. -->
-  <!-- @close only ever fires after Ionic's own dismiss teardown completes (see this component's
-       script) — it's the single place that actually tells the parent it's safe to unmount,
-       never a stand-in for "the user asked to close" (that's requestClose, which decides
-       whether to dismiss now or arm the confirm first). backdropDismiss defaults to false here
-       since sheet=false — a stray tap outside a full-screen edit flow shouldn't be able to
-       discard a draft, bypassing the confirm guard entirely. -->
   <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="emit('created')">
     <template #header>
       <header class="wizard-head">
@@ -432,12 +416,6 @@ function useFullArrange() {
           <AppIcon v-else name="close" />
         </button>
         <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" aria-label="Name der Routine" />
-        <!-- Audit fix (workplan-v1 §1.9c): FastPathStep's save goes straight to save(), never
-             reaching ReviewStep — the indicator used to promise "3 Fertig" unconditionally and
-             then not show it on this path. showFastPath already tracks whether the current
-             selection is small/untouched enough to take that path (and flips live if the user
-             taps "customize"), so gating step 3's label on it keeps the indicator honest in both
-             directions rather than adding a step back to a flow built to remove one. -->
         <div class="steps">
           <span :class="{ active: step === 'choose' || step === 'pick' }">1 Wählen</span>
           <span :class="{ active: step === 'arrange' }">2 {{ showFastPath ? "Fertig" : "Anordnen" }}</span>

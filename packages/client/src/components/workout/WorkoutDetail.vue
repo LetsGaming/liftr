@@ -128,9 +128,9 @@ async function share() {
         sets: we.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps, isWarmup: s.isWarmup })),
       })),
       muscles: muscles.value,
-      // Phase 5: shows the account's *current* overall tier, not a reconstruction of what it was
-      // back when this specific past workout happened (that would need a historical snapshot
-      // this view doesn't have) — same documented-simplification convention as prCount above.
+      // Shows the account's *current* overall tier, not a reconstruction of what it was back
+      // when this specific past workout happened (that would need a historical snapshot this
+      // view doesn't have).
       tier: overallRank.current ? { tier: overallRank.current.tier, division: overallRank.current.division, level: xpStore.level } : null,
       // No "session's highest rank-up" concept for a past workout viewed later — that's a
       // finish-flow-only idea (see useWorkoutShareCard.ts).
@@ -146,11 +146,6 @@ async function share() {
 </script>
 
 <template>
-  <!-- Was a 420px floating card, on mobile too — it didn't use enough width, and it
-       differed from ExerciseInfoPanel's right-drawer for no content-driven reason — now the
-       same drawer shape as the exercise-info sheet, full-width on mobile like every other sheet
-       in the app, and wider than the info drawer on desktop since this view's content (a stat
-       grid, muscle figure, exercise list) is denser. -->
   <SheetModal
     ref="sheetRef"
     :title="title ?? 'Workout-Details'"
@@ -185,7 +180,6 @@ async function share() {
             <template #meta>
               <span class="tnum set-chips">
                 <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
-                  <!-- reps×weight, matching shareCard.ts's same convention. -->
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
                   <span v-if="s.isPr" aria-hidden="true"> <AppIcon name="trophy" /></span>

@@ -1,20 +1,14 @@
 <script setup lang="ts">
 /**
- * Small, fully inert map preview for a route card — real OSM tiles under the route line, unlike
- * the abstract stretched-SVG-squiggle this replaces (critique finding: users couldn't tell what
- * the old thumbnail was showing at all). Lazy: doesn't create a Leaflet instance, or fetch a
- * single tile, until the card actually scrolls into view (IntersectionObserver), and tears the
- * map down completely on unmount — this sits in a grid that mounts/unmounts on every Verlauf/
- * Strecken tab switch, so leaking N live map instances per switch is a real cost, not a
- * theoretical one.
+ * Small, fully inert map preview for a route card — real OSM tiles under the route line. Lazy:
+ * doesn't create a Leaflet instance or fetch a tile until the card scrolls into view
+ * (IntersectionObserver), and tears the map down on unmount, since this sits in a grid that
+ * mounts/unmounts on every Verlauf/Strecken tab switch.
  *
- * Deliberately does NOT copy RouteMapEditor.vue's one-shot
- * `requestAnimationFrame(() => map?.invalidateSize())` — that's the known, reproduced-live-in-
- * browser bug where the map paints only a small stale tile island in one corner, because
- * SheetModal.vue never emits a hook to invalidate against once its open-transition actually
- * finishes. A ResizeObserver watching the container itself has no such timing dependency: it
- * fires whenever the box's real size settles, whatever caused that (a sheet transition, a grid
- * reflow, a tab switch), and keeps firing for the component's whole lifetime instead of once.
+ * Uses a ResizeObserver on the container rather than a one-shot `invalidateSize()` after mount:
+ * the container's size can still be settling after mount (e.g. inside a sheet's open transition),
+ * and a one-shot call can fire too early, leaving the map showing only a stale tile in one corner.
+ * The ResizeObserver instead fires whenever the box's real size settles, whatever caused it.
  */
 import L from "leaflet";
 import { onBeforeUnmount, onMounted, ref } from "vue";
