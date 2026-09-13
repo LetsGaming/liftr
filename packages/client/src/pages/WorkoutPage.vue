@@ -556,15 +556,16 @@ async function logSet() {
            instead of an always-visible rail. Hidden at >=900px, since the vertical rail above
            already covers this on desktop. -->
       <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile surface-hybrid">
-        <span v-if="nextExercisePreview" class="next-ex-line">
-          <b>Nächste Übung:</b> {{ nextExercisePreview.name }}
-          <template v-if="nextExercisePreview.summary"> · {{ nextExercisePreview.summary }}</template>
-        </span>
+        <div v-if="nextExercisePreview" class="next-ex-lines">
+          <span class="next-ex-label">Nächste Übung</span>
+          <span class="next-ex-name">{{ nextExercisePreview.name }}</span>
+          <span v-if="nextExercisePreview.summary" class="next-ex-summary">{{ nextExercisePreview.summary }}</span>
+        </div>
         <!-- The routine's last exercise has no "next" to preview — rather than just
              disappearing (which would look like a layout bug), this says so explicitly. The
              overview affordance stays available regardless, so jump-to-any is never lost even
              on the last exercise. -->
-        <span v-else class="next-ex-line next-ex-empty">Letzte Übung dieser Routine</span>
+        <span v-else class="next-ex-lines next-ex-empty">Letzte Übung dieser Routine</span>
         <button class="next-ex-overview-btn surface-hybrid" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
           <AppIcon name="drag-handle" />
         </button>
@@ -941,17 +942,32 @@ async function logSet() {
   padding: var(--sp3);
   border-radius: var(--r-md);
 }
-.next-ex-line {
+/* Was a single nowrap+ellipsis line cramming label/name/weight×reps together, which truncated
+   on anything but a short name (feedback: "should go across more rows to actually be able to
+   display all the data" — the mid-workout screen already has the vertical room for it). Three
+   stacked rows instead — label, name, summary — each free to wrap instead of being clipped. */
+.next-ex-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.next-ex-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.next-ex-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.next-ex-summary {
   font-size: 12.5px;
   color: var(--dim);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.next-ex-line b {
-  color: var(--text);
-  font-weight: 700;
 }
 .next-ex-empty {
   font-style: italic;

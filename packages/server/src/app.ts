@@ -68,7 +68,24 @@ export function configureApp(app: FastifyInstance) {
 }
 
 export async function buildApp() {
-  const app = configureApp(Fastify({ logger: true }));
+  // Fastify's built-in per-request logging (incoming + completed, both at 'info') logs
+  // unconditionally regardless of status code — fine in production, but it turns a dev/seed run
+  // into a log line per asset/API call. Muted by default (env.verboseLogging): disable the
+  // built-in logging and replace it with a targeted onResponse hook that only logs 4xx/5xx, so a
+  // real failure still shows up without the noise of every 200.
+  const app = configureApp(
+    Fastify({
+      logger: env.verboseLogging ? true : { level: "warn" },
+      disableRequestLogging: !env.verboseLogging,
+    }),
+  );
+  if (!env.verboseLogging) {
+    app.addHook("onResponse", async (request, reply) => {
+      if (reply.statusCode >= 400) {
+        request.log.warn({ statusCode: reply.statusCode, method: request.method, url: request.url }, "request failed");
+      }
+    });
+  }
 
   await app.register(cors, { origin: env.allowedOrigins ?? true });
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }); // GPX files are small text; 20MB is generous

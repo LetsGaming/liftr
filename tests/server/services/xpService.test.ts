@@ -29,9 +29,9 @@ describe("getXpSummary", () => {
         // No exercise rank exists for this exercise, so tier is null (multiplier 1); this is the
         // only set ever logged, so repeat-decay occurrence is 1 (multiplier 1) and
         // plausibilityMultiplier defaults to 1. computeSetXp therefore reduces to
-        // BODYWEIGHT_NOMINAL_LOAD_KG (30) * reps (10) = 300, regardless of the weight typed here.
-        consistencyBonusXp: 850,
-        varietyBonusXp: 1500,
+        // BODYWEIGHT_NOMINAL_LOAD_KG (3) * reps (10) = 30, regardless of the weight typed here.
+        consistencyBonusXp: 85,
+        varietyBonusXp: 150,
       })
       .returning();
     const [we] = await db
@@ -51,8 +51,8 @@ describe("getXpSummary", () => {
 
     const result = await getXpSummary(db, OWNER_USER_ID);
 
-    // per-set XP (300) + consistencyBonusXp (850) + varietyBonusXp (1500) = 2650
-    const expectedTotalXp = 2650;
+    // per-set XP (30) + consistencyBonusXp (85) + varietyBonusXp (150) = 265
+    const expectedTotalXp = 265;
     expect(result.totalXp).toBe(expectedTotalXp);
     expect(result.level).toBe(computeLevel(expectedTotalXp).level);
   });
@@ -84,9 +84,9 @@ describe("getXpSummary", () => {
 
     const result = await getXpSummary(db, OWNER_USER_ID);
 
-    // per-set XP only: BODYWEIGHT_NOMINAL_LOAD_KG (30) * reps (5) = 150; no bonus contribution
+    // per-set XP only: BODYWEIGHT_NOMINAL_LOAD_KG (3) * reps (5) = 15; no bonus contribution
     // since the workout never finished (endedAt is null).
-    expect(result.totalXp).toBe(150);
+    expect(result.totalXp).toBe(15);
   });
 
   it("folds run XP into totalXp, mapping a manual run's null plausibilityMultiplier to 1 (full credit) per Ruling 5", async () => {
@@ -96,7 +96,7 @@ describe("getXpSummary", () => {
       source: "gpx",
       name: null,
       startedAt: new Date("2026-09-01T10:00:00Z"),
-      distanceM: 5000, // 5km * 60 XP/km = 300 base XP; first occurrence of this bucket => multiplier 1
+      distanceM: 5000, // 5km * 6 XP/km = 30 base XP; first occurrence of this bucket => multiplier 1
       durationS: 1500,
       avgPaceSPerKm: 300,
       plausibilityMultiplier: 0.5,
@@ -118,9 +118,9 @@ describe("getXpSummary", () => {
 
     const result = await getXpSummary(db, OWNER_USER_ID);
 
-    // GPS run: (5000/1000)*60 * 1 (1st occurrence) * 0.5 (plausibility) = 150
-    // Manual run: (10000/1000)*60 * 1 (1st occurrence) * 1 (null -> 1) = 600
+    // GPS run: (5000/1000)*6 * 1 (1st occurrence) * 0.5 (plausibility) = 15
+    // Manual run: (10000/1000)*6 * 1 (1st occurrence) * 1 (null -> 1) = 60
     // No workouts logged, so no set/session-bonus XP contributes here.
-    expect(result.totalXp).toBe(750);
+    expect(result.totalXp).toBe(75);
   });
 });

@@ -104,30 +104,82 @@ function editFromMenu(route: PlannedRoute) {
     <p>Platziere Wegpunkte auf der Karte und speichere sie als wiederverwendbare Strecke.</p>
     <button class="btn-primary" @click="emit('create')">+ Neue Strecke</button>
   </div>
+  <!-- The empty-state CTA above only renders while the list is empty (RoutineList.vue has the
+       same shape) — without this, there was no way at all to create a second route once one
+       already existed. -->
+  <button v-if="plannedRouteStore.routes.length > 0" class="btn-secondary route-list-add" @click="emit('create')">+ Neue Strecke</button>
 </template>
 
 <style scoped>
+/* Grid sizing/gap/max-width mirrors RoutineList.vue's .routine-grid exactly (Workout tab's
+   equivalent card grid) — the two lists were sized independently and drifted apart, which read
+   as Läufe and Workout not being the same app. */
 .route-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp3);
+  width: 100%;
+  max-width: var(--content-w-wide);
+}
+@media (min-width: 900px) {
+  .route-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--sp5);
+    max-width: var(--content-w-xwide);
+  }
 }
 .route-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: var(--sp2);
+  padding: var(--sp4);
   border-radius: var(--r-lg);
   /* min-width:0 lets the flex column shrink instead of the card growing past its grid track,
      so .route-info's overflow-wrap can kick in. Deliberately NOT overflow:hidden — the ⋮
      dropdown below needs to escape the card's own bounds. */
   min-width: 0;
+  /* Same entrance stagger + hover lift as .routine-card (RoutineList.vue) — Workout's cards
+     animate in and lift on hover; Läufe's didn't, which was part of the same "different app"
+     mismatch as the grid sizing above. */
+  animation: pop-in var(--dur-base) var(--ease-out) backwards;
+  transition: box-shadow var(--dur-base) var(--ease-out);
 }
-/* Outer radius (--r-lg, 22px) minus this card's padding (10px) = 12px, so the thumbnail nests
-   snugly instead of using its own default (--r-md, 16px). Local override only; other callers
-   keep the thumbnail's default. */
+.route-grid > .route-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+.route-grid > .route-card:nth-child(2) {
+  animation-delay: 40ms;
+}
+.route-grid > .route-card:nth-child(3) {
+  animation-delay: 80ms;
+}
+.route-grid > .route-card:nth-child(n + 4) {
+  animation-delay: 120ms;
+}
+@media (hover: hover) {
+  .route-card:hover {
+    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+@media (min-width: 900px) {
+  .route-card {
+    padding: var(--sp6);
+    gap: var(--sp3);
+    border-radius: var(--r-xl);
+  }
+  .route-info b {
+    font-size: 18px;
+  }
+}
+/* Outer radius minus this card's own padding, so the thumbnail nests snugly instead of using its
+   default (--r-md, 16px) — recomputed for each breakpoint's own radius/padding pair above. */
 .route-card :deep(.route-thumb-map) {
-  border-radius: 12px;
+  border-radius: 6px;
+}
+@media (min-width: 900px) {
+  .route-card :deep(.route-thumb-map) {
+    border-radius: 4px;
+  }
 }
 .map-credit {
   margin-top: var(--sp2);
@@ -148,7 +200,14 @@ function editFromMenu(route: PlannedRoute) {
   flex: 1;
 }
 .route-info b {
+  /* Matches RoutineList.vue's .rc-head b (15.5px / 18px desktop) — was unset before (inheriting
+     the page's default body size), one more point of size drift from Workout's routine cards. */
+  font-size: 15.5px;
   overflow-wrap: anywhere;
+}
+.route-info span {
+  font-size: 12px;
+  color: var(--dim);
 }
 .route-actions {
   display: flex;
@@ -198,6 +257,9 @@ function editFromMenu(route: PlannedRoute) {
   background: var(--danger-lo);
   color: var(--text);
   font-weight: 700;
+}
+.route-list-add {
+  margin-top: var(--sp3);
 }
 .route-empty p {
   color: var(--dim);

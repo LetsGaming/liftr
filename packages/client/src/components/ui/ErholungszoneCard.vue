@@ -32,6 +32,10 @@ const verdict = computed(() => {
   <section v-if="loaded" class="erholungszone surface-hybrid">
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
+    <div class="ez-legend">
+      <span><i class="warm" />Weniger erholt</span>
+      <span><i class="cool" />Mehr erholt</span>
+    </div>
     <div class="ez-status">
       <span class="ez-pill">DEIN STATUS</span>
       <p>{{ verdict }}</p>
@@ -63,6 +67,30 @@ const verdict = computed(() => {
 }
 .ez-eyebrow {
   --eyebrow-color: var(--warning-hi);
+}
+/* Explains MuscleFigure's heat-mode coloring (warm/fatigue = fc0000-derived orange asset,
+   cool/main = the app's blue asset — see ingestMuscleAssets.ts's FATIGUE_COLOR/PRIMARY_TO)
+   so the figure isn't just decorative color a reader has to guess the meaning of. */
+.ez-legend {
+  display: flex;
+  gap: var(--sp4);
+  justify-content: center;
+  font-size: 11px;
+  color: var(--dim);
+}
+.ez-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+.ez-legend .warm {
+  background: var(--icon-fill-fire);
+}
+.ez-legend .cool {
+  background: var(--icon-fill-blue);
 }
 .ez-status {
   display: flex;

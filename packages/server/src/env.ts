@@ -19,6 +19,10 @@ export const env = {
   orsApiKey: process.env.LIFTR_ORS_API_KEY,
   orsBaseUrl: process.env.LIFTR_ORS_BASE_URL ?? "https://api.openrouteservice.org",
   orsProfile: process.env.LIFTR_ORS_PROFILE ?? "foot-walking",
+  /** Off by default: full per-request pino logging is muted (errors/warnings — 4xx/5xx responses
+   *  — still log) so routine dev/seed runs don't bloat the log file with a line per request. Set
+   *  to "1" for full request-level logging when actually debugging server behavior. */
+  verboseLogging: process.env.LIFTR_LOG_VERBOSE === "1",
 };
 
 if (!env.token && process.env.NODE_ENV === "production") {

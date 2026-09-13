@@ -1,87 +1,67 @@
 <script setup lang="ts">
 /**
- * Small, fully inert map preview for a route card — real OSM tiles under the route line. Lazy:
- * doesn't create a Leaflet instance or fetch a tile until the card scrolls into view
- * (IntersectionObserver), and tears the map down on unmount, since this sits in a grid that
- * mounts/unmounts on every Verlauf/Strecken tab switch.
- *
- * Uses a ResizeObserver on the container rather than a one-shot `invalidateSize()` after mount:
- * the container's size can still be settling after mount (e.g. inside a sheet's open transition),
- * and a one-shot call can fire too early, leaving the map showing only a stale tile in one corner.
- * The ResizeObserver instead fires whenever the box's real size settles, whatever caused it.
+ * Small, fully inert map preview for a route card — real OSM tiles under the route line, via
+ * LeafletMapBase (owns lazy-mount, tile layer, and resize handling). This sits in a grid that
+ * mounts/unmounts on every Verlauf/Strecken tab switch, so LeafletMapBase's lazy prop matters
+ * here: no Leaflet instance or tile fetch until the card actually scrolls into view.
  */
 import L from "leaflet";
-import { onBeforeUnmount, onMounted, ref } from "vue";
-import { cssVar, createOsmTileLayer } from "../../lib/leafletTheme";
+import LeafletMapBase from "../map/LeafletMapBase.vue";
+import { cssVar } from "../../lib/leafletTheme";
 import type { Waypoint } from "../../services/plannedRouteService";
 
 const props = defineProps<{ points: Waypoint[]; approximate?: boolean }>();
 
-const container = ref<HTMLDivElement | null>(null);
+const inertMapOptions: Partial<L.MapOptions> = {
+  attributionControl: false,
+  zoomControl: false,
+  dragging: false,
+  touchZoom: false,
+  doubleClickZoom: false,
+  scrollWheelZoom: false,
+  boxZoom: false,
+  keyboard: false,
+};
+
 let map: L.Map | null = null;
-let intersectionObserver: IntersectionObserver | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let resizeRaf: number | null = null;
+let line: L.Polyline | null = null;
 
-function createMap(el: HTMLDivElement) {
-  map = L.map(el, {
-    attributionControl: false,
-    zoomControl: false,
-    dragging: false,
-    touchZoom: false,
-    doubleClickZoom: false,
-    scrollWheelZoom: false,
-    boxZoom: false,
-    keyboard: false,
-  });
-  createOsmTileLayer().addTo(map);
-
+function render() {
+  if (!map || props.points.length < 2) return;
   const latLngs = props.points.map((p) => [p.lat, p.lon] as [number, number]);
-  const line = L.polyline(latLngs, {
+  line = L.polyline(latLngs, {
     color: cssVar("--fire", "#ff7a1f"),
     weight: 3,
     dashArray: props.approximate ? "4 4" : undefined,
   });
   line.addTo(map);
   map.fitBounds(line.getBounds(), { padding: [8, 8] });
-
-  resizeObserver = new ResizeObserver(() => {
-    if (resizeRaf != null) cancelAnimationFrame(resizeRaf);
-    resizeRaf = requestAnimationFrame(() => {
-      resizeRaf = null;
-      if (!map) return;
-      map.invalidateSize();
-      map.fitBounds(line.getBounds(), { padding: [8, 8] });
-    });
-  });
-  resizeObserver.observe(el);
 }
 
-onMounted(() => {
-  if (!container.value || props.points.length < 2) return;
-  const el = container.value;
-  intersectionObserver = new IntersectionObserver((entries) => {
-    if (!entries[0]?.isIntersecting) return;
-    intersectionObserver?.disconnect();
-    intersectionObserver = null;
-    createMap(el);
-  });
-  intersectionObserver.observe(el);
-});
+function handleReady(m: L.Map) {
+  map = m;
+  render();
+}
 
-onBeforeUnmount(() => {
-  intersectionObserver?.disconnect();
-  intersectionObserver = null;
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  if (resizeRaf != null) cancelAnimationFrame(resizeRaf);
-  map?.remove();
-  map = null;
-});
+// LeafletMapBase's ResizeObserver already calls invalidateSize() on resize; refitting to the
+// route's own bounds here undoes the stale center/zoom invalidateSize() alone would leave behind.
+function handleResize() {
+  if (!map || !line) return;
+  map.fitBounds(line.getBounds(), { padding: [8, 8] });
+}
 </script>
 
 <template>
-  <div ref="container" class="route-thumb-map" aria-hidden="true" />
+  <div class="route-thumb-map" aria-hidden="true">
+    <LeafletMapBase
+      v-if="points.length >= 2"
+      class="map-surface"
+      lazy
+      :map-options="inertMapOptions"
+      @ready="handleReady"
+      @resize="handleResize"
+    />
+  </div>
 </template>
 
 <style scoped>
@@ -91,6 +71,10 @@ onBeforeUnmount(() => {
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-2);
+}
+.map-surface {
+  width: 100%;
+  height: 100%;
 }
 .route-thumb-map :deep(.leaflet-container) {
   background: var(--surface-2);

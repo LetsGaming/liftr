@@ -9,12 +9,16 @@
  * get their own independent occurrence counter.
  */
 
-/** XP per kilometer of distance. Nominal, tuned so a typical 5K (~300 XP) sits in the same rough
- *  order of magnitude as a typical strength session's per-set XP total. This is an initial guess,
- *  not first-principles derived — like `TIER_XP_MULTIPLIER`'s values, it was arrived at by eyeballing
+/** XP per kilometer of distance. Nominal, tuned so a typical 5K sits in the same rough order of
+ *  magnitude as a typical strength session's per-set XP total. This is an initial guess, not
+ *  first-principles derived — like `TIER_XP_MULTIPLIER`'s values, it was arrived at by eyeballing
  *  rough parity with the existing set-XP formula, not by any formal derivation, and is expected to
- *  need a future balancing pass once real usage data exists. */
-export const RUN_XP_PER_KM = 60;
+ *  need a future balancing pass once real usage data exists.
+ *
+ *  Divided by xp.ts's `XP_SCALE_DOWN` (not re-imported — this module is a deliberate standalone
+ *  sibling, see the module comment) so runs stay in the same rescaled order of magnitude as set
+ *  XP and the shared level curve, instead of suddenly dwarfing them. */
+export const RUN_XP_PER_KM = 60 / 10;
 
 /** Anti-grinding decay step/floor for repeated similar-distance runs. Deliberately the *same*
  *  values as `xp.ts`'s `REPEAT_XP_DECAY_STEP`/`REPEAT_XP_FLOOR_MULTIPLIER` — same anti-grinding
@@ -25,6 +29,14 @@ export const RUN_XP_PER_KM = 60;
  *  internals. */
 export const RUN_REPEAT_XP_DECAY_STEP = 0.15;
 export const RUN_REPEAT_XP_FLOOR_MULTIPLIER = 0.5;
+
+/** Small XP bonus for a run whose distance/pace/HR came from a synced smartwatch (Health Connect
+ *  today) rather than phone GPS alone: watch-derived GPS+HR is higher-fidelity and meaningfully
+ *  harder to fabricate than a phone-only recording, so it's treated as more plausible and earns a
+ *  little more — not a reward for owning a watch, a reward for the run being better-corroborated.
+ *  Deliberately modest (unlike `computeRunPlausibility`'s multiplier, this never gates rank/PR
+ *  eligibility or moves where a run lands against the rank thresholds — only the XP payout). */
+export const HEALTHCONNECT_XP_BONUS_MULTIPLIER = 1.08;
 
 /** Multiplier for the Nth time (1-indexed, `occurrence` = 1 on first-ever performance) a similar
  *  distance bucket has been run. Same `1/(1 + DECAY_STEP*(occurrence-1))`-shaped formula, floored
@@ -61,6 +73,10 @@ export interface RunXpInput {
    *  (`computeRunPlausibility`) never runs against a manual entry, since there are no
    *  `run_points` to independently check distance against in the first place. */
   plausibilityMultiplier?: number;
+  /** "healthconnect" applies `HEALTHCONNECT_XP_BONUS_MULTIPLIER`; every other source (gpx/fit/
+   *  manual, or omitted) gets no bonus. Optional since most callers (rank/PR code) never need it —
+   *  only computeRunXp reads this field. */
+  source?: "gpx" | "fit" | "manual" | "healthconnect";
 }
 
 /** A single run's base XP before repeat-decay: purely linear in distance (unlike sets, a run's
@@ -88,7 +104,8 @@ export function computeRunXp(runs: RunXpInput[]): number {
     const occurrence = (occurrenceByKey.get(key) ?? 0) + 1;
     occurrenceByKey.set(key, occurrence);
     const plausibilityMultiplier = run.plausibilityMultiplier ?? 1;
-    total += baseRunXp(run.distanceM) * repeatRunMultiplier(occurrence) * plausibilityMultiplier;
+    const sourceBonus = run.source === "healthconnect" ? HEALTHCONNECT_XP_BONUS_MULTIPLIER : 1;
+    total += baseRunXp(run.distanceM) * repeatRunMultiplier(occurrence) * plausibilityMultiplier * sourceBonus;
   }
   return total;
 }

@@ -1,100 +1,33 @@
 <script setup lang="ts">
-// Läufe: GPX import, route map, and run replay built on the stored run_points array — the
-// whole point of keeping the full trackpoint array.
+// Läufe: mirrors WorkoutPage.vue's flat "start" flow — no sub-tabs, saved routes (RouteList) are
+// the page's primary content, same as saved routines are Workout's. Individual-run browsing
+// (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here — that's
+// where Workout's own finished-session history lives too, so neither tab duplicates it locally.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { nearestRunCategory, type RunCategory } from "@liftr/shared";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import RunReplay from "../components/run/RunReplay.vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
-import AppIcon from "../components/ui/AppIcon.vue";
-import StatTile from "../components/ui/StatTile.vue";
 import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
-import { useConfirmTap } from "../composables/useConfirmTap";
 import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
-import { isHealthConnectAvailable } from "../health/healthConnect";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { getRunDetail } from "../services/runService";
-import { getPlannedRouteDetail, type PlannedRoute } from "../services/plannedRouteService";
+import type { PlannedRoute } from "../services/plannedRouteService";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
-import { useRunRankStore } from "../stores/runRankStore";
-import { useRunsStore, type RunDetail } from "../stores/runsStore";
+import { useRunsStore } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
-const runRankStore = useRunRankStore();
-const { toast } = useToast();
-const selectedRun = ref<RunDetail | null>(null);
-const deleting = ref(false);
-
-// Task 11: rank/PR chip on the selected run — same "5 km"/"Halbmarathon" German labels
-// RanksPage.vue/RecordsPage.vue already use for RunCategory (duplicated locally there too;
-// not worth centralizing for a 5-entry map used in three places).
-const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
-  mile: "Meile",
-  "5k": "5 km",
-  "10k": "10 km",
-  half_marathon: "Halbmarathon",
-  marathon: "Marathon",
-};
-
-// Manual runs never feed the rank engine (runImportService.ts only ranks GPS-tracked imports),
-// so they're excluded here explicitly rather than relying on runRanks/runPrs simply having no
-// matching rows — a manual run's distance could otherwise coincidentally nearest-match a
-// category some *other* real run of yours already has a rank/PR in.
-const selectedRunCategory = computed<RunCategory | null>(() => {
-  const run = selectedRun.value;
-  if (!run || run.source === "manual") return null;
-  return nearestRunCategory(run.distanceM);
-});
-const selectedRunRank = computed(() => {
-  const category = selectedRunCategory.value;
-  if (!category) return null;
-  return runRankStore.ranks.find((r) => r.category === category) ?? null;
-});
-const selectedRunIsPr = computed(() => {
-  const run = selectedRun.value;
-  if (!run || run.source === "manual") return false;
-  return runRankStore.prs.some((p) => p.runId === run.id);
-});
-
-// Same archived-route fallback as RunDetail.vue's chip: plannedRouteStore only ever holds active
-// (non-archived) routes, so a run referencing a since-deleted route falls back to a direct by-id
-// fetch, cached locally here — display-only edge case, not part of the store's active-list state.
-const archivedRouteCache = ref<Record<string, string | null>>({});
-const selectedRunRouteName = computed(() => {
-  const id = selectedRun.value?.plannedRouteId;
-  if (!id) return null;
-  return plannedRouteStore.byId(id)?.name ?? archivedRouteCache.value[id] ?? null;
-});
-async function resolveRouteName(id: string) {
-  if (plannedRouteStore.byId(id) || archivedRouteCache.value[id] !== undefined) return;
-  try {
-    archivedRouteCache.value[id] = (await getPlannedRouteDetail(id)).name;
-  } catch {
-    archivedRouteCache.value[id] = null;
-  }
-}
-
-// In the URL instead of a bare ref (critique finding): gives the Verlauf/Strecken split
-// deep-linking and back-button support essentially for free, and survives the route
-// cross-fade's full unmount/remount of this page (App.vue's <RouterView> transitions
-// mode="out-in", so a plain ref would otherwise reset to "verlauf" on every re-entry anyway).
-const route = useRoute();
-const router = useRouter();
-const activeSubTab = computed<"verlauf" | "strecken">({
-  get: () => (route.query.tab === "strecken" ? "strecken" : "verlauf"),
-  set: (tab) => router.replace({ query: { ...route.query, tab: tab === "strecken" ? "strecken" : undefined } }),
-});
 const plannedRouteStore = usePlannedRouteStore();
+const { toast } = useToast();
+
 const showRouteWizard = ref(false);
 const editingRoute = ref<PlannedRoute | null>(null);
 const initialCenter = ref<{ lat: number; lon: number } | undefined>(undefined);
 
 async function openNewRouteWizard() {
   editingRoute.value = null;
+  // Centers a fresh route's map on the user's most recent GPS-tracked run instead of the
+  // fallback — RouteMapEditor.vue's own useLastKnownLocation() chain only reaches this far.
   const gpsRun = runsStore.runs.find((r) => r.source !== "manual");
   if (gpsRun) {
     const detail = await getRunDetail(gpsRun.id);
@@ -109,18 +42,6 @@ function openEditRouteWizard(route: PlannedRoute) {
   showRouteWizard.value = true;
 }
 
-/** Deletes the selected run, tap-to-confirm. */
-const deleteConfirm = useConfirmTap(async () => {
-  const id = selectedRun.value?.id;
-  if (!id) return;
-  deleting.value = true;
-  try {
-    await runsStore.deleteRun(id);
-    selectedRun.value = runsStore.runs.length > 0 ? await runsStore.loadDetail(runsStore.runs[0]!.id) : null;
-  } finally {
-    deleting.value = false;
-  }
-});
 const importing = ref(false);
 const importError = ref<string | null>(null);
 const showManualForm = ref(false);
@@ -130,19 +51,17 @@ const { activeRoute, start: startFromRoute, dismiss: dismissRouteBanner } = useS
 const minutesInputRef = ref<HTMLInputElement | null>(null);
 
 const { manualName, manualDate, manualDistanceKm, manualMinutes, manualError, submitting, submitManual } =
-  useManualRunEntry(async () => {
+  useManualRunEntry(() => {
     showManualForm.value = false;
     manualName.value = "";
     manualDistanceKm.value = "";
     manualMinutes.value = "";
     dismissRouteBanner();
-    if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
     toast("Lauf gespeichert.");
   });
 
 watch(activeRoute, (route) => {
   if (!route) return;
-  activeSubTab.value = "verlauf";
   showManualForm.value = true;
   manualName.value = route.name;
   manualDistanceKm.value = (route.distanceM / 1000).toFixed(2).replace(".", ",");
@@ -152,20 +71,8 @@ watch(activeRoute, (route) => {
 
 onMounted(async () => {
   await runsStore.load();
-  if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
   if (!plannedRouteStore.loaded) await plannedRouteStore.load();
-  // Non-blocking, same as RanksPage.vue's own mount — the chip/badge above just render nothing
-  // until these resolve, no loading state worth gating the rest of the page on.
-  if (!runRankStore.ranksLoaded) void runRankStore.loadRanks();
-  if (!runRankStore.prsLoaded) void runRankStore.loadPrs();
 });
-
-async function selectRun(id: string) {
-  selectedRun.value = await runsStore.loadDetail(id);
-  if (!plannedRouteStore.loaded) await plannedRouteStore.load();
-  const routeId = selectedRun.value?.plannedRouteId;
-  if (routeId) await resolveRouteName(routeId);
-}
 
 function triggerImport() {
   fileInput.value?.click();
@@ -177,8 +84,7 @@ async function onFileChosen(e: Event) {
   importing.value = true;
   importError.value = null;
   try {
-    const run = await runsStore.importFile(file);
-    await selectRun(run.id);
+    await runsStore.importFile(file);
     toast("Lauf importiert.");
   } catch (err) {
     importError.value = (err as Error).message;
@@ -191,19 +97,6 @@ async function onFileChosen(e: Event) {
 function saveManual() {
   void submitManual({ plannedRouteId: activeRoute.value?.id ?? null, elevationGainM: activeRoute.value?.elevationGainM ?? null });
 }
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
-}
-function formatPace(sPerKm: number | null) {
-  if (sPerKm == null) return "–";
-  const s = Math.round(sPerKm);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
-}
-function formatDuration(s: number) {
-  const m = Math.round(s / 60);
-  return `${m} min`;
-}
 </script>
 
 <template>
@@ -215,45 +108,10 @@ function formatDuration(s: number) {
     </IonHeader>
     <IonContent class="ion-padding">
     <WorkoutRunsSwitcher active="runs" />
-    <!-- Was a second full-width boxed switcher stacked directly under WorkoutRunsSwitcher
-         (critique finding: 2 near-identical bars in a row read as one confusingly duplicated).
-         Now the app's shared sub-level tablist (.tab-strip/.tab-pill, promoted to tokens.css) —
-         auto-width, left-aligned pills instead of a second flex:1 boxed pair, so it visibly
-         reads as a *different kind* of control than the switcher above it, not a copy of it. -->
-    <div class="tab-row">
-      <div class="tab-strip" role="tablist" aria-label="Verlauf oder Strecken">
-        <button
-          role="tab"
-          class="tab-pill"
-          :class="{ active: activeSubTab === 'verlauf' }"
-          :aria-selected="activeSubTab === 'verlauf'"
-          aria-controls="runs-verlauf-panel"
-          @click="activeSubTab = 'verlauf'"
-        >
-          Verlauf
-        </button>
-        <button
-          role="tab"
-          class="tab-pill"
-          :class="{ active: activeSubTab === 'strecken' }"
-          :aria-selected="activeSubTab === 'strecken'"
-          aria-controls="runs-strecken-panel"
-          @click="activeSubTab = 'strecken'"
-        >
-          Strecken
-        </button>
-      </div>
-      <!-- Was its own full-width gradient bar below the switcher (critique finding: read as a
-           4th stacked bar). Now lives at the end of the tab row, only while Strecken is active —
-           mirrors the Verlauf branch's own right-aligned .pagehead action row below, making the
-           two sub-tabs structurally symmetric instead of one having an extra bar the other doesn't. -->
-      <button v-if="activeSubTab === 'strecken'" class="btn-primary" @click="openNewRouteWizard">+ Neue Strecke</button>
-    </div>
 
-    <div v-if="activeSubTab === 'verlauf'" id="runs-verlauf-panel" role="tabpanel">
     <div class="pagehead">
       <div>
-        <p style="color: var(--dim)">Als Datei importiert · deine Daten, kein Drittanbieter-Konto</p>
+        <p style="color: var(--dim)">Strecke starten oder Lauf manuell erfassen</p>
       </div>
       <div class="actions">
         <button class="btn-secondary" @click="showManualForm = !showManualForm">Manuell</button>
@@ -293,126 +151,29 @@ function formatDuration(s: number) {
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 
-    <!-- No import button in this empty state: the .pagehead button above is the only one that's
-         always present (it's the sole import entry point once runs exist), so duplicating it
-         here would just be two identically-labeled "GPX/FIT importieren" buttons on screen. -->
-    <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty panel">
-      <div class="eyebrow">Läufe</div>
-      <p>
-        Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
-        manuell nach — oben rechts.
-      </p>
-      <p v-if="isHealthConnectAvailable()">
-        Läufe mit Route werden auf Android automatisch über Health Connect importiert, sobald du das in deinem Profil
-        einmalig verbindest.
-      </p>
-    </section>
-
-    <div v-else class="layout">
-      <div class="main-col">
-        <template v-if="selectedRun">
-          <RunReplay v-if="selectedRun.points.length > 0" :points="selectedRun.points" />
-          <p v-else style="color: var(--dim)">Manuell erfasster Lauf — keine Route verfügbar.</p>
-          <div v-if="selectedRunRouteName" class="route-chip">
-            Strecke: {{ selectedRunRouteName }}
-          </div>
-          <!-- Task 11: current standing for the run's nearest category — not this run's own
-               performance specifically, just whether that category has a rank at all (see
-               selectedRunRank's comment). .pop-in gives it --ease-spring (motion.css): the one
-               place a run legitimately earns the overshoot easing — see .run-row's own comment
-               below for why the row entrance itself still doesn't. -->
-          <div v-if="selectedRunRank" class="route-chip rank-chip pop-in">
-            {{ RUN_CATEGORY_LABEL[selectedRunCategory!] }} · {{ TIER_LABEL_DE[selectedRunRank.tier as RankTier] }}
-            {{ DIVISION_LABEL[selectedRunRank.division] }}
-          </div>
-          <div v-if="selectedRunIsPr" class="route-chip pr-chip pop-in">Neuer Rekord</div>
-          <div class="stats">
-            <StatTile :value="`${(selectedRun.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
-            <StatTile :value="formatDuration(selectedRun.durationS)" label="Dauer" />
-            <StatTile :value="formatPace(selectedRun.avgPaceSPerKm)" label="Pace ø" />
-            <StatTile :value="selectedRun.avgHr != null ? Math.round(selectedRun.avgHr) + ' bpm' : '–'" label="Puls ø" />
-            <StatTile
-              v-if="selectedRun.elevationGainM != null"
-              :value="Math.round(selectedRun.elevationGainM) + ' hm'"
-              label="Höhenmeter"
-            />
-          </div>
-          <button
-            class="btn-secondary delete-run-btn"
-            :class="{ confirming: deleteConfirm.isArmed() }"
-            :disabled="deleting"
-            @click="deleteConfirm.trigger()"
-          >
-            <template v-if="deleting">Wird gelöscht…</template>
-            <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen?</template>
-            <template v-else><AppIcon name="trash" /> Lauf löschen</template>
-          </button>
-        </template>
-      </div>
-
-      <div class="run-list">
-        <h3>Verlauf</h3>
-        <button
-          v-for="run in runsStore.runs"
-          :key="run.id"
-          class="run-row panel"
-          :class="{ active: selectedRun?.id === run.id }"
-          @click="selectRun(run.id)"
-        >
-          <div class="meta">
-            <b>{{ run.name ?? "Lauf" }}</b>
-            <span>{{ formatDate(run.startedAt) }} · {{ (run.distanceM / 1000).toFixed(1) }} km</span>
-          </div>
-          <div class="pace tnum">{{ formatPace(run.avgPaceSPerKm) }}</div>
-        </button>
-      </div>
-    </div>
-    </div>
-
-    <div v-if="activeSubTab === 'strecken'" id="runs-strecken-panel" role="tabpanel">
-      <RouteList
-        @edit="openEditRouteWizard"
-        @start="(route) => { activeSubTab = 'verlauf'; startFromRoute(route); }"
-        @create="openNewRouteWizard"
-      />
-      <RouteWizard
-        v-if="showRouteWizard"
-        :route="editingRoute"
-        :initial-center="initialCenter"
-        @close="showRouteWizard = false"
-      />
-    </div>
+    <RouteList
+      @edit="openEditRouteWizard"
+      @start="(route) => startFromRoute(route)"
+      @create="openNewRouteWizard"
+    />
+    <RouteWizard
+      v-if="showRouteWizard"
+      :route="editingRoute"
+      :initial-center="initialCenter"
+      @close="showRouteWizard = false"
+    />
     </IonContent>
   </IonPage>
 </template>
 
 <style scoped>
-/* Verlauf/Strecken switcher: the global .tab-strip/.tab-pill (tokens.css) is auto-width and
-   left-aligned by default (that's what stops it reading as a second copy of the boxed, full-
-   width WorkoutRunsSwitcher above it) — overridden here from its promoted-from-
-   ExerciseInfoPanel.vue default of flex:1/equal-width, which is right for a full-bleed sheet
-   header but wrong for this page-level row that also carries the "+ Neue Strecke" action. */
-.tab-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp3);
-  margin-bottom: var(--sp4);
-}
-.tab-row .tab-strip {
-  flex: 1 1 auto;
-}
-.tab-row .tab-pill {
-  flex: none;
-  min-height: var(--touch-target-min);
-  padding: 8px 16px;
-}
 .pagehead {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp3);
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: var(--sp4);
 }
 .actions {
   display: flex;
@@ -431,6 +192,7 @@ function formatDuration(s: number) {
   flex-wrap: wrap;
   gap: var(--sp2);
   margin-top: var(--sp3);
+  margin-bottom: var(--sp4);
   padding: var(--sp4);
   max-width: 560px;
 }
@@ -442,80 +204,13 @@ function formatDuration(s: number) {
   color: var(--text);
   font-size: 13.5px;
 }
-/* Rides .panel (hybrid bg/blur/shadow/hairline). border-radius stays --r-xl (larger than
-   .panel's default --r-lg) to preserve this empty state's deliberately roomier look; .panel's
-   own background/box-shadow/backdrop-filter declarations are otherwise reused as-is. */
-.runs-empty {
-  border-radius: var(--r-xl);
-  padding: var(--sp5);
-  margin-top: var(--sp4);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--sp4);
-  /* Fills the viewport instead of sitting as a short card with a large empty scroll area below
-     it. Same reasoning as WorkoutPage.vue's .not-started fix. */
-  min-height: 40vh;
-}
-.runs-empty p {
-  color: var(--dim);
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-.layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp5);
-  margin-top: var(--sp5);
-}
-/* Same cramped-4-across fix as OverviewPage's .status-strip: 2x2 on mobile, widening to
-   4-across only once there's room (>=560px). */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--sp2);
-  margin-top: var(--sp3);
-}
-.stats :deep(.stat-tile b) {
-  font-size: clamp(14px, 4.2vw, 20px);
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  line-height: 1.15;
-}
-@media (min-width: 560px) {
-  .stats {
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  }
-}
-.route-chip {
-  display: inline-block;
-  margin-top: var(--sp2);
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 12.5px;
-  font-weight: 700;
-}
-/* Sits next to the route chip (same visual pattern, reused rather than invented) when
-   consecutive chips wrap onto the same line. */
-.route-chip + .route-chip {
-  margin-left: var(--sp2);
-}
-/* Same --pr color token WorkoutDetail.vue's/WorkoutPage.vue's strength-side PR chip already
-   uses — this is that same "you earned this" accent, not a new color introduced for running. */
-.pr-chip {
-  color: var(--pr);
-  border-color: var(--pr);
-}
 .route-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp3);
   margin-top: var(--sp3);
+  margin-bottom: var(--sp4);
   padding: var(--sp3) var(--sp4);
   font-size: 13.5px;
 }
@@ -526,83 +221,5 @@ function formatDuration(s: number) {
   font-size: 18px;
   line-height: 1;
   padding: 4px;
-}
-.delete-run-btn {
-  margin-top: var(--sp4);
-  color: var(--danger);
-}
-.delete-run-btn.confirming {
-  background: var(--danger-lo);
-  border-color: var(--danger);
-  color: var(--text);
-}
-.run-list h3 {
-  font-size: 15px;
-  margin-bottom: var(--sp3);
-}
-/* Rides .panel (hybrid bg/blur/shadow + gradient hairline edge via ::after). Per tokens.css's
-   .panel/.surface-hybrid comment, a native <button> needs its own explicit background (which
-   .panel already sets) rather than relying on the pseudo-element alone — this button already
-   gets that from the .panel class in the template. There's no real border here, just the
-   hairline gradient, so "active" and "hover" are expressed as an inset ring / brightness tweak
-   layered on top of .panel's own box-shadow instead of swapping backgrounds, which would break
-   translucency. */
-.run-row {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--sp3);
-  color: var(--text);
-  margin-bottom: var(--sp2);
-  text-align: left;
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), filter var(--dur-fast) var(--ease-out);
-  /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
-     (rank-up, PR, level-up) per motion.css's own convention — a run-list row entrance isn't
-     one of those. Task 11 narrows that exception from "never" to "not here specifically": the
-     rank/PR chip inside the detail panel above (.rank-chip/.pr-chip) does get --ease-spring, via
-     the shared .pop-in utility — that's the one place a run legitimately earns it. This row's
-     own entrance stays --ease-out regardless. */
-  animation: pop-in var(--dur-base) var(--ease-out) both;
-}
-.run-row:active {
-  transform: scale(0.98);
-}
-@media (hover: hover) {
-  .run-row:not(.active):hover {
-    filter: brightness(1.12);
-  }
-}
-.run-row.active {
-  box-shadow: var(--surface-hybrid-shadow), inset 0 0 0 2px var(--blue);
-}
-.run-row .meta {
-  display: flex;
-  flex-direction: column;
-}
-.run-row .meta span {
-  font-size: 12px;
-  color: var(--faint);
-}
-.run-row .pace {
-  font-size: 13px;
-  color: var(--dim);
-}
-
-@media (min-width: 900px) {
-  .layout {
-    flex-direction: row;
-    align-items: flex-start;
-    max-width: var(--content-w-xwide);
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .main-col {
-    flex: 1.4;
-  }
-  .run-list {
-    flex: 1;
-    max-width: 340px;
-  }
 }
 </style>
