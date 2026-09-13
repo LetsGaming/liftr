@@ -41,8 +41,21 @@ const lastComputedDistanceM = ref(0);
 const elevationGainM = ref<number | null>(null);
 const saving = ref(false);
 
+/** Whether the drawn path connects back to the starting waypoint — a loop (the historical,
+ *  previously-unconditional behavior) vs. a point-to-point route. User-configurable so a walk
+ *  from A to B doesn't get an unwanted closing leg back to A. */
+const closeLoop = ref(true);
+
+/** What actually gets routed/saved: the raw waypoints plus, when closeLoop is on, a synthetic
+ *  final point back at the start — kept separate from `waypoints` itself so the map's editable
+ *  markers (RouteMapEditor's :waypoints prop below) only ever show the points the user actually
+ *  placed, never a synthetic one they didn't add and shouldn't be able to drag/delete. */
+const effectiveWaypoints = computed(() =>
+  closeLoop.value && waypoints.value.length >= 2 ? [...waypoints.value, { ...waypoints.value[0]! }] : waypoints.value,
+);
+
 const distanceM = computed(() =>
-  routedPoints.value.length > 0 ? lastComputedDistanceM.value : pathDistanceM(waypoints.value),
+  routedPoints.value.length > 0 ? lastComputedDistanceM.value : pathDistanceM(effectiveWaypoints.value),
 );
 const canSave = computed(() => name.value.trim().length > 0 && waypoints.value.length >= 2);
 
@@ -54,10 +67,21 @@ async function hydrateFrom(route: PlannedRoute | null | undefined) {
     geometrySource.value = "straight";
     lastComputedDistanceM.value = 0;
     elevationGainM.value = null;
+    closeLoop.value = true;
     return;
   }
   name.value = route.name;
-  waypoints.value = route.waypoints.map((w) => ({ ...w }));
+  const savedWaypoints = route.waypoints.map((w) => ({ ...w }));
+  // A previously-saved closed loop persists its synthetic closing point as an ordinary waypoint
+  // (there's no separate "is this a loop" column) — strip it back off here so re-editing doesn't
+  // compound another one on top via effectiveWaypoints below, and re-derive the toggle's state
+  // from whether the route actually ends back at its start.
+  const first = savedWaypoints[0];
+  const last = savedWaypoints[savedWaypoints.length - 1];
+  const wasClosedLoop =
+    savedWaypoints.length >= 3 && first != null && last != null && first.lat === last.lat && first.lon === last.lon;
+  waypoints.value = wasClosedLoop ? savedWaypoints.slice(0, -1) : savedWaypoints;
+  closeLoop.value = wasClosedLoop;
   geometrySource.value = route.geometrySource;
   lastComputedDistanceM.value = route.distanceM;
   elevationGainM.value = route.elevationGainM;
@@ -92,7 +116,7 @@ async function runPreview() {
   previewController?.abort();
   previewController = new AbortController();
   try {
-    const result = await previewPlannedRoute(waypoints.value, previewController.signal);
+    const result = await previewPlannedRoute(effectiveWaypoints.value, previewController.signal);
     routedPoints.value = result.points;
     geometrySource.value = result.geometrySource;
     lastComputedDistanceM.value = result.distanceM;
@@ -114,6 +138,7 @@ function onRemove(index: number) {
   waypoints.value = waypoints.value.filter((_, i) => i !== index);
   schedulePreview();
 }
+watch(closeLoop, schedulePreview);
 
 const closeConfirm = useConfirmTap(() => sheetRef.value?.dismiss());
 function requestClose() {
@@ -129,9 +154,9 @@ async function save() {
   saving.value = true;
   try {
     if (props.route) {
-      await plannedRouteStore.update(props.route.id, { name: name.value.trim(), waypoints: waypoints.value });
+      await plannedRouteStore.update(props.route.id, { name: name.value.trim(), waypoints: effectiveWaypoints.value });
     } else {
-      await plannedRouteStore.create(name.value.trim(), waypoints.value);
+      await plannedRouteStore.create(name.value.trim(), effectiveWaypoints.value);
     }
     emit("saved");
     sheetRef.value?.dismiss();
@@ -167,12 +192,18 @@ async function save() {
       @remove="onRemove"
     />
     <footer class="wizard-foot">
-      <div class="stats">
-        <span>{{ (distanceM / 1000).toFixed(2) }} km{{ geometrySource === "straight" ? " ≈" : "" }}</span>
-        <span>{{ elevationGainM != null ? Math.round(elevationGainM) + " hm" : "Höhe unbekannt" }}</span>
-        <span>{{ waypoints.length }} Wegpunkte</span>
+      <div class="wizard-foot-row">
+        <div class="stats">
+          <span>{{ (distanceM / 1000).toFixed(2) }} km{{ geometrySource === "straight" ? " ≈" : "" }}</span>
+          <span>{{ elevationGainM != null ? Math.round(elevationGainM) + " hm" : "Höhe unbekannt" }}</span>
+          <span>{{ waypoints.length }} Wegpunkte</span>
+        </div>
+        <label class="loop-toggle">
+          <input v-model="closeLoop" type="checkbox" />
+          Schleife schließen
+        </label>
       </div>
-      <button class="btn-primary" :disabled="!canSave || saving" @click="save">Speichern</button>
+      <button class="btn-primary btn-block" :disabled="!canSave || saving" @click="save">Speichern</button>
     </footer>
   </SheetModal>
 </template>
@@ -208,16 +239,29 @@ async function save() {
 }
 .wizard-foot {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+.wizard-foot-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--line);
 }
 .stats {
   display: flex;
   gap: 12px;
   font-size: 0.9rem;
   color: var(--dim);
+}
+.loop-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--dim);
+  white-space: nowrap;
 }
 </style>
