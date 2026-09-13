@@ -6,17 +6,18 @@ import { mountWithProviders } from "../../helpers/mountWithProviders";
 // file), which resolves to the same absolute packages/client/src/lib/api.ts that the ~client
 // alias points at — so mocking "~client/lib/api" here does apply to it (tests/README.md).
 // ApiError itself needs to stay the *real* class (AuthGate does `err instanceof ApiError`), so
-// only api.get and setToken are overridden via importOriginal instead of replacing the module
-// wholesale.
-const { mockGet, mockSetToken } = vi.hoisted(() => ({
+// only api.get/api.post and setToken are overridden via importOriginal instead of replacing the
+// module wholesale.
+const { mockGet, mockPost, mockSetToken } = vi.hoisted(() => ({
   mockGet: vi.fn(),
+  mockPost: vi.fn(),
   mockSetToken: vi.fn(),
 }));
 vi.mock("~client/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~client/lib/api")>();
   return {
     ...actual,
-    api: { ...actual.api, get: mockGet },
+    api: { ...actual.api, get: mockGet, post: mockPost },
     setToken: mockSetToken,
   };
 });
@@ -26,7 +27,9 @@ import AuthGate from "~client/components/ui/AuthGate.vue";
 
 beforeEach(() => {
   mockGet.mockReset();
+  mockPost.mockReset();
   mockSetToken.mockReset();
+  window.history.pushState({}, "", "/");
 });
 
 afterEach(() => {
@@ -34,12 +37,14 @@ afterEach(() => {
 });
 
 describe("AuthGate", () => {
-  it("renders the slot content once the initial health check succeeds (no token needed)", async () => {
-    mockGet.mockResolvedValue({ ok: true });
-
-    const wrapper = mountWithProviders(AuthGate, {
-      slots: { default: "<div class='protected'>secret content</div>" },
+  it("renders the slot immediately when status says setup is done and health succeeds", async () => {
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      if (path === "/api/health") return Promise.resolve({ ok: true });
+      return Promise.reject(new Error(`unexpected path ${path}`));
     });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
 
     expect(wrapper.find(".protected").exists()).toBe(true);
@@ -49,103 +54,157 @@ describe("AuthGate", () => {
   it("renders the slot content (lets the app through) when the initial check fails offline, not with a 401", async () => {
     mockGet.mockRejectedValue(new TypeError("Failed to fetch"));
 
-    const wrapper = mountWithProviders(AuthGate, {
-      slots: { default: "<div class='protected'>secret content</div>" },
-    });
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
 
     expect(wrapper.find(".protected").exists()).toBe(true);
     expect(wrapper.find(".gate").exists()).toBe(false);
   });
 
-  it("shows the token gate instead of the slot when the initial check 401s", async () => {
-    mockGet.mockRejectedValue(new ApiError("GET /api/health failed: 401", 401));
+  it("shows the setup form when needsSetup is true", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
 
-    const wrapper = mountWithProviders(AuthGate, {
-      slots: { default: "<div class='protected'>secret content</div>" },
-    });
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
 
     expect(wrapper.find(".gate").exists()).toBe(true);
+    expect(wrapper.find("input[type='password']").exists()).toBe(true);
+    expect(wrapper.find("input[aria-label='Benutzername']").exists()).toBe(false);
     expect(wrapper.find(".protected").exists()).toBe(false);
-    expect(wrapper.text()).toContain("Dieser Server ist mit einem Token gesichert.");
   });
 
-  it("disables the unlock button until a token is typed", async () => {
-    mockGet.mockRejectedValue(new ApiError("unauthorized", 401));
-    const wrapper = mountWithProviders(AuthGate);
-    await flushPromises();
-
-    const submitBtn = wrapper.find("button.btn-primary");
-    expect(submitBtn.attributes("disabled")).toBeDefined();
-
-    await wrapper.find("input[type=password]").setValue("abc123");
-    expect(wrapper.find("button.btn-primary").attributes("disabled")).toBeUndefined();
-  });
-
-  it("submits the typed token, and on success stores it and reveals the slot", async () => {
-    mockGet.mockRejectedValueOnce(new ApiError("unauthorized", 401));
-    mockGet.mockResolvedValueOnce({ ok: true }); // the re-check after submit succeeds
-
-    const wrapper = mountWithProviders(AuthGate, {
-      slots: { default: "<div class='protected'>secret content</div>" },
+  it("shows the join form when the URL has an invite query param", async () => {
+    window.history.pushState({}, "", "/?invite=ABCD2345");
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
     });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
 
-    await wrapper.find("input[type=password]").setValue("  my-token  ");
+    expect(wrapper.find("input[aria-label='Einladungscode']").exists()).toBe(true);
+    expect(wrapper.find("input[aria-label='Benutzername']").exists()).toBe(true);
+  });
+
+  it("shows the login form by default when a session is missing/invalid", async () => {
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
+    });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    expect(wrapper.find("input[aria-label='Benutzername']").exists()).toBe(true);
+    expect(wrapper.find("input[aria-label='Einladungscode']").exists()).toBe(false);
+    expect(wrapper.find(".protected").exists()).toBe(false);
+  });
+
+  it("submitting setup stores the returned token and reveals the slot", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
+    mockPost.mockResolvedValue({ token: "owner-token" });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    await wrapper.find("input[type='password']").setValue("ownerpass1");
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
 
-    expect(mockSetToken).toHaveBeenCalledWith("my-token"); // trimmed
+    expect(mockPost).toHaveBeenCalledWith("/api/auth/setup", { password: "ownerpass1" });
+    expect(mockSetToken).toHaveBeenCalledWith("owner-token");
     expect(wrapper.find(".protected").exists()).toBe(true);
-    expect(wrapper.find(".gate").exists()).toBe(false);
   });
 
-  it("shows an error and stays gated when the submitted token is rejected", async () => {
-    mockGet.mockRejectedValueOnce(new ApiError("unauthorized", 401));
-    mockGet.mockRejectedValueOnce(new ApiError("unauthorized", 401)); // re-check after submit also fails
-
-    const wrapper = mountWithProviders(AuthGate, {
-      slots: { default: "<div class='protected'>secret content</div>" },
+  it("submitting login stores the token and reveals the slot", async () => {
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
     });
+    mockPost.mockResolvedValue({ token: "new-token" });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
 
-    await wrapper.find("input[type=password]").setValue("wrong-token");
+    await wrapper.find("input[aria-label='Benutzername']").setValue("owner");
+    await wrapper.find("input[type='password']").setValue("ownerpass1");
     await wrapper.find("button.btn-primary").trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Token abgelehnt");
+    expect(mockPost).toHaveBeenCalledWith("/api/auth/login", { username: "owner", password: "ownerpass1" });
+    expect(wrapper.find(".protected").exists()).toBe(true);
+  });
+
+  it("submitting join redeems the invite and reveals the slot", async () => {
+    window.history.pushState({}, "", "/?invite=abcd2345");
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
+    });
+    mockPost.mockResolvedValue({ token: "member-token" });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    await wrapper.find("input[aria-label='Benutzername']").setValue("newmember");
+    await wrapper.find("input[type='password']").setValue("memberpass1");
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(mockPost).toHaveBeenCalledWith("/api/auth/register", {
+      code: "ABCD2345",
+      username: "newmember",
+      password: "memberpass1",
+    });
+    expect(wrapper.find(".protected").exists()).toBe(true);
+  });
+
+  it("shows an error and stays gated when login is rejected", async () => {
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
+    });
+    mockPost.mockRejectedValue(new ApiError("unauthorized", 401));
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    await wrapper.find("input[aria-label='Benutzername']").setValue("owner");
+    await wrapper.find("input[type='password']").setValue("wrong");
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Benutzername oder Passwort falsch.");
     expect(wrapper.find(".gate").exists()).toBe(true);
     expect(wrapper.find(".protected").exists()).toBe(false);
   });
 
-  it("toggles the token field between password and text on the eye button", async () => {
-    mockGet.mockRejectedValue(new ApiError("unauthorized", 401));
+  it("toggles the password field between password and text on the eye button", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
     const wrapper = mountWithProviders(AuthGate);
     await flushPromises();
 
-    const input = wrapper.find("input[aria-label='API-Token']");
+    const input = wrapper.find("input[aria-label='Passwort']");
     expect(input.attributes("type")).toBe("password");
 
     await wrapper.find("button.btn-secondary").trigger("click");
-    expect(wrapper.find("input[aria-label='API-Token']").attributes("type")).toBe("text");
+    expect(wrapper.find("input[aria-label='Passwort']").attributes("type")).toBe("text");
   });
 
-  it("submits on Enter in the token field", async () => {
-    mockGet.mockRejectedValueOnce(new ApiError("unauthorized", 401));
-    mockGet.mockResolvedValueOnce({ ok: true });
+  it("submits on Enter in the password field", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
+    mockPost.mockResolvedValue({ token: "owner-token" });
 
-    const wrapper = mountWithProviders(AuthGate, {
-      slots: { default: "<div class='protected'>secret content</div>" },
-    });
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
 
-    const input = wrapper.find("input[aria-label='API-Token']");
-    await input.setValue("enter-token");
+    const input = wrapper.find("input[aria-label='Passwort']");
+    await input.setValue("ownerpass1");
     await input.trigger("keyup.enter");
     await flushPromises();
 
-    expect(mockSetToken).toHaveBeenCalledWith("enter-token");
+    expect(mockSetToken).toHaveBeenCalledWith("owner-token");
     expect(wrapper.find(".protected").exists()).toBe(true);
   });
 });
