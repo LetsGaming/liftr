@@ -12,7 +12,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/ui/AppIcon.vue";
 import DrillInScreen from "../components/ui/DrillInScreen.vue";
-import RouteThumbnail from "../components/route/RouteThumbnail.vue";
+import RunMap from "../components/run/RunMap.vue";
 import LiveRunScreen from "../components/run/LiveRunScreen.vue";
 import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
@@ -63,8 +63,14 @@ function onLiveRunFinished() {
         <IonTitle>{{ plannedRoute ? plannedRoute.name : "Strecke" }}</IonTitle>
       </IonToolbar>
     </IonHeader>
-    <IonContent class="ion-padding">
+    <!-- scroll-y off: the main content here is an interactive, pannable map — a scrollable page
+         wrapping it means dragging to scroll the page instead pans the map, trapping the
+         gesture. fillHeight (DrillInScreen) makes the layout fit the viewport without needing
+         scroll in the first place, same as RouteWizard.vue/LiveRunScreen.vue's SheetModal-based
+         screens already do for the same reason. -->
+    <IonContent class="ion-padding" :scroll-y="false">
       <DrillInScreen
+        fill-height
         :title="plannedRoute ? plannedRoute.name : 'Strecke'"
         :loading="!plannedRouteStore.loaded"
         :not-found="plannedRouteStore.loaded && !plannedRoute"
@@ -85,12 +91,7 @@ function onLiveRunFinished() {
           </div>
 
           <div class="ro-route-map">
-            <RouteThumbnail
-              :points="plannedRoute.polyline"
-              :approximate="plannedRoute.geometrySource === 'straight'"
-              height="45vh"
-              interactive
-            />
+            <RunMap :points="plannedRoute.polyline" :approximate="plannedRoute.geometrySource === 'straight'" />
           </div>
           <p class="map-credit">Karten © OpenStreetMap contributors</p>
 
@@ -132,21 +133,29 @@ function onLiveRunFinished() {
   gap: var(--sp3);
   font-size: 13.5px;
   color: var(--dim);
+  flex: none;
 }
+/* Grows to fill whatever's left of the viewport (DrillInScreen's fill-height mode) instead of a
+   fixed vh — was previously wrapping RouteThumbnail.vue, a component whose own hardcoded 88px
+   thumbnail height silently ignored the height/interactive props this page tried to pass it,
+   leaving a large blank gap above the action buttons. RunMap.vue (height:100%) is the actual
+   interactive, properly-sized map component the other run/route screens already use. */
 .ro-route-map {
-  height: 45vh;
-  min-height: 280px;
+  flex: 1;
+  min-height: 220px;
   border-radius: var(--r-lg);
   overflow: hidden;
 }
 .map-credit {
   color: var(--faint);
   font-size: 11px;
+  flex: none;
 }
 .manual-form {
   display: flex;
   flex-direction: column;
   gap: var(--sp3);
   padding: var(--sp4);
+  flex: none;
 }
 </style>

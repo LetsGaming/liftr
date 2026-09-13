@@ -15,6 +15,13 @@ defineProps<{
   notFound: boolean;
   /** Number of skeleton rows to show while `loading`. */
   skeletonCount?: number;
+  /** Opt-in: the default slot fills the remaining viewport height instead of flowing/scrolling
+   *  with the page (see .drill-in.fill-height below). For a screen whose main content is an
+   *  interactive map — dragging to scroll the page would instead pan the map, trapping the
+   *  gesture — not for a normal content list, which should keep scrolling normally (the default
+   *  RoutineOverviewPage.vue relies on). The caller must also disable its own IonContent's
+   *  scroll (`:scroll-y="false"`) for this to actually stop the page from scrolling underneath. */
+  fillHeight?: boolean;
 }>();
 
 const router = useRouter();
@@ -27,7 +34,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="drill-in">
+  <div class="drill-in" :class="{ 'fill-height': fillHeight }">
     <!-- Back affordance lives in the page content, not the IonToolbar: on mobile the toolbar sits
          directly underneath App.vue's fixed .top-hud status bar (different stacking contexts — a
          toolbar button there gets visually collided with the level-ring/streak chip instead of
@@ -52,10 +59,15 @@ function goBack() {
         <slot name="header-extra" />
       </div>
 
-      <slot />
+      <div v-if="fillHeight" class="ro-fill-slot">
+        <slot />
+      </div>
+      <slot v-else />
 
       <!-- Sticky start bar pinned to the bottom of the viewport so it's reachable with zero
-           scroll regardless of content height. -->
+           scroll regardless of content height. In fill-height mode there's no scroll container
+           for `sticky` to stick within, so it just renders as the flex column's last row —
+           already always-visible by construction there. -->
       <div class="ro-start-bar">
         <slot name="start-bar" />
       </div>
@@ -88,6 +100,19 @@ function goBack() {
   gap: var(--sp3);
   /* Clears the sticky start bar so the last content row is never hidden behind it. */
   padding-bottom: 88px;
+}
+/* Opt-in (see the fillHeight prop doc above): fills the page instead of flowing/scrolling with
+   it — the caller's IonContent must also have scroll disabled for this to matter. */
+.drill-in.fill-height {
+  height: 100%;
+  padding-bottom: 0;
+}
+.ro-fill-slot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp3);
 }
 .ro-skel {
   height: 64px;

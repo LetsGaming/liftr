@@ -9,9 +9,11 @@
 import L from "leaflet";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { cssVar, createOsmTileLayer } from "../../lib/leafletTheme";
-import type { RunPoint } from "../../stores/runsStore";
 
-const props = defineProps<{ points: RunPoint[] }>();
+/** Only lat/lon are ever read below — a plain structural shape (not RunPoint) so this also
+ *  accepts a planned route's Waypoint[] (RouteOverviewPage.vue's preview) without those callers
+ *  needing to fabricate RunPoint's other fields (idx/t/ele/hr/cadence) they don't have. */
+const props = defineProps<{ points: { lat: number; lon: number }[]; approximate?: boolean }>();
 
 const container = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
@@ -27,7 +29,12 @@ function render() {
   });
 
   const latLngs = props.points.map((p) => [p.lat, p.lon] as [number, number]);
-  const line = L.polyline(latLngs, { color: cssVar("--fire", "#ff7a1f"), weight: 4, opacity: 0.9 });
+  const line = L.polyline(latLngs, {
+    color: cssVar("--fire", "#ff7a1f"),
+    weight: 4,
+    opacity: 0.9,
+    dashArray: props.approximate ? "4 4" : undefined,
+  });
   line.addTo(map);
   map.fitBounds(line.getBounds(), { padding: [24, 24] });
 
