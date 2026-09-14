@@ -61,6 +61,18 @@ const openWorkoutTitle = ref<string | undefined>(undefined);
  *  which RunsPage.vue also relies on for the same detail view. */
 const openRunId = ref<string | null>(null);
 
+/** "Letzte Aktivität" filter pills — same .tab-strip/.tab-pill tablist RunsPage.vue's
+ *  Verlauf/Strecken switcher uses (tokens.css), just with 3 options over the history feed's own
+ *  `kind` discriminant instead of a page-level sub-tab. */
+const activityFilter = ref<"alle" | "workout" | "run">("alle");
+const filteredActivity = computed(() =>
+  activityFilter.value === "alle" ? history.items : history.items.filter((i) => i.kind === activityFilter.value),
+);
+/** Was every loaded item in one flat list (19+ rows with no cap) — a Miller's-Law violation.
+ *  Shows a manageable first chunk, "Mehr anzeigen" reveals the rest already sitting in memory. */
+const activityShownCount = ref(8);
+const visibleActivity = computed(() => filteredActivity.value.slice(0, activityShownCount.value));
+
 onMounted(() => {
   void history.load();
   void routineStore.load();
@@ -235,10 +247,8 @@ function retryFailed() {
           <button type="button" class="btn-secondary" @click="retryFailed">Erneut versuchen</button>
         </div>
 
-        <!-- Erholungszone -->
         <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" :can-start="!!suggestedRoutine" @start="startFromReadiness" />
 
-        <!-- Launchpad -->
         <section class="launchpad tile--priority surface-hybrid">
           <template v-if="activeWorkout.isActive">
             <div class="eyebrow lp-eyebrow">Weiter machen</div>
@@ -263,8 +273,6 @@ function retryFailed() {
             <button class="btn-primary btn-block" @click="router.push(`/routines/${suggestedRoutine.id}`)">
               <AppIcon name="play" /> Starten
             </button>
-            <!-- suggestedRoutine is a stand-in for "last used" (no lastUsedAt tracking exists
-                 yet); shown only when there's actually something else to switch to. -->
             <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">Andere Routine wählen →</router-link>
           </template>
           <template v-else>
@@ -273,16 +281,12 @@ function retryFailed() {
             <router-link to="/workout" class="btn-secondary btn-block">Erste Routine anlegen →</router-link>
           </template>
         </section>
-
-        <!-- First-run: one promise (the whole ladder, Initiate lit) instead of the loaded
-             dashboard's four stat dashes + two "noch nicht genug Daten" tiles at once. -->
         <section v-if="isFirstRun" class="first-run-ladder panel">
           <div class="eyebrow tile-head">Deine Rangleiter</div>
           <TierLadder :current-tier="null" :current-division="null" />
         </section>
 
         <template v-else>
-          <!-- Status strip -->
           <section class="status-strip">
             <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'">
               <template #label><AppIcon name="flame" /> Tage Serie</template>
@@ -300,7 +304,6 @@ function retryFailed() {
             </InfoToggle>
           </div>
 
-          <!-- Progress tiles -->
           <section class="progress-tiles">
             <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
@@ -347,9 +350,6 @@ function retryFailed() {
           </section>
         </template>
 
-        <!-- Entdecken: surfaces existing-but-buried features, reusing the .progress-tiles/.tile
-             grid above. A plate calculator also exists as an inline reveal in SetEntry.vue, but
-             has no standalone page/modal to link to, so it's left out of this grid. -->
         <section class="discover">
           <div class="eyebrow tile-head">Entdecken</div>
           <div class="progress-tiles">
@@ -360,8 +360,6 @@ function retryFailed() {
             </router-link>
           </div>
         </section>
-
-        <!-- Recent activity -->
         <section v-if="!isFirstRun" class="activity">
           <div class="eyebrow tile-head">Letzte Aktivität</div>
 
@@ -370,24 +368,65 @@ function retryFailed() {
             Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast.
           </p>
 
-          <ul v-else class="feed">
-            <li v-for="item in history.items" :key="item.id" class="feed-row">
+          <template v-else>
+            <div class="tab-strip" role="tablist" aria-label="Aktivität filtern">
               <button
-                class="feed-btn surface-hybrid"
-                @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
+                role="tab"
+                class="tab-pill"
+                :class="{ active: activityFilter === 'alle' }"
+                :aria-selected="activityFilter === 'alle'"
+                @click="activityFilter = 'alle'; activityShownCount = 8"
               >
-                <span class="icon" :class="item.kind"><AppIcon :name="item.kind === 'run' ? 'running' : 'dumbbell'" /></span>
-                <div class="meta">
-                  <b>{{ item.title ?? (item.kind === "run" ? "Lauf" : "Workout") }}</b>
-                  <span>{{ formatDate(item.at) }}</span>
-                </div>
-                <div class="value tnum">
-                  {{ item.kind === "workout" ? volumeLabel(item) : runLabel(item) }}
-                  <span v-if="xpLabel(item)" class="xp-sub">{{ xpLabel(item) }}</span>
-                </div>
+                Beides
               </button>
-            </li>
-          </ul>
+              <button
+                role="tab"
+                class="tab-pill"
+                :class="{ active: activityFilter === 'workout' }"
+                :aria-selected="activityFilter === 'workout'"
+                @click="activityFilter = 'workout'; activityShownCount = 8"
+              >
+                Workouts
+              </button>
+              <button
+                role="tab"
+                class="tab-pill"
+                :class="{ active: activityFilter === 'run' }"
+                :aria-selected="activityFilter === 'run'"
+                @click="activityFilter = 'run'; activityShownCount = 8"
+              >
+                Runs
+              </button>
+            </div>
+
+            <ul class="feed">
+              <li v-for="item in visibleActivity" :key="item.id" class="feed-row">
+                <button
+                  class="feed-btn surface-hybrid"
+                  @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
+                >
+                  <span class="icon" :class="item.kind"><AppIcon :name="item.kind === 'run' ? 'running' : 'dumbbell'" /></span>
+                  <div class="meta">
+                    <b>{{ item.title ?? (item.kind === "run" ? "Lauf" : "Workout") }}</b>
+                    <span>{{ formatDate(item.at) }}</span>
+                  </div>
+                  <div class="value tnum">
+                    {{ item.kind === "workout" ? volumeLabel(item) : runLabel(item) }}
+                    <span v-if="xpLabel(item)" class="xp-sub">{{ xpLabel(item) }}</span>
+                  </div>
+                </button>
+              </li>
+            </ul>
+
+            <button
+              v-if="activityShownCount < filteredActivity.length"
+              type="button"
+              class="show-more-link"
+              @click="activityShownCount += 8"
+            >
+              Mehr anzeigen
+            </button>
+          </template>
 
           <button v-if="history.nextCursor" class="btn-secondary btn-block" :disabled="history.loadingMore" @click="history.loadMore()">
             {{ history.loadingMore ? "Lädt…" : "Mehr laden" }}
@@ -476,7 +515,7 @@ function retryFailed() {
   gap: var(--sp3);
   padding: var(--sp3) var(--sp4);
   border-radius: var(--r-md);
-  border: 1px solid var(--fire-hi);
+  border: 1px solid var(--warning-hi);
   background: var(--surface-2);
   color: var(--text);
   font-size: 13px;
@@ -567,7 +606,7 @@ function retryFailed() {
   padding: 0;
 }
 .volume-bar.current {
-  background: linear-gradient(180deg, var(--blue-hi), var(--blue));
+  background: var(--icon-fill-blue);
 }
 .volume-bar.selected:not(.current) {
   background: var(--line-2);
@@ -635,11 +674,26 @@ function retryFailed() {
 .activity {
   padding-bottom: var(--sp4);
 }
+.activity .tab-strip {
+  margin-bottom: var(--sp3);
+}
 .feed {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--sp2);
+}
+.show-more-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: var(--sp3);
+  padding: var(--sp2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dim);
+  background: none;
+  border: none;
 }
 /* Same .surface-hybrid treatment as .tile above. */
 .feed-btn {

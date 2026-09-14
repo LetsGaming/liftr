@@ -554,31 +554,36 @@ describe("computeRankEventsByWeekday", () => {
   });
 
   it("counts a genuine, corroborated rank-up on today's weekday", async () => {
+    // A single Date captured once and reused for both the seeded event and the expected weekday —
+    // two separate `new Date()` calls straddling the awaits below could tick past midnight between
+    // them and land in different weekday buckets, which is exactly what made this test flaky.
+    const now = new Date();
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await establishCorroboratedPeak(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8, now);
     await recomputeRankForExercise(db, OWNER_USER_ID, ex.id);
 
     const result = await computeRankEventsByWeekday(db, OWNER_USER_ID);
-    const todayWeekday = new Date().getDay();
+    const todayWeekday = now.getDay();
     const total = result.reduce((sum, r) => sum + r.count, 0);
     expect(total).toBe(1);
     expect(result.find((r) => r.weekday === todayWeekday)!.count).toBe(1);
   });
 
   it("splits today's rank-ups into total vs. flagged counts", async () => {
+    const now = new Date();
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
-    await establishCorroboratedPeak(ex.id, 60, 8);
+    await establishCorroboratedPeak(ex.id, 60, 8, now);
     await recomputeRankForExercise(db, OWNER_USER_ID, ex.id); // clean rank-up #1
 
     const ex2 = await insertTestExercise(db);
     await seedStandards(ex2.id);
-    await establishCorroboratedPeak(ex2.id, 60, 8);
+    await establishCorroboratedPeak(ex2.id, 60, 8, now);
     await recomputeRankForExercise(db, OWNER_USER_ID, ex2.id, 0.4, "pace"); // flagged rank-up #2
 
     const result = await computeRankEventsByWeekday(db, OWNER_USER_ID);
-    const todayWeekday = new Date().getDay();
+    const todayWeekday = now.getDay();
     const today = result.find((r) => r.weekday === todayWeekday)!;
     expect(today.count).toBe(2);
     expect(today.flaggedCount).toBe(1);

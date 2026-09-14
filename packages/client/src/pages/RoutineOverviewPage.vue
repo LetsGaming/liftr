@@ -10,6 +10,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/ui/AppIcon.vue";
+import DrillInScreen from "../components/ui/DrillInScreen.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import RoutineWizard from "../components/routine-wizard/RoutineWizard.vue";
 import { useRoutineManagement } from "../composables/useRoutineManagement";
@@ -27,13 +28,6 @@ const { editingRoutine, showBuilder, editRoutine, onRoutineCreated } = useRoutin
 
 const routineId = computed(() => route.params.id as string);
 const routine = computed(() => routineStore.byId(routineId.value));
-
-/** This drill-in screen has no nav-bar entry of its own (forceActiveTo highlights "Workout"
- *  instead), so it needs an explicit way back rather than relying on the app's usual "tap the
- *  tab" convention. */
-function goBack() {
-  router.back();
-}
 
 /** Per-exercise set details collapsed by default to save vertical space, expandable per row.
  *  Keyed by routineExercise id so state doesn't shift if exercises reorder. */
@@ -99,117 +93,74 @@ async function jetztStarten() {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-      <div class="routine-overview">
-        <!-- Back affordance lives in the page content, not the IonToolbar: on mobile the
-             toolbar sits directly underneath App.vue's fixed .top-hud status bar (different
-             stacking contexts — a toolbar button there gets visually collided with the
-             level-ring/streak chip instead of reliably rendered above them), the exact same
-             reason the page title itself was relocated out of the toolbar. This screen has no
-             nav-bar entry of its own (forceActiveTo highlights "Workout" instead), so it needs
-             an explicit way back rather than relying on the app's usual "tap the tab"
-             convention. -->
-        <button class="ro-back-btn" aria-label="Zurück" @click="goBack">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          <span>Zurück</span>
-        </button>
-
-        <!-- Not-yet-loaded: routineStore.load() is in flight (kicked off by router.ts's
-             beforeEnter on a cold deep-link, or already running from wherever navigation
-             originated). Distinguished from "not found" below by routineStore.loaded. -->
-        <template v-if="!routineStore.loaded">
-          <div class="ro-skel shimmer" aria-hidden="true" />
-          <div class="ro-skel shimmer" aria-hidden="true" />
-          <div class="ro-skel shimmer" aria-hidden="true" />
-        </template>
-
-        <!-- Not-found: routines have loaded but no routine matches this id (bogus/stale deep
-             link, e.g. a since-deleted routine). -->
-        <div v-else-if="!routine" class="ro-not-found panel">
+      <DrillInScreen
+        :title="routine ? routine.name : 'Routine'"
+        :loading="!routineStore.loaded"
+        :not-found="routineStore.loaded && !routine"
+        :skeleton-count="3"
+      >
+        <template #not-found>
           <div class="eyebrow">Routine nicht gefunden</div>
           <p>Diese Routine existiert nicht (mehr). Vielleicht wurde sie gelöscht.</p>
           <router-link to="/workout" class="btn-secondary btn-block">Zur Übersicht →</router-link>
-        </div>
+        </template>
 
-        <template v-else>
-          <div class="ro-header">
-            <h2>{{ routine.name }}</h2>
-            <span class="ro-count">
-              {{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}
-            </span>
-            <button class="ro-edit-btn" aria-label="Routine bearbeiten" @click="editRoutine(routine)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        <template v-if="routine" #header-extra>
+          <span class="ro-count">
+            {{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}
+          </span>
+          <button class="ro-edit-btn" aria-label="Routine bearbeiten" @click="editRoutine(routine)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            </svg>
+          </button>
+        </template>
+
+        <div class="eyebrow">Trainierte Muskeln</div>
+        <MuscleFigure class="ro-muscles" :primary="routineMuscles.primary" :secondary="routineMuscles.secondary" />
+
+        <div class="eyebrow ro-ex-eyebrow">Übungen</div>
+        <ul class="ro-ex-list">
+          <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-item surface-hybrid">
+            <button
+              class="ro-ex-row"
+              :aria-expanded="!!expandedExercises[re.id]"
+              @click="toggleExpanded(re.id)"
+            >
+              <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
+              <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
+              <svg
+                class="ro-ex-chevron"
+                :class="{ open: expandedExercises[re.id] }"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-          </div>
+            <ul v-if="expandedExercises[re.id]" class="ro-ex-sets">
+              <li v-for="(set, i) in re.targetSets" :key="i">{{ setLine(set, i) }}</li>
+            </ul>
+          </li>
+        </ul>
 
-          <div class="eyebrow">Trainierte Muskeln</div>
-          <MuscleFigure class="ro-muscles" :primary="routineMuscles.primary" :secondary="routineMuscles.secondary" />
-
-          <div class="eyebrow ro-ex-eyebrow">Übungen</div>
-          <ul class="ro-ex-list">
-            <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-item surface-hybrid">
-              <button
-                class="ro-ex-row"
-                :aria-expanded="!!expandedExercises[re.id]"
-                @click="toggleExpanded(re.id)"
-              >
-                <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
-                <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
-                <svg
-                  class="ro-ex-chevron"
-                  :class="{ open: expandedExercises[re.id] }"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-              <ul v-if="expandedExercises[re.id]" class="ro-ex-sets">
-                <li v-for="(set, i) in re.targetSets" :key="i">{{ setLine(set, i) }}</li>
-              </ul>
-            </li>
-          </ul>
-
-          <!-- Sticky start button pinned to the bottom of the viewport so it's reachable with
-               zero scroll regardless of exercise count. Same sticky-inside-ion-content pattern
-               as PickStep.vue's .continue-bar. -->
-          <div class="ro-start-bar">
-            <button class="btn-primary btn-lg btn-block" :disabled="starting" @click="jetztStarten">
-              <template v-if="starting">Wird gestartet…</template>
-              <template v-else><AppIcon name="play" /> Jetzt starten</template>
-            </button>
-          </div>
+        <template #start-bar>
+          <button class="btn-primary btn-lg btn-block" :disabled="starting" @click="jetztStarten">
+            <template v-if="starting">Wird gestartet…</template>
+            <template v-else><AppIcon name="play" /> Jetzt starten</template>
+          </button>
         </template>
-      </div>
+      </DrillInScreen>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
     </IonContent>
   </IonPage>
 </template>
 
 <style scoped>
-.ro-back-btn {
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: var(--sp2) var(--sp2) var(--sp2) 0;
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-size: 13.5px;
-  font-weight: 600;
-}
-.ro-back-btn svg {
-  width: 18px;
-  height: 18px;
-}
 .ro-edit-btn {
   flex: none;
   width: 32px;
@@ -224,39 +175,6 @@ async function jetztStarten() {
 .ro-edit-btn svg {
   width: 18px;
   height: 18px;
-}
-.routine-overview {
-  max-width: var(--content-w-narrow);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp3);
-  /* Clears the sticky start bar so the last exercise row is never hidden behind it. */
-  padding-bottom: 88px;
-}
-.ro-skel {
-  height: 64px;
-  border-radius: var(--r-lg);
-  background-color: var(--surface-2);
-}
-.ro-not-found {
-  padding: var(--sp5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp3);
-}
-.ro-header {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
-}
-.ro-header h2 {
-  flex: 1;
-  font-size: 20px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .ro-count {
   font-size: 12.5px;
@@ -323,11 +241,5 @@ async function jetztStarten() {
   color: var(--dim);
   flex: none;
   white-space: nowrap;
-}
-.ro-start-bar {
-  position: sticky;
-  bottom: 0;
-  padding: var(--sp3) 0;
-  background: linear-gradient(0deg, var(--bg) 60%, transparent);
 }
 </style>

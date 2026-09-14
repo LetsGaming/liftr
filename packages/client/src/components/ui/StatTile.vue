@@ -49,7 +49,7 @@ withDefaults(defineProps<{ value: string | number; label?: string; reward?: bool
   font-size: 17px;
 }
 .stat-tile b.accent-fire {
-  color: var(--fire-hi);
+  color: var(--warning-hi);
 }
 .stat-tile b.accent-blue {
   color: var(--blue-hi);

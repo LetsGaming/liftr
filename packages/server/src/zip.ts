@@ -37,6 +37,9 @@ export function buildZip(entries: ZipEntry[]): Buffer {
     const crc = crc32(entry.data);
     const size = entry.data.length;
 
+    // Local file header (PK\x03\x04): signature, version-needed, flags, method (0 = store),
+    // mod time/date (left zeroed — no tool cares for this export), crc-32, compressed/uncompressed
+    // size (equal since we don't compress), name length, extra-field length.
     const localHeader = Buffer.alloc(30);
     localHeader.writeUInt32LE(0x04034b50, 0);
     localHeader.writeUInt16LE(20, 4);
@@ -51,6 +54,10 @@ export function buildZip(entries: ZipEntry[]): Buffer {
     localHeader.writeUInt16LE(0, 28);
     localParts.push(localHeader, nameBuf, entry.data);
 
+    // Central directory header (PK\x01\x02): same fields as the local header plus
+    // version-made-by, comment length, disk number, internal/external attributes, and this
+    // entry's offset from the start of the archive (needed since the central directory is
+    // written after all entries, so readers can jump straight to each one).
     const centralHeader = Buffer.alloc(46);
     centralHeader.writeUInt32LE(0x02014b50, 0);
     centralHeader.writeUInt16LE(20, 4);
@@ -77,6 +84,8 @@ export function buildZip(entries: ZipEntry[]): Buffer {
   const centralStart = offset;
   const centralSize = centralParts.reduce((a, b) => a + b.length, 0);
 
+  // End Of Central Directory record (PK\x05\x06): signature, disk numbers, entry counts (this
+  // disk / total), central directory size and start offset, comment length.
   const eocd = Buffer.alloc(22);
   eocd.writeUInt32LE(0x06054b50, 0);
   eocd.writeUInt16LE(0, 4);

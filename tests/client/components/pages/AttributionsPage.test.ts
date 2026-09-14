@@ -10,6 +10,7 @@ describe("AttributionsPage", () => {
     expect(wrapper.text()).toContain("wger Exercise Database");
     expect(wrapper.text()).toContain("OpenStreetMap");
     expect(wrapper.text()).toContain("OpenPowerlifting");
-    expect(wrapper.findAll("li.surface-hybrid")).toHaveLength(6);
+    expect(wrapper.text()).toContain("OpenRouteService");
+    expect(wrapper.findAll("li.surface-hybrid")).toHaveLength(7);
   });
 });

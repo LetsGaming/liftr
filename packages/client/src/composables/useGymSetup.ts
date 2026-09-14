@@ -1,0 +1,127 @@
+/**
+ * Equipment toggling + "Scheiben & Stange" (plates/bar) card: lets the user specify which weight
+ * plates they have, so the app can show how to load the barbell. Onboarding-only settings that
+ * can't be edited again would be a trap, so this mirrors the wizard's EquipmentStep/PlatesStep
+ * here on the settings page instead. Extracted out of ProfilePage.vue — that file mixed six+
+ * unrelated settings concerns together.
+ */
+import { computed, ref, watch } from "vue";
+import { useToast } from "./useToast";
+import { SUPPORT_EQUIPMENT_SLUGS } from "../lib/equipmentIcons";
+import type { useSettingsStore } from "../stores/settingsStore";
+
+export type BarType = "barbell" | "ez-bar" | "trap-bar" | "dumbbell";
+export const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar", "dumbbell"];
+export const BAR_LABEL_DE: Record<BarType, string> = {
+  barbell: "Langhantel",
+  "ez-bar": "SZ-Stange",
+  "trap-bar": "Trap-Bar",
+  dumbbell: "Kurzhantel-Griff",
+};
+const DEFAULT_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 20, "ez-bar": 10, "trap-bar": 25, dumbbell: 2.5 };
+export const PLATE_SIZES_KG = [25, 20, 15, 10, 5, 2.5, 1.25, 1];
+
+// "plates" is implied by owning a barbell/ez-bar/trap-bar (requirements.ts's withImpliedPlates)
+// — never a pickable chip here, same as onboarding's EquipmentStep.
+export const supportEquipmentSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !== "plates");
+
+export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) {
+  const { toast } = useToast();
+
+  // Defaults to bodyweight-owned even before the store loads (same default as onboarding's
+  // OnboardingDraft.ts) — a profile with no saved equipment yet (server returns null, e.g. a
+  // brand-new account) must never render as "nothing owned, not even your own body".
+  const equipment = ref<Set<string>>(new Set(["bodyweight"]));
+  const equipmentSaving = ref(false);
+
+  watch(
+    () => settingsStore.ownedEquipment,
+    (owned) => {
+      // Bodyweight is always available (everyone has a body) — force it into the set regardless
+      // of what the server has on record, same guarantee as onboarding's OnboardingDraft.ts
+      // default, so a stored profile that predates this fix (or one saved without it, see the
+      // toggle guard below) still shows it as owned instead of silently reverting to "not
+      // selected".
+      if (owned) equipment.value = new Set([...owned, "bodyweight"]);
+    },
+    { immediate: true },
+  );
+
+  // Bodyweight can never be deselected — every user has a body, so unchecking it would just
+  // break exercise suggestions for no real-world reason (same fix as onboarding's equipment step
+  // is meant to have). Guard here rather than disabling the chip outright so it still reads as
+  // "on" rather than as a dead control.
+  function toggleEquipment(slug: string) {
+    if (slug === "bodyweight") return;
+    if (equipment.value.has(slug)) equipment.value.delete(slug);
+    else equipment.value.add(slug);
+  }
+
+  async function saveEquipmentCard() {
+    equipmentSaving.value = true;
+    try {
+      await settingsStore.saveEquipment([...equipment.value]);
+      toast("Equipment gespeichert.");
+    } finally {
+      equipmentSaving.value = false;
+    }
+  }
+
+  const ownedBarTypes = computed(() => BAR_TYPES.filter((t) => equipment.value.has(t)));
+
+  const barWeightsKg = ref<Map<BarType, number>>(new Map());
+  const plateCounts = ref<Map<number, number>>(new Map());
+  const gymSaving = ref(false);
+
+  watch(
+    () => settingsStore.gymSetup,
+    (gym) => {
+      if (!gym) return;
+      barWeightsKg.value = new Map(Object.entries(gym.barWeights) as [BarType, number][]);
+      plateCounts.value = new Map(gym.plates.map((p) => [p.weightKg, p.count]));
+    },
+    { immediate: true },
+  );
+
+  function plateCount(weightKg: number): number {
+    return plateCounts.value.get(weightKg) ?? 0;
+  }
+  function adjustPlateCount(weightKg: number, delta: number) {
+    const next = Math.max(0, plateCount(weightKg) + delta);
+    if (next === 0) plateCounts.value.delete(weightKg);
+    else plateCounts.value.set(weightKg, next);
+  }
+  function barWeight(type: BarType): number {
+    return barWeightsKg.value.get(type) ?? DEFAULT_BAR_WEIGHT_KG[type];
+  }
+  function adjustBarWeight(type: BarType, delta: number) {
+    barWeightsKg.value.set(type, Math.min(50, Math.max(1, barWeight(type) + delta)));
+  }
+  async function saveGymCard() {
+    gymSaving.value = true;
+    try {
+      const plates = [...plateCounts.value.entries()].filter(([, count]) => count > 0).map(([weightKg, count]) => ({ weightKg, count }));
+      const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
+      await settingsStore.saveGymSetup({ barWeights, plates });
+      toast("Scheiben & Stange gespeichert.");
+    } finally {
+      gymSaving.value = false;
+    }
+  }
+
+  return {
+    equipment,
+    equipmentSaving,
+    toggleEquipment,
+    saveEquipmentCard,
+    ownedBarTypes,
+    barWeightsKg,
+    plateCounts,
+    gymSaving,
+    plateCount,
+    adjustPlateCount,
+    barWeight,
+    adjustBarWeight,
+    saveGymCard,
+  };
+}

@@ -1,0 +1,161 @@
+/* Shape for components/ui/CardGrid.vue + components/ui/ListCard.vue, the shared base components
+   behind RoutineList.vue's routine cards and RouteList.vue's route cards. Global (not scoped):
+   the grid's `.card-grid > .card:nth-child()` stagger selector has to match a `.card` rendered by
+   a *different* SFC (ListCard.vue) than the one owning `.card-grid` (CardGrid.vue), which
+   Vue's scoped-CSS attribute matching can't do across component boundaries. Loaded once from
+   main.ts, same as tokens.css/motion.css. Content each card wraps (preview, thumbnail, meso
+   form, drag handle, empty state) stays local to each list's own component. */
+/* Root layout for components/ui/CardListScreen.vue — the "not started" screen shell wrapping a
+   CardGrid (or its empty state) plus whatever "+ Neue X" / primary CTA buttons follow it.
+   RouteList.vue previously had no equivalent wrapper at all, so unlike RoutineList.vue its own
+   CTA button never picked up the desktop centering below — same class of bug as the grid/card
+   CSS this file already unifies. */
+.card-list-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp4);
+  align-items: flex-start;
+  /* With few/no items, unconstrained content pins at the top, leaving primary CTAs above the
+     thumb-reachable lower half. min-height + centering pulls a short list toward mid-screen; a
+     long list simply exceeds this min-height and scrolls as normal. */
+  min-height: 55vh;
+  justify-content: center;
+}
+@media (min-width: 900px) {
+  .card-list-screen {
+    align-items: center;
+    width: 100%;
+  }
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--sp3);
+  width: 100%;
+  max-width: var(--content-w-wide);
+}
+@media (min-width: 900px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--sp5);
+    max-width: var(--content-w-xwide);
+  }
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+  padding: var(--sp4);
+  border-radius: var(--r-lg);
+  min-width: 0;
+  position: relative;
+  /* Tier-accent border, same fallback idiom as RankDistributionDonut.vue/RankUpCalendar.vue/
+     RestTimer.vue — this is App.vue's app-wide --tier-accent (set on the shell from the user's
+     overall rank, tokens.css), not a per-routine value, so every card gets it, not just routine
+     ones. Layered as an `outline` on top of .surface-hybrid's own background/blur/shadow/
+     hairline rather than replacing them. */
+  outline: 1px solid var(--tier-accent, transparent);
+  outline-offset: -1px;
+  animation: pop-in var(--dur-base) var(--ease-out) backwards;
+  transition:
+    box-shadow var(--dur-base) var(--ease-out),
+    transform 180ms ease;
+}
+.card.dragging {
+  transition: none;
+}
+.card-grid > .card:nth-child(1) {
+  animation-delay: 0ms;
+}
+.card-grid > .card:nth-child(2) {
+  animation-delay: 40ms;
+}
+.card-grid > .card:nth-child(3) {
+  animation-delay: 80ms;
+}
+.card-grid > .card:nth-child(n + 4) {
+  animation-delay: 120ms;
+}
+@media (hover: hover) {
+  .card:hover {
+    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+@media (min-width: 900px) {
+  .card {
+    padding: var(--sp6);
+    gap: var(--sp3);
+    border-radius: var(--r-xl);
+  }
+  .card-name {
+    font-size: 18px;
+  }
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp2);
+}
+.card-name {
+  font-size: 15.5px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.card-meta {
+  font-size: 12px;
+  color: var(--dim);
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  margin-top: var(--sp2);
+}
+.card-actions .btn-secondary {
+  flex: 1;
+  min-width: 0;
+}
+.card-menu-wrap {
+  position: relative;
+  flex: none;
+}
+.card-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  background: none;
+  border: none;
+}
+.card-menu button:hover {
+  background: var(--surface-2);
+}
+.card-menu button.danger {
+  color: var(--danger);
+}
+.card-menu button.danger.confirming {
+  background: var(--danger-lo);
+  color: var(--text);
+  font-weight: 700;
+}

@@ -4,7 +4,7 @@
  * workout with one tap too, without a second, drifting copy of this logic. Both call sites
  * share the same "last time" fetch, mesocycle weight scaling, and store.start() call.
  */
-import { applyMesocycleWeek } from "@liftr/shared";
+import { applyMesocycleWeek, DEFAULT_TARGET_SETS } from "@liftr/shared";
 import { ref } from "vue";
 import { getExerciseHistory } from "../services/exerciseService";
 import { recommendExercises } from "../services/routineService";
@@ -81,11 +81,7 @@ export function useStartRoutine() {
       // offline or a failed request just keeps the flat default rather than blocking Quick Start.
       const recommended = await recommendExercises(exercises.map((ex) => ex.id)).catch(() => []);
       const targetSetsByExerciseId = new Map(recommended.map((r) => [r.exerciseId, r.targetSets]));
-      const fallbackTargetSets = [
-        { reps: 8, weightKg: null },
-        { reps: 8, weightKg: null },
-        { reps: 8, weightKg: null },
-      ];
+      const fallbackTargetSets = DEFAULT_TARGET_SETS;
 
       const inputs: StartExerciseInput[] = await Promise.all(
         exercises.map(async (ex): Promise<StartExerciseInput> => ({

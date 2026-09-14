@@ -1,5 +1,6 @@
 /** Rank list, backed by /api/ranks. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getRanks, type RankRow } from "../services/rankService";
 
 export type { RankRow };
@@ -12,15 +13,11 @@ export const useRanksStore = defineStore("ranks", {
   }),
   actions: {
     async load() {
-      try {
-        this.ranks = await getRanks();
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
-        // needs to tell "still fetching" from "failed" apart.
-        this.error = true;
-      }
+      await withLoadState(getRanks, {
+        apply: (ranks) => (this.ranks = ranks),
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
 
     /** Applies a sync-flush rank verdict to the in-memory list without a round trip — the

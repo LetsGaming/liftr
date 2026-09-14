@@ -35,7 +35,13 @@ function requestSuggestions() {
 
 <template>
   <div class="pick-step">
-    <ExerciseList v-if="mode === 'manual'" mode="select" :selected-ids="selectedIds" @toggle="emit('toggle', $event.id)" />
+    <ExerciseList
+      v-if="mode === 'manual'"
+      mode="select"
+      :selected-ids="selectedIds"
+      :default-only-doable="true"
+      @toggle="emit('toggle', $event.id)"
+    />
 
     <div v-else class="muscle-suggest">
       <p class="hint">Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast.</p>

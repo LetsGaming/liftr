@@ -18,13 +18,14 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CatalogEntry } from "./catalogSchema.js";
+import { fetchWithTimeout } from "./lib/fetchWithTimeout.js";
 
 const FREE_EXERCISE_DB_RAW =
   "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises";
 const WGER_API = "https://wger.de/api/v2";
 
 async function downloadTo(url: string, destPath: string): Promise<boolean> {
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) return false;
   const buf = Buffer.from(await res.arrayBuffer());
   await writeFile(destPath, buf);
@@ -41,7 +42,7 @@ interface WgerImageListResponse {
  *  "don't abort the whole ingest over one flaky upstream" rule the equipment resolvers follow. */
 async function fetchWgerImageUrl(wgerImageId: number): Promise<string | null> {
   try {
-    const res = await fetch(`${WGER_API}/exerciseimage/?exercise=${wgerImageId}&format=json`);
+    const res = await fetchWithTimeout(`${WGER_API}/exerciseimage/?exercise=${wgerImageId}&format=json`);
     if (!res.ok) return null;
     const data = (await res.json()) as WgerImageListResponse;
     return data.results[0]?.image ?? null;

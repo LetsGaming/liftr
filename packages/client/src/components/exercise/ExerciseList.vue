@@ -19,9 +19,13 @@ import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore
 import { useSettingsStore } from "../../stores/settingsStore";
 import ExerciseRow from "./ExerciseRow.vue";
 
-const props = withDefaults(defineProps<{ mode?: "browse" | "select"; selectedIds?: Set<string> }>(), {
+const props = withDefaults(defineProps<{ mode?: "browse" | "select"; selectedIds?: Set<string>; defaultOnlyDoable?: boolean }>(), {
   mode: "browse",
   selectedIds: () => new Set(),
+  // Explicit `undefined` (not omitted!) so an absent prop resolves to `undefined`, not Vue's
+  // usual "unset boolean prop -> false" auto-cast — the `?? props.mode !== "select"` below needs
+  // to see a real "caller didn't specify" signal, not a false positive.
+  defaultOnlyDoable: undefined,
 });
 const emit = defineEmits<{ open: [exercise: CatalogExercise]; toggle: [exercise: CatalogExercise] }>();
 
@@ -33,13 +37,13 @@ const search = ref("");
 const equipmentFilter = ref("");
 const muscleFilter = ref("");
 // Defaults ON in "browse" mode — hiding exercises the user can't do with their owned equipment
-// is the useful default there. Defaults OFF in "select" mode (the routine wizard's manual
-// picker) — manual picking stays deliberate, the user might be at a different gym today, so an
-// unusable exercise is marked + deprioritized in the sort below rather than hidden outright.
-// Either way, only offered/applied once there's actually an owned-equipment list to filter by
-// (an unset/empty list means "no restriction configured", not "owns nothing"), and uses the
-// full requiredEquipment list via canPerform, not just the one primary `equipment` tag.
-const onlyDoableEquipment = ref(props.mode !== "select");
+// is the useful default there. In "select" mode (the routine wizard's manual picker) the caller
+// decides via `defaultOnlyDoable` (PickStep.vue passes true — building a routine you intend to
+// actually do should default to only showing what's doable; see UX-05). Either way, only
+// offered/applied once there's actually an owned-equipment list to filter by (an unset/empty list
+// means "no restriction configured", not "owns nothing"), and uses the full requiredEquipment
+// list via canPerform, not just the one primary `equipment` tag.
+const onlyDoableEquipment = ref(props.defaultOnlyDoable ?? props.mode !== "select");
 const hasEquipmentFilter = computed(() => !!settingsStore.ownedEquipment && settingsStore.ownedEquipment.length > 0);
 
 const equipmentOptions = computed(() => [...new Set(catalog.exercises.map((e) => e.equipment).filter((e): e is string => !!e))].sort());
@@ -119,7 +123,15 @@ function equipmentLabel(eq: string | null): string {
       <template v-else>Nur machbare Übungen</template>
     </button>
 
-    <p v-if="catalog.loaded && filtered.length === 0" class="empty">Keine Übung passt zu diesen Filtern.</p>
+    <div v-if="catalog.loaded && filtered.length === 0" class="empty">
+      <p v-if="onlyDoableEquipment && hasEquipmentFilter">
+        Keine Übung passt zu diesen Filtern — "Nur machbare Übungen" blendet dabei möglicherweise passende Übungen aus.
+      </p>
+      <p v-else>Keine Übung passt zu diesen Filtern.</p>
+      <button v-if="onlyDoableEquipment && hasEquipmentFilter" class="btn-secondary" type="button" @click="onlyDoableEquipment = false">
+        Filter "Nur machbare Übungen" ausschalten
+      </button>
+    </div>
 
     <ul class="ex-grid">
       <li v-for="ex in filtered" :key="ex.id">
@@ -190,6 +202,10 @@ function equipmentLabel(eq: string | null): string {
   font-weight: 800;
 }
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp2);
   color: var(--dim);
 }
 .ex-grid {
@@ -243,7 +259,7 @@ function equipmentLabel(eq: string | null): string {
 .missing-note {
   font-size: 10.5px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
 }
 .recommended-note {
   font-size: 10.5px;

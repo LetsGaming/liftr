@@ -24,10 +24,13 @@ current than any prose restating it): there are 9 **anchor** exercises, which om
   deadlift, overhead-press, barbell-row.
 - Four bodyweight movements with published rep-norm tables: push-up, pull-up, chin-up, dip.
 
-Every other entry declares `anchor: <one-of-the-9-slugs>` and a `ratio` — the load (or rep-count)
-multiplier applied to that anchor's own threshold table. `trust: derived` marks a close variant
-of the anchor movement; `trust: synthetic` marks the long-tail isolation catalog, where the ratio
-is closer to an informed guess than a sourced number. This is the "synthetic-standard method"
+Nearly every other entry declares `anchor: <one-of-the-9-slugs>` and a `ratio` — the load (or
+rep-count) multiplier applied to that anchor's own threshold table. `trust: derived` marks a close
+variant of the anchor movement; `trust: synthetic` marks the long-tail isolation catalog, where the
+ratio is closer to an informed guess than a sourced number. (Two entries — `plank` and
+`side-plank` — currently have neither an anchor identity nor an `anchor`/`ratio` pair; they resolve
+to no threshold table and get no rank at all. That's a real gap, not a documented third category —
+see `packages/ingest/src/ingestStandards.ts`.) This is the "synthetic-standard method"
 referenced throughout the codebase and audit — see
 [rank-engine.md](./rank-engine.md#trust-tiers-being-honest-about-the-numbers) for how these trust
 tiers actually feed into rank resolution and the UI's honesty guarantee.

@@ -7,15 +7,15 @@
  * resume instead, which is enough to remove the manual GPX/FIT export step without the
  * complexity of a true background service.
  */
-import { Capacitor } from "@capacitor/core";
 import { Health } from "capacitor-health";
 import { api } from "../lib/api";
+import { isAndroid } from "../lib/platform";
 
 const LAST_CHECK_KEY = "liftr.healthconnect.lastCheck";
 
 /** Only meaningful on Android — Health Connect doesn't exist on iOS/web. */
 export function isHealthConnectAvailable(): boolean {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  return isAndroid();
 }
 
 export async function requestHealthConnectPermissions(): Promise<boolean> {

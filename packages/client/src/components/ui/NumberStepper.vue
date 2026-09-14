@@ -152,7 +152,6 @@ function commitEdit() {
         +
       </button>
     </div>
-    <!-- lg-only extra content below the controls (SetEntry's plate-calculator reveal) -->
     <slot />
   </div>
 </template>
@@ -176,7 +175,7 @@ function commitEdit() {
   font-weight: 600;
 }
 .stepper.lg .num.emphasize {
-  color: var(--fire-hi);
+  color: var(--warning-hi);
   transition: color var(--dur-base) var(--ease-out);
 }
 /* .num-edit is the same number, just as a <button> (direct-entry affordance) — background

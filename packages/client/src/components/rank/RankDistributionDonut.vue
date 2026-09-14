@@ -68,7 +68,6 @@ const total = computed(() => ranksStore.ranks.length);
     <div class="eyebrow rd-eyebrow">Rangverteilung</div>
     <div class="rd-body">
       <svg viewBox="0 0 100 100" class="rd-svg">
-        <!-- Arcs are aria-hidden: the legend below already carries this data as real text. -->
         <circle cx="50" cy="50" :r="RADIUS" fill="none" stroke="var(--surface-3)" stroke-width="14" aria-hidden="true" />
         <circle
           v-for="s in segments"

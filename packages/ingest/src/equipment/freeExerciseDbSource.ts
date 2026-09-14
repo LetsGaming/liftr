@@ -4,6 +4,7 @@
  * curated.yaml already hand-verifies for images. One static JSON file, no auth, no pagination.
  */
 import { normalizeFreeExerciseDbEquipment, type Equipment } from "@liftr/shared";
+import { fetchJson } from "../lib/fetchWithTimeout.js";
 import type { EquipmentSourceAdapter } from "./types.js";
 
 const EXERCISES_JSON_URL = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
@@ -17,9 +18,7 @@ export const freeExerciseDbEquipmentSource: EquipmentSourceAdapter = {
   name: "free-exercise-db",
 
   async buildIndex(): Promise<Map<string, Equipment | null>> {
-    const res = await fetch(EXERCISES_JSON_URL);
-    if (!res.ok) throw new Error(`free-exercise-db fetch failed: ${res.status} ${res.statusText}`);
-    const rows = (await res.json()) as FreeExerciseDbRow[];
+    const rows = await fetchJson<FreeExerciseDbRow[]>(EXERCISES_JSON_URL);
 
     const index = new Map<string, Equipment | null>();
     for (const row of rows) {

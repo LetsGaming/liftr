@@ -77,7 +77,7 @@ export function widenAnchorSpread(
 }
 
 /** Divide each tier's ratio span into TIER_DIVISION_COUNT[tier] evenly-spaced thresholds. */
-function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"]): StandardThreshold[] {
+export function expand(byTier: Record<Tier, number>, trust: StandardThreshold["trust"]): StandardThreshold[] {
   const out: StandardThreshold[] = [];
   for (let i = 0; i < TIERS.length; i++) {
     const tier = TIERS[i]!;

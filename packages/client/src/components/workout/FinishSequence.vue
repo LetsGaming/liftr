@@ -186,10 +186,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- celebrate.skip() only short-circuits the wait for the CURRENTLY active beat (see
-       useCelebrate.ts's run() loop) — a tap advances exactly one beat, it does not skip the
-       whole sequence. aria-label reflects that; do not rename this back to "Überspringen"
-       without re-reading useCelebrate.ts, the two read very differently to a screen reader. -->
   <div
     class="finish-seq"
     :class="topTierClass"
@@ -200,7 +196,6 @@ onBeforeUnmount(() => {
     @keydown.enter="celebrate.skip()"
     @keydown.space.prevent="celebrate.skip()"
   >
-    <!-- Beat 1: Rangaufstiege — omitted entirely when the session had none. -->
     <div v-if="celebrate.activeIndex.value === 0" class="beat pop-in">
       <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
       <div class="rankup-list">
@@ -226,15 +221,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-      <!-- RecordsPage.vue link, copied from RanksPage.vue's own "Rekorde ansehen" link
-           (same to/class/style) rather than inventing a new visual treatment. Gated on hasPr so
-           it never appears on a session with rank-ups but no PR. @click.stop keeps this tap from
-           also bubbling to the root's celebrate.skip() handler — router-link already does the
-           only thing this tap should do, which is leave. The workout itself is already
-           saved/synced by this point (finishedSummary/finishSequenceDone come from
-           useWorkoutFinish, computed before this component ever mounts), so navigating away
-           mid-sequence — which unmounts WorkoutPage and this component with it — loses nothing;
-           there's no explicit close/done step to run first. -->
       <router-link
         v-if="hasPr"
         to="/records"
@@ -246,10 +232,6 @@ onBeforeUnmount(() => {
       </router-link>
     </div>
 
-    <!-- Beat 2: Serie — the 7-day dot strip, plain days vs. active-with-flame. A day is marked
-         "active" purely from that day's logged history, not a full re-derivation of the
-         protection-token walk (streak.ts's own math already runs server-side for the number
-         itself) — good enough to show the week's shape, not a claim of exact token attribution. -->
     <div v-else-if="celebrate.activeIndex.value === 1" class="beat pop-in">
       <div class="streak-num tnum">{{ streak }} <AppIcon name="flame" /></div>
       <div class="eyebrow beat-eyebrow">Trainingsserie</div>
@@ -262,12 +244,6 @@ onBeforeUnmount(() => {
       <p v-if="tokensRemaining > 0" class="streak-note">Deine Serie übersteht noch {{ tokensRemaining }} Ruhetage.</p>
     </div>
 
-    <!-- Beat 3: Fortschritt — session XP rolls up into the level bar; a level-up gets the
-         shared stamp-in treatment (motion.css) instead of a plain number change. The three XP
-         sources render as separate, independently animated lines rather than one pre-summed
-         total, so the breakdown itself explains where the number came from. The variety line is
-         omitted entirely (not shown as "+0 XP") when this session's muscles fully overlapped the
-         previous one — a visible zero would read as a judgment, punishing specialization. -->
     <div v-else-if="celebrate.activeIndex.value === 2" class="beat pop-in">
       <div class="eyebrow beat-eyebrow">Fortschritt</div>
       <div class="xp-breakdown">
@@ -287,10 +263,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Was "Tippen zum Überspringen" (tap to skip) — a tap only advances the current beat
-         (see the comment on the root element above), so "skip" overstated what happens on
-         beats 1-2 and was simply wrong copy for a 3-beat sequence a user might want to slow
-         down on, not escape. -->
     <p class="skip-hint">Weiter tippen →</p>
   </div>
 </template>
@@ -325,7 +297,7 @@ onBeforeUnmount(() => {
   animation-duration: var(--dur-cele);
 }
 .beat-eyebrow {
-  --eyebrow-color: var(--fire-hi);
+  --eyebrow-color: var(--warning-hi);
 }
 .rankup-list {
   width: 100%;
@@ -435,7 +407,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 .dot.active {
-  background: linear-gradient(160deg, var(--fire-hi), var(--fire));
+  background: var(--icon-fill-fire);
 }
 .dl {
   font-size: 11px;

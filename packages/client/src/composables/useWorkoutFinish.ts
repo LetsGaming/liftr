@@ -5,6 +5,7 @@
  * mixing session orchestration, sharing, mesocycle UI, and this finish flow together.
  */
 import { computed, ref, watch, type ComputedRef } from "vue";
+import { computeSetXp, type Tier } from "@liftr/shared";
 import { buildRoutineUpdate, findRoutineBeats, type RoutineBeat } from "./useRoutineBeat";
 import type { useActiveWorkoutStore, ActiveExercise } from "../stores/activeWorkoutStore";
 import type { useCatalogStore } from "../stores/catalogStore";
@@ -123,6 +124,31 @@ export function useWorkoutFinish(
   const beatActiveExercises = ref<ActiveExercise[]>([]);
   const routineUpdated = ref(false);
   const updatingRoutine = ref(false);
+
+  /** Client-side echo of a just-logged set's XP, for the live sessionXp total and the "+N XP"
+   *  chip — the real total is recomputed server-side at finish() above. Lives here (not
+   *  WorkoutPage.vue) since it mutates the same sessionXp this composable owns. */
+  function logSetXp(weightKg: number | null, reps: number, tier: Tier | null): number {
+    const amount = Math.round(computeSetXp(weightKg, reps, tier));
+    sessionXp.value += amount;
+    return amount;
+  }
+
+  /** sessionCaptions carries the honest copy but not the badge/next-target data to render a
+   *  RankProgress card — that lives on ranksStore's row for the exercise (already refreshed by
+   *  applyVerdict() in finishWorkout() above). Joined here rather than left in WorkoutPage.vue so
+   *  ranksStore stays the single source of truth for "what's this exercise's rank right now" —
+   *  the same pattern RanksPage.vue and ExerciseInfoPanel.vue already use. A caption whose
+   *  exercise has no ranksStore row yet (shouldn't happen — applyVerdict() runs for every touched
+   *  exercise before this — but kept defensive) is simply dropped rather than rendered with
+   *  guessed data. */
+  const captionRows = computed(() =>
+    sessionCaptions.value.flatMap((c) => {
+      const row = ranksStore.ranks.find((r) => r.exerciseId === c.exerciseId);
+      if (!row) return [];
+      return [{ ...c, tier: row.tier, division: row.division, lp: row.lp, nextTargetWeightKg: row.nextTargetWeightKg, nextTargetReps: row.nextTargetReps, trust: row.trust }];
+    }),
+  );
 
   async function updateRoutineWithBeats() {
     if (!beatRoutine.value || updatingRoutine.value) return;
@@ -250,6 +276,8 @@ export function useWorkoutFinish(
     sessionXp,
     sessionRankUps,
     sessionCaptions,
+    captionRows,
+    logSetXp,
     consistencyBonusXp,
     varietyBonusXp,
     newMuscleSlugs,

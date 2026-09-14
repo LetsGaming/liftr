@@ -54,7 +54,12 @@ jobs:
           fi
           echo "code=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
+      - name: Build shared package (client build needs its dist)
+        run: pnpm --filter @liftr/shared build
+
       - name: Build client web assets
+        env:
+          VITE_API_BASE: ${{ vars.LIFTR_BACKEND_URL }}
         run: pnpm --filter @liftr/client build
 
       - name: Sync web assets into the Android project

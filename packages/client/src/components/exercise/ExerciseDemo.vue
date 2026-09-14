@@ -28,13 +28,11 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
 </script>
 
 <template>
-  <!-- animated: single stage, two frames cross-fading in a loop -->
   <div v-if="!reduceMotion && bothLoaded()" class="demo-stage">
     <img class="frame-a" :src="`${apiBase()}/images/${props.slug}/start.jpg`" alt="Übungsablauf" @error="startFailed = true" />
     <img class="frame-b" :src="`${apiBase()}/images/${props.slug}/end.jpg`" alt="" @error="endFailed = true" />
   </div>
 
-  <!-- static fallback: reduced motion, known-missing photos, or one/both frames failed anyway -->
   <div v-else class="exercise-demo">
     <div class="frame">
       <img v-if="!knownMissing && !startFailed" :src="`${apiBase()}/images/${props.slug}/start.jpg`" alt="Startposition" @error="startFailed = true" />

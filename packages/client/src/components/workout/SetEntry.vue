@@ -1,6 +1,6 @@
 <script setup lang="ts">
-/** The two big steppers — the core interaction of the whole app (plan 1.5, audit §2.1). Built
- *  on the shared NumberStepper.vue (size="lg"), which this component's original markup/CSS became. */
+/** The two big steppers — the core interaction of the whole app (plan 1.5). Built on the shared
+ *  NumberStepper.vue (size="lg"), which this component's original markup/CSS became. */
 import { calculatePlates, calculatePlatesFromInventory, DEFAULT_BAR_WEIGHT_KG } from "@liftr/shared";
 import { computed, ref } from "vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
@@ -18,10 +18,9 @@ const catalog = useCatalogStore();
 // inventory (Profil > Scheiben & Stange) once configured; falls back to the unlimited 20kg-bar
 // standard set until they've set one up, so the calculator is useful from day one either way.
 //
-// Feedback: "usually a barbell has a different weight than a dumbbell" — the bar weight is
-// looked up per the current exercise's own equipment (barbell/ez-bar/trap-bar/dumbbell), not one
-// flat number; anything else (machine, cable, bodyweight, ...) has no "bar" of its own and just
-// uses the barbell default.
+// Bar weight is looked up per the current exercise's own equipment (barbell/ez-bar/trap-bar/
+// dumbbell), not one flat number; anything else (machine, cable, bodyweight, ...) has no "bar"
+// of its own and just uses the barbell default.
 const currentEquipment = computed(() => {
   const exerciseId = store.currentExercise?.exerciseId;
   return exerciseId ? (catalog.byId(exerciseId)?.equipment ?? null) : null;
@@ -99,7 +98,7 @@ const plates = computed(() => {
   margin-top: 4px;
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
   line-height: 1.4;
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Attributions page — required by license for every ingested third-party source. Static
-// content; nothing here is fetched at runtime, matching the ingest-once rule.
+// Attributions page — required by license for every ingested third-party source. Content is
+// static except for one noted exception (OpenRouteService), which is a live per-request call
+// rather than an ingest-once source — see the intro paragraph below.
 //
 // Uses the same IonPage/IonHeader/IonToolbar/IonTitle/IonContent pattern every other page
 // follows instead of a bare <div>, with tokens.css (via ionic-theme.css) still the source of
@@ -19,6 +20,8 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
       <div class="attributions-content">
         <p style="color: var(--dim)">
           Liftr importiert Referenzdaten einmalig (nicht bei jeder Anfrage) aus den folgenden Quellen.
+          Eine Ausnahme: die Routenberechnung für geplante Strecken fragt OpenRouteService bei Bedarf
+          live pro Anfrage ab, nicht einmalig.
         </p>
 
         <ul class="sources">
@@ -57,6 +60,11 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
             <b>OpenStreetMap</b> — Kartendaten für Laufrouten
             <span class="license">ODbL</span>
             <p>© OpenStreetMap-Mitwirkende</p>
+          </li>
+          <li class="surface-hybrid">
+            <b>OpenRouteService</b> — Routenberechnung für geplante Strecken
+            <span class="license">CC-BY 4.0</span>
+            <p>openrouteservice.org · © openrouteservice.org by HeiGIT</p>
           </li>
         </ul>
       </div>

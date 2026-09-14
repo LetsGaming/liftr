@@ -18,7 +18,15 @@ export const TIER_XP_MULTIPLIER: Record<Tier, number> = {
   apex: 1.75,
 };
 
-export const BODYWEIGHT_NOMINAL_LOAD_KG = 30;
+/** All raw XP constants in this file (this one, CONSISTENCY_BASE/SCALE, VARIETY_PER_MUSCLE) and
+ *  LEVEL_XP_SCALE below are divided by the same XP_SCALE_DOWN factor — that keeps every ratio
+ *  between them, and therefore the whole balance (which term dominates when, the level curve's
+ *  pacing), bit-for-bit identical while shrinking the numbers a user actually sees to something
+ *  that reads as meaningful rather than "4600 XP for showing up once". Change this one constant,
+ *  not the others individually, to retune "how big do the numbers feel" without retuning balance. */
+export const XP_SCALE_DOWN = 10;
+
+export const BODYWEIGHT_NOMINAL_LOAD_KG = 30 / XP_SCALE_DOWN;
 
 /** Doing the exact same exercise (same reps, same weight) repeatedly earns less each time, to
  *  nudge the user toward progression instead of repeating identical workouts. Decays toward a
@@ -136,7 +144,7 @@ export interface LevelInfo {
  * level each, then growth visibly slows instead of compounding. See the worked table at the bottom
  * of this file for the resulting pacing.
  */
-export const LEVEL_XP_SCALE = 4600;
+export const LEVEL_XP_SCALE = 4600 / XP_SCALE_DOWN;
 export const LEVEL_CURVE_EXPONENT = 0.8;
 
 /** Total XP required to reach `level` — the exact inverse of `computeLevel`'s curve. Exported so
@@ -181,8 +189,8 @@ export function computeLevel(totalXp: number): LevelInfo {
  *  (satisfying "day 1 already feels like a real reward") and flattens smoothly, never dips, and
  *  never has a threshold to "reset and re-farm." This is what makes maintaining a streak always
  *  at least as good as breaking and rebuilding one. */
-export const CONSISTENCY_BASE = 300;
-export const CONSISTENCY_SCALE = 550;
+export const CONSISTENCY_BASE = 300 / XP_SCALE_DOWN;
+export const CONSISTENCY_SCALE = 550 / XP_SCALE_DOWN;
 /** ~75 days: sits in the 60-90 day range (roughly 5-7.5 months at 3 sessions/week) — a beginner
  *  sees this term visibly climbing through their entire early habit-forming period, not a
  *  multi-year plateau. */
@@ -198,7 +206,7 @@ export function computeConsistencyBonus(streakDays: number): number {
  *  term can never read as a penalty. Purely a count of muscles trained this session that weren't
  *  trained in the immediately-preceding finished session — never punishes specialization, since
  *  the comparison is always against the user's own prior session, never a full-body checklist. */
-export const VARIETY_PER_MUSCLE = 500;
+export const VARIETY_PER_MUSCLE = 500 / XP_SCALE_DOWN;
 export const VARIETY_MAX_MUSCLES_PER_SESSION = 5;
 
 export function computeVarietyBonus(newMuscleCount: number): number {
@@ -219,11 +227,11 @@ export function computeVarietyBonus(newMuscleCount: number): number {
  *
  * | Point    | streakDays | Per-set XP (session) | Consistency bonus | Variety bonus | Session XP | ~totalXp | Level |
  * |----------|-----------:|----------------------:|-------------------:|---------------:|-----------:|---------:|------:|
- * | Day 1    |          1 |                  2280 |                 850 |           1500 |       4630 |     4630 |     1 |
- * | Week 2   |         14 |                  2040 |                2358 |           1000 |       5398 |    30084 |     4 |
- * | Month 1  |         30 |                  1390 |                3312 |           1500 |       6202 |    70408 |     8 |
- * | Month 3  |         90 |                  1380 |    5063 (cap @ d75) |           1500 |       7943 |   245175 |    24 |
- * | Month 6  |        180 |                  1440 |    5063 (cap @ d75) |           1500 |       8003 |   486371 |    41 |
+ * | Day 1    |          1 |                   228 |                  85 |            150 |        463 |      463 |     1 |
+ * | Week 2   |         14 |                   204 |                 236 |            100 |        540 |     3008 |     4 |
+ * | Month 1  |         30 |                   139 |                 331 |            150 |        620 |     7041 |     8 |
+ * | Month 3  |         90 |                   138 |     506 (cap @ d75) |            150 |        794 |    24518 |    24 |
+ * | Month 6  |        180 |                   144 |     506 (cap @ d75) |            150 |        800 |    48637 |    41 |
  *
  * Level column now uses `computeLevel`'s `floor((totalXp / LEVEL_XP_SCALE) ^ LEVEL_CURVE_EXPONENT)`
  * curve (see that function's doc comment) — day 1 lands at exactly level 1 (the reported bug this

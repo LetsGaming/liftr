@@ -23,11 +23,10 @@ import SetKindPicker from "../components/workout/SetKindPicker.vue";
 import SheetModal from "../components/ui/SheetModal.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import SyncIndicator from "../components/ui/SyncIndicator.vue";
+import TabSwitcher from "../components/ui/TabSwitcher.vue";
 import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
-import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
 import { useAddExerciseToSession } from "../composables/useAddExerciseToSession";
-import { useConfirmTap } from "../composables/useConfirmTap";
 import { useMesocycleControls } from "../composables/useMesocycleControls";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { useWorkoutFinish } from "../composables/useWorkoutFinish";
@@ -39,7 +38,7 @@ import { haptics } from "../lib/haptics";
 import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
 import { TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
-import { computeSetXp, TIERS, type Tier } from "@liftr/shared";
+import { TIERS, type Tier } from "@liftr/shared";
 import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
@@ -93,6 +92,8 @@ const {
   sessionXp,
   sessionRankUps,
   sessionCaptions,
+  captionRows,
+  logSetXp,
   consistencyBonusXp,
   varietyBonusXp,
   newMuscleSlugs,
@@ -154,21 +155,6 @@ const { finishedCanvas, sharingFinished, shareFinished, copyingFinished, copyFin
   topRankUp,
 );
 
-/** sessionCaptions (from useWorkoutFinish) carries the honest copy but not the badge/next-target
- *  data to render a RankProgress card — that lives on
- *  ranksStore's row for the exercise (already refreshed by applyVerdict() in finishWorkout()).
- *  Joined here rather than in the composable so ranksStore stays the single source of truth
- *  for "what's this exercise's rank right now" — the same pattern RanksPage.vue and
- *  ExerciseInfoPanel.vue already use. A caption whose exercise has no ranksStore row yet
- *  (shouldn't happen — applyVerdict() runs for every touched exercise before this — but kept
- *  defensive) is simply dropped rather than rendered with guessed data. */
-const captionRows = computed(() =>
-  sessionCaptions.value.flatMap((c) => {
-    const row = ranksStore.ranks.find((r) => r.exerciseId === c.exerciseId);
-    if (!row) return [];
-    return [{ ...c, tier: row.tier, division: row.division, lp: row.lp, nextTargetWeightKg: row.nextTargetWeightKg, nextTargetReps: row.nextTargetReps, trust: row.trust }];
-  }),
-);
 const { toast } = useToast();
 const canCopyShareImage = canCopyToClipboard();
 async function onCopyFinished() {
@@ -185,13 +171,17 @@ async function onCopyFinished() {
  *  where it was. */
 const showWorkoutMenu = ref(false);
 
-const cancelConfirm = useConfirmTap(() => {
-  // Closes the overflow sheet on the *confirming* tap only (useConfirmTap's onConfirm callback
-  // fires exactly once, on the second tap) — the first ("Wirklich abbrechen?") tap must leave
-  // the sheet open so the user can see and complete the confirmation.
+/** "Workout abbrechen" confirmation: a visible inline banner the user must explicitly dismiss
+ *  or confirm — no auto-expiring timer. Was previously a silent tap-twice-within-3s pattern
+ *  (useConfirmTap), which only swapped a tiny icon-button's label with no dialog/banner and no
+ *  visible countdown; too easy to trigger by accident on a destructive, unrecoverable,
+ *  whole-workout-ending action (UX audit finding). */
+const showCancelConfirm = ref(false);
+function confirmCancelWorkout() {
+  showCancelConfirm.value = false;
   showWorkoutMenu.value = false;
   void store.cancelWorkout();
-});
+}
 
 const { activeMesocycle } = useMesocycleControls(store, routineStore);
 
@@ -337,9 +327,7 @@ async function logSet() {
 
   if (set) {
     void haptics.tap();
-    const amount = Math.round(computeSetXp(weightKg, reps, tier));
-    sessionXp.value += amount;
-    triggerXpChip(amount);
+    triggerXpChip(logSetXp(weightKg, reps, tier));
     // One-shot pop-in trigger — see justLoggedIndex's declaration. 260ms gives --dur-base's
     // 220ms animation a little headroom to finish before the class clears.
     justLoggedIndex.value = set.index;
@@ -349,6 +337,13 @@ async function logSet() {
   }
   if (wasLastUnloggedSet) void haptics.bump();
 }
+
+// Same two tabs as RunsPage.vue's own TabSwitcher — kept as a literal here rather than a shared
+// constant since it's just two short { id, label, to } objects, not logic.
+const WORKOUT_RUNS_TABS = [
+  { id: "workout", label: "Workout", to: "/workout" },
+  { id: "runs", label: "Läufe", to: "/runs" },
+];
 </script>
 
 <template>
@@ -359,18 +354,9 @@ async function logSet() {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-    <!-- Hidden once a session is active: mid-workout is the protected/focused zone — a
-         Workout/Läufe toggle is only relevant before a session starts, and it would compete with
-         the focus-col layout for top-of-screen space while logging sets. -->
-    <WorkoutRunsSwitcher v-if="!store.isActive" active="workout" />
+    <TabSwitcher v-if="!store.isActive" :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
     <div class="workout-page">
-    <!-- Post-finish summary: shows a recap of the finished workout instead of just returning to
-         the routine list. Snapshot taken in finishWorkout() before store.finish() resets the
-         state, since XP/rank verdicts arrive async via the sync flush, not synchronously. -->
     <div v-if="finishedSummary" class="finished-summary">
-      <!-- Three timed reward beats surface rank-ups, streak, and session XP in sequence instead
-           of all at once. Falls straight through to the summary/share content below once the
-           sequence finishes (or the user taps to skip it). -->
       <FinishSequence
         v-if="!finishSequenceDone"
         :rank-ups="sessionRankUps"
@@ -391,9 +377,6 @@ async function logSet() {
         <div class="eyebrow">Geschafft</div>
         <h2>{{ finishedSummary.routineName }}</h2>
 
-        <!-- Terminal frame: holds the tier/level state FinishSequence's last beat just showed,
-             instead of cutting straight to a data table; duration/volume/sets move below the
-             fold, after muscles and rank hints. -->
         <div class="reward-recap panel-reward" :class="topRankUp ? `t-${topRankUp.tier}` : ''">
           <span v-if="topRankUp" class="badge recap-badge" :class="`t-${topRankUp.tier}`">
             <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[topRankUp.tier as RankTier]" /></svg>
@@ -408,12 +391,6 @@ async function logSet() {
         <div class="eyebrow">Trainierte Muskeln</div>
         <MuscleFigure :primary="finishedSummary.muscles.primary" :secondary="finishedSummary.muscles.secondary" />
 
-        <!-- Recovery-gain / plausibility captions for this session's verdicts. Only rendered
-             when there's actually something to say — a normal session with no decay-recovery
-             and no plausibility flag adds nothing here (sessionCaptions is already filtered to
-             non-empty captions in useWorkoutFinish.ts). Looks up each exercise's current row in
-             ranksStore (already refreshed by applyVerdict() during finishWorkout()) for the
-             badge/next-target data the raw verdict doesn't carry. -->
         <template v-if="captionRows.length > 0">
           <div class="eyebrow">Was sich verändert hat</div>
           <div class="caption-list">
@@ -454,7 +431,6 @@ async function logSet() {
           </div>
         </div>
 
-        <!-- Below the fold — reference numbers, not the reward. -->
         <div class="stat-row">
           <StatTile :value="finishedSummary.durationLabel" label="Dauer" />
           <StatTile :value="`${Math.round(finishedSummary.volumeKg).toLocaleString('de-DE')} kg`" label="Volumen" />
@@ -489,33 +465,20 @@ async function logSet() {
       </div>
 
       <aside class="rail-col">
-        <!-- Non-modal pendingCount/flushing indicator: a small corner dot/badge here, not a
-             banner/toast, so it never competes with the focus column's logging surface or
-             blocks/covers tappable content. Not folded into App.vue's top-hud, since that chrome
-             only renders xp/streak chips and defines no slot for this. Rendered in normal flow
-             (right-aligned via its own `justify-content: flex-end`, see SyncIndicator.vue), NOT
-             absolutely positioned over `.rail-col`: since `.rail-col` has no padding, its
-             top-right corner is the exact same corner WorkoutClock.vue's pause/resume `.icon-btn`
-             occupies, so an absolutely-positioned indicator there would visually cover that
-             tappable button. Placing it as its own row directly above WorkoutClock guarantees no
-             overlap by construction. -->
         <SyncIndicator />
-        <!-- Cancel sits right of the pause button so it reads as "same family of control,
-             different action" instead of an unrelated button off on its own. Same confirm-tap
-             behavior (useConfirmTap), restyled to match the pause button's shape/size with a
-             danger treatment instead of its neutral one. -->
         <WorkoutClock>
           <template #actions>
-            <button
-              class="cancel-btn"
-              :class="{ confirming: cancelConfirm.isArmed() }"
-              :aria-label="cancelConfirm.isArmed() ? 'Wirklich abbrechen?' : 'Workout abbrechen'"
-              @click="cancelConfirm.trigger()"
-            >
-              {{ cancelConfirm.isArmed() ? "Wirklich?" : "✕" }}
-            </button>
+            <span class="cancel-divider" aria-hidden="true" />
+            <button class="cancel-btn" aria-label="Workout abbrechen" @click="showCancelConfirm = true">✕</button>
           </template>
         </WorkoutClock>
+        <div v-if="showCancelConfirm" class="cancel-confirm panel">
+          <p>Workout wirklich abbrechen? Der gesamte Fortschritt geht verloren.</p>
+          <div class="cancel-confirm-actions">
+            <button class="btn-secondary" @click="showCancelConfirm = false">Nein</button>
+            <button class="btn-cancel-confirm" @click="confirmCancelWorkout">Ja, abbrechen</button>
+          </div>
+        </div>
         <div class="progress-row">
           <div class="progress">
             <span>{{ store.progressLabel }}</span>
@@ -524,19 +487,10 @@ async function logSet() {
               {{ activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1] }}%
             </span>
           </div>
-          <!-- The one remaining session-level control up here — everything else (add exercise,
-               workout note, warm-up, cancel) lives in the sheet this opens (see below). -->
           <button class="overflow-btn" aria-label="Weitere Optionen" @click="showWorkoutMenu = true">⋯</button>
         </div>
-        <!-- Vertical variant (default) — desktop's list. Hidden below the 900px breakpoint in
-             favor of the horizontal strip placed just above the focus column, since on mobile
-             the full vertical list otherwise pushes the current exercise's set-logging UI below
-             the fold (see ExerciseRail.vue's header comment). -->
         <ExerciseRail class="rail-list-desktop" />
 
-        <!-- Mid-session add: lets a lifter change what a session includes once started (e.g.
-             equipment in use, a busy rack) without cancelling entirely. Trigger lives in the
-             overflow sheet (below); this inline search panel renders right here once opened. -->
         <div v-if="showAddExercise" class="add-ex-panel panel">
           <div class="add-ex-panel-head">
             <b>Übung hinzufügen</b>
@@ -554,21 +508,13 @@ async function logSet() {
         </div>
       </aside>
 
-      <!-- A single compact line — exercise name plus its first set's weight/reps, so a lifter
-           can prep plates/equipment before the transition — plus a small "overview" affordance
-           that reopens the full list in a sheet, preserving jump-to-any behind a deliberate tap
-           instead of an always-visible rail. Hidden at >=900px, since the vertical rail above
-           already covers this on desktop. -->
       <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile surface-hybrid">
-        <span v-if="nextExercisePreview" class="next-ex-line">
-          <b>Nächste Übung:</b> {{ nextExercisePreview.name }}
-          <template v-if="nextExercisePreview.summary"> · {{ nextExercisePreview.summary }}</template>
-        </span>
-        <!-- The routine's last exercise has no "next" to preview — rather than just
-             disappearing (which would look like a layout bug), this says so explicitly. The
-             overview affordance stays available regardless, so jump-to-any is never lost even
-             on the last exercise. -->
-        <span v-else class="next-ex-line next-ex-empty">Letzte Übung dieser Routine</span>
+        <div v-if="nextExercisePreview" class="next-ex-lines">
+          <span class="next-ex-label">Nächste Übung</span>
+          <span class="next-ex-name">{{ nextExercisePreview.name }}</span>
+          <span v-if="nextExercisePreview.summary" class="next-ex-summary">{{ nextExercisePreview.summary }}</span>
+        </div>
+        <span v-else class="next-ex-lines next-ex-empty">Letzte Übung dieser Routine</span>
         <button class="next-ex-overview-btn surface-hybrid" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
           <AppIcon name="drag-handle" />
         </button>
@@ -581,39 +527,23 @@ async function logSet() {
             <TruncatingLabel as="h2">{{ store.currentExercise.name }}</TruncatingLabel>
           </div>
           <div class="focus-head-actions">
-            <!-- "Übung überspringen", not just "Überspringen": RestTimer's own "Überspringen"
-                 button means something much less consequential (skip the rest, not the whole
-                 exercise), so this needs the extra word to disambiguate. Deliberately NOT gated
-                 behind useConfirmTap, unlike the cancel-workout button (.cancel-btn, next to
-                 pause): skipping is non-destructive and reversible — nothing is lost (the
-                 skipped exercise's sets are untouched and still reachable via the jump
-                 rail/jumpToExercise), unlike cancel (discards the whole session) or delete
-                 (permanent), so a second confirm tap would add friction without protecting
-                 against any real loss. -->
             <button v-if="store.exercises.length > 1" class="skip-btn surface-hybrid" @click="store.skipCurrentExercise()">
               Übung überspringen <AppIcon name="skip-forward" />
             </button>
-            <!-- Rank/XP display sits behind this deliberate-reveal toggle rather than always
-                 rendering RankProgress inline — a small, visually minimal tier-glyph chip, same
-                 footprint as the ⓘ info button next to it. Its `.active` (revealed) state gets a
-                 Nebula-tinted ring (see .rank-toggle-btn.active below) so "revealed" reads as an
-                 intentional interactive state. -->
-            <button
-              class="info-btn rank-toggle-btn surface-hybrid"
-              :class="{ active: showRank }"
-              :aria-pressed="showRank"
-              aria-label="Rang anzeigen"
-              @click="showRank = !showRank"
-            >
-              <AppIcon name="trophy" />
-            </button>
-            <button class="info-btn surface-hybrid" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
+            <div class="focus-head-info-group">
+              <button
+                class="info-btn rank-toggle-btn surface-hybrid"
+                :class="{ active: showRank }"
+                :aria-pressed="showRank"
+                aria-label="Rang anzeigen"
+                @click="showRank = !showRank"
+              >
+                <AppIcon name="trophy" />
+              </button>
+              <button class="info-btn surface-hybrid" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
+            </div>
           </div>
         </div>
-
-        <!-- Gated behind showRank's deliberate-reveal toggle above rather than always visible.
-             An exercise that genuinely has no rank yet (never logged) renders nothing at all
-             once revealed — a real absence, not a loading state. -->
         <RankProgress
           v-if="showRank && currentRank"
           variant="inline"
@@ -624,12 +554,6 @@ async function logSet() {
           :next-target-reps="currentRank.nextTargetReps"
           :trust="currentRank.trust"
         />
-
-        <!-- Always rendered, visibility toggled: some sets have a "last time" reference and some
-             don't (a freshly added exercise never does) — toggling this in and out of the DOM
-             would shove the entry/button/timer below it up and down on every single set
-             transition, the single most frequent interaction in the app. Reserved height +
-             visibility toggle instead, same pattern as .reps-hint. -->
         <p class="last-ref" :class="{ 'last-ref-hidden': store.currentSet?.prevWeightKg == null && !store.currentSet?.prevReps }">
           Letztes Mal an dieser Stelle:
           <b>
@@ -639,13 +563,6 @@ async function logSet() {
         </p>
 
         <SetEntry />
-
-        <!-- RPE/notes — secondary, off the primary logging path: small pill row, deliberately
-             not inline with the weight/reps steppers and not competing with "Satz speichern".
-             Only shown while there's a current set to attach them to (mirrors SetEntry's own
-             v-if scope). Reads straight off store.currentSet, so both reset to their unset label
-             on their own once a set logs and the store's currentSet advances — no local caching
-             to go stale. -->
         <div v-if="store.currentSet" class="set-meta-row">
           <button class="meta-pill surface-hybrid" @click="showRpeCapture = true">
             {{ store.currentSet.rpe != null ? `RPE ${store.currentSet.rpe}` : "RPE" }}
@@ -654,25 +571,13 @@ async function logSet() {
             {{ store.currentSet.notes ? `Notiz: ${store.currentSet.notes}` : "Notiz" }}
           </button>
         </div>
-
-        <!-- Always rendered above "Satz speichern" — RestTimer.vue renders an idle "startet nach
-             dem Satz" state (or the superset-continue variant) rather than nothing when no rest
-             is running, so its slot is permanently reserved. Fixed relative order means the Save
-             button's own screen position never shifts between "no sets logged" / "timer
-             running" / "timer finished". -->
         <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
 
         <div class="log-set-wrap">
           <template v-if="store.currentSet">
-            <!-- Reps start at 0 (activeWorkoutStore.ts) so the button stays disabled until the
-                 stepper is actually touched — a routine's target/last-time is shown above as a
-                 reference, never silently submitted as what was actually done. -->
             <button class="btn-primary btn-lg btn-block log-set-btn" :disabled="store.currentSet.reps <= 0" @click="logSet">
               Satz speichern
             </button>
-            <!-- Always rendered (not v-if) with a reserved min-height, visibility toggled
-                 instead of the element being added/removed — otherwise the hint appearing and
-                 disappearing as reps go from 0 pushes the set list up and down. -->
             <p class="reps-hint" :class="{ 'reps-hint-hidden': store.currentSet.reps > 0 }">
               Erst Wiederholungen, dann speichern.
             </p>
@@ -683,9 +588,6 @@ async function logSet() {
 
         <ul class="set-rows tnum">
           <li v-for="s in store.currentExercise.sets" :key="s.index" :class="{ done: s.logged, warmup: s.isWarmup, 'pop-in': justLoggedIndex === s.index }">
-            <!-- Tapping the badge opens "Satzart auswählen" — only while the set is still
-                 unlogged; a logged set's kind is locked (see activeWorkoutStore.ts's
-                 setSetKind()), so the badge stops being a button and just shows the outcome. -->
             <button
               v-if="!s.logged"
               class="sn"
@@ -741,10 +643,6 @@ async function logSet() {
         @save="saveNoteCapture"
       />
 
-      <!-- "Übung hinzufügen", "Workout-Notiz", and "Aufwärmsätze einfügen" consolidate behind
-           the "⋯" trigger next to .progress — these are all occasional, once-in-a-while actions,
-           never touched between sets the way the clock/pause, current exercise, and weight/reps
-           entry are. -->
       <SheetModal v-if="showWorkoutMenu" title="Mehr" @close="showWorkoutMenu = false">
         <div class="workout-menu">
           <button class="menu-item" @click="showWorkoutMenu = false; showAddExercise = true">
@@ -771,9 +669,6 @@ async function logSet() {
 
     <ExerciseInfoPanel v-if="infoExercise" :exercise="infoExercise" @close="infoExerciseId = null" />
 
-    <!-- Full jump-to-any-exercise list. Same ExerciseRail component/data/click logic as the
-         desktop vertical list above — its "jump" emit (alongside its existing
-         store.jumpToExercise(i) call) closes this sheet once a jump happens. -->
     <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
       <ExerciseRail @jump="showExerciseOverview = false" />
     </SheetModal>
@@ -876,7 +771,7 @@ async function logSet() {
   gap: 4px;
 }
 .beat-done {
-  color: var(--green);
+  color: var(--success);
   font-weight: 700;
 }
 /* `flex: 1` split the row 50/50, and at mobile widths that gave "Routine aktualisieren" too
@@ -924,11 +819,7 @@ async function logSet() {
   display: flex;
   gap: var(--sp2);
 }
-/* Below 900px this row sits above the focus column; at >=900px it's hidden, since the vertical
-   rail (.rail-col) already covers "what's next"/jump-to-any there. */
-.rail-strip-mobile {
-  margin-bottom: var(--sp4);
-}
+
 /* Uses the shared .surface-hybrid utility (translucent + blurred, gradient hairline via ::after)
    rather than a flat fill + border — border dropped since the hairline pseudo-element does that
    job (same pattern as .panel above). */
@@ -940,17 +831,32 @@ async function logSet() {
   padding: var(--sp3);
   border-radius: var(--r-md);
 }
-.next-ex-line {
+/* Was a single nowrap+ellipsis line cramming label/name/weight×reps together, which truncated
+   on anything but a short name (feedback: "should go across more rows to actually be able to
+   display all the data" — the mid-workout screen already has the vertical room for it). Three
+   stacked rows instead — label, name, summary — each free to wrap instead of being clipped. */
+.next-ex-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.next-ex-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.next-ex-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.next-ex-summary {
   font-size: 12.5px;
   color: var(--dim);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.next-ex-line b {
-  color: var(--text);
-  font-weight: 700;
 }
 .next-ex-empty {
   font-style: italic;
@@ -1049,6 +955,15 @@ async function logSet() {
   align-items: center;
   gap: var(--sp2);
   flex: none;
+}
+/* Law-of-Proximity fix (UX-08): groups the two icon-only affordances (rank/info) away from the
+   unrelated "Übung überspringen" pill instead of all three reading as one row of same-weight
+   controls — pushed to the row's far end so the skip pill and the info group visually separate. */
+.focus-head-info-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  margin-left: auto;
 }
 /* N2: was a flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). */
 .skip-btn {
@@ -1182,7 +1097,7 @@ async function logSet() {
 }
 .reps-hint {
   font-size: 11.5px;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
   text-align: center;
   min-height: 1.4em;
 }
@@ -1271,7 +1186,7 @@ async function logSet() {
    translucent family as the sibling (non-done) rows above instead of special-casing it back to a
    fully opaque fill. */
 .set-rows li.done {
-  background: color-mix(in srgb, var(--green) 20%, var(--surface-hybrid-bg));
+  background: color-mix(in srgb, var(--success) 20%, var(--surface-hybrid-bg));
 }
 .set-rows li.warmup:not(.done) {
   color: var(--dim);
@@ -1305,7 +1220,7 @@ button.sn:active {
   transform: scale(0.88);
 }
 .set-rows .sn.k-warmup {
-  background: var(--fire);
+  background: var(--warning);
   color: var(--k-warmup-text);
 }
 .set-rows .sn.k-normal {
@@ -1313,7 +1228,7 @@ button.sn:active {
   color: var(--text);
 }
 .set-rows .sn.k-failure {
-  background: var(--red);
+  background: var(--danger);
   color: var(--k-failure-text);
 }
 .set-rows .sn.k-dropset {
@@ -1374,14 +1289,54 @@ button.sn:active {
   border-radius: var(--r-md);
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--red);
+  color: var(--danger);
   background: transparent;
-  border: 1px solid var(--red-lo);
+  border: 1px solid var(--danger-lo);
 }
-.cancel-btn.confirming {
-  background: var(--red-lo);
-  border-color: var(--red);
+/* Law-of-Proximity fix (UX-07): a plain hairline between Pause and Workout-abbrechen so the
+   destructive action doesn't read as just another same-size icon button glued to the safe one —
+   on top of the red-outlined treatment .cancel-btn already carries. */
+.cancel-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line-2);
+  flex: none;
+}
+/* Visible, explicit cancel-workout confirmation — replaces the old silent tap-twice-within-3s
+   pattern (useConfirmTap). .panel (tokens.css) supplies background/border/radius. */
+.cancel-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp3);
+  padding: var(--sp4);
+}
+.cancel-confirm p {
+  font-size: 13.5px;
   color: var(--text);
+}
+.cancel-confirm-actions {
+  display: flex;
+  gap: var(--sp2);
+}
+.cancel-confirm-actions button {
+  flex: 1;
+}
+.btn-cancel-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  min-height: var(--touch-target-min);
+  border-radius: var(--r-md);
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--k-failure-text);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.btn-cancel-confirm:active {
+  transform: scale(0.97);
 }
 
 /* UI/UX rework audit P0-B: a fixed 260px rail + a capped-520px focus column inside a flex

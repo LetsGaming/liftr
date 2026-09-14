@@ -77,7 +77,9 @@ read for today — an explicit heuristic, not a claim to know your physiology, s
 
 ## Running
 
-Runs are a first-class second discipline alongside lifting, with no third-party dependency:
+Runs are a first-class second discipline alongside lifting, with no third-party dependency\* —
+and, since the run XP/rank parity work, that's true of progression too, not just import/display:
+runs now earn XP and rank exactly like sets do.
 
 - **GPX/FIT file import** from any watch or app you already own — explicitly chosen over a Strava
   API integration, which was evaluated and rejected to avoid a load-bearing dependency on a
@@ -89,6 +91,19 @@ Runs are a first-class second discipline alongside lifting, with no third-party 
 - **Manual run entry** as a fallback when there's no file/device data, with real inline
   validation errors instead of just disabling the save button.
 - A combined **workout/runs switcher** so both disciplines live in one place in the UI.
+- **Runs earn XP and rank.** Every logged run (manual or GPS-tracked) earns XP that feeds the same
+  global level as strength XP — see [xp-and-streaks.md](concepts/xp-and-streaks.md#run-xp). A
+  GPS-tracked run also gets ranked into one of five distance categories (Mile/5K/10K/Half
+  Marathon/Marathon), with its own peak/current rank, corroboration, decay, PRs, and a dedicated
+  Overall Runner Rank aggregate — same mechanics as the strength rank system, run in parallel, not
+  blended into it. Manual entries (no GPS track to independently verify) are XP-only, never
+  rank-eligible. See [rank-engine.md](concepts/rank-engine.md#running-ranks).
+
+\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
+distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
+straight-line distance, and self-hostable via `LIFTR_ORS_BASE_URL` to remove the third party
+entirely. See [SECURITY.md](SECURITY.md#outbound-requests-openrouteservice) and
+[ADR 0007](adr/0007-openrouteservice-external-routing-exception.md).
 
 ## Routines and planning
 
@@ -102,6 +117,8 @@ Runs are a first-class second discipline alongside lifting, with no third-party 
   visual weight to the one-tap "start today's workout" path.
 - **Custom exercises** — add your own exercise (with muscle tags) alongside the curated catalog,
   with correct name display and slug transliteration (including non-ASCII names).
+- **Strecken planen** — Wegpunkte auf einer Karte setzen; die App berechnet automatisch Distanz und
+  Höhenmeter (via OpenRouteService, optional) und merkt sich die Strecke zum späteren Start.
 
 ## Exercise catalog
 
@@ -112,9 +129,8 @@ real or derivable strength standards, each with:
   target muscles, instructions, and stats.
 - Muscle-group tagging feeding an interactive **muscle figure/diagram**.
 - Full exercise history per exercise.
-- An **attributions page** crediting every third-party photo source (free-exercise-db, wger,
-  workout-guide) by license, since the catalog leans on openly-licensed images rather than
-  original photography.
+- An **attributions page** crediting every third-party photo source (free-exercise-db, wger)
+  by license, since the catalog leans on openly-licensed images rather than original photography.
 
 ## Profile and settings
 
@@ -140,7 +156,13 @@ real or derivable strength standards, each with:
   Service-worker caching keeps the app shell, exercise catalog/images, and other API reads
   available offline too.
 - **Self-hosted, single-user.** Runs on your own server, data lives in one SQLite file you can
-  back up or move, no cloud account, no analytics, no third party in the loop.
+  back up or move, no cloud account, no analytics, no third party in the loop\*\*.
+
+\*\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
+distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
+straight-line distance, and self-hostable via `LIFTR_ORS_BASE_URL` to remove the third party
+entirely. See [SECURITY.md](SECURITY.md#outbound-requests-openrouteservice) and
+[ADR 0007](adr/0007-openrouteservice-external-routing-exception.md).
 
 ## Stack, for reference
 

@@ -18,12 +18,16 @@ import { registerHistoryRoutes } from "./routes/history.js";
 import { registerMemberRoutes } from "./routes/members.js";
 import { registerMesocycleRoutes } from "./routes/mesocycles.js";
 import { registerOverallRankRoutes } from "./routes/overallRank.js";
+import { registerPlannedRouteRoutes } from "./routes/plannedRoutes.js";
 import { registerPrRoutes } from "./routes/prs.js";
 import { registerRankEventsRoutes } from "./routes/rankEvents.js";
 import { registerRankRoutes } from "./routes/ranks.js";
 import { registerReadinessRoutes } from "./routes/readiness.js";
 import { registerRoutineRoutes } from "./routes/routines.js";
 import { registerRoutineSuggestionRoutes } from "./routes/routineSuggestions.js";
+import { registerOverallRunnerRankRoutes } from "./routes/runOverallRank.js";
+import { registerRunPrRoutes } from "./routes/runPrs.js";
+import { registerRunRankRoutes } from "./routes/runRanks.js";
 import { registerRunRoutes } from "./routes/runs.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerStreakRoutes } from "./routes/streak.js";
@@ -64,7 +68,24 @@ export function configureApp(app: FastifyInstance) {
 }
 
 export async function buildApp() {
-  const app = configureApp(Fastify({ logger: true }));
+  // Fastify's built-in per-request logging (incoming + completed, both at 'info') logs
+  // unconditionally regardless of status code — fine in production, but it turns a dev/seed run
+  // into a log line per asset/API call. Muted by default (env.verboseLogging): disable the
+  // built-in logging and replace it with a targeted onResponse hook that only logs 4xx/5xx, so a
+  // real failure still shows up without the noise of every 200.
+  const app = configureApp(
+    Fastify({
+      logger: env.verboseLogging ? true : { level: "warn" },
+      disableRequestLogging: !env.verboseLogging,
+    }),
+  );
+  if (!env.verboseLogging) {
+    app.addHook("onResponse", async (request, reply) => {
+      if (reply.statusCode >= 400) {
+        request.log.warn({ statusCode: reply.statusCode, method: request.method, url: request.url }, "request failed");
+      }
+    });
+  }
 
   await app.register(cors, { origin: env.allowedOrigins ?? true });
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }); // GPX files are small text; 20MB is generous
@@ -123,6 +144,10 @@ export async function buildApp() {
   registerStreakRoutes(app, db);
   registerSettingsRoutes(app, db);
   registerRunRoutes(app, db);
+  registerRunRankRoutes(app, db);
+  registerRunPrRoutes(app, db);
+  registerOverallRunnerRankRoutes(app, db);
+  registerPlannedRouteRoutes(app, db);
   registerExportRoutes(app, db);
   registerXpRoutes(app, db);
 
