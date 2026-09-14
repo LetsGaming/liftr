@@ -4,12 +4,12 @@
  * IndexedDB, since losing a rest countdown on a crash is a minor annoyance, not lost data.
  * Fires a Notification when it hits zero, if permission was granted.
  */
-import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { onBeforeUnmount, ref, watch } from "vue";
+import { isNative } from "../../lib/platform";
 
 async function fireRestOverNotification() {
-  if (Capacitor.isNativePlatform()) {
+  if (isNative()) {
     await LocalNotifications.schedule({
       notifications: [{ id: Date.now() % 2147483647, title: "Pause vorbei", body: "Zeit für den nächsten Satz." }],
     });
