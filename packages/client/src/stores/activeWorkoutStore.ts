@@ -3,11 +3,11 @@
  * IndexedDB immediately via persist(), so a crashed tab or a locked phone mid-set loses
  * nothing — on next load, restore() picks the workout back up exactly where it left off.
  */
-import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, SET_KIND_LABEL, warmupRamp, type SetKind } from "@liftr/shared";
 import { defineStore } from "pinia";
 import { clearActiveWorkout, loadActiveWorkout, saveActiveWorkout } from "../lib/idb";
+import { isNative } from "../lib/platform";
 import { computeAdvanceAfterLog } from "../lib/supersetAdvance";
 import { useSyncStore, type RankVerdict } from "./syncStore";
 
@@ -218,7 +218,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       // Requested lazily on the first real engagement, not on page load, to avoid a naggy
       // permission popup before the user has done anything. RestTimer.vue's Notification call
       // was previously a dead branch since nothing requested this; closes that gap.
-      if (Capacitor.isNativePlatform()) {
+      if (isNative()) {
         void LocalNotifications.requestPermissions();
       } else if (typeof Notification !== "undefined" && Notification.permission === "default") {
         void Notification.requestPermission();

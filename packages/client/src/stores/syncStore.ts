@@ -6,11 +6,11 @@
  * flush is best-effort and never blocks the UI.
  */
 import { App as CapacitorApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
 import { Network } from "@capacitor/network";
 import { defineStore } from "pinia";
 import { importNewHealthConnectWorkouts } from "../health/healthConnect";
 import { enqueueOutboxItem, listOutboxItems, removeOutboxItem, type OutboxItem } from "../lib/idb";
+import { isNative } from "../lib/platform";
 import { postSyncBatch, type SyncResult } from "../services/syncService";
 
 export type { SyncResult };
@@ -111,7 +111,7 @@ export const useSyncStore = defineStore("sync", {
       window.addEventListener("online", () => void this.flush());
       window.addEventListener("focus", () => void this.flush());
 
-      if (Capacitor.isNativePlatform()) {
+      if (isNative()) {
         void CapacitorApp.addListener("resume", () => {
           void this.flush();
           void importNewHealthConnectWorkouts();
