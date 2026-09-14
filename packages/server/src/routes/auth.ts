@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { LiftrDb } from "@liftr/db";
 import { hashPassword, verifyPassword } from "../lib/passwords.js";
 import { generateSessionToken, hashSessionToken } from "../lib/sessionTokens.js";
+import { isCommonPassword } from "../lib/commonPasswords.js";
 import {
   createSession,
   deleteSessionByTokenHash,
@@ -18,7 +19,10 @@ import type { ZodFastifyInstance } from "../types.js";
 
 const USERNAME_PATTERN = /^[a-z0-9-]{3,24}$/;
 const usernameSchema = z.string().regex(USERNAME_PATTERN, "3-24 lowercase letters, digits, or hyphens");
-const passwordSchema = z.string().min(8, "at least 8 characters");
+const passwordSchema = z
+  .string()
+  .min(8, "at least 8 characters")
+  .refine((pw) => !isCommonPassword(pw), { message: "too common, choose a different password" });
 
 const setupInput = z.object({ password: passwordSchema });
 const loginInput = z.object({ username: usernameSchema, password: z.string() });

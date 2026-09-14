@@ -55,6 +55,16 @@ describe("POST /api/auth/setup", () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it("rejects a common password even when it meets the length minimum", async () => {
+    const app = buildApp(db);
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/auth/setup",
+      payload: { password: "aaaaaaaa" },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it("refuses to run again once setup is already done", async () => {
     const app = buildApp(db);
     await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
