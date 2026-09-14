@@ -162,7 +162,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   border-radius: var(--r-sm);
   background: var(--surface-3);
   border: 1px solid var(--line);
-  color: var(--red);
+  color: var(--danger);
   font-size: 12px;
 }
 .ex-note {
@@ -200,7 +200,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   color: var(--dim);
 }
 .coverage-chip.cov-covered {
-  border-color: var(--green);
+  border-color: var(--success);
   color: var(--text);
 }
 .coverage-chip.cov-partial {
@@ -208,8 +208,8 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   color: var(--dim);
 }
 .coverage-chip.cov-missing {
-  border-color: var(--fire);
-  color: var(--fire-hi);
+  border-color: var(--warning);
+  color: var(--warning-hi);
 }
 .customize-btn {
   padding: 10px;

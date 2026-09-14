@@ -9,17 +9,13 @@ import type { LiftrDb } from "@liftr/db";
 import {
   estimateE1rm,
   rankSkillScore,
-  resolveRank,
   nextLoadTarget,
   nextTargetAtOrdinal,
   ordinal,
-  positionToBand,
-  ratchetPeak,
-  computeCurrentBand,
-  applySessionRecoveryGain,
   type StandardThreshold,
   type PlausibilityReason,
 } from "@liftr/shared";
+import { computeRankCore } from "./rankAlgorithm.js";
 import { findLatestBodyweightLog } from "../repositories/bodyweightRepository.js";
 import {
   findBestPrByKind,
@@ -37,6 +33,22 @@ import type { Profile } from "../routes/settings.js";
 
 /** No bodyweight-tracking UI exists yet — fall back to a configurable default. */
 const FALLBACK_BODYWEIGHT_KG = 75;
+
+/**
+ * Peak-eligibility floor, hoisted to module scope (was function-local inside
+ * `recomputeRankForExercise` below) so `runRankService.ts`'s run-analog recompute can import the
+ * exact same value rather than re-declaring it — see that function's own gate for the full
+ * rationale (a session has to be quite badly flagged to lose peak eligibility outright).
+ */
+export const PEAK_ELIGIBILITY_FLOOR = 0.3;
+
+/**
+ * PR hard-block floor, hoisted to module scope for the same single-source-of-truth reason as
+ * `PEAK_ELIGIBILITY_FLOOR` above — see `recomputeRankForExercise`'s PR-detection block for the
+ * full rationale (a PR is a permanent, high-stakes claim and gets zero credit at a much milder
+ * degree of flagging than peak eligibility does).
+ */
+export const PR_ELIGIBILITY_FLOOR = 0.5;
 
 export async function getCurrentBodyweightKg(db: LiftrDb, userId: string): Promise<number> {
   const latest = await findLatestBodyweightLog(db, userId);
@@ -134,7 +146,11 @@ export async function recomputeRankForExercise(
       value = rankSkillScore(load, s.reps) / bodyweightKg;
       e1rm = estimateE1rm(load, s.reps).e1rm;
     }
-    if (value > bestValue) {
+    // Tie-break by recency: `findLoggedSetsForExercise` has no ORDER BY, so relying on row order
+    // to pick a winner among equal-value sets would be nondeterministic (and was — it silently
+    // dated rank-up events to whichever tied set the DB happened to return first, not the most
+    // recent one that actually corroborated the peak).
+    if (value > bestValue || (value === bestValue && s.loggedAt > bestSet!.loggedAt)) {
       bestValue = value;
       bestSet = s;
       bestE1rm = e1rm;
@@ -149,25 +165,7 @@ export async function recomputeRankForExercise(
   }
   if (!bestSet) return null;
 
-  const rank = resolveRank(bestValue, thresholds);
-
-  // Corroboration: the candidate must have been reached (or bettered) on at least one OTHER day,
-  // not only on the single best-ever set's own day. Resolving each day's own best `value` against
-  // the same thresholds (rather than comparing raw `value` numbers directly) is what makes this
-  // check tier/division/LP-aware instead of load-unit-aware — a different day's set only counts if
-  // it reaches an equal-or-stronger *band*, matching what `ratchetPeak` itself compares on.
   const bestDayKey = bestSet.loggedAt.toISOString().slice(0, 10);
-  const candidatePosition = ordinal(rank.tier, rank.division) * 100 + rank.lp;
-  let isPeakCorroborated = false;
-  for (const [dayKey, dayBestValue] of dailyBest) {
-    if (dayKey === bestDayKey) continue;
-    const dayRank = resolveRank(dayBestValue, thresholds);
-    const dayPosition = ordinal(dayRank.tier, dayRank.division) * 100 + dayRank.lp;
-    if (dayPosition >= candidatePosition) {
-      isPeakCorroborated = true;
-      break;
-    }
-  }
 
   const previousRank = await findRankByExerciseId(db, userId, exerciseId);
 
@@ -195,10 +193,10 @@ export async function recomputeRankForExercise(
 
   // Plausibility gate: a badly-flagged session's sets are excluded from peak
   // advancement entirely, not just discounted — the peak ratchet is the one thing in this system
-  // meant to be un-fakeable. PEAK_ELIGIBILITY_FLOOR intentionally matches the plausibility module's
-  // own PLAUSIBILITY_FLOOR-adjacent low end; a session has to be quite badly flagged to lose peak
-  // eligibility outright, since most flagged sessions should still discount rather than block.
-  const PEAK_ELIGIBILITY_FLOOR = 0.3;
+  // meant to be un-fakeable. PEAK_ELIGIBILITY_FLOOR (module-level, see above) intentionally
+  // matches the plausibility module's own PLAUSIBILITY_FLOOR-adjacent low end; a session has to be
+  // quite badly flagged to lose peak eligibility outright, since most flagged sessions should
+  // still discount rather than block.
   const peakEligible = plausibilityMultiplier >= PEAK_ELIGIBILITY_FLOOR;
 
   // PR hard-block: stricter than peak eligibility on purpose. A PR is the single highest-trust,
@@ -213,48 +211,31 @@ export async function recomputeRankForExercise(
   // PR eligibility outright. That leaves a normal ~40-55% single-session breakthrough — a
   // legitimate "short rest, good day" case — still eligible for a PR, while a session flagged
   // enough to already be trending toward the peak-eligibility floor loses PR credit well before
-  // it gets there.
-  const PR_ELIGIBILITY_FLOOR = 0.5;
+  // it gets there. (PR_ELIGIBILITY_FLOOR is module-level, see above.)
   const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
 
   // `peak` is `null` when either of two independent gates hasn't cleared yet — a badly flagged
   // session with no `storedPeak` yet (the improbable-jump check can't fire without a prior peak
   // to compare against, so a flagged first-ever session must not quietly seed one), OR a
-  // genuinely plausible result that simply hasn't been corroborated on a second day yet (see
-  // above). Either way, a later session is what gets to establish/advance the peak — `ratchetPeak`
-  // itself returns `storedPeak` unchanged (possibly still `null`) whenever `isCorroborated` is
-  // false, so this is no longer unconditionally non-null once `peakEligible` is true.
-  const peak =
-    peakEligible
-      ? ratchetPeak(
-          { tier: rank.tier, division: rank.division, lp: rank.lp, e1rm: bestE1rm },
-          bestSet.loggedAt.getTime(),
-          storedPeak,
-          isPeakCorroborated,
-        )
-      : storedPeak;
-
-  // A genuine rank-up is a *peak* advancing, not the displayed current band changing —
-  // decay softening or reversing current must never register as a rank-up, only a real new
-  // best. `rankedUp` was previously defined against the naive current value; redefining it
-  // against peak also fixes a latent bug decay would otherwise introduce: without this, a
-  // decay-reversal snap-back (current jumping from a softened band back up to an
-  // already-known peak) would have looked like a fresh rank-up and logged a spurious event.
-  // No peak at all (see above) means nothing to log a rank-up for.
-  const rankedUp = peak != null && (!storedPeak || storedPeak.tier !== peak.tier || storedPeak.division !== peak.division);
-
-  // Current-rank recovery. Two paths, applied in sequence:
-  //  1. Passive decay (unchanged pure day-based curve) always runs first, using the same
-  //     daysSinceLastTrained this function already computes below.
-  //  2. If this recompute was triggered by a session logged *today* (daysSinceLastTrained === 0 —
-  //     true for every call from the finish-workout path, since it only touches exercises trained
-  //     in that same session), a buffed recovery gain is applied on top of whatever was already
-  //     climbed in prior sessions (the *previously stored* current band), not on top of the
-  //     freshly-passively-decayed value — discounted by this session's plausibility multiplier.
-  // `pnpm recompute`'s maintenance/rebuild path also calls this function and will also apply
-  // path 2 whenever it happens to run on the same day an exercise was trained — an accepted
+  // genuinely plausible result that simply hasn't been corroborated on a second day yet. Either
+  // way, a later session is what gets to establish/advance the peak — `ratchetPeak` itself
+  // returns `storedPeak` unchanged (possibly still `null`) whenever `isCorroborated` is false, so
+  // this is no longer unconditionally non-null once `peakEligible` is true.
+  //
+  // `rankedUp` is a *peak* advancing, not the displayed current band changing — decay softening
+  // or reversing current must never register as a rank-up, only a real new best.
+  //
+  // Current-rank recovery (decay/recovery-gain) is throttled by `plausibilityMultiplier` only when
+  // there was a genuine decay backlog going into this recompute (`previousCurrentBand` sat below
+  // the OLD `storedPeak`) AND the recompute was triggered by a session logged today
+  // (`daysSinceLastTrained === 0`) — a lifter fully caught up who hits a genuine new PR in the same
+  // session must see it reflected immediately, not throttled as if returning from a decay gap.
+  // `pnpm recompute`'s maintenance/rebuild path also calls this function and will also apply the
+  // buffed path whenever it happens to run on the same day an exercise was trained — an accepted
   // simplification (the peak ratchet already has the same "not fully re-derivable from a single
-  // from-scratch pass" property).
+  // from-scratch pass" property). See rankAlgorithm.ts's `computeRankCore` for the shared mechanics
+  // (identical to runRankService.ts's `recomputeRunRank`) and this file's own tests for the exact
+  // corroboration/decay/PR-eligibility scenarios these gates exist for.
   const lastTrainedAtMs = loggedSets.reduce((max, s) => Math.max(max, s.loggedAt.getTime()), 0);
   const daysSinceLastTrained = Math.floor((Date.now() - lastTrainedAtMs) / (24 * 60 * 60 * 1000));
 
@@ -262,44 +243,19 @@ export async function recomputeRankForExercise(
     ? { tier: previousRank.tier, division: previousRank.division, lp: previousRank.lp }
     : null;
 
-  let currentBand: { tier: (typeof rank)["tier"]; division: number; lp: number };
-  if (peak == null) {
-    // No established peak (flagged first-ever session, see above) — there's nothing to decay
-    // from or recover toward yet, so show the plain freshly-resolved current value honestly
-    // rather than fabricating a band around the flagged/blocked peak.
-    currentBand = { tier: rank.tier, division: rank.division, lp: rank.lp };
-  } else {
-    // Passive decay always runs, even on a first-ever recompute (no `previousCurrentBand` yet) —
-    // gating it on `previousCurrentBand` existing would let a long-untouched exercise's very first
-    // computation show an undecayed peak, contradicting the "decays below peak once the exercise
-    // hasn't been trained in a long time" behavior this same file already tests for on a fresh
-    // exercise.
-    const passivelyDecayedBand = computeCurrentBand(peak, daysSinceLastTrained);
-
-    // Only throttle today's climb through the buffed recovery-gain path when there was a genuine
-    // decay backlog going into *this* recompute — i.e. `previousCurrentBand` sat below the OLD
-    // peak (`storedPeak`, before this call's `ratchetPeak` above possibly advanced it). Comparing
-    // against `storedPeak` rather than the freshly-computed `peak` matters: a lifter who was fully
-    // caught up (current == old peak) and then hits a genuine new PR in this same session must see
-    // that PR reflected immediately — `previousCurrentBand` would sit far below the *new*, just-
-    // advanced `peak`, which would otherwise look identical to "returning from a real decay gap"
-    // and wrongly throttle a rank the lifter just legitimately earned.
-    const storedPeakPos = storedPeak ? ordinal(storedPeak.tier, storedPeak.division) * 100 + storedPeak.lp : null;
-    const hadDecayBacklog =
-      previousCurrentBand != null &&
-      storedPeakPos != null &&
-      ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp < storedPeakPos;
-
-    if (hadDecayBacklog && previousCurrentBand && daysSinceLastTrained === 0) {
-      const rawGainBand = applySessionRecoveryGain(peak, previousCurrentBand);
-      const prevPos = ordinal(previousCurrentBand.tier, previousCurrentBand.division) * 100 + previousCurrentBand.lp;
-      const rawGainPos = ordinal(rawGainBand.tier, rawGainBand.division) * 100 + rawGainBand.lp;
-      const scaledPos = prevPos + (rawGainPos - prevPos) * plausibilityMultiplier;
-      currentBand = positionToBand(scaledPos);
-    } else {
-      currentBand = passivelyDecayedBand;
-    }
-  }
+  const { rank, peak, rankedUp, currentBand } = computeRankCore({
+    thresholds,
+    dailyBest,
+    bestValue,
+    peakMetricValue: bestE1rm,
+    bestDayKey,
+    bestAchievedAtMs: bestSet.loggedAt.getTime(),
+    storedPeak,
+    previousCurrentBand,
+    peakEligible,
+    plausibilityMultiplier,
+    daysSinceLastTrained,
+  });
 
   // Next-target predictions follow the *decayed* current band, not the freshly-resolved naive
   // value — a softened display would otherwise show a next target the lifter has technically

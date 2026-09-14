@@ -17,6 +17,25 @@ export type { CatalogExercise };
 // requiring every reader to defensively handle a schema this store itself controls.
 const CACHE_KEY = "liftr.catalog.v2";
 
+/** Lightweight structural guard for the localStorage cache — this is exactly the kind of
+ *  v1-vs-v2 shape drift documented above (requiredEquipment as string[] instead of
+ *  {item,tier}[]), so check each entry's requiredEquipment shape too, not just that it parsed. A
+ *  cache entry that fails this is treated the same as "no cache" rather than crashed into state. */
+function isCatalogExercise(value: unknown): value is CatalogExercise {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.slug === "string" &&
+    Array.isArray(v.requiredEquipment) &&
+    v.requiredEquipment.every((r) => r && typeof r === "object" && "item" in r && "tier" in r)
+  );
+}
+
+function isCatalogExerciseArray(value: unknown): value is CatalogExercise[] {
+  return Array.isArray(value) && value.every(isCatalogExercise);
+}
+
 export const useCatalogStore = defineStore("catalog", {
   state: () => ({
     exercises: [] as CatalogExercise[],
@@ -30,8 +49,15 @@ export const useCatalogStore = defineStore("catalog", {
     async load() {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
-        this.exercises = JSON.parse(cached);
-        this.loaded = true;
+        try {
+          const parsed: unknown = JSON.parse(cached);
+          if (isCatalogExerciseArray(parsed)) {
+            this.exercises = parsed;
+            this.loaded = true;
+          }
+        } catch {
+          // corrupt/unparseable cache entry — same as "not cached"
+        }
       }
       try {
         const fresh = await getExercises();

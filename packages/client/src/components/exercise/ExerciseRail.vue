@@ -118,7 +118,7 @@ function workingReps(ex: ActiveExercise): number | null {
   flex: none;
 }
 .rail-item.done .n {
-  background: var(--green);
+  background: var(--success);
   color: #04120a;
   /* Draws in rather than snapping — an exercise going from "3/4" to a green check is the row's
      own small reward moment. */

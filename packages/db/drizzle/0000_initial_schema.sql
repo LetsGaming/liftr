@@ -65,6 +65,32 @@ CREATE TABLE `muscles` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `muscles_slug_unique` ON `muscles` (`slug`);--> statement-breakpoint
+CREATE TABLE `planned_route_points` (
+	`route_id` text NOT NULL,
+	`idx` integer NOT NULL,
+	`lat` real NOT NULL,
+	`lon` real NOT NULL,
+	`ele` real,
+	PRIMARY KEY(`route_id`, `idx`),
+	FOREIGN KEY (`route_id`) REFERENCES `planned_routes`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `planned_route_points_route_idx` ON `planned_route_points` (`route_id`);--> statement-breakpoint
+CREATE TABLE `planned_routes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
+	`name` text NOT NULL,
+	`order_index` integer DEFAULT 0 NOT NULL,
+	`waypoints_json` text NOT NULL,
+	`distance_m` real NOT NULL,
+	`elevation_gain_m` real,
+	`geometry_source` text NOT NULL,
+	`computed_at` integer NOT NULL,
+	`archived_at` integer,
+	`created_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `prs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
@@ -151,6 +177,61 @@ CREATE TABLE `run_points` (
 );
 --> statement-breakpoint
 CREATE INDEX `run_points_run_idx` ON `run_points` (`run_id`);--> statement-breakpoint
+CREATE TABLE `run_prs` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
+	`category` text NOT NULL,
+	`kind` text NOT NULL,
+	`value` real NOT NULL,
+	`run_id` text NOT NULL,
+	`achieved_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`run_id`) REFERENCES `runs`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `run_prs_category_idx` ON `run_prs` (`category`);--> statement-breakpoint
+CREATE TABLE `run_rank_events` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
+	`category` text NOT NULL,
+	`tier` text NOT NULL,
+	`division` integer NOT NULL,
+	`occurred_at` integer NOT NULL,
+	`plausibility_reason` text,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `run_rank_events_category_idx` ON `run_rank_events` (`category`);--> statement-breakpoint
+CREATE TABLE `run_ranks` (
+	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
+	`category` text NOT NULL,
+	`tier` text NOT NULL,
+	`division` integer NOT NULL,
+	`lp` real NOT NULL,
+	`best_speed_mps` real,
+	`trust` text,
+	`next_target_speed_mps` real,
+	`computed_at` integer NOT NULL,
+	`peak_tier` text,
+	`peak_division` integer,
+	`peak_lp` real,
+	`peak_speed_mps` real,
+	`peak_achieved_at` integer,
+	PRIMARY KEY(`user_id`, `category`),
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `run_standards` (
+	`id` text PRIMARY KEY NOT NULL,
+	`category` text NOT NULL,
+	`sex` text NOT NULL,
+	`tier` text NOT NULL,
+	`division` integer NOT NULL,
+	`threshold` real NOT NULL,
+	`trust` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `run_standards_category_sex_tier_division_idx` ON `run_standards` (`category`,`sex`,`tier`,`division`);--> statement-breakpoint
 CREATE TABLE `runs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text DEFAULT '00000000-0000-4000-8000-000000000001' NOT NULL,
@@ -162,8 +243,11 @@ CREATE TABLE `runs` (
 	`avg_pace_s_per_km` real,
 	`avg_hr` real,
 	`elevation_gain_m` real,
+	`planned_route_id` text,
+	`plausibility_multiplier` real,
 	`client_id` text NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`planned_route_id`) REFERENCES `planned_routes`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `runs_user_client_idx` ON `runs` (`user_id`,`client_id`);--> statement-breakpoint
@@ -235,9 +319,9 @@ CREATE TABLE `users` (
 	`created_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `users_username_idx` ON `users` (`username`);--> statement-breakpoint
 INSERT INTO `users` (`id`, `username`, `name`, `role`, `created_at`) VALUES ('00000000-0000-4000-8000-000000000001', 'owner', 'Owner', 'owner', unixepoch('subsec') * 1000);
 --> statement-breakpoint
-CREATE UNIQUE INDEX `users_username_idx` ON `users` (`username`);--> statement-breakpoint
 CREATE TABLE `workout_exercises` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workout_id` text NOT NULL,

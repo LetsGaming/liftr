@@ -111,6 +111,24 @@
   --green: #37d67a;
   --pr: #ffd23f;
 
+  /* Semantic aliases over the raw palette above — components should reach for these, not
+     --red/--green/--fire directly, so a future "danger" use can't accidentally pick a
+     non-danger color. ionic-theme.css's --ion-color-danger/--ion-color-success already alias
+     the same raw colors; this extends that one semantic layer app-wide instead of introducing
+     a second, inconsistent one. No --info: --blue already serves that role generically and
+     nothing in this app uses a raw color specifically to mean "info". */
+  --success: var(--green);
+  --danger: var(--red);
+  --danger-lo: var(--red-lo);
+  --warning: var(--fire);
+  --warning-hi: var(--fire-hi);
+
+  /* The "hi-color -> base-color, 135deg" icon-fill convention was already independently repeated
+     across 6 files (onboarding hero icons, volume-bar fill, replay chrome, calendar fallback,
+     recovery-zone CTA, finish-sequence icon) — naming it here instead of leaving it un-tokenized. */
+  --icon-fill-blue: linear-gradient(135deg, var(--blue-hi), var(--blue));
+  --icon-fill-fire: linear-gradient(135deg, var(--fire-hi), var(--fire));
+
   /* Dark text for set-kind badges (.k-warmup/.k-failure/.k-dropset) sitting on their own bright
      fill (--fire/--red/--expert-3) — was copy-pasted three times (ArrangeStep.vue, SetKindPicker.vue,
      WorkoutPage.vue); one set of tokens here instead. */
@@ -462,6 +480,74 @@ textarea::placeholder {
 }
 .btn-close:active {
   transform: scale(0.9);
+}
+
+/* Square icon-only action button (edit/more/menu-trigger glyphs, via AppIcon) — was locally
+   redefined per-file at five different sizes (28/32/40/44/44px) with no shared source, so any
+   one of them (RouteList.vue's being the worst offender: only min-width/min-height were set,
+   no background/color/border-radius, so it fell through to the unstyled browser default). One
+   canonical square, sized at the touch-target floor like .btn-close; a call site that genuinely
+   needs a smaller inline glyph (e.g. next to running text) still declares its own scoped rule
+   rather than adding a modifier here, since those are a different shape problem (auto-width,
+   inline with text) than this square/grid button. Not named `.icon-btn` — WorkoutClock.vue
+   already scopes that exact name, and a global class of the same name could silently leak
+   background/border into it. */
+.btn-icon {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  flex: none;
+  display: grid;
+  place-items: center;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.btn-icon:active {
+  transform: scale(0.9);
+}
+.btn-icon.danger {
+  color: var(--red);
+}
+/* Same armed-confirm-tap treatment as .cancel-btn/.delete-run-btn/.rc-menu's own delete row —
+   there is no --danger token in this palette, it's --red/--red-lo. */
+.btn-icon.confirming {
+  background: var(--red-lo);
+  border-color: var(--red);
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Sub-level tablist pills (role="tablist"/role="tab") — promoted from ExerciseInfoPanel.vue,
+   the only place in the app that had both the correct a11y semantics (aria-selected etc., still
+   declared at the call site) and a visual shape distinct from TabSwitcher.vue's boxed,
+   equal-width .switcher/.switcher-pill (that one stays local/scoped to TabSwitcher.vue — it's
+   the reusable top-level/sub-tab switcher used by WorkoutPage.vue, RunsPage.vue and RanksPage.vue,
+   a different "level" of navigation than this). Borderless pills, not a boxed container; each
+   call site still supplies its own layout modifiers (e.g. flex:1 vs auto-width) as needed. */
+.tab-strip {
+  display: flex;
+  gap: var(--sp2);
+}
+.tab-pill {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab-pill.active {
+  background: var(--surface-3, var(--surface-2));
+  border-color: var(--line-2);
+  color: var(--text);
 }
 
 /* Primary/secondary action buttons — were locally redefined in 12 files with six different

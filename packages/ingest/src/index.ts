@@ -1,7 +1,7 @@
 /**
  * Ingest-once CLI: `pnpm ingest --all` / `--catalog` / `--images` / `--muscles` /
- * `--standards`. Run manually, never from the running server. Every step is idempotent — safe
- * to re-run after editing tools/catalog/curated.yaml.
+ * `--standards` / `--run-standards`. Run manually, never from the running server. Every step is
+ * idempotent — safe to re-run after editing tools/catalog/curated.yaml.
  */
 import { createDb } from "@liftr/db";
 import path from "node:path";
@@ -11,6 +11,7 @@ import { loadCatalog, ingestCatalog } from "./ingestCatalog.js";
 import { ingestImages } from "./ingestImages.js";
 import { ingestMuscleAssets } from "./ingestMuscleAssets.js";
 import { ingestStandards } from "./ingestStandards.js";
+import { ingestRunStandards } from "./ingestRunStandards.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../..");
@@ -38,6 +39,13 @@ async function main() {
       const entries = await loadCatalog(CATALOG_PATH);
       await ingestStandards(db, entries);
     }
+  }
+
+  if (all || args.has("--run-standards")) {
+    // no exercises-table dependency (run_standards isn't per-exercise), so this doesn't need to
+    // wait on --catalog the way --standards does.
+    console.log("== run standards ==");
+    await ingestRunStandards(db);
   }
 
   if (all || args.has("--images")) {

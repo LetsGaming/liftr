@@ -1,5 +1,6 @@
 /** Personal Records ledger, backed by /api/prs. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getPrs, type PrListItem } from "../services/prService";
 
 export const usePrStore = defineStore("prs", {
@@ -10,13 +11,11 @@ export const usePrStore = defineStore("prs", {
   }),
   actions: {
     async load() {
-      try {
-        this.prs = await getPrs();
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        this.error = true;
-      }
+      await withLoadState(getPrs, {
+        apply: (prs) => (this.prs = prs),
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
   },
 });

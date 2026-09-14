@@ -11,4 +11,14 @@ export const env = {
    *  is reachable beyond the reverse proxy's own trusted network to lock CORS down to known
    *  origins for real. */
   allowedOrigins: process.env.LIFTR_ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? null,
+  /** OpenRouteService: BYO API key for planned-route road-snapping + elevation. Unset is a fully
+   *  supported degraded state (straight-line distance, no elevation) — no production-throw like
+   *  LIFTR_TOKEN has, since self-hosting without this key is a legitimate, deliberate choice. */
+  orsApiKey: process.env.LIFTR_ORS_API_KEY,
+  orsBaseUrl: process.env.LIFTR_ORS_BASE_URL ?? "https://api.openrouteservice.org",
+  orsProfile: process.env.LIFTR_ORS_PROFILE ?? "foot-walking",
+  /** Off by default: full per-request pino logging is muted (errors/warnings — 4xx/5xx responses
+   *  — still log) so routine dev/seed runs don't bloat the log file with a line per request. Set
+   *  to "1" for full request-level logging when actually debugging server behavior. */
+  verboseLogging: process.env.LIFTR_LOG_VERBOSE === "1",
 };

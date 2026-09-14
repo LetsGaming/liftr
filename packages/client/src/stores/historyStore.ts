@@ -4,6 +4,7 @@
  * last time you had signal," which is fine: history is a review surface, not the logging loop.
  */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getHistoryPage, type HistoryItem } from "../services/historyService";
 import { deleteWorkout as deleteWorkoutOnServer, getWorkout, type WorkoutDetail } from "../services/workoutService";
 
@@ -23,15 +24,14 @@ export const useHistoryStore = defineStore("history", {
   }),
   actions: {
     async load() {
-      try {
-        const { items, nextCursor } = await getHistoryPage();
-        this.items = items;
-        this.nextCursor = nextCursor;
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        this.error = true;
-      }
+      await withLoadState(getHistoryPage, {
+        apply: ({ items, nextCursor }) => {
+          this.items = items;
+          this.nextCursor = nextCursor;
+        },
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
 
     /** Was fetched and silently discarded before — history was permanently capped at 20 rows. */

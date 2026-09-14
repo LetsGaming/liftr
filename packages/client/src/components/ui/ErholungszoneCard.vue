@@ -26,18 +26,16 @@ const verdict = computed(() => {
 </script>
 
 <template>
-  <!-- This is the first dashboard section — without a placeholder, everything below jumps down
-       when /api/readiness resolves. Shaped like the real content instead of a flat rectangle,
-       using the same shimmer technique as WorkoutPage.vue's rank skeleton. -->
   <section v-if="loaded" class="erholungszone surface-hybrid">
     <div class="eyebrow ez-eyebrow">Erholungszone</div>
     <MuscleFigure :heat="heat" />
+    <div class="ez-legend">
+      <span><i class="warm" />Weniger erholt</span>
+      <span><i class="cool" />Mehr erholt</span>
+    </div>
     <div class="ez-status">
       <span class="ez-pill">DEIN STATUS</span>
       <p>{{ verdict }}</p>
-      <!-- Hides this CTA until there's a routine to start — the launchpad card below already
-           owns the "no routine yet" empty state, so a no-op button here would duplicate that
-           guidance instead of routing anywhere. -->
       <button v-if="canStart" class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
     </div>
   </section>
@@ -62,7 +60,31 @@ const verdict = computed(() => {
   gap: var(--sp4);
 }
 .ez-eyebrow {
-  --eyebrow-color: var(--fire-hi);
+  --eyebrow-color: var(--warning-hi);
+}
+/* Explains MuscleFigure's heat-mode coloring (warm/fatigue = fc0000-derived orange asset,
+   cool/main = the app's blue asset — see ingestMuscleAssets.ts's FATIGUE_COLOR/PRIMARY_TO)
+   so the figure isn't just decorative color a reader has to guess the meaning of. */
+.ez-legend {
+  display: flex;
+  gap: var(--sp4);
+  justify-content: center;
+  font-size: 11px;
+  color: var(--dim);
+}
+.ez-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+.ez-legend .warm {
+  background: var(--icon-fill-fire);
+}
+.ez-legend .cool {
+  background: var(--icon-fill-blue);
 }
 .ez-status {
   display: flex;
@@ -71,7 +93,7 @@ const verdict = computed(() => {
 }
 .ez-pill {
   align-self: flex-start;
-  background: linear-gradient(135deg, var(--fire-hi), var(--fire));
+  background: var(--icon-fill-fire);
   color: var(--k-warmup-text);
   font-size: 11px;
   font-weight: 800;

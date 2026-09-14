@@ -28,6 +28,33 @@ export function haversineM(a: { lat: number; lon: number }, b: { lat: number; lo
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
 
+/** Sum of haversineM over consecutive waypoints — the straight-line distance through an ordered
+ *  point list. Used both as the server-side fallback when ORS is unavailable, and client-side for
+ *  an instant provisional distance while the user is still placing waypoints on the map. */
+export function pathDistanceM(points: { lat: number; lon: number }[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    total += haversineM(points[i - 1]!, points[i]!);
+  }
+  return total;
+}
+
+/** Same positive-delta-sum rule already inlined in summarizeRun, extracted since a planned route
+ *  has no timestamps and so can't reuse summarizeRun directly. Returns null when no point in the
+ *  array carries elevation at all (same "unknown, not zero" convention summarizeRun uses). */
+export function elevationGainFrom(points: { ele?: number | null }[]): number | null {
+  if (!points.some((p) => p.ele != null)) return null;
+  let gain = 0;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1]!.ele;
+    const cur = points[i]!.ele;
+    if (prev != null && cur != null && cur > prev) {
+      gain += cur - prev;
+    }
+  }
+  return gain;
+}
+
 /** Implausible for a run — points faster than this are dropped as GPS jitter/error. */
 export const MAX_PLAUSIBLE_SPEED_M_S = 8;
 

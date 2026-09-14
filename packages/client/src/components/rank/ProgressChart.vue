@@ -77,9 +77,7 @@ const trendLabel = computed(() => {
 <template>
   <div class="progress-chart">
     <svg v-if="series.length >= 2" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" class="spark" role="img" :aria-label="trendLabel!">
-      <!-- Use --dim, not --faint, for a downward trend: it's still real data, just not the
-           "good" color, and --faint would read as barely-there. -->
-      <polyline :points="points" fill="none" :stroke="trendUp ? 'var(--green)' : 'var(--dim)'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline :points="points" fill="none" :stroke="trendUp ? 'var(--success)' : 'var(--dim)'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
     <p v-else class="empty">Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve.</p>
     <div v-if="latest != null" class="latest tnum">

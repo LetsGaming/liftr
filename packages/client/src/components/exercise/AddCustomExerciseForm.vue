@@ -239,7 +239,7 @@ async function save() {
   font-weight: 800;
 }
 .error-msg {
-  color: var(--red);
+  color: var(--danger);
   font-size: 12.5px;
 }
 .actions {

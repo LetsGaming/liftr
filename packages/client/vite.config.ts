@@ -5,7 +5,8 @@ import { VitePWA } from "vite-plugin-pwa";
 // Client shell (plan 1.2): Vue 3 PWA, offline-first (plan 1.3). The service worker precaches
 // the app shell; catalog + images use CacheFirst; API GETs use StaleWhileRevalidate, so the
 // core logging loop keeps working with no signal (audit's "gym basement" requirement).
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  resolve: command === "serve" ? { conditions: ["development"] } : undefined,
   plugins: [
     vue(),
     VitePWA({
@@ -27,6 +28,19 @@ export default defineConfig({
             urlPattern: /\/api\//,
             handler: "StaleWhileRevalidate",
             options: { cacheName: "liftr-api" },
+          },
+          // OSM route/run map tiles (RunMap.vue, RouteMapEditor.vue, RouteThumbnail.vue) were
+          // entirely uncached before this — every mount re-fetched every tile from
+          // tile.openstreetmap.org, with no offline story at all. Cross-origin, so the pattern
+          // matches the full URL rather than just a path.
+          {
+            urlPattern: /^https:\/\/tile\.openstreetmap\.org\//,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "osm-tiles",
+              expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 3600 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
           },
         ],
       },
@@ -75,8 +89,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:3001",
-      "/images": "http://localhost:3001",
+      // BACKEND_PORT lets an isolated dev session (scripts/dev-up.mjs --id <name>) point this
+      // client at its own dynamically-allocated backend instead of the default :3001 — unset in
+      // the normal `pnpm dev` flow, where it keeps defaulting to 3001 exactly as before.
+      "/api": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,
+      "/images": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,
     },
   },
-});
+}));

@@ -264,6 +264,95 @@ Response `200`:
 
 ---
 
+## Planned Routes (`plannedRoutes.ts`)
+
+Source: [`packages/server/src/routes/plannedRoutes.ts`](../../packages/server/src/routes/plannedRoutes.ts) ·
+Tests: [`tests/server/routes/plannedRoutes.test.ts`](../../tests/server/routes/plannedRoutes.test.ts)
+
+Wegpunkte (waypoints) placed on a map, resolved into a real geometry (road-snapped distance +
+elevation via OpenRouteService, or a straight-line fallback) that a run can later be started
+against or manually linked to via `plannedRouteId` (see [Runs](#runs-runsts) below). See
+[environment-variables.md](./environment-variables.md) for `LIFTR_ORS_API_KEY` and friends, and
+[ADR 0007](../adr/0007-openrouteservice-external-routing-exception.md) for why this feature calls
+an external service at all.
+
+Common shapes:
+```ts
+type Waypoint = { lat: number; lon: number };
+
+// plannedRouteResponse
+{
+  id: string;
+  name: string;
+  orderIndex: number;
+  waypoints: Waypoint[];
+  distanceM: number;
+  elevationGainM: number | null;
+  geometrySource: "ors" | "straight";  // which path computed distanceM/elevationGainM
+  computedAt: Date;
+  createdAt: Date;
+}
+
+// routePointResponse — one resolved point of the (possibly road-snapped) route line
+{ idx: number; lat: number; lon: number; ele: number | null }
+```
+
+### `GET /api/planned-routes`
+Lists active (non-archived) planned routes. No geometry — `waypoints` only, not the resolved
+`points` — for a lightweight list view.
+
+Response `200`: `Array<plannedRouteResponse>`
+
+### `GET /api/planned-routes/:id`
+Full detail including the resolved route line.
+
+Params: `{ id: string }`
+
+Response `200`: `plannedRouteResponse & { points: routePointResponse[] }` · `404` if the route
+doesn't exist or belongs to another user.
+
+### `POST /api/planned-routes/preview`
+Computes geometry for a waypoint set **without persisting anything** — no id is created or
+returned. Runs through the exact same `computeGeometry` path as create/update, so what the map
+shows while editing can't drift from what gets saved. Used to render the live snapped line as the
+user places waypoints.
+
+Request body: `{ waypoints: Waypoint[] }` (2-50 points)
+
+Response `200`: `{ points: routePointResponse[]; distanceM: number; elevationGainM: number | null; geometrySource: "ors" | "straight" }`
+
+### `POST /api/planned-routes`
+Creates a route: resolves geometry from `waypoints` (ORS if `LIFTR_ORS_API_KEY` is set and
+reachable, straight-line fallback otherwise) and persists it.
+
+Request body:
+```ts
+{ name: string; orderIndex?: number; waypoints: Waypoint[] } // waypoints: 2-50 points, default orderIndex 0
+```
+
+Response `201`: `plannedRouteResponse & { points: routePointResponse[] }`
+
+### `PATCH /api/planned-routes/:id`
+Partial update. Geometry is only recomputed (re-calling ORS/straight-line and rewriting the stored
+points) when `waypoints` is present in the body — renaming a route or reordering it doesn't trigger
+a wasted recompute/network call.
+
+Params: `{ id: string }` · Body:
+```ts
+{ name?: string; orderIndex?: number; waypoints?: Waypoint[] } // waypoints: 2-50 points if present
+```
+
+Response `200`: `{ ok: true }` · `404` if the route doesn't exist or belongs to another user.
+
+### `DELETE /api/planned-routes/:id`
+Soft archive — same pattern as routines (`DELETE /api/routines/:id`), not a hard delete, so a run
+already linked via `plannedRouteId` keeps a valid reference.
+
+Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404` if the route doesn't exist or
+belongs to another user.
+
+---
+
 ## PRs (`prs.ts`)
 
 Source: [`packages/server/src/routes/prs.ts`](../../packages/server/src/routes/prs.ts) ·
@@ -454,6 +543,86 @@ Response `200` (no explicit schema): `{ exercises: [...] }` — shape produced b
 
 ---
 
+## Run overall rank (`runOverallRank.ts`)
+
+Source: [`packages/server/src/routes/runOverallRank.ts`](../../packages/server/src/routes/runOverallRank.ts)
+
+The running analog of [Overall rank](#overall-rank-overallrankts) above — see
+[rank-engine.md](../concepts/rank-engine.md#running-ranks) for why this is a genuinely separate
+aggregate from Overall Lifter Rank rather than folded into it.
+
+### `GET /api/runs/overall-rank`
+Account-level "how good a runner am I overall" aggregate. Thin schema wrapper — aggregation logic
+lives in `services/overallRunnerRankService.ts`, which reuses the exact same
+`computeOverallRank`/`computeOverallPeak` math as the strength version, just averaged over
+`runRanks` (one row per category) instead of `ranks` (one row per exercise).
+
+Response `200`:
+```ts
+{
+  current: { tier: Tier; division: number; lp: number } | null;
+  peak:    { tier: Tier; division: number; lp: number } | null;
+}
+```
+
+---
+
+## Run PRs (`runPrs.ts`)
+
+Source: [`packages/server/src/routes/runPrs.ts`](../../packages/server/src/routes/runPrs.ts)
+
+The running analog of [PRs](#prs-prsts) above. Unlike `prs.ts`, no service layer/join is needed —
+`run_prs` carries `category` directly (no exercise table to join to), so this route reads straight
+off the repository.
+
+### `GET /api/runs/prs`
+Running Personal Records ledger.
+
+Response `200`:
+```ts
+Array<{
+  id: string;
+  category: RunCategory;   // "mile" | "5k" | "10k" | "half_marathon" | "marathon"
+  kind: "time" | "speed";
+  value: number;           // seconds for kind "time", m/s for kind "speed"
+  runId: string;           // links back to the run that set this PR
+  achievedAt: string;
+}>
+```
+
+---
+
+## Run ranks (`runRanks.ts`)
+
+Source: [`packages/server/src/routes/runRanks.ts`](../../packages/server/src/routes/runRanks.ts)
+
+The running analog of [Ranks](#ranks-ranksts) above — see
+[rank-engine.md](../concepts/rank-engine.md#running-ranks) for the five categories, the
+Riegel-adjustment step, and why manual runs never appear here (rank recompute only ever runs for
+GPS-tracked runs).
+
+### `GET /api/runs/ranks`
+Every running category with a computed rank, sorted by `lp` descending.
+
+Response `200`:
+```ts
+Array<{
+  category: RunCategory;          // "mile" | "5k" | "10k" | "half_marathon" | "marathon"
+  tier: Tier;
+  division: number;
+  lp: number;
+  bestSpeedMps: number | null;    // Riegel-adjusted best speed, m/s
+  trust: "real" | "derived" | "synthetic" | null;
+  nextTargetSpeedMps: number | null;
+  // Peak snapshot — null only for a row never recomputed since peak tracking was added; a normal
+  // row always has both set together. Mirrors `routes/ranks.ts`'s own peakTier/peakDivision.
+  peakTier: Tier | null;
+  peakDivision: number | null;
+}>
+```
+
+---
+
 ## Runs (`runs.ts`)
 
 Source: [`packages/server/src/routes/runs.ts`](../../packages/server/src/routes/runs.ts) ·
@@ -527,9 +696,12 @@ Request body:
 Response `200` (not 201 — this is an idempotent upsert): `runResponse`.
 
 ### `DELETE /api/runs/:id`
-Cascades to `run_points` via FK. Runs don't feed XP/LP (only logged sets do), so unlike workout
-deletion there's no rank recompute here. Deliberately leaves that date's streak credit alone even
-if this was the day's only run.
+Cascades to `run_points` via FK. GPS-tracked runs *do* feed rank now (see
+[Run ranks](#run-ranks-runranksts) above), but deletion still doesn't trigger a live recompute here
+— `runRanks`/`runPrs` are derived caches of the *current* best, not an append-only ledger that
+needs pruning, same reasoning as workout deletion not retroactively undoing past rank state. The
+next rank-eligible run logged in that category recomputes from whatever history remains.
+Deliberately leaves that date's streak credit alone even if this was the day's only run.
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404` if the run doesn't exist.
 
@@ -540,13 +712,17 @@ Request body:
 ```ts
 {
   name?: string | null;
-  startedAt: Date;         // coerced
-  distanceM: number;        // positive
-  durationS: number;        // positive
+  startedAt: Date;               // coerced
+  distanceM: number;              // positive
+  durationS: number;              // positive
+  plannedRouteId?: string | null; // links this run back to a planned route (see Planned Routes below)
+  elevationGainM?: number | null; // manual entry has no GPS track to derive this from, so it's taken as-is
 }
 ```
 
-Response `201`: `runResponse` with `source: "manual"`.
+Response `201`: `runResponse` with `source: "manual"`. Note `runResponse` itself (shared by every
+`/api/runs*` endpoint) also carries `plannedRouteId: string | null` — set here, always `null` for
+GPX/FIT/Health Connect imports.
 
 ---
 
@@ -555,8 +731,10 @@ Response `201`: `runResponse` with `source: "manual"`.
 Source: [`packages/server/src/routes/settings.ts`](../../packages/server/src/routes/settings.ts) ·
 Tests: [`tests/server/routes/settings.test.ts`](../../tests/server/routes/settings.test.ts)
 
-Single-user app — every setting here is one k/v row (`readJsonSetting`/`writeJsonSetting`), not
-per-account data. `null` distinguishes "never configured" from "configured to an empty value."
+Every setting here is one k/v row (`readJsonSetting`/`writeJsonSetting`), scoped by `user_id`
+alongside the key — resolves to a single owner identity today (see the Auth section above), but
+already per-user underneath. `null` distinguishes "never configured" from "configured to an empty
+value."
 
 ### `GET /api/settings/profile` / `PUT /api/settings/profile`
 Onboarding profile: sex, birth year, experience level, workouts/week.
@@ -736,6 +914,8 @@ Params: `{ id: string }` · Body:
 
 Response `200`: `{ ok: true }`
 
+Notable statuses: `404` if the workout doesn't exist or belongs to another user.
+
 ### `GET /api/workouts/:id`
 Full detail for the history detail view and share cards.
 
@@ -761,7 +941,10 @@ Source: [`packages/server/src/routes/xp.ts`](../../packages/server/src/routes/xp
 Tests: [`tests/server/routes/xp.test.ts`](../../tests/server/routes/xp.test.ts)
 
 ### `GET /api/xp`
-Total XP across every logged non-warmup set + the resulting level.
+Total XP across every logged non-warmup set + every logged run + the two session-level bonuses +
+the resulting level. Strength and running XP converge into this one global total/level — see
+[xp-and-streaks.md](../concepts/xp-and-streaks.md#one-level-two-disciplines). Aggregation lives in
+`services/xpService.ts`'s `getXpSummary`.
 
 Response `200`:
 ```ts

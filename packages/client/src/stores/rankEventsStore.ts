@@ -1,6 +1,7 @@
 /** Rank-ups by weekday, backed by /api/rank-events. Feeds the Ränge page's "Rangaufstiege"
  *  calendar strip. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getRankEvents, type RankEventsByWeekday } from "../services/rankEventsService";
 
 export const useRankEventsStore = defineStore("rankEvents", {
@@ -10,12 +11,11 @@ export const useRankEventsStore = defineStore("rankEvents", {
   }),
   actions: {
     async load() {
-      try {
-        this.byWeekday = await getRankEvents();
-        this.loaded = true;
-      } catch {
-        // offline with nothing cached yet — the strip just doesn't render
-      }
+      // offline with nothing cached yet — the strip just doesn't render
+      await withLoadState(getRankEvents, {
+        apply: (byWeekday) => (this.byWeekday = byWeekday),
+        setLoaded: (v) => (this.loaded = v),
+      });
     },
   },
 });

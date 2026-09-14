@@ -21,6 +21,12 @@ const props = withDefaults(
     lp: number;
     nextTargetWeightKg?: number | null;
     nextTargetReps?: number | null;
+    /** Pre-formatted override for the "next target" line, for callers whose target isn't a
+     *  weight×reps pair (e.g. RanksPage.vue's running rows, where the next target is a pace).
+     *  Takes precedence over nextTargetWeightKg/nextTargetReps when set — this keeps the
+     *  weight/reps formatting (and its "???" fallback) as the strength-specific default while
+     *  letting a caller opt into fully custom wording instead of forking this component. */
+    nextTargetLabel?: string | null;
     trust?: "real" | "derived" | "synthetic";
     /** "card" — badge left, stacked text right (Ränge grid). "inline" — compact single row
      *  for the active-workout focus column, where vertical space is scarce. */
@@ -43,6 +49,7 @@ const props = withDefaults(
   {
     nextTargetWeightKg: null,
     nextTargetReps: null,
+    nextTargetLabel: null,
     trust: "real",
     variant: "card",
     peakTier: null,
@@ -72,6 +79,7 @@ const trustLabel = computed(() => {
 });
 
 const nextLabel = computed(() => {
+  if (props.nextTargetLabel != null) return props.nextTargetLabel;
   // Both targets null means the top of the currently-modeled standards has been reached —
   // "???" invites "what's next?" instead of flatly stating there's nothing left, which reads as
   // a dead end. A real next target still renders normally below.
@@ -92,7 +100,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 </script>
 
 <template>
-  <div class="rank-progress" :class="[`t-${tier}`, variant, { 'panel-reward': variant === 'inline' }]">
+  <div class="rank-progress" :class="[`t-${tier}`, `variant-${variant}`, { 'panel-reward': variant === 'inline' }]">
     <span class="badge" :class="`t-${tier}`">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="TIER_BADGE_PATH[tier as RankTier]" /></svg>
     </span>
@@ -173,7 +181,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 .rp-decay {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
 }
 .rp-trust {
   font-size: 11px;
@@ -191,25 +199,30 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-style: italic;
 }
 
-/* card variant (Ränge grid) — larger badge, text can be white-on-gradient since the parent
-   rank-card paints a full tier gradient behind it. */
-.rank-progress.card .badge {
+/* card variant (Ränge grid, ExerciseInfoPanel's Rang tab) — larger badge, text can be
+   white-on-gradient since the parent .rank-tier-frame (styles/rank-card.css) paints a full tier
+   gradient behind it. Prefixed `variant-` (not a bare `card`/`inline` class matching the `variant`
+   prop) so this component's own root class can never collide with an unrelated global class of
+   the same name — it did, once list-card.css's own `.card` became this component's typical
+   container (RankLifterSection.vue/RankRunnerSection.vue), matching a descendant selector meant
+   for the grid's own cards. */
+.rank-progress.variant-card .badge {
   width: 46px;
   height: 52px;
 }
-.rank-progress.card .rp-tier {
+.rank-progress.variant-card .rp-tier {
   font-size: 12px;
 }
-/* Sits on the .card variant's parent tier-gradient card, where --dim doesn't clear AA contrast —
-   uses the brighter --text token instead. RanksPage.vue's .rank-card pins --text to a
-   light-on-dark value (mirroring tokens.css's .panel-reward), so referencing the token here
-   tracks theme changes automatically instead of hardcoding a literal. */
-.rank-progress.card .rp-lp,
-.rank-progress.card .rp-next,
-.rank-progress.card .rp-trust {
+/* Sits on the card variant's parent tier-gradient plaque, where --dim doesn't clear AA contrast —
+   uses the brighter --text token instead. `.rank-tier-frame` pins --text to a light-on-dark value
+   (mirroring tokens.css's .panel-reward), so referencing the token here tracks theme changes
+   automatically instead of hardcoding a literal. */
+.rank-progress.variant-card .rp-lp,
+.rank-progress.variant-card .rp-next,
+.rank-progress.variant-card .rp-trust {
   color: var(--text);
 }
-.rank-progress.card .trust-marker {
+.rank-progress.variant-card .trust-marker {
   color: var(--dim);
 }
 
@@ -217,12 +230,12 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
    app's normal dark surface rather than a tier gradient, so text uses the standard tokens
    rather than --tt. Uses .panel-reward (tokens.css), not the flat .panel recipe, since this is
    the one progress readout visible for most of a session. */
-.rank-progress.inline {
+.rank-progress.variant-inline {
   border-radius: var(--r-lg);
   padding: var(--sp3) var(--sp4);
 }
-.rank-progress.inline .rp-tier,
-.rank-progress.inline .rp-lp {
+.rank-progress.variant-inline .rp-tier,
+.rank-progress.variant-inline .rp-lp {
   color: var(--dim);
 }
 </style>

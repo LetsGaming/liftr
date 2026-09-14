@@ -1,5 +1,6 @@
 /** Bodyweight log, used in place of the rank engine's hardcoded 75kg fallback. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getBodyweightLogs, logBodyweight, type BodyweightEntry } from "../services/bodyweightService";
 
 export type { BodyweightEntry };
@@ -15,15 +16,11 @@ export const useBodyweightStore = defineStore("bodyweight", {
   },
   actions: {
     async load() {
-      try {
-        this.entries = await getBodyweightLogs();
-        this.loaded = true;
-        this.error = false;
-      } catch {
-        // See xpStore.ts's load() for why `error` exists — OverviewPage's stalled-load banner
-        // needs to tell "still fetching" from "failed" apart.
-        this.error = true;
-      }
+      await withLoadState(getBodyweightLogs, {
+        apply: (entries) => (this.entries = entries),
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
     async log(weightKg: number) {
       const date = new Date().toISOString().slice(0, 10);

@@ -1,0 +1,212 @@
+<script setup lang="ts">
+/**
+ * Active-run screen for phone-GPS live tracking (useLiveRun.ts) — the live-tracking counterpart
+ * to RunsPage.vue's manual-entry form. Opened from RunsPage.vue when the user picks "Live
+ * tracken" (either freeform or off a planned route's quick-start hand-off); finishing here
+ * submits straight to runsStore.submitLiveRun instead of the manual form.
+ */
+import { computed, onMounted, ref } from "vue";
+import SheetModal from "../ui/SheetModal.vue";
+import AppIcon from "../ui/AppIcon.vue";
+import LiveRunMap from "./LiveRunMap.vue";
+import { useLiveRun } from "../../composables/useLiveRun";
+import { useConfirmTap } from "../../composables/useConfirmTap";
+import { useRunsStore } from "../../stores/runsStore";
+import { useToast } from "../../composables/useToast";
+import type { PlannedRoute } from "../../services/plannedRouteService";
+import type { RunSummary } from "../../services/runService";
+
+const props = defineProps<{
+  route?: PlannedRoute | null;
+  initialCenter?: { lat: number; lon: number };
+}>();
+const emit = defineEmits<{ finished: [run: RunSummary]; close: [] }>();
+
+const runsStore = useRunsStore();
+const { toast } = useToast();
+const live = useLiveRun();
+const closeConfirm = useConfirmTap(() => {
+  void live.discard();
+  emit("close");
+});
+
+onMounted(() => {
+  void live.start();
+});
+
+function requestClose() {
+  // Tracking hasn't produced anything worth losing yet, or it's already finished — just leave.
+  if (live.status.value === "idle" || live.status.value === "finished" || live.points.value.length === 0) {
+    void live.discard();
+    emit("close");
+    return;
+  }
+  closeConfirm.trigger();
+}
+
+// SheetModal's own native dismiss (backdrop tap, swipe, hardware back) can't be intercepted with
+// a confirm-tap the way the header's own close button can — same limitation RouteWizard.vue's
+// `@close="emit('close')"` already accepts for its own SheetModal. Cleanup still has to run
+// either way, so this at least guarantees the GPS watch is cleared before the component
+// unmounts, even though this path skips the "are you sure" step the header button gets.
+function handleNativeClose() {
+  void live.discard();
+  emit("close");
+}
+
+const submitting = ref(false);
+async function finishRun() {
+  const result = await live.finish();
+  if (result.points.length === 0) {
+    // Nothing was ever recorded (e.g. GPS never got a fix) — nothing to submit, just leave.
+    emit("close");
+    return;
+  }
+  submitting.value = true;
+  try {
+    const run = await runsStore.submitLiveRun({
+      clientId: crypto.randomUUID(),
+      name: props.route?.name ?? null,
+      points: result.points,
+    });
+    toast("Lauf gespeichert.");
+    emit("finished", run);
+  } catch {
+    toast("Speichern fehlgeschlagen — der Lauf bleibt auf diesem Gerät, bis du es erneut versuchst.");
+  } finally {
+    submitting.value = false;
+  }
+}
+
+function fmtDuration(s: number) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+    : `${m}:${String(sec).padStart(2, "0")}`;
+}
+function fmtPace(sPerKm: number | null) {
+  if (sPerKm == null) return "–";
+  const s = Math.round(sPerKm);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
+}
+
+const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
+</script>
+
+<template>
+  <SheetModal :sheet="false" background="var(--bg)" @close="handleNativeClose">
+    <template #header>
+      <header class="live-head">
+        <div class="live-head-title">
+          <b>{{ route ? route.name : "Freier Lauf" }}</b>
+          <span v-if="live.status.value === 'paused'" class="status-chip">Pausiert</span>
+        </div>
+        <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" @click="requestClose">
+          <template v-if="closeConfirm.isArmed()">Wirklich verwerfen?</template>
+          <template v-else><AppIcon name="close" /></template>
+        </button>
+      </header>
+    </template>
+
+    <p v-if="live.error.value" class="gps-error">{{ live.error.value }}</p>
+
+    <LiveRunMap class="live-map" :points="live.points.value" :initial-center="initialCenter" />
+
+    <div class="hud">
+      <div class="hud-stat">
+        <span class="eyebrow">Distanz</span>
+        <b class="tnum">{{ distanceKm }} km</b>
+      </div>
+      <div class="hud-stat">
+        <span class="eyebrow">Zeit</span>
+        <b class="tnum">{{ fmtDuration(live.elapsedS.value) }}</b>
+      </div>
+      <div class="hud-stat">
+        <span class="eyebrow">Tempo</span>
+        <b class="tnum">{{ fmtPace(live.paceSPerKm.value) }}</b>
+      </div>
+    </div>
+
+    <footer class="live-foot">
+      <button
+        v-if="live.status.value === 'tracking'"
+        class="btn-secondary btn-block"
+        @click="live.pause()"
+      >
+        <AppIcon name="pause" /> Pause
+      </button>
+      <button
+        v-else-if="live.status.value === 'paused'"
+        class="btn-secondary btn-block"
+        @click="live.resume()"
+      >
+        <AppIcon name="play" /> Weiter
+      </button>
+      <button
+        class="btn-primary btn-block"
+        :disabled="submitting || live.status.value === 'idle'"
+        @click="finishRun"
+      >
+        <template v-if="submitting">Speichert…</template>
+        <template v-else>Lauf beenden</template>
+      </button>
+    </footer>
+  </SheetModal>
+</template>
+
+<style scoped>
+.live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp3);
+  padding: 10px 12px;
+}
+.live-head-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+}
+.status-chip {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--dim);
+}
+.gps-error {
+  margin: 0 12px;
+  padding: var(--sp3);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 13px;
+}
+.live-map {
+  flex: 1;
+  min-height: 0;
+}
+.hud {
+  display: flex;
+  justify-content: space-around;
+  padding: var(--sp4);
+  gap: var(--sp3);
+}
+.hud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.hud-stat b {
+  font-size: 1.4rem;
+}
+.live-foot {
+  display: flex;
+  gap: var(--sp3);
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+</style>

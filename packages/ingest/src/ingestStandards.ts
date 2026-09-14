@@ -46,6 +46,8 @@ function resolveThresholds(entry: CatalogEntry, sex: Sex): StandardThreshold[] |
 export async function ingestStandards(db: LiftrDb, entries: CatalogEntry[]) {
   let written = 0;
 
+  const exerciseBySlug = new Map((await db.select().from(exercises)).map((e) => [e.slug, e]));
+
   for (const entry of entries) {
     const bySex = new Map<Sex, StandardThreshold[]>();
     for (const sex of SEXES) {
@@ -57,7 +59,7 @@ export async function ingestStandards(db: LiftrDb, entries: CatalogEntry[]) {
       continue;
     }
 
-    const exercise = await db.query.exercises.findFirst({ where: eq(exercises.slug, entry.slug) });
+    const exercise = exerciseBySlug.get(entry.slug);
     if (!exercise) {
       console.warn(`  ! "${entry.slug}" not found in exercises table — run --catalog first`);
       continue;

@@ -23,6 +23,8 @@ const manualRunInput = z.object({
   startedAt: z.coerce.date(),
   distanceM: z.number().positive(),
   durationS: z.number().positive(),
+  plannedRouteId: z.string().nullable().optional(),
+  elevationGainM: z.number().nullable().optional(),
 });
 
 // Health Connect import: the client (capacitor-health's queryWorkouts, called
@@ -59,6 +61,7 @@ const runResponse = z.object({
   avgPaceSPerKm: z.number().nullable(),
   avgHr: z.number().nullable(),
   elevationGainM: z.number().nullable(),
+  plannedRouteId: z.string().nullable(),
   clientId: z.string(),
 });
 
@@ -123,8 +126,12 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
 
   /**
    * DELETE /api/runs/:id. Cascades to run_points via FK (`PRAGMA foreign_keys = ON`,
-   * db/src/client.ts). Runs don't feed XP/LP — only logged sets do (see services/rankService.ts
-   * / routes/xp.ts) — so unlike workout deletion there's no rank recompute needed here.
+   * db/src/client.ts). Runs *do* feed rank now (see services/runRankService.ts's
+   * `recomputeRunRank`, wired in via runImportService.ts's `persistRun`) — but deleting one still
+   * doesn't need a live recompute here, unlike logging one: `runRanks`/`runPrs` are caches of the
+   * *current* best derived from the surviving history, not an append-only ledger that needs
+   * pruning on delete (same reasoning as workout deletion not retroactively undoing past rank
+   * state). The next run logged in that category recomputes from whatever history remains.
    * Deliberately leaves that date's streak credit alone even if this was the day's only run: the
    * streak's own math (streak.ts) is a simple "was there activity on this date" walk with no
    * per-source undo, so removing a run doesn't retroactively revoke the streak credit it earned.
@@ -147,6 +154,8 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
       startedAt: req.body.startedAt,
       distanceM: req.body.distanceM,
       durationS: req.body.durationS,
+      plannedRouteId: req.body.plannedRouteId ?? null,
+      elevationGainM: req.body.elevationGainM ?? null,
     });
     reply.code(201);
     return run;

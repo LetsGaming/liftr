@@ -8,29 +8,43 @@
  * ToastHost.vue. Deliberately a tiny corner dot/badge, not a banner or toast: it must never
  * block or cover tappable content.
  *
- * Three states:
+ * Four states:
  *  - idle:    pendingCount === 0 && !flushing -> a small, quickly-fading checkmark dot.
  *  - queued:  pendingCount > 0 && !flushing   -> a small count badge (no animation — nothing
  *             is happening right now, just "N queued").
  *  - syncing: flushing === true                -> pulsing via the existing .shimmer utility
  *             (styles/motion.css), reusing the same technique as WorkoutPage.vue's
  *             .rank-skeleton.shimmer instead of adding a new keyframe.
+ *  - error:   lastError set && pendingCount > 0 -> a red dot. Before this, `lastError` was
+ *             tracked in syncStore but never rendered anywhere, so a stuck flush (offline for
+ *             a while, or a server rejecting the batch) looked identical to "idle" — the
+ *             indicator appeared to "do nothing" because the one state a user actually needs to
+ *             notice was invisible. Not shown once the queue drains even if `lastError` is
+ *             still set from a prior failed attempt — nothing is actually wrong anymore then.
  */
 import { computed } from "vue";
 import { useSyncStore } from "../../stores/syncStore";
 
 const sync = useSyncStore();
 
-const state = computed<"idle" | "queued" | "syncing">(() => {
+const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
   if (sync.flushing) return "syncing";
+  if (sync.pendingCount > 0 && sync.lastError) return "error";
   if (sync.pendingCount > 0) return "queued";
   return "idle";
 });
 </script>
 
 <template>
-  <div class="sync-indicator" :class="`is-${state}`" :data-sync-state="state" aria-hidden="true">
+  <div
+    class="sync-indicator"
+    :class="`is-${state}`"
+    :data-sync-state="state"
+    :aria-hidden="state !== 'error'"
+    :title="state === 'error' ? `Synchronisierung fehlgeschlagen: ${sync.lastError}` : undefined"
+  >
     <span v-if="state === 'syncing'" class="sync-dot sync-dot-syncing shimmer" />
+    <span v-else-if="state === 'error'" class="sync-badge sync-badge-error">{{ sync.pendingCount }}</span>
     <span v-else-if="state === 'queued'" class="sync-badge">{{ sync.pendingCount }}</span>
     <span v-else class="sync-dot sync-dot-idle" />
   </div>
@@ -82,5 +96,11 @@ const state = computed<"idle" | "queued" | "syncing">(() => {
   font-weight: 800;
   line-height: 14px;
   text-align: center;
+}
+.sync-badge-error {
+  background: var(--danger-lo);
+  border-color: var(--danger);
+  color: var(--danger);
+  pointer-events: auto;
 }
 </style>

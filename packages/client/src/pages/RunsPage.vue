@@ -1,54 +1,78 @@
 <script setup lang="ts">
-// Läufe: GPX import, route map, and run replay built on the stored run_points array — the
-// whole point of keeping the full trackpoint array.
+// Läufe: mirrors WorkoutPage.vue's flat "start" flow — no sub-tabs, saved routes (RouteList) are
+// the page's primary content, same as saved routines are Workout's. Individual-run browsing
+// (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here — that's
+// where Workout's own finished-session history lives too, so neither tab duplicates it locally.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { onMounted, ref } from "vue";
-import RunReplay from "../components/run/RunReplay.vue";
-import AppIcon from "../components/ui/AppIcon.vue";
-import StatTile from "../components/ui/StatTile.vue";
-import WorkoutRunsSwitcher from "../components/ui/WorkoutRunsSwitcher.vue";
-import { useConfirmTap } from "../composables/useConfirmTap";
+import { nextTick, onMounted, ref, watch } from "vue";
+import RouteList from "../components/route/RouteList.vue";
+import RouteWizard from "../components/route-wizard/RouteWizard.vue";
+import TabSwitcher from "../components/ui/TabSwitcher.vue";
+import { useManualRunEntry } from "../composables/useManualRunEntry";
+import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
-import { isHealthConnectAvailable } from "../health/healthConnect";
-import { validateManualEntry } from "../lib/runValidation";
-import { useRunsStore, type RunDetail } from "../stores/runsStore";
+import { getRunDetail } from "../services/runService";
+import type { PlannedRoute } from "../services/plannedRouteService";
+import { usePlannedRouteStore } from "../stores/plannedRouteStore";
+import { useRunsStore } from "../stores/runsStore";
 
 const runsStore = useRunsStore();
+const plannedRouteStore = usePlannedRouteStore();
 const { toast } = useToast();
-const selectedRun = ref<RunDetail | null>(null);
-const deleting = ref(false);
 
-/** Deletes the selected run, tap-to-confirm. */
-const deleteConfirm = useConfirmTap(async () => {
-  const id = selectedRun.value?.id;
-  if (!id) return;
-  deleting.value = true;
-  try {
-    await runsStore.deleteRun(id);
-    selectedRun.value = runsStore.runs.length > 0 ? await runsStore.loadDetail(runsStore.runs[0]!.id) : null;
-  } finally {
-    deleting.value = false;
+const showRouteWizard = ref(false);
+const editingRoute = ref<PlannedRoute | null>(null);
+const initialCenter = ref<{ lat: number; lon: number } | undefined>(undefined);
+
+async function openNewRouteWizard() {
+  editingRoute.value = null;
+  // Centers a fresh route's map on the user's most recent GPS-tracked run instead of the
+  // fallback — RouteMapEditor.vue's own useLastKnownLocation() chain only reaches this far.
+  const gpsRun = runsStore.runs.find((r) => r.source !== "manual");
+  if (gpsRun) {
+    const detail = await getRunDetail(gpsRun.id);
+    initialCenter.value = detail.points[0] ? { lat: detail.points[0].lat, lon: detail.points[0].lon } : undefined;
+  } else {
+    initialCenter.value = undefined;
   }
-});
+  showRouteWizard.value = true;
+}
+function openEditRouteWizard(route: PlannedRoute) {
+  editingRoute.value = route;
+  showRouteWizard.value = true;
+}
+
 const importing = ref(false);
 const importError = ref<string | null>(null);
-const manualError = ref<string | null>(null);
 const showManualForm = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-const manualName = ref("");
-const manualDate = ref(new Date().toISOString().slice(0, 10));
-const manualDistanceKm = ref("");
-const manualMinutes = ref("");
+const { activeRoute, start: startFromRoute, dismiss: dismissRouteBanner } = useStartPlannedRoute();
+const minutesInputRef = ref<HTMLInputElement | null>(null);
+
+const { manualName, manualDate, manualDistanceKm, manualMinutes, manualError, submitting, submitManual } =
+  useManualRunEntry(() => {
+    showManualForm.value = false;
+    manualName.value = "";
+    manualDistanceKm.value = "";
+    manualMinutes.value = "";
+    dismissRouteBanner();
+    toast("Lauf gespeichert.");
+  });
+
+watch(activeRoute, (route) => {
+  if (!route) return;
+  showManualForm.value = true;
+  manualName.value = route.name;
+  manualDistanceKm.value = (route.distanceM / 1000).toFixed(2).replace(".", ",");
+  manualDate.value = new Date().toISOString().slice(0, 10);
+  nextTick(() => minutesInputRef.value?.focus());
+});
 
 onMounted(async () => {
   await runsStore.load();
-  if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
+  if (!plannedRouteStore.loaded) await plannedRouteStore.load();
 });
-
-async function selectRun(id: string) {
-  selectedRun.value = await runsStore.loadDetail(id);
-}
 
 function triggerImport() {
   fileInput.value?.click();
@@ -60,8 +84,7 @@ async function onFileChosen(e: Event) {
   importing.value = true;
   importError.value = null;
   try {
-    const run = await runsStore.importFile(file);
-    await selectRun(run.id);
+    await runsStore.importFile(file);
     toast("Lauf importiert.");
   } catch (err) {
     importError.value = (err as Error).message;
@@ -71,48 +94,16 @@ async function onFileChosen(e: Event) {
   }
 }
 
-async function submitManual() {
-  const validationError = validateManualEntry(manualDistanceKm.value, manualMinutes.value, manualDate.value);
-  if (validationError) {
-    manualError.value = validationError;
-    return;
-  }
-  const km = Number(manualDistanceKm.value.replace(",", "."));
-  const min = Number(manualMinutes.value.replace(",", "."));
-  try {
-    await runsStore.logManual({
-      name: manualName.value || null,
-      startedAt: new Date(manualDate.value + "T12:00:00").toISOString(),
-      distanceM: km * 1000,
-      durationS: min * 60,
-    });
-    manualError.value = null;
-    showManualForm.value = false;
-    manualName.value = "";
-    manualDistanceKm.value = "";
-    manualMinutes.value = "";
-    if (runsStore.runs.length > 0) await selectRun(runsStore.runs[0]!.id);
-    toast("Lauf gespeichert.");
-  } catch (err) {
-    // Genuine server/network failure only — client-side validation is handled above and never
-    // reaches here (validateManualEntry() also guards the new Date(...) call above from ever
-    // throwing on a bad manualDate, so this catch only sees real request failures).
-    manualError.value = (err as Error).message;
-  }
+function saveManual() {
+  void submitManual({ plannedRouteId: activeRoute.value?.id ?? null, elevationGainM: activeRoute.value?.elevationGainM ?? null });
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
-}
-function formatPace(sPerKm: number | null) {
-  if (sPerKm == null) return "–";
-  const s = Math.round(sPerKm);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
-}
-function formatDuration(s: number) {
-  const m = Math.round(s / 60);
-  return `${m} min`;
-}
+// Same two tabs as WorkoutPage.vue's own TabSwitcher — kept as a literal here rather than a
+// shared constant since it's just two short { id, label, to } objects, not logic.
+const WORKOUT_RUNS_TABS = [
+  { id: "workout", label: "Workout", to: "/workout" },
+  { id: "runs", label: "Läufe", to: "/runs" },
+];
 </script>
 
 <template>
@@ -123,10 +114,11 @@ function formatDuration(s: number) {
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-    <WorkoutRunsSwitcher active="runs" />
+    <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
+
     <div class="pagehead">
       <div>
-        <p style="color: var(--dim)">Als Datei importiert · deine Daten, kein Drittanbieter-Konto</p>
+        <p style="color: var(--dim)">Strecke starten oder Lauf manuell erfassen</p>
       </div>
       <div class="actions">
         <button class="btn-secondary" @click="showManualForm = !showManualForm">Manuell</button>
@@ -139,71 +131,44 @@ function formatDuration(s: number) {
 
     <p v-if="importError" class="error">{{ importError }}</p>
 
+    <div v-if="activeRoute" class="route-banner panel">
+      <span>
+        Strecke: {{ activeRoute.name }} · {{ (activeRoute.distanceM / 1000).toFixed(2).replace(".", ",") }} km{{
+          activeRoute.geometrySource === "straight" ? " ≈" : ""
+        }}{{
+          activeRoute.elevationGainM != null ? " · " + Math.round(activeRoute.elevationGainM) + " hm" : ""
+        }} — nur noch Dauer eintragen
+      </span>
+      <button aria-label="Schließen" @click="dismissRouteBanner">×</button>
+    </div>
+
     <div v-if="showManualForm" class="manual-form panel pop-in">
       <input v-model="manualName" type="text" placeholder="Name (optional)" aria-label="Name des Laufs" />
       <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
       <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
-      <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
-      <button class="btn-primary" @click="submitManual">Speichern</button>
+      <input
+        ref="minutesInputRef"
+        v-model="manualMinutes"
+        type="text"
+        inputmode="decimal"
+        placeholder="Minuten"
+        aria-label="Dauer in Minuten"
+      />
+      <button class="btn-primary" :disabled="submitting" @click="saveManual">Speichern</button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 
-    <!-- No import button in this empty state: the .pagehead button above is the only one that's
-         always present (it's the sole import entry point once runs exist), so duplicating it
-         here would just be two identically-labeled "GPX/FIT importieren" buttons on screen. -->
-    <section v-if="runsStore.loaded && runsStore.runs.length === 0" class="runs-empty panel">
-      <div class="eyebrow">Läufe</div>
-      <p>
-        Noch keine Läufe erfasst. Importiere eine GPX- oder FIT-Datei aus deiner Uhr oder App, oder trage einen Lauf
-        manuell nach — oben rechts.
-      </p>
-      <p v-if="isHealthConnectAvailable()">
-        Läufe mit Route werden auf Android automatisch über Health Connect importiert, sobald du das in deinem Profil
-        einmalig verbindest.
-      </p>
-    </section>
-
-    <div v-else class="layout">
-      <div class="main-col">
-        <template v-if="selectedRun">
-          <RunReplay v-if="selectedRun.points.length > 0" :points="selectedRun.points" />
-          <p v-else style="color: var(--dim)">Manuell erfasster Lauf — keine Route verfügbar.</p>
-          <div class="stats">
-            <StatTile :value="`${(selectedRun.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
-            <StatTile :value="formatDuration(selectedRun.durationS)" label="Dauer" />
-            <StatTile :value="formatPace(selectedRun.avgPaceSPerKm)" label="Pace ø" />
-            <StatTile :value="selectedRun.avgHr != null ? Math.round(selectedRun.avgHr) + ' bpm' : '–'" label="Puls ø" />
-          </div>
-          <button
-            class="btn-secondary delete-run-btn"
-            :class="{ confirming: deleteConfirm.isArmed() }"
-            :disabled="deleting"
-            @click="deleteConfirm.trigger()"
-          >
-            <template v-if="deleting">Wird gelöscht…</template>
-            <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen?</template>
-            <template v-else><AppIcon name="trash" /> Lauf löschen</template>
-          </button>
-        </template>
-      </div>
-
-      <div class="run-list">
-        <h3>Verlauf</h3>
-        <button
-          v-for="run in runsStore.runs"
-          :key="run.id"
-          class="run-row panel"
-          :class="{ active: selectedRun?.id === run.id }"
-          @click="selectRun(run.id)"
-        >
-          <div class="meta">
-            <b>{{ run.name ?? "Lauf" }}</b>
-            <span>{{ formatDate(run.startedAt) }} · {{ (run.distanceM / 1000).toFixed(1) }} km</span>
-          </div>
-          <div class="pace tnum">{{ formatPace(run.avgPaceSPerKm) }}</div>
-        </button>
-      </div>
-    </div>
+    <RouteList
+      @edit="openEditRouteWizard"
+      @start="(route) => startFromRoute(route)"
+      @create="openNewRouteWizard"
+    />
+    <RouteWizard
+      v-if="showRouteWizard"
+      :route="editingRoute"
+      :initial-center="initialCenter"
+      @close="showRouteWizard = false"
+    />
     </IonContent>
   </IonPage>
 </template>
@@ -215,13 +180,14 @@ function formatDuration(s: number) {
   gap: var(--sp3);
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: var(--sp4);
 }
 .actions {
   display: flex;
   gap: var(--sp2);
 }
 .error {
-  color: var(--red);
+  color: var(--danger);
   margin-top: var(--sp2);
   font-size: 13px;
 }
@@ -233,6 +199,7 @@ function formatDuration(s: number) {
   flex-wrap: wrap;
   gap: var(--sp2);
   margin-top: var(--sp3);
+  margin-bottom: var(--sp4);
   padding: var(--sp4);
   max-width: 560px;
 }
@@ -244,125 +211,22 @@ function formatDuration(s: number) {
   color: var(--text);
   font-size: 13.5px;
 }
-/* Rides .panel (hybrid bg/blur/shadow/hairline). border-radius stays --r-xl (larger than
-   .panel's default --r-lg) to preserve this empty state's deliberately roomier look; .panel's
-   own background/box-shadow/backdrop-filter declarations are otherwise reused as-is. */
-.runs-empty {
-  border-radius: var(--r-xl);
-  padding: var(--sp5);
-  margin-top: var(--sp4);
+.route-banner {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--sp4);
-  /* Fills the viewport instead of sitting as a short card with a large empty scroll area below
-     it. Same reasoning as WorkoutPage.vue's .not-started fix. */
-  min-height: 40vh;
-}
-.runs-empty p {
-  color: var(--dim);
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-.layout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp5);
-  margin-top: var(--sp5);
-}
-/* Same cramped-4-across fix as OverviewPage's .status-strip: 2x2 on mobile, widening to
-   4-across only once there's room (>=560px). */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--sp2);
-  margin-top: var(--sp3);
-}
-.stats :deep(.stat-tile b) {
-  font-size: clamp(14px, 4.2vw, 20px);
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  line-height: 1.15;
-}
-@media (min-width: 560px) {
-  .stats {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-.delete-run-btn {
-  margin-top: var(--sp4);
-  color: var(--red);
-}
-.delete-run-btn.confirming {
-  background: var(--red-lo);
-  border-color: var(--red);
-  color: var(--text);
-}
-.run-list h3 {
-  font-size: 15px;
-  margin-bottom: var(--sp3);
-}
-/* Rides .panel (hybrid bg/blur/shadow + gradient hairline edge via ::after). Per tokens.css's
-   .panel/.surface-hybrid comment, a native <button> needs its own explicit background (which
-   .panel already sets) rather than relying on the pseudo-element alone — this button already
-   gets that from the .panel class in the template. There's no real border here, just the
-   hairline gradient, so "active" and "hover" are expressed as an inset ring / brightness tweak
-   layered on top of .panel's own box-shadow instead of swapping backgrounds, which would break
-   translucency. */
-.run-row {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: var(--sp3);
-  color: var(--text);
-  margin-bottom: var(--sp2);
-  text-align: left;
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), filter var(--dur-fast) var(--ease-out);
-  /* --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
-     (rank-up, PR, level-up) per motion.css's own convention — a run-list row entrance isn't
-     one of those. */
-  animation: pop-in var(--dur-base) var(--ease-out) both;
+  justify-content: space-between;
+  gap: var(--sp3);
+  margin-top: var(--sp3);
+  margin-bottom: var(--sp4);
+  padding: var(--sp3) var(--sp4);
+  font-size: 13.5px;
 }
-.run-row:active {
-  transform: scale(0.98);
-}
-@media (hover: hover) {
-  .run-row:not(.active):hover {
-    filter: brightness(1.12);
-  }
-}
-.run-row.active {
-  box-shadow: var(--surface-hybrid-shadow), inset 0 0 0 2px var(--blue);
-}
-.run-row .meta {
-  display: flex;
-  flex-direction: column;
-}
-.run-row .meta span {
-  font-size: 12px;
-  color: var(--faint);
-}
-.run-row .pace {
-  font-size: 13px;
+.route-banner button {
+  background: none;
+  border: none;
   color: var(--dim);
-}
-
-@media (min-width: 900px) {
-  .layout {
-    flex-direction: row;
-    align-items: flex-start;
-    max-width: var(--content-w-xwide);
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .main-col {
-    flex: 1.4;
-  }
-  .run-list {
-    flex: 1;
-    max-width: 340px;
-  }
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
 }
 </style>

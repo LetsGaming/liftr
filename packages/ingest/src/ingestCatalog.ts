@@ -115,8 +115,10 @@ export async function ingestCatalog(db: LiftrDb, catalogPath: string, equipmentS
   let created = 0;
   let updated = 0;
 
+  const existingBySlug = new Map((await db.select().from(exercises)).map((e) => [e.slug, e]));
+
   for (const entry of entries) {
-    const existing = await db.query.exercises.findFirst({ where: eq(exercises.slug, entry.slug) });
+    const existing = existingBySlug.get(entry.slug);
 
     const resolvedEquipment = equipmentBySlug.get(entry.slug) ?? null;
     const { requirements: requiredEquipment, source: requirementSource } = buildRequiredEquipment(entry, resolvedEquipment, wgerFullIndex);

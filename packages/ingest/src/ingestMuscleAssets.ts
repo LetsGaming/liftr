@@ -16,6 +16,7 @@
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fetchWithTimeout } from "./lib/fetchWithTimeout.js";
 import { MUSCLES } from "./muscles.js";
 
 const RAW_BASE = "https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/muscles";
@@ -52,7 +53,7 @@ const BODY_DARK: [number, number, number] = [26, 32, 51];
 const BODY_LIGHT: [number, number, number] = [79, 92, 130];
 
 async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`fetch failed ${res.status}: ${url}`);
   return res.text();
 }

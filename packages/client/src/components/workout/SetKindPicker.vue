@@ -67,7 +67,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   }
 }
 .kind-row.danger {
-  color: var(--red);
+  color: var(--danger);
 }
 .kind-letter {
   width: 30px;
@@ -82,7 +82,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   color: var(--text);
 }
 .k-warmup {
-  background: var(--fire);
+  background: var(--warning);
   color: var(--k-warmup-text);
 }
 .k-normal {
@@ -90,7 +90,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   color: var(--text);
 }
 .k-failure {
-  background: var(--red);
+  background: var(--danger);
   color: var(--k-failure-text);
 }
 .k-dropset {

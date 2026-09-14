@@ -1,5 +1,6 @@
 /** XP / level, backed by /api/xp. Purely additive display — never gates anything. */
 import { defineStore } from "pinia";
+import { withLoadState } from "../lib/loadState";
 import { getXp } from "../services/xpService";
 
 const SHOW_XP_KEY = "liftr.showXp";
@@ -25,15 +26,15 @@ export const useXpStore = defineStore("xp", {
   }),
   actions: {
     async load() {
-      try {
-        const res = await getXp();
-        this.$patch({ ...res, loaded: true, error: false });
-      } catch {
-        // A failed load used to leave `loaded` false forever with no signal distinguishing
-        // "still fetching" from "never going to arrive" — the caller (OverviewPage's
-        // stalled-load banner) reads `error` to tell the two apart.
-        this.error = true;
-      }
+      // A failed load used to leave `loaded` false forever with no signal distinguishing
+      // "still fetching" from "never going to arrive" — withLoadState's `error` flag (see
+      // ../lib/loadState.ts) is what lets the caller (OverviewPage's stalled-load banner) tell
+      // the two apart.
+      await withLoadState(getXp, {
+        apply: (res) => this.$patch(res),
+        setLoaded: (v) => (this.loaded = v),
+        setError: (v) => (this.error = v),
+      });
     },
     toggleShowXp() {
       this.showXp = !this.showXp;

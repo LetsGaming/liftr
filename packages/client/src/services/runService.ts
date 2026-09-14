@@ -10,6 +10,17 @@ export interface RunPoint {
   cadence: number | null;
 }
 
+/** One fix from useLiveRun.ts's live-tracking recorder — same shape as RunPoint minus the
+ *  server-assigned `idx` (ordering is implicit: array order === recording order). */
+export interface PhoneGpsRunPoint {
+  t: string;
+  lat: number;
+  lon: number;
+  ele: number | null;
+  hr: number | null;
+  cadence: number | null;
+}
+
 export interface RunSummary {
   id: string;
   source: "gpx" | "fit" | "manual" | "healthconnect";
@@ -20,6 +31,7 @@ export interface RunSummary {
   avgPaceSPerKm: number | null;
   avgHr: number | null;
   elevationGainM: number | null;
+  plannedRouteId: string | null;
 }
 
 export interface RunDetail extends RunSummary {
@@ -53,12 +65,42 @@ export async function importRunFile(file: File): Promise<RunSummary> {
   return (await res.json()) as RunSummary;
 }
 
-export function logManualRun(input: { name: string | null; startedAt: string; distanceM: number; durationS: number }): Promise<RunSummary> {
+/** Turns a live-tracked point buffer into a minimal single-segment GPX 1.1 document, so a
+ *  phone-GPS live run can go through the exact same server-side import pipeline (parse ->
+ *  plausibility gate -> rank recompute) a real GPX file upload does, instead of a second,
+ *  parallel ingestion path that would need to re-implement all of that gating itself. */
+function buildGpxFromPoints(points: PhoneGpsRunPoint[]): string {
+  const trkpts = points
+    .map((p) => {
+      const ele = p.ele != null ? `<ele>${p.ele}</ele>` : "";
+      return `<trkpt lat="${p.lat}" lon="${p.lon}">${ele}<time>${p.t}</time></trkpt>`;
+    })
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="liftr"><trk><trkseg>${trkpts}</trkseg></trk></gpx>`;
+}
+
+export function submitLiveRun(input: { clientId: string; name: string | null; points: PhoneGpsRunPoint[] }): Promise<RunSummary> {
+  const gpx = buildGpxFromPoints(input.points);
+  const file = new File([gpx], `${input.name ?? "live-run"}-${input.clientId}.gpx`, { type: "application/gpx+xml" });
+  return importRunFile(file);
+}
+
+export function logManualRun(input: {
+  name: string | null;
+  startedAt: string;
+  distanceM: number;
+  durationS: number;
+  plannedRouteId?: string | null;
+  elevationGainM?: number | null;
+}): Promise<RunSummary> {
   return api.post("/api/runs", input);
 }
 
-/** Runs don't feed XP/LP (only logged sets do), so unlike workout deletion there's nothing to
- *  recompute server-side. */
+/** Runs *do* feed rank now (see server's `services/runRankService.ts`), but deleting one still
+ *  doesn't need a client-side recompute trigger, unlike logging one: `runRanks`/`runPrs` are
+ *  caches of the *current* best derived from the surviving history, not an append-only ledger
+ *  that needs pruning on delete. The next run logged in that category recomputes from whatever
+ *  history remains — see runRankStore.ts. */
 export function deleteRun(id: string): Promise<void> {
   return api.del(`/api/runs/${id}`);
 }

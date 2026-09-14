@@ -10,6 +10,7 @@
  * heavier `exerciseinfo` one, since muscles/translations/images aren't needed here.
  */
 import { normalizeWgerEquipment, type Equipment } from "@liftr/shared";
+import { fetchJson } from "../lib/fetchWithTimeout.js";
 import type { EquipmentSourceAdapter } from "./types.js";
 
 const API_BASE = "https://wger.de/api/v2";
@@ -25,13 +26,7 @@ interface WgerExerciseRow {
   equipment: number[];
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`wger fetch failed: ${res.status} ${res.statusText} (${url})`);
-  return res.json() as Promise<T>;
-}
-
-async function fetchAllExercises(): Promise<WgerExerciseRow[]> {
+async function fetchAllExercisesUncached(): Promise<WgerExerciseRow[]> {
   const rows: WgerExerciseRow[] = [];
   let url: string | null = `${API_BASE}/exercise/?format=json&limit=${PAGE_SIZE}`;
   while (url) {
@@ -40,6 +35,28 @@ async function fetchAllExercises(): Promise<WgerExerciseRow[]> {
     url = page.next;
   }
   return rows;
+}
+
+// Memoized per-process: buildIndex() and fetchWgerFullEquipmentIndex() below both walk the same
+// ~861-row paginated /exercise/ list, and ingestCatalog.ts calls both in one ingest run — without
+// this, one catalog ingest hits wger's paginated endpoint twice.
+let exerciseRowsPromise: Promise<WgerExerciseRow[]> | null = null;
+function fetchAllExercises(): Promise<WgerExerciseRow[]> {
+  if (!exerciseRowsPromise) {
+    // Don't cache a rejection — a transient failure shouldn't permanently poison every later
+    // call in the same process.
+    exerciseRowsPromise = fetchAllExercisesUncached().catch((err) => {
+      exerciseRowsPromise = null;
+      throw err;
+    });
+  }
+  return exerciseRowsPromise;
+}
+
+/** Test-only escape hatch: clears the per-process memoization so each test can stub `fetch`
+ *  independently instead of inheriting a previous test's cached rows. */
+export function __resetFetchAllExercisesCacheForTests() {
+  exerciseRowsPromise = null;
 }
 
 export const wgerEquipmentSource: EquipmentSourceAdapter = {

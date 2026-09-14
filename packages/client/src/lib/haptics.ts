@@ -16,15 +16,15 @@
  * fourth tier. A moment that doesn't clearly fit tap/bump/success gets no haptic: a gamification
  * layer doesn't need constant physical feedback.
  */
-import { Capacitor } from "@capacitor/core";
 import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
+import { isNative } from "./platform";
 
 function prefersReducedMotion(): boolean {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function canHaptic(): boolean {
-  return Capacitor.isNativePlatform() && !prefersReducedMotion();
+  return isNative() && !prefersReducedMotion();
 }
 
 export const haptics = {

@@ -27,3 +27,16 @@ export const SET_KIND_BADGE: Record<SetKind, string> = {
   failure: "F",
   dropset: "D",
 };
+
+/** {reps, weightKg} target-set shape, one target per set. `weightKg: null` means "no weight
+ *  target for this set" (plain bodyweight); see routineExercises.targetSets in @liftr/db's
+ *  schema.ts for the full rationale. Single source of truth for the 3x8-reps/no-weight default
+ *  used both client-side (useAddExerciseToSession.ts, useStartRoutine.ts's quickStart fallback)
+ *  and as the literal DB default string in @liftr/db's schema.ts (routineExercises.targetSets) —
+ *  a SQL column default can't reference a JS import, so that string must be kept in sync with
+ *  this constant by hand; see the comment there. */
+export const DEFAULT_TARGET_SETS: { reps: number; weightKg: null }[] = [
+  { reps: 8, weightKg: null },
+  { reps: 8, weightKg: null },
+  { reps: 8, weightKg: null },
+];

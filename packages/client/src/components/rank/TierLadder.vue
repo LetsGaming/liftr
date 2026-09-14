@@ -190,7 +190,7 @@ function toggleExpand(tier: Tier) {
 .rung-peak {
   font-size: 11px;
   font-weight: 700;
-  color: var(--fire-hi);
+  color: var(--warning-hi);
 }
 .rung-count {
   font-size: 11px;

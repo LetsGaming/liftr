@@ -196,6 +196,6 @@ function submit() {
   font-size: 14px;
 }
 .error {
-  color: var(--red);
+  color: var(--danger);
 }
 </style>

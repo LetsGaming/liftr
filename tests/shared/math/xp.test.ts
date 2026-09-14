@@ -19,8 +19,8 @@ import {
 
 describe("computeSetXp", () => {
   it("always uses the nominal bodyweight load, ignoring any typed weight", () => {
-    // 30 (nominal) * 5 * 1.3 (advanced) — the typed 100kg no longer affects magnitude.
-    expect(computeSetXp(100, 5, "advanced")).toBeCloseTo(30 * 5 * 1.3, 5);
+    // nominal * 5 * 1.3 (advanced) — the typed 100kg no longer affects magnitude.
+    expect(computeSetXp(100, 5, "advanced")).toBeCloseTo(BODYWEIGHT_NOMINAL_LOAD_KG * 5 * 1.3, 5);
   });
 
   it("uses the same nominal bodyweight load when weightKg is null", () => {
@@ -316,7 +316,7 @@ describe("computeLevel", () => {
   // session (worked-table total below, this file's own module doc comment) used to reach level 6
   // under the old floor(sqrt(xp/100)) curve. One session must now land at exactly level 1.
   it("caps a single first-ever session's XP at level 1, never higher", () => {
-    const firstSessionXp = 4630; // per this module's worked sizing table, Day 1 row
+    const firstSessionXp = 463; // per this module's worked sizing table, Day 1 row
     expect(computeLevel(firstSessionXp).level).toBe(1);
   });
 

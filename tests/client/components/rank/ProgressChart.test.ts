@@ -79,7 +79,7 @@ describe("ProgressChart", () => {
     // W=280, H=64, PAD=4 -> first point x=4, last point x=276; min/max normalize y to
     // 60 (bottom, weakest) and 4 (top, strongest) for a strictly two-point series.
     expect(polyline.attributes("points")).toBe("4.0,60.0 276.0,4.0");
-    expect(polyline.attributes("stroke")).toBe("var(--green)");
+    expect(polyline.attributes("stroke")).toBe("var(--success)");
 
     expect(wrapper.find(".latest").text()).toBe("160 kg e1RM");
   });
