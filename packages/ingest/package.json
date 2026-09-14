@@ -5,9 +5,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "start": "tsx src/index.ts",
-    "bootstrap": "tsx src/bootstrap.ts",
-    "build": "tsc -p tsconfig.json",
+    "start": "tsx --conditions=development src/index.ts",
+    "bootstrap": "tsx --conditions=development src/bootstrap.ts",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
