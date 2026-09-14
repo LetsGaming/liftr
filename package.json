@@ -23,6 +23,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@fastify/multipart": "^9.0.1",
+    "@fastify/rate-limit": "^11.2.0",
     "@liftr/db": "workspace:*",
     "@liftr/shared": "workspace:*",
     "@types/leaflet": "^1.9.22",

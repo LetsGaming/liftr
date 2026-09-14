@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
+import rateLimit from "@fastify/rate-limit";
 import staticFiles from "@fastify/static";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
@@ -60,6 +61,11 @@ export function configureApp(app: FastifyInstance) {
     if (error instanceof ConflictError) {
       return reply.code(409).send({ error: "conflict", detail: error.message });
     }
+    if (error.statusCode === 429) {
+      // Thrown by @fastify/rate-limit (see routes/auth.ts's per-route config) — a real client
+      // condition, not a server failure, so it must not fall through to the generic 500 below.
+      return reply.code(429).send({ error: "rate_limited" });
+    }
     request.log.error(error);
     return reply.code(500).send({ error: "internal_error" });
   });
@@ -88,6 +94,7 @@ export async function buildApp() {
   }
 
   await app.register(cors, { origin: env.allowedOrigins ?? true });
+  await app.register(rateLimit, { global: false }); // opt-in per route below, not applied by default
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }); // GPX files are small text; 20MB is generous
 
   // Paths in env.ts are resolved relative to process.cwd() (the package's own directory when

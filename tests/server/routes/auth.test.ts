@@ -1,3 +1,4 @@
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { LiftrDb } from "@liftr/db";
@@ -10,8 +11,12 @@ import { createInviteCode, setUserPassword } from "~server/repositories/authRepo
 
 let db: LiftrDb;
 
-function buildApp(db: LiftrDb) {
+async function buildApp(db: LiftrDb) {
   const app = configureApp(Fastify({ logger: false }));
+  // Mirrors app.ts's registration (global: false — only routes with their own `config.rateLimit`,
+  // set in routes/auth.ts, are actually limited). A fresh app per test gives each test its own
+  // rate-limit counter, so this doesn't bleed between tests.
+  await app.register(rateLimit, { global: false });
   registerAuthRoutes(app, db);
   // /me and /logout need requireAuth wired the same way app.ts wires it in production.
   app.addHook("onRequest", async (request, reply) => {
@@ -28,14 +33,14 @@ beforeEach(() => {
 
 describe("GET /api/auth/status", () => {
   it("reports needsSetup: true on a fresh install (owner has no password)", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "GET", url: "/api/auth/status" });
     expect(res.json()).toEqual({ needsSetup: true });
   });
 
   it("reports needsSetup: false once the owner has a password", async () => {
     await setUserPassword(db, "00000000-0000-4000-8000-000000000001", await hashPassword("ownerpass"));
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "GET", url: "/api/auth/status" });
     expect(res.json()).toEqual({ needsSetup: false });
   });
@@ -43,20 +48,20 @@ describe("GET /api/auth/status", () => {
 
 describe("POST /api/auth/setup", () => {
   it("sets the owner's password and returns a usable token", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
     expect(res.statusCode).toBe(200);
     expect(typeof res.json().token).toBe("string");
   });
 
   it("rejects a password shorter than 8 characters", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "short" } });
     expect(res.statusCode).toBe(400);
   });
 
   it("rejects a common password even when it meets the length minimum", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({
       method: "POST",
       url: "/api/auth/setup",
@@ -66,7 +71,7 @@ describe("POST /api/auth/setup", () => {
   });
 
   it("refuses to run again once setup is already done", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
     const res = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "different1" } });
     expect(res.statusCode).toBe(409);
@@ -76,7 +81,7 @@ describe("POST /api/auth/setup", () => {
 describe("POST /api/auth/login", () => {
   it("logs in with the correct password", async () => {
     await setUserPassword(db, "00000000-0000-4000-8000-000000000001", await hashPassword("ownerpass1"));
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "owner", password: "ownerpass1" } });
     expect(res.statusCode).toBe(200);
     expect(typeof res.json().token).toBe("string");
@@ -84,19 +89,19 @@ describe("POST /api/auth/login", () => {
 
   it("rejects a wrong password", async () => {
     await setUserPassword(db, "00000000-0000-4000-8000-000000000001", await hashPassword("ownerpass1"));
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "owner", password: "wrong" } });
     expect(res.statusCode).toBe(401);
   });
 
   it("rejects an unknown username", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "nobody", password: "whatever1" } });
     expect(res.statusCode).toBe(401);
   });
 
   it("rejects login before setup has ever run (null passwordHash)", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "owner", password: "whatever1" } });
     expect(res.statusCode).toBe(401);
   });
@@ -109,7 +114,7 @@ describe("POST /api/auth/login", () => {
   // packages/server/src/routes/auth.ts, not by timing here.
   it("returns the identical invalid_credentials response for an unknown username and a wrong password on a real account", async () => {
     await setUserPassword(db, "00000000-0000-4000-8000-000000000001", await hashPassword("ownerpass1"));
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const unknownRes = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "nobody", password: "whatever1" } });
     const wrongPasswordRes = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "owner", password: "wrong1234" } });
     expect(unknownRes.statusCode).toBe(401);
@@ -121,7 +126,7 @@ describe("POST /api/auth/login", () => {
 
 describe("POST /api/auth/register", () => {
   it("redeems a valid invite code and creates a member", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     await createInviteCode(db, { code: "ABCD2345", createdByUserId: "00000000-0000-4000-8000-000000000001", expiresAt: new Date(Date.now() + 86_400_000) });
     const res = await app.inject({ method: "POST", url: "/api/auth/register", payload: { code: "ABCD2345", username: "newmember", password: "memberpass1" } });
     expect(res.statusCode).toBe(200);
@@ -129,13 +134,13 @@ describe("POST /api/auth/register", () => {
   });
 
   it("rejects an unknown code", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const res = await app.inject({ method: "POST", url: "/api/auth/register", payload: { code: "NOTREAL1", username: "newmember", password: "memberpass1" } });
     expect(res.statusCode).toBe(400);
   });
 
   it("rejects a code that's already been used", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     await createInviteCode(db, { code: "ABCD2345", createdByUserId: "00000000-0000-4000-8000-000000000001", expiresAt: new Date(Date.now() + 86_400_000) });
     await app.inject({ method: "POST", url: "/api/auth/register", payload: { code: "ABCD2345", username: "first", password: "memberpass1" } });
     const res = await app.inject({ method: "POST", url: "/api/auth/register", payload: { code: "ABCD2345", username: "second", password: "memberpass1" } });
@@ -143,7 +148,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("rejects a duplicate username", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     await createInviteCode(db, { code: "ABCD2345", createdByUserId: "00000000-0000-4000-8000-000000000001", expiresAt: new Date(Date.now() + 86_400_000) });
     await createInviteCode(db, { code: "EFGH6789", createdByUserId: "00000000-0000-4000-8000-000000000001", expiresAt: new Date(Date.now() + 86_400_000) });
     await app.inject({ method: "POST", url: "/api/auth/register", payload: { code: "ABCD2345", username: "dupe", password: "memberpass1" } });
@@ -154,7 +159,7 @@ describe("POST /api/auth/register", () => {
 
 describe("GET /api/auth/me and POST /api/auth/logout", () => {
   it("me returns the current user's identity", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const setupRes = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
     const token = setupRes.json().token;
     const res = await app.inject({ method: "GET", url: "/api/auth/me", headers: { authorization: `Bearer ${token}` } });
@@ -162,11 +167,28 @@ describe("GET /api/auth/me and POST /api/auth/logout", () => {
   });
 
   it("logout invalidates the token", async () => {
-    const app = buildApp(db);
+    const app = await buildApp(db);
     const setupRes = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
     const token = setupRes.json().token;
     await app.inject({ method: "POST", url: "/api/auth/logout", headers: { authorization: `Bearer ${token}` } });
     const res = await app.inject({ method: "GET", url: "/api/auth/me", headers: { authorization: `Bearer ${token}` } });
     expect(res.statusCode).toBe(401);
+  });
+});
+
+describe("POST /api/auth/login rate limiting", () => {
+  it("returns 429 after exceeding the attempt limit", async () => {
+    const app = await buildApp(db);
+
+    let lastStatus = 0;
+    for (let i = 0; i < 11; i++) {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/login",
+        payload: { username: "owner", password: "wrong" },
+      });
+      lastStatus = res.statusCode;
+    }
+    expect(lastStatus).toBe(429);
   });
 });

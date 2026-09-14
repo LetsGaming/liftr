@@ -35,6 +35,13 @@ const registerInput = z.object({ code: z.string().length(8), username: usernameS
  *  so the format is guaranteed valid; the one-time cost at startup is negligible. */
 const dummyPasswordHashPromise = hashPassword("dummy-password-for-timing");
 
+/** 10 attempts per 15 minutes per IP — generous enough that a real user fat-fingering their
+ *  password a few times never gets blocked, tight enough to make scripted guessing impractical
+ *  even parallelized across a handful of connections. Scoped to these three routes only: they're
+ *  the ones an attacker can use to guess a credential (password or invite code); every other
+ *  route already requires a valid session. */
+const authRateLimit = { rateLimit: { max: 10, timeWindow: "15 minutes" } };
+
 const tokenResponse = z.object({ token: z.string() });
 const statusResponse = z.object({ needsSetup: z.boolean() });
 const meResponse = z.object({ id: z.string(), username: z.string(), name: z.string(), role: z.enum(["owner", "member"]) });
@@ -60,7 +67,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
 
   app.post(
     "/api/auth/setup",
-    { schema: { body: setupInput, response: { 200: tokenResponse, 409: errorResponse, 500: errorResponse } } },
+    { config: authRateLimit, schema: { body: setupInput, response: { 200: tokenResponse, 409: errorResponse, 500: errorResponse } } },
     async (req, reply) => {
       const owner = await findOwnerUser(db);
       if (!owner) return reply.code(500).send({ error: "no_owner" });
@@ -72,7 +79,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
 
   app.post(
     "/api/auth/login",
-    { schema: { body: loginInput, response: { 200: tokenResponse, 401: errorResponse } } },
+    { config: authRateLimit, schema: { body: loginInput, response: { 200: tokenResponse, 401: errorResponse } } },
     async (req, reply) => {
       const user = await findUserByUsername(db, req.body.username);
       if (!user?.passwordHash) {
@@ -93,7 +100,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
 
   app.post(
     "/api/auth/register",
-    { schema: { body: registerInput, response: { 200: tokenResponse, 400: errorResponse, 409: errorResponse } } },
+    { config: authRateLimit, schema: { body: registerInput, response: { 200: tokenResponse, 400: errorResponse, 409: errorResponse } } },
     async (req, reply) => {
       const invite = await findValidInviteCode(db, req.body.code.toUpperCase());
       if (!invite) return reply.code(400).send({ error: "invalid_invite_code" });
