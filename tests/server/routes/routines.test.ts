@@ -137,6 +137,34 @@ describe("POST /api/routines", () => {
     expect(res.json()).toMatchObject({ error: "invalid_request" });
   });
 
+  it("rejects a routine name over the length cap with 400, not 500", async () => {
+    const { app, db } = createTestApp();
+    registerRoutineRoutes(app, db);
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/routines",
+      payload: { name: "A".repeat(501) },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: "invalid_request" });
+  });
+
+  it("rejects a body over Fastify's bodyLimit with 413, not a bare 500", async () => {
+    const { app, db } = createTestApp();
+    registerRoutineRoutes(app, db);
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/routines",
+      payload: { name: "A".repeat(2_000_000) },
+    });
+
+    expect(res.statusCode).toBe(413);
+    expect(res.json()).toMatchObject({ error: "payload_too_large" });
+  });
+
   it("accepts a zero restBetweenSetsSeconds (BUG-02 regression)", async () => {
     const { app, db } = createTestApp();
     registerRoutineRoutes(app, db);
