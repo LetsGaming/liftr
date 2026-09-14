@@ -65,6 +65,23 @@ describe("applySyncBatch — start_workout", () => {
   });
 });
 
+describe("applySyncBatch — unexpected errors", () => {
+  it("does not leak the raw exception message to the client on an unexpected error", async () => {
+    const item = startWorkoutItem({
+      clientId: "fk-violation",
+      payload: {
+        id: "workout-fk-violation",
+        routineId: "not-a-real-routine-id",
+        startedAt: new Date("2026-01-01T10:00:00Z"),
+        exercises: [{ id: "we-fk-1", exerciseId, orderIndex: 0 }],
+      },
+    });
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [item]);
+    expect(result!.status).toBe("error");
+    expect(result!.error).not.toMatch(/SQLITE|FOREIGN KEY|constraint/i);
+  });
+});
+
 describe("applySyncBatch — log_set", () => {
   async function withStartedWorkout() {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);

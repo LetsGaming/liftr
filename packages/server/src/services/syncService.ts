@@ -9,6 +9,7 @@ import {
   type PlausibilityInput,
 } from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
+import type { FastifyBaseLogger } from "fastify";
 import { findSetByClientId, insertSet } from "../repositories/setRepository.js";
 import { findExerciseById, findRankByExerciseId, findStandardsForExercise } from "../repositories/rankRepository.js";
 import { creditStreak, findAllStreakDates } from "../repositories/streakRepository.js";
@@ -359,13 +360,19 @@ export async function applySyncItem(db: LiftrDb, userId: string, item: SyncItem)
   }
 }
 
-export async function applySyncBatch(db: LiftrDb, userId: string, items: SyncItem[]): Promise<SyncResult[]> {
+export async function applySyncBatch(
+  db: LiftrDb,
+  userId: string,
+  items: SyncItem[],
+  logger?: Pick<FastifyBaseLogger, "error">,
+): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
   for (const item of items) {
     try {
       results.push(await applySyncItem(db, userId, item));
     } catch (err) {
-      results.push({ clientId: item.clientId, status: "error", error: (err as Error).message });
+      logger?.error(err, "applySyncBatch: unexpected error applying sync item");
+      results.push({ clientId: item.clientId, status: "error", error: "internal_error" });
     }
   }
   return results;

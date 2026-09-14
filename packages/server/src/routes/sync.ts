@@ -71,7 +71,7 @@ const syncBody = z.object({ items: z.array(syncItem).min(1).max(200) });
 
 export function registerSyncRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.post("/api/sync", { schema: { body: syncBody } }, async (req) => {
-    const results = await applySyncBatch(db, req.userId, req.body.items);
+    const results = await applySyncBatch(db, req.userId, req.body.items, req.log);
     return { results };
   });
 }
