@@ -34,7 +34,7 @@ const logSetPayload = z.object({
   reps: z.number().int().min(0),
   rpe: z.number().nullable().optional(),
   kind: z.enum(["normal", "warmup", "failure", "dropset"]).default("normal"),
-  notes: z.string().nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
   loggedAt: z.coerce.date(),
 });
 
@@ -44,7 +44,7 @@ const finishWorkoutPayload = z.object({
   pausedSeconds: z.number().int().min(0).default(0),
   // Workout-level notes — see activeWorkoutStore.ts's finish(). Rides the same offline-safe
   // outbox path rather than a second online-only PATCH call bolted onto the finish flow.
-  notes: z.string().nullable().optional(),
+  notes: z.string().max(500).nullable().optional(),
 });
 
 /**

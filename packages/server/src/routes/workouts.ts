@@ -22,7 +22,7 @@ const startWorkoutInput = z.object({
 const patchWorkoutInput = z.object({
   endedAt: z.coerce.date().optional(),
   pausedSeconds: z.number().int().min(0).optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(500).optional(),
 });
 
 const workoutIdParams = z.object({ id: z.string() });

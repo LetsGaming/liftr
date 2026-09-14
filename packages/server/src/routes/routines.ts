@@ -43,7 +43,7 @@ const routineExerciseInput = z.object({
 });
 
 const routineInput = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(500),
   orderIndex: z.number().int().default(0),
   exercises: z.array(routineExerciseInput).default([]),
 });

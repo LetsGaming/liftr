@@ -66,6 +66,12 @@ export function configureApp(app: FastifyInstance) {
       // condition, not a server failure, so it must not fall through to the generic 500 below.
       return reply.code(429).send({ error: "rate_limited" });
     }
+    if (error.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
+      // Thrown by Fastify itself before routing/Zod ever run, once a request exceeds the
+      // `bodyLimit` set on the Fastify() constructor — a real client condition (oversized
+      // payload), not a server failure, so it must not fall through to the generic 500 below.
+      return reply.code(413).send({ error: "payload_too_large" });
+    }
     request.log.error(error);
     return reply.code(500).send({ error: "internal_error" });
   });
@@ -83,6 +89,9 @@ export async function buildApp() {
     Fastify({
       logger: env.verboseLogging ? true : { level: "warn" },
       disableRequestLogging: !env.verboseLogging,
+      // 1MB — Fastify's own default, made explicit rather than implicit so an oversized request
+      // cleanly 413s instead of surfacing as a bare, unexplained 500.
+      bodyLimit: 1_048_576,
     }),
   );
   if (!env.verboseLogging) {
