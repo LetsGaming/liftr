@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6213092c-be9b-4268-a283-fe0ab83204e3",
+  "id": "5a06666b-4621-4a0f-a9ca-d7ba6691a36b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "bodyweight_logs": {

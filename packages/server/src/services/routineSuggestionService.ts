@@ -206,11 +206,11 @@ async function recommendForExercises(
 
 /**
  * Recommendation for exercises the user has already chosen — manual routine-wizard picks and
- * Quick Start's first-4-catalog-exercises fallback both used to hardcode `reps: 8, weightKg: 0`
- * regardless of the lifter's stated experience level or history; this reuses the exact same
- * engine the muscle-group suggester already uses instead of adding a second, simpler one.
- * No equipment filtering here — the exercises are already explicitly chosen, not candidates to
- * narrow down.
+ * Quick Start's first-4-catalog-exercises fallback. Reuses the exact same engine the
+ * muscle-group suggester already uses, so sets/reps/weight reflect the lifter's stated
+ * experience level and history instead of a hardcoded default, and so there's no second, simpler
+ * engine to keep in sync. No equipment filtering here — the exercises are already explicitly
+ * chosen, not candidates to narrow down.
  */
 export async function recommendForChosenExercises(
   db: LiftrDb,
