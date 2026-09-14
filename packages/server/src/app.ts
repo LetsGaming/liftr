@@ -112,6 +112,11 @@ export async function buildApp() {
     // (X-Content-Type-Options, X-Frame-Options) plus HSTS; a hand-tuned CSP for the client bundle
     // is a separate, larger task if wanted later.
     contentSecurityPolicy: false,
+    // Helmet's default CORP ("same-origin") would block the native/Capacitor client from loading
+    // exercise-catalog images, which it fetches from this server's own absolute (cross-origin, from
+    // the app's point of view) URL — see apiBase() in packages/client/src/lib/api.ts. Auth here is
+    // a bearer header, not cookies, so CORP's ambient-credential protection doesn't apply anyway.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   });
   await app.register(rateLimit, { global: false }); // opt-in per route below, not applied by default
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }); // GPX files are small text; 20MB is generous

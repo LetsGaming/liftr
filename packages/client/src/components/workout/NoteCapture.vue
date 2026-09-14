@@ -34,7 +34,7 @@ function onSave() {
 
 <template>
   <SheetModal ref="sheetRef" :title="props.title" height="50%" @close="emit('close')">
-    <textarea v-model="draft" class="note-textarea" rows="6" placeholder="Notiz…" />
+    <textarea v-model="draft" class="note-textarea" rows="6" maxlength="500" placeholder="Notiz…" />
     <button class="btn-primary btn-block note-save" @click="onSave">Speichern</button>
   </SheetModal>
 </template>

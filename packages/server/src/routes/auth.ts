@@ -35,12 +35,31 @@ const registerInput = z.object({ code: z.string().length(8), username: usernameS
  *  so the format is guaranteed valid; the one-time cost at startup is negligible. */
 const dummyPasswordHashPromise = hashPassword("dummy-password-for-timing");
 
-/** 10 attempts per 15 minutes per IP — generous enough that a real user fat-fingering their
- *  password a few times never gets blocked, tight enough to make scripted guessing impractical
- *  even parallelized across a handful of connections. Scoped to these three routes only: they're
- *  the ones an attacker can use to guess a credential (password or invite code); every other
- *  route already requires a valid session. */
-const authRateLimit = { rateLimit: { max: 10, timeWindow: "15 minutes" } };
+/** 10 attempts per 15 minutes per username (falling back to IP when no username is present, e.g.
+ *  a malformed body or /api/auth/setup which takes no username) — generous enough that a real
+ *  user fat-fingering their password a few times never gets blocked, tight enough to make
+ *  scripted guessing impractical even parallelized across a handful of connections. Scoped to
+ *  these three routes only: they're the ones an attacker can use to guess a credential (password
+ *  or invite code); every other route already requires a valid session.
+ *
+ *  Keyed on `req.body.username` rather than the default `req.ip`: this app's documented
+ *  deployment sits behind a reverse proxy with no `trustProxy` configured (see
+ *  docs/operations/docker-deployment.md), so every real client's `request.ip` resolves to the
+ *  proxy's own address — an IP-only key would put every legitimate user behind one shared bucket,
+ *  letting an outsider lock everyone out with 10 failed attempts. `hook: "preHandler"` is required
+ *  so `request.body` has already been parsed/validated when the key generator runs (the default
+ *  hook, onRequest, runs before body parsing). */
+const authRateLimit = {
+  rateLimit: {
+    max: 10,
+    timeWindow: "15 minutes",
+    hook: "preHandler" as const,
+    keyGenerator: (req: import("fastify").FastifyRequest) => {
+      const username = (req.body as { username?: unknown } | undefined)?.username;
+      return typeof username === "string" && username.length > 0 ? username : req.ip;
+    },
+  },
+};
 
 const tokenResponse = z.object({ token: z.string() });
 const statusResponse = z.object({ needsSetup: z.boolean() });

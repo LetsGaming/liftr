@@ -25,6 +25,10 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    // Server error bodies are `{ error: string, detail?: string }` (see app.ts's error handler) —
+    // carried here so callers (e.g. AuthGate.vue) can distinguish *why* a 400 happened instead of
+    // showing one generic message for every 400 cause.
+    public detail?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -45,7 +49,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
-    throw new ApiError(`${init?.method ?? "GET"} ${path} failed: ${res.status}`, res.status);
+    let detail: string | undefined;
+    try {
+      const body: unknown = await res.clone().json();
+      if (body && typeof body === "object" && typeof (body as { detail?: unknown }).detail === "string") {
+        detail = (body as { detail: string }).detail;
+      }
+    } catch {
+      // Non-JSON or empty error body (e.g. a 429 with no body) — no detail available.
+    }
+    throw new ApiError(`${init?.method ?? "GET"} ${path} failed: ${res.status}`, res.status, detail);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;

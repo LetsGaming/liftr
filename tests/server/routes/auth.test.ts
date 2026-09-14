@@ -191,4 +191,23 @@ describe("POST /api/auth/login rate limiting", () => {
     }
     expect(lastStatus).toBe(429);
   });
+
+  // Regression test for the reverse-proxy IP-collapse finding: without a per-username
+  // keyGenerator, every request in this test shares the same source IP (app.inject's default),
+  // so exhausting one username's bucket would also lock out every other username sharing that
+  // IP — exactly what happens for real users behind a reverse proxy with no trustProxy configured
+  // (see authRateLimit's comment in routes/auth.ts). Two different usernames must get independent
+  // buckets even though they share an IP.
+  it("keys the rate limit on username, not just IP — a second username from the same IP still gets its own bucket", async () => {
+    const app = await buildApp(db);
+
+    for (let i = 0; i < 10; i++) {
+      await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "alice", password: "wrong" } });
+    }
+    const aliceLocked = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "alice", password: "wrong" } });
+    expect(aliceLocked.statusCode).toBe(429);
+
+    const bobFirstAttempt = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "bob", password: "wrong" } });
+    expect(bobFirstAttempt.statusCode).not.toBe(429);
+  });
 });
