@@ -115,7 +115,7 @@ async function main() {
   const backendLog = path.join(logDir, "backend.out.log");
   // buildApp() runs migrations at module-load time (packages/server/src/db.ts), so the backend
   // is also what brings this fresh SQLite file up to schema — nothing else needs to migrate it.
-  const backend = spawnBackground("pnpm", ["exec", "tsx", "watch", "src/index.ts"], {
+  const backend = spawnBackground("pnpm", ["exec", "tsx", "watch", "--conditions=development", "src/index.ts"], {
     cwd: path.join(repoRoot, "packages", "server"),
     env,
     logFile: backendLog,
@@ -139,7 +139,7 @@ async function main() {
     // only the script-path argument below needs to resolve against repoRoot, which it already
     // does as a relative path passed straight through (no shell involved).
     const tsxBin = path.join(repoRoot, "packages", "server", "node_modules", ".bin", process.platform === "win32" ? "tsx.CMD" : "tsx");
-    const seed = spawn(tsxBin, ["scripts/seed-mock-data.ts"], {
+    const seed = spawn(tsxBin, ["--conditions=development", "scripts/seed-mock-data.ts"], {
       cwd: repoRoot,
       env,
       stdio: "inherit",
