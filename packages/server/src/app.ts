@@ -10,11 +10,12 @@ import { requireAuth } from "./auth.js";
 import { db } from "./db.js";
 import { env } from "./env.js";
 import { ConflictError, NotFoundError } from "./lib/errors.js";
-import { registerUserContext } from "./userContext.js";
+import { registerAuthRoutes } from "./routes/auth.js";
 import { registerBodyweightRoutes } from "./routes/bodyweight.js";
 import { registerExerciseRoutes } from "./routes/exercises.js";
 import { registerExportRoutes } from "./routes/export.js";
 import { registerHistoryRoutes } from "./routes/history.js";
+import { registerMemberRoutes } from "./routes/members.js";
 import { registerMesocycleRoutes } from "./routes/mesocycles.js";
 import { registerOverallRankRoutes } from "./routes/overallRank.js";
 import { registerPlannedRouteRoutes } from "./routes/plannedRoutes.js";
@@ -63,7 +64,6 @@ export function configureApp(app: FastifyInstance) {
     return reply.code(500).send({ error: "internal_error" });
   });
 
-  registerUserContext(typedApp);
   return typedApp;
 }
 
@@ -114,11 +114,20 @@ export async function buildApp() {
   }
 
   app.addHook("onRequest", async (request, reply) => {
-    if (request.url.startsWith("/api/")) {
-      await requireAuth(request, reply);
+    // /api/auth/{status,setup,login,register} must be reachable with no session yet — they're
+    // how a token is obtained in the first place.
+    const isPublicAuthRoute =
+      request.url === "/api/auth/status" ||
+      request.url === "/api/auth/setup" ||
+      request.url === "/api/auth/login" ||
+      request.url === "/api/auth/register";
+    if (request.url.startsWith("/api/") && !isPublicAuthRoute) {
+      await requireAuth(db)(request, reply);
     }
   });
 
+  registerAuthRoutes(app, db);
+  registerMemberRoutes(app, db);
   registerExerciseRoutes(app, db, imagesRoot);
   registerRoutineRoutes(app, db);
   registerRoutineSuggestionRoutes(app, db);

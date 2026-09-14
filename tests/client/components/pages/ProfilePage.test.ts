@@ -32,6 +32,15 @@ vi.mock("~client/stores/themeStore", () => ({ useThemeStore: () => themeState })
 vi.mock("~client/stores/xpStore", () => ({ useXpStore: () => xpState }));
 vi.mock("~client/stores/settingsStore", () => ({ useSettingsStore: () => settingsState }));
 vi.mock("~client/services/exportService", () => ({ fetchExportZip: vi.fn() }));
+vi.mock("~client/services/authService", () => ({
+  getMe: vi.fn(),
+  listMembers: vi.fn(),
+  createInvite: vi.fn(),
+  removeMember: vi.fn(),
+  logout: vi.fn(),
+}));
+
+import * as authService from "~client/services/authService";
 
 beforeEach(async () => {
   vi.clearAllMocks();
@@ -40,6 +49,8 @@ beforeEach(async () => {
   Object.assign(xpState, { level: 3, totalXp: 450, showXp: true, loaded: false });
   Object.assign(settingsState, { profile: null, profileLoaded: false, ownedEquipment: null, gymSetup: null });
   vi.stubGlobal("URL", { ...URL, createObjectURL: vi.fn(() => "blob:mock"), revokeObjectURL: vi.fn() });
+  vi.mocked(authService.getMe).mockResolvedValue({ id: "u1", username: "owner", name: "Owner", role: "owner" });
+  vi.mocked(authService.listMembers).mockResolvedValue([]);
 });
 
 describe("ProfilePage", () => {
@@ -107,6 +118,62 @@ describe("ProfilePage", () => {
 
     expect(fetchExportZip).toHaveBeenCalledOnce();
     expect(wrapper.text()).toContain("Export fehlgeschlagen: 500");
+  });
+
+  it("shows the members section and lets the owner generate an invite code", async () => {
+    vi.mocked(authService.createInvite).mockResolvedValue({ code: "ABCD2345", expiresAt: new Date().toISOString() });
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    expect(wrapper.text()).toContain("Mitglieder");
+    const inviteBtn = wrapper.findAll(".card--quiet button").find((b) => b.text().includes("Einladungscode erstellen"))!;
+    await inviteBtn.trigger("click");
+    await flushAsync();
+
+    expect(wrapper.text()).toContain("ABCD2345");
+  });
+
+  it("hides the members section for a non-owner", async () => {
+    vi.mocked(authService.getMe).mockResolvedValue({ id: "u2", username: "member1", name: "Member", role: "member" });
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    expect(wrapper.text()).not.toContain("Mitglieder");
+    expect(authService.listMembers).not.toHaveBeenCalled();
+  });
+
+  it("removes a member and refreshes the list", async () => {
+    vi.mocked(authService.listMembers)
+      .mockResolvedValueOnce([{ id: "m1", username: "bob", name: "Bob", role: "member", createdAt: "2026-01-01" }])
+      .mockResolvedValueOnce([]);
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    expect(wrapper.text()).toContain("Bob");
+    const removeBtn = wrapper.findAll(".member-row button").find((b) => b.text() === "Entfernen")!;
+    await removeBtn.trigger("click");
+    await flushAsync();
+
+    expect(authService.removeMember).toHaveBeenCalledWith("m1");
+    expect(wrapper.text()).not.toContain("Bob");
+  });
+
+  it("logs out and reloads the page", async () => {
+    const reloadSpy = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload: reloadSpy });
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    const logoutBtn = wrapper.findAll("button").find((b) => b.text() === "Abmelden")!;
+    await logoutBtn.trigger("click");
+    await flushAsync();
+
+    expect(authService.logout).toHaveBeenCalledOnce();
+    expect(reloadSpy).toHaveBeenCalledOnce();
   });
 });
 
