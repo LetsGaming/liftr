@@ -5,10 +5,8 @@ import { hashSessionToken } from "./lib/sessionTokens.js";
 
 /**
  * Every `/api/*` request carries a bearer token; this looks it up against `sessions` and, on a
- * hit, sets `request.userId`/`request.role` for the rest of the request to use. Replaces the old
- * single-shared-token check and the separate `userContext.ts` hook that used to run after it —
- * those were two hooks doing halves of the same lookup; this is the one place identity gets
- * resolved now.
+ * hit, sets `request.userId`/`request.role` for the rest of the request to use — the one place
+ * identity gets resolved for the whole request.
  */
 export function requireAuth(db: LiftrDb) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
