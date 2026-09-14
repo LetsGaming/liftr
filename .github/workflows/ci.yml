@@ -35,3 +35,25 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Build
+        run: pnpm -r --filter=./packages/* build
+
+      - name: Smoke-test the compiled server actually boots
+        env:
+          LIFTR_DB_PATH: ${{ runner.temp }}/ci-smoke.db
+          PORT: "39999"
+        run: |
+          node packages/server/dist/index.js &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:39999/api/health >/dev/null; then
+              echo "server booted and healthy"
+              kill $SERVER_PID
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "::error::compiled server did not become healthy within 10s"
+          kill $SERVER_PID 2>/dev/null || true
+          exit 1
