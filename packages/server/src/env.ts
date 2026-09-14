@@ -12,8 +12,8 @@ export const env = {
    *  origins for real. */
   allowedOrigins: process.env.LIFTR_ALLOWED_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? null,
   /** OpenRouteService: BYO API key for planned-route road-snapping + elevation. Unset is a fully
-   *  supported degraded state (straight-line distance, no elevation) — no production-throw like
-   *  LIFTR_TOKEN has, since self-hosting without this key is a legitimate, deliberate choice. */
+   *  supported degraded state (straight-line distance, no elevation), since self-hosting without
+   *  this key is a legitimate, deliberate choice. */
   orsApiKey: process.env.LIFTR_ORS_API_KEY,
   orsBaseUrl: process.env.LIFTR_ORS_BASE_URL ?? "https://api.openrouteservice.org",
   orsProfile: process.env.LIFTR_ORS_PROFILE ?? "foot-walking",
