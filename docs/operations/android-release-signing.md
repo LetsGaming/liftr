@@ -72,6 +72,23 @@ Once all four are set, push a tag (`git tag v0.1.0 && git push origin v0.1.0`) o
 "Decode release keystore" step will no longer print the unsigned-build warning, and the resulting
 APK will install as an update over any previously-signed install of the app.
 
+## 2b. Point the release APK at your backend
+
+`release.yml` also needs to know where your Docker-deployed backend actually lives — without this,
+the built APK has no API URL baked in and can't reach anything on-device. Set a repository
+**variable** (not a secret — it's just a URL) called `LIFTR_BACKEND_URL`:
+
+```bash
+gh variable set LIFTR_BACKEND_URL --body "https://liftr.your-domain.example"
+```
+
+(Or via the web UI: **Settings → Secrets and variables → Actions → Variables tab → New repository
+variable**.) Point it at whatever address your reverse proxy exposes the Docker deployment on (see
+`docs/operations/docker-deployment.md`) — a LAN IP is fine too if you're not exposing it publicly,
+as long as it's reachable from wherever you'll actually use the app. If this variable isn't set,
+the build still succeeds but produces the same broken (no-backend-URL) APK as before — same
+graceful-degradation pattern as the unset-keystore case above.
+
 ## 3. (Optional) Build a signed release locally
 
 Useful for testing a release build without pushing a tag. Create
