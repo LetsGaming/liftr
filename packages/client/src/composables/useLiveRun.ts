@@ -99,7 +99,9 @@ export function useLiveRun() {
       status.value = "tracking";
       startTicking();
     } catch {
-      error.value = "Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen.";
+      error.value = globalThis.isSecureContext
+        ? "Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen."
+        : "GPS braucht eine sichere (HTTPS-)Verbindung — im Browser nur über HTTPS verfügbar.";
     }
   }
 
