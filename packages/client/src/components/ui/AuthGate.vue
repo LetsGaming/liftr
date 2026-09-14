@@ -1,33 +1,44 @@
 <script setup lang="ts">
 /**
- * Auth entry screen. The server enforces a single bearer token when LIFTR_TOKEN is set; this
- * component checks once on boot, and shows a blocking prompt only if that check comes back 401.
- * In dev, where LIFTR_TOKEN is unset, the health check succeeds with no token and this never
- * shows — a check, not a login wall for its own sake.
+ * Auth entry screen. Blocks the app behind one of three states depending on server/URL state:
+ * setup (fresh install, no owner password yet), join (URL carries `?invite=CODE`), or login
+ * (default). All three exchange credentials for a bearer token via `setToken`, then re-check.
  */
 import { onMounted, ref } from "vue";
 import { ApiError, api, setToken } from "../../lib/api";
 import AppIcon from "./AppIcon.vue";
 
-const status = ref<"checking" | "ok" | "needs-token" | "offline">("checking");
-const tokenInput = ref("");
+type Status = "checking" | "ok" | "setup" | "join" | "login" | "offline";
+
+const status = ref<Status>("checking");
+const username = ref("");
+const password = ref("");
+const inviteCode = ref("");
 const submitting = ref(false);
 const error = ref<string | null>(null);
-/** Same reasoning as ProfilePage.vue's token field — a bearer token to verify before submitting,
- *  not a login credential worth blanket-masking. */
-const tokenVisible = ref(false);
+const passwordVisible = ref(false);
+
+function getInviteCodeFromUrl(): string | null {
+  return new URLSearchParams(window.location.search).get("invite");
+}
 
 async function check() {
   status.value = "checking";
   try {
+    const { needsSetup } = await api.get<{ needsSetup: boolean }>("/api/auth/status");
+    if (needsSetup) {
+      status.value = "setup";
+      return;
+    }
     await api.get("/api/health");
     status.value = "ok";
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
-      status.value = "needs-token";
+      inviteCode.value = getInviteCodeFromUrl() ?? "";
+      status.value = inviteCode.value ? "join" : "login";
     } else {
-      // offline on first load with no cached auth state — let the app through; the PWA
-      // shell + cached catalog still work, and API calls will retry once online.
+      // Offline on first load with no cached auth state — let the app through; the PWA shell +
+      // cached catalog still work, and API calls retry once online.
       status.value = "offline";
     }
   }
@@ -35,50 +46,97 @@ async function check() {
 
 onMounted(check);
 
-async function submit() {
+async function submitSetup() {
   submitting.value = true;
   error.value = null;
-  setToken(tokenInput.value.trim());
   try {
-    await api.get("/api/health");
+    const { token } = await api.post<{ token: string }>("/api/auth/setup", { password: password.value });
+    setToken(token);
     status.value = "ok";
   } catch {
-    error.value = "Token abgelehnt — bitte prüfen.";
-    status.value = "needs-token";
+    error.value = "Einrichtung fehlgeschlagen.";
   } finally {
     submitting.value = false;
   }
 }
+
+async function submitLogin() {
+  submitting.value = true;
+  error.value = null;
+  try {
+    const { token } = await api.post<{ token: string }>("/api/auth/login", {
+      username: username.value.trim().toLowerCase(),
+      password: password.value,
+    });
+    setToken(token);
+    status.value = "ok";
+  } catch {
+    error.value = "Benutzername oder Passwort falsch.";
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function submitJoin() {
+  submitting.value = true;
+  error.value = null;
+  try {
+    const { token } = await api.post<{ token: string }>("/api/auth/register", {
+      code: inviteCode.value.trim().toUpperCase(),
+      username: username.value.trim().toLowerCase(),
+      password: password.value,
+    });
+    setToken(token);
+    status.value = "ok";
+  } catch {
+    error.value = "Einladungscode ungültig oder Benutzername bereits vergeben.";
+  } finally {
+    submitting.value = false;
+  }
+}
+
+function submit() {
+  if (status.value === "setup") return submitSetup();
+  if (status.value === "join") return submitJoin();
+  return submitLogin();
+}
 </script>
 
 <template>
-  <div v-if="status === 'needs-token'" class="gate">
+  <div v-if="status === 'setup' || status === 'login' || status === 'join'" class="gate">
     <div class="card surface-hybrid">
       <h1>Liftr</h1>
-      <p>
-        Dieser Server ist mit einem Token gesichert. Derselbe Wert lässt sich später jederzeit
-        unter Profil &amp; Einstellungen ändern, ohne diesen Bildschirm erneut auszulösen.
-      </p>
-      <div class="token-row">
+      <p v-if="status === 'setup'">Richte dein Besitzer-Konto ein.</p>
+      <p v-else-if="status === 'join'">Tritt mit deinem Einladungscode bei.</p>
+      <p v-else>Melde dich an.</p>
+
+      <input v-if="status === 'join'" v-model="inviteCode" type="text" placeholder="Einladungscode" aria-label="Einladungscode" />
+      <input v-if="status !== 'setup'" v-model="username" type="text" placeholder="Benutzername" aria-label="Benutzername" autocomplete="username" />
+      <div class="password-row">
         <input
-          v-model="tokenInput"
-          :type="tokenVisible ? 'text' : 'password'"
-          placeholder="Token"
-          aria-label="API-Token"
+          v-model="password"
+          :type="passwordVisible ? 'text' : 'password'"
+          placeholder="Passwort"
+          aria-label="Passwort"
+          autocomplete="current-password"
           @keyup.enter="submit"
         />
         <button
           type="button"
           class="btn-secondary"
-          :aria-label="tokenVisible ? 'Token verbergen' : 'Token anzeigen'"
-          @click="tokenVisible = !tokenVisible"
+          :aria-label="passwordVisible ? 'Passwort verbergen' : 'Passwort anzeigen'"
+          @click="passwordVisible = !passwordVisible"
         >
-          <AppIcon :name="tokenVisible ? 'eye-off' : 'eye'" />
+          <AppIcon :name="passwordVisible ? 'eye-off' : 'eye'" />
         </button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
-      <button class="btn-primary btn-lg btn-block" :disabled="submitting || !tokenInput.trim()" @click="submit">
-        {{ submitting ? "Prüfe…" : "Entsperren" }}
+      <button
+        class="btn-primary btn-lg btn-block"
+        :disabled="submitting || !password.trim() || (status !== 'setup' && !username.trim()) || (status === 'join' && !inviteCode.trim())"
+        @click="submit"
+      >
+        {{ submitting ? "…" : status === "setup" ? "Einrichten" : status === "join" ? "Beitreten" : "Anmelden" }}
       </button>
     </div>
   </div>
@@ -86,18 +144,17 @@ async function submit() {
 </template>
 
 <style scoped>
-/* No background here: an opaque fill would sit in front of tokens.css's `body::before` cosmic
-   sweep, which paints at z-index 0 behind body's children and gets fully hidden by any opaque
-   child painted on top of it. This is the first screen a locked-down server shows, so it needs
-   to let the sweep show through like every other screen. */
+/* No background here: an opaque fill would sit in front of tokens.css's body::before cosmic
+   sweep, which paints behind body's children and gets hidden by any opaque child on top of it —
+   this is the first screen a locked-down server shows, so it needs to let the sweep show through
+   like every other screen. */
 .gate {
   min-height: 100vh;
   display: grid;
   place-items: center;
 }
-/* Uses the shared .surface-hybrid utility (tokens.css) instead of a flat --surface-2 fill +
-   --line border, so this card reads as a translucent object floating over the sweep instead of
-   an opaque box painted over it. */
+/* .surface-hybrid (tokens.css) instead of a flat --surface-2 fill + --line border, so this card
+   reads as a translucent object floating over the sweep instead of an opaque box painted over it. */
 .card {
   border-radius: var(--r-xl);
   padding: var(--sp8);
@@ -113,12 +170,22 @@ async function submit() {
   font-size: 13px;
   margin-bottom: var(--sp4);
 }
-.token-row {
+.card input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: var(--sp2);
+}
+.password-row {
   display: flex;
   gap: var(--sp2);
   margin-bottom: var(--sp3);
 }
-.token-row input {
+.password-row input {
   flex: 1;
   min-width: 0;
   padding: 12px 14px;

@@ -1,21 +1,20 @@
 <script setup lang="ts">
 // Profil & Einstellungen. Bodyweight log lives here — enough to close the rank-engine's
-// hardcoded-75kg fallback gap. Auth token entry also lives here as a fallback path — the
-// primary path is the AuthGate prompt on first 401.
+// hardcoded-75kg fallback gap. Account login/logout now happens via AuthGate's setup/login/join
+// forms and the member management below — no more raw token entry.
 // Split into composables (each owns its own loading/error state) since this page used to mix
 // six+ unrelated concerns directly in its script setup — see composables/use{ProfileForm,
 // GymSetup,HealthConnectImport,DataExport}.ts.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
-import AppIcon from "../components/ui/AppIcon.vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import { useDataExport } from "../composables/useDataExport";
 import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
 import { useHealthConnectImport, isHealthConnectAvailable } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
-import { getToken, setToken } from "../lib/api";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
+import { createInvite, getMe, listMembers, logout, removeMember, type Me, type Member } from "../services/authService";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useThemeStore } from "../stores/themeStore";
@@ -45,18 +44,38 @@ const {
 const { healthConnectStatus, healthConnectBusy, connectHealthConnect } = useHealthConnectImport();
 const { exporting, exportError, exportData } = useDataExport();
 
-// API-Token: a locally-generated bearer token the user must verify before saving, not a login
-// credential shared across services — masking it with no way to reveal would prevent confirming
-// what was typed. Defaults masked. Small enough to leave on the page rather than its own composable.
-const tokenInput = ref(getToken());
-const tokenVisible = ref(false);
-function saveToken() {
-  setToken(tokenInput.value.trim());
+const me = ref<Me | null>(null);
+const members = ref<Member[]>([]);
+const inviteCode = ref<string | null>(null);
+const inviteBusy = ref(false);
+
+async function generateInvite() {
+  inviteBusy.value = true;
+  try {
+    const invite = await createInvite();
+    inviteCode.value = invite.code;
+  } finally {
+    inviteBusy.value = false;
+  }
 }
 
-onMounted(() => {
+async function removeMemberAndRefresh(id: string) {
+  await removeMember(id);
+  members.value = await listMembers();
+}
+
+async function handleLogout() {
+  await logout();
+  window.location.reload();
+}
+
+onMounted(async () => {
   void bodyweight.load();
   if (!settingsStore.profileLoaded) void settingsStore.load();
+  me.value = await getMe();
+  if (me.value.role === "owner") {
+    members.value = await listMembers();
+  }
 });
 
 const canSave = computed(() => {
@@ -74,6 +93,7 @@ async function saveWeight() {
     saving.value = false;
   }
 }
+
 </script>
 
 <template>
@@ -238,29 +258,24 @@ async function saveWeight() {
       </div>
     </section>
 
+    <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
+      <h2 class="eyebrow">Mitglieder</h2>
+      <ul v-if="members.length" class="member-list">
+        <li v-for="member in members" :key="member.id" class="member-row">
+          <span>{{ member.name }} ({{ member.username }})</span>
+          <button v-if="member.role !== 'owner'" class="btn-secondary" @click="removeMemberAndRefresh(member.id)">
+            Entfernen
+          </button>
+        </li>
+      </ul>
+      <button class="btn-primary" :disabled="inviteBusy" @click="generateInvite">
+        {{ inviteBusy ? "…" : "Einladungscode erstellen" }}
+      </button>
+      <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
+    </section>
+
     <section class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">API-Token</h2>
-      <p class="hint">
-        Nur nötig, wenn der Server mit LIFTR_TOKEN abgesichert ist — derselbe Wert, nach dem beim
-        Start auch der Entsperren-Bildschirm fragt, falls der Server einen Token verlangt.
-      </p>
-      <div class="bw-row token-row">
-        <input
-          v-model="tokenInput"
-          :type="tokenVisible ? 'text' : 'password'"
-          placeholder="Token"
-          aria-label="API-Token"
-        />
-        <button
-          type="button"
-          class="btn-secondary"
-          :aria-label="tokenVisible ? 'Token verbergen' : 'Token anzeigen'"
-          @click="tokenVisible = !tokenVisible"
-        >
-          <AppIcon :name="tokenVisible ? 'eye-off' : 'eye'" />
-        </button>
-        <button class="btn-primary" @click="saveToken">Speichern</button>
-      </div>
+      <button class="btn-secondary btn-block" @click="handleLogout">Abmelden</button>
     </section>
 
     <section v-if="isHealthConnectAvailable()" class="card card--quiet surface-hybrid">
@@ -391,13 +406,25 @@ async function saveWeight() {
   border-color: var(--nebula-m);
   box-shadow: 0 0 0 3px var(--nebula-glow);
 }
-/* Token row has 3 items (input + reveal toggle + save) instead of the base 2 — wraps to a
-   second line on narrow viewports instead of overflowing the card. */
-.token-row {
-  flex-wrap: wrap;
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--sp3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
 }
-.token-row input {
-  flex-basis: 100%;
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp2);
+  font-size: 14px;
+}
+.invite-code {
+  margin-top: var(--sp3);
+  font-size: 13px;
+  color: var(--dim);
 }
 .unit {
   color: var(--faint);
