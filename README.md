@@ -9,15 +9,21 @@
 
 # Liftr
 
-Log a set, watch your rank move. That's the whole loop.
+**Log a set. Watch your rank move.**
 
-Liftr is a self-hosted strength and running tracker. Most workout apps either have a progression
-system worth caring about and are miserable to use, or they're polished and forgettable. Liftr is
-an attempt at the first one without the second: private, ad-free, no account, and it turns "did I
-get stronger" into something you can actually see, one set at a time.
+Nine tiers, real strength standards, and a number that goes up because you actually got stronger,
+not because an app wanted you to open it today.
 
-The rank system is the retention mechanic — that's the whole design rule. Everything else exists
-to make logging a set fast enough that using the app doesn't feel like a chore.
+- <img src="docs/assets/icon-dumbbell.svg" width="16" height="16" align="absmiddle" alt="" /> **A rank for almost every lift**, not just squat/bench/deadlift
+- <img src="docs/assets/icon-lock.svg" width="16" height="16" align="absmiddle" alt="" /> **Self-hosted, no account, no ads, no analytics** — your training data stays yours
+- <img src="docs/assets/icon-offline.svg" width="16" height="16" align="absmiddle" alt="" /> **Installable PWA that works offline.** Log a set in a basement gym with zero signal, it syncs later
+- <img src="docs/assets/icon-run.svg" width="16" height="16" align="absmiddle" alt="" /> **Runs count too** — import GPX/FIT from any watch, no Strava required
+- <img src="docs/assets/icon-database.svg" width="16" height="16" align="absmiddle" alt="" /> **One SQLite file.** Back it up, move it, own it
+
+Most workout apps either have a progression system worth caring about and are miserable to use, or
+they're polished and forgettable. Liftr tries to be the first one without the second.
+
+<p align="center"><sub>Free. Open source. Runs on hardware you already own.</sub></p>
 
 ## The core loop
 
@@ -25,19 +31,19 @@ to make logging a set fast enough that using the app doesn't feel like a chore.
 
 ## What it feels like to use
 
-Open the app mid-workout, not before it. Start a routine and the set you're about to do is already on screen, last time's weight and reps sitting right next to the input, so you never have to think "what did I lift last week." Log it in one or two taps. That's the whole interaction the app is built around, and nothing gets added on top of it that would slow that down.
+Open the app mid-workout, not before it. Start a routine and the set you're about to do is already
+on screen, last time's weight and reps right next to the input, so you never have to think "what
+did I lift last week." Log it in one or two taps.
 
-Every lift has a rank — nine tiers from Initiate to Apex, with divisions inside each tier (more divisions at the bottom for frequent early rank-ups, down to a single division at Apex — one real milestone, not another grind), based on real strength standards where they exist (bodyweight-relative lifts, barbell classics) and honest estimates where they don't. When an estimate is doing the guessing, the app marks it with a small `≈` instead of pretending to a precision it doesn't have.
+Every lift has a rank, based on real strength standards where they exist and honest estimates
+where they don't (marked with a small `≈`, no pretending). Hit a rank once and it's locked in as
+your peak for good, even if your bodyweight shifts. Your current rank can soften if you stop
+training a lift for a while, then snaps right back the moment you log one real set again. No
+re-climbing, just a reason to come back.
 
-Once you hit a rank, it's locked in as your peak. The app won't quietly take it back from you, even if your bodyweight shifts or an old standard turns out to have been miscalibrated. Your *current* rank is a separate number: it softens a little if you stop training a lift for a few weeks — three weeks off costs you a division, not the whole tier — and it snaps straight back the moment you log one real set. No re-climbing, no second grind, just a reason to come back.
-
-Beyond your individual lift ranks — nearly every exercise in the catalog gets one, not just a handful of barbell classics — Liftr rolls your strongest, most-trusted lifts into a single Overall Rank, weighted toward your real barbell numbers so one obscure accessory exercise can't drag it around.
-
-The Recovery Zone looks at your recent training load and tells you plainly whether today is a green light or a rest day — a heuristic, not a claim to know your physiology better than you do. Streaks work on the same logic: miss a day and the streak survives, because the point is protecting motivation, not punishing a Tuesday.
-
-Runs count too. Import GPX or FIT files from any watch or app you already have — no Strava account, no third-party API required.
-
-None of it leaves your hands, either. No cloud account, no analytics, no feed to perform for. Liftr runs on your own server, keeps its data in a single SQLite file you can back up or take with you, and works offline as an installable PWA — log a set with zero signal in a basement gym and it syncs once you're back online.
+The Recovery Zone reads your recent training load and tells you plainly if today's a green light
+or a rest day. Streaks survive a missed day, because the point is protecting motivation, not
+punishing a Tuesday.
 
 ## The ladder
 
@@ -60,10 +66,9 @@ Rank** that rolls your strongest lifts into a single headline number.
 ## Why it's built this way
 
 Progression only stays motivating if it's honest. A rank that goes up for reasons you don't
-understand, or vanishes for reasons outside your control (a bodyweight fluctuation shouldn't cost
-you a rank you legitimately earned), stops feeling like a game and starts feeling like noise. The
-peak/current split, the trust markers on estimated numbers, the streak forgiveness — all three
-exist for the same reason: to keep the numbers fair.
+understand, or vanishes for reasons outside your control, stops feeling like a game and starts
+feeling like noise. Every design call in Liftr (the peak/current split, the trust markers on
+estimated numbers, the streak forgiveness) exists to keep the numbers fair.
 
 ## Getting it running
 
@@ -106,7 +111,7 @@ Vue 3 + Ionic/Capacitor (installable PWA) · Fastify + SQLite/Drizzle · TypeScr
 
 ---
 
-<p align="center"><sub>One lifter's home gym, one server, no third parties in between.* 🏋️</sub></p>
+<p align="center"><sub>One lifter's home gym, one server, no third parties in between.*</sub> <img src="docs/assets/icon-dumbbell.svg" width="14" height="14" align="absmiddle" alt="" /></p>
 
 <sub>\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
 distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
