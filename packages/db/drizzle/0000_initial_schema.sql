@@ -320,6 +320,8 @@ CREATE TABLE `users` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_username_idx` ON `users` (`username`);--> statement-breakpoint
+INSERT INTO `users` (`id`, `username`, `name`, `role`, `created_at`) VALUES ('00000000-0000-4000-8000-000000000001', 'owner', 'Owner', 'owner', unixepoch('subsec') * 1000);
+--> statement-breakpoint
 CREATE TABLE `workout_exercises` (
 	`id` text PRIMARY KEY NOT NULL,
 	`workout_id` text NOT NULL,
