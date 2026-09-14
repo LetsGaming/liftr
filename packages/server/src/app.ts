@@ -1,4 +1,5 @@
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import staticFiles from "@fastify/static";
@@ -103,6 +104,15 @@ export async function buildApp() {
   }
 
   await app.register(cors, { origin: env.allowedOrigins ?? true });
+  await app.register(helmet, {
+    // This server also directly serves the built client PWA as static files (see the
+    // clientDistRoot wiring below) — helmet's default CSP would block that app's own inline
+    // styles/scripts if left at full strictness. contentSecurityPolicy: false here keeps the
+    // scope of this task to the two headers the audit specifically flagged as missing
+    // (X-Content-Type-Options, X-Frame-Options) plus HSTS; a hand-tuned CSP for the client bundle
+    // is a separate, larger task if wanted later.
+    contentSecurityPolicy: false,
+  });
   await app.register(rateLimit, { global: false }); // opt-in per route below, not applied by default
   await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } }); // GPX files are small text; 20MB is generous
 

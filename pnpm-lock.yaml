@@ -14,6 +14,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@9.39.5(supports-color@8.1.1))
+      '@fastify/helmet':
+        specifier: ^13.1.1
+        version: 13.1.1
       '@fastify/multipart':
         specifier: ^9.0.1
         version: 9.4.0
@@ -224,6 +227,9 @@ importers:
       '@fastify/cors':
         specifier: ^10.0.2
         version: 10.1.0
+      '@fastify/helmet':
+        specifier: ^13.1.1
+        version: 13.1.1
       '@fastify/multipart':
         specifier: ^9.0.1
         version: 9.4.0
@@ -1660,6 +1666,9 @@ packages:
 
   '@fastify/forwarded@3.0.2':
     resolution: {integrity: sha512-NE8HgKLgYejV9lDpqkEFaDKMLYelJBVfHekhB0UKvX0ghagXRJqg68feg8er1NPXxG4N9i6vPxzt8E+3wHfcmA==}
+
+  '@fastify/helmet@13.1.1':
+    resolution: {integrity: sha512-bSat5DTq8geASv8G6P0KW1UbltZ+xGD/zyd9S72pT7ogAHehcsWL85GdjMRCjDsExJvaEvgEZ52qU/2HXirVCw==}
 
   '@fastify/merge-json-schemas@0.2.1':
     resolution: {integrity: sha512-OA3KGBCy6KtIvLf8DINC5880o5iBlDX4SxzLQS8HorJAbqluzLRn80UXU0bxZn7UOFhFgpRJDasfwn9nG4FG4A==}
@@ -3142,6 +3151,10 @@ packages:
   he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
+
+  helmet@8.3.0:
+    resolution: {integrity: sha512-Qgpiaws3Sm30Av8Eah6sjMCZZwjlBu+E68rhpCWBshY1lb09HtLwj5GviX0OyQIn+ulUS0iX0AxN5n3tLZzz1w==}
+    engines: {node: '>=18.0.0'}
 
   html-encoding-sniffer@4.0.0:
     resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
@@ -5798,6 +5811,11 @@ snapshots:
 
   '@fastify/forwarded@3.0.2': {}
 
+  '@fastify/helmet@13.1.1':
+    dependencies:
+      fastify-plugin: 6.0.0
+      helmet: 8.3.0
+
   '@fastify/merge-json-schemas@0.2.1':
     dependencies:
       dequal: 2.0.3
@@ -7437,6 +7455,8 @@ snapshots:
       function-bind: 1.1.2
 
   he@1.2.0: {}
+
+  helmet@8.3.0: {}
 
   html-encoding-sniffer@4.0.0:
     dependencies:
