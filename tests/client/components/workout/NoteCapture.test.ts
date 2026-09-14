@@ -44,6 +44,15 @@ afterEach(() => {
 });
 
 describe("NoteCapture", () => {
+  // The server caps notes at 500 chars (logSetPayload/finishWorkoutPayload in sync.ts) and rejects
+  // the whole sync chunk if exceeded, wedging the offline outbox — this cap must match exactly so
+  // the browser can't produce a note the server will bounce.
+  it("caps the textarea at 500 characters, matching the server's notes limit", () => {
+    const wrapper = mountCapture("Notiz", null);
+
+    expect(wrapper.find("textarea").attributes("maxlength")).toBe("500");
+  });
+
   it("seeds the textarea from modelValue", () => {
     const wrapper = mountCapture("Notiz zum Satz", "felt heavy");
 

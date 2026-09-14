@@ -180,6 +180,54 @@ describe("AuthGate", () => {
     expect(wrapper.find(".protected").exists()).toBe(false);
   });
 
+  it("shows a rate-limit message (not the generic wrong-password copy) on a 429 from login", async () => {
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
+    });
+    mockPost.mockRejectedValue(new ApiError("rate limited", 429));
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    await wrapper.find("input[aria-label='Benutzername']").setValue("owner");
+    await wrapper.find("input[type='password']").setValue("wrong");
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Zu viele Versuche");
+    expect(wrapper.text()).not.toContain("Benutzername oder Passwort falsch.");
+  });
+
+  it("shows a password-too-weak message on a 400 whose detail names the common-password rejection", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
+    mockPost.mockRejectedValue(new ApiError("invalid_request", 400, "password: too common, choose a different password"));
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    await wrapper.find("input[type='password']").setValue("password1");
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Passwort zu unsicher");
+    expect(wrapper.text()).not.toContain("Einrichtung fehlgeschlagen.");
+  });
+
+  it("keeps the generic setup error for a 400 that isn't the common-password rejection", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
+    mockPost.mockRejectedValue(new ApiError("invalid_request", 400, "password: at least 8 characters"));
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    await wrapper.find("input[type='password']").setValue("short1");
+    await wrapper.find("button.btn-primary").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Einrichtung fehlgeschlagen.");
+  });
+
   it("toggles the password field between password and text on the eye button", async () => {
     mockGet.mockResolvedValue({ needsSetup: true });
     const wrapper = mountWithProviders(AuthGate);
