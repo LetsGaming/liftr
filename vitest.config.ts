@@ -9,6 +9,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [vue()],
   resolve: {
+    conditions: ["development"],
     alias: [
       { find: "~server", replacement: fileURLToPath(new URL("./packages/server/src", import.meta.url)) },
       { find: "~client", replacement: fileURLToPath(new URL("./packages/client/src", import.meta.url)) },

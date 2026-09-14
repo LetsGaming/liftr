@@ -5,7 +5,8 @@ import { VitePWA } from "vite-plugin-pwa";
 // Client shell (plan 1.2): Vue 3 PWA, offline-first (plan 1.3). The service worker precaches
 // the app shell; catalog + images use CacheFirst; API GETs use StaleWhileRevalidate, so the
 // core logging loop keeps working with no signal (audit's "gym basement" requirement).
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  resolve: command === "serve" ? { conditions: ["development"] } : undefined,
   plugins: [
     vue(),
     VitePWA({
@@ -95,4 +96,4 @@ export default defineConfig({
       "/images": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,
     },
   },
-});
+}));
