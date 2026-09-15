@@ -177,7 +177,7 @@ Two concrete reproductions:
 This isn't independently fixable without a terrain/water data source (OSM water polygons, a DEM);
 recorded here as a known limitation rather than a bug with a clear code-level fix.
 
-**Resolution:** **Not fixed, by decision.** Documented as an inherent limitation in `loop.ts`'s module header and in ADR-0008's consequences. Needs a terrain/water data source this app does not have; a heuristic guess would be worse than the honest gap.
+**Resolution:** **Not fixed, by decision.** Documented as an inherent limitation in `loop.ts`'s module header and in ADR-0008's consequences. Needs a terrain/water data source this app does not have; a heuristic guess would be worse than the honest gap. Partially sidestepped for loops by `docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md`: the router, not the arc, now picks the actual return streets, so a real street network at least won't route *through* the middle of a lake the way a blind arc point could sit in one — but it can still legitimately route *along* the shore of one, or across a bridge over it, since the corridor only ever says "not the outbound path," never "avoid water."
 
 ### A6. No heading continuity — the arc ignores which direction you were already moving
 
@@ -254,6 +254,8 @@ generateLoopWaypoints(approach2)[0];
 ```
 
 **Resolution:** Fixed (Task 3). The return leg is the circular arc tangent to the approach heading; the structural-proof repro is inverted into a test asserting the two approaches now produce *different* arcs, and the roundabout case is completed along the roundabout.
+
+**Further resolved by `docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md`:** the arc no longer decides the return leg's *real* path at all when ORS is configured — its points are excluded from what actually gets routed, and the closing leg is instead routed against a corridor that avoids the outbound leg's own snapped streets, forcing the router to find genuinely different real streets rather than snapping a geometric guess. The heading-aware arc above remains what's shown locally while editing and in the offline/no-ORS-key fallback.
 
 ---
 

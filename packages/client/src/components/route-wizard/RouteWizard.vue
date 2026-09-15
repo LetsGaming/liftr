@@ -13,6 +13,12 @@
  * size on modal-present. That's fine: RouteMapEditor mounts on `LeafletMapBase.vue`, whose live
  * `ResizeObserver` keeps calling `invalidateSize()` for as long as the map exists, so a
  * still-animating sheet settling into its final size is handled regardless of timing.
+ *
+ * The road-snapped line is computed once, server-side, at Save — not while editing. This sheet
+ * makes no network call per waypoint edit (see docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md):
+ * every tap/drag/remove/loop-toggle only ever recomputes the local straight-line/geometric-arc
+ * preview (`RouteMapEditor`'s own fallback rendering, previously only used when ORS was
+ * unavailable). The one exception is seeding a brand-new route from an already-recorded run.
  */
 import { computed, ref, watch } from "vue";
 import { generateLoopWaypoints, pathDistanceM } from "@liftr/shared";
@@ -36,9 +42,9 @@ const props = defineProps<{
   initialCenter?: { lat: number; lon: number };
   /** Pre-fills a brand-new route (only used when `route` is unset) from an already-recorded
    *  track — e.g. RunDetail.vue's "Als Strecke speichern" turning a finished run's GPS points
-   *  into a reusable route. Goes through the exact same waypoints/preview/save path as manually
-   *  placed points, so the ORS preview still runs and the user can still drag/add/remove points
-   *  before saving. */
+   *  into a reusable route. Goes through the same waypoints/save path as manually placed points;
+   *  unlike manual editing, this one hydration fires a single one-time preview call to enrich the
+   *  already-real recorded points with a snapped distance/elevation up front — see hydrateFrom. */
   seedWaypoints?: Waypoint[];
   seedName?: string;
 }>();
@@ -105,15 +111,14 @@ const maxUserWaypoints = computed(() =>
 const userWaypointCount = computed(() => waypoints.value.filter((w) => !w.gen).length);
 
 /** Generates the arc once closeLoop is on and there isn't one yet. Called from the *debounced*
- *  preview scheduler below (schedulePreview), not straight from onAdd — closeLoop defaults to
- *  true on a brand-new route, so generating eagerly the instant a 2nd waypoint lands would bridge
- *  only those first two points and ignore every waypoint placed after, since gen points, once
- *  present, are never regenerated (see setCloseLoop's own doc for why). Riding the same debounce
- *  the ORS preview already uses means it only fires once the user actually pauses, by which point
- *  every waypoint they meant to place is there — and it still covers the "toggle already on,
- *  never fires a change event" case this exists for in the first place. No-ops (via
- *  generateLoopWaypoints's own guard) below 2 waypoints, and is a no-op whenever a generated arc
- *  already exists. */
+ *  scheduler below (scheduleArc), not straight from onAdd — closeLoop defaults to true on a
+ *  brand-new route, so generating eagerly the instant a 2nd waypoint lands would bridge only
+ *  those first two points and ignore every waypoint placed after, since gen points, once present,
+ *  are never regenerated (see setCloseLoop's own doc for why). Debouncing means it only fires once
+ *  the user actually pauses, by which point every waypoint they meant to place is there — and it
+ *  still covers the "toggle already on, never fires a change event" case this exists for in the
+ *  first place. No-ops (via generateLoopWaypoints's own guard) below 2 waypoints, and is a no-op
+ *  whenever a generated arc already exists. */
 function generateArcIfNeeded() {
   if (!closeLoop.value || arcDismissed.value || waypoints.value.some((w) => w.gen)) return;
   const maxCount = Math.max(0, SERVER_MAX_WAYPOINTS - 1 - waypoints.value.length);
@@ -185,34 +190,39 @@ async function hydrateFrom(route: PlannedRoute | null | undefined) {
 }
 watch(() => props.route, hydrateFrom, { immediate: true });
 
-let previewController: AbortController | null = null;
-let previewTimer: ReturnType<typeof setTimeout> | null = null;
+let arcTimer: ReturnType<typeof setTimeout> | null = null;
 
-function schedulePreview() {
-  if (previewTimer) clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => {
-    // Runs on the same debounce as the ORS preview itself — see generateArcIfNeeded's own doc for
-    // why this can't just happen straight from onAdd.
-    generateArcIfNeeded();
-    void runPreview();
-  }, 400);
+/** Debounced local arc (re)generation — no network involved. The debounce exists so a burst of
+ *  taps produces one arc bridging the finished path, not one per tap (see generateArcIfNeeded's
+ *  own doc); it has nothing to do with request traffic since removing the live ORS preview below. */
+function scheduleArc() {
+  if (arcTimer) clearTimeout(arcTimer);
+  arcTimer = setTimeout(generateArcIfNeeded, 400);
 }
 
+/** Any edit invalidates whatever geometry is on screen — a hydrated route's saved ORS line most
+ *  of all, which would otherwise keep showing the old snapped shape under freshly moved markers.
+ *  There is no live preview request to replace it with (see the module doc), so the sheet drops
+ *  back to the local straight/arc line and the "≈" label until the user actually saves. */
+function markLocalGeometry() {
+  routedPoints.value = [];
+  geometrySource.value = "straight";
+  elevationGainM.value = null;
+}
+
+/** The one network call this sheet makes — a one-time enrichment when a brand-new route is
+ *  seeded from a recorded GPS track (props.seedWaypoints, called once from hydrateFrom). Manual
+ *  editing never calls this; the map shows the local line until Speichern. */
 async function runPreview() {
-  if (waypoints.value.length < 2) {
-    routedPoints.value = [];
-    return;
-  }
-  previewController?.abort();
-  previewController = new AbortController();
+  if (waypoints.value.length < 2) return;
   try {
-    const result = await previewPlannedRoute(effectiveWaypoints.value, previewController.signal);
+    const result = await previewPlannedRoute(effectiveWaypoints.value);
     routedPoints.value = result.points;
     geometrySource.value = result.geometrySource;
     lastComputedDistanceM.value = result.distanceM;
     elevationGainM.value = result.elevationGainM;
   } catch {
-    // A failed/aborted preview is a non-event — the straight line and its ≈ label just stay.
+    // A failed preview is a non-event — the straight line and its ≈ label just stay.
   }
 }
 
@@ -221,6 +231,7 @@ function onAdd(waypoint: Waypoint) {
     toast(`Maximal ${maxUserWaypoints.value} Wegpunkte — entferne zuerst einen Punkt.`);
     return;
   }
+  markLocalGeometry();
   if (!arcDismissed.value && waypoints.value.some((w) => w.gen)) {
     // A new tap after the arc has already generated invalidates it twice over: appending behind it
     // would make the route visit the arc and then jump back out to the new point (a zigzag that
@@ -239,18 +250,23 @@ function onAdd(waypoint: Waypoint) {
       ...waypoints.value.slice(lastUserIdx + 1),
     ];
   }
-  schedulePreview();
+  scheduleArc();
 }
 function onMove(index: number, waypoint: Waypoint) {
+  markLocalGeometry();
   waypoints.value = waypoints.value.map((w, i) => (i === index ? waypoint : w));
-  schedulePreview();
+  scheduleArc();
 }
 function onRemove(index: number) {
+  markLocalGeometry();
   if (waypoints.value[index]?.gen) arcDismissed.value = true;
   waypoints.value = waypoints.value.filter((_, i) => i !== index);
-  schedulePreview();
+  scheduleArc();
 }
-watch(closeLoop, schedulePreview);
+watch(closeLoop, () => {
+  markLocalGeometry();
+  scheduleArc();
+});
 
 const closeConfirm = useConfirmTap(() => sheetRef.value?.dismiss());
 function requestClose() {
@@ -282,8 +298,7 @@ async function save() {
   // are no more taps coming — and where skipping it is destructive: effectiveWaypoints would be
   // read with the timer still pending and the route would persist as a straight closing line with
   // "Schleife schließen" checked, which hydrateFrom then never repairs (findings B1). This call is
-  // a no-op when an arc already exists, and the pending timer is deliberately left running so its
-  // runPreview() still refreshes the sheet if the save fails.
+  // a no-op when an arc already exists; any pending arc timer left running is harmless either way.
   generateArcIfNeeded();
   saving.value = true;
   try {
@@ -317,6 +332,7 @@ async function save() {
       :waypoints="waypoints"
       :routed-points="routedPoints"
       :approximate="geometrySource === 'straight'"
+      :closed="closeLoop"
       :initial-center="initialCenter"
       @add="onAdd"
       @move="onMove"

@@ -26,13 +26,9 @@
  *
  * ## The plane
  *
- * Works in a local metric plane (an equirectangular approximation centered on the chord it's
- * bridging) rather than directly in lat/lon degrees, since a degree of longitude shrinks with
- * latitude — arithmetic in raw degrees would bulge east-west loops the wrong amount as you move
- * away from the equator. Longitudes are unwrapped around the route's own start before projecting
- * and wrapped back afterwards, so a route across the ±180° line stays next to itself. The
- * projection is only ever used internally here; every public lat/lon in and out is a real WGS84
- * coordinate, clamped to the ranges the server's waypoint schema accepts.
+ * Works in a local metric plane bridging the chord — see ./localPlane.ts for the projection this
+ * (and corridor.ts) works in. Every public lat/lon in and out here is a real WGS84 coordinate,
+ * clamped to the ranges the server's waypoint schema accepts.
  *
  * ## What this cannot do
  *
@@ -55,21 +51,9 @@
  * affordance in the wizard would be the real fix and does not exist yet.
  */
 import { haversineM } from "./gps.js";
+import { isFiniteWaypoint, projector, type Point2, type Waypoint } from "./localPlane.js";
 
-export interface Waypoint {
-  lat: number;
-  lon: number;
-}
-
-const EARTH_RADIUS_M = 6_371_000;
-const M_PER_DEG_LAT = (Math.PI / 180) * EARTH_RADIUS_M;
-
-/** cos(lat) → 0 at the poles, so metres-per-degree-of-longitude → 0 and `unproject` ends up
- *  dividing by nearly nothing, throwing the output longitude far outside ±180° (findings C —
- *  confirmed up to lon = -198°). No running route gets within a kilometre of a pole, so this
- *  floor never engages in practice; it costs one Math.max and converts an impossible-to-debug
- *  garbage coordinate into a merely-distorted one. */
-const MIN_M_PER_DEG_LON = M_PER_DEG_LAT * Math.cos((89.9 * Math.PI) / 180);
+export type { Waypoint };
 
 /** A loop shorter than this is already closed for practical purposes — bulging an arc across a
  *  near-zero chord would just create a tiny, meaningless zigzag. */
@@ -107,26 +91,6 @@ const DEFAULT_COUNT = 3;
  *  of `maxCount`, which the one production caller always supplies but a future one might not
  *  (findings C). */
 const MAX_GENERATED_COUNT = 48;
-
-interface Point2 {
-  x: number;
-  y: number;
-}
-
-/** Longitude is discontinuous at ±180°: 179.99 and -179.99 are 2 km apart on the ground but
- *  359.98 degrees apart numerically, and the local-plane projection below is plain linear
- *  arithmetic with no way to know that. Unwrapping every longitude into one continuous run around
- *  a single reference point before projecting — and wrapping the result back afterwards — is what
- *  keeps an arc that crosses the antimeridian next to the route instead of on the opposite side of
- *  the planet (findings A2, which saved as silently corrupted data because the wrong-side points
- *  still satisfied the server's lat/lon bounds). */
-function unwrapLon(lon: number, refLon: number): number {
-  return lon - 360 * Math.round((lon - refLon) / 360);
-}
-
-function wrapLon(lon: number): number {
-  return ((((lon + 180) % 360) + 360) % 360) - 180;
-}
 
 /** The direction the runner was travelling when they placed their final waypoint, as a unit vector
  *  in the projected plane. This is the input the old implementation never read (findings A6): it
@@ -237,35 +201,6 @@ function clampBulgeM(rawM: number, chordLenM: number): number {
   const cap = MAX_BULGE_RATIO * Math.sqrt(chordLenM * Math.min(chordLenM, BULGE_KNEE_CHORD_M));
   const floor = Math.min(cap, Math.max(MIN_BULGE_ABS_M, MIN_BULGE_RATIO * chordLenM));
   return Math.min(cap, Math.max(floor, rawM));
-}
-
-function projector(lat0: number, refLon: number) {
-  const mPerDegLon = Math.max(MIN_M_PER_DEG_LON, M_PER_DEG_LAT * Math.cos((lat0 * Math.PI) / 180));
-  return {
-    project: (p: Waypoint): Point2 => ({
-      x: unwrapLon(p.lon, refLon) * mPerDegLon,
-      y: p.lat * M_PER_DEG_LAT,
-    }),
-    /** Every public coordinate this module returns passes through here, which makes it the one
-     *  place that can guarantee the WGS84 contract the server's zod schema enforces. Clamping and
-     *  wrapping rather than throwing: a slightly-clamped point is a draggable annoyance, a
-     *  rejected save is a dead end for the user. */
-    unproject: (p: Point2): Waypoint => ({
-      lat: Math.min(90, Math.max(-90, p.y / M_PER_DEG_LAT)),
-      lon: wrapLon(p.x / mPerDegLon),
-    }),
-  };
-}
-
-/** The server's waypoint schema is the contract on both ends of this function: it will not accept
- *  an out-of-range or non-finite coordinate on the way in, and must never be handed one on the way
- *  out. Rejecting the whole call is the right failure mode — a partial arc derived from one garbage
- *  waypoint is worse than no arc (findings C: `NaN < MIN_CHORD_M` is false, so the chord guard
- *  below never caught this and every output point came back NaN). */
-function isFiniteWaypoint(w: Waypoint): boolean {
-  return (
-    Number.isFinite(w.lat) && Number.isFinite(w.lon) && Math.abs(w.lat) <= 90 && Math.abs(w.lon) <= 180
-  );
 }
 
 /**

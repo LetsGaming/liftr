@@ -387,8 +387,10 @@ doesn't exist or belongs to another user.
 ### `POST /api/planned-routes/preview`
 Computes geometry for a waypoint set **without persisting anything** — no id is created or
 returned. Runs through the exact same `computeGeometry` path as create/update, so what the map
-shows while editing can't drift from what gets saved. Used to render the live snapped line as the
-user places waypoints.
+shows can't drift from what gets saved. The client no longer calls this on every waypoint edit
+(see `docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md` — the wizard renders locally
+while editing and only shows the real snapped line after Save); it's currently only called once,
+when seeding a brand-new route from an already-recorded run's GPS track.
 
 Request body: `{ waypoints: Waypoint[] }` (2-50 points)
 
@@ -396,7 +398,12 @@ Response `200`: `{ points: routePointResponse[]; distanceM: number; elevationGai
 
 ### `POST /api/planned-routes`
 Creates a route: resolves geometry from `waypoints` (ORS if `LIFTR_ORS_API_KEY` is set and
-reachable, straight-line fallback otherwise) and persists it.
+reachable, straight-line fallback otherwise) and persists it. A waypoint list whose first and last
+point coincide (within 25m) is treated as a closed loop: the outbound leg is routed normally, then
+the closing leg back to the start is routed against a corridor that avoids the outbound leg's own
+snapped streets, so the loop doesn't just retrace itself (two ORS calls instead of one — see
+ADR-0009). Waypoints flagged `gen` (the wizard's local return-leg arc) are excluded from what
+actually gets routed, but still persisted as-is.
 
 Request body:
 ```ts
@@ -408,7 +415,8 @@ Response `201`: `plannedRouteResponse & { points: routePointResponse[] }`
 ### `PATCH /api/planned-routes/:id`
 Partial update. Geometry is only recomputed (re-calling ORS/straight-line and rewriting the stored
 points) when `waypoints` is present in the body — renaming a route or reordering it doesn't trigger
-a wasted recompute/network call.
+a wasted recompute/network call. The same closed-loop detection as `POST /api/planned-routes`
+applies when it is.
 
 Params: `{ id: string }` · Body:
 ```ts

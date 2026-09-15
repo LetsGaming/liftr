@@ -10,7 +10,6 @@ import SheetModal from "../ui/SheetModal.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import LiveRunMap from "./LiveRunMap.vue";
 import { useLiveRun } from "../../composables/useLiveRun";
-import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useRunsStore } from "../../stores/runsStore";
 import { useToast } from "../../composables/useToast";
 import type { PlannedRoute } from "../../services/plannedRouteService";
@@ -25,10 +24,16 @@ const emit = defineEmits<{ finished: [run: RunSummary]; close: [] }>();
 const runsStore = useRunsStore();
 const { toast } = useToast();
 const live = useLiveRun();
-const closeConfirm = useConfirmTap(() => {
+
+/** Visible inline confirm card, not a silent tap-twice-on-the-close-icon pattern — same reasoning
+ *  as WorkoutPage.vue's "Workout abbrechen" confirm: discarding an in-progress run is destructive
+ *  and unrecoverable, so it needs an explicit dialog the user can't trigger by accident. */
+const showDiscardConfirm = ref(false);
+function confirmDiscard() {
+  showDiscardConfirm.value = false;
   void live.discard();
   emit("close");
-});
+}
 
 onMounted(() => {
   void live.start();
@@ -41,7 +46,7 @@ function requestClose() {
     emit("close");
     return;
   }
-  closeConfirm.trigger();
+  showDiscardConfirm.value = true;
 }
 
 // SheetModal's own native dismiss (backdrop tap, swipe, hardware back) can't be intercepted with
@@ -103,12 +108,17 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
           <b>{{ route ? route.name : "Freier Lauf" }}</b>
           <span v-if="live.status.value === 'paused'" class="status-chip">Pausiert</span>
         </div>
-        <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" @click="requestClose">
-          <template v-if="closeConfirm.isArmed()">Wirklich verwerfen?</template>
-          <template v-else><AppIcon name="close" /></template>
-        </button>
+        <button class="btn-close close-btn" @click="requestClose"><AppIcon name="close" /></button>
       </header>
     </template>
+
+    <div v-if="showDiscardConfirm" class="discard-confirm panel">
+      <p>Lauf wirklich verwerfen? Der bisherige Fortschritt geht verloren.</p>
+      <div class="discard-confirm-actions">
+        <button class="btn-secondary" @click="showDiscardConfirm = false">Nein</button>
+        <button class="btn-cancel-confirm" @click="confirmDiscard">Ja, verwerfen</button>
+      </div>
+    </div>
 
     <p v-if="live.error.value" class="gps-error">{{ live.error.value }}</p>
 
@@ -175,6 +185,39 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
   border-radius: var(--r-sm);
   background: var(--surface-2);
   color: var(--dim);
+}
+/* Same visible-confirm-card treatment as WorkoutPage.vue's .cancel-confirm — .panel (tokens.css)
+   supplies background/border/radius. */
+.discard-confirm {
+  margin: 0 12px;
+  padding: var(--sp4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp3);
+}
+.discard-confirm p {
+  font-size: 13.5px;
+  color: var(--text);
+}
+.discard-confirm-actions {
+  display: flex;
+  gap: var(--sp2);
+}
+.discard-confirm-actions button {
+  flex: 1;
+}
+.btn-cancel-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  min-height: var(--touch-target-min);
+  border-radius: var(--r-md);
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: var(--k-failure-text);
+  font-size: 13.5px;
+  font-weight: 700;
 }
 .gps-error {
   margin: 0 12px;

@@ -45,5 +45,15 @@ export const usePlannedRouteStore = defineStore("plannedRoute", {
       await deletePlannedRoute(id);
       this.routes = this.routes.filter((r) => r.id !== id);
     },
+    /** Drag-reorder, same shape as routineStore.reorder(): only PATCH routes whose position
+     *  actually changed, then reload so the server's orderIndex-sorted GET stays the single
+     *  source of truth for display order. */
+    async reorder(orderedIds: string[]) {
+      const updates = orderedIds
+        .map((id, index) => ({ id, index }))
+        .filter(({ id, index }) => this.routes.find((r) => r.id === id)?.orderIndex !== index);
+      await Promise.all(updates.map(({ id, index }) => updatePlannedRoute(id, { orderIndex: index })));
+      await this.load();
+    },
   },
 });

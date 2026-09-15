@@ -1,4 +1,4 @@
-import { elevationGainFrom } from "@liftr/shared";
+import { elevationGainFrom, type CorridorRing } from "@liftr/shared";
 import { z } from "zod";
 import { env } from "../env.js";
 
@@ -44,9 +44,14 @@ export interface OrsRouteResult {
  * Calls OpenRouteService's directions API for a road/trail-snapped route + per-point elevation.
  * ORS's own coordinate order is [lon, lat] — the opposite of every other lat/lon pair in this
  * codebase, which is always {lat, lon}. This swap happens ONLY here, in both directions (request
- * and response), so it can never leak into the rest of the app as a silent bug.
+ * and response), so it can never leak into the rest of the app as a silent bug. `avoidPolygons`
+ * shares the same swap — see plannedRouteService.ts's `buildAvoidCorridor` usage for how a closed
+ * loop's closing leg uses this to route around its own outbound corridor instead of retracing it.
  */
-export async function fetchOrsRoute(waypoints: { lat: number; lon: number }[]): Promise<OrsRouteResult> {
+export async function fetchOrsRoute(
+  waypoints: { lat: number; lon: number }[],
+  opts?: { avoidPolygons?: CorridorRing[] | null },
+): Promise<OrsRouteResult> {
   // Safe today — every caller (computeGeometry) already guards on env.orsApiKey being present
   // before calling this — but this function is exported, so a direct call without that guard
   // would otherwise silently send `Authorization: undefined` instead of failing loudly.
@@ -54,6 +59,7 @@ export async function fetchOrsRoute(waypoints: { lat: number; lon: number }[]): 
     throw new OrsUnavailableError("network", "ORS API key is not configured");
   }
   const url = `${env.orsBaseUrl}/v2/directions/${env.orsProfile}/geojson`;
+  const rings = opts?.avoidPolygons;
 
   let res: Response;
   try {
@@ -65,6 +71,20 @@ export async function fetchOrsRoute(waypoints: { lat: number; lon: number }[]): 
         elevation: true,
         instructions: false,
         units: "m",
+        // Omitted entirely (not just an empty array) when there's no avoidance, so a plain
+        // (non-loop) request's body is byte-for-byte identical to before this option existed.
+        ...(rings && rings.length > 0
+          ? {
+              options: {
+                avoid_polygons: {
+                  type: "MultiPolygon",
+                  // One polygon per ring, single outer ring, no holes — [lon, lat] again, same
+                  // swap as `coordinates` above.
+                  coordinates: rings.map((ring) => [ring.map((p) => [p.lon, p.lat])]),
+                },
+              },
+            }
+          : {}),
       }),
       signal: AbortSignal.timeout(8000),
     });

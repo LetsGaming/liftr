@@ -386,7 +386,7 @@ function retryFailed() {
                 :aria-selected="activityFilter === 'workout'"
                 @click="activityFilter = 'workout'; activityShownCount = 8"
               >
-                Workouts
+                Workout
               </button>
               <button
                 role="tab"
@@ -395,7 +395,7 @@ function retryFailed() {
                 :aria-selected="activityFilter === 'run'"
                 @click="activityFilter = 'run'; activityShownCount = 8"
               >
-                Runs
+                Läufe
               </button>
             </div>
 

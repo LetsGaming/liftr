@@ -1,5 +1,6 @@
 export * from "./catalog/slug.js";
 export * from "./math/bodyweightTrend.js";
+export * from "./math/corridor.js";
 export * from "./math/e1rm.js";
 export * from "./math/mesocycle.js";
 export * from "./math/gps.js";

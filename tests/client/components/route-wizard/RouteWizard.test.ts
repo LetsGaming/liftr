@@ -1,7 +1,10 @@
 // RouteWizard.vue owns a debounced lifecycle (400 ms) across three collaborators: the loop
 // generator (@liftr/shared, left REAL here — the point of this file is the integration), the
-// planned-route API (mocked: previewPlannedRoute and getPlannedRouteDetail both hit the network)
-// and the planned-route store (mocked: create/update hit the network and reload the list).
+// planned-route API (mocked: previewPlannedRoute and getPlannedRouteDetail) and the planned-route
+// store (mocked: create/update hit the network and reload the list). previewPlannedRoute is no
+// longer called from manual editing (see docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md)
+// — it only fires once, for the seeded-from-a-recorded-run hydration path — so the 400 ms debounce
+// below now only drives local arc (re)generation, not a network round trip.
 // RouteMapEditor is stubbed because the real one imports leaflet and needs a live DOM map; only its
 // add/move/remove emit contract matters to this component's logic. SheetModal is stubbed the same
 // way RoutineWizard.test.ts and RunDetail.test.ts stub it — see tests/README.md on stubbing an
@@ -49,7 +52,7 @@ const SheetModalStub = defineComponent({
 
 const RouteMapEditorStub = defineComponent({
   name: "RouteMapEditor",
-  props: ["waypoints", "routedPoints", "approximate", "initialCenter"],
+  props: ["waypoints", "routedPoints", "approximate", "closed", "initialCenter"],
   emits: ["add", "move", "remove"],
   template: `<div class="map-stub" :data-count="waypoints.length"></div>`,
 });
@@ -430,5 +433,151 @@ describe("RouteWizard waypoint cap and save errors (findings B4)", () => {
 
     const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
     expect(toasts.map((t) => t.text).join(" ")).toContain("bitte erneut versuchen");
+  });
+});
+
+describe("RouteWizard makes no network calls while editing (ADR-0009)", () => {
+  it("does not preview on a tap, before or after the debounce", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    expect(previewMock).not.toHaveBeenCalled();
+    // The arc still generates locally — only the network call is gone.
+    expect(waypointsOf(wrapper).some((w) => w.gen)).toBe(true);
+  });
+
+  it("does not preview on a marker drag", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    map(wrapper).vm.$emit("move", 0, { lat: A.lat + 0.001, lon: A.lon });
+    await wrapper.vm.$nextTick();
+    await settle(wrapper);
+
+    expect(previewMock).not.toHaveBeenCalled();
+  });
+
+  it("does not preview on a removal", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    map(wrapper).vm.$emit("remove", 0);
+    await wrapper.vm.$nextTick();
+    await settle(wrapper);
+
+    expect(previewMock).not.toHaveBeenCalled();
+  });
+
+  it("does not preview when the loop toggle is flipped, in either direction", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    await wrapper.find(".loop-toggle input").setValue(false);
+    await settle(wrapper);
+    await wrapper.find(".loop-toggle input").setValue(true);
+    await settle(wrapper);
+
+    expect(previewMock).not.toHaveBeenCalled();
+  });
+
+  it("does not preview when a saved route is opened for editing", async () => {
+    const wrapper = mountWizard({
+      route: {
+        id: "route-1",
+        name: "Gespeichert",
+        orderIndex: 0,
+        waypoints: [A, B, { ...A }],
+        distanceM: 2000,
+        elevationGainM: null,
+        geometrySource: "ors",
+        computedAt: "2026-01-01T00:00:00.000Z",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        polyline: [],
+      },
+    });
+    await vi.runAllTimersAsync();
+    await wrapper.vm.$nextTick();
+
+    expect(detailMock).toHaveBeenCalledTimes(1);
+    expect(previewMock).not.toHaveBeenCalled();
+  });
+
+  it("still previews exactly once when seeded from a recorded track", async () => {
+    const wrapper = mountWizard({ seedWaypoints: [A, B, C] });
+    await vi.runAllTimersAsync();
+    await wrapper.vm.$nextTick();
+
+    expect(previewMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the saved snapped line back to the local approximate one on the first edit", async () => {
+    detailMock.mockResolvedValueOnce({ points: [{ idx: 0, lat: A.lat, lon: A.lon, ele: null }, { idx: 1, lat: B.lat, lon: B.lon, ele: null }] });
+    const wrapper = mountWizard({
+      route: {
+        id: "route-1",
+        name: "Gespeichert",
+        orderIndex: 0,
+        waypoints: [A, B, { ...A }],
+        distanceM: 2000,
+        elevationGainM: null,
+        geometrySource: "ors",
+        computedAt: "2026-01-01T00:00:00.000Z",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        polyline: [],
+      },
+    });
+    await vi.runAllTimersAsync();
+    await wrapper.vm.$nextTick();
+    expect((map(wrapper).props("routedPoints") as unknown[]).length).toBeGreaterThan(0);
+    expect(map(wrapper).props("approximate")).toBe(false);
+
+    map(wrapper).vm.$emit("move", 0, { lat: A.lat + 0.001, lon: A.lon });
+    await wrapper.vm.$nextTick();
+
+    expect(map(wrapper).props("routedPoints")).toEqual([]);
+    expect(map(wrapper).props("approximate")).toBe(true);
+  });
+
+  it("keeps the hydrated line when a tap is refused by the waypoint budget", async () => {
+    const wrapper = mountWizard();
+    for (let i = 0; i < 46; i++) {
+      await tap(wrapper, { lat: 52.5 + i * 0.001, lon: 13.4 + (i % 7) * 0.001 });
+    }
+    await settle(wrapper);
+    const before = map(wrapper).props("routedPoints");
+
+    await tap(wrapper, { lat: 52.6, lon: 13.5 }); // refused — over budget
+
+    expect(map(wrapper).props("routedPoints")).toBe(before);
+  });
+
+  it("passes closeLoop through to the map as :closed", async () => {
+    const wrapper = mountWizard();
+    expect(map(wrapper).props("closed")).toBe(true); // default
+
+    await wrapper.find(".loop-toggle input").setValue(false);
+    expect(map(wrapper).props("closed")).toBe(false);
+  });
+
+  it("saves without any preview round-trip", async () => {
+    const wrapper = mountWizard();
+    await setName(wrapper, "Ohne Vorschau");
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    await vi.runAllTimersAsync();
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(previewMock).not.toHaveBeenCalled();
   });
 });

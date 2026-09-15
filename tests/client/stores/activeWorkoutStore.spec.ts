@@ -149,12 +149,12 @@ describe("activeWorkoutStore — workout-level notes (Task 2)", () => {
   });
 });
 
-// Bug fix (product owner report): starting a workout always seeded reps at 0, forcing manual
-// re-entry on every single set even when a sensible default (last time's reps, or the routine's
-// target reps) was available — unlike weightKg, which already defaulted this way. No prior test
-// covered start()'s/addExercise()'s seeding of a set's initial reps value at all.
+// Bug fix (user report): reps was defaulting to last time's *actual* reps performed, which could
+// silently drift the target down (e.g. a failed/short set became the new "default" forever) —
+// unlike weightKg, reps should always start at the routine's prescribed target, editable from
+// there via the stepper, never at whatever happened to be logged last time.
 describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
-  it("start() defaults reps to last time's reps when history exists for that set index", async () => {
+  it("start() always defaults reps to the routine's target, ignoring last time's actual reps", async () => {
     const store = useActiveWorkoutStore();
     await store.start(null, "Test", [
       {
@@ -166,10 +166,10 @@ describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
       },
     ]);
 
-    expect(store.exercises[0]!.sets[0]!.reps).toBe(10);
+    expect(store.exercises[0]!.sets[0]!.reps).toBe(8);
   });
 
-  it("start() falls back to the routine's target reps when there's no history for that set index", async () => {
+  it("start() defaults reps to the routine's target when there's no history for that set index", async () => {
     const store = useActiveWorkoutStore();
     await store.start(null, "Test", [
       {
@@ -184,7 +184,7 @@ describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
     expect(store.exercises[0]!.sets[0]!.reps).toBe(8);
   });
 
-  it("start() falls back to the routine's target reps when lastTime is undefined entirely (e.g. offline)", async () => {
+  it("start() defaults reps to the routine's target when lastTime is undefined entirely (e.g. offline)", async () => {
     const store = useActiveWorkoutStore();
     await store.start(null, "Test", [
       {
@@ -198,7 +198,7 @@ describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
     expect(store.exercises[0]!.sets[0]!.reps).toBe(12);
   });
 
-  it("addExercise() applies the same reps-defaulting as start()", async () => {
+  it("addExercise() applies the same reps-defaulting as start(), ignoring last time's actual reps", async () => {
     const store = useActiveWorkoutStore();
     seedOneSetExercise(store);
 
@@ -210,6 +210,6 @@ describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
       lastTime: [{ weightKg: 100, reps: 7 }],
     });
 
-    expect(store.exercises[1]!.sets[0]!.reps).toBe(7);
+    expect(store.exercises[1]!.sets[0]!.reps).toBe(5);
   });
 });

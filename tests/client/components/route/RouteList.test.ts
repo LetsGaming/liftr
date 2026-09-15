@@ -40,14 +40,30 @@ function makeRoute(overrides: Partial<PlannedRoute> = {}): PlannedRoute {
 
 const STUBS = { RouteThumbnail: { template: "<div class='route-thumb-stub' />" } };
 
+// Same stub as RoutineList.test.ts: RouteList.vue's drag-reorder gating reads
+// window.matchMedia("(min-width: 900px)") on mount, which jsdom doesn't implement.
+function stubMatchMedia(matchesDesktop: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockImplementation((query: string) => ({
+      matches: matchesDesktop,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+}
+
 beforeEach(() => {
   setActivePinia(createPinia());
   getPlannedRoutesMock.mockResolvedValue([]);
   deletePlannedRouteMock.mockResolvedValue(undefined);
+  stubMatchMedia(false);
 });
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
 });
 
 async function mountWithRoutes(routes: PlannedRoute[]) {

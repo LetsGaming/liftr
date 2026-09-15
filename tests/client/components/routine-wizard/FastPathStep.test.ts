@@ -79,18 +79,18 @@ describe("FastPathStep", () => {
     expect(wrapper.find(".ex-reps").text()).toBe("40×8 / 6");
   });
 
-  it("emits move with (from, to) from the reorder buttons, disabled at the boundaries", async () => {
+  // Reordering is now drag-to-reorder (useDragReorder, same as ArrangeStep.vue) rather than
+  // up/down buttons. The drag gesture itself is driven by native PointerEvent
+  // (pointerdown/pointermove/pointerup + setPointerCapture), which jsdom doesn't implement —
+  // ArrangeStep.test.ts's header comment documents the same limitation. The composable's own
+  // reorder math is covered directly by useDragReorder.test.ts; this just checks the handle renders.
+  it("renders a drag handle per row for reordering", () => {
     const wrapper = mountFastPath(
       { entries: [["ex-1", makeDraft()], ["ex-2", makeDraft()]] },
       [makeExercise({ id: "ex-1" }), makeExercise({ id: "ex-2", slug: "squat" })],
     );
 
-    const rows = wrapper.findAll(".ex-list li");
-    const firstRowButtons = rows[0]!.findAll(".reorder button");
-    expect(firstRowButtons[0]!.attributes("disabled")).toBeDefined(); // can't move row 0 up
-    await firstRowButtons[1]!.trigger("click"); // move row 0 down
-
-    expect(wrapper.emitted("move")).toEqual([[0, 1]]);
+    expect(wrapper.findAll(".drag-handle")).toHaveLength(2);
   });
 
   it("emits removeExercise with the exercise id", async () => {
