@@ -16,26 +16,36 @@
  */
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { onBeforeUnmount, onMounted, ref } from "vue";
-import { createOsmTileLayer } from "../../lib/leafletTheme";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { createTileLayer, type BasemapId } from "../../lib/leafletTheme";
+import { useBasemap } from "../../composables/useBasemap";
 
 const props = defineProps<{
   mapOptions?: Partial<L.MapOptions>;
   initialView?: { center: [number, number]; zoom: number };
   lazy?: boolean;
+  /** Pins the tile layer to this basemap, ignoring the shared standard/satellite preference —
+   *  RouteThumbnail.vue passes "standard" so a small inert route-card preview stays consistent
+   *  regardless of what the user last picked on a real map. Omit to follow the shared preference
+   *  (useBasemap.ts) like every interactive map does. */
+  basemap?: BasemapId;
 }>();
 
 const emit = defineEmits<{ ready: [map: L.Map]; resize: [] }>();
 
+const { basemap: sharedBasemap } = useBasemap();
+
 const container = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
+let tileLayer: L.TileLayer | null = null;
 let intersectionObserver: IntersectionObserver | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let resizeRaf: number | null = null;
 
 function createMap(el: HTMLDivElement) {
   map = L.map(el, { attributionControl: true, zoomControl: true, ...props.mapOptions });
-  createOsmTileLayer().addTo(map);
+  tileLayer = createTileLayer(props.basemap ?? sharedBasemap.value);
+  tileLayer.addTo(map);
   if (props.initialView) map.setView(props.initialView.center, props.initialView.zoom);
 
   resizeObserver = new ResizeObserver(() => {
@@ -50,6 +60,22 @@ function createMap(el: HTMLDivElement) {
 
   emit("ready", map);
 }
+
+// Only reacts to the shared preference when `basemap` isn't pinning this map to one — see the
+// prop doc above. The getter short-circuits past `sharedBasemap.value` entirely while pinned, so
+// Vue never even tracks it as a dependency and this watcher simply never fires in that case.
+watch(
+  () => (props.basemap ? null : sharedBasemap.value),
+  (next) => {
+    if (!next || !map) return;
+    // Add the new layer before removing the old one, so there's never a frame with no tiles at
+    // all underneath whatever's currently drawn on top (route line, markers).
+    const nextLayer = createTileLayer(next);
+    nextLayer.addTo(map);
+    tileLayer?.remove();
+    tileLayer = nextLayer;
+  },
+);
 
 onMounted(() => {
   if (!container.value) return;
@@ -75,6 +101,7 @@ onBeforeUnmount(() => {
   if (resizeRaf != null) cancelAnimationFrame(resizeRaf);
   map?.remove();
   map = null;
+  tileLayer = null;
 });
 
 defineExpose({

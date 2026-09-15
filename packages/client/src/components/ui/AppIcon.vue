@@ -33,6 +33,7 @@ export type AppIconName =
   | "pause"
   | "warning"
   | "target"
+  | "layers"
   | "scale"
   | "more"
   | "drag-handle"
@@ -76,6 +77,7 @@ const PATHS: Record<AppIconName, string> = {
   pause: '<path d="M8 5v14M16 5v14"/>',
   warning: '<path d="M12 3l10 18H2z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>',
   target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
   scale: '<path d="M12 3v18M6 7h12"/><path d="M4 7l3 6a3 3 0 006 0L4 7"/><path d="M14 7l3 6a3 3 0 006 0l-3-6"/><path d="M8 21h8"/>',
   more:
     '<circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/>',

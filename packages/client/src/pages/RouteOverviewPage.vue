@@ -88,7 +88,6 @@ function onLiveRunFinished() {
           <div class="ro-route-map">
             <RunMap :points="plannedRoute.polyline" :approximate="plannedRoute.geometrySource === 'straight'" />
           </div>
-          <p class="map-credit">Karten © OpenStreetMap contributors</p>
 
           <div v-if="showManualForm" class="manual-form panel pop-in">
             <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
@@ -137,11 +136,6 @@ function onLiveRunFinished() {
   min-height: 220px;
   border-radius: var(--r-lg);
   overflow: hidden;
-}
-.map-credit {
-  color: var(--faint);
-  font-size: 11px;
-  flex: none;
 }
 .manual-form {
   display: flex;

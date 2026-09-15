@@ -42,6 +42,20 @@ export default defineConfig(({ command }) => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // Esri World Imagery satellite basemap (lib/leafletTheme.ts's createSatelliteTileLayer,
+          // toggled via BasemapToggle.vue) — its own cache entry, same reasoning as the OSM rule
+          // above, since a different tile host isn't covered by that pattern. Lower maxEntries
+          // than OSM's: satellite JPEGs run several times heavier per tile than OSM's PNGs, so an
+          // equal entry count would use noticeably more offline storage for the same coverage.
+          {
+            urlPattern: /^https:\/\/server\.arcgisonline\.com\//,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "esri-satellite-tiles",
+              expiration: { maxEntries: 150, maxAgeSeconds: 30 * 24 * 3600 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
       manifest: {
