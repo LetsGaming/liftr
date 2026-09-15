@@ -185,3 +185,39 @@ describe("RouteWizard loop arc lifecycle", () => {
     expect((wrapper.find(".loop-toggle input").element as HTMLInputElement).checked).toBe(true);
   });
 });
+
+describe("RouteWizard save (findings B1)", () => {
+  it("generates the arc before saving when the user saves inside the debounce window", async () => {
+    // A completely normal quick-create: two taps and Speichern within 400 ms. The old save() read
+    // effectiveWaypoints synchronously while the arc's timer was still pending, so the route
+    // persisted as [A, B, copyOfA] — a straight closing line with the box checked. Permanent,
+    // because hydrateFrom deliberately never synthesises a missing arc on reload.
+    const wrapper = mountWizard();
+    await setName(wrapper, "Schnellrunde");
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    await vi.runAllTimersAsync();
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+    const saved = createMock.mock.calls[0]![1] as { gen?: boolean }[];
+    expect(saved.filter((w) => w.gen).length).toBeGreaterThan(0);
+    expect(saved.length).toBeGreaterThan(3);
+  });
+
+  it("does not generate a second arc when one already exists at save time", async () => {
+    const wrapper = mountWizard();
+    await setName(wrapper, "Schon fertig");
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    const beforeSave = waypointsOf(wrapper).filter((w) => w.gen).length;
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    await vi.runAllTimersAsync();
+
+    const saved = createMock.mock.calls[0]![1] as { gen?: boolean }[];
+    expect(saved.filter((w) => w.gen)).toHaveLength(beforeSave);
+  });
+});

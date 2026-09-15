@@ -204,6 +204,14 @@ function requestClose() {
 
 async function save() {
   if (!canSave.value) return;
+  // The arc normally lands on the 400 ms debounce (see generateArcIfNeeded's doc for why it can't
+  // fire straight from onAdd). Saving is the one moment where waiting for it is pointless — there
+  // are no more taps coming — and where skipping it is destructive: effectiveWaypoints would be
+  // read with the timer still pending and the route would persist as a straight closing line with
+  // "Schleife schließen" checked, which hydrateFrom then never repairs (findings B1). This call is
+  // a no-op when an arc already exists, and the pending timer is deliberately left running so its
+  // runPreview() still refreshes the sheet if the save fails.
+  generateArcIfNeeded();
   saving.value = true;
   try {
     if (props.route) {
