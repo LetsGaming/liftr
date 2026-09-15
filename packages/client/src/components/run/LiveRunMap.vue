@@ -9,6 +9,7 @@
 import L from "leaflet";
 import { watch } from "vue";
 import LeafletMapBase from "../map/LeafletMapBase.vue";
+import BasemapToggle from "../map/BasemapToggle.vue";
 import { cssVar } from "../../lib/leafletTheme";
 
 const props = defineProps<{
@@ -60,6 +61,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
       :initial-view="{ center: [initialCenter?.lat ?? points[0]?.lat ?? 52.52, initialCenter?.lon ?? points[0]?.lon ?? 13.405], zoom: 16 }"
       @ready="handleReady"
     />
+    <BasemapToggle class="basemap-toggle-slot" />
   </div>
 </template>
 
@@ -68,7 +70,10 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 220px;
+  /* No min-height floor: sits inside LiveRunScreen.vue's `.live-map` (flex: 1; min-height: 0,
+     itself inside SheetModal's `fill-body` flex column), which already guarantees real height —
+     see RouteMapEditor.vue's matching comment for why a floor here would fight that instead. */
+  min-height: 0;
   overflow: hidden;
 }
 .map-surface {
@@ -76,6 +81,10 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   height: 100%;
   border-radius: var(--r-lg);
   background: var(--bg);
+}
+.basemap-toggle-slot {
+  top: 12px;
+  right: 12px;
 }
 :global(.live-run-dot) {
   width: 16px;

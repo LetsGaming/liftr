@@ -44,6 +44,9 @@ const fakeMap = {
   fitBounds: vi.fn((bounds: unknown, opts: unknown) => {
     fitBoundsCalls.push({ bounds, opts });
   }),
+  // RunMap.vue registers dragstart/zoomstart listeners on `ready` to guard its resize-triggered
+  // re-fit against fighting a user who's already panned/zoomed by hand — see handleResize's doc.
+  on: vi.fn(),
 };
 
 mapMock.mockImplementation(() => fakeMap);
