@@ -437,4 +437,67 @@ describe("generateLoopWaypoints", () => {
     expect(at40k).toBeGreaterThan(at10k); // grows, unlike the old flat cap
     expect(at40k).toBeLessThan(40_000); // but stays bounded
   });
+
+  // --- findings C: defence in depth for inputs the only production caller never produces today ---
+
+  it("returns [] rather than NaN coordinates for non-finite or out-of-range input", () => {
+    // `NaN < MIN_CHORD_M` is false in JS, so the chord guard never caught a NaN and every output
+    // point came back {lat: NaN, lon: NaN}.
+    expect(generateLoopWaypoints([{ lat: NaN, lon: 13.4 }, { lat: 52.5, lon: 13.41 }])).toEqual([]);
+    expect(generateLoopWaypoints([{ lat: 52.5, lon: Infinity }, { lat: 52.5, lon: 13.41 }])).toEqual([]);
+    expect(generateLoopWaypoints([{ lat: 52.5, lon: 13.4 }, { lat: 91, lon: 13.41 }])).toEqual([]);
+    expect(generateLoopWaypoints([{ lat: 52.5, lon: 13.4 }, { lat: 52.5, lon: -181 }])).toEqual([]);
+  });
+
+  it("treats a fractional or negative count as the integer it can honour", () => {
+    // Lat-identical endpoints (not the brief's original 52.5/52.51 diagonal pair): with no
+    // approach-heading signal, bulgeNormal's fixed fallback convention picks a normal that is
+    // purely perpendicular to the chord, so only a chord that itself runs along one projected axis
+    // (here: due east) makes the two symmetric interior points (t=1/3 and 2/3) equidistant in raw
+    // lat from the chord's mean lat. A diagonal chord bulges along a normal that mixes lat and lon,
+    // so the same "matched pair" check would fail even with a correctly-floored count — that's an
+    // artifact of which axis the assertion reads, not of the count handling under test here.
+    const waypoints = [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.5, lon: 13.41 },
+    ];
+    // count: 2.5 used to run for i=1,2 with t=i/3.5, giving a ~25% height difference between what
+    // should be a matched pair.
+    const half = generateLoopWaypoints(waypoints, { count: 2.5 });
+    expect(half).toHaveLength(2);
+    const chordLat = 52.5;
+    expect(Math.abs(half[0]!.lat - chordLat)).toBeCloseTo(Math.abs(half[1]!.lat - chordLat), 4);
+
+    expect(generateLoopWaypoints(waypoints, { count: -3 })).toEqual([]);
+    expect(generateLoopWaypoints(waypoints, { count: 0 })).toEqual([]);
+  });
+
+  it("caps count independently of maxCount", () => {
+    const waypoints = [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.51, lon: 13.41 },
+    ];
+    // 1,000,000 points used to allocate for ~70 ms with no caller-supplied maxCount to stop it.
+    // 48 is what the server's 50-waypoint array leaves once the two real endpoints are counted.
+    expect(generateLoopWaypoints(waypoints, { count: 1_000_000 })).toHaveLength(48);
+  });
+
+  it("treats bulgeRatio: 0 as no bulge, and an invalid ratio as the default", () => {
+    const waypoints = [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.5, lon: 13.41 },
+    ];
+    // 0, negatives and -Infinity all used to produce the SAME output (floored to 50 m), so
+    // bulgeRatio: 0 did not mean "no bulge".
+    const flat = generateLoopWaypoints(waypoints, { bulgeRatio: 0 });
+    expect(flat).toHaveLength(3);
+    for (const p of flat) {
+      expect(p.lat).toBeCloseTo(52.5, 6); // straight along the chord
+    }
+
+    const dflt = generateLoopWaypoints(waypoints);
+    for (const invalid of [-1, NaN, -Infinity, Infinity]) {
+      expect(generateLoopWaypoints(waypoints, { bulgeRatio: invalid })).toEqual(dflt);
+    }
+  });
 });
