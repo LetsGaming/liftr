@@ -29,6 +29,7 @@ import {
   type Waypoint,
 } from "../../services/plannedRouteService";
 import WizardHeader from "../ui/WizardHeader.vue";
+import { ApiError } from "../../lib/api";
 
 const props = defineProps<{
   route?: PlannedRoute | null;
@@ -81,12 +82,27 @@ const distanceM = computed(() =>
 );
 // Generated loop points don't count toward "is there a real route here" — otherwise the loop
 // toggle alone (with 0 user-placed points) could satisfy this.
-const canSave = computed(() => name.value.trim().length > 0 && waypoints.value.filter((w) => !w.gen).length >= 2);
+const canSave = computed(
+  () => name.value.trim().length > 0 && userWaypointCount.value >= 2 && effectiveWaypoints.value.length <= SERVER_MAX_WAYPOINTS,
+);
 
 // Server cap is 50 waypoints total (packages/server/src/routes/plannedRoutes.ts's
 // waypointsSchema); effectiveWaypoints above adds one more for the closing point, so the
 // generator gets whatever's left after the user's own points.
 const SERVER_MAX_WAYPOINTS = 50;
+
+/** How many points the generator asks for by default — mirrors @liftr/shared's DEFAULT_COUNT.
+ *  Reserved out of the budget below so the return-leg bulge doesn't silently thin out and vanish
+ *  as the user approaches the server's cap (findings B4). */
+const RESERVED_ARC_WAYPOINTS = 3;
+
+/** The user's own budget: the server's 50 minus the synthetic closing point and the arc's own
+ *  points when the loop is on. Enforced on the way in (onAdd below) rather than discovered on the
+ *  way out as a 400 that no amount of retrying will fix. */
+const maxUserWaypoints = computed(() =>
+  closeLoop.value ? SERVER_MAX_WAYPOINTS - 1 - RESERVED_ARC_WAYPOINTS : SERVER_MAX_WAYPOINTS,
+);
+const userWaypointCount = computed(() => waypoints.value.filter((w) => !w.gen).length);
 
 /** Generates the arc once closeLoop is on and there isn't one yet. Called from the *debounced*
  *  preview scheduler below (schedulePreview), not straight from onAdd — closeLoop defaults to
@@ -195,6 +211,10 @@ async function runPreview() {
 }
 
 function onAdd(waypoint: Waypoint) {
+  if (userWaypointCount.value >= maxUserWaypoints.value) {
+    toast(`Maximal ${maxUserWaypoints.value} Wegpunkte — entferne zuerst einen Punkt.`);
+    return;
+  }
   if (!arcDismissed.value && waypoints.value.some((w) => w.gen)) {
     // A new tap after the arc has already generated invalidates it twice over: appending behind it
     // would make the route visit the arc and then jump back out to the new point (a zigzag that
@@ -235,6 +255,20 @@ function requestClose() {
   closeConfirm.trigger();
 }
 
+/** The server's 400 body carries Zod's own English message as `detail` (see app.ts's error
+ *  handler) — diagnostic, not user copy, and this UI is German. So: a German sentence chosen by
+ *  status, and the detail to the console for whoever is debugging. The old catch-all told the user
+ *  to try again for every failure, which is actively wrong on a 400: the same waypoints fail
+ *  identically every time (findings B4). */
+function saveErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.detail) console.warn("Strecke abgelehnt:", err.status, err.detail);
+    if (err.status === 400) return "Strecke abgelehnt — zu viele oder ungültige Wegpunkte.";
+    if (err.status === 429) return "Zu viele Anfragen — bitte kurz warten.";
+  }
+  return "Speichern fehlgeschlagen — bitte erneut versuchen.";
+}
+
 async function save() {
   if (!canSave.value) return;
   // The arc normally lands on the 400 ms debounce (see generateArcIfNeeded's doc for why it can't
@@ -254,8 +288,8 @@ async function save() {
     }
     emit("saved");
     sheetRef.value?.dismiss();
-  } catch {
-    toast("Speichern fehlgeschlagen — bitte erneut versuchen.");
+  } catch (err) {
+    toast(saveErrorMessage(err));
   } finally {
     saving.value = false;
   }
@@ -287,7 +321,10 @@ async function save() {
         <div class="stats">
           <span>{{ (distanceM / 1000).toFixed(2) }} km{{ geometrySource === "straight" ? " ≈" : "" }}</span>
           <span>{{ elevationGainM != null ? Math.round(elevationGainM) + " hm" : "Höhe unbekannt" }}</span>
-          <span>{{ waypoints.filter((w) => !w.gen).length }} Wegpunkte</span>
+          <span :class="{ 'stat-warn': userWaypointCount >= maxUserWaypoints - 5 }">
+            {{ userWaypointCount >= maxUserWaypoints - 5 ? `${userWaypointCount}/${maxUserWaypoints}` : userWaypointCount }}
+            Wegpunkte
+          </span>
         </div>
         <label class="loop-toggle">
           <input
@@ -350,6 +387,11 @@ async function save() {
   gap: 12px;
   font-size: 0.9rem;
   color: var(--dim);
+}
+/* Only appears in the last five waypoints before the cap — the footer row is tight on a 375px
+   viewport, so the counter stays a plain number until the limit is actually relevant. */
+.stat-warn {
+  color: var(--danger);
 }
 /* min-height + horizontal padding puts the whole label (not just the ~13px checkbox glyph) at
    the app's --touch-target-min — otherwise this is the one interactive control in the route flow

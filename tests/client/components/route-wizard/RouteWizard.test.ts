@@ -99,6 +99,13 @@ beforeEach(() => {
   detailMock.mockReset().mockResolvedValue({ points: [] });
   sheetDismissSpy.mockReset();
 });
+beforeEach(async () => {
+  // useToast's `toasts` is module-level reactive state shared across every test file that mounts
+  // it — splice it clean so a toast left over from a previous test doesn't bleed into this file's
+  // assertions (same pattern RoutineWizard.test.ts uses).
+  const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
+  toasts.splice(0, toasts.length);
+});
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -337,5 +344,75 @@ describe("RouteWizard late taps (findings B3)", () => {
     const lastUser = list.reduce((acc, w, i) => (w.gen ? acc : i), -1);
     const firstGen = list.findIndex((w) => w.gen);
     expect(firstGen).toBeGreaterThan(lastUser);
+  });
+});
+
+describe("RouteWizard waypoint cap and save errors (findings B4)", () => {
+  async function tapMany(wrapper: Wrapper, n: number) {
+    for (let i = 0; i < n; i++) {
+      // A grid of distinct points, all well inside Berlin and all >50 m apart.
+      await tap(wrapper, { lat: 52.5 + i * 0.001, lon: 13.4 + (i % 7) * 0.001 });
+    }
+  }
+
+  it("refuses the tap that would exceed the waypoint budget and says so", async () => {
+    const wrapper = mountWizard();
+    await tapMany(wrapper, 46);
+    expect(waypointsOf(wrapper).filter((w) => !w.gen)).toHaveLength(46);
+
+    await tap(wrapper, { lat: 52.6, lon: 13.5 });
+
+    expect(waypointsOf(wrapper).filter((w) => !w.gen)).toHaveLength(46);
+    expect(wrapper.text()).toContain("46");
+  });
+
+  it("never builds a payload longer than the server's 50-waypoint limit", async () => {
+    const wrapper = mountWizard();
+    await setName(wrapper, "Lang");
+    await tapMany(wrapper, 46);
+    await settle(wrapper);
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    await vi.runAllTimersAsync();
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect((createMock.mock.calls[0]![1] as unknown[]).length).toBeLessThanOrEqual(50);
+  });
+
+  it("tells the user a rejected save will not succeed on retry", async () => {
+    const { ApiError } = await import("~client/lib/api");
+    createMock.mockRejectedValue(new ApiError("POST failed: 400", 400, "Array must contain at most 50 element(s)"));
+    const wrapper = mountWizard();
+    await setName(wrapper, "Abgelehnt");
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    // Not vi.runAllTimersAsync() here: useToast's own auto-dismiss (2500 ms) would also run to
+    // completion and splice the toast back out before this test ever inspects it. advanceTimersByTimeAsync(0)
+    // still flushes the rejected-promise microtask chain that runs the catch handler, without racing the dismiss.
+    await vi.advanceTimersByTimeAsync(0);
+
+    const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
+    expect(toasts.map((t) => t.text).join(" ")).toContain("abgelehnt");
+    expect(toasts.map((t) => t.text).join(" ")).not.toContain("bitte erneut versuchen");
+  });
+
+  it("still offers a retry for a transient failure", async () => {
+    createMock.mockRejectedValue(new Error("network down"));
+    const wrapper = mountWizard();
+    await setName(wrapper, "Netzfehler");
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+
+    await wrapper.find("button.btn-primary").trigger("click");
+    // See the previous test's note: bounded flush, not runAllTimersAsync, so the toast's own
+    // auto-dismiss timer doesn't race the assertion.
+    await vi.advanceTimersByTimeAsync(0);
+
+    const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
+    expect(toasts.map((t) => t.text).join(" ")).toContain("bitte erneut versuchen");
   });
 });
