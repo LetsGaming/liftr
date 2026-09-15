@@ -5,11 +5,51 @@
  * point back at the start, which OpenRouteService then routed as the shortest path home — usually
  * the same roads walked out on, not a loop at all.
  *
+ * ## The shape
+ *
+ * The return leg is a **circular arc**, and the circle is picked by the runner's own heading. Let P
+ * be the route's last waypoint, Q its first, and û the direction of the last real segment of the
+ * path (waypoints[n-2] → waypoints[n-1]). There is exactly one circle through P and Q that leaves P
+ * along û; the arc of that circle is the return leg. Its tangent–chord angle φ = ∠(û, chord) also
+ * gives its greatest distance from the chord in closed form, (chord/2)·tan(φ/2), which is the one
+ * knob this module tunes: zero when the runner is already heading home, a clean semicircle when the
+ * start is 90° off their shoulder, and clamped (see clampBulgeM) as it runs away toward "heading
+ * directly away from home".
+ *
+ * That single construction decides both things the previous implementation decided separately and
+ * badly: which side of the chord to bulge toward (the side û points to) and what shape to bulge in
+ * (an arc that departs along û rather than a symmetric sine hump ignoring it). A route traced
+ * around a roundabout closes roughly along the roundabout — closer to exact the more densely the points are spaced, since the heading estimate that drives the construction is itself just the direction of the last real segment; for a handful of widely-spaced taps it's a good approximation, not an exact reconstruction.
+ *
+ * ## The plane
+ *
  * Works in a local metric plane (an equirectangular approximation centered on the chord it's
  * bridging) rather than directly in lat/lon degrees, since a degree of longitude shrinks with
  * latitude — arithmetic in raw degrees would bulge east-west loops the wrong amount as you move
- * away from the equator. The projection is only ever used internally here; every public
- * lat/lon in and out is a real WGS84 coordinate.
+ * away from the equator. Longitudes are unwrapped around the route's own start before projecting
+ * and wrapped back afterwards, so a route across the ±180° line stays next to itself. The
+ * projection is only ever used internally here; every public lat/lon in and out is a real WGS84
+ * coordinate, clamped to the ranges the server's waypoint schema accepts.
+ *
+ * ## What this cannot do
+ *
+ * **No terrain or water awareness.** This module knows two-dimensional geometry and nothing else —
+ * not where the lake is, not where the valley floor ends, not whether there is a bridge. A ferry
+ * route across the Chiemsee gets a return leg in open water; an out-and-back along the Lauterbrunnen
+ * valley floor gets one part-way up the valley wall. Fixing that needs a real data source (OSM water
+ * polygons, a DEM) that this app does not have, and guessing is worse than not guessing: a
+ * heuristic that looks plausible removes the user's reason to check the map. The generated points
+ * are therefore ordinary editable waypoints by design — the route wizard renders them with a
+ * distinct outlined marker and the user can drag or delete any of them.
+ *
+ * **Two waypoints carry no heading signal.** With exactly two waypoints the only segment in the path
+ * IS the chord, so û is exactly anti-parallel to it and points to neither side, and the centroid of
+ * two points lies exactly on the line between them. Nothing in the input prefers either side, and no
+ * arithmetic can invent a preference. The side is therefore decided by a fixed compass convention
+ * (see bulgeNormal), chosen to be tap-order invariant so the same two taps at least always produce
+ * the same loop — but which side that is remains arbitrary with respect to the ground. On a coastal
+ * path or a riverside route it is a coin flip between open ground and water. A "flip the loop"
+ * affordance in the wizard would be the real fix and does not exist yet.
  */
 import { haversineM } from "./gps.js";
 
@@ -226,16 +266,28 @@ function isFiniteWaypoint(w: Waypoint): boolean {
 }
 
 /**
- * Generates `count` waypoints (excluding both endpoints) forming a smooth arc from the route's
- * last waypoint back toward its first, bulging toward whichever side of the chord the runner's
- * final approach heading points (see `bulgeNormal`) so the return leg encloses area instead of
- * folding back over the outbound path. Callers append these between
- * the existing waypoints and the closing point back at the start (mirrors RouteWizard.vue's
- * existing `effectiveWaypoints` — this function only produces the new interior points).
+ * Generates `count` waypoints (excluding both endpoints) forming the return leg from the route's
+ * last waypoint back toward its first — a circular arc that departs along the direction the runner
+ * was already moving and curves back to the start, so the loop encloses new ground instead of
+ * folding back over the outbound path. Callers append these between the existing waypoints and the
+ * closing point back at the start (mirrors RouteWizard.vue's `effectiveWaypoints` — this function
+ * only produces the new interior points). Pure and deterministic: the same input always produces
+ * the same output, and the input array is never mutated.
  *
- * Returns `[]` when there's nothing sensible to generate: fewer than 2 input waypoints, a chord
- * shorter than `MIN_CHORD_M`, or `maxCount` leaves no room (the server's 50-waypoint cap, minus
- * the input waypoints and the eventual closing point, already spoken for).
+ * Returns `[]` when there's nothing sensible to generate: fewer than 2 input waypoints, any
+ * non-finite or out-of-WGS84-range coordinate, a chord shorter than `MIN_CHORD_M`, or a `count`/
+ * `maxCount` that leaves no room (the server's 50-waypoint cap, minus the input waypoints and the
+ * eventual closing point, already spoken for).
+ *
+ * @param opts.count      How many interior points to generate. Floored to an integer, clamped to
+ *                        `maxCount` and to `MAX_GENERATED_COUNT`.
+ * @param opts.maxCount   Upper bound from the caller's own waypoint budget.
+ * @param opts.bulgeRatio Excursion as a fraction of the chord, used **only** when the route carries
+ *                        no approach-heading signal (a 2-waypoint out-and-back, or an approach
+ *                        exactly along the chord). When a heading is available the excursion comes
+ *                        from it instead. An explicit `0` means no bulge at all — points
+ *                        interpolated straight along the chord; anything negative or non-finite is
+ *                        ignored in favour of the default.
  */
 export function generateLoopWaypoints(
   waypoints: Waypoint[],
