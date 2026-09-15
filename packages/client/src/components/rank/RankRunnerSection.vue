@@ -8,6 +8,7 @@ import { RUN_CATEGORIES, type RunCategory } from "@liftr/shared";
 import { computed, onMounted } from "vue";
 import CardGrid from "../ui/CardGrid.vue";
 import RankProgress from "./RankProgress.vue";
+import TierBadge from "./TierBadge.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunRankRow } from "../../stores/runRankStore";
 
@@ -84,19 +85,20 @@ function formatNextSpeedTarget(speedMps: number | null): string {
       >
         <div class="card-head">
           <b class="card-name">{{ RUN_CATEGORY_LABEL[category] }}</b>
+          <TierBadge v-if="runRankByCategory[category]" :tier="runRankByCategory[category]!.tier" />
         </div>
-        <div v-if="runRankByCategory[category]" class="rank-tier-frame" :class="`t-${runRankByCategory[category]!.tier}`">
-          <RankProgress
-            variant="card"
-            :tier="runRankByCategory[category]!.tier"
-            :division="runRankByCategory[category]!.division"
-            :lp="runRankByCategory[category]!.lp"
-            :next-target-label="formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
-            :trust="runRankByCategory[category]!.trust ?? 'real'"
-            :peak-tier="runRankByCategory[category]!.peakTier"
-            :peak-division="runRankByCategory[category]!.peakDivision"
-          />
-        </div>
+        <RankProgress
+          v-if="runRankByCategory[category]"
+          variant="card"
+          :badge="false"
+          :tier="runRankByCategory[category]!.tier"
+          :division="runRankByCategory[category]!.division"
+          :lp="runRankByCategory[category]!.lp"
+          :next-target-label="formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
+          :trust="runRankByCategory[category]!.trust ?? 'real'"
+          :peak-tier="runRankByCategory[category]!.peakTier"
+          :peak-division="runRankByCategory[category]!.peakDivision"
+        />
         <p v-else class="run-rank-empty-note">Noch kein Rang — lauf diese Distanz, um zu starten.</p>
       </div>
     </CardGrid>
@@ -104,15 +106,11 @@ function formatNextSpeedTarget(speedMps: number | null): string {
 </template>
 
 <style scoped>
-/* .page-note/.rank-tier-frame/.rank-skel-card/.load-error and the .ranks-tier-ladder :deep()
-   overrides are shared with RankLifterSection.vue and ExerciseInfoPanel.vue via the global
-   styles/rank-card.css (loaded from main.ts); .card/.card-grid/.card-head/.card-name come from
-   global list-card.css, same as every other card grid in the app — only this section's own
-   empty-state note and the grid's self-centering (see RankLifterSection.vue's identical rule)
-   stay scoped here. */
-.card-grid {
-  margin: var(--sp4) auto 0;
-}
+/* .page-note/.rank-skel-card/.load-error and the grid's self-centering are shared with
+   RankLifterSection.vue and ExerciseInfoPanel.vue via the global styles/rank-card.css (loaded
+   from main.ts); .card/.card-grid/.card-head/.card-name come from global list-card.css, same as
+   every other card grid in the app — only this section's own empty-state note stays scoped
+   here. */
 .run-rank-empty-note {
   font-size: 12.5px;
   color: var(--dim);

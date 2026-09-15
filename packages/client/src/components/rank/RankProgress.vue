@@ -12,7 +12,8 @@
  */
 import { computed } from "vue";
 import { MAX_ORDINAL, ordinal, type Division, type Tier } from "@liftr/shared";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import TierBadge from "./TierBadge.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -45,6 +46,10 @@ const props = withDefaults(
     /** A short, honest note when this exercise's rank/XP gain from the most recent session was
      *  reduced by the plausibility gate. Never shows exact thresholds. */
     plausibilityNote?: string | null;
+    /** The Ränge grid cards (RankLifterSection.vue/RankRunnerSection.vue) already render the
+     *  medal themselves, in ListCard's #badge slot next to the exercise name — set false there so
+     *  it isn't shown twice. Every other call site keeps the default. */
+    badge?: boolean;
   }>(),
   {
     nextTargetWeightKg: null,
@@ -56,6 +61,7 @@ const props = withDefaults(
     peakDivision: null,
     recoveryGainLabel: null,
     plausibilityNote: null,
+    badge: true,
   },
 );
 
@@ -71,7 +77,7 @@ const decayCaption = computed(() => {
  *  only platform) and to screen readers. The page-level LP-explainer already teaches what "≈"
  *  means in general; this names the specific case per card as a normal caption alongside the
  *  decay/recovery/plausibility lines below, rather than a second interactive element (which
- *  would nest inside RanksPage's own <button class="rank-card">). */
+ *  would nest inside the grid's own tappable ListCard). */
 const trustLabel = computed(() => {
   if (props.trust === "derived") return "Abgeleiteter Standard";
   if (props.trust === "synthetic") return "Geschätzter Standard";
@@ -101,9 +107,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 
 <template>
   <div class="rank-progress" :class="[`t-${tier}`, `variant-${variant}`, { 'panel-reward': variant === 'inline' }]">
-    <span class="badge" :class="`t-${tier}`">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="TIER_BADGE_PATH[tier as RankTier]" /></svg>
-    </span>
+    <TierBadge v-if="badge" :tier="tier" />
     <div class="rp-body">
       <div class="rp-head">
         <span class="rp-tier">
@@ -153,16 +157,17 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.05em;
-  color: var(--tt, var(--text));
+  /* var(--text), not var(--tt): --tt is an on-metal color (tokens.css's per-tier tokens, all
+     near-white) meant for text sitting directly on a saturated tier fill. This readout now sits
+     on the card's own neutral glass (or .panel-reward for the inline variant, which re-pins
+     --text locally) — --tt would be unreadable in light theme, where the page background is
+     light and there's no dark fill underneath to contrast against. */
+  color: var(--text);
 }
 .rp-lp {
   font-size: 11.5px;
   color: var(--dim);
 }
-/* The "≈" trust marker always sits on a dark tier fill (the .card variant's parent .rank-card
-   gradient, or the .inline variant's .panel-reward). Both ancestors pin --dim to a
-   light-on-dark value, so referencing the token here tracks theme changes automatically instead
-   of hardcoding a literal. */
 .trust-marker {
   color: var(--dim);
   font-weight: 600;
@@ -199,31 +204,19 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-style: italic;
 }
 
-/* card variant (Ränge grid, ExerciseInfoPanel's Rang tab) — larger badge, text can be
-   white-on-gradient since the parent .rank-tier-frame (styles/rank-card.css) paints a full tier
-   gradient behind it. Prefixed `variant-` (not a bare `card`/`inline` class matching the `variant`
-   prop) so this component's own root class can never collide with an unrelated global class of
-   the same name — it did, once list-card.css's own `.card` became this component's typical
-   container (RankLifterSection.vue/RankRunnerSection.vue), matching a descendant selector meant
-   for the grid's own cards. */
+/* card variant (Ränge grid, ExerciseInfoPanel's Rang tab) — larger badge, roomier text. `variant`
+   now only controls density; which surface it sits on (plain card glass, or ExerciseInfoPanel's
+   .panel-reward) is the caller's choice, not baked in here. Prefixed `variant-` (not a bare
+   `card`/`inline` class matching the `variant` prop) so this component's own root class can never
+   collide with an unrelated global class of the same name — it did, once list-card.css's own
+   `.card` became this component's typical container (RankLifterSection.vue/
+   RankRunnerSection.vue), matching a descendant selector meant for the grid's own cards. */
 .rank-progress.variant-card .badge {
   width: 46px;
   height: 52px;
 }
 .rank-progress.variant-card .rp-tier {
   font-size: 12px;
-}
-/* Sits on the card variant's parent tier-gradient plaque, where --dim doesn't clear AA contrast —
-   uses the brighter --text token instead. `.rank-tier-frame` pins --text to a light-on-dark value
-   (mirroring tokens.css's .panel-reward), so referencing the token here tracks theme changes
-   automatically instead of hardcoding a literal. */
-.rank-progress.variant-card .rp-lp,
-.rank-progress.variant-card .rp-next,
-.rank-progress.variant-card .rp-trust {
-  color: var(--text);
-}
-.rank-progress.variant-card .trust-marker {
-  color: var(--dim);
 }
 
 /* inline variant (active-workout focus column, finish-sequence beat) — compact, sits on the

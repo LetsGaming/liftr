@@ -1,8 +1,8 @@
 /* Shared pieces for the "Ränge" tab (RankLifterSection.vue/Kraft, RankRunnerSection.vue/Lauf) and
-   for ExerciseInfoPanel.vue's own Rang tab. Global (not scoped) for two reasons: `.card-grid`'s
-   entrance-stagger selector (list-card.css) has to match `.card` elements rendered by ListCard.vue,
-   a different SFC than whichever page owns the grid; and `.ranks-tier-ladder :deep(...)` has to
-   match markup rendered by TierLadder.vue, again a different SFC than either rank section.
+   for ExerciseInfoPanel.vue's own Rang tab. Global (not scoped): `.card-grid`'s entrance-stagger
+   selector (list-card.css) has to match `.card` elements rendered by ListCard.vue, a different SFC
+   than whichever page owns the grid — same reason the grid-centering rule below has to live here
+   rather than in either section's own scoped style.
 
    This file used to also own a bespoke `.rank-card`/`.rank-grid` — a full-bleed opaque tier-metal
    gradient filling an entire grid cell, with its own hand-rolled border/grid/breakpoint recipe that
@@ -10,18 +10,17 @@
    routines, routes). The result: a Ränge grid that was a wall of clashing saturated colors (every
    card a different hue depending on tier) sitting among otherwise-uniform dark glass cards
    elsewhere, hard to scan for "which exercise", and drifting further from `.card` on every
-   unrelated change to either. ExerciseInfoPanel.vue had independently invented nearly the same
-   full-tier-fill pattern a third time for its own Rang tab (as `.rank-card-frame`, locally scoped).
+   unrelated change to either. That first fix demoted the fill from "the entire card" to a small
+   `.rank-tier-frame` plaque nested inside the neutral card — better, but still a second focal
+   point competing with the exercise name, and a *third* reward-surface recipe alongside
+   tokens.css's `.panel-reward` (which every other earned-status surface in the app already uses).
 
-   Now: both rank sections render through the *same* `CardGrid`/`ListCard` components every other
-   grid uses (packages/client/src/components/ui/), so the outer shell — grid metrics, dark glass
-   background, corner radius, breakpoint scaling, hover/press feedback, entrance stagger — is
-   identical to the Workout/Läufe routine and route grids, not a parallel system. The colorful tier
-   fill still exists (rank is earned status, not decoration — that part of the old reasoning holds),
-   just demoted from "the entire card" to a small self-contained plaque inside the neutral card:
-   `.rank-tier-frame` below, the one piece promoted out of ExerciseInfoPanel.vue so all three call
-   sites finally share one implementation instead of three that already diverged in the details
-   (border color, sheen, edge technique). */
+   Now: the grid cards carry no fill at all. Tier identity comes from two things the card already
+   had — `list-card.css`'s `.card { outline: 1px solid var(--tier-accent) }` (set once `t-<tier>`
+   is on the ListCard) and the hex medal itself (TierBadge.vue, in ListCard's #badge slot) — so a
+   grid of these reads as "a normal card grid, one colorful medal each" rather than "a grid with a
+   colored box on every card". ExerciseInfoPanel.vue's single hero readout is a different shape (one
+   reward moment in a tab panel, no card rim to lean on) and uses `.panel-reward` directly instead. */
 .page-note {
   color: var(--dim);
 }
@@ -43,75 +42,25 @@
   border-radius: var(--r-lg);
 }
 
-/* The tier "medal plaque" — badge + LP bar + next-target text (RankProgress.vue's `variant="card"`)
-   sits inside this. Deliberately still an opaque, saturated, per-tier gradient fill (not
-   .surface-hybrid glass): this is the one reward moment on the card, and should read as earned
-   status, distinct from the neutral chrome around it — same reasoning tokens.css's `.panel-reward`
-   already uses for the app's other reward surfaces (XP chips, rank-up rows). Sized to its own
-   content rather than the whole grid cell, so a grid of these reads as "a normal card grid with one
-   colorful accent each", not "a grid of solid color blocks". */
-.rank-tier-frame {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--r-md);
-  padding: var(--sp3) var(--sp4);
-  /* Always-dark fill regardless of theme (tier colors are always dark, by design — see
-     tokens.css's `:root[data-theme="light"]` comment) — text inside must stay light-on-dark even
-     when the page itself is in light mode. Same pattern as tokens.css's .panel-reward. */
-  --text: #eef2fb;
-  --dim: #b8c2e0;
-  --faint: #98a2c0;
-}
-/* Gradient-hairline rim — the same mask-composite ring technique tokens.css's `.surface-hybrid`/
-   `.panel` use for every neutral card/panel edge in the app, tier-tinted instead of nebula-tinted,
-   rather than a flat single-hue `border`. */
-.rank-tier-frame::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(155deg, var(--b3, var(--nebula-1)), rgba(255, 255, 255, 0.16) 45%, var(--b2, var(--nebula-2)));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-/* Tier gradient fill + the same static diagonal sheen band tokens.css's `.panel-reward::after`
-   paints over its own tier fill — layered into one background (comma-separated, same technique
-   tokens.css's `.badge` uses to combine its specular streaks with its face gradient) so this plaque
-   finishes exactly like every other reward surface in the app instead of reading flatter/cheaper
-   next to them. Fallbacks only matter if `.t-<tier>` somehow isn't also applied on an ancestor; in
-   practice it always is (see call sites). */
-.rank-tier-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.08) 50%, transparent 65%),
-    linear-gradient(155deg, var(--b3, var(--surface-3)), var(--b2, var(--surface-2)) 55%, var(--b1, var(--surface)));
-  z-index: -1;
+/* The Ränge grid's own self-centering — list-card.css's `.card-grid` is sized (width:100%,
+   max-width capped) but not self-centering on its own; CardListScreen.vue normally handles that
+   via flex `align-items: center` at desktop widths, but both rank sections have other content
+   (ladder, analytics, filter) stacked above the grid, so neither is wrapped in that screen shell.
+   Global rather than scoped in either section: `.card-grid` is CardGrid.vue's own root element, a
+   different SFC than either section, so a scoped rule would need the same "leaks into child root"
+   exception list-card.css's own selectors already rely on — simpler to just say it once here for
+   both. */
+.rank-lifter-section .card-grid,
+.rank-runner-section .card-grid {
+  margin: var(--sp4) auto 0;
 }
 
-/* UX-14: TierLadder's own division-chip only ever marks "current" — everything else (already
-   climbed past this tier's earlier divisions, or not reached the later ones yet) renders as the
-   same flat grey pill, unreadable at a glance. TierLadder.vue itself is out of scope, so this
-   reaches into its rendered output via :deep() (same pattern as OverviewPage.vue's/RunsPage.vue's
-   `.wrapper :deep(.child)`) rather than forking its markup. Divisions list in DOM order from
-   worst (III) to best (I) — see TierLadder.vue's own `divisions()` comment — so a chip with a
-   later `.current` sibling was already climbed past, and one after `.current` hasn't been reached
-   yet. Borrows RankProgress.vue's own tier-accent-fill/opacity vocabulary rather than inventing a
-   new one. Used by both RankLifterSection.vue and RankRunnerSection.vue's own `.ranks-tier-ladder`
-   wrapper class. */
-.ranks-tier-ladder :deep(.division-chip:has(~ .division-chip.current)) {
-  background: var(--tier-accent, var(--nebula-1));
-  color: var(--tt, var(--text));
-  opacity: 0.55;
-}
-.ranks-tier-ladder :deep(.division-chip.current) {
-  box-shadow: 0 0 0 2px var(--tier-accent, var(--nebula-1));
-  font-weight: 800;
-}
-.ranks-tier-ladder :deep(.division-chip.current ~ .division-chip) {
-  opacity: 0.4;
+/* The small medal in a grid card's head (ListCard's #badge slot, next to the exercise name) reads
+   as a label, not a hero — sized down from TierBadge's default (RankProgress.vue's 46×52, meant to
+   sit beside a whole progress readout) to fit a 15.5px title line. Global for the same reason as
+   the centering rule above: TierBadge.vue's `.badge` root is rendered by a different SFC than
+   either rank section that puts it in the slot. */
+.card-head .badge {
+  width: 30px;
+  height: 34px;
 }
