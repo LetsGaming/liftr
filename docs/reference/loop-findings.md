@@ -5,6 +5,12 @@ integration in the route wizard (`packages/client/src/components/route-wizard/Ro
 This is a **findings-only report** — nothing here has been fixed; it exists to guide a follow-up
 fix pass.
 
+> **Status:** closed out by `docs/superpowers/plans/2026-09-15-loop-generator-fixes.md`. Every
+> finding below carries a resolution line. The report itself is left unedited otherwise — its
+> measurements, repro snippets and tables are the evidence the fixes were argued and tested from,
+> and several of them are quoted directly in `tests/shared/math/loop.test.ts`. See
+> `docs/adr/0008-heading-aware-loop-closure.md` for the algorithm decision.
+
 ## Scope and method
 
 Five agents investigated independently and in parallel: two ran realistic user-story scenarios
@@ -84,6 +90,8 @@ generateLoopWaypoints([p0, southBend(95), p2]);   // bulges south (wrong side)
 generateLoopWaypoints([p0, southBend(105), p2]);  // bulges north (correct side)
 ```
 
+**Resolution:** Fixed (Phase 1 Tasks 2–3). `DEGENERATE_SIDE_RATIO` deleted; the side comes from the approach heading, falls back to the centroid, then to a tap-order-invariant compass convention. Covered by the bend-continuity sweep and the Fischland tap-order test.
+
 ### A2. Antimeridian crossing — silent multi-thousand-km corruption
 
 **Severity: high · Reachable: yes, for routes near ±180° longitude (Fiji, Chukotka, Kiribati, parts of NZ)**
@@ -109,6 +117,8 @@ severe per-incident (garbage data persists silently rather than degrading visual
 generateLoopWaypoints([{ lat: -16.841, lon: 179.97 }, { lat: -16.83, lon: -179.985 }]);
 ```
 
+**Resolution:** Fixed (Task 1). Longitudes unwrapped around the route's start before projecting and wrapped back after; the Taveuni repro is a test.
+
 ### A3. `MIN_BULGE_M = 50` fixed floor — disproportionate detour on short loops
 
 **Severity: medium · Reachable: yes, for any loop with a 50–143 m chord (small park loops, track re-use)**
@@ -129,6 +139,8 @@ park or across a street.
 
 **Repro**: any two waypoints 51–150 m apart, default options.
 
+**Resolution:** Fixed (Task 5). The 50 m floor is now `max(10 m, 0.15·chord)`, and for the 2-waypoint case in the repro the excursion is a plain 35% of the chord with no floor involved at all.
+
 ### A4. `MAX_BULGE_M = 2000` cap — return leg becomes negligible on long/ultra routes
 
 **Severity: low-medium · Reachable: yes, for any route with a chord over ~5.7 km**
@@ -148,6 +160,8 @@ Not a crash or corruption — likely an intentional safety cap — but it means 
 ("encloses new ground instead of re-covering the outbound path") quietly stops being true well
 before the ultra distances this app's running-rank system already models.
 
+**Resolution:** Fixed (Task 5). The flat 2000 m cap grows as a square root past a 5 km knee: 35% of a 40 km chord instead of 5%.
+
 ### A5. No terrain/water awareness (design limitation, not a fixable arithmetic bug)
 
 **Severity: informational · Reachable: yes, for lakeside/riverside/valley routes**
@@ -162,6 +176,8 @@ Two concrete reproductions:
 
 This isn't independently fixable without a terrain/water data source (OSM water polygons, a DEM);
 recorded here as a known limitation rather than a bug with a clear code-level fix.
+
+**Resolution:** **Not fixed, by decision.** Documented as an inherent limitation in `loop.ts`'s module header and in ADR-0008's consequences. Needs a terrain/water data source this app does not have; a heuristic guess would be worse than the honest gap.
 
 ### A6. No heading continuity — the arc ignores which direction you were already moving
 
@@ -237,6 +253,8 @@ generateLoopWaypoints(approach1)[0]; // identical to the line below
 generateLoopWaypoints(approach2)[0];
 ```
 
+**Resolution:** Fixed (Task 3). The return leg is the circular arc tangent to the approach heading; the structural-proof repro is inverted into a test asserting the two approaches now produce *different* arcs, and the roundabout case is completed along the roundabout.
+
 ---
 
 ## B — Integration bugs (`RouteWizard.vue`)
@@ -257,6 +275,8 @@ arc-less with no way to fix it except manually unchecking and rechecking.
 **Trace**: `RouteWizard.vue:181-184` (`onAdd`) → `schedulePreview()` → 400 ms timer *pending* →
 user clicks "Speichern" → `save()` reads `effectiveWaypoints.value` synchronously, arc never ran.
 
+**Resolution:** Fixed (Task 8). `save()` calls `generateArcIfNeeded()` before reading `effectiveWaypoints`.
+
 ### B2. Arc silently regenerates after the user deletes it
 
 **Severity: medium-high · Reachable: yes, whenever a user dislikes the generated arc and removes it**
@@ -272,6 +292,8 @@ points, once present, are never regenerated").
 **Trace**: `onRemove` (RouteWizard.vue:189-192) → `schedulePreview()` → `generateArcIfNeeded()`
 (90-95) — guard passes once no `gen` point remains, closeLoop is still true.
 
+**Resolution:** Fixed (Task 9). A new `arcDismissed` flag distinguishes "no arc yet" from "the user threw the arc away"; cleared only by hydration or by ticking the toggle again.
+
 ### B3. Arc lands mid-list after a pause-then-continue tapping pattern
 
 **Severity: medium · Reachable: yes, for a common "tap, pause, tap more" pattern**
@@ -282,6 +304,8 @@ waypoints, pauses long enough for the arc to generate, then taps more waypoints,
 `gen` points and no-ops for the rest of the session. Result: the waypoint order becomes
 `[user, user, gen, gen, gen, user, user]`, so the route visits the generated arc, jumps back out to
 the newer taps, then closes — a visibly wrong zigzag rather than a clean loop, saved without error.
+
+**Resolution:** Fixed (Task 10). `onAdd` strips and rebuilds the trailing arc, or inserts after the last user point when the arc was dismissed.
 
 ### B4. 50-waypoint cap: silent degradation, then a misleading generic error
 
@@ -297,6 +321,8 @@ save is rejected with a 400. The client's catch-all error handler (RouteWizard.v
 the server's actual validation detail and shows a generic "Speichern fehlgeschlagen — bitte erneut
 versuchen." — advice that is actively wrong here, since retrying with the same waypoints fails
 identically every time.
+
+**Resolution:** Fixed (Task 11). A 46-waypoint client cap with a German toast and a footer counter, plus a status-aware save error that stops telling the user to retry something that cannot succeed.
 
 ---
 
@@ -330,6 +356,8 @@ not urgent.
   `maxCount` allocates a million points in ~70 ms — not a meaningful DoS, and unreachable since the
   only caller always supplies `maxCount`.
 
+**Resolution:** Fixed (Task 6) for NaN/Infinity, fractional/negative `count`, `bulgeRatio` edge values and the missing upper `count` cap. The dimensional-analysis bias and the polar blowup were **subsumed** by Phase 1: the side decision no longer mixes projected-plane and great-circle quantities, and `unproject` now floors metres-per-degree-of-longitude and clamps its output.
+
 ---
 
 ## D — Investigated and confirmed NOT bugs
@@ -353,6 +381,8 @@ Recorded so a future investigation doesn't re-tread this ground.
   detected on any doubling-back or zigzag route tested.
 - **Duplicate/identical waypoints**: chord correctly evaluates to 0, early-return `[]` fires as
   designed.
+
+**Resolution:** Unchanged; still not bugs. `tests/shared/math/loop.test.ts` now pins the determinism and duplicate-waypoint cases D depends on. Note the one D item the redesign *does* invalidate: "no literal path self-intersection detected" no longer holds, because a return leg sweeping past 180° is a lollipop — see ADR-0008.
 
 ---
 
