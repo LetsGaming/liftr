@@ -118,8 +118,9 @@ entirely. See [SECURITY.md](SECURITY.md#outbound-requests-openrouteservice) and
 - **Custom exercises** — add your own exercise (with muscle tags) alongside the curated catalog,
   with correct name display and slug transliteration (including non-ASCII names).
 - **Strecken planen** — Wegpunkte auf einer Karte setzen; die App berechnet automatisch Distanz und
-  Höhenmeter (via OpenRouteService, optional) und merkt sich die Strecke zum späteren Start. Mit „Schleife
-  schließen" ergänzt die App eine Rückweg-Kurve, die in der Richtung weiterläuft, in der du unterwegs warst — die gesetzten Punkte lassen sich danach frei verschieben oder löschen.
+  Höhenmeter (via OpenRouteService, optional) und merkt sich die Strecke zum späteren Start. Mit
+  „Schleife schließen“ ergänzt die App eine Rückweg-Kurve, die in der Richtung weiterläuft, in der
+  du unterwegs warst — die gesetzten Punkte lassen sich danach frei verschieben oder löschen.
 
 ## Exercise catalog
 

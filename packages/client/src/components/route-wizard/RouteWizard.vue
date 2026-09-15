@@ -131,6 +131,12 @@ function setCloseLoop(checked: boolean) {
     // also the only affordance in this sheet for getting a discarded arc back.
     arcDismissed.value = false;
     generateArcIfNeeded();
+    // The loop-on budget is lower than the loop-off cap (room is reserved for the generated
+    // arc). If the user already placed more waypoints than that budget allows, canSave silently
+    // goes false with nothing but a red counter to explain it — tell them why.
+    if (userWaypointCount.value > maxUserWaypoints.value) {
+      toast(`Mit Schleife sind maximal ${maxUserWaypoints.value} Wegpunkte möglich — entferne zuerst Punkte.`);
+    }
   } else if (waypoints.value.some((w) => w.gen)) {
     waypoints.value = waypoints.value.filter((w) => !w.gen);
   }

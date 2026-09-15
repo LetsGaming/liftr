@@ -366,6 +366,22 @@ describe("RouteWizard waypoint cap and save errors (findings B4)", () => {
     expect(wrapper.text()).toContain("46");
   });
 
+  it("warns and blocks save when toggling the loop on pushes an already-placed count over its budget", async () => {
+    const wrapper = mountWizard();
+    await setName(wrapper, "ZuVoll");
+    // Loop off (default true) so the loop-off cap (50) applies while placing — the full 50 is
+    // fine with the loop off, but leaves no room at all for the loop-on synthetic closing point.
+    await wrapper.find(".loop-toggle input").setValue(false);
+    await tapMany(wrapper, 50);
+    expect(waypointsOf(wrapper).filter((w) => !w.gen)).toHaveLength(50);
+
+    await wrapper.find(".loop-toggle input").setValue(true);
+
+    const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
+    expect(toasts.map((t) => t.text).join(" ")).toContain("Mit Schleife sind maximal");
+    expect(wrapper.find("button.btn-primary").attributes("disabled")).toBeDefined();
+  });
+
   it("never builds a payload longer than the server's 50-waypoint limit", async () => {
     const wrapper = mountWizard();
     await setName(wrapper, "Lang");

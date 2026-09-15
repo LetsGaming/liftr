@@ -12,14 +12,17 @@
  * path (waypoints[n-2] → waypoints[n-1]). There is exactly one circle through P and Q that leaves P
  * along û; the arc of that circle is the return leg. Its tangent–chord angle φ = ∠(û, chord) also
  * gives its greatest distance from the chord in closed form, (chord/2)·tan(φ/2), which is the one
- * knob this module tunes: zero when the runner is already heading home, a clean semicircle when the
- * start is 90° off their shoulder, and clamped (see clampBulgeM) as it runs away toward "heading
- * directly away from home".
+ * knob this module tunes: near-zero (floored, see clampBulgeM) when the runner is already heading
+ * home, a clean semicircle when the start is 90° off their shoulder, and clamped (see clampBulgeM)
+ * as it runs away toward "heading directly away from home".
  *
  * That single construction decides both things the previous implementation decided separately and
  * badly: which side of the chord to bulge toward (the side û points to) and what shape to bulge in
  * (an arc that departs along û rather than a symmetric sine hump ignoring it). A route traced
- * around a roundabout closes roughly along the roundabout — closer to exact the more densely the points are spaced, since the heading estimate that drives the construction is itself just the direction of the last real segment; for a handful of widely-spaced taps it's a good approximation, not an exact reconstruction.
+ * around a roundabout closes roughly along the roundabout — closer to exact the more densely the
+ * points are spaced, since the heading estimate that drives the construction is itself just the
+ * direction of the last real segment; for a handful of widely-spaced taps it's a good
+ * approximation, not an exact reconstruction.
  *
  * ## The plane
  *
@@ -207,7 +210,7 @@ function bulgeNormal(chordUnit: Point2, approach: Point2 | null, projected: Poin
  * given heading. Its tangent–chord angle φ is the angle between that heading and the chord, and its
  * greatest distance from the chord is (chord/2)·tan(φ/2): zero when the runner is already heading
  * straight home, a clean semicircle when the start is 90° off their shoulder, and unbounded as they
- * head directly away from it. The caller clamps the unbounded end.
+ * head directly away from it. The caller clamps both ends (see clampBulgeM).
  *
  * With no heading signal there is nothing to derive it from, so the documented default ratio stands
  * in — see bulgeNormal and the module doc for why that case exists and why it can't be solved.
