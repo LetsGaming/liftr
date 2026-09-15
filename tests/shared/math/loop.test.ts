@@ -108,4 +108,47 @@ describe("generateLoopWaypoints", () => {
     const arcPathM = pathDistanceM([end, ...arc, start]);
     expect(arcPathM).toBeGreaterThan(chordM * 1.05);
   });
+
+  // --- findings A2 / C: the projection layer's own correctness ---
+
+  it("keeps an arc across the ±180° line beside the route, not on the far side of the planet", () => {
+    // Taveuni area, Fiji — two taps ~5 km apart straddling the antimeridian (loop-findings.md A2).
+    // haversineM already gets the distance right; it was projector()'s raw `lon * mPerDegLon`
+    // that interpolated the long way around the globe and produced points 3,750-5,385 km away.
+    const start = { lat: -16.841, lon: 179.97 };
+    const end = { lat: -16.83, lon: -179.985 };
+    const chordM = haversineM(end, start);
+    expect(chordM).toBeGreaterThan(4000);
+    expect(chordM).toBeLessThan(6000);
+
+    const arc = generateLoopWaypoints([start, end]);
+
+    expect(arc.length).toBeGreaterThan(0);
+    for (const p of arc) {
+      expect(haversineM(p, start)).toBeLessThan(4 * chordM);
+      expect(haversineM(p, end)).toBeLessThan(4 * chordM);
+    }
+  });
+
+  it("never emits a coordinate outside the range the server's waypoint schema accepts", () => {
+    // The server's zod bounds (lat [-90,90], lon [-180,180]) are the contract every generated
+    // point has to satisfy. A2's antimeridian points satisfied them while being garbage; C's
+    // polar case violates them outright. Both are checked here, plus an equator crossing.
+    const routes = [
+      [{ lat: -16.841, lon: 179.97 }, { lat: -16.83, lon: -179.985 }],
+      [{ lat: 89.99, lon: 0 }, { lat: 89.98, lon: 90 }],
+      [{ lat: -89.99, lon: -179.999 }, { lat: -89.98, lon: 179.999 }],
+      [{ lat: 0, lon: 179.999 }, { lat: 0.01, lon: -179.999 }],
+    ];
+    for (const waypoints of routes) {
+      for (const p of generateLoopWaypoints(waypoints)) {
+        expect(Number.isFinite(p.lat)).toBe(true);
+        expect(Number.isFinite(p.lon)).toBe(true);
+        expect(p.lat).toBeGreaterThanOrEqual(-90);
+        expect(p.lat).toBeLessThanOrEqual(90);
+        expect(p.lon).toBeGreaterThanOrEqual(-180);
+        expect(p.lon).toBeLessThanOrEqual(180);
+      }
+    }
+  });
 });
