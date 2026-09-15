@@ -3,6 +3,10 @@ import { api } from "../lib/api";
 export interface Waypoint {
   lat: number;
   lon: number;
+  /** Set on a waypoint RouteWizard.vue's loop generator placed, as opposed to one the user placed
+   *  by tapping the map — lets RouteMapEditor style it distinctly and lets unchecking "Schleife
+   *  schließen" remove exactly the generated points, even after a save/reload round-trip. */
+  gen?: boolean;
 }
 
 export interface RoutePoint {

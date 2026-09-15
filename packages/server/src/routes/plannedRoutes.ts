@@ -12,7 +12,14 @@ import {
 import { createPlannedRoute, previewPlannedRoute, updatePlannedRoute } from "../services/plannedRouteService.js";
 import type { ZodFastifyInstance } from "../types.js";
 
-const waypointSchema = z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180) });
+// `gen` marks a waypoint the loop generator placed rather than the user — see the field's doc on
+// repositories/plannedRouteRepository.ts's Waypoint interface for why this needs no schema/
+// migration beyond this one optional field.
+const waypointSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+  gen: z.boolean().optional(),
+});
 const waypointsSchema = z.array(waypointSchema).min(2).max(50);
 
 const createInput = z.object({ name: z.string().min(1), orderIndex: z.number().int().default(0), waypoints: waypointsSchema });

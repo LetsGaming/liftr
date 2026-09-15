@@ -12,6 +12,15 @@ export type PlannedRouteDbClient = Pick<LiftrDb, "update" | "delete" | "insert" 
 export interface Waypoint {
   lat: number;
   lon: number;
+  /** Set on a waypoint the "Schleife schließen" loop generator placed (RouteWizard.vue's
+   *  generateLoopWaypoints call), as opposed to one the user placed by tapping the map. Lets the
+   *  client tell them apart on reopen — to style them distinctly and to strip them back out when
+   *  the loop toggle is unchecked — without a schema change, since `waypoints` is already a JSON
+   *  text column (see plannedRoutes.waypoints in packages/db/src/schema.ts) rather than a
+   *  relational table with fixed columns. Round-trips through JSON.stringify/parse exactly like
+   *  `lat`/`lon` above; server logic (ORS requests, distance math) reads only lat/lon and ignores
+   *  it entirely. */
+  gen?: boolean;
 }
 
 export interface RoutePoint {

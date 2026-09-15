@@ -57,6 +57,7 @@ function handleResize() {
       v-if="points.length >= 2"
       class="map-surface"
       lazy
+      basemap="standard"
       :map-options="inertMapOptions"
       @ready="handleReady"
       @resize="handleResize"

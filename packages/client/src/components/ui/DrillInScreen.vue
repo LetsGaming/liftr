@@ -20,7 +20,10 @@ defineProps<{
    *  interactive map — dragging to scroll the page would instead pan the map, trapping the
    *  gesture — not for a normal content list, which should keep scrolling normally (the default
    *  RoutineOverviewPage.vue relies on). The caller must also disable its own IonContent's
-   *  scroll (`:scroll-y="false"`) for this to actually stop the page from scrolling underneath. */
+   *  scroll (`:scroll-y="false"`) for this to actually stop the page from scrolling underneath.
+   *  Also folds the standalone back-button row into the title row (see .ro-header-combined) —
+   *  every row not spent on chrome is a row the map below gets instead, which matters more here
+   *  than on a normal scrolling drill-in. */
   fillHeight?: boolean;
 }>();
 
@@ -35,7 +38,12 @@ function goBack() {
 
 <template>
   <div class="drill-in" :class="{ 'fill-height': fillHeight }">
-    <button class="ro-back-btn" aria-label="Zurück" @click="goBack">
+    <!-- fillHeight screens (an interactive map is the main content) fold the back button into
+         the title row below instead of giving it a row of its own — see .ro-header-combined
+         below for why that height matters more here than on a normal scrolling drill-in. Loading
+         and not-found have no title yet to combine it with, so it stays standalone in both
+         modes for those two states. -->
+    <button v-if="!fillHeight || loading || notFound" class="ro-back-btn" aria-label="Zurück" @click="goBack">
       <AppIcon name="chevron-left" :size="18" />
       <span>Zurück</span>
     </button>
@@ -49,7 +57,10 @@ function goBack() {
     </div>
 
     <template v-else>
-      <div class="ro-header">
+      <div class="ro-header" :class="{ 'ro-header-combined': fillHeight }">
+        <button v-if="fillHeight" class="ro-back-btn-inline" aria-label="Zurück" @click="goBack">
+          <AppIcon name="chevron-left" :size="18" />
+        </button>
         <h2>{{ title }}</h2>
         <slot name="header-extra" />
       </div>
@@ -119,6 +130,23 @@ function goBack() {
   display: flex;
   align-items: center;
   gap: var(--sp2);
+}
+/* fillHeight only: folds the standalone back-button row into this one, buying back roughly a
+   full row of height for the map below — RouteOverviewPage.vue's map is the whole reason this
+   mode exists, so every row not spent on it is a row the map doesn't get. */
+.ro-header-combined {
+  margin-top: var(--sp1);
+}
+.ro-back-btn-inline {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin-left: calc(var(--sp2) * -1);
+  background: none;
+  border: none;
+  color: var(--dim);
 }
 .ro-header h2 {
   flex: 1;

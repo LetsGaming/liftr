@@ -3,6 +3,7 @@ export * from "./math/bodyweightTrend.js";
 export * from "./math/e1rm.js";
 export * from "./math/mesocycle.js";
 export * from "./math/gps.js";
+export * from "./math/loop.js";
 export * from "./math/plates.js";
 export * from "./math/polyline.js";
 export * from "./math/riegel.js";

@@ -87,6 +87,14 @@ withDefaults(
      *  wizard wants; dragging it partway closed mid-edit would be a bad time to discover your
      *  draft is gone. */
     sheet?: boolean;
+    /** Only meaningful together with the `#header` slot. Default: `.sheet-scroll` is a normal
+     *  scrolling region. true: it becomes a column flex container instead (`overflow: hidden`),
+     *  so a single child that sets `flex: 1; min-height: 0` (an interactive map, e.g.
+     *  RouteWizard.vue/LiveRunScreen.vue) can actually grow to fill it — plain `overflow-y: auto`
+     *  isn't a flex container, so that pattern was silently inert until this existed, and the
+     *  child's own min-height floor decided the real height instead, which is what let content
+     *  overflow into a scroll `.sheet-scroll` was never meant to need. */
+    fillBody?: boolean;
     desktopVariant?: "card" | "drawer";
     /** Native Ionic tap-outside-to-close. Defaults to `sheet`'s own value (a draggable sheet
      *  naturally dismisses on backdrop tap too; a static full-bleed flow like the wizard
@@ -103,6 +111,7 @@ withDefaults(
     maxWidth: undefined,
     background: "var(--surface-hybrid-bg)",
     sheet: true,
+    fillBody: false,
     desktopVariant: "card",
     backdropDismiss: undefined,
   },
@@ -151,7 +160,7 @@ defineExpose({ dismiss });
     <div class="sheet" :class="{ 'has-custom-header': !!slots.header }">
       <template v-if="slots.header">
         <slot name="header" />
-        <div class="sheet-scroll"><slot /></div>
+        <div class="sheet-scroll" :class="{ 'fill-body': fillBody }"><slot /></div>
       </template>
       <template v-else>
         <div class="sheet-head">
@@ -232,6 +241,14 @@ defineExpose({ dismiss });
   min-height: 0;
   overflow-y: auto;
   padding: var(--sp4);
+}
+/* Opt-in (see the fillBody prop doc above): turns this into a column flex container so a single
+   `flex: 1; min-height: 0` child can actually grow into the remaining space instead of that rule
+   being inert inside a non-flex `overflow-y: auto` box. */
+.sheet-scroll.fill-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .sheet-head {
   flex: none;
