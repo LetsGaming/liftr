@@ -123,10 +123,11 @@ describe("generateLoopWaypoints", () => {
     const chordM = haversineM(end, start);
     const arc = generateLoopWaypoints([start, end]);
     for (const p of arc) {
-      // Rough sanity bound: no arc point should land wildly further from either endpoint than the
-      // chord length itself (bulge height is capped at 2km and scaled off the chord).
-      expect(haversineM(p, start)).toBeLessThan(chordM + 2100);
-      expect(haversineM(p, end)).toBeLessThan(chordM + 2100);
+      // No arc point should land wildly further from either endpoint than the chord itself plus the
+      // excursion the clamp allows for a chord this length (see clampBulgeM).
+      const slack = 1.0 * Math.sqrt(chordM * Math.min(chordM, 5000));
+      expect(haversineM(p, start)).toBeLessThan(chordM + 2 * slack);
+      expect(haversineM(p, end)).toBeLessThan(chordM + 2 * slack);
     }
   });
 
@@ -375,5 +376,65 @@ describe("generateLoopWaypoints", () => {
     const snapshot = JSON.stringify(route);
     generateLoopWaypoints(route);
     expect(JSON.stringify(route)).toBe(snapshot);
+  });
+
+  // --- findings A3 / A4: proportionate at both ends of the scale ---
+
+  /** Greatest distance from the chord over the generated arc — the quantity A3/A4 tabulate. */
+  function excursionM(waypoints: { lat: number; lon: number }[]) {
+    const start = waypoints[0]!;
+    const end = waypoints[waypoints.length - 1]!;
+    const arc = generateLoopWaypoints(waypoints);
+    const chordM = haversineM(end, start);
+    // Distance from a point to the chord, via the triangle-area identity, all in metres.
+    return Math.max(
+      ...arc.map((p) => {
+        const a = haversineM(end, p);
+        const b = haversineM(p, start);
+        const s = (a + b + chordM) / 2;
+        const area = Math.sqrt(Math.max(0, s * (s - a) * (s - b) * (s - chordM)));
+        return (2 * area) / chordM;
+      }),
+    );
+  }
+
+  it("keeps the detour proportionate on short loops instead of flooring it at 50 m", () => {
+    // loop-findings.md A3: a 50 m fixed floor was 99% of a 50.5 m chord and 50% of a 100 m one.
+    const due = (metresEast: number) => [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.5, lon: 13.4 + metresEast / (111_195 * Math.cos((52.5 * Math.PI) / 180)) },
+    ];
+    for (const chordM of [50.5, 60, 100, 143]) {
+      const ratio = excursionM(due(chordM)) / chordM;
+      expect(ratio).toBeGreaterThan(0.1);
+      expect(ratio).toBeLessThan(0.45); // was 0.99 at a 50.5 m chord
+    }
+  });
+
+  it("never collapses the detour to nothing when the runner is already heading home", () => {
+    // The floor's real job after the Phase 1 redesign: a heading pointed almost straight at the
+    // start gives a tangent-chord angle near zero, i.e. an arc indistinguishable from the chord.
+    const route = [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.51, lon: 13.4 },
+      { lat: 52.5099, lon: 13.4002 }, // final approach: aimed almost exactly back at the start
+    ];
+    const chordM = haversineM(route[route.length - 1]!, route[0]!);
+    expect(excursionM(route)).toBeGreaterThan(0.1 * chordM);
+  });
+
+  it("keeps the detour a meaningful fraction of a long chord instead of capping it at 2 km", () => {
+    // loop-findings.md A4: the old cap made the return leg 5% of a 40 km chord and 2% of a 100 km
+    // one. Still bounded — it just doesn't stop growing.
+    const north = (metres: number) => [
+      { lat: 52.0, lon: 13.4 },
+      { lat: 52.0 + metres / 111_195, lon: 13.4 },
+    ];
+    const at10k = excursionM(north(10_000));
+    const at40k = excursionM(north(40_000));
+    expect(at10k).toBeGreaterThan(0.2 * 10_000);
+    expect(at40k).toBeGreaterThan(0.2 * 40_000);
+    expect(at40k).toBeGreaterThan(at10k); // grows, unlike the old flat cap
+    expect(at40k).toBeLessThan(40_000); // but stays bounded
   });
 });

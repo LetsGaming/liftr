@@ -38,8 +38,21 @@ const MIN_HEADING_SEGMENT_M = 1;
  *  numerically parallel and genuinely pick no side. Deliberately a floating-point epsilon and not
  *  a "how confident are we" threshold — see bulgeNormal's doc. */
 const SIDE_EPS = 1e-6;
-const MIN_BULGE_M = 50;
-const MAX_BULGE_M = 2000;
+/** Excursion floor, as a fraction of the chord. Scale-free by design: a fixed metre floor is a
+ *  99%-of-chord detour on a 50 m loop (findings A3). */
+const MIN_BULGE_RATIO = 0.15;
+/** ...with a small absolute term so the very shortest loops the app allows still get a detour
+ *  bigger than road-snapping noise. Only binds below a ~67 m chord, where it is still under 20%
+ *  of it. */
+const MIN_BULGE_ABS_M = 10;
+/** Excursion ceiling, as a fraction of the chord below the knee. 1.0 is a 126.9° tangent–chord
+ *  angle: enough to honour any realistic curved-street or roundabout continuation (a third-traced
+ *  roundabout needs 120°), while bounding a straight out-and-back's return leg to ~2.8× the chord
+ *  instead of letting tan(φ/2) run away as the heading approaches "directly away from home". */
+const MAX_BULGE_RATIO = 1.0;
+/** Chord length past which the ceiling grows as a square root rather than linearly. The old hard
+ *  2000 m cap stopped growing entirely at 5.7 km and was 2% of a 100 km chord (findings A4). */
+const BULGE_KNEE_CHORD_M = 5000;
 /** Excursion as a fraction of the chord for the no-heading-signal case only — a 2-waypoint
  *  out-and-back, or an approach that runs exactly along the chord. When a heading IS available the
  *  excursion is derived from it instead (see approachBulgeM), and this value does not apply.
@@ -167,6 +180,17 @@ function approachBulgeM(
   return (chordLenM / 2) * Math.tan(phi / 2);
 }
 
+/** Holds the heading-derived excursion inside a band that stays proportionate at both ends of the
+ *  scale this app actually sees — a 50 m park loop and a 40 km ultra. Below the knee the ceiling is
+ *  a plain ratio of the chord; above it, growth continues as a square root (bounded, sublinear,
+ *  still a visible fraction of the loop). The floor is clamped to the ceiling rather than the other
+ *  way round, so the two can't cross on an absurdly long chord. */
+function clampBulgeM(rawM: number, chordLenM: number): number {
+  const cap = MAX_BULGE_RATIO * Math.sqrt(chordLenM * Math.min(chordLenM, BULGE_KNEE_CHORD_M));
+  const floor = Math.min(cap, Math.max(MIN_BULGE_ABS_M, MIN_BULGE_RATIO * chordLenM));
+  return Math.min(cap, Math.max(floor, rawM));
+}
+
 function projector(lat0: number, refLon: number) {
   const mPerDegLon = Math.max(MIN_M_PER_DEG_LON, M_PER_DEG_LAT * Math.cos((lat0 * Math.PI) / 180));
   return {
@@ -225,7 +249,7 @@ export function generateLoopWaypoints(
 
   const bulgeRatio = opts?.bulgeRatio ?? DEFAULT_BULGE_RATIO;
   const rawBulgeM = approachBulgeM(approach, chordUnit, chordLenM, bulgeRatio);
-  const bulgeM = Math.min(MAX_BULGE_M, Math.max(MIN_BULGE_M, rawBulgeM)); // Phase 2 replaces this line
+  const bulgeM = clampBulgeM(rawBulgeM, chordLenM);
 
   // Lay the points on the circle through P and Q whose greatest distance from the chord is
   // `bulgeM` on the `normal` side — the unique circular return leg with that excursion. When
