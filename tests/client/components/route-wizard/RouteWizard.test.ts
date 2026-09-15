@@ -221,3 +221,60 @@ describe("RouteWizard save (findings B1)", () => {
     expect(saved.filter((w) => w.gen)).toHaveLength(beforeSave);
   });
 });
+
+describe("RouteWizard arc dismissal (findings B2)", () => {
+  async function removeAt(wrapper: Wrapper, index: number) {
+    map(wrapper).vm.$emit("remove", index);
+    await wrapper.vm.$nextTick();
+  }
+
+  it("does not regenerate the arc after the user deletes its points one by one", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    const withArc = waypointsOf(wrapper);
+    const genCount = withArc.filter((w) => w.gen).length;
+    expect(genCount).toBeGreaterThan(0);
+
+    // Remove every generated point, pausing long enough between each for the debounce to settle —
+    // exactly the pattern in the report. The old guard flipped the moment the last one went and a
+    // brand-new arc appeared ~400 ms later, silently undoing the deletions.
+    for (let i = 0; i < genCount; i++) {
+      const idx = waypointsOf(wrapper).findIndex((w) => w.gen);
+      await removeAt(wrapper, idx);
+      await settle(wrapper);
+    }
+
+    expect(waypointsOf(wrapper).some((w) => w.gen)).toBe(false);
+    expect(waypointsOf(wrapper)).toHaveLength(2);
+  });
+
+  it("keeps the points the user chose to keep when they delete only part of the arc", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    const genCount = waypointsOf(wrapper).filter((w) => w.gen).length;
+
+    await removeAt(wrapper, waypointsOf(wrapper).findIndex((w) => w.gen));
+    await settle(wrapper);
+
+    expect(waypointsOf(wrapper).filter((w) => w.gen)).toHaveLength(genCount - 1);
+  });
+
+  it("brings a fresh arc back when the user toggles the loop off and on again", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    await removeAt(wrapper, waypointsOf(wrapper).findIndex((w) => w.gen));
+    await settle(wrapper);
+
+    await wrapper.find(".loop-toggle input").setValue(false);
+    await wrapper.find(".loop-toggle input").setValue(true);
+    await settle(wrapper);
+
+    expect(waypointsOf(wrapper).filter((w) => w.gen).length).toBeGreaterThan(0);
+  });
+});
