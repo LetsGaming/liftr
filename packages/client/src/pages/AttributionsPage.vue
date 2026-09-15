@@ -62,9 +62,13 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
             <p>© OpenStreetMap-Mitwirkende</p>
           </li>
           <li class="surface-hybrid">
-            <b>Esri World Imagery</b> — Satellitenansicht für Laufrouten (Maxar/Vexcel-Luftbilder)
+            <b>Esri World Imagery</b> — Satellitenansicht für Laufrouten (Vantor/Vexcel-Luftbilder),
+            mit Straßen- und Ortsnamen-Beschriftung (Esri Reference/World_Transportation)
             <span class="license">© Esri</span>
-            <p>Tiles © Esri — Maxar, Earthstar Geographics, and the GIS User Community</p>
+            <p>
+              Tiles © Esri — Vantor, Earthstar Geographics, and the GIS User Community · Beschriftungen:
+              Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende
+            </p>
           </li>
           <li class="surface-hybrid">
             <b>OpenRouteService</b> — Routenberechnung für geplante Strecken

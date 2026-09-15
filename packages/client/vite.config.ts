@@ -42,6 +42,21 @@ export default defineConfig(({ command }) => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // Esri street/place-name labels overlay for satellite mode (lib/leafletTheme.ts's
+          // createLabelsTileLayer) — a more specific pattern than the arcgisonline.com rule below,
+          // and listed first so it wins the match: without its own rule, every label tile would
+          // count against esri-satellite-tiles' 150-entry budget too, roughly halving how much
+          // imagery actually stays cached. Label PNGs are much lighter than imagery, so a bigger
+          // entry count costs comparatively little offline storage.
+          {
+            urlPattern: /^https:\/\/server\.arcgisonline\.com\/.*\/Reference\/World_Transportation\//,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "esri-labels-tiles",
+              expiration: { maxEntries: 300, maxAgeSeconds: 30 * 24 * 3600 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           // Esri World Imagery satellite basemap (lib/leafletTheme.ts's createSatelliteTileLayer,
           // toggled via BasemapToggle.vue) — its own cache entry, same reasoning as the OSM rule
           // above, since a different tile host isn't covered by that pattern. Lower maxEntries

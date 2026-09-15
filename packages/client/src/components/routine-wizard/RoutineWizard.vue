@@ -13,7 +13,7 @@
  */
 import type { SetKind } from "@liftr/shared";
 import { computed, reactive, ref, watch } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
+import WizardHeader from "../ui/WizardHeader.vue";
 import SheetModal from "../ui/SheetModal.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useToast } from "../../composables/useToast";
@@ -410,18 +410,12 @@ function useFullArrange() {
 <template>
   <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="emit('created')">
     <template #header>
-      <header class="wizard-head">
-        <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" aria-label="Schließen" @click="requestClose">
-          <template v-if="closeConfirm.isArmed()">Verwerfen?</template>
-          <AppIcon v-else name="close" />
-        </button>
-        <input v-model="name" class="name-input" type="text" placeholder="Name der Routine" aria-label="Name der Routine" />
-        <div class="steps">
-          <span :class="{ active: step === 'choose' || step === 'pick' }">1 Wählen</span>
-          <span :class="{ active: step === 'arrange' }">2 {{ showFastPath ? "Fertig" : "Anordnen" }}</span>
-          <span v-if="!showFastPath" :class="{ active: step === 'review' }">3 Fertig</span>
-        </div>
-      </header>
+      <WizardHeader
+        v-model:title="name"
+        :title-placeholder="'Name der Routine'"
+        :is-confirming-close="closeConfirm.isArmed()"
+        @close="requestClose"
+      />
     </template>
 
     <PathChooser v-if="step === 'choose'" @choose="choosePath" />
