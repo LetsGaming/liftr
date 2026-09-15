@@ -166,6 +166,9 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDate(detail.val
       <div class="date-line tnum">{{ formatDate(detail.startedAt) }}</div>
 
       <div v-if="sourceRouteName" class="route-chip">Strecke: {{ sourceRouteName }}</div>
+      <!-- rank-chip carries no CSS of its own (it shares .route-chip's look on purpose, same row
+           as the "Strecke:" chip) — kept only as a stable selector distinguishing this chip from
+           its siblings (route/pr) for tests. -->
       <div v-if="detailRank" class="route-chip rank-chip pop-in">
         {{ RUN_CATEGORY_LABEL[detailCategory!] }} · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }}
         {{ DIVISION_LABEL[detailRank.division] }}

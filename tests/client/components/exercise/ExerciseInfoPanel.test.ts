@@ -195,7 +195,7 @@ describe("ExerciseInfoPanel", () => {
     await flushPromises();
 
     expect(ranksStore.loaded).toBe(true);
-    expect(wrapper.find(".rank-tier-frame").exists()).toBe(true);
+    expect(wrapper.find(".panel-reward").exists()).toBe(true);
     expect(wrapper.text()).toContain("40 LP");
   });
 
@@ -204,7 +204,7 @@ describe("ExerciseInfoPanel", () => {
 
     await wrapper.findAll(".tab-pill")[1]!.trigger("click");
 
-    expect(wrapper.find(".rank-tier-frame").exists()).toBe(false);
+    expect(wrapper.find(".panel-reward").exists()).toBe(false);
     expect(wrapper.find(".hint").text()).toBe(
       "Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast.",
     );
@@ -217,7 +217,7 @@ describe("ExerciseInfoPanel", () => {
     await wrapper.findAll(".tab-pill")[1]!.trigger("click");
 
     expect(getRanksMock).not.toHaveBeenCalled();
-    expect(wrapper.find(".rank-tier-frame").exists()).toBe(true);
+    expect(wrapper.find(".panel-reward").exists()).toBe(true);
   });
 
   it("Statistiken tab computes best e1RM, lifetime volume, and total sets logged (loaded lift)", async () => {

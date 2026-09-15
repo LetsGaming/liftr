@@ -19,6 +19,7 @@ import ProgressChart from "./ProgressChart.vue";
 import RankDistributionDonut from "./RankDistributionDonut.vue";
 import RankProgress from "./RankProgress.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
+import TierBadge from "./TierBadge.vue";
 import TierLadder from "./TierLadder.vue";
 
 const ranksStore = useRanksStore();
@@ -135,19 +136,21 @@ const filteredRanks = computed(() =>
           :title="exerciseName(r.slug, r.name)"
           @open="toggleExpand(r.exerciseId)"
         >
-          <div class="rank-tier-frame" :class="`t-${r.tier}`">
-            <RankProgress
-              variant="card"
-              :tier="r.tier"
-              :division="r.division"
-              :lp="r.lp"
-              :next-target-weight-kg="r.nextTargetWeightKg"
-              :next-target-reps="r.nextTargetReps"
-              :trust="r.trust"
-              :peak-tier="r.peakTier"
-              :peak-division="r.peakDivision"
-            />
-          </div>
+          <template #badge>
+            <TierBadge :tier="r.tier" />
+          </template>
+          <RankProgress
+            variant="card"
+            :badge="false"
+            :tier="r.tier"
+            :division="r.division"
+            :lp="r.lp"
+            :next-target-weight-kg="r.nextTargetWeightKg"
+            :next-target-reps="r.nextTargetReps"
+            :trust="r.trust"
+            :peak-tier="r.peakTier"
+            :peak-division="r.peakDivision"
+          />
           <template v-if="expanded.has(r.exerciseId)" #footer>
             <div class="chart-slot pop-in" @click.stop>
               <ProgressChart v-if="historyCache.has(r.exerciseId)" :sets="historyCache.get(r.exerciseId)!" :is-bodyweight="r.isBodyweight" />
@@ -160,12 +163,13 @@ const filteredRanks = computed(() =>
 </template>
 
 <style scoped>
-/* .page-note/.rank-tier-frame/.rank-skel-card/.load-error and the .ranks-tier-ladder :deep()
-   overrides are shared with RankRunnerSection.vue and ExerciseInfoPanel.vue via the global
-   styles/rank-card.css (loaded from main.ts); the grid/card shell itself comes from
-   CardGrid.vue/ListCard.vue + global list-card.css, same as every other card grid in the app
-   (RoutineList.vue/RouteList.vue) — only this section's own unique pieces (analytics tiles, tier
-   filter, chart-expand panel) stay scoped here. */
+/* .page-note/.rank-skel-card/.load-error are shared with RankRunnerSection.vue and
+   ExerciseInfoPanel.vue via the global styles/rank-card.css (loaded from main.ts); the grid/card
+   shell itself comes from CardGrid.vue/ListCard.vue + global list-card.css, same as every other
+   card grid in the app (RoutineList.vue/RouteList.vue) — including the grid's own self-centering
+   (also in rank-card.css, shared with RankRunnerSection.vue's identical rule) — only this
+   section's own unique pieces (analytics tiles, tier filter, chart-expand panel) stay scoped
+   here. */
 .rank-analytics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -199,16 +203,6 @@ const filteredRanks = computed(() =>
   color: var(--text);
   font-size: 12.5px;
   font-weight: 700;
-}
-/* list-card.css's `.card-grid` is sized (width:100%, max-width capped) but not self-centering —
-   CardListScreen.vue normally centers it via flex `align-items: center` at desktop widths, but
-   this section has other content (ladder, analytics, filter) stacked above the grid so it isn't
-   wrapped in that screen shell. Same `margin: auto` self-centering as `.rank-analytics`/
-   `.rank-tier-filter` above instead. Scoped selectors on a child component's own root element
-   still apply (Vue's documented "leaks into child root" behavior for single-root components used
-   directly in this template), so this reaches CardGrid.vue's rendered `.card-grid` div. */
-.card-grid {
-  margin: var(--sp4) auto 0;
 }
 /* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep; `.surface-hybrid`
    (tokens.css) puts a loading Ränge screen on the same translucent/hairline system as the loaded

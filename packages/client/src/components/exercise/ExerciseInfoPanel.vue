@@ -160,7 +160,7 @@ function missingBadge(req: TieredRequirement): string | null {
     </div>
 
     <div v-else-if="activeTab === 'rang'">
-      <div v-if="rankRow" class="rank-tier-frame" :class="`t-${rankRow.tier}`">
+      <div v-if="rankRow" class="rank-reward panel-reward" :class="`t-${rankRow.tier}`">
         <RankProgress
           variant="card"
           :tier="rankRow.tier"
@@ -220,11 +220,17 @@ function missingBadge(req: TieredRequirement): string | null {
   font-size: 13px;
 }
 
-/* <RankProgress variant="card">'s tier "medal plaque" — shared globally as `.rank-tier-frame`
-   (styles/rank-card.css) with the Ränge grid's own per-exercise/per-category cards, which used to
-   independently duplicate this exact recipe (this file's own former `.rank-card-frame`, and
-   RankLifterSection/RankRunnerSection's former `.rank-card`) with drifting details (border color,
-   missing sheen). One implementation now. */
+/* The Rang tab's own hero readout — the one place <RankProgress variant="card"> still gets a
+   full tier-fill background: this is a single reward moment in a tab panel, not a grid cell with
+   its own tier-accent rim, so there's no card border to carry tier color instead. Reuses
+   tokens.css's .panel-reward (the same recipe the app's other reward surfaces use) rather than a
+   bespoke plaque — that used to be a third divergent copy of this recipe alongside
+   RankLifterSection/RankRunnerSection's own, until all three were unified onto ListCard's rim +
+   medal for the grids and .panel-reward here. .panel-reward itself sets no padding (it's also
+   used un-padded elsewhere), so it's added locally. */
+.rank-reward {
+  padding: var(--sp3) var(--sp4);
+}
 .wide-chart {
   width: 100%;
   margin-bottom: var(--sp4);

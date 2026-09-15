@@ -160,6 +160,24 @@ function toggleExpand(tier: Tier) {
 .division-chip.current {
   color: var(--tt, var(--text));
   background: var(--tier-accent, var(--nebula-1));
+  box-shadow: 0 0 0 2px var(--tier-accent, var(--nebula-1));
+  font-weight: 800;
+}
+/* Divisions render worst-to-best (III -> I, see `divisions()` above), so a chip with a later
+   `.current` sibling was already climbed past this rung, and one after `.current` hasn't been
+   reached yet — same tier-accent-fill/opacity vocabulary as RankProgress.vue rather than a new
+   one. Was previously reached into from outside via a `.ranks-tier-ladder :deep(...)` rule in
+   styles/rank-card.css, which silently never applied — `:deep()` is a Vue SFC `<style scoped>`
+   construct, rewritten at compile time; a plain global stylesheet ships it to the browser
+   unrewritten, an invalid selector the browser drops. This file's own template is exactly where
+   these selectors belong instead. */
+.division-chip:has(~ .division-chip.current) {
+  background: var(--tier-accent, var(--nebula-1));
+  color: var(--tt, var(--text));
+  opacity: 0.55;
+}
+.division-chip.current ~ .division-chip {
+  opacity: 0.4;
 }
 .rung .badge {
   width: 26px;
