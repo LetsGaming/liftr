@@ -41,35 +41,79 @@ describe("generateLoopWaypoints", () => {
     expect(generateLoopWaypoints(waypoints)).toHaveLength(3);
   });
 
-  it("produces a lens shape (bulges to one side), not a straight line, for a 2-waypoint out-and-back", () => {
-    // The degenerate case: with only 2 waypoints the centroid sits exactly on the P->Q chord, so
-    // "which side to bulge" has no signal from the route shape and must fall back to a fixed side
-    // rather than collapsing the arc back onto the chord.
-    const start = { lat: 52.5, lon: 13.4 };
-    const end = { lat: 52.5, lon: 13.41 }; // due east, same latitude — an easy line to reason about
-    const arc = generateLoopWaypoints([start, end]);
-    expect(arc.length).toBeGreaterThan(0);
-    // Every arc point should sit off the chord's latitude (i.e. off to one side), not on it.
-    for (const p of arc) {
-      expect(Math.abs(p.lat - start.lat)).toBeGreaterThan(0.0001);
+  it("produces a lens shape for a 2-waypoint out-and-back, on the same side whichever end was tapped first", () => {
+    // With exactly 2 waypoints there is no approach-heading signal at all: the only segment in the
+    // path IS the chord, so the heading is exactly anti-parallel to it and picks no side, and the
+    // centroid of two points sits exactly on the line between them. The arc still has to bulge —
+    // collapsing onto the chord would make "Schleife schließen" a straight line — so a fixed
+    // convention decides, and that convention is absolute (east, then north) rather than
+    // "left of the chord". Tap order must not decide which side of a coastal path the return leg
+    // lands on (loop-findings.md A1, Fischland-Darß).
+    const a = { lat: 52.5, lon: 13.4 };
+    const b = { lat: 52.5, lon: 13.41 }; // due east, same latitude — an easy line to reason about
+
+    const forward = generateLoopWaypoints([a, b]);
+    const reversed = generateLoopWaypoints([b, a]);
+
+    expect(forward.length).toBeGreaterThan(0);
+    expect(reversed.length).toBeGreaterThan(0);
+    // Off the chord, all on one side, not scattered across both.
+    for (const p of [...forward, ...reversed]) {
+      expect(Math.abs(p.lat - a.lat)).toBeGreaterThan(0.0001);
     }
-    // All on the same side (consistent sign), not scattered across both.
-    const signs = new Set(arc.map((p) => Math.sign(p.lat - start.lat)));
-    expect(signs.size).toBe(1);
+    expect(new Set(forward.map((p) => Math.sign(p.lat - a.lat))).size).toBe(1);
+    expect(new Set(reversed.map((p) => Math.sign(p.lat - a.lat))).size).toBe(1);
+    // ...and it is the SAME side both ways round, which is the whole point.
+    expect(Math.sign(forward[0]!.lat - a.lat)).toBe(Math.sign(reversed[0]!.lat - a.lat));
   });
 
-  it("bulges to the side opposite the route's own centroid for an L-shaped route", () => {
-    // An L bending "up" (north) from a west->east chord — the centroid sits north of the P->Q
-    // chord, so the generated arc should bulge south of it.
-    const end = { lat: 52.5, lon: 13.4 }; // last waypoint (P)
-    const bend = { lat: 52.51, lon: 13.4 }; // north of both endpoints
-    const start = { lat: 52.5, lon: 13.41 }; // first waypoint (Q), east of `end`
-    // generateLoopWaypoints treats waypoints[0] as the loop's start and the last entry as its
-    // current end — mirror that ordering here (end...start is the chord being bridged).
+  it("bulges to the side the final approach heading points toward, not to a fixed fallback side", () => {
+    // An L bending north: start -> north -> east. Arriving at the last waypoint the runner is
+    // heading southeast; the chord home points due west; southeast is south of due west, so the
+    // return leg sweeps south — enclosing the ground between it and the northward outbound leg
+    // instead of folding back over it.
+    const end = { lat: 52.5, lon: 13.4 }; // waypoints[0] — where the loop closes
+    const bend = { lat: 52.51, lon: 13.4 };
+    const start = { lat: 52.5, lon: 13.41 }; // waypoints[last] — where the arc starts
     const arc = generateLoopWaypoints([end, bend, start]);
     expect(arc.length).toBeGreaterThan(0);
     for (const p of arc) {
-      expect(p.lat).toBeLessThan(end.lat); // bulges south, away from the northward bend
+      expect(p.lat).toBeLessThan(end.lat);
+    }
+  });
+
+  it("does not flip the bulge side for a small change in a mid-route waypoint (findings A1)", () => {
+    // The report's own repro: a 3-waypoint route with a small southward bend. At a 95 m offset the
+    // old code was inside DEGENERATE_SIDE_RATIO and bulged south (same side as the bend); at 105 m
+    // it was outside and bulged north. A 10 m nudge roughly doubled the enclosed area.
+    const p0 = { lat: 52.5, lon: 13.4 };
+    const p2 = { lat: 52.5, lon: 13.41 };
+    const southBend = (m: number) => ({ lat: 52.5 - m / 111320, lon: 13.405 });
+
+    for (const offsetM of [95, 105]) {
+      const arc = generateLoopWaypoints([p0, southBend(offsetM), p2]);
+      expect(arc.length).toBeGreaterThan(0);
+      for (const p of arc) {
+        expect(p.lat).toBeGreaterThan(52.5); // north — away from the southward bend
+      }
+    }
+  });
+
+  it("picks the bulge side continuously across the whole range of bend depths", () => {
+    // Same route, sweeping the bend from 200 m north of the chord to 200 m south of it. The side
+    // may change exactly once, where the bend crosses the chord and the two sides are genuinely
+    // mirror images — never anywhere else, and never at an arbitrary fraction-of-chord threshold.
+    const p0 = { lat: 52.5, lon: 13.4 };
+    const p2 = { lat: 52.5, lon: 13.41 };
+    const sideAt = (offsetM: number) => {
+      const arc = generateLoopWaypoints([p0, { lat: 52.5 - offsetM / 111320, lon: 13.405 }, p2]);
+      expect(arc.length).toBeGreaterThan(0);
+      return Math.sign(arc[0]!.lat - 52.5);
+    };
+
+    for (let offsetM = 5; offsetM <= 200; offsetM += 5) {
+      expect(sideAt(offsetM)).toBe(1); // bend south -> bulge north
+      expect(sideAt(-offsetM)).toBe(-1); // bend north -> bulge south
     }
   });
 
