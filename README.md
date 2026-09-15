@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="self-hosted" src="https://img.shields.io/badge/self--hosted-5ba0ff?style=flat-square" />
   <img alt="offline-first PWA" src="https://img.shields.io/badge/offline--first-PWA-1e5fd0?style=flat-square" />
-  <img alt="no accounts (yet)" src="https://img.shields.io/badge/accounts-none-8fb4ff?style=flat-square" />
+  <img alt="multi-account" src="https://img.shields.io/badge/accounts-owner%20%2B%20invited%20members-8fb4ff?style=flat-square" />
   <img alt="stack" src="https://img.shields.io/badge/stack-Vue%203%20%2B%20Fastify%20%2B%20SQLite-1c2233?style=flat-square" />
 </p>
 
@@ -15,7 +15,7 @@ Nine tiers, real strength standards, and a number that goes up because you actua
 not because an app wanted you to open it today.
 
 - <img src="docs/assets/icon-dumbbell.svg" width="16" height="16" align="absmiddle" alt="" /> **A rank for almost every lift**, not just squat/bench/deadlift
-- <img src="docs/assets/icon-lock.svg" width="16" height="16" align="absmiddle" alt="" /> **Self-hosted, no account, no ads, no analytics** — your training data stays yours
+- <img src="docs/assets/icon-lock.svg" width="16" height="16" align="absmiddle" alt="" /> **Self-hosted, no ads, no analytics** — the whole household can have their own login, and your training data stays on your own server
 - <img src="docs/assets/icon-offline.svg" width="16" height="16" align="absmiddle" alt="" /> **Installable PWA that works offline.** Log a set in a basement gym with zero signal, it syncs later
 - <img src="docs/assets/icon-run.svg" width="16" height="16" align="absmiddle" alt="" /> **Runs count too** — import GPX/FIT from any watch, no Strava required
 - <img src="docs/assets/icon-database.svg" width="16" height="16" align="absmiddle" alt="" /> **One SQLite file.** Back it up, move it, own it
@@ -85,11 +85,16 @@ That starts the Fastify API and the Vue client together.
 <summary><b>Deploying for real (production, behind your own reverse proxy)</b></summary>
 <br>
 
-Set a `LIFTR_TOKEN` (the single bearer token that gates access — there are no user accounts to manage) and point `LIFTR_DB_PATH` at where you want the SQLite file to live, then:
+Point `LIFTR_DB_PATH` at where you want the SQLite file to live, then:
 
 ```bash
 pnpm build
 ```
+
+On first launch the app prompts the owner to set a password — no `LIFTR_TOKEN` or other secret to
+configure. From there the owner can invite other people (a partner, roommates, training buddies)
+via a time-limited invite code from the members screen; each person logs in with their own
+username and password.
 
 Install it to your phone's home screen from the browser's "Add to Home Screen" prompt — no app store required.
 
@@ -111,7 +116,7 @@ Vue 3 + Ionic/Capacitor (installable PWA) · Fastify + SQLite/Drizzle · TypeScr
 
 ---
 
-<p align="center"><sub>One lifter's home gym, one server, no third parties in between.*</sub> <img src="docs/assets/icon-dumbbell.svg" width="14" height="14" align="absmiddle" alt="" /></p>
+<p align="center"><sub>One household's home gym, one server, no third parties in between.*</sub> <img src="docs/assets/icon-dumbbell.svg" width="14" height="14" align="absmiddle" alt="" /></p>
 
 <sub>\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
 distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
