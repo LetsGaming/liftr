@@ -263,13 +263,14 @@ describe("generateLoopWaypoints", () => {
 
     expect(arc.length).toBeGreaterThan(0);
     for (const p of arc) {
-      // 75 m, not 15 m: a raw last-segment-chord heading is, by the tangent-chord theorem, off
-      // from the true tangent by half the subtended arc angle — for this deliberately coarse
-      // 3-tap/60°-spaced scenario that's a provable, deterministic ring deviation (measured up to
-      // ~69.3 m across the three generated points), not a construction bug (see
-      // docs/superpowers/plans/2026-09-15-loop-generator-fixes.md's Task 3 ledger ruling for the
-      // full derivation). 75 m clears that with margin while still catching a real regression,
-      // e.g. an inverted `sense`, which fails to even close the loop.
+      // 75 m, not 15 m: a raw last-segment-chord heading estimate is, by the tangent-chord
+      // theorem, off from the true tangent by half the subtended arc angle. For this deliberately
+      // coarse 3-tap/60°-spaced synthetic roundabout that produces a provable, deterministic ring
+      // deviation of up to ~69 m across the three generated points — not a construction bug (the
+      // "places every generated point on one circle" test below independently verifies the
+      // construction is exact to ~5 m regardless of heading accuracy). 75 m clears that deviation
+      // with margin while still catching a real regression, e.g. an inverted `sense`, which fails
+      // to even close the loop.
       expect(Math.abs(haversineM(p, center) - 40)).toBeLessThan(75);
     }
   });
