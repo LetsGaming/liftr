@@ -93,7 +93,7 @@ const RunReplayStub = {
 };
 // RouteWizard.vue pulls in plannedRouteStore/RouteMapEditor/leaflet — stubbed here since this
 // file only tests that RunDetail opens it with the right seed props, not the wizard itself
-// (covered by RouteWizard's own tests).
+// (covered by tests/client/components/route-wizard/RouteWizard.test.ts).
 const RouteWizardStub = {
   props: ["seedWaypoints", "seedName"],
   template: `<div class="route-wizard-stub" :data-seed-name="seedName" :data-seed-count="seedWaypoints?.length ?? 0"></div>`,
