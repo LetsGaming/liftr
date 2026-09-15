@@ -115,4 +115,44 @@ describe("fetchOrsRoute", () => {
 
     await expect(fetchOrsRoute([{ lat: 0, lon: 0 }])).rejects.toBeInstanceOf(OrsUnavailableError);
   });
+
+  it("omits the options key entirely when no avoidance is passed", async () => {
+    vi.mocked(fetch).mockResolvedValue(fakeResponse(200, orsSuccessBody()));
+
+    await fetchOrsRoute([{ lat: 0, lon: 0 }]);
+
+    const call = vi.mocked(fetch).mock.calls[0]!;
+    const body = JSON.parse((call[1] as RequestInit).body as string);
+    expect(body.options).toBeUndefined();
+  });
+
+  it("omits the options key when avoidPolygons is null or empty", async () => {
+    vi.mocked(fetch).mockResolvedValue(fakeResponse(200, orsSuccessBody()));
+
+    await fetchOrsRoute([{ lat: 0, lon: 0 }], { avoidPolygons: null });
+    await fetchOrsRoute([{ lat: 0, lon: 0 }], { avoidPolygons: [] });
+
+    for (const call of vi.mocked(fetch).mock.calls) {
+      const body = JSON.parse((call[1] as RequestInit).body as string);
+      expect(body.options).toBeUndefined();
+    }
+  });
+
+  it("sends rings as a GeoJSON MultiPolygon in [lon, lat] order", async () => {
+    vi.mocked(fetch).mockResolvedValue(fakeResponse(200, orsSuccessBody()));
+    const rings = [
+      [{ lat: 1, lon: 2 }, { lat: 3, lon: 4 }, { lat: 5, lon: 6 }, { lat: 1, lon: 2 }],
+      [{ lat: 7, lon: 8 }, { lat: 9, lon: 10 }, { lat: 11, lon: 12 }, { lat: 7, lon: 8 }],
+    ];
+
+    await fetchOrsRoute([{ lat: 0, lon: 0 }], { avoidPolygons: rings });
+
+    const call = vi.mocked(fetch).mock.calls[0]!;
+    const body = JSON.parse((call[1] as RequestInit).body as string);
+    expect(body.options.avoid_polygons.type).toBe("MultiPolygon");
+    expect(body.options.avoid_polygons.coordinates).toHaveLength(2);
+    expect(body.options.avoid_polygons.coordinates[0]).toHaveLength(1); // single outer ring, no holes
+    expect(body.options.avoid_polygons.coordinates[0][0][0]).toEqual([2, 1]); // [lon, lat]
+    expect(body.options.avoid_polygons.coordinates[1][0][0]).toEqual([8, 7]);
+  });
 });

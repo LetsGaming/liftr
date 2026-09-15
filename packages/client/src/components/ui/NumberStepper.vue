@@ -247,7 +247,15 @@ function commitEdit() {
   transform: scale(0.9);
 }
 .stepper.sm .ctrls span {
-  min-width: 28px;
+  /* Fixed, not min-width: a value going from "8" to "182.5" must not change this span's width —
+     that would shift every button to its right (the +/- controls, remove/kind buttons in the
+     parent row) on every adjustment. Wide enough for most realistic values (a 3-digit weight
+     plus unit); nowrap + visible overflow lets a rare longer decimal (e.g. "93.75kg") spill past
+     the box, centered, rather than line-wrapping mid-number. */
+  display: inline-block;
+  width: 44px;
+  overflow: visible;
+  white-space: nowrap;
   text-align: center;
   font-weight: 700;
   font-size: 14px;

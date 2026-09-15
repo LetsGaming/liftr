@@ -98,23 +98,29 @@ const filteredRanks = computed(() =>
         <RankUpCalendar />
       </div>
 
-      <div v-if="presentTiers.length > 1" class="tab-strip rank-tier-filter" role="tablist" aria-label="Nach Rang filtern">
-        <button
-          role="tab"
-          class="tab-pill"
-          :class="{ active: tierFilter === 'alle' }"
-          :aria-selected="tierFilter === 'alle'"
-          @click="tierFilter = 'alle'"
-        >
+      <div v-if="presentTiers.length > 1" class="rank-tier-filter">
+        <button type="button" class="tab-pill tab-pill-sm" :class="{ active: tierFilter === 'alle' }" @click="tierFilter = 'alle'">
           Alle
         </button>
+        <!-- A flat pill row stopped scaling once someone has trained enough exercises to span
+             more than 2 tiers (9-tier system, TierLadder.vue) — a select collapses the long tail
+             into one control instead of a pill row wrapping across multiple lines. -->
+        <select
+          v-if="presentTiers.length > 2"
+          class="rank-tier-select"
+          aria-label="Nach Rang filtern"
+          :value="tierFilter === 'alle' ? '' : tierFilter"
+          @change="tierFilter = (($event.target as HTMLSelectElement).value || 'alle') as 'alle' | Tier"
+        >
+          <option value="">Ränge</option>
+          <option v-for="t in presentTiers" :key="t" :value="t">{{ TIER_LABEL_DE[t] }}</option>
+        </select>
         <button
-          v-for="t in presentTiers"
+          v-for="t in presentTiers.length <= 2 ? presentTiers : []"
           :key="t"
-          role="tab"
-          class="tab-pill"
+          type="button"
+          class="tab-pill tab-pill-sm"
           :class="{ active: tierFilter === t }"
-          :aria-selected="tierFilter === t"
           @click="tierFilter = t"
         >
           {{ TIER_LABEL_DE[t] }}
@@ -168,8 +174,31 @@ const filteredRanks = computed(() =>
   max-width: var(--content-w-wide);
 }
 .rank-tier-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
   margin: var(--sp4) auto 0;
   max-width: var(--content-w-wide);
+}
+/* Smaller than the base .tab-pill (tokens.css) — that one's sized for a 2-3-item primary tab
+   strip; this is a secondary in-page filter that shouldn't compete for visual weight, and
+   `flex: none` since it no longer needs to stretch across a row alongside every tier. */
+.tab-pill-sm {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 11.5px;
+}
+/* Same visual language as ExerciseList.vue's .filter-select — once there are more than two tiers
+   to filter by, a pill row per tier stops scaling (9-tier system), so the long tail collapses
+   into one dropdown instead of wrapping across lines. */
+.rank-tier-select {
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
 }
 /* list-card.css's `.card-grid` is sized (width:100%, max-width capped) but not self-centering —
    CardListScreen.vue normally centers it via flex `align-items: center` at desktop widths, but

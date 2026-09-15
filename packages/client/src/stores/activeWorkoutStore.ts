@@ -255,11 +255,11 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
               return {
                 index: i,
                 weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-                // Reps default to last time's actual value for this set index, then the
-                // routine's target reps — same fallback shape as weightKg above — instead of
-                // always starting at 0 and forcing a manual entry on every set. Still fully
-                // editable via the stepper before logging; this only changes the starting value.
-                reps: input.lastTime?.[i]?.reps ?? target.reps,
+                // Reps always start at the routine's target, not last time's actual — unlike
+                // weight (progressive overload), reps are the thing the routine prescribes, and
+                // defaulting to whatever was actually done last time (which may have been a
+                // failed/short set) silently drifted the target down.
+                reps: target.reps,
                 isWarmup: (target.kind ?? "normal") === "warmup",
                 kind: target.kind ?? "normal",
                 logged: false,
@@ -491,9 +491,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           return {
             index: i,
             weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-            // Same reps-defaulting as start() above, so a mid-session added exercise gets the
-            // same sensible default instead of always starting at 0.
-            reps: input.lastTime?.[i]?.reps ?? target.reps,
+            // Same reps-defaulting as start() above — always the routine's target, not last time's actual.
+            reps: target.reps,
             isWarmup: (target.kind ?? "normal") === "warmup",
             kind: target.kind ?? "normal",
             logged: false,

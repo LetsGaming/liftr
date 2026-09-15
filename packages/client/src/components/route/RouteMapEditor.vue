@@ -16,6 +16,12 @@ const props = defineProps<{
   waypoints: Waypoint[];
   routedPoints: RoutePoint[];
   approximate?: boolean;
+  /** Draws the fallback line's closing segment back to waypoints[0] — used for a closed loop when
+   *  there's no real routedPoints geometry yet (RouteWizard.vue's synthetic closing point is
+   *  deliberately not in `waypoints`, since those are only the user's editable markers, so without
+   *  this the local line of a closed loop stops one segment short). Ignored once routedPoints is
+   *  non-empty — real geometry already closes itself. Markers are unaffected either way. */
+  closed?: boolean;
   initialCenter?: { lat: number; lon: number };
   readonly?: boolean;
 }>();
@@ -67,7 +73,15 @@ function renderLine() {
   const source =
     props.routedPoints.length > 0
       ? props.routedPoints
-      : props.waypoints.map((w, idx) => ({ idx, lat: w.lat, lon: w.lon, ele: null }));
+      : (() => {
+          const local = props.waypoints.map((w, idx) => ({ idx, lat: w.lat, lon: w.lon, ele: null }));
+          // Real geometry (routedPoints) already closes itself server-side — this only patches
+          // the local fallback line, which draws through the raw editable waypoints and would
+          // otherwise stop one segment short of the actual closing point.
+          return props.closed && props.waypoints.length >= 2
+            ? [...local, { ...local[0]!, idx: local.length }]
+            : local;
+        })();
   if (source.length < 2) return;
   line = L.polyline(
     source.map((p) => [p.lat, p.lon] as [number, number]),
@@ -107,7 +121,7 @@ onBeforeUnmount(() => {
 });
 
 watch(() => props.waypoints, () => { renderMarkers(); renderLine(); }, { deep: true });
-watch(() => [props.routedPoints, props.approximate], renderLine, { deep: true });
+watch(() => [props.routedPoints, props.approximate, props.closed], renderLine, { deep: true });
 watch(removeConfirm.armedKey, renderMarkers);
 
 defineExpose({ invalidateSize: () => map?.invalidateSize() });
@@ -182,6 +196,10 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   border-radius: var(--r-md);
   background: var(--surface);
   border: 1px solid var(--line);
+  /* No global button-text-color reset exists, so without this the browser's default button text
+     color (near-black) was used unconditionally — fine against light mode's white --surface, but
+     unreadable against dark mode's near-black one. */
+  color: var(--text);
 }
 
 /* Waypoint marker badge: L.divIcon's `className` REPLACES Leaflet's default class rather than

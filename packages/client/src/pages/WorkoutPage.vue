@@ -354,7 +354,7 @@ const WORKOUT_RUNS_TABS = [
       </IonToolbar>
     </IonHeader>
     <IonContent class="ion-padding">
-    <TabSwitcher v-if="!store.isActive" :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
+    <TabSwitcher v-if="!store.isActive && !finishedSummary" :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
     <div class="workout-page">
     <div v-if="finishedSummary" class="finished-summary">
       <FinishSequence

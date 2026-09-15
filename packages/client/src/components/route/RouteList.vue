@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, onBeforeUnmount, ref } from "vue";
 import AppIcon from "../ui/AppIcon.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import CardListScreen from "../ui/CardListScreen.vue";
@@ -7,6 +8,8 @@ import RouteThumbnail from "./RouteThumbnail.vue";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
 import { useCardMenu } from "../../composables/useCardMenu";
 import { useConfirmTap } from "../../composables/useConfirmTap";
+import { useDragReorder } from "../../composables/useDragReorder";
+import { useToast } from "../../composables/useToast";
 import { useRouter } from "vue-router";
 import type { PlannedRoute } from "../../services/plannedRouteService";
 
@@ -14,7 +17,39 @@ const emit = defineEmits<{ edit: [route: PlannedRoute]; start: [route: PlannedRo
 
 const plannedRouteStore = usePlannedRouteStore();
 const deleteConfirm = useConfirmTap((id) => id && plannedRouteStore.remove(id));
+const { toast } = useToast();
 const router = useRouter();
+
+/** Drag-to-reorder, same composable/pattern as RoutineList.vue's own reorder. */
+const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => {
+  const ids = plannedRouteStore.routes.map((r) => r.id);
+  const [moved] = ids.splice(from, 1);
+  ids.splice(to, 0, moved!);
+  plannedRouteStore.reorder(ids).catch(() => {
+    toast("Sortierung konnte nicht gespeichert werden.");
+    void plannedRouteStore.load();
+  });
+});
+
+function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) {
+  if (!cardEl) return;
+  onPointerDown(e, index, plannedRouteStore.routes.length, cardEl);
+}
+
+// Same reasoning as RoutineList.vue: useDragReorder assumes one column, so the drag handle is
+// only rendered/wired at the single-column (<900px) breakpoint the grid itself switches on.
+const dragReorderBreakpoint = "(min-width: 900px)";
+const isDesktopGrid = ref(typeof window !== "undefined" ? window.matchMedia(dragReorderBreakpoint).matches : false);
+let dragBreakpointMql: MediaQueryList | null = null;
+if (typeof window !== "undefined") {
+  dragBreakpointMql = window.matchMedia(dragReorderBreakpoint);
+  const syncIsDesktopGrid = (e: MediaQueryListEvent | MediaQueryList) => {
+    isDesktopGrid.value = e.matches;
+  };
+  dragBreakpointMql.addEventListener("change", syncIsDesktopGrid);
+  onBeforeUnmount(() => dragBreakpointMql?.removeEventListener("change", syncIsDesktopGrid));
+}
+const canDragReorder = computed(() => !isDesktopGrid.value);
 
 /** Opens the route's detail screen — mirrors RoutineList.vue's openOverview() drill-in pattern. */
 function openOverview(routeId: string) {
@@ -36,11 +71,23 @@ function editFromMenu(route: PlannedRoute) {
   <CardListScreen>
     <CardGrid v-if="plannedRouteStore.routes.length > 0">
       <ListCard
-        v-for="route in plannedRouteStore.routes"
+        v-for="(route, i) in plannedRouteStore.routes"
         :key="route.id"
+        :dragging="draggingIndex === i"
+        :drag-style="styleFor(i)"
         :title="route.name"
         @open="openOverview(route.id)"
       >
+        <template v-if="canDragReorder" #drag-handle>
+          <button
+            class="rc-drag-handle"
+            aria-label="Verschieben"
+            @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
+            @click.stop
+          >
+            <AppIcon name="drag-handle" />
+          </button>
+        </template>
         <template #menu>
           <button
             class="btn-icon"
@@ -105,6 +152,19 @@ function editFromMenu(route: PlannedRoute) {
 }
 .route-list-add {
   margin-top: var(--sp3);
+}
+/* Same handle treatment as RoutineList.vue's .rc-drag-handle. */
+.rc-drag-handle {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 16px;
+  touch-action: none;
+  cursor: grab;
 }
 .route-empty p {
   color: var(--dim);

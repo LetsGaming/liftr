@@ -12,6 +12,7 @@
 import { toRef } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
+import { useDragReorder } from "../../composables/useDragReorder";
 import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
 import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
@@ -54,6 +55,13 @@ function substituteReason(exerciseId: string): string {
   return `Ersetzt: bevorzugte Variante braucht ${names.join(", ")}, das du nicht hast.`;
 }
 
+const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => emit("move", from, to));
+
+function handleDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) {
+  if (!cardEl) return;
+  onPointerDown(e, index, props.entries.length, cardEl);
+}
+
 const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
   toRef(props, "entries"),
   toRef(props, "requestedMuscleSlugs"),
@@ -64,13 +72,23 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 
 <template>
   <div class="fast-step">
+    <p class="hint">Ziehe am Griff, um die Reihenfolge zu ändern.</p>
     <ul class="ex-list">
-      <li v-for="([exerciseId, cfg], i) in entries" :key="exerciseId" class="surface-hybrid">
+      <li
+        v-for="([exerciseId, cfg], i) in entries"
+        :key="exerciseId"
+        class="surface-hybrid"
+        :class="{ dragging: draggingIndex === i }"
+        :style="styleFor(i)"
+      >
         <div class="ex-line">
-          <div class="reorder">
-            <button :disabled="i === 0" aria-label="Nach oben" @click="emit('move', i, i - 1)"><AppIcon name="arrow-up" /></button>
-            <button :disabled="i === entries.length - 1" aria-label="Nach unten" @click="emit('move', i, i + 1)"><AppIcon name="arrow-down" /></button>
-          </div>
+          <button
+            class="drag-handle"
+            aria-label="Verschieben"
+            @pointerdown="handleDown($event, i, ($event.currentTarget as HTMLElement)?.closest('li') as HTMLElement)"
+          >
+            <AppIcon name="drag-handle" />
+          </button>
           <ExerciseRow
             visual="icon"
             :size="16"
@@ -116,15 +134,26 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   flex-direction: column;
   gap: var(--sp4);
 }
+.hint {
+  font-size: 12.5px;
+  color: var(--dim);
+}
 .ex-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--sp2);
+  position: relative;
 }
 .ex-list li {
   padding: var(--sp3);
   border-radius: var(--r-md);
+  transition: transform 120ms ease;
+}
+.ex-list li.dragging {
+  box-shadow: var(--shadow);
+  outline: 1px solid var(--line-2);
+  outline-offset: -1px;
 }
 .ex-line {
   display: flex;
@@ -134,21 +163,17 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
 .ex-line :deep(.exercise-row) {
   flex: 1;
 }
-.reorder {
-  display: flex;
-  flex-direction: column;
+.drag-handle {
   flex: none;
-}
-.reorder button {
-  width: 24px;
-  height: 18px;
-  background: none;
-  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
   color: var(--dim);
-  font-size: 9px;
-}
-.reorder button:disabled {
-  opacity: 0.25;
+  font-size: 14px;
+  touch-action: none;
+  cursor: grab;
 }
 .ex-reps {
   color: var(--dim);
