@@ -43,3 +43,4 @@ What does this cost or foreclose? What does it buy?
 | [0005](0005-corroboration-required-for-peak.md) | Corroboration required before a result becomes peak |
 | [0006](0006-multi-user-hardening.md) | Harden the schema and backend for multi-user, ahead of building it |
 | [0007](0007-openrouteservice-external-routing-exception.md) | OpenRouteService as a narrow, opt-in exception to "no third party in the loop" |
+| [0008](0008-heading-aware-loop-closure.md) | Heading-aware circular arc for closing a running loop |
