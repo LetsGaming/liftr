@@ -11,6 +11,7 @@ describe("AttributionsPage", () => {
     expect(wrapper.text()).toContain("OpenStreetMap");
     expect(wrapper.text()).toContain("OpenPowerlifting");
     expect(wrapper.text()).toContain("OpenRouteService");
-    expect(wrapper.findAll("li.surface-hybrid")).toHaveLength(7);
+    expect(wrapper.text()).toContain("Esri World Imagery");
+    expect(wrapper.findAll("li.surface-hybrid")).toHaveLength(8);
   });
 });

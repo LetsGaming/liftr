@@ -7,6 +7,7 @@ import L from "leaflet";
 import { onBeforeUnmount, watch } from "vue";
 import { cssVar } from "../../lib/leafletTheme";
 import LeafletMapBase from "../map/LeafletMapBase.vue";
+import BasemapToggle from "../map/BasemapToggle.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useLastKnownLocation } from "../../composables/useLastKnownLocation";
 import type { RoutePoint, Waypoint } from "../../services/plannedRouteService";
@@ -36,9 +37,13 @@ function renderMarkers() {
   markers.forEach((m) => m.remove());
   markers = props.waypoints.map((w, i) => {
     const confirming = removeConfirm.isArmed(String(i));
+    // "generated" (the loop-close arc, see RouteWizard.vue's setCloseLoop) gets an outlined
+    // rather than filled badge — still an ordinary draggable/removable marker, just visibly
+    // distinct so it's obvious at a glance which points the app placed vs. the user.
+    const classes = [confirming ? "confirming" : "", w.gen ? "generated" : ""].filter(Boolean).join(" ");
     const icon = L.divIcon({
       className: "route-waypoint-icon",
-      html: `<span class="${confirming ? "confirming" : ""}">${confirming ? "×" : i + 1}</span>`,
+      html: `<span class="${classes}">${confirming ? "×" : i + 1}</span>`,
       iconSize: [28, 28],
     });
     const marker = L.marker([w.lat, w.lon], { draggable: !props.readonly, icon });
@@ -115,6 +120,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
       :initial-view="{ center: [initialCenter.lat, initialCenter.lon], zoom: 14 }"
       @ready="handleReady"
     />
+    <BasemapToggle class="basemap-toggle-slot" />
     <button v-if="!readonly" type="button" class="locate-btn" aria-label="Meinen Standort verwenden" @click="locate">
       📍
     </button>
@@ -134,7 +140,12 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 320px;
+  /* No min-height floor: this only ever sits inside RouteWizard.vue's `.wizard-map` (flex: 1;
+     min-height: 0, itself inside SheetModal's `fill-body` flex column), which already guarantees
+     real height. A floor here fights that flex sizing on a short viewport — a taller floor than
+     the available space is exactly what forced the wizard's page to scroll before fill-body
+     existed (see RouteWizard.vue's header comment and SheetModal.vue's fillBody prop doc). */
+  min-height: 0;
 }
 .map-surface {
   width: 100%;
@@ -142,9 +153,16 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   border-radius: var(--r-lg);
   background: var(--bg);
 }
+/* Stacks below .basemap-toggle-slot (top:12px) rather than sharing its row — top-left is
+   Leaflet's own zoom control, bottom-right its attribution, so top-right is the only free corner
+   for both of this component's own floating buttons. */
+.basemap-toggle-slot {
+  top: 12px;
+  right: 12px;
+}
 .locate-btn {
   position: absolute;
-  top: 12px;
+  top: 64px;
   right: 12px;
   z-index: 1000;
   width: 44px;
@@ -196,6 +214,19 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
 :deep(.route-waypoint-icon span.confirming) {
   background: var(--danger-lo);
   border-color: var(--danger);
+  color: var(--text);
+}
+/* Generated loop-close point (RouteWizard.vue's setCloseLoop) — outlined instead of filled so
+   it's visibly distinct from a user-placed waypoint at a glance, while staying just as draggable
+   and removable. Confirming-to-delete still wins over this if both apply. */
+:deep(.route-waypoint-icon span.generated) {
+  background: transparent;
+  border: 2px dashed var(--warning);
+  color: var(--warning);
+}
+:deep(.route-waypoint-icon span.generated.confirming) {
+  background: var(--danger-lo);
+  border: 2px dashed var(--danger);
   color: var(--text);
 }
 </style>

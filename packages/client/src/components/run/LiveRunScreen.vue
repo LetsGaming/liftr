@@ -96,7 +96,7 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
 </script>
 
 <template>
-  <SheetModal :sheet="false" background="var(--bg)" @close="handleNativeClose">
+  <SheetModal :sheet="false" fill-body background="var(--bg)" @close="handleNativeClose">
     <template #header>
       <header class="live-head">
         <div class="live-head-title">
