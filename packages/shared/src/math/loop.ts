@@ -40,7 +40,11 @@ const MIN_HEADING_SEGMENT_M = 1;
 const SIDE_EPS = 1e-6;
 const MIN_BULGE_M = 50;
 const MAX_BULGE_M = 2000;
-const BULGE_RATIO = 0.35;
+/** Excursion as a fraction of the chord for the no-heading-signal case only — a 2-waypoint
+ *  out-and-back, or an approach that runs exactly along the chord. When a heading IS available the
+ *  excursion is derived from it instead (see approachBulgeM), and this value does not apply.
+ *  `opts.bulgeRatio` overrides exactly this number and nothing else. */
+const DEFAULT_BULGE_RATIO = 0.35;
 const DEFAULT_COUNT = 3;
 
 interface Point2 {
@@ -137,6 +141,32 @@ function bulgeNormal(chordUnit: Point2, approach: Point2 | null, projected: Poin
   return left.x > 0 || (left.x === 0 && left.y > 0) ? left : { x: -left.x, y: -left.y };
 }
 
+/**
+ * How far off the chord the return leg has to swing in order to leave the final waypoint along the
+ * runner's current heading and still curve back to the start.
+ *
+ * There is exactly one circle through P (the route's end) and Q (its start) that departs P along a
+ * given heading. Its tangent–chord angle φ is the angle between that heading and the chord, and its
+ * greatest distance from the chord is (chord/2)·tan(φ/2): zero when the runner is already heading
+ * straight home, a clean semicircle when the start is 90° off their shoulder, and unbounded as they
+ * head directly away from it. The caller clamps the unbounded end.
+ *
+ * With no heading signal there is nothing to derive it from, so the documented default ratio stands
+ * in — see bulgeNormal and the module doc for why that case exists and why it can't be solved.
+ */
+function approachBulgeM(
+  approach: Point2 | null,
+  chordUnit: Point2,
+  chordLenM: number,
+  bulgeRatio: number,
+): number {
+  if (!approach) return bulgeRatio * chordLenM;
+  const along = Math.min(1, Math.max(-1, approach.x * chordUnit.x + approach.y * chordUnit.y));
+  const phi = Math.acos(along);
+  if (!(phi > 0) || phi >= Math.PI) return bulgeRatio * chordLenM;
+  return (chordLenM / 2) * Math.tan(phi / 2);
+}
+
 function projector(lat0: number, refLon: number) {
   const mPerDegLon = Math.max(MIN_M_PER_DEG_LON, M_PER_DEG_LAT * Math.cos((lat0 * Math.PI) / 180));
   return {
@@ -193,18 +223,34 @@ export function generateLoopWaypoints(
   const approach = approachDirection(projected);
   const normal = bulgeNormal(chordUnit, approach, projected);
 
-  const bulgeRatio = opts?.bulgeRatio ?? BULGE_RATIO;
-  const bulgeM = Math.min(MAX_BULGE_M, Math.max(MIN_BULGE_M, bulgeRatio * chordM));
+  const bulgeRatio = opts?.bulgeRatio ?? DEFAULT_BULGE_RATIO;
+  const rawBulgeM = approachBulgeM(approach, chordUnit, chordLenM, bulgeRatio);
+  const bulgeM = Math.min(MAX_BULGE_M, Math.max(MIN_BULGE_M, rawBulgeM)); // Phase 2 replaces this line
+
+  // Lay the points on the circle through P and Q whose greatest distance from the chord is
+  // `bulgeM` on the `normal` side — the unique circular return leg with that excursion. When
+  // `bulgeM` wasn't clamped, that is exactly the circle tangent to the approach heading at P, so
+  // the first thing the route asks of the runner is to keep going rather than to swing sideways
+  // (findings A6). `phi` is the tangent–chord angle the clamp actually left us with; the arc
+  // sweeps 2·phi, which exceeds 180° — a teardrop rather than a lens — whenever the start is
+  // behind the runner, which is precisely when a lens would have been a fold-back.
+  const phi = 2 * Math.atan((2 * bulgeM) / chordLenM);
+  const radius = chordLenM / (2 * Math.sin(phi));
+  const center = {
+    x: (p.x + q.x) / 2 - normal.x * (radius - bulgeM),
+    y: (p.y + q.y) / 2 - normal.y * (radius - bulgeM),
+  };
+  const startAngle = Math.atan2(p.y - center.y, p.x - center.x);
+  // Which way round the circle: the sense that leaves P toward `normal`. `normal` is perpendicular
+  // to the chord by construction, so this cross product is ±chordLenM and never zero.
+  const sense = normal.x * chord.y - normal.y * chord.x >= 0 ? 1 : -1;
+  const sweep = sense * 2 * phi;
 
   const result: Waypoint[] = [];
   for (let i = 1; i <= count; i++) {
-    const t = i / (count + 1);
-    const arcHeight = bulgeM * Math.sin(Math.PI * t);
+    const angle = startAngle + sweep * (i / (count + 1));
     result.push(
-      unproject({
-        x: p.x + t * chord.x + normal.x * arcHeight,
-        y: p.y + t * chord.y + normal.y * arcHeight,
-      }),
+      unproject({ x: center.x + radius * Math.cos(angle), y: center.y + radius * Math.sin(angle) }),
     );
   }
   return result;
