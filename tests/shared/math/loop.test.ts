@@ -303,4 +303,77 @@ describe("generateLoopWaypoints", () => {
       expect(r).toBeCloseTo(radii[0]!, -1); // within ~5 m — projection rounding only
     }
   });
+
+  // --- findings A1, second repro: a coastal out-and-back where the side decides land vs. water ---
+
+  it("puts the return leg on the same side of a coastal path however the pair was tapped", () => {
+    // Fischland-Darß (Baltic coast): a spit running NNE-SSW, water on both sides, two taps ~1.2 km
+    // apart. Nothing in a 2-point route can tell the generator which side is land — but tapping the
+    // same two points in the other order must not silently move the return leg across the water.
+    const south = { lat: 54.365, lon: 12.38 };
+    const north = { lat: 54.376, lon: 12.383 };
+
+    const forward = generateLoopWaypoints([south, north]);
+    const reversed = generateLoopWaypoints([north, south]);
+
+    expect(forward).toHaveLength(3);
+    expect(reversed).toHaveLength(3);
+    // Same circle, traversed the other way round: the point SET is identical, reversed in order.
+    const reversedBack = [...reversed].reverse();
+    for (let i = 0; i < forward.length; i++) {
+      expect(forward[i]!.lat).toBeCloseTo(reversedBack[i]!.lat, 6);
+      expect(forward[i]!.lon).toBeCloseTo(reversedBack[i]!.lon, 6);
+    }
+  });
+
+  it("encloses a comparable area for near-identical routes (no cliff at a threshold)", () => {
+    // The concrete harm loop-findings.md A1 measured: 64,822 m² vs 132,590 m² of enclosed area for
+    // a 10 m difference in a mid-route waypoint. Shoelace over the full closed ring.
+    const p0 = { lat: 52.5, lon: 13.4 };
+    const p2 = { lat: 52.5, lon: 13.41 };
+    const southBend = (m: number) => ({ lat: 52.5 - m / 111320, lon: 13.405 });
+    const areaOf = (offsetM: number) => {
+      const route = [p0, southBend(offsetM), p2];
+      const ring = [...route, ...generateLoopWaypoints(route), p0];
+      const mPerDegLat = (Math.PI / 180) * 6_371_000;
+      const mPerDegLon = mPerDegLat * Math.cos(52.5 * (Math.PI / 180));
+      let twiceArea = 0;
+      for (let i = 0; i < ring.length - 1; i++) {
+        const a = ring[i]!;
+        const b = ring[i + 1]!;
+        twiceArea += a.lon * mPerDegLon * (b.lat * mPerDegLat) - b.lon * mPerDegLon * (a.lat * mPerDegLat);
+      }
+      return Math.abs(twiceArea) / 2;
+    };
+
+    const at95 = areaOf(95);
+    const at105 = areaOf(105);
+    expect(Math.abs(at95 - at105) / Math.max(at95, at105)).toBeLessThan(0.1);
+  });
+
+  it("still returns [] for the cases that have nothing sensible to generate", () => {
+    // Guards the early returns the report confirmed correct (section D: duplicate waypoints).
+    expect(generateLoopWaypoints([{ lat: 52.5, lon: 13.4 }, { lat: 52.5, lon: 13.4 }])).toEqual([]);
+    expect(generateLoopWaypoints([{ lat: 52.5, lon: 13.4 }])).toEqual([]);
+  });
+
+  it("is deterministic and free of hidden state across repeated calls", () => {
+    // Section D relies on this: setCloseLoop toggling off and back on must reproduce the same arc.
+    const route = [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.5005, lon: 13.404 },
+      { lat: 52.5045, lon: 13.412 },
+    ];
+    expect(generateLoopWaypoints(route)).toEqual(generateLoopWaypoints(route));
+  });
+
+  it("does not mutate the waypoint array it was given", () => {
+    const route = [
+      { lat: 52.5, lon: 13.4 },
+      { lat: 52.5045, lon: 13.412 },
+    ];
+    const snapshot = JSON.stringify(route);
+    generateLoopWaypoints(route);
+    expect(JSON.stringify(route)).toBe(snapshot);
+  });
 });
