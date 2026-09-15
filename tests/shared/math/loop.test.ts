@@ -195,4 +195,112 @@ describe("generateLoopWaypoints", () => {
       }
     }
   });
+
+  // --- findings A6: the arc has to know which way you were already going ---
+
+  /** Compass bearing in degrees from `a` to `b`, in the same convention loop-findings.md uses. */
+  function bearingDeg(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+    const mPerDegLat = (Math.PI / 180) * 6_371_000;
+    const mPerDegLon = mPerDegLat * Math.cos(((a.lat + b.lat) / 2) * (Math.PI / 180));
+    return (Math.atan2((b.lon - a.lon) * mPerDegLon, (b.lat - a.lat) * mPerDegLat) * 180) / Math.PI;
+  }
+  /** Signed turn in (-180, 180]: 0 = straight ahead, ±180 = a full reversal. */
+  function turnDeg(from: number, to: number) {
+    return ((((to - from) % 360) + 540) % 360) - 180;
+  }
+
+  // Both routes end at exactly the same waypoint and start at exactly the same waypoint; only the
+  // final approach differs (22° vs 303°). loop-findings.md A6 proved the old arc's first point was
+  // byte-for-byte identical for both.
+  const approach1 = [
+    { lat: 52.5, lon: 13.4 },
+    { lat: 52.5005, lon: 13.404 },
+    { lat: 52.5012, lon: 13.408 },
+    { lat: 52.503, lon: 13.411 },
+    { lat: 52.5045, lon: 13.412 },
+  ];
+  const approach2 = [
+    { lat: 52.5, lon: 13.4 },
+    { lat: 52.5008, lon: 13.4125 },
+    { lat: 52.502, lon: 13.4155 },
+    { lat: 52.5035, lon: 13.4145 },
+    { lat: 52.5045, lon: 13.412 },
+  ];
+
+  it("generates a different arc for a different final approach to the same waypoint", () => {
+    const a = generateLoopWaypoints(approach1);
+    const b = generateLoopWaypoints(approach2);
+    expect(a.length).toBeGreaterThan(0);
+    expect(b.length).toBeGreaterThan(0);
+    expect(a[0]).not.toEqual(b[0]);
+    expect(haversineM(a[0]!, b[0]!)).toBeGreaterThan(100);
+  });
+
+  it("puts the first generated point roughly ahead of the runner, not 99° off to the side", () => {
+    for (const route of [approach1, approach2]) {
+      const secondLast = route[route.length - 2]!;
+      const last = route[route.length - 1]!;
+      const arc = generateLoopWaypoints(route);
+      const turn = turnDeg(bearingDeg(secondLast, last), bearingDeg(last, arc[0]!));
+      // Was -99.0° for approach1 (a sharp lateral swing ORS can only reach by backtracking).
+      expect(Math.abs(turn)).toBeLessThan(60);
+    }
+  });
+
+  it("completes a partially-traced roundabout along the roundabout itself", () => {
+    // loop-findings.md A6's second scenario: 3 taps covering 120° of a 40 m-radius roundabout.
+    // The old arc cut across the island (its points sat ~4 m from the centre, 36 m off the ring).
+    const center = { lat: 52.5, lon: 13.4 };
+    const mPerDegLat = (Math.PI / 180) * 6_371_000;
+    const mPerDegLon = mPerDegLat * Math.cos(52.5 * (Math.PI / 180));
+    const onRing = (deg: number) => ({
+      lat: center.lat + (40 * Math.cos((deg * Math.PI) / 180)) / mPerDegLat,
+      lon: center.lon + (40 * Math.sin((deg * Math.PI) / 180)) / mPerDegLon,
+    });
+
+    const arc = generateLoopWaypoints([onRing(0), onRing(60), onRing(120)]);
+
+    expect(arc.length).toBeGreaterThan(0);
+    for (const p of arc) {
+      // 75 m, not 15 m: a raw last-segment-chord heading is, by the tangent-chord theorem, off
+      // from the true tangent by half the subtended arc angle — for this deliberately coarse
+      // 3-tap/60°-spaced scenario that's a provable, deterministic ring deviation (measured up to
+      // ~69.3 m across the three generated points), not a construction bug (see
+      // docs/superpowers/plans/2026-09-15-loop-generator-fixes.md's Task 3 ledger ruling for the
+      // full derivation). 75 m clears that with margin while still catching a real regression,
+      // e.g. an inverted `sense`, which fails to even close the loop.
+      expect(Math.abs(haversineM(p, center) - 40)).toBeLessThan(75);
+    }
+  });
+
+  it("places every generated point on one circle through the route's end and start", () => {
+    // The structural invariant of the new shape: the arc is a circular arc, so the end waypoint,
+    // every generated point and the start waypoint are all equidistant from a common centre.
+    const route = approach2;
+    const end = route[route.length - 1]!;
+    const start = route[0]!;
+    const arc = generateLoopWaypoints(route);
+    const ring = [end, ...arc, start];
+
+    // Fit the centre from the first three points, then check the rest against it.
+    const mPerDegLat = (Math.PI / 180) * 6_371_000;
+    const mPerDegLon = mPerDegLat * Math.cos(start.lat * (Math.PI / 180));
+    const xy = ring.map((p) => ({ x: p.lon * mPerDegLon, y: p.lat * mPerDegLat }));
+    const [a, b, c] = [xy[0]!, xy[1]!, xy[2]!];
+    const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+    const ux =
+      ((a.x ** 2 + a.y ** 2) * (b.y - c.y) +
+        (b.x ** 2 + b.y ** 2) * (c.y - a.y) +
+        (c.x ** 2 + c.y ** 2) * (a.y - b.y)) /
+      d;
+    const uy =
+      ((a.x ** 2 + a.y ** 2) * (c.x - b.x) +
+        (b.x ** 2 + b.y ** 2) * (a.x - c.x) +
+        (c.x ** 2 + c.y ** 2) * (b.x - a.x)) /
+      d;
+    const radii = xy.map((p) => Math.hypot(p.x - ux, p.y - uy));
+    for (const r of radii) {
+      expect(r).toBeCloseTo(radii[0]!, -1); // within ~5 m — projection rounding only
+    }
+  });
 });
