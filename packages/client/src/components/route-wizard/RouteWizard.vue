@@ -59,6 +59,16 @@ const saving = ref(false);
  *  route. User-configurable so a walk from A to B doesn't get an unwanted closing leg back to A. */
 const closeLoop = ref(true);
 
+/** Set once the user removes a generated point, which is the only way to tell "no arc has been
+ *  generated yet" apart from "the user looked at the arc and threw it away". Without the
+ *  distinction, `generateArcIfNeeded`'s `some(w => w.gen)` guard flips back the moment the last
+ *  generated point is deleted and a brand-new arc reappears ~400 ms later, silently undoing the
+ *  deletion and contradicting this file's own promise that gen points are never regenerated
+ *  (findings B2). Cleared only by hydrating a different route, or by the user explicitly asking for
+ *  a loop again via the toggle — not by further tapping, since a dismissal is a statement about the
+ *  feature, not about one particular arc. */
+const arcDismissed = ref(false);
+
 /** What actually gets routed/saved: the raw waypoints plus, when closeLoop is on, a synthetic
  *  final point back at the start. Kept separate from `waypoints` so the map's editable markers
  *  (RouteMapEditor's :waypoints prop below) only ever show points the user actually placed. */
@@ -89,7 +99,7 @@ const SERVER_MAX_WAYPOINTS = 50;
  *  generateLoopWaypoints's own guard) below 2 waypoints, and is a no-op whenever a generated arc
  *  already exists. */
 function generateArcIfNeeded() {
-  if (!closeLoop.value || waypoints.value.some((w) => w.gen)) return;
+  if (!closeLoop.value || arcDismissed.value || waypoints.value.some((w) => w.gen)) return;
   const maxCount = Math.max(0, SERVER_MAX_WAYPOINTS - 1 - waypoints.value.length);
   const generated = generateLoopWaypoints(waypoints.value, { maxCount }).map((w) => ({ ...w, gen: true }));
   if (generated.length > 0) waypoints.value = [...waypoints.value, ...generated];
@@ -101,6 +111,9 @@ function generateArcIfNeeded() {
 function setCloseLoop(checked: boolean) {
   closeLoop.value = checked;
   if (checked) {
+    // Ticking the box is the user asking for a loop, which overrides an earlier dismissal — it's
+    // also the only affordance in this sheet for getting a discarded arc back.
+    arcDismissed.value = false;
     generateArcIfNeeded();
   } else if (waypoints.value.some((w) => w.gen)) {
     waypoints.value = waypoints.value.filter((w) => !w.gen);
@@ -110,6 +123,7 @@ function setCloseLoop(checked: boolean) {
 async function hydrateFrom(route: PlannedRoute | null | undefined) {
   if (!route) {
     name.value = props.seedName ?? "";
+    arcDismissed.value = false;
     waypoints.value = props.seedWaypoints ? [...props.seedWaypoints] : [];
     routedPoints.value = [];
     geometrySource.value = "straight";
@@ -121,6 +135,7 @@ async function hydrateFrom(route: PlannedRoute | null | undefined) {
     return;
   }
   name.value = route.name;
+  arcDismissed.value = false;
   const savedWaypoints = route.waypoints.map((w) => ({ ...w }));
   // A saved closed loop persists its synthetic closing point as an ordinary waypoint (there's no
   // separate "is this a loop" column). Strip it back off so re-editing doesn't compound another
@@ -188,6 +203,7 @@ function onMove(index: number, waypoint: Waypoint) {
   schedulePreview();
 }
 function onRemove(index: number) {
+  if (waypoints.value[index]?.gen) arcDismissed.value = true;
   waypoints.value = waypoints.value.filter((_, i) => i !== index);
   schedulePreview();
 }
