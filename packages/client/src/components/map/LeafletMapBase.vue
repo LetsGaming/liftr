@@ -17,7 +17,7 @@
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { createTileLayer, type BasemapId } from "../../lib/leafletTheme";
+import { createLabelsTileLayer, createTileLayer, type BasemapId } from "../../lib/leafletTheme";
 import { useBasemap } from "../../composables/useBasemap";
 
 const props = defineProps<{
@@ -38,14 +38,22 @@ const { basemap: sharedBasemap } = useBasemap();
 const container = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let tileLayer: L.TileLayer | null = null;
+// Only ever present alongside the satellite base layer — see createLabelsTileLayer's doc for why
+// this is a second stacked layer rather than something baked into the base tile URL.
+let labelsLayer: L.TileLayer | null = null;
 let intersectionObserver: IntersectionObserver | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let resizeRaf: number | null = null;
 
 function createMap(el: HTMLDivElement) {
   map = L.map(el, { attributionControl: true, zoomControl: true, ...props.mapOptions });
-  tileLayer = createTileLayer(props.basemap ?? sharedBasemap.value);
+  const resolved = props.basemap ?? sharedBasemap.value;
+  tileLayer = createTileLayer(resolved);
   tileLayer.addTo(map);
+  if (resolved === "satellite") {
+    labelsLayer = createLabelsTileLayer();
+    labelsLayer.addTo(map);
+  }
   if (props.initialView) map.setView(props.initialView.center, props.initialView.zoom);
 
   resizeObserver = new ResizeObserver(() => {
@@ -69,11 +77,17 @@ watch(
   (next) => {
     if (!next || !map) return;
     // Add the new layer before removing the old one, so there's never a frame with no tiles at
-    // all underneath whatever's currently drawn on top (route line, markers).
+    // all underneath whatever's currently drawn on top (route line, markers). Same add-then-
+    // remove ordering applies to the labels layer, which only exists alongside satellite.
     const nextLayer = createTileLayer(next);
     nextLayer.addTo(map);
     tileLayer?.remove();
     tileLayer = nextLayer;
+
+    const nextLabels = next === "satellite" ? createLabelsTileLayer() : null;
+    nextLabels?.addTo(map);
+    labelsLayer?.remove();
+    labelsLayer = nextLabels;
   },
 );
 
@@ -102,6 +116,7 @@ onBeforeUnmount(() => {
   map?.remove();
   map = null;
   tileLayer = null;
+  labelsLayer = null;
 });
 
 defineExpose({

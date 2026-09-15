@@ -36,11 +36,31 @@ export function createOsmTileLayer(): L.TileLayer {
  */
 export function createSatelliteTileLayer(): L.TileLayer {
   return L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-    attribution: "Tiles © Esri — Maxar, Earthstar Geographics, and the GIS User Community",
+    attribution: "Tiles © Esri — Vantor, Earthstar Geographics, and the GIS User Community",
     maxZoom: 19,
   });
 }
 
 export function createTileLayer(basemap: BasemapId): L.TileLayer {
   return basemap === "satellite" ? createSatelliteTileLayer() : createOsmTileLayer();
+}
+
+/**
+ * Transparent street/place-name labels for the satellite view — bare imagery is hard to orient
+ * yourself in while placing route waypoints. Esri's own reference overlay, same host and same
+ * no-API-key deal as createSatelliteTileLayer above, so it's covered by the same tradeoff already
+ * accepted there. `zIndex: 2` (the base imagery layer defaults to 1) keeps it stacked above the
+ * imagery within Leaflet's shared tilePane; route polylines/markers live in the higher overlayPane/
+ * markerPane by default, so they stay on top of both without any extra pane work here.
+ *
+ * `attribution: ""` deliberately — createSatelliteTileLayer's own attribution already credits Esri
+ * in the map's attribution control, and this layer's partner credits (HERE, Garmin, OSM
+ * contributors) live in AttributionsPage.vue instead of getting appended as a second, differently
+ * worded line in that small on-map corner.
+ */
+export function createLabelsTileLayer(): L.TileLayer {
+  return L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+    { attribution: "", maxZoom: 19, zIndex: 2 },
+  );
 }

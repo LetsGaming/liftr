@@ -28,6 +28,7 @@ import {
   type RoutePoint,
   type Waypoint,
 } from "../../services/plannedRouteService";
+import WizardHeader from "../ui/WizardHeader.vue";
 
 const props = defineProps<{
   route?: PlannedRoute | null;
@@ -223,12 +224,12 @@ async function save() {
 <template>
   <SheetModal ref="sheetRef" :sheet="false" fill-body background="var(--bg)" @close="emit('close')">
     <template #header>
-      <header class="wizard-head">
-        <button class="btn-close close-btn" :class="{ confirming: closeConfirm.isArmed() }" aria-label="Schließen" @click="requestClose">
-          {{ closeConfirm.isArmed() ? "Verwerfen?" : "×" }}
-        </button>
-        <input v-model="name" class="name-input" type="text" placeholder="Name der Strecke" aria-label="Name der Strecke" />
-      </header>
+      <WizardHeader
+        v-model:title="name"
+        :title-placeholder="'Name der Strecke'"
+        :is-confirming-close="closeConfirm.isArmed()"
+        @close="requestClose"
+      />
     </template>
     <RouteMapEditor
       class="wizard-map"
