@@ -59,6 +59,11 @@ const BULGE_KNEE_CHORD_M = 5000;
  *  `opts.bulgeRatio` overrides exactly this number and nothing else. */
 const DEFAULT_BULGE_RATIO = 0.35;
 const DEFAULT_COUNT = 3;
+/** Upper bound on generated points regardless of what the caller asks for: the server's waypoint
+ *  array holds 50, and two of those are the real endpoints of the chord being bridged. Independent
+ *  of `maxCount`, which the one production caller always supplies but a future one might not
+ *  (findings C). */
+const MAX_GENERATED_COUNT = 48;
 
 interface Point2 {
   x: number;
@@ -209,6 +214,17 @@ function projector(lat0: number, refLon: number) {
   };
 }
 
+/** The server's waypoint schema is the contract on both ends of this function: it will not accept
+ *  an out-of-range or non-finite coordinate on the way in, and must never be handed one on the way
+ *  out. Rejecting the whole call is the right failure mode — a partial arc derived from one garbage
+ *  waypoint is worse than no arc (findings C: `NaN < MIN_CHORD_M` is false, so the chord guard
+ *  below never caught this and every output point came back NaN). */
+function isFiniteWaypoint(w: Waypoint): boolean {
+  return (
+    Number.isFinite(w.lat) && Number.isFinite(w.lon) && Math.abs(w.lat) <= 90 && Math.abs(w.lon) <= 180
+  );
+}
+
 /**
  * Generates `count` waypoints (excluding both endpoints) forming a smooth arc from the route's
  * last waypoint back toward its first, bulging toward whichever side of the chord the runner's
@@ -226,13 +242,19 @@ export function generateLoopWaypoints(
   opts?: { count?: number; bulgeRatio?: number; maxCount?: number },
 ): Waypoint[] {
   if (waypoints.length < 2) return [];
-  const count = Math.max(0, Math.min(opts?.count ?? DEFAULT_COUNT, opts?.maxCount ?? Infinity));
+  if (!waypoints.every(isFiniteWaypoint)) return [];
+
+  const requested = Math.floor(opts?.count ?? DEFAULT_COUNT);
+  const allowed = Math.floor(opts?.maxCount ?? MAX_GENERATED_COUNT);
+  const count = Math.max(0, Math.min(requested, allowed, MAX_GENERATED_COUNT));
   if (count === 0) return [];
 
   const start = waypoints[0]!;
   const end = waypoints[waypoints.length - 1]!;
   const chordM = haversineM(end, start);
-  if (chordM < MIN_CHORD_M) return [];
+  // Inverted rather than `chordM < MIN_CHORD_M` so a NaN chord fails the guard instead of passing
+  // it — belt and braces behind isFiniteWaypoint above.
+  if (!(chordM >= MIN_CHORD_M)) return [];
 
   // Unwrap everything relative to the loop's own start — arbitrary but consistent, and always
   // within ±180° of every other point on a route short enough to run.
@@ -247,7 +269,23 @@ export function generateLoopWaypoints(
   const approach = approachDirection(projected);
   const normal = bulgeNormal(chordUnit, approach, projected);
 
-  const bulgeRatio = opts?.bulgeRatio ?? DEFAULT_BULGE_RATIO;
+  // An explicit 0 means no bulge at all — points interpolated straight along the chord — rather
+  // than silently becoming the floor as it used to. Anything non-finite or negative is not a
+  // meaningful ratio and falls back to the default instead of producing a mirrored or NaN arc.
+  const bulgeRatio =
+    opts?.bulgeRatio != null && Number.isFinite(opts.bulgeRatio) && opts.bulgeRatio >= 0
+      ? opts.bulgeRatio
+      : DEFAULT_BULGE_RATIO;
+
+  if (bulgeRatio === 0) {
+    const flat: Waypoint[] = [];
+    for (let i = 1; i <= count; i++) {
+      const t = i / (count + 1);
+      flat.push(unproject({ x: p.x + chord.x * t, y: p.y + chord.y * t }));
+    }
+    return flat;
+  }
+
   const rawBulgeM = approachBulgeM(approach, chordUnit, chordLenM, bulgeRatio);
   const bulgeM = clampBulgeM(rawBulgeM, chordLenM);
 
