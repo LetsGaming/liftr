@@ -2,9 +2,13 @@
 
 Liftr is a self-hosted strength + running tracker: Vue 3 (Ionic/Capacitor PWA) client, Fastify
 server, SQLite via Drizzle, TypeScript throughout in a pnpm monorepo (`packages/{client,server,
-shared,db,ingest}`). Single bearer token auth (`LIFTR_TOKEN`), no accounts yet — see
-`docs/adr/0002-single-bearer-token-auth.md` and `docs/adr/0006-multi-user-hardening.md`. The app's
-UI strings are German; keep any copy you touch consistent with that.
+shared,db,ingest}`). Real per-person accounts: an owner (set up on first launch) can invite other
+people via time-limited invite codes, and everyone logs in with their own username/password to a
+session-scoped bearer token — no `LIFTR_TOKEN` anymore. See `docs/adr/0006-multi-user-hardening.md`
+for the schema/scoping groundwork (`docs/adr/0002-single-bearer-token-auth.md` documents the
+original single-token design it superseded) and `docs/reference/http-api.md#auth` for how auth
+actually works today. The app's UI strings are German; keep any copy you touch consistent with
+that.
 
 Start with [`docs/README.md`](docs/README.md) for the full documentation map — architecture, the
 HTTP API, concepts (rank engine, XP/streaks, sync), and guides. Docs link to source instead of
@@ -20,9 +24,16 @@ node scripts/dev-up.mjs --id <your-session-id>
 ```
 
 Pick `<your-session-id>` yourself — something short and specific to this task/session (e.g.
-`rank-decay-bug`, `routine-wizard-copy`). This starts an isolated backend + dashboard pair with
-auth open (no `LIFTR_TOKEN` set, so there's no login screen), each on its own automatically-picked
-free port, backed by its own disposable SQLite database. It then ingests the exercise catalog and
+`rank-decay-bug`, `routine-wizard-copy`). This starts an isolated backend + dashboard pair, each on
+its own automatically-picked free port, backed by its own disposable SQLite database.
+
+**Known gap:** since the multi-account-login merge, the seeded database has no owner password set,
+so the dashboard shows the first-run setup screen rather than going straight to content — set a
+password there once per session (any value that clears the common-password check) to reach the
+seeded data. This is a dev-tooling regression, not expected behavior; auto-provisioning an owner
+session in `dev-up.mjs`/`seed-mock-data.ts` is a follow-up, not done here.
+
+It then ingests the exercise catalog and
 the running-standards table into that database and seeds it with realistic mock data so the
 dashboard shows real content instead of empty states: an onboarded profile, owned equipment +
 gym/plate setup, a bodyweight trend, a custom exercise, three routines (Push/Pull/Bein Tag, one

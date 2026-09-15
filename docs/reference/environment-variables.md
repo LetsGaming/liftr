@@ -14,27 +14,12 @@ resulting `env` object rather than touching `process.env` directly.
 |---|---|---|
 | `PORT` | `3001` | Port the Fastify server listens on. Coerced with `Number(...)`. |
 | `LIFTR_DB_PATH` | `../../data/liftr.db` | Path to the SQLite database file. Resolved relative to `process.cwd()` at the point the db client opens it — i.e. relative to wherever the server process was launched from (typically `packages/server/` under `pnpm --filter @liftr/server dev`), **not** relative to `env.ts`'s own location. |
-| `LIFTR_TOKEN` | *(unset)* | The single bearer token checked on every `/api/*` request (see [http-api.md](./http-api.md#auth)). **Required in production** — see [Production requirement](#production-requirement) below. When unset, auth is skipped entirely (dev-mode / test-mode behavior). |
 | `LIFTR_IMAGES_DIR` | `../../data/images` | Directory the exercise-demo images are mirrored into by `pnpm ingest --images`, and served from at `/images/*`. Same `process.cwd()`-relative resolution as `LIFTR_DB_PATH`. If the directory doesn't exist at startup, the server logs a warning and skips registering the static file server rather than failing. |
 | `LIFTR_CLIENT_DIST` | `../../packages/client/dist` | Directory the built client PWA is served from at `/` in production (single self-hosted origin). If it doesn't exist at startup (e.g. dev, where the client runs on its own Vite dev server and proxies `/api` here instead), the server logs a warning and skips registering it. |
 | `LIFTR_ALLOWED_ORIGINS` | *(unset → `null`)* | Comma-separated CORS allow-list (e.g. `https://liftr.example.com,capacitor://localhost`), trimmed and empty-filtered per entry. When unset, CORS reflects any origin (`cors` plugin's `origin: true`) — considered low-risk today since auth is a bearer token in a header rather than a cookie, so a page merely being allowed to call the API can't also read the token out of another origin's `localStorage`. Set this once the server is reachable beyond the reverse proxy's own trusted network. |
 | `LIFTR_ORS_API_KEY` | *(unset)* | OpenRouteService API key for planned-route road-snapping and elevation. Unset is a fully supported degraded state — straight-line distance, no elevation — not a misconfiguration. See [ADR 0007](../adr/0007-openrouteservice-external-routing-exception.md) and [SECURITY.md](../SECURITY.md). |
 | `LIFTR_ORS_BASE_URL` | `https://api.openrouteservice.org` | ORS API base URL — point this at a self-hosted ORS instance to remove the third party entirely, no code change. |
 | `LIFTR_ORS_PROFILE` | `foot-walking` | ORS routing profile. |
-
-### Production requirement
-
-`env.ts` throws at import time — i.e. the server refuses to start — if `LIFTR_TOKEN` is unset
-**and** `NODE_ENV=production`:
-
-```
-LIFTR_TOKEN must be set in production — the homelab reverse proxy is not a substitute.
-```
-
-`NODE_ENV` itself isn't read anywhere else in `env.ts`; it's only this one guard. In any other
-`NODE_ENV` (including unset), an unset `LIFTR_TOKEN` is silently allowed and auth is skipped —
-this is what makes local dev and the vitest test suite (`tests/server/helpers/testApp.ts`, which
-never sets `LIFTR_TOKEN`) work without configuring a token.
 
 ## Database package (`@liftr/db`)
 
@@ -64,13 +49,13 @@ Source: [`packages/client/src/lib/api.ts`](../../packages/client/src/lib/api.ts)
 |---|---|---|
 | `VITE_API_BASE` | *(unset → `""`)* | Base URL prepended to every API request. Empty string in the normal browser/dev-server case, so the Vite dev-server proxy (`/api` → `http://localhost:3001`, configured in [`vite.config.ts`](../../packages/client/vite.config.ts)) keeps working unchanged. Only needs to be set to an absolute LAN server URL for a Capacitor native build, where there's no dev-server proxy available on-device. Set at build time (Vite inlines `import.meta.env.*` into the bundle) — not a runtime-configurable value. |
 
-No other `VITE_*` variables are read anywhere in `packages/client/src`. The auth token itself is
-*not* an env var — it's entered once at runtime via `AuthGate.vue` on the app's first `401` and
-stored in `localStorage` (`liftr.token`), independent of how the server's own `LIFTR_TOKEN` got
-configured.
+No other `VITE_*` variables are read anywhere in `packages/client/src`. The session token itself is
+*not* an env var — it's obtained by logging in (or completing first-run owner setup) via
+`AuthGate.vue` and stored in `localStorage` (`liftr.token`), scoped to whichever account the user
+authenticated as.
 
 ## Not environment-configured
 
-`NODE_ENV` is read only by the server's production guard above — Vite/vue-tsc/vitest set it
+`NODE_ENV` isn't read anywhere in `packages/server/src/env.ts` — Vite/vue-tsc/vitest set it
 implicitly per their own conventions (e.g. `vite build` sets `NODE_ENV=production` for the client
-build), but nothing in this repo reads it to change behavior beyond that one throw in `env.ts`.
+build), but nothing server-side changes behavior based on it.

@@ -146,13 +146,16 @@ export async function buildApp() {
 
   app.addHook("onRequest", async (request, reply) => {
     // /api/auth/{status,setup,login,register} must be reachable with no session yet — they're
-    // how a token is obtained in the first place.
-    const isPublicAuthRoute =
+    // how a token is obtained in the first place. /api/health must also stay public: Docker
+    // healthchecks, the CI boot-smoke test, and external monitoring all need to reach it with no
+    // credentials, the same as any other health-check endpoint's usual contract.
+    const isPublicRoute =
       request.url === "/api/auth/status" ||
       request.url === "/api/auth/setup" ||
       request.url === "/api/auth/login" ||
-      request.url === "/api/auth/register";
-    if (request.url.startsWith("/api/") && !isPublicAuthRoute) {
+      request.url === "/api/auth/register" ||
+      request.url === "/api/health";
+    if (request.url.startsWith("/api/") && !isPublicRoute) {
       await requireAuth(db)(request, reply);
     }
   });

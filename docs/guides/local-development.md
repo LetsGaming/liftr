@@ -74,9 +74,12 @@ node scripts/dev-down.mjs --id my-session   # stop + clean up when done
 `dev-up.mjs`:
 
 1. Picks two free ports and starts the server (`PORT`, `LIFTR_DB_PATH` pointed at
-   `data/agent-<id>/liftr.db`, `LIFTR_TOKEN` unset so auth is open — no login screen) and the
-   client dev server (`BACKEND_PORT` env var, which `vite.config.ts`'s proxy target reads, so it
-   talks to *this* session's backend instead of the default `:3001`).
+   `data/agent-<id>/liftr.db`) and the client dev server (`BACKEND_PORT` env var, which
+   `vite.config.ts`'s proxy target reads, so it talks to *this* session's backend instead of the
+   default `:3001`). **Known gap:** the seeded database has no owner password set, so the
+   dashboard currently shows the first-run setup screen rather than going straight to content —
+   set any password there once per session to reach the seeded data; auto-provisioning this is a
+   follow-up, not yet done.
 2. Ingests the exercise catalog *and* the running-standards table into that fresh database
    (`tools/catalog/curated.yaml`, plus `ingestRunStandards`'s 270-row `run_standards` table) —
    always, since a new database starts empty and running rank/PR recompute has nothing to resolve

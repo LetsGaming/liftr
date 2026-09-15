@@ -1,43 +1,70 @@
 # Security
 
 Liftr's security posture is scoped to what it actually is today: a self-hosted tracker meant to
-sit behind your own reverse proxy on your own network, currently with one shared identity for
-every request. This document describes what's actually implemented, not an aspirational threat
-model.
+sit behind your own reverse proxy on your own network, with real per-person accounts (an owner
+plus any invited members) rather than one shared identity. This document describes what's
+actually implemented, not an aspirational threat model. See
+[audit/2026-09-14-security-pentest.md](../audit/2026-09-14-security-pentest.md) for the full
+pentest this posture was verified against, and
+[docs/superpowers/plans/2026-09-14-security-hardening.md](../docs/superpowers/plans/2026-09-14-security-hardening.md)
+for how the findings below were closed.
 
 ## Auth model
 
-There are no per-person accounts and no sessions yet. Access is gated by a single bearer token,
-`LIFTR_TOKEN`, checked on every `/api/*` request (`packages/server/src/app.ts`'s `onRequest`
-hook calls `requireAuth`, `packages/server/src/auth.ts`), and every authenticated request
-resolves to the same owner identity (`packages/server/src/userContext.ts`). The schema and every
-repository/service/route are already scoped by `user_id` in preparation for real per-person login
-(see [ADR 0006](adr/0006-multi-user-hardening.md)) — but that scoping has nothing to differentiate
-yet, since only one identity currently exists.
+Every `/api/*` request (other than `/api/auth/{status,setup,login,register}`, which have to be
+reachable before a session exists) carries a session bearer token, checked against the `sessions`
+table (`packages/server/src/app.ts`'s `onRequest` hook calls `requireAuth`,
+`packages/server/src/auth.ts`), resolving to a real per-person `userId`/`role`
+(`packages/server/src/userContext.ts` no longer resolves a constant — see
+[ADR 0006](adr/0006-multi-user-hardening.md) for the schema/scoping groundwork this login system
+was built on).
 
-- The token is compared with `crypto.timingSafeEqual`, not `!==` — a plain string comparison
-  exits as soon as one byte differs, so a closer-matching guess takes measurably longer to reject,
-  leaking information through timing. `timingSafeEqual` compares in constant time instead. It
-  requires equal-length buffers, so a length check has to run first; that check isn't
-  constant-time, but it only leaks the token's *length*, not any byte of its content.
-- If `LIFTR_TOKEN` is unset, auth is skipped entirely — this is the local-dev default.
-  `packages/server/src/env.ts` refuses to start in production (`NODE_ENV=production`) without a
-  token set, specifically so "the homelab reverse proxy is my auth" can't happen by accident.
-- This is deliberately minimal: the design bet (`auth.ts`'s own doc comment) is that the reverse
-  proxy in front of Liftr is the outer perimeter, and the bearer token exists "just enough to stop
-  an open LAN port being an open API" — not to defend against a hostile network. If you're
-  exposing Liftr beyond your own trusted network, put real auth (e.g. your reverse proxy's own
-  access control, a VPN) in front of it rather than relying on the token alone.
+- **First-run setup**: `POST /api/auth/setup` sets the owner's password once
+  (`GET /api/auth/status` reports `needsSetup` so the client knows whether to show setup or login).
+  A second attempt after setup is done returns `409`.
+- **Invite-based onboarding**: the owner generates a time-limited (24h) invite code
+  (`POST /api/members/invite`, owner-only), which a new person redeems via
+  `POST /api/auth/register` to create a `member`-role account. Redemption is a conditional DB
+  update, safe under concurrent registration attempts against the same code
+  (`packages/server/src/repositories/authRepository.ts`'s `redeemInviteCode`).
+- **Passwords**: hashed with scrypt (`packages/server/src/lib/passwords.ts`), stored as
+  `scrypt:N:r:p:salt:hash`, never plaintext. Minimum 8 characters, plus a small embedded
+  common-password blocklist (`packages/server/src/lib/commonPasswords.ts`) rejecting trivially
+  guessable passwords like `password1` or `aaaaaaaa` even when they meet the length floor.
+- **Sessions**: a login/setup/register success issues a 32-byte random session token
+  (Node's CSPRNG); only its SHA-256 hash is stored server-side (`packages/server/src/lib/
+  sessionTokens.ts`), so reading the database doesn't hand out usable tokens. Logging out, or an
+  owner removing a member, invalidates the token immediately — no stale-session window.
+- **Rate limiting**: `/api/auth/{setup,login,register}` — the only routes an attacker can use to
+  guess a credential or invite code — are limited to 10 attempts per 15 minutes via
+  `@fastify/rate-limit`, keyed on the request's `username` field (falling back to IP for a
+  malformed body) rather than IP alone, since this app's documented reverse-proxy deployment (see
+  [docker-deployment.md](operations/docker-deployment.md)) would otherwise collapse every real
+  user behind one shared IP-based bucket.
+- **Username enumeration resistance**: a nonexistent username still pays the full scrypt cost
+  against a dummy hash before returning `401`, so a wrong-password check and an unknown-username
+  check take statistically indistinguishable time (`routes/auth.ts`'s `dummyPasswordHashPromise`).
+- This is still deliberately minimal for a homelab-scale app: the design bet is that the reverse
+  proxy in front of Liftr is the outer perimeter, real per-person login is the inner gate, and
+  neither replaces the other. If you're exposing Liftr beyond your own trusted network, put real
+  auth (e.g. your reverse proxy's own access control, a VPN) in front of it too rather than relying
+  on the login system alone.
+- Not yet implemented: self-service password change/reset (a locked-out member's only recovery
+  today is the owner removing and re-inviting them via `DELETE /api/members/:id`) — tracked as an
+  open item in the pentest audit, not a bug.
 
 ## CORS
 
 `packages/server/src/app.ts` registers `@fastify/cors` with `origin: env.allowedOrigins ?? true`.
 Unset (`LIFTR_ALLOWED_ORIGINS`, the default), CORS reflects any origin. `env.ts`'s own comment
-explains why that's an acceptable default rather than an oversight: auth here is a bearer token
-sent in a header, not a cookie, so a malicious page gaining CORS "permission" to call the API
+explains why that's an acceptable default rather than an oversight: auth here is a session bearer
+token sent in a header, not a cookie, so a malicious page gaining CORS "permission" to call the API
 still can't read the token out of another origin's `localStorage` — cookie-based auth would make
 an open CORS policy a real CSRF risk, but a header-based token doesn't have that failure mode the
-same way.
+same way. This calculus is re-flagged (not changed) in the pentest audit as a "should the default
+flip to fail-closed now" product decision, since real per-person passwords raise the stakes of a
+leaked token compared to the original single shared `LIFTR_TOKEN` — `LIFTR_ALLOWED_ORIGINS`
+already exists and works when set.
 
 Set `LIFTR_ALLOWED_ORIGINS` (a comma-separated allow-list, e.g.
 `https://liftr.example.com,capacitor://localhost`) once the server is reachable beyond the
@@ -61,7 +88,24 @@ path (you're importing your own workout files), not a multi-tenant file-ingestio
 
 The `/api/export.zip` route (`packages/server/src/routes/export.ts`) is a read-only backup
 export, not an upload path — see `packages/server/src/services/exportService.ts` for what it
-includes.
+includes. Its CSV output (`packages/server/src/csv.ts`) escapes a leading `=`, `+`, `-`, or `@`
+with a `'` prefix to prevent formula/DDE injection when a note field is opened in a spreadsheet
+app.
+
+## Request limits and error handling
+
+- `Fastify({ bodyLimit: 1_048_576, ... })` caps every request body at 1MB (Fastify's own default,
+  made explicit); free-text fields (`routine.name`, `workouts.notes`, `sets.notes`) additionally
+  cap at 500 characters via their Zod schemas, so an oversized request cleanly `400`s/`413`s
+  instead of surfacing as a bare `500`.
+- Every response carries security headers via `@fastify/helmet` (`X-Content-Type-Options`,
+  `X-Frame-Options`, `Strict-Transport-Security` over HTTPS) — `contentSecurityPolicy` is left
+  off since this server also serves the client PWA as static files and a hand-tuned CSP for that
+  bundle is a separate, larger task.
+- `/api/sync`'s per-item error handling logs unexpected exceptions server-side and returns a fixed
+  `internal_error` string to the client, rather than the raw driver/constraint message — the same
+  posture every other route's central error handler already had (see
+  [http-api.md](reference/http-api.md#error-shapes)).
 
 ## Outbound requests (OpenRouteService)
 
@@ -83,10 +127,11 @@ variables.
 
 ## Where secrets live
 
-- `LIFTR_TOKEN` — the API bearer token (see above). Set as an environment variable on whatever
-  host runs the server; never committed.
-- `LIFTR_ORS_API_KEY` — the OpenRouteService API key (see above), if configured. Same handling as
-  `LIFTR_TOKEN`: environment variable only, never committed.
+- Per-person passwords and session tokens (see [Auth model](#auth-model) above) — stored hashed in
+  the SQLite database itself, not as environment/config secrets. There's no `LIFTR_TOKEN` or
+  similar shared secret to manage anymore.
+- `LIFTR_ORS_API_KEY` — the OpenRouteService API key (see above), if configured. Environment
+  variable only, never committed.
 - Android release-signing secrets (the release keystore and its passwords, used by
   `.github/workflows/release.yml`) — see
   [`docs/operations/android-release-signing.md`](operations/android-release-signing.md) for how

@@ -9,8 +9,8 @@ each entry is linked inline; when in doubt, open the linked file.
 - **Base**: all endpoints below are mounted under `/api/*` except the static file servers
   (`/images/*`, and the client SPA at `/`) registered in
   [`packages/server/src/app.ts`](../../packages/server/src/app.ts).
-- **Auth**: every `/api/*` route sits behind a single bearer-token gate — see
-  [Auth](#auth) below. It is not repeated per-endpoint.
+- **Auth**: every `/api/*` route (other than the public auth routes and `/api/health`) sits
+  behind a session bearer-token gate — see [Auth](#auth) below. It is not repeated per-endpoint.
 - **Validation**: request bodies/params/query are Zod schemas registered via
   `fastify-type-provider-zod` directly on the route (`{ schema: { body, params, querystring,
   response } }`). A schema mismatch never reaches route code — it's rejected by the validator
@@ -25,21 +25,94 @@ each entry is linked inline; when in doubt, open the linked file.
 ## Auth
 
 Source: [`packages/server/src/auth.ts`](../../packages/server/src/auth.ts),
-wired up in `app.ts`'s `onRequest` hook for every request whose URL starts with `/api/`.
+wired up in `app.ts`'s `onRequest` hook for every request whose URL starts with `/api/`, except
+`/api/auth/{status,setup,login,register}` (how a token is obtained in the first place) and
+`/api/health`.
 
-- Single bearer token, checked with a constant-time comparison (`timingSafeEqual`) against
-  `LIFTR_TOKEN` (see [environment-variables.md](./environment-variables.md)).
-- Header: `Authorization: Bearer <LIFTR_TOKEN>`.
-- **Dev mode**: if `LIFTR_TOKEN` is unset, `requireAuth` returns immediately — no token is
-  required at all. This is also why the route tests (`tests/server/routes/*.test.ts`) never send
-  an `Authorization` header: `LIFTR_TOKEN` is unset under vitest.
+- Session bearer token: `Authorization: Bearer <token>`, checked against the `sessions` table by
+  its SHA-256 hash (only the hash is stored — see [SECURITY.md](../SECURITY.md#auth-model)).
+- A token is issued by `POST /api/auth/setup` (first-run owner setup), `POST /api/auth/login`, or
+  `POST /api/auth/register` (invite-code redemption) — see [Auth routes](#auth-authts) below.
 - On failure: `401 { "error": "unauthorized" }`.
-- There are no accounts or sessions yet, so this token answers "is this a request from the app I
-  trust", not "which user is this" — every request currently resolves to the same owner identity
-  (`packages/server/src/userContext.ts`). Every per-user table/route is already scoped by a
-  resolved `userId` in preparation for real per-person login (see
-  [ADR 0006](../adr/0006-multi-user-hardening.md)); that plumbing just has one identity to resolve
-  to today.
+- This resolves a real per-person `userId`/`role` (`packages/server/src/userContext.ts`), not a
+  single shared identity — every per-user table/route is scoped by that resolved `userId` (see
+  [ADR 0006](../adr/0006-multi-user-hardening.md) for the schema groundwork this was built on).
+- `/api/auth/{setup,login,register}` are additionally rate-limited (10 attempts / 15 minutes,
+  keyed by username) — see [SECURITY.md](../SECURITY.md#auth-model).
+
+## Auth routes (`auth.ts`)
+
+Source: [`packages/server/src/routes/auth.ts`](../../packages/server/src/routes/auth.ts) ·
+Tests: [`tests/server/routes/auth.test.ts`](../../tests/server/routes/auth.test.ts)
+
+### `GET /api/auth/status`
+Whether first-run owner setup still needs to happen. Public (no token required).
+
+Response `200`: `{ needsSetup: boolean }`
+
+### `POST /api/auth/setup`
+One-time: sets the owner's password. Public. `409 { "error": "already_set_up" }` if setup already
+ran.
+
+Request body: `{ password: string }` (min 8 chars, rejected if it's a common/guessable password —
+see [SECURITY.md](../SECURITY.md#auth-model))
+
+Response `200`: `{ token: string }` — a usable session token, same as login.
+
+### `POST /api/auth/login`
+Public.
+
+Request body: `{ username: string; password: string }`
+
+Response `200`: `{ token: string }` · `401 { "error": "invalid_credentials" }` for any wrong
+username or password (identical response either way — see [SECURITY.md](../SECURITY.md#auth-model)
+on enumeration resistance).
+
+### `POST /api/auth/register`
+Redeems an invite code (see [Member routes](#member-routes-membersts) below) to create a
+`member`-role account. Public.
+
+Request body: `{ code: string; username: string; password: string }` (`code`: 8 chars; `username`:
+3-24 lowercase letters/digits/hyphens; `password`: same rules as setup)
+
+Response `200`: `{ token: string }` · `400 { "error": "invalid_invite_code" }` for an unknown/
+expired/already-used code · `409 { "error": "username_taken" }`
+
+### `GET /api/auth/me`
+The current session's identity. Requires a valid session.
+
+Response `200`: `{ id: string; username: string; name: string; role: "owner" | "member" }`
+
+### `POST /api/auth/logout`
+Invalidates the current session token immediately.
+
+Response `200`: `{ ok: true }`
+
+---
+
+## Member routes (`members.ts`)
+
+Source: [`packages/server/src/routes/members.ts`](../../packages/server/src/routes/members.ts) ·
+Tests: [`tests/server/routes/members.test.ts`](../../tests/server/routes/members.test.ts)
+
+Every route here is owner-only (`requireOwner`, layered on top of the app-wide session check).
+
+### `POST /api/members/invite`
+Generates a new invite code, valid for 24 hours.
+
+Response `200`: `{ code: string; expiresAt: string }`
+
+### `GET /api/members`
+Lists every account (owner + members).
+
+Response `200`: `Array<{ id: string; username: string; name: string; role: "owner" | "member"; createdAt: Date }>`
+
+### `DELETE /api/members/:id`
+Removes an account — its session tokens stop working on the next request. `400
+{ "error": "cannot_delete_self" }` or `400 { "error": "cannot_delete_owner" }` if either guard
+trips.
+
+Params: `{ id: string }` · Response `200`: `{ ok: true }`
 
 ## Error shapes
 
@@ -964,9 +1037,10 @@ Response `200`:
 Registered directly in `app.ts`, outside the per-file route registrations above — no auth gate
 (only `/api/*` is gated):
 
-- `GET /api/health` — `{ ok: true }`. **Note**: despite the `/api/` prefix this route is
-  registered, it still passes through the auth `onRequest` hook like any other `/api/*` path
-  (the hook matches on URL prefix, not on which file registered the route).
+- `GET /api/health` — `{ ok: true }`. **Public** (no token required), despite the `/api/` prefix —
+  deliberately exempted in the auth `onRequest` hook alongside the public auth routes, since
+  liveness checks (Docker healthchecks, the CI boot-smoke test, monitoring) need to reach it with
+  no credentials.
 - `GET /images/*` — static file server rooted at `LIFTR_IMAGES_DIR`, only registered if that
   directory exists on disk at startup.
 - `GET /*` — serves the built client SPA from `LIFTR_CLIENT_DIST`, only registered if that

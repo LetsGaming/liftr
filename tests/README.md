@@ -96,8 +96,8 @@ knowing before touching this area:
   registerXpRoutes(app, db);
   const res = await app.inject({ method: "GET", url: "/api/xp" });
   ```
-  `LIFTR_TOKEN` is unset in tests, so `requireAuth` (only wired up in the real `buildApp()`, not
-  here) is moot either way — route tests don't need an Authorization header.
+  `requireAuth` is only wired up in the real `buildApp()`, not here — route tests don't need an
+  Authorization header at all.
 - `tests/client/helpers/mountWithProviders.ts` — `mountWithProviders(Component, options?)` wraps
   `@vue/test-utils`'s `mount()` with a fresh Pinia, the real `i18n` instance (actual `de` copy, so
   text assertions match production strings), and a stub router (`createTestRouter()`, no real
