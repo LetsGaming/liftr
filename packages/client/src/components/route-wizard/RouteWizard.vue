@@ -195,7 +195,24 @@ async function runPreview() {
 }
 
 function onAdd(waypoint: Waypoint) {
-  waypoints.value = [...waypoints.value, waypoint];
+  if (!arcDismissed.value && waypoints.value.some((w) => w.gen)) {
+    // A new tap after the arc has already generated invalidates it twice over: appending behind it
+    // would make the route visit the arc and then jump back out to the new point (a zigzag that
+    // saves without complaint — findings B3), and the arc was computed from a different final
+    // waypoint and therefore a different approach heading. Drop it; the debounce rebuilds it from
+    // the full updated path.
+    waypoints.value = [...waypoints.value.filter((w) => !w.gen), waypoint];
+  } else {
+    // The arc was dismissed, so any surviving generated points are ones the user deliberately kept
+    // — effectively their own return leg now. Slot the new tap in after the last point they placed
+    // rather than destroying them. (reduce, not findLastIndex: lib is ES2022.)
+    const lastUserIdx = waypoints.value.reduce((acc, w, i) => (w.gen ? acc : i), -1);
+    waypoints.value = [
+      ...waypoints.value.slice(0, lastUserIdx + 1),
+      waypoint,
+      ...waypoints.value.slice(lastUserIdx + 1),
+    ];
+  }
   schedulePreview();
 }
 function onMove(index: number, waypoint: Waypoint) {

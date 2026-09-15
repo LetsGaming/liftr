@@ -278,3 +278,64 @@ describe("RouteWizard arc dismissal (findings B2)", () => {
     expect(waypointsOf(wrapper).filter((w) => w.gen).length).toBeGreaterThan(0);
   });
 });
+
+describe("RouteWizard late taps (findings B3)", () => {
+  async function removeAt(wrapper: Wrapper, index: number) {
+    map(wrapper).vm.$emit("remove", index);
+    await wrapper.vm.$nextTick();
+  }
+
+  it("never leaves a generated point ahead of a user-placed one", async () => {
+    // tap, tap, pause (arc generates), tap again — the old onAdd appended after the gen block and
+    // generateArcIfNeeded no-opped for the rest of the session, producing a visible zigzag that
+    // saved without error.
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    expect(waypointsOf(wrapper).some((w) => w.gen)).toBe(true);
+
+    await tap(wrapper, C);
+    await settle(wrapper);
+
+    const list = waypointsOf(wrapper);
+    const lastUser = list.reduce((acc, w, i) => (w.gen ? acc : i), -1);
+    const firstGen = list.findIndex((w) => w.gen);
+    expect(firstGen).toBeGreaterThan(lastUser);
+    expect(list.filter((w) => !w.gen)).toHaveLength(3);
+  });
+
+  it("rebuilds the arc from the updated path rather than keeping the stale one", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    const before = waypointsOf(wrapper).filter((w) => w.gen);
+
+    await tap(wrapper, C);
+    await settle(wrapper);
+    const after = waypointsOf(wrapper).filter((w) => w.gen);
+
+    expect(after.length).toBeGreaterThan(0);
+    expect(after[0]).not.toEqual(before[0]);
+  });
+
+  it("keeps a dismissed arc's surviving points in place when a new waypoint is tapped", async () => {
+    const wrapper = mountWizard();
+    await tap(wrapper, A);
+    await tap(wrapper, B);
+    await settle(wrapper);
+    const genCount = waypointsOf(wrapper).filter((w) => w.gen).length;
+    await removeAt(wrapper, waypointsOf(wrapper).findIndex((w) => w.gen));
+    await settle(wrapper);
+
+    await tap(wrapper, C);
+    await settle(wrapper);
+
+    const list = waypointsOf(wrapper);
+    expect(list.filter((w) => w.gen)).toHaveLength(genCount - 1);
+    const lastUser = list.reduce((acc, w, i) => (w.gen ? acc : i), -1);
+    const firstGen = list.findIndex((w) => w.gen);
+    expect(firstGen).toBeGreaterThan(lastUser);
+  });
+});
