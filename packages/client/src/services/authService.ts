@@ -35,3 +35,24 @@ export function listMembers(): Promise<Member[]> {
 export function removeMember(id: string): Promise<void> {
   return api.del(`/api/members/${id}`);
 }
+
+export interface ErrorLogEntry {
+  id: string;
+  occurredAt: string;
+  method: string;
+  url: string;
+  statusCode: number;
+  message: string;
+  stack: string | null;
+}
+
+/** Owner-only — see routes/diagnostics.ts. Powers ProfilePage's Diagnostics panel: the last N
+ *  unexpected-error occurrences, visible from inside the app, no server/log access needed. */
+export function getRecentErrors(): Promise<ErrorLogEntry[]> {
+  return api.get<ErrorLogEntry[]>("/api/diagnostics/errors");
+}
+
+export async function deleteMyAccount(): Promise<void> {
+  await api.del("/api/auth/me");
+  setToken("");
+}

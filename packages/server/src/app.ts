@@ -3,7 +3,7 @@ import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import staticFiles from "@fastify/static";
-import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
+import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest } from "fastify";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -11,8 +11,11 @@ import { ZodError } from "zod";
 import { requireAuth } from "./auth.js";
 import { db } from "./db.js";
 import { env } from "./env.js";
+import { dbErrorReporter, fileErrorReporter } from "./lib/errorReporters.js";
+import { reportError, type ErrorReporter } from "./lib/errorReporting.js";
 import { ConflictError, NotFoundError } from "./lib/errors.js";
 import { registerAuthRoutes } from "./routes/auth.js";
+import { registerDiagnosticsRoutes } from "./routes/diagnostics.js";
 import { registerBodyweightRoutes } from "./routes/bodyweight.js";
 import { registerExerciseRoutes } from "./routes/exercises.js";
 import { registerExportRoutes } from "./routes/export.js";
@@ -43,7 +46,16 @@ import { registerXpRoutes } from "./routes/xp.js";
  * instance (`registerXRoutes(app, testDb)` on a bare Fastify()) that exercises the same
  * validation/error behavior as production, without the singleton db/static-file wiring below.
  */
-export function configureApp(app: FastifyInstance) {
+/** Called only for the genuinely-unexpected (500) branch below — every typed/expected error above
+ *  it (validation, not-found, conflict, rate-limit, oversized-body) returns before reaching this,
+ *  same as it never reaching `request.log.error`. Defaults to a no-op so every test file that
+ *  builds its own bare `configureApp(Fastify())` (see this function's own doc comment) keeps
+ *  working unchanged; `buildApp` below is the only caller that passes a real one. */
+export function configureApp(
+  app: FastifyInstance,
+  opts?: { onUnexpectedError?: (error: FastifyError, request: FastifyRequest) => void },
+) {
+  const onUnexpectedError = opts?.onUnexpectedError ?? (() => {});
   const typedApp = app.withTypeProvider<ZodTypeProvider>();
   typedApp.setValidatorCompiler(validatorCompiler);
   typedApp.setSerializerCompiler(serializerCompiler);
@@ -74,6 +86,7 @@ export function configureApp(app: FastifyInstance) {
       return reply.code(413).send({ error: "payload_too_large" });
     }
     request.log.error(error);
+    onUnexpectedError(error, request);
     return reply.code(500).send({ error: "internal_error" });
   });
 
@@ -81,6 +94,15 @@ export function configureApp(app: FastifyInstance) {
 }
 
 export async function buildApp() {
+  // Both reporters are free (no external service): a capped DB table (backs the owner-only
+  // Diagnostics panel, routes/diagnostics.ts) and a JSON-lines file in the same persistent volume
+  // as the DB (see errorReporters.ts). See lib/errorReporting.ts's doc comment for how a future
+  // self-hosted Sentry-compatible sink would slot into this same array.
+  const errorReporters: ErrorReporter[] = [
+    dbErrorReporter(db),
+    fileErrorReporter(path.join(path.dirname(path.resolve(process.cwd(), env.dbPath)), "logs", "errors.log")),
+  ];
+
   // Fastify's built-in per-request logging (incoming + completed, both at 'info') logs
   // unconditionally regardless of status code — fine in production, but it turns a dev/seed run
   // into a log line per asset/API call. Muted by default (env.verboseLogging): disable the
@@ -94,6 +116,16 @@ export async function buildApp() {
       // cleanly 413s instead of surfacing as a bare, unexplained 500.
       bodyLimit: 1_048_576,
     }),
+    {
+      onUnexpectedError: (error, request) => {
+        void reportError(
+          errorReporters,
+          error,
+          { method: request.method, url: request.url, statusCode: 500 },
+          (err) => request.log.error({ err }, "error reporter failed"),
+        );
+      },
+    },
   );
   if (!env.verboseLogging) {
     app.addHook("onResponse", async (request, reply) => {
@@ -162,6 +194,7 @@ export async function buildApp() {
 
   registerAuthRoutes(app, db);
   registerMemberRoutes(app, db);
+  registerDiagnosticsRoutes(app, db);
   registerExerciseRoutes(app, db, imagesRoot);
   registerRoutineRoutes(app, db);
   registerRoutineSuggestionRoutes(app, db);

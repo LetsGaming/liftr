@@ -176,6 +176,31 @@ describe("GET /api/auth/me and POST /api/auth/logout", () => {
   });
 });
 
+describe("DELETE /api/auth/me", () => {
+  it("owner cannot self-delete", async () => {
+    const app = await buildApp(db);
+    const setupRes = await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
+    const token = setupRes.json().token;
+    const res = await app.inject({ method: "DELETE", url: "/api/auth/me", headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toEqual({ error: "cannot_delete_owner" });
+  });
+
+  it("a member can delete their own account, invalidating their token", async () => {
+    const app = await buildApp(db);
+    await createInviteCode(db, { code: "ABCD2345", createdByUserId: "00000000-0000-4000-8000-000000000001", expiresAt: new Date(Date.now() + 86_400_000) });
+    const registerRes = await app.inject({ method: "POST", url: "/api/auth/register", payload: { code: "ABCD2345", username: "member1", password: "memberpass1" } });
+    const token = registerRes.json().token;
+
+    const deleteRes = await app.inject({ method: "DELETE", url: "/api/auth/me", headers: { authorization: `Bearer ${token}` } });
+    expect(deleteRes.statusCode).toBe(200);
+    expect(deleteRes.json()).toEqual({ ok: true });
+
+    const meRes = await app.inject({ method: "GET", url: "/api/auth/me", headers: { authorization: `Bearer ${token}` } });
+    expect(meRes.statusCode).toBe(401);
+  });
+});
+
 describe("POST /api/auth/login rate limiting", () => {
   it("returns 429 after exceeding the attempt limit", async () => {
     const app = await buildApp(db);

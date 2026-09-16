@@ -43,6 +43,20 @@ docker run --rm -v liftr-data:/data -v "$PWD":/backup alpine tar czf /backup/lif
 
 Restore onto a fresh volume the same way, in reverse (`tar xzf` into a mounted `/data`).
 
+To run this automatically instead of remembering to do it by hand, add it to the host's own
+crontab (`crontab -e`) — no extra container needed, this runs the same one-liner above on a
+schedule:
+
+```cron
+# Daily at 03:00, keeping the last 14 days
+0 3 * * * docker run --rm -v liftr-data:/data -v /home/you/liftr-backups:/backup alpine \
+  sh -c 'tar czf /backup/liftr-data-$(date +\%Y-\%m-\%d).tgz /data && \
+  find /backup -name "liftr-data-*.tgz" -mtime +14 -delete'
+```
+
+Periodically verify a backup actually restores — an untested backup is not a real backup — by
+extracting one onto a scratch volume and checking the app boots against it.
+
 ## 4. Update
 
 ```bash
@@ -52,6 +66,25 @@ docker compose up -d --build
 
 The bootstrap step is idempotent, so this is safe to run on every update — it won't re-seed or
 re-fetch anything that's already there.
+
+## Diagnosing problems
+
+Two ways to see what's gone wrong without needing a live terminal on the box every time, neither
+requiring a cloud account or a second service to run:
+
+- **In the app itself**: the owner account's Profil page has a "Diagnose" panel showing the last
+  100 unexpected server errors (`GET /api/diagnostics/errors`, owner-only).
+- **On disk**: the same errors, one JSON line each, at `liftr-data/logs/errors.log` inside the
+  volume — survives restarts, gets swept up for free by the `tar`-the-whole-volume backup above,
+  and is `grep`-able (`docker run --rm -v liftr-data:/data alpine tail -50 /data/logs/errors.log`).
+- For routine request logging (not just unexpected errors), `docker compose logs -f liftr` remains
+  the way to watch what the server is doing live.
+
+If this instance ever justifies self-hosting a Sentry-compatible service (e.g. GlitchTip) — worth
+considering only if other projects on the same box would use it too, since running one more
+service is a real cost — see the doc comment on
+[`packages/server/src/lib/errorReporting.ts`](../../packages/server/src/lib/errorReporting.ts) for
+the adapter seam that plugs it in without touching how errors are caught.
 
 ## If the container won't start
 

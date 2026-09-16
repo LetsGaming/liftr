@@ -45,6 +45,12 @@ ENV LIFTR_DB_PATH=/data/liftr.db \
     LIFTR_CLIENT_DIST=/app/packages/client/dist \
     PORT=3001
 
+# node:*-slim images ship a non-root `node` user (uid/gid 1000) — run as that instead of root.
+# /data is a named volume mounted at runtime, so it inherits root ownership from Docker unless
+# chown'd here up front.
+RUN mkdir -p /data && chown -R node:node /data /app
+USER node
+
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://localhost:' + (process.env.PORT || 3001) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"

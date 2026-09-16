@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AppDb } from "../db.js";
+import { userRateLimit } from "../lib/rateLimit.js";
 import { applySyncBatch } from "../services/syncService.js";
 import type { ZodFastifyInstance } from "../types.js";
 
@@ -69,8 +70,12 @@ const syncItem = z.discriminatedUnion("type", [
 
 const syncBody = z.object({ items: z.array(syncItem).min(1).max(200) });
 
+// 60/min per user — the offline outbox can flush a large backlog after reconnecting, so this
+// stays generous; it's a resource-abuse backstop, not a normal-usage limit.
+const syncRateLimit = userRateLimit(60, "1 minute");
+
 export function registerSyncRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.post("/api/sync", { schema: { body: syncBody } }, async (req) => {
+  app.post("/api/sync", { config: syncRateLimit, schema: { body: syncBody } }, async (req) => {
     const results = await applySyncBatch(db, req.userId, req.body.items, req.log);
     return { results };
   });

@@ -83,6 +83,28 @@ export const inviteCodes = sqliteTable(
   (t) => [uniqueIndex("invite_codes_code_idx").on(t.code)],
 );
 
+/** A capped ring buffer (see `pruneErrorLogs` in errorLogRepository.ts, called after every
+ *  insert) of unexpected-error occurrences — mirrors what app.ts's error handler already logs via
+ *  pino, so the owner can see "has this broken recently" from the app itself, no server/log access
+ *  needed. Not user-attributed (see lib/errorReporting.ts's `ErrorReporter` interface): an
+ *  unexpected error can happen before a user is resolved, and attribution isn't the point here —
+ *  "did this happen and how often" is. */
+export const errorLogs = sqliteTable(
+  "error_logs",
+  {
+    id: id(),
+    occurredAt: integer("occurred_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch('subsec') * 1000)`),
+    method: text("method").notNull(),
+    url: text("url").notNull(),
+    statusCode: integer("status_code").notNull(),
+    message: text("message").notNull(),
+    stack: text("stack"),
+  },
+  (t) => [index("error_logs_occurred_at_idx").on(t.occurredAt)],
+);
+
 /** Every per-user table's owner column. Defaults to `OWNER_USER_ID` so a caller that doesn't
  *  (yet) resolve a real user — a direct `db.insert(...)` in a test fixture, a maintenance script —
  *  attributes to the one identity that actually exists today, rather than needing to pass it

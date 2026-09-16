@@ -162,4 +162,19 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
     if (token) await deleteSessionByTokenHash(db, hashSessionToken(token));
     return { ok: true as const };
   });
+
+  // Self-service account deletion (data-export/deletion right, not owner-gated like
+  // routes/members.ts's DELETE /api/members/:id). The owner can't self-delete this way — there's
+  // no one left to run the app's owner-only routes afterward — so an owner wanting out has to
+  // hand off ownership or wipe the whole instance, not delete their own row.
+  app.delete(
+    "/api/auth/me",
+    { schema: { response: { 200: okResponse, 400: errorResponse } } },
+    async (req, reply) => {
+      const user = await findUserById(db, req.userId);
+      if (user?.role === "owner") return reply.code(400).send({ error: "cannot_delete_owner" });
+      await deleteUser(db, req.userId); // cascades to this user's sessions, workouts, runs, etc.
+      return { ok: true as const };
+    },
+  );
 }

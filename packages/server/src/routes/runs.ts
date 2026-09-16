@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AppDb } from "../db.js";
 import { NotFoundError } from "../lib/errors.js";
+import { userRateLimit } from "../lib/rateLimit.js";
 import { deleteRun, findRecentRuns, findRunById, findRunPoints } from "../repositories/runRepository.js";
 import {
   importHealthConnectRun,
@@ -95,7 +96,8 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
 
   // POST /api/runs/import — multipart GPX or FIT file upload. Multipart bodies aren't JSON, so
   // this can't carry a `schema.body` the way the JSON routes do — validation happens inline.
-  app.post("/api/runs/import", async (req, reply) => {
+  // Rate-limited: parsing a file is real CPU work, unlike the plain JSON routes above.
+  app.post("/api/runs/import", { config: userRateLimit(20, "1 minute") }, async (req, reply) => {
     const file = await req.file();
     if (!file) return reply.code(400).send({ error: "no_file" });
     const buffer = await file.toBuffer();
