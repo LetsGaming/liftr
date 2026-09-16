@@ -7,6 +7,10 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-16
+
+- Internal updates and minor improvements.
+
 ## [1.0.0] - 2026-09-16
 
 Initial release. Liftr is a self-hosted strength + running tracker: Vue 3 (Ionic/Capacitor PWA)
