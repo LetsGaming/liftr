@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import AppIcon from "../ui/AppIcon.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import CardListScreen from "../ui/CardListScreen.vue";
+import EmptyStateCard from "../ui/EmptyStateCard.vue";
 import ListCard from "../ui/ListCard.vue";
 import RouteThumbnail from "./RouteThumbnail.vue";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
@@ -80,7 +81,7 @@ function editFromMenu(route: PlannedRoute) {
       >
         <template v-if="canDragReorder" #drag-handle>
           <button
-            class="rc-drag-handle"
+            class="drag-handle-btn"
             aria-label="Verschieben"
             @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
             @click.stop
@@ -123,11 +124,12 @@ function editFromMenu(route: PlannedRoute) {
       </ListCard>
     </CardGrid>
     <p v-if="plannedRouteStore.routes.length > 0" class="map-credit">Karten © OpenStreetMap contributors</p>
-    <div v-else class="route-empty surface-hybrid">
-      <div class="eyebrow">Noch keine Strecke</div>
-      <p>Platziere Wegpunkte auf der Karte und speichere sie als wiederverwendbare Strecke.</p>
-      <button class="btn-primary" @click="emit('create')">+ Neue Strecke</button>
-    </div>
+    <EmptyStateCard v-else eyebrow="Noch keine Strecke">
+      Platziere Wegpunkte auf der Karte und speichere sie als wiederverwendbare Strecke.
+      <template #action>
+        <button class="btn-primary" @click="emit('create')">+ Neue Strecke</button>
+      </template>
+    </EmptyStateCard>
     <button v-if="plannedRouteStore.routes.length > 0" class="btn-secondary route-list-add" @click="emit('create')">+ Neue Strecke</button>
   </CardListScreen>
 </template>
@@ -152,24 +154,5 @@ function editFromMenu(route: PlannedRoute) {
 }
 .route-list-add {
   margin-top: var(--sp3);
-}
-/* Same handle treatment as RoutineList.vue's .rc-drag-handle. */
-.rc-drag-handle {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 16px;
-  touch-action: none;
-  cursor: grab;
-}
-.route-empty p {
-  color: var(--dim);
-  font-size: 13.5px;
-  line-height: 1.5;
-  margin-bottom: var(--sp3);
 }
 </style>

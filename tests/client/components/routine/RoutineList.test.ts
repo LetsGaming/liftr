@@ -145,7 +145,7 @@ describe("RoutineList", () => {
   it("renders the first-timer empty state when there are no saved routines", () => {
     const { wrapper } = mountRoutineList([]);
 
-    expect(wrapper.find(".routine-empty").exists()).toBe(true);
+    expect(wrapper.find(".empty-state-card").exists()).toBe(true);
     expect(wrapper.find(".card-grid").exists()).toBe(false);
     expect(wrapper.text()).toContain("Noch keine Routine");
   });
@@ -231,14 +231,14 @@ describe("RoutineList", () => {
     stubMatchMedia(false);
     const { wrapper } = mountRoutineList([makeRoutine()]);
 
-    expect(wrapper.find(".rc-drag-handle").exists()).toBe(true);
+    expect(wrapper.find(".drag-handle-btn").exists()).toBe(true);
   });
 
   it("hides the drag-to-reorder handle once the grid becomes multi-column (desktop, >=900px)", () => {
     stubMatchMedia(true);
     const { wrapper } = mountRoutineList([makeRoutine()]);
 
-    expect(wrapper.find(".rc-drag-handle").exists()).toBe(false);
+    expect(wrapper.find(".drag-handle-btn").exists()).toBe(false);
   });
 
   it("toggles the ⋮ action menu open and closed on repeated taps", async () => {

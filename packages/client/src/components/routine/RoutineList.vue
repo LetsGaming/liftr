@@ -8,6 +8,7 @@
 import AppIcon from "../ui/AppIcon.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import CardListScreen from "../ui/CardListScreen.vue";
+import EmptyStateCard from "../ui/EmptyStateCard.vue";
 import ListCard from "../ui/ListCard.vue";
 import MuscleFigure from "../ui/MuscleFigure.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
@@ -118,7 +119,7 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
         >
           <template v-if="canDragReorder" #drag-handle>
             <button
-              class="rc-drag-handle"
+              class="drag-handle-btn"
               aria-label="Verschieben"
               @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
               @click.stop
@@ -174,15 +175,14 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           </template>
         </ListCard>
       </CardGrid>
-      <div v-else class="routine-empty surface-hybrid">
-        <div class="eyebrow routine-empty-eyebrow">Noch keine Routine</div>
-        <p class="routine-empty-copy">
-          Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist
-          der Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür
-          braucht es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten.
-        </p>
-        <button class="btn-primary btn-block routine-empty-cta" @click="showBuilder = true">+ Neue Routine</button>
-      </div>
+      <EmptyStateCard v-else eyebrow="Noch keine Routine">
+        Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist der
+        Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür braucht
+        es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten.
+        <template #action>
+          <button class="btn-primary btn-block" @click="showBuilder = true">+ Neue Routine</button>
+        </template>
+      </EmptyStateCard>
 
       <button v-if="routineStore.routines.length > 0" class="btn-secondary" @click="showBuilder = true">+ Neue Routine</button>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
@@ -194,40 +194,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
 </template>
 
 <style scoped>
-/* Same bordered-surface treatment as ErholungszoneCard.vue's .erholungszone. Width-capped and
-   self-contained like .finished-summary so it doesn't stretch edge-to-edge on wide viewports. */
-.routine-empty {
-  width: 100%;
-  max-width: var(--content-w-narrow);
-  border-radius: var(--r-xl);
-  padding: var(--sp5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp4);
-}
-.routine-empty-eyebrow {
-  --eyebrow-color: var(--blue-hi);
-}
-.routine-empty-copy {
-  color: var(--dim);
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-/* Same visual pattern as ArrangeStep.vue's .drag-handle, sized to the 44px touch-target floor
-   used elsewhere on this card (.btn-icon), since this card lives on a primary mobile-first
-   screen (unlike the wizard's 32px handle). */
-.rc-drag-handle {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 16px;
-  touch-action: none;
-  cursor: grab;
-}
 .rc-preview {
   display: flex;
   align-items: center;

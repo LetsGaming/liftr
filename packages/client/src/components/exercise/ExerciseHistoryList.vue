@@ -6,6 +6,7 @@
  * the lazy fetch and passes the resulting sets array down.
  */
 import { computed } from "vue";
+import { formatDateLong } from "../../lib/format";
 
 interface HistorySet {
   weightKg: number | null;
@@ -36,7 +37,7 @@ const groups = computed<DayGroup[]>(() => {
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .map(([day, sets]) => ({
       day,
-      dateLabel: new Date(day).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }),
+      dateLabel: formatDateLong(day),
       sets: sets.slice().sort((a, b) => (a.loggedAt < b.loggedAt ? 1 : -1)),
     }));
 });

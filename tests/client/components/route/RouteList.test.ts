@@ -79,9 +79,9 @@ describe("RouteList", () => {
     const wrapper = await mountWithRoutes([]);
 
     expect(wrapper.find(".card-grid").exists()).toBe(false);
-    expect(wrapper.find(".route-empty").exists()).toBe(true);
+    expect(wrapper.find(".empty-state-card").exists()).toBe(true);
 
-    await wrapper.find(".route-empty button.btn-primary").trigger("click");
+    await wrapper.find(".empty-state-card button.btn-primary").trigger("click");
     expect(wrapper.emitted("create")).toHaveLength(1);
   });
 

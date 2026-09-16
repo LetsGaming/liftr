@@ -223,16 +223,22 @@ describe("POST /api/auth/login rate limiting", () => {
   // IP — exactly what happens for real users behind a reverse proxy with no trustProxy configured
   // (see authRateLimit's comment in routes/auth.ts). Two different usernames must get independent
   // buckets even though they share an IP.
-  it("keys the rate limit on username, not just IP — a second username from the same IP still gets its own bucket", async () => {
-    const app = await buildApp(db);
+  it(
+    "keys the rate limit on username, not just IP — a second username from the same IP still gets its own bucket",
+    // 11 failed logins each verify against a real scrypt hash (deliberately slow, see
+    // lib/passwords.ts) — comfortably over vitest's 5000ms default on a loaded CI runner.
+    async () => {
+      const app = await buildApp(db);
 
-    for (let i = 0; i < 10; i++) {
-      await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "alice", password: "wrong" } });
-    }
-    const aliceLocked = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "alice", password: "wrong" } });
-    expect(aliceLocked.statusCode).toBe(429);
+      for (let i = 0; i < 10; i++) {
+        await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "alice", password: "wrong" } });
+      }
+      const aliceLocked = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "alice", password: "wrong" } });
+      expect(aliceLocked.statusCode).toBe(429);
 
-    const bobFirstAttempt = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "bob", password: "wrong" } });
-    expect(bobFirstAttempt.statusCode).not.toBe(429);
-  });
+      const bobFirstAttempt = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "bob", password: "wrong" } });
+      expect(bobFirstAttempt.statusCode).not.toBe(429);
+    },
+    20000,
+  );
 });
