@@ -6,8 +6,13 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      # Fixed regardless of anything in .env (`environment:` overrides `env_file:` for the same
+      # key in Compose) — the app must always listen on the same container-internal port the
+      # healthcheck and the port mapping below both hardcode to 3001. LIFTR_HOST_PORT below is
+      # the only thing a custom host port should ever change.
+      PORT: "3001"
     ports:
-      - "${PORT:-3001}:3001"
+      - "${LIFTR_HOST_PORT:-3001}:3001"
     volumes:
       - liftr-data:/data
     healthcheck:
