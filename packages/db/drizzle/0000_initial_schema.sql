@@ -6,6 +6,17 @@ CREATE TABLE `bodyweight_logs` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `error_logs` (
+	`id` text PRIMARY KEY NOT NULL,
+	`occurred_at` integer DEFAULT (unixepoch('subsec') * 1000) NOT NULL,
+	`method` text NOT NULL,
+	`url` text NOT NULL,
+	`status_code` integer NOT NULL,
+	`message` text NOT NULL,
+	`stack` text
+);
+--> statement-breakpoint
+CREATE INDEX `error_logs_occurred_at_idx` ON `error_logs` (`occurred_at`);--> statement-breakpoint
 CREATE TABLE `exercise_muscles` (
 	`exercise_id` text NOT NULL,
 	`muscle_id` text NOT NULL,

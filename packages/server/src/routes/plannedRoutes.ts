@@ -2,6 +2,7 @@ import { z } from "zod";
 import { downsamplePolyline } from "@liftr/shared";
 import type { AppDb } from "../db.js";
 import { NotFoundError } from "../lib/errors.js";
+import { userRateLimit } from "../lib/rateLimit.js";
 import {
   archivePlannedRoute,
   findActivePlannedRoutes,
@@ -93,9 +94,10 @@ export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
 
   // Not persisted, no id — this is what makes the map show the real snapped line while editing,
   // via the exact same computeGeometry the create/update paths use, so it can't drift from them.
+  // Rate-limited: unlike the other routes here, this one can call the paid OpenRouteService API.
   app.post(
     "/api/planned-routes/preview",
-    { schema: { body: previewInput, response: { 200: previewResponse } } },
+    { config: userRateLimit(30, "1 minute"), schema: { body: previewInput, response: { 200: previewResponse } } },
     async (req) => {
       return previewPlannedRoute(req.body.waypoints, req.log);
     },

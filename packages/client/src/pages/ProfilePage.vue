@@ -9,12 +9,24 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 import { computed, onMounted, ref } from "vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import { useConfirmTap } from "../composables/useConfirmTap";
 import { useDataExport } from "../composables/useDataExport";
 import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
 import { useHealthConnectImport, isHealthConnectAvailable } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
-import { createInvite, getMe, listMembers, logout, removeMember, type Me, type Member } from "../services/authService";
+import {
+  createInvite,
+  deleteMyAccount,
+  getMe,
+  getRecentErrors,
+  listMembers,
+  logout,
+  removeMember,
+  type ErrorLogEntry,
+  type Me,
+  type Member,
+} from "../services/authService";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useThemeStore } from "../stores/themeStore";
@@ -64,10 +76,37 @@ async function removeMemberAndRefresh(id: string) {
   members.value = await listMembers();
 }
 
+const errorLogs = ref<ErrorLogEntry[]>([]);
+const errorLogsOpen = ref(false);
+const errorLogsLoading = ref(false);
+
+async function toggleErrorLogs() {
+  errorLogsOpen.value = !errorLogsOpen.value;
+  if (errorLogsOpen.value && errorLogs.value.length === 0) {
+    errorLogsLoading.value = true;
+    try {
+      errorLogs.value = await getRecentErrors();
+    } finally {
+      errorLogsLoading.value = false;
+    }
+  }
+}
+
 async function handleLogout() {
   await logout();
   window.location.reload();
 }
+
+const deletingAccount = ref(false);
+const { trigger: triggerDeleteAccount, isArmed: isDeleteAccountArmed } = useConfirmTap(async () => {
+  deletingAccount.value = true;
+  try {
+    await deleteMyAccount();
+    window.location.reload();
+  } finally {
+    deletingAccount.value = false;
+  }
+});
 
 onMounted(async () => {
   void bodyweight.load();
@@ -274,8 +313,45 @@ async function saveWeight() {
       <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
     </section>
 
+    <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
+      <h2 class="eyebrow">Diagnose</h2>
+      <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
+      <button class="btn-secondary btn-block" @click="toggleErrorLogs">
+        {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
+      </button>
+      <div v-if="errorLogsOpen" class="error-log-list">
+        <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
+        <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
+          Keine Fehler aufgezeichnet.
+        </p>
+        <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
+          <div class="error-log-meta">
+            <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>
+            <span>{{ entry.method }} {{ entry.url }}</span>
+          </div>
+          <div class="error-log-message">{{ entry.message }}</div>
+        </div>
+      </div>
+    </section>
+
     <section class="card card--quiet surface-hybrid">
       <button class="btn-secondary btn-block" @click="handleLogout">Abmelden</button>
+    </section>
+
+    <section v-if="me && me.role !== 'owner'" class="card card--quiet surface-hybrid">
+      <h2 class="eyebrow">Konto löschen</h2>
+      <p class="hint">
+        Löscht dein Konto und alle deine Daten (Workouts, Läufe, Routinen) unwiderruflich. Zweimal
+        tippen zum Bestätigen.
+      </p>
+      <button
+        class="btn-secondary btn-block danger"
+        :class="{ confirming: isDeleteAccountArmed() }"
+        :disabled="deletingAccount"
+        @click="triggerDeleteAccount()"
+      >
+        {{ deletingAccount ? "Wird gelöscht…" : isDeleteAccountArmed() ? "Wirklich löschen?" : "Konto löschen" }}
+      </button>
     </section>
 
     <section v-if="isHealthConnectAvailable()" class="card card--quiet surface-hybrid">
@@ -425,6 +501,31 @@ async function saveWeight() {
   margin-top: var(--sp3);
   font-size: 13px;
   color: var(--dim);
+}
+.error-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+  margin-top: var(--sp3);
+}
+.error-log-row {
+  padding: var(--sp2) var(--sp3);
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+}
+.error-log-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp2);
+  font-size: 12px;
+  color: var(--faint);
+}
+.error-log-message {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--danger);
+  word-break: break-word;
 }
 .unit {
   color: var(--faint);
@@ -594,5 +695,15 @@ async function saveWeight() {
    relative to the profile/equipment cards above. */
 .card--quiet {
   opacity: 0.92;
+}
+/* Same armed-confirm-tap treatment as list-card.css's `.card-menu button.danger` — reused here
+   since this is the only full-width (not menu-row) destructive button in the app so far. */
+.btn-secondary.danger {
+  color: var(--danger);
+}
+.btn-secondary.danger.confirming {
+  background: var(--danger-lo);
+  color: var(--text);
+  font-weight: 700;
 }
 </style>

@@ -88,6 +88,16 @@ Invalidates the current session token immediately.
 
 Response `200`: `{ ok: true }`
 
+### `DELETE /api/auth/me`
+Self-service account deletion. Deletes the current user and, via `ON DELETE CASCADE`, every row
+that references them (sessions, workouts, runs, routines, etc.) — irreversible. The owner cannot
+use this route (`400 { "error": "cannot_delete_owner" }`); removing the owner account would leave
+no one able to reach the owner-only [member routes](#member-routes-membersts). A member can always
+delete their own account this way, without needing the owner to do it via
+`DELETE /api/members/:id`.
+
+Response `200`: `{ ok: true }` · `400 { "error": "cannot_delete_owner" }`
+
 ---
 
 ## Member routes (`members.ts`)
@@ -113,6 +123,22 @@ Removes an account — its session tokens stop working on the next request. `400
 trips.
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }`
+
+---
+
+## Diagnostics routes (`diagnostics.ts`)
+
+Source: [`packages/server/src/routes/diagnostics.ts`](../../packages/server/src/routes/diagnostics.ts)
+
+Owner-only (`requireOwner`). Backs the Profil page's "Diagnose" panel — see
+[`docs/operations/docker-deployment.md`](../operations/docker-deployment.md#diagnosing-problems)
+for the durable-file counterpart and the self-hosted-Sentry-later seam
+([`lib/errorReporting.ts`](../../packages/server/src/lib/errorReporting.ts)).
+
+### `GET /api/diagnostics/errors`
+The last 100 unexpected (500) errors, newest first — a capped ring buffer, not a full audit log.
+
+Response `200`: `Array<{ id: string; occurredAt: Date; method: string; url: string; statusCode: number; message: string; stack: string | null }>`
 
 ## Error shapes
 
