@@ -6,6 +6,7 @@
  */
 import { ref, type Ref } from "vue";
 import type { WorkoutCardModel, WorkoutCardTier, WorkoutCardTopRankUp } from "@liftr/shared";
+import { formatDateLong } from "../lib/format";
 import { canvasToBlob, copyBlobToClipboard, drawWorkoutCard, shareOrDownloadBlob } from "../lib/shareCard";
 import type { RankUpSummary } from "../components/workout/FinishSequence.vue";
 import type { FinishedSummary } from "./useWorkoutFinish";
@@ -28,7 +29,7 @@ function buildCardModel(
   return {
     kind: "workout",
     routineName: s.routineName,
-    dateLabel: new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }),
+    dateLabel: formatDateLong(new Date().toISOString()),
     durationLabel: s.durationLabel,
     volumeKg: s.volumeKg,
     setCount: s.setCount,

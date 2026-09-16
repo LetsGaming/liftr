@@ -6,6 +6,7 @@
  */
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { onBeforeUnmount, ref, watch } from "vue";
+import { formatClock } from "../../lib/format";
 import { isNative } from "../../lib/platform";
 
 async function fireRestOverNotification() {
@@ -80,10 +81,6 @@ watch(
 onBeforeUnmount(stop);
 
 const progressPercent = () => Math.round((1 - Math.max(left.value, 0) / currentTotal.value) * 100);
-
-function formatSeconds(s: number): string {
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
 </script>
 
 <template>
@@ -95,7 +92,7 @@ function formatSeconds(s: number): string {
   </div>
   <div v-else class="rest-timer surface-hybrid">
     <div class="ring" :class="{ 'ring-done': justFinished }" :style="{ '--p': progressPercent() + '%' }">
-      <i class="tnum">{{ running ? formatSeconds(Math.max(left, 0)) : formatSeconds(props.seconds ?? 90) }}</i>
+      <i class="tnum">{{ running ? formatClock(Math.max(left, 0)) : formatClock(props.seconds ?? 90) }}</i>
     </div>
     <div class="meta">
       <b>Pause</b>

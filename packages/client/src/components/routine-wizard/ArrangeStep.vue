@@ -12,6 +12,7 @@ import AppIcon from "../ui/AppIcon.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
 import { useDragReorder } from "../../composables/useDragReorder";
 import { useExerciseName } from "../../composables/useExerciseName";
+import { formatClock } from "../../lib/format";
 import { useCatalogStore } from "../../stores/catalogStore";
 import type { DraftExercise } from "./RoutineWizard.vue";
 
@@ -42,12 +43,6 @@ function handleDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) 
   onPointerDown(e, index, props.entries.length, cardEl);
 }
 
-function formatRest(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 function kindOf(kind: SetKind | undefined): SetKind {
   return kind ?? "normal";
 }
@@ -67,7 +62,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
       >
         <div class="card-head">
           <button
-            class="drag-handle"
+            class="drag-handle-btn wizard-drag-handle"
             aria-label="Verschieben"
             @pointerdown="handleDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
           >
@@ -145,7 +140,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
             <span class="rest-label">Pause zwischen Sätzen</span>
             <div class="rest-ctrls">
               <button type="button" aria-label="Weniger Pause zwischen Sätzen" @click="emit('adjustRestBetweenSets', exerciseId, -1)">−</button>
-              <span class="tnum">{{ formatRest(cfg.restBetweenSetsSeconds) }}</span>
+              <span class="tnum">{{ formatClock(cfg.restBetweenSetsSeconds) }}</span>
               <button type="button" aria-label="Mehr Pause zwischen Sätzen" @click="emit('adjustRestBetweenSets', exerciseId, 1)">+</button>
             </div>
           </div>
@@ -153,7 +148,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
             <span class="rest-label">Pause nach der Übung</span>
             <div class="rest-ctrls">
               <button type="button" aria-label="Weniger Pause nach der Übung" @click="emit('adjustRestAfterExercise', exerciseId, -1)">−</button>
-              <span class="tnum">{{ formatRest(cfg.restAfterExerciseSeconds) }}</span>
+              <span class="tnum">{{ formatClock(cfg.restAfterExerciseSeconds) }}</span>
               <button type="button" aria-label="Mehr Pause nach der Übung" @click="emit('adjustRestAfterExercise', exerciseId, 1)">+</button>
             </div>
           </div>
@@ -215,17 +210,10 @@ function kindOf(kind: SetKind | undefined): SetKind {
   align-items: center;
   gap: var(--sp3);
 }
-.drag-handle {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 16px;
-  touch-action: none;
-  cursor: grab;
+/* This wizard step isn't the primary mobile-first screen the shared drag-handle-btn's 44px
+   touch-target floor is sized for (styles/list-card.css) — shrink it here to 32px. */
+.wizard-drag-handle {
+  --drag-handle-size: 32px;
 }
 .card-head :deep(.exercise-row) {
   flex: 1;

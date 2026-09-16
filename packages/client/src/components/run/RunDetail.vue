@@ -14,6 +14,7 @@ import { useRunsStore, type RunDetail as RunDetailModel } from "../../stores/run
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
 import { useRunRankStore } from "../../stores/runRankStore";
 import { getPlannedRouteDetail, type Waypoint } from "../../services/plannedRouteService";
+import { formatClock, formatDateLong } from "../../lib/format";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import AppIcon from "../ui/AppIcon.vue";
@@ -114,17 +115,13 @@ onMounted(async () => {
   }
 });
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
-}
 function formatDuration(s: number) {
   const m = Math.round(s / 60);
   return `${m} min`;
 }
 function formatPace(sPerKm: number | null) {
   if (sPerKm == null) return "–";
-  const s = Math.round(sPerKm);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
+  return `${formatClock(Math.round(sPerKm))}/km`;
 }
 
 // "Als Strecke speichern" — turns this run's recorded GPS track into a reusable planned route.
@@ -144,7 +141,7 @@ const routeSeedWaypoints = computed<Waypoint[]>(() => {
   }
   return sampled;
 });
-const routeSeedName = computed(() => detail.value?.name ?? formatDate(detail.value?.startedAt ?? new Date().toISOString()));
+const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail.value?.startedAt ?? new Date().toISOString()));
 </script>
 
 <template>
@@ -163,7 +160,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDate(detail.val
     <p v-else-if="!detail" class="hint">Dieser Lauf ließ sich nicht laden — möglicherweise keine Verbindung zum Server.</p>
 
     <template v-else>
-      <div class="date-line tnum">{{ formatDate(detail.startedAt) }}</div>
+      <div class="date-line tnum">{{ formatDateLong(detail.startedAt) }}</div>
 
       <div v-if="sourceRouteName" class="route-chip">Strecke: {{ sourceRouteName }}</div>
       <!-- rank-chip carries no CSS of its own (it shares .route-chip's look on purpose, same row

@@ -332,6 +332,20 @@ const isFastPathEligible = computed(() => {
 });
 const showFastPath = computed(() => isFastPathEligible.value && !fastPathOverride.value);
 
+/** WizardHeader's step indicator. "choose" and "pick" share one "1 Wählen" slot (PathChooser is
+ *  just the entry into picking) — lost when the header markup was extracted into WizardHeader.vue
+ *  without carrying this over; restored here rather than in WizardHeader itself, since the
+ *  "two states, one slot" collapse and the fast-path-dependent label/count are wizard-specific. */
+const wizardSteps = computed(() => {
+  const steps = [
+    { key: "pick", label: "1 Wählen" },
+    { key: "arrange", label: showFastPath.value ? "2 Fertig" : "2 Anordnen" },
+  ];
+  if (!showFastPath.value) steps.push({ key: "review", label: "3 Fertig" });
+  return steps;
+});
+const activeStepKey = computed(() => (step.value === "choose" ? "pick" : step.value));
+
 const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
 async function save() {
@@ -414,6 +428,8 @@ function useFullArrange() {
         v-model:title="name"
         :title-placeholder="'Name der Routine'"
         :is-confirming-close="closeConfirm.isArmed()"
+        :steps="wizardSteps"
+        :active-step-key="activeStepKey"
         @close="requestClose"
       />
     </template>

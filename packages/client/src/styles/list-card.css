@@ -97,6 +97,23 @@
   justify-content: space-between;
   gap: var(--sp2);
 }
+/* Shared drag-handle button look — was three verbatim copies (RouteList.vue/RoutineList.vue's
+   .rc-drag-handle, ArrangeStep.vue's .drag-handle) that only ever differed in size. Size via
+   --drag-handle-size (default: the 44px touch-target floor); ArrangeStep.vue's wizard-step cards
+   override it to 32px since that card isn't the primary mobile-first screen the 44px floor is for. */
+.drag-handle-btn {
+  --drag-handle-size: 44px;
+  flex: none;
+  width: var(--drag-handle-size);
+  height: var(--drag-handle-size);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 16px;
+  touch-action: none;
+  cursor: grab;
+}
 .card-name {
   font-size: 15.5px;
   flex: 1;

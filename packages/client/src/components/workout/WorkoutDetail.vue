@@ -13,6 +13,7 @@ import type { WorkoutCardModel } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useExerciseName } from "../../composables/useExerciseName";
+import { formatDateLong } from "../../lib/format";
 import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../../lib/shareCard";
 import AppIcon from "../ui/AppIcon.vue";
 import { useCatalogStore } from "../../stores/catalogStore";
@@ -89,9 +90,7 @@ const totalVolumeKg = computed(() =>
 const totalSets = computed(() => orderedExercises.value.reduce((sum, we) => sum + we.sets.filter((s) => !s.isWarmup).length, 0));
 const prCount = computed(() => orderedExercises.value.reduce((sum, we) => sum + we.sets.filter((s) => s.isPr).length, 0));
 
-const dateLabel = computed(() =>
-  detail.value ? new Date(detail.value.startedAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }) : "",
-);
+const dateLabel = computed(() => (detail.value ? formatDateLong(detail.value.startedAt) : ""));
 
 /** Same union-of-primary-over-secondary logic as WorkoutPage.vue's sessionMuscles — reused via
  *  the same catalogStore lookup rather than re-derived, so the two never drift. */
