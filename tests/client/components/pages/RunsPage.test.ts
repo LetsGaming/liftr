@@ -85,19 +85,19 @@ describe("RunsPage", () => {
     expect(wizard.props("route")).toStrictEqual(route);
   });
 
-  it("starts the manual pre-fill flow when RouteList emits start", async () => {
+  it("navigates straight to live tracking when RouteList emits start, not the manual form", async () => {
     const wrapper = mountWithProviders(RunsPage, { global: { stubs: STUBS } });
     await flushPromises();
+    const router = wrapper.vm.$router;
+    const pushSpy = vi.spyOn(router, "push");
 
     const route = { id: "route1", name: "Tempelhof-Runde", distanceM: 6400, elevationGainM: 34, geometrySource: "ors" };
     await wrapper.findComponent(RouteList).vm.$emit("start", route);
     await flushPromises();
 
-    expect(wrapper.find(".route-banner").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Tempelhof-Runde");
-    expect(wrapper.find(".manual-form").exists()).toBe(true);
-    const nameInput = wrapper.find<HTMLInputElement>(".manual-form input[placeholder='Name (optional)']");
-    expect(nameInput.element.value).toBe("Tempelhof-Runde");
+    expect(pushSpy).toHaveBeenCalledWith("/routes/route1?autostart=live");
+    expect(wrapper.find(".route-banner").exists()).toBe(false);
+    expect(wrapper.find(".manual-form").exists()).toBe(false);
   });
 
   it("toggles the manual entry form via the 'Manuell' button", async () => {
