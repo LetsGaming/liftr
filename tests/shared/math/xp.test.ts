@@ -323,4 +323,24 @@ describe("computeLevel", () => {
   it("is sized so LEVEL_XP_SCALE alone (roughly a first session's XP) is still level 0 or 1", () => {
     expect(computeLevel(LEVEL_XP_SCALE).level).toBeLessThanOrEqual(1);
   });
+
+  // DoS guard: a non-finite totalXp (e.g. Infinity, reachable via a spoofed distance/duration
+  // flowing through computeRunXp) must not spin the level-search loops forever, and NaN must not
+  // propagate into the returned level. If either guard regresses, this hangs and the test times out.
+  it("returns promptly with level 0 for Infinity", () => {
+    const result = computeLevel(Infinity);
+    expect(result.level).toBe(0);
+    expect(Number.isFinite(result.xpIntoLevel)).toBe(true);
+  });
+
+  it("returns promptly with level 0 for NaN", () => {
+    const result = computeLevel(NaN);
+    expect(result.level).toBe(0);
+    expect(Number.isNaN(result.level)).toBe(false);
+  });
+
+  it("returns promptly with level 0 for -Infinity", () => {
+    const result = computeLevel(-Infinity);
+    expect(result.level).toBe(0);
+  });
 });

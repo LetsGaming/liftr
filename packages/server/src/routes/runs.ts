@@ -11,6 +11,7 @@ import {
   UnsupportedFileFormatError,
 } from "../services/runImportService.js";
 import type { ZodFastifyInstance } from "../types.js";
+import { boundedNumber } from "../schemas.js";
 
 /**
  * Running: import a GPX you own, or log a run manually with no file. Both paths converge on the
@@ -22,10 +23,12 @@ import type { ZodFastifyInstance } from "../types.js";
 const manualRunInput = z.object({
   name: z.string().nullable().optional(),
   startedAt: z.coerce.date(),
-  distanceM: z.number().positive(),
-  durationS: z.number().positive(),
+  // 500,000 m (500 km) / 86,400 s (24 h) — far beyond any real run, but finite so it can't hang
+  // computeLevel/computeRunXp downstream (see schemas.ts's boundedNumber doc comment).
+  distanceM: boundedNumber(0, 500_000).positive(),
+  durationS: boundedNumber(0, 86_400).positive(),
   plannedRouteId: z.string().nullable().optional(),
-  elevationGainM: z.number().nullable().optional(),
+  elevationGainM: boundedNumber(-2000, 10_000).nullable().optional(),
 });
 
 // Health Connect import: the client (capacitor-health's queryWorkouts, called

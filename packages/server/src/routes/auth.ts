@@ -22,6 +22,10 @@ const usernameSchema = z.string().regex(USERNAME_PATTERN, "3-24 lowercase letter
 const passwordSchema = z
   .string()
   .min(8, "at least 8 characters")
+  // scrypt's hashing cost scales with input length (see passwords.ts) — an unbounded password
+  // lets a client force expensive hashing on every login attempt. 128 chars is generous for any
+  // real password.
+  .max(128, "at most 128 characters")
   .refine((pw) => !isCommonPassword(pw), { message: "too common, choose a different password" });
 
 const setupInput = z.object({ password: passwordSchema });

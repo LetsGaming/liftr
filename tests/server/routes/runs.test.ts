@@ -148,6 +148,59 @@ describe("run routes", () => {
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: "invalid_request" });
     });
+
+    // DoS guard: 1e309 overflows to Infinity when JS parses the JSON number literal, which
+    // satisfies `.positive()` (Infinity > 0) but must still be rejected as non-finite. Sent as a
+    // raw JSON string since `JSON.stringify(Infinity)` itself produces `null`, not a usable payload.
+    it("rejects a distance that overflows to Infinity", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs",
+        payload: '{"startedAt":"2026-01-02T07:00:00Z","distanceM":1e309,"durationS":900}',
+        headers: { "content-type": "application/json" },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects a distance beyond the sane max (500km)", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs",
+        payload: { startedAt: "2026-01-02T07:00:00Z", distanceM: 600_000, durationS: 900 },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects a duration beyond the sane max (24h)", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs",
+        payload: { startedAt: "2026-01-02T07:00:00Z", distanceM: 3000, durationS: 200_000 },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects an out-of-range elevationGainM", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs",
+        payload: {
+          startedAt: "2026-01-02T07:00:00Z",
+          distanceM: 3000,
+          durationS: 900,
+          elevationGainM: 50_000,
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
   });
 
   describe("POST /api/runs/healthconnect", () => {

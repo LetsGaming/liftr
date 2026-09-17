@@ -70,6 +70,18 @@ describe("POST /api/auth/setup", () => {
     expect(res.statusCode).toBe(400);
   });
 
+  // DoS guard: scrypt's hashing cost scales with input length, so an unbounded password lets a
+  // client force expensive hashing on every request.
+  it("rejects a password over 128 characters", async () => {
+    const app = await buildApp(db);
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/auth/setup",
+      payload: { password: "a".repeat(129) },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it("refuses to run again once setup is already done", async () => {
     const app = await buildApp(db);
     await app.inject({ method: "POST", url: "/api/auth/setup", payload: { password: "ownerpass1" } });
