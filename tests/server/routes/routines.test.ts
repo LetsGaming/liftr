@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mesocycles, routines } from "@liftr/db";
 import { registerRoutineRoutes } from "~server/routes/routines.js";
 import { createTestApp } from "../helpers/testApp.js";
-import { insertTestExercise } from "../helpers/testDb.js";
+import { insertTestExercise, insertTestUser } from "../helpers/testDb.js";
 
 describe("GET /api/routines", () => {
   it("returns an empty array when there are no routines", async () => {
@@ -44,6 +44,17 @@ describe("GET /api/routines", () => {
     const res = await app.inject({ method: "GET", url: "/api/routines" });
 
     expect(res.json()[0].mesocycle).toBeNull();
+  });
+
+  it("excludes routines belonging to another user", async () => {
+    const { app, db } = await createTestApp();
+    registerRoutineRoutes(app, db);
+    const otherUser = await insertTestUser(db);
+    await db.insert(routines).values({ userId: otherUser.id, name: "Not mine", orderIndex: 0 });
+
+    const res = await app.inject({ method: "GET", url: "/api/routines" });
+
+    expect(res.json()).toEqual([]);
   });
 });
 
@@ -264,6 +275,17 @@ describe("PATCH /api/routines/:id", () => {
 
     expect(res.statusCode).toBe(404);
   });
+
+  it("returns 404 for a routine belonging to another user", async () => {
+    const { app, db } = await createTestApp();
+    registerRoutineRoutes(app, db);
+    const otherUser = await insertTestUser(db);
+    const [routine] = await db.insert(routines).values({ userId: otherUser.id, name: "Not mine", orderIndex: 0 }).returning();
+
+    const res = await app.inject({ method: "PATCH", url: `/api/routines/${routine!.id}`, payload: { name: "Hijacked" } });
+
+    expect(res.statusCode).toBe(404);
+  });
 });
 
 describe("DELETE /api/routines/:id", () => {
@@ -288,5 +310,18 @@ describe("DELETE /api/routines/:id", () => {
     const res = await app.inject({ method: "DELETE", url: "/api/routines/does-not-exist" });
 
     expect(res.statusCode).toBe(404);
+  });
+
+  it("returns 404 for a routine belonging to another user, leaving it unarchived", async () => {
+    const { app, db } = await createTestApp();
+    registerRoutineRoutes(app, db);
+    const otherUser = await insertTestUser(db);
+    const [routine] = await db.insert(routines).values({ userId: otherUser.id, name: "Not mine", orderIndex: 0 }).returning();
+
+    const res = await app.inject({ method: "DELETE", url: `/api/routines/${routine!.id}` });
+
+    expect(res.statusCode).toBe(404);
+    const row = await db.query.routines.findFirst({ where: (r, { eq }) => eq(r.id, routine!.id) });
+    expect(row?.archivedAt).toBeNull();
   });
 });

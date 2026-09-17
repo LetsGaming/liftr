@@ -3,6 +3,7 @@ import { bodyweightLogs, type LiftrDb } from "@liftr/db";
 import type { FastifyInstance } from "fastify";
 import { registerBodyweightRoutes } from "~server/routes/bodyweight.js";
 import { createTestApp } from "../helpers/testApp.js";
+import { insertTestUser } from "../helpers/testDb.js";
 
 let app: FastifyInstance;
 let db: LiftrDb;
@@ -34,6 +35,15 @@ describe("GET /api/bodyweight", () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.map((r: { date: string }) => r.date)).toEqual(["2026-09-05", "2026-09-01"]);
+  });
+
+  it("excludes entries belonging to another user", async () => {
+    const otherUser = await insertTestUser(db);
+    await db.insert(bodyweightLogs).values({ userId: otherUser.id, date: "2026-09-05", weightKg: 90 });
+
+    const res = await app.inject({ method: "GET", url: "/api/bodyweight" });
+
+    expect(res.json()).toEqual([]);
   });
 });
 

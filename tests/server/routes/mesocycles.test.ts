@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { routines, type LiftrDb } from "@liftr/db";
+import { mesocycles, routines, type LiftrDb } from "@liftr/db";
 import type { FastifyInstance } from "fastify";
 import { registerMesocycleRoutes } from "~server/routes/mesocycles.js";
 import { createTestApp } from "../helpers/testApp.js";
+import { insertTestUser } from "../helpers/testDb.js";
 
 let app: FastifyInstance;
 let db: LiftrDb;
@@ -74,6 +75,19 @@ describe("POST /api/routines/:id/mesocycle", () => {
     expect(res.statusCode).toBe(400);
     expect(res.json()).toMatchObject({ error: "invalid_request" });
   });
+
+  it("returns 404 for a routine belonging to another user", async () => {
+    const otherUser = await insertTestUser(db);
+    const [otherRoutine] = await db.insert(routines).values({ userId: otherUser.id, name: "Not mine" }).returning();
+
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/routines/${otherRoutine!.id}/mesocycle`,
+      payload: { totalWeeks: 4 },
+    });
+
+    expect(res.statusCode).toBe(404);
+  });
 });
 
 describe("DELETE /api/routines/:id/mesocycle", () => {
@@ -94,6 +108,21 @@ describe("DELETE /api/routines/:id/mesocycle", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
+  });
+
+  it("returns 404 for a routine belonging to another user", async () => {
+    const otherUser = await insertTestUser(db);
+    const [otherRoutine] = await db.insert(routines).values({ userId: otherUser.id, name: "Not mine" }).returning();
+    await db.insert(mesocycles).values({
+      routineId: otherRoutine!.id,
+      totalWeeks: 4,
+      currentWeek: 1,
+      weekPercents: JSON.stringify([80, 85, 90, 60]),
+    });
+
+    const res = await app.inject({ method: "DELETE", url: `/api/routines/${otherRoutine!.id}/mesocycle` });
+
+    expect(res.statusCode).toBe(404);
   });
 });
 
@@ -122,5 +151,20 @@ describe("POST /api/routines/:id/mesocycle/advance", () => {
 
     expect(res.statusCode).toBe(404);
     expect(res.json()).toEqual({ error: "not_found" });
+  });
+
+  it("returns 404 for a routine belonging to another user", async () => {
+    const otherUser = await insertTestUser(db);
+    const [otherRoutine] = await db.insert(routines).values({ userId: otherUser.id, name: "Not mine" }).returning();
+    await db.insert(mesocycles).values({
+      routineId: otherRoutine!.id,
+      totalWeeks: 4,
+      currentWeek: 1,
+      weekPercents: JSON.stringify([80, 85, 90, 60]),
+    });
+
+    const res = await app.inject({ method: "POST", url: `/api/routines/${otherRoutine!.id}/mesocycle/advance` });
+
+    expect(res.statusCode).toBe(404);
   });
 });
