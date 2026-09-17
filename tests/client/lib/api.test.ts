@@ -191,6 +191,32 @@ describe("api.post / put / patch", () => {
   });
 });
 
+describe("request timeout", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("aborts and rejects with a timeout-shaped ApiError when fetch never settles", async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = api.get("/api/workouts").catch((err) => err);
+    await vi.advanceTimersByTimeAsync(30_000);
+    const err = await pending;
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(0);
+    expect((err as ApiError).name).toBe("ApiError");
+  });
+});
+
 describe("api.del", () => {
   it("sends a bodyless DELETE with no Content-Type header (regression: Fastify 400s a bodyless request carrying one)", async () => {
     const fetchMock = vi.fn().mockResolvedValue(fakeResponse(204));

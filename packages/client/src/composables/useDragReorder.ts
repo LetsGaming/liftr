@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { onUnmounted, ref } from "vue";
 
 /**
  * Minimal drag-to-reorder for one vertical list, built on native Pointer Events — no external
@@ -54,6 +54,12 @@ export function useDragReorder(onReorder: (from: number, to: number) => void) {
     targetIndex.value = clamp(raw, 0, count - 1);
   }
 
+  function removeWindowListeners() {
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerUp);
+  }
+
   function onPointerUp() {
     if (draggingIndex.value !== null && targetIndex.value !== null && targetIndex.value !== draggingIndex.value) {
       onReorder(draggingIndex.value, targetIndex.value);
@@ -62,10 +68,12 @@ export function useDragReorder(onReorder: (from: number, to: number) => void) {
     targetIndex.value = null;
     dragOffsetY.value = 0;
     pointerId = null;
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerUp);
+    removeWindowListeners();
   }
+
+  // Covers the component unmounting mid-drag (before pointerup/pointercancel ever fires) — without
+  // this the three window listeners (and their closure over onReorder/component state) leak.
+  onUnmounted(removeWindowListeners);
 
   /** Per-card inline style: the dragged card follows the pointer; cards it's currently
    *  crossing over shift out of the way by one card-height. */

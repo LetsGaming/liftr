@@ -48,19 +48,42 @@ export class ApiError extends Error {
   }
 }
 
+// A reachable-but-hung server (weak wifi, captive portal) would otherwise never settle — no
+// caller currently passes its own `init.signal`, so a flat per-request timeout is enough; 20s is
+// generous for a slow mobile connection while still bounding syncStore's `flushing` flag (which
+// this timeout, surfaced as a rejection, resets via its existing try/finally) to a sane worst
+// case. Same AbortController + setTimeout pattern as useServerConnection.ts's
+// checkServerIdentity() (VERIFY_TIMEOUT_MS) rather than AbortSignal.timeout(), since that native
+// timer doesn't run on vitest's fake-timer clock, and a request that hangs by design is exactly
+// what a fake-timer test needs to simulate.
+const REQUEST_TIMEOUT_MS = 20_000;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
-  const res = await fetch(apiBase() + path, {
-    ...init,
-    headers: {
-      // Only set Content-Type when there's actually a body — Fastify's default JSON body
-      // parser rejects an empty body sent with this header (400), which silently broke
-      // every bodyless DELETE (e.g. routine deletion) until caught by an actual click test.
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init?.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(apiBase() + path, {
+      ...init,
+      signal: init?.signal ?? controller.signal,
+      headers: {
+        // Only set Content-Type when there's actually a body — Fastify's default JSON body
+        // parser rejects an empty body sent with this header (400), which silently broke
+        // every bodyless DELETE (e.g. routine deletion) until caught by an actual click test.
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init?.headers,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError" && !init?.signal) {
+      throw new ApiError(`${init?.method ?? "GET"} ${path} timed out`, 0, "timeout");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!res.ok) {
     let detail: string | undefined;
     try {

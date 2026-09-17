@@ -23,7 +23,11 @@ const prStore = usePrStore();
 const runRankStore = useRunRankStore();
 const { exerciseName } = useExerciseName();
 onMounted(() => {
-  void prStore.load();
+  // router.ts's beforeEnter already prefetches prStore for this route, so guard against a
+  // redundant re-fetch on mount (same pattern as RoutineOverviewPage.vue's onMounted). No such
+  // prefetch exists for runRankStore, so its load stays unconditional — this is a cold-load
+  // safety net for it, not a redundant refresh.
+  if (!prStore.loaded) void prStore.load();
   void runRankStore.loadPrs();
 });
 

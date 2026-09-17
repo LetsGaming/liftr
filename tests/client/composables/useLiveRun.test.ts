@@ -17,6 +17,23 @@ vi.mock("@capacitor/geolocation", () => ({
 
 import { useLiveRun } from "~client/composables/useLiveRun";
 
+// Minimal shape of @capacitor/geolocation's `Position`, just what onFix() reads — avoids
+// importing that package's types from a test file outside packages/client (same idb/@capacitor
+// resolution mismatch vitest.config.ts's alias comments describe, but for type declarations,
+// which that runtime-only alias doesn't fix).
+interface Position {
+  timestamp: number;
+  coords: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    altitude: number | null;
+    altitudeAccuracy: number | null;
+    heading: number | null;
+    speed: number | null;
+  };
+}
+
 beforeEach(() => {
   checkPermissionsMock.mockResolvedValue({ location: "granted", coarseLocation: "granted" });
   watchPositionMock.mockRejectedValue(new Error("Geolocation unavailable"));
@@ -39,5 +56,36 @@ describe("useLiveRun start() failure copy", () => {
     const live = useLiveRun();
     await live.start();
     expect(live.error.value).toBe("Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen.");
+  });
+});
+
+describe("useLiveRun pause()", () => {
+  function fixAt(lat: number): Position {
+    return {
+      timestamp: Date.now(),
+      coords: { latitude: lat, longitude: 0, accuracy: 5, altitude: null, altitudeAccuracy: null, heading: null, speed: null },
+    } as Position;
+  }
+
+  it("stops recording GPS fixes while paused, and resumes recording them on resume()", async () => {
+    let onFix: (pos: Position | null, err?: Error) => void = () => {};
+    watchPositionMock.mockImplementation((_opts, cb) => {
+      onFix = cb;
+      return Promise.resolve("watch-1");
+    });
+
+    const live = useLiveRun();
+    await live.start();
+
+    onFix(fixAt(1));
+    expect(live.points.value).toHaveLength(1);
+
+    live.pause();
+    onFix(fixAt(2)); // dropped — paused
+    expect(live.points.value).toHaveLength(1);
+
+    live.resume();
+    onFix(fixAt(3)); // recorded again
+    expect(live.points.value).toHaveLength(2);
   });
 });

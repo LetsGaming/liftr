@@ -8,6 +8,7 @@
 // would drive them: dispatching pointer events on window.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useDragReorder } from "~client/composables/useDragReorder";
+import { withSetup } from "../helpers/withSetup";
 
 const CARD_HEIGHT = 92;
 const ITEM_HEIGHT = CARD_HEIGHT + 8; // + the list's row gap, per useDragReorder.ts
@@ -171,5 +172,19 @@ describe("useDragReorder", () => {
 
     expect(onReorder).toHaveBeenCalledTimes(2);
     expect(onReorder).toHaveBeenLastCalledWith(2, 3);
+  });
+
+  it("removes the window drag listeners on unmount, even mid-drag (before pointerup ever fires)", () => {
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    const { result, unmount } = withSetup(() => useDragReorder(vi.fn()));
+    const card = makeCard();
+    result.onPointerDown(pointerDownEvent(card, 0), 0, 4, card); // mid-drag, no pointerup/pointercancel yet
+
+    unmount();
+
+    expect(removeSpy).toHaveBeenCalledWith("pointermove", expect.any(Function));
+    expect(removeSpy).toHaveBeenCalledWith("pointerup", expect.any(Function));
+    expect(removeSpy).toHaveBeenCalledWith("pointercancel", expect.any(Function));
+    removeSpy.mockRestore();
   });
 });
