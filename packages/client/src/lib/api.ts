@@ -1,16 +1,29 @@
 /**
- * Thin fetch wrapper. The bearer token for the app's single-token auth lives in localStorage,
- * entered once via AuthGate.vue on the first 401 the app sees.
+ * Thin fetch wrapper. The bearer token lives in localStorage, entered once via AuthGate.vue on
+ * the first 401 the app sees.
  *
  * `apiBase()` matters once the client runs inside a Capacitor WebView: there's no dev-server
- * proxy on-device, so every request needs an absolute LAN server URL. Empty string in the
- * browser/dev-server case, so the existing Vite proxy keeps working unchanged there — this only
- * does something different on a native build.
+ * proxy and no same-origin server to fall back to on-device, so every request needs an absolute
+ * server URL. On native, that's whatever the user entered and verified via ServerGate.vue
+ * (composables/useServerConnection.ts) — never baked in at build time, so moving/rebuilding the
+ * backend never requires a new APK. On web, this stays "" (same-origin; the existing Vite dev
+ * proxy or the server's own single-origin static serving handles the rest).
  */
+import { isNative } from "./platform";
+
 const TOKEN_KEY = "liftr.token";
+const SERVER_URL_KEY = "liftr.serverUrl";
 
 export function apiBase(): string {
-  return import.meta.env.VITE_API_BASE ?? "";
+  return isNative() ? getServerUrl() : "";
+}
+
+export function getServerUrl(): string {
+  return localStorage.getItem(SERVER_URL_KEY) ?? "";
+}
+
+export function setServerUrl(url: string) {
+  localStorage.setItem(SERVER_URL_KEY, url);
 }
 
 export function getToken(): string {

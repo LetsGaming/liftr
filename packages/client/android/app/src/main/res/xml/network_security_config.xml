@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allows plain http:// to any host — the app connects to a server URL the user enters at
+  runtime (see ServerGate.vue), which is very often a self-hosted instance on a LAN with no
+  reverse-proxy/TLS in front yet (see docs/operations/docker-deployment.md). Without this,
+  Android 9+ blocks cleartext traffic by default and every http:// server URL would silently
+  fail to connect. Same model as Home Assistant's companion app: you're pointing this at a
+  server you trust, not browsing the open web.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

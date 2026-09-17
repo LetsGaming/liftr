@@ -1,7 +1,23 @@
+import { flushPromises } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
-import ProfilePage from "~client/pages/ProfilePage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
+
+const { isNativeMock, isAndroidMock, getInfoMock, browserOpenMock } = vi.hoisted(() => ({
+  isNativeMock: vi.fn().mockReturnValue(false),
+  isAndroidMock: vi.fn().mockReturnValue(false),
+  getInfoMock: vi.fn().mockResolvedValue({ version: "1.0.0" }),
+  browserOpenMock: vi.fn(),
+}));
+vi.mock("~client/lib/platform", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~client/lib/platform")>();
+  return { ...actual, isNative: isNativeMock, isAndroid: isAndroidMock };
+});
+vi.mock("@capacitor/app", () => ({ App: { getInfo: getInfoMock } }));
+vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpenMock } }));
+
+import ProfilePage from "~client/pages/ProfilePage.vue";
+import { useAppUpdate } from "~client/composables/useAppUpdate";
 
 // Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
@@ -44,11 +60,28 @@ import * as authService from "~client/services/authService";
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  isNativeMock.mockReturnValue(false);
+  isAndroidMock.mockReturnValue(false);
+  getInfoMock.mockResolvedValue({ version: "1.0.0" });
+  localStorage.clear();
+  // useAppUpdate.ts is a module-level singleton (see its header comment) — reset it directly
+  // rather than re-importing the module, so a result from one test never leaks into the next.
+  // currentVersion resets to __APP_VERSION__ (matching the module's own non-Android default,
+  // isAndroidMock already false at this point), not null — non-Android never calls check() to
+  // repopulate it.
+  const appUpdate = useAppUpdate();
+  appUpdate.currentVersion.value = __APP_VERSION__;
+  appUpdate.latestVersion.value = null;
+  appUpdate.downloadUrl.value = null;
+  appUpdate.error.value = null;
   Object.assign(bodyweightState, { entries: [], loaded: false, error: false, latest: null });
   Object.assign(themeState, { theme: "dark" });
   Object.assign(xpState, { level: 3, totalXp: 450, showXp: true, loaded: false });
   Object.assign(settingsState, { profile: null, profileLoaded: false, ownedEquipment: null, gymSetup: null });
-  vi.stubGlobal("URL", { ...URL, createObjectURL: vi.fn(() => "blob:mock"), revokeObjectURL: vi.fn() });
+  // Object.assign onto the real URL constructor (not a `{ ...URL }` spread into a plain object,
+  // which drops constructibility and broke `new URL(...)` for anything else in this file that
+  // needs it, e.g. useServerConnection's normalizeServerUrl).
+  vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:mock"), revokeObjectURL: vi.fn() }));
   vi.mocked(authService.getMe).mockResolvedValue({ id: "u1", username: "owner", name: "Owner", role: "owner" });
   vi.mocked(authService.listMembers).mockResolvedValue([]);
 });
@@ -159,6 +192,98 @@ describe("ProfilePage", () => {
 
     expect(authService.removeMember).toHaveBeenCalledWith("m1");
     expect(wrapper.text()).not.toContain("Bob");
+  });
+
+  it("hides the Server section on web", () => {
+    const wrapper = mountWithProviders(ProfilePage);
+    expect(wrapper.findAll(".eyebrow").some((e) => e.text() === "Server")).toBe(false);
+  });
+
+  it("shows the current server URL on native, with a way to change it", async () => {
+    isNativeMock.mockReturnValue(true);
+    localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
+
+    const wrapper = mountWithProviders(ProfilePage);
+
+    expect(wrapper.text()).toContain("https://liftr.example.com");
+    expect(wrapper.find("input[aria-label='Server-Adresse']").exists()).toBe(false);
+
+    await wrapper.findAll("button").find((b) => b.text() === "Ändern")!.trigger("click");
+    expect(wrapper.find("input[aria-label='Server-Adresse']").exists()).toBe(true);
+  });
+
+  it("verifies and saves a changed server URL, then reloads", async () => {
+    isNativeMock.mockReturnValue(true);
+    localStorage.setItem("liftr.serverUrl", "https://old.example.com");
+    const reloadSpy = vi.fn();
+    vi.stubGlobal("location", { ...window.location, reload: reloadSpy });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ ok: true, service: "liftr" }) }),
+    );
+
+    const wrapper = mountWithProviders(ProfilePage);
+    // "Speichern" isn't unique to this section (bodyweight/profile/equipment/gym cards each have
+    // their own) — scope every lookup after "Ändern" to the Server section itself.
+    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Server")!;
+    await section.findAll("button").find((b) => b.text() === "Ändern")!.trigger("click");
+    await section.find("input[aria-label='Server-Adresse']").setValue("new.example.com");
+    await section.findAll("button").find((b) => b.text() === "Speichern")!.trigger("click");
+    await flushPromises();
+
+    expect(localStorage.getItem("liftr.serverUrl")).toBe("https://new.example.com");
+    expect(reloadSpy).toHaveBeenCalledOnce();
+  });
+
+  it("shows only the version (no update-check UI) on non-Android", () => {
+    const wrapper = mountWithProviders(ProfilePage);
+
+    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Version")!;
+    expect(section.exists()).toBe(true);
+    expect(section.text()).toContain("v0.0.0-test");
+    expect(section.findAll("button")).toHaveLength(0);
+    expect(getInfoMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the current version, checks for an update on mount, and offers a download once one is found", async () => {
+    isAndroidMock.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ tag_name: "v1.2.0", assets: [{ name: "liftr.apk", browser_download_url: "https://gh.example/liftr.apk" }] }),
+      }),
+    );
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushPromises();
+
+    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Version")!;
+    expect(section.text()).toContain("v1.0.0");
+    expect(section.text()).toContain("Update verfügbar: v1.2.0");
+
+    await section.findAll("button").find((b) => b.text() === "Herunterladen")!.trigger("click");
+    expect(browserOpenMock).toHaveBeenCalledWith({ url: "https://gh.example/liftr.apk" });
+  });
+
+  it("re-checks for an update on demand", async () => {
+    isAndroidMock.mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ tag_name: "v1.0.0", assets: [] }) }),
+    );
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushPromises();
+
+    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Version")!;
+    expect(section.text()).not.toContain("Update verfügbar");
+
+    await section.findAll("button").find((b) => b.text() === "Nach Updates suchen")!.trigger("click");
+    await flushPromises();
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
   });
 
   it("logs out and reloads the page", async () => {

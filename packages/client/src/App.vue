@@ -5,8 +5,12 @@ import { RouterLink, RouterView, useRoute } from "vue-router";
 import AppIcon from "./components/ui/AppIcon.vue";
 import AuthGate from "./components/ui/AuthGate.vue";
 import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
+import ServerGate from "./components/ui/ServerGate.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
+import { useAppUpdate } from "./composables/useAppUpdate";
+import { useToast } from "./composables/useToast";
 import { showingFinishRecap } from "./composables/useWorkoutChrome";
+import { isAndroid } from "./lib/platform";
 import { useActiveWorkoutStore } from "./stores/activeWorkoutStore";
 import { useOverallRankStore } from "./stores/overallRankStore";
 import { useRoutineStore } from "./stores/routineStore";
@@ -26,6 +30,16 @@ onMounted(() => {
   void xp.load();
   void settingsStore.load();
   void overallRank.load();
+
+  // Android-only: the update itself is an APK asset, meaningless on iOS/web. Silent on failure
+  // (see useAppUpdate.ts) — a launch-time check should never surface as an error to someone who
+  // didn't ask for one; ProfilePage.vue's own "Nach Updates suchen" button covers that case.
+  if (isAndroid()) {
+    const { check, updateAvailable, latestVersion } = useAppUpdate();
+    void check().then(() => {
+      if (updateAvailable.value) useToast().toast(`Update verfügbar: v${latestVersion.value} — siehe Profil`);
+    });
+  }
 });
 
 /** Setting the tier class at the shell lets --tier-accent/--tier-deep (tokens.css) cascade down
@@ -161,62 +175,32 @@ const forceActiveTo = computed(() => {
 </script>
 
 <template>
-  <AuthGate>
-    <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
-    <ToastHost />
-    <h1 class="sr-only">{{ pageTitle }}</h1>
-    <div class="app-shell" :class="overallTierClass">
-      <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
-        <div
-          v-if="xp.showXp && xp.loaded"
-          class="level-ring"
-          :style="{ '--progress': xp.progressPercent }"
-          role="img"
-          :aria-label="`Level ${xp.level}, ${xp.xpIntoLevel} von ${xp.xpForNextLevel} XP bis Level ${xp.level + 1}`"
-        >
-          <span>{{ xp.level }}</span>
+  <ServerGate>
+    <AuthGate>
+      <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
+      <ToastHost />
+      <h1 class="sr-only">{{ pageTitle }}</h1>
+      <div class="app-shell" :class="overallTierClass">
+        <div v-if="!hideTopHud && ((xp.showXp && xp.loaded) || (streak.loaded && streak.streak > 0))" class="top-hud">
+          <div
+            v-if="xp.showXp && xp.loaded"
+            class="level-ring"
+            :style="{ '--progress': xp.progressPercent }"
+            role="img"
+            :aria-label="`Level ${xp.level}, ${xp.xpIntoLevel} von ${xp.xpForNextLevel} XP bis Level ${xp.level + 1}`"
+          >
+            <span>{{ xp.level }}</span>
+          </div>
+          <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">
+            <AppIcon name="flame" /> {{ streak.streak }}
+          </div>
         </div>
-        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">
-          <AppIcon name="flame" /> {{ streak.streak }}
-        </div>
-      </div>
-      <nav class="side-nav" aria-label="Hauptnavigation">
-        <RouterLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="nav-link"
-          :class="{ 'router-link-active': item.to === forceActiveTo }"
-          :style="{ '--nav-color': item.color }"
-        >
-          <!-- eslint-disable-next-line vue/no-v-html -- static, hand-authored SVG paths only, never user input, see header comment -->
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="item.svg" />
-          {{ t(item.labelKey) }}
-        </RouterLink>
-        <div v-if="xp.showXp && xp.loaded" class="level-chip">
-          <span class="level-dot" aria-hidden="true"></span>
-          <b>Lv. {{ xp.level }}</b>
-          <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
-          <span class="xp-amount"><AppIcon name="sparkle" /> {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
-        </div>
-        <div v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
-          <AppIcon name="flame" /> {{ streak.streak }} Tage Serie
-        </div>
-      </nav>
-      <main class="main-content">
-        <RouterView v-slot="{ Component }">
-          <Transition name="route-fade" mode="out-in">
-            <component :is="Component" />
-          </Transition>
-        </RouterView>
-      </main>
-      <div class="bottom-chrome">
-        <nav class="tab-bar" aria-label="Hauptnavigation">
+        <nav class="side-nav" aria-label="Hauptnavigation">
           <RouterLink
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="tab-link"
+            class="nav-link"
             :class="{ 'router-link-active': item.to === forceActiveTo }"
             :style="{ '--nav-color': item.color }"
           >
@@ -224,10 +208,42 @@ const forceActiveTo = computed(() => {
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="item.svg" />
             {{ t(item.labelKey) }}
           </RouterLink>
+          <div v-if="xp.showXp && xp.loaded" class="level-chip">
+            <span class="level-dot" aria-hidden="true"></span>
+            <b>Lv. {{ xp.level }}</b>
+            <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
+            <span class="xp-amount"><AppIcon name="sparkle" /> {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
+          </div>
+          <div v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
+            <AppIcon name="flame" /> {{ streak.streak }} Tage Serie
+          </div>
         </nav>
+        <main class="main-content">
+          <RouterView v-slot="{ Component }">
+            <Transition name="route-fade" mode="out-in">
+              <component :is="Component" />
+            </Transition>
+          </RouterView>
+        </main>
+        <div class="bottom-chrome">
+          <nav class="tab-bar" aria-label="Hauptnavigation">
+            <RouterLink
+              v-for="item in navItems"
+              :key="item.to"
+              :to="item.to"
+              class="tab-link"
+              :class="{ 'router-link-active': item.to === forceActiveTo }"
+              :style="{ '--nav-color': item.color }"
+            >
+              <!-- eslint-disable-next-line vue/no-v-html -- static, hand-authored SVG paths only, never user input, see header comment -->
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="item.svg" />
+              {{ t(item.labelKey) }}
+            </RouterLink>
+          </nav>
+        </div>
       </div>
-    </div>
-  </AuthGate>
+    </AuthGate>
+  </ServerGate>
 </template>
 
 <style scoped>

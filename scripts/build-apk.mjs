@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * Builds an installable Android APK against a given backend URL, without cutting a GitHub
- * release. Useful for testing a Docker-deployed backend from a real device.
+ * Builds an installable Android APK, without cutting a GitHub release. Useful for testing
+ * against a Docker-deployed backend from a real device — the app itself asks for that backend's
+ * URL on first launch (see ServerGate.vue/useServerConnection.ts) and verifies it before
+ * proceeding, so no backend URL needs to be baked in at build time.
  *
- * Usage: node scripts/build-apk.mjs --backend-url http://192.168.1.50:3001 [--release]
+ * Usage: node scripts/build-apk.mjs [--release]
  *
  * Default: builds an unsigned debug APK (installs fine for personal side-loading via
  * `adb install`, no keystore needed). --release builds a signed release APK instead, reusing
@@ -20,29 +22,21 @@ const repoRoot = path.resolve(__dirname, "..");
 const log = (msg) => console.log(`[build-apk] ${msg}`);
 
 function parseArgs(argv) {
-  const args = { backendUrl: null, release: false };
+  const args = { release: false };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--backend-url" && argv[i + 1] !== undefined) args.backendUrl = argv[++i];
-    else if (argv[i] === "--release") args.release = true;
-  }
-  if (!args.backendUrl) {
-    throw new Error("--backend-url is required, e.g. --backend-url http://192.168.1.50:3001");
+    if (argv[i] === "--release") args.release = true;
   }
   return args;
 }
 
 function main() {
-  const { backendUrl, release } = parseArgs(process.argv.slice(2));
+  const { release } = parseArgs(process.argv.slice(2));
 
   log(`building @liftr/shared...`);
   execFileSync("pnpm", ["--filter", "@liftr/shared", "build"], { cwd: repoRoot, stdio: "inherit" });
 
-  log(`building client with VITE_API_BASE=${backendUrl}...`);
-  execFileSync("pnpm", ["--filter", "@liftr/client", "build"], {
-    cwd: repoRoot,
-    stdio: "inherit",
-    env: { ...process.env, VITE_API_BASE: backendUrl },
-  });
+  log(`building client...`);
+  execFileSync("pnpm", ["--filter", "@liftr/client", "build"], { cwd: repoRoot, stdio: "inherit" });
 
   log("syncing web assets into the Android project...");
   execFileSync("npx", ["cap", "sync", "android"], {
