@@ -26,6 +26,13 @@ const plannedRoute = computed(() => plannedRouteStore.byId(routeId.value));
 
 onMounted(() => {
   if (!plannedRouteStore.loaded) void plannedRouteStore.load();
+  // Deep-link from RouteList.vue's card "Starten" button (RunsPage.vue), same pattern as
+  // ProfilePage.vue's `?focus=account-app` — reuses this page's own live-tracking wiring instead
+  // of duplicating LiveRunScreen's invocation on the card's page.
+  if (route.query.autostart === "live") {
+    showLiveRun.value = true;
+    void router.replace(`/routes/${routeId.value}`);
+  }
 });
 
 const showLiveRun = ref(false);

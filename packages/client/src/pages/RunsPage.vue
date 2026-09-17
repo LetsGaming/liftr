@@ -5,6 +5,7 @@
 // where Workout's own finished-session history lives too, so neither tab duplicates it locally.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { nextTick, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
 import TabSwitcher from "../components/ui/TabSwitcher.vue";
@@ -19,6 +20,7 @@ import { useRunsStore } from "../stores/runsStore";
 const runsStore = useRunsStore();
 const plannedRouteStore = usePlannedRouteStore();
 const { toast } = useToast();
+const router = useRouter();
 
 const showRouteWizard = ref(false);
 const editingRoute = ref<PlannedRoute | null>(null);
@@ -47,7 +49,7 @@ const importError = ref<string | null>(null);
 const showManualForm = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-const { activeRoute, start: startFromRoute, dismiss: dismissRouteBanner } = useStartPlannedRoute();
+const { activeRoute, dismiss: dismissRouteBanner } = useStartPlannedRoute();
 const minutesInputRef = ref<HTMLInputElement | null>(null);
 
 const { manualName, manualDate, manualDistanceKm, manualMinutes, manualError, submitting, submitManual } =
@@ -92,6 +94,16 @@ async function onFileChosen(e: Event) {
     importing.value = false;
     (e.target as HTMLInputElement).value = "";
   }
+}
+
+// Card's "Starten" now matches RoutineList.vue's directness: straight into live GPS tracking
+// instead of the manual-entry hand-off (useStartPlannedRoute stays for the other, still-needed
+// manual paths — RouteOverviewPage.vue's "Manuell eintragen" and this page's own "Manuell"
+// toggle). Reuses RouteOverviewPage.vue's already-correct live-tracking wiring via a query param,
+// same deep-link pattern as ProfilePage.vue's `?focus=account-app`, instead of re-deriving
+// LiveRunScreen's invocation here.
+function startLiveFromCard(route: PlannedRoute) {
+  void router.push(`/routes/${route.id}?autostart=live`);
 }
 
 function saveManual() {
@@ -160,7 +172,7 @@ const WORKOUT_RUNS_TABS = [
 
     <RouteList
       @edit="openEditRouteWizard"
-      @start="(route) => startFromRoute(route)"
+      @start="startLiveFromCard"
       @create="openNewRouteWizard"
     />
     <RouteWizard
