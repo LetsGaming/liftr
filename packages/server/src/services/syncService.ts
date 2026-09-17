@@ -142,6 +142,22 @@ async function applyStartWorkout(db: LiftrDb, userId: string, item: StartWorkout
  * schema-level `.max()` would fail every item in the batch (including an unrelated
  * finish_workout) over one bad set.
  */
+// A set's loggedAt has no upper/lower bound at the schema level (routes/sync.ts's
+// logSetPayload) — it's a client-supplied date used verbatim, so it needs a server-trustworthy
+// anchor here instead. rankService.ts's peak-corroboration logic buckets sets by loggedAt's UTC
+// calendar day to decide whether a peak was reached on a genuinely separate real training day
+// (see its `dailyBest` map); without this bound, a single sync batch could carry two log_set
+// items for the SAME workout with loggedAt values fabricated days apart, tricking that bucketing
+// into treating them as two real occasions. Anchoring to the workout's own `startedAt` (set once,
+// at start_workout time, and immutable afterward) closes that: two log_sets belonging to one
+// workout can never straddle more than a bounded window, so they can't fabricate a second
+// corroborating day out of one sync transaction. A *legitimate* multi-day offline sync (several
+// real past workouts flushed together) is unaffected — each workout has its own startedAt anchor.
+// MAX_WORKOUT_DURATION_MS mirrors finishWorkoutPayload's 86_400s (24h) pausedSeconds ceiling
+// ("well beyond any real pause"); LOG_SET_TIME_GRACE_MS absorbs client clock skew.
+const MAX_WORKOUT_DURATION_MS = 86_400_000;
+const LOG_SET_TIME_GRACE_MS = 5 * 60_000;
+
 async function applyLogSet(db: LiftrDb, userId: string, item: LogSetItem): Promise<SyncResult> {
   const existing = await findSetByClientId(db, userId, item.clientId);
   if (existing) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
@@ -150,6 +166,18 @@ async function applyLogSet(db: LiftrDb, userId: string, item: LogSetItem): Promi
   // stale/bad queue entry (or another user's id, once accounts exist)
   const parent = await findWorkoutExerciseById(db, userId, item.payload.workoutExerciseId);
   if (!parent) return { clientId: item.clientId, status: "error", error: "unknown_workout_exercise" };
+
+  const workout = await findWorkoutById(db, userId, parent.workoutId);
+  if (!workout) return { clientId: item.clientId, status: "error", error: "unknown_workout_exercise" };
+
+  const loggedAtMs = item.payload.loggedAt.getTime();
+  const startedAtMs = workout.startedAt.getTime();
+  if (
+    loggedAtMs < startedAtMs - LOG_SET_TIME_GRACE_MS ||
+    loggedAtMs > startedAtMs + MAX_WORKOUT_DURATION_MS + LOG_SET_TIME_GRACE_MS
+  ) {
+    return { clientId: item.clientId, status: "error", error: "implausible_logged_at" };
+  }
 
   if ((item.payload.weightKg ?? 0) > MAX_PLAUSIBLE_WEIGHT_KG || item.payload.reps > MAX_PLAUSIBLE_REPS) {
     return { clientId: item.clientId, status: "error", error: "implausible_set" };
@@ -236,8 +264,16 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
   };
   if (workoutWithSets) {
     const allSets = workoutWithSets.workoutExercises.flatMap((we) => we.sets);
-    const effectiveDurationSeconds =
-      (item.payload.endedAt.getTime() - workoutWithSets.startedAt.getTime()) / 1000 - item.payload.pausedSeconds;
+    // Floored at 1s, not 0: plausibility.ts's paceSeverity treats a duration <= 0 as "no signal"
+    // and skips the pace check entirely, so clamping to exactly 0 would still silently disable it.
+    // A 1s floor keeps the check live and drives it straight to max severity (correctly, since a
+    // non-positive raw duration — from any input combination, not just an unbounded pausedSeconds —
+    // is itself implausible), instead of trusting endedAt/startedAt/pausedSeconds to always compose
+    // into something positive.
+    const effectiveDurationSeconds = Math.max(
+      1,
+      (item.payload.endedAt.getTime() - workoutWithSets.startedAt.getTime()) / 1000 - item.payload.pausedSeconds,
+    );
     const bodyweightKg = await getCurrentBodyweightKg(db, userId);
     const sex = await getUserSex(db, userId);
 

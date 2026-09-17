@@ -142,6 +142,107 @@ describe("applySyncBatch — log_set", () => {
     expect(results.find((r) => r.clientId === "bad")?.status).toBe("error");
     expect(results.find((r) => r.clientId === "good")?.status).toBe("created");
   });
+
+  // Anti-cheat: rankService's peak-corroboration logic buckets sets by loggedAt's UTC calendar
+  // day to decide whether a peak was reached on a genuinely separate real training occasion. If
+  // loggedAt has no bound relative to the workout it belongs to, a single sync batch can carry
+  // two log_set items for the SAME workout with client-supplied loggedAt values days apart,
+  // fabricating a "second day" that never happened — see rankService.ts's dailyBest map and its
+  // corroboration comment (~line 220).
+  it("rejects a loggedAt far outside its own workout's session window (closes the fabricated-corroboration bypass)", async () => {
+    await withStartedWorkout(); // workout-1 started 2026-01-01T10:00:00Z
+    const weekLater = new Date("2026-01-08T10:05:00Z");
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ loggedAt: weekLater })]);
+    expect(result).toMatchObject({ status: "error", error: "implausible_logged_at" });
+  });
+
+  it("rejects a loggedAt before its own workout even started", async () => {
+    await withStartedWorkout(); // workout-1 started 2026-01-01T10:00:00Z
+    const beforeStart = new Date("2025-12-30T10:05:00Z");
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ loggedAt: beforeStart })]);
+    expect(result).toMatchObject({ status: "error", error: "implausible_logged_at" });
+  });
+
+  it("accepts a loggedAt within the workout's plausible session window", async () => {
+    await withStartedWorkout(); // workout-1 started 2026-01-01T10:00:00Z
+    // Several hours into a long session — still well within the 24h bound.
+    const sameDayLater = new Date("2026-01-01T20:00:00Z");
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ loggedAt: sameDayLater })]);
+    expect(result!.status).toBe("created");
+  });
+});
+
+describe("applySyncBatch — log_set peak-corroboration anti-cheat (single-batch exploit)", () => {
+  function logSetItemFor(workoutExerciseId: string, loggedAt: Date, clientId: string): SyncItem {
+    return {
+      clientId,
+      type: "log_set",
+      payload: { workoutExerciseId, setIndex: 0, weightKg: 60, reps: 8, kind: "normal", loggedAt },
+    } as SyncItem;
+  }
+
+  it("does not let a single workout's two widely-separated log_set timestamps fabricate a corroborated peak", async () => {
+    await seedStandards(db, exerciseId);
+    const startedAt = new Date("2026-01-01T10:00:00Z");
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem({ payload: { id: "workout-1", startedAt, exercises: [{ id: "we-1", exerciseId, orderIndex: 0 }] } })]);
+
+    // Same performance logged "twice", loggedAt a week apart, but both items are part of ONE
+    // sync batch for the SAME still-open workout — exactly the exploit: fabricating two
+    // "distinct calendar days" without any real second training session.
+    const dayOne = new Date("2026-01-01T10:05:00Z");
+    const weekLater = new Date("2026-01-08T10:05:00Z");
+    const setResults = await applySyncBatch(db, OWNER_USER_ID, [
+      logSetItemFor("we-1", dayOne, "client-set-day1"),
+      logSetItemFor("we-1", weekLater, "client-set-fabricated-day2"),
+    ]);
+    // The fabricated second "day" must be rejected outright, not silently accepted.
+    expect(setResults[0]!.status).toBe("created");
+    expect(setResults[1]).toMatchObject({ status: "error", error: "implausible_logged_at" });
+
+    const [finishResult] = await applySyncBatch(db, OWNER_USER_ID, [
+      {
+        clientId: "client-finish-1",
+        type: "finish_workout",
+        payload: { workoutId: "workout-1", endedAt: new Date("2026-01-01T11:00:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+    // Only one real day of data survived, so the peak is NOT corroborated yet — no fabricated
+    // rank-up from a single sync batch.
+    const verdict = finishResult!.ranks!.find((r) => r.exerciseId === exerciseId);
+    expect(verdict!.rankedUp).toBe(false);
+  });
+
+  it("still corroborates correctly across a legitimate multi-day offline sync batch (separate real workouts)", async () => {
+    await seedStandards(db, exerciseId);
+    // Two genuinely separate workouts, each with its own server-anchored startedAt a week apart —
+    // a realistic "offline for a week, flush the whole backlog at once" scenario — submitted
+    // together in one batch. Each log_set's loggedAt stays within ITS OWN workout's session
+    // window, unlike the fabricated-single-workout exploit above.
+    const day1Start = new Date("2026-01-01T10:00:00Z");
+    const day8Start = new Date("2026-01-08T10:00:00Z");
+    const results = await applySyncBatch(db, OWNER_USER_ID, [
+      startWorkoutItem({ payload: { id: "workout-day1", startedAt: day1Start, exercises: [{ id: "we-day1", exerciseId, orderIndex: 0 }] } }),
+      logSetItemFor("we-day1", new Date("2026-01-01T10:05:00Z"), "client-set-day1"),
+      {
+        clientId: "client-finish-day1",
+        type: "finish_workout",
+        payload: { workoutId: "workout-day1", endedAt: new Date("2026-01-01T11:00:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+      startWorkoutItem({
+        clientId: "client-start-day8",
+        payload: { id: "workout-day8", startedAt: day8Start, exercises: [{ id: "we-day8", exerciseId, orderIndex: 0 }] },
+      }),
+      logSetItemFor("we-day8", new Date("2026-01-08T10:05:00Z"), "client-set-day8"),
+      {
+        clientId: "client-finish-day8",
+        type: "finish_workout",
+        payload: { workoutId: "workout-day8", endedAt: new Date("2026-01-08T11:00:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+    const day8Finish = results.find((r) => r.clientId === "client-finish-day8");
+    const verdict = day8Finish!.ranks!.find((r) => r.exerciseId === exerciseId);
+    expect(verdict!.rankedUp).toBe(true);
+  });
 });
 
 describe("applySyncBatch — finish_workout", () => {
@@ -332,6 +433,36 @@ describe("applySyncBatch — finish_workout", () => {
     expect(result!.status).toBe("created");
     expect(result!.ranks?.length).toBeGreaterThan(0);
     expect(result!.ranks?.every((r) => r.plausibilityReason == null)).toBe(true);
+  });
+
+  it("still flags pace (max severity) when endedAt <= startedAt, instead of silently skipping the check", async () => {
+    // endedAt at/before startedAt drives the raw (endedAt - startedAt)/1000 - pausedSeconds
+    // duration to <= 0 even with pausedSeconds: 0 — the schema's 24h cap on pausedSeconds alone
+    // doesn't stop this, since startedAt/endedAt themselves are unbounded client-supplied dates.
+    // Without a floor at the computation site, plausibility.ts's paceSeverity treats a <= 0
+    // duration as "no signal" and returns severity 0, i.e. the pace check is silently disabled.
+    await seedStandards(db, exerciseId);
+    await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
+    const startedAt = new Date("2026-01-01T10:00:00Z");
+    const setItems: SyncItem[] = Array.from({ length: 5 }, (_, i) =>
+      logSetItemAt(new Date(startedAt.getTime() + i * 1000), `client-nonpositive-set-${i}`),
+    );
+    await applySyncBatch(db, OWNER_USER_ID, setItems);
+
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
+      {
+        clientId: "finish-nonpositive-1",
+        type: "finish_workout",
+        payload: { workoutId: "workout-1", endedAt: startedAt, pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+
+    expect(result!.status).toBe("created");
+    expect(result!.ranks?.length).toBeGreaterThan(0);
+    expect(result!.ranks?.some((r) => r.plausibilityReason === "pace")).toBe(true);
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "workout-1") });
+    // Max severity clamps the multiplier to PLAUSIBILITY_FLOOR (0.05), not just "somewhat below 1".
+    expect(workoutRow!.plausibilityMultiplier).toBeCloseTo(0.05, 5);
   });
 
   it("triggers the improbable_jump flag for a bodyweight exercise using bodyweight-adjusted ratios", async () => {

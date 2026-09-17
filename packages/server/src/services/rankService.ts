@@ -167,30 +167,6 @@ export async function recomputeRankForExercise(
 
   const bestDayKey = bestSet.loggedAt.toISOString().slice(0, 10);
 
-  const previousRank = await findRankByExerciseId(db, userId, exerciseId);
-
-  // Ratchet-only peak snapshot: peak is locked in at the moment it's achieved and never
-  // recomputed retroactively against today's bodyweight, so a legitimate bodyweight increase
-  // alone can never erase a peak. `storedPeak` is null for a brand-new exercise (or one with no
-  // prior peak yet) — `ratchetPeak`'s own corroboration gate applies here exactly like
-  // everywhere else (`if (!isCorroborated) return storedPeak`), so a genuinely first-ever session
-  // does NOT seed a peak by itself; it stays null until a second, separate day matches or exceeds
-  // it (see the corroboration block below and tests/server/services/rankAntiCheat.test.ts).
-  const storedPeak =
-    previousRank?.peakTier != null &&
-    previousRank.peakDivision != null &&
-    previousRank.peakLp != null &&
-    previousRank.peakE1rm != null &&
-    previousRank.peakAchievedAt != null
-      ? {
-          tier: previousRank.peakTier,
-          division: previousRank.peakDivision,
-          lp: previousRank.peakLp,
-          e1rm: previousRank.peakE1rm,
-          achievedAt: previousRank.peakAchievedAt.getTime(),
-        }
-      : null;
-
   // Plausibility gate: a badly-flagged session's sets are excluded from peak
   // advancement entirely, not just discounted — the peak ratchet is the one thing in this system
   // meant to be un-fakeable. PEAK_ELIGIBILITY_FLOOR (module-level, see above) intentionally
@@ -239,97 +215,148 @@ export async function recomputeRankForExercise(
   const lastTrainedAtMs = loggedSets.reduce((max, s) => Math.max(max, s.loggedAt.getTime()), 0);
   const daysSinceLastTrained = Math.floor((Date.now() - lastTrainedAtMs) / (24 * 60 * 60 * 1000));
 
-  const previousCurrentBand = previousRank
-    ? { tier: previousRank.tier, division: previousRank.division, lp: previousRank.lp }
-    : null;
+  const prKind = metric === "reps" ? "reps" : "e1rm";
 
-  const { rank, peak, rankedUp, currentBand } = computeRankCore({
-    thresholds,
-    dailyBest,
-    bestValue,
-    peakMetricValue: bestE1rm,
-    bestDayKey,
-    bestAchievedAtMs: bestSet.loggedAt.getTime(),
-    storedPeak,
-    previousCurrentBand,
-    peakEligible,
-    plausibilityMultiplier,
-    daysSinceLastTrained,
-  });
+  // Race-closing transaction: everything above this point is read-only and idempotent to re-read
+  // (daily-best/corroboration history, standards, bodyweight), so it stays plain `await`ed I/O
+  // outside any transaction. But "read the current rank/PR -> decide if this is a rank-up/PR ->
+  // write the new rank + rankEvents/prs row" is the part that raced (see this function's own
+  // doc comment history / the task this was fixed under): two overlapping recomputes for the same
+  // exercise could both read the same stale previous rank before either wrote, independently
+  // decide a rank-up occurred, and both write — duplicate rankEvents rows, or one write silently
+  // clobbering the other. Wrapping that whole read-decide-write sequence in one *synchronous*
+  // `db.transaction()` closes it: SQLite serializes transactions, so a second, overlapping call
+  // blocks until the first one's write has committed, then re-reads the now-updated row instead of
+  // racing against a stale one.
+  //
+  // better-sqlite3's `db.transaction()` callback must be fully synchronous — the native binding
+  // commits as soon as the callback returns, and an async callback returns a pending Promise
+  // immediately (on the first `await`), which better-sqlite3 does NOT wait for, silently breaking
+  // the transaction boundary. So every read/write below drives its Drizzle query builder to
+  // completion via `.sync()`/`.run()` rather than `await` (see plannedRouteService.ts's
+  // `updatePlannedRoute` for the same idiom).
+  return db.transaction((tx) => {
+    // Read fresh, inside the transaction — NOT reusing an earlier async read of `previousRank`,
+    // which would reintroduce the exact TOCTOU (time-of-check-to-time-of-use) gap this transaction
+    // exists to close.
+    const previousRank = findRankByExerciseId(tx, userId, exerciseId).sync();
 
-  // Next-target predictions follow the *decayed* current band, not the freshly-resolved naive
-  // value — a softened display would otherwise show a next target the lifter has technically
-  // already cleared.
-  const currentOrdinal = ordinal(currentBand.tier, currentBand.division);
-  const decayedNextTarget = nextTargetAtOrdinal(thresholds, currentOrdinal);
-  const nextTargetWeightKg =
-    metric === "load_ratio" && decayedNextTarget
-      ? nextLoadTarget(decayedNextTarget.threshold, bodyweightKg, preferredReps).weightKg
-      : null;
-  const nextTargetReps =
-    metric === "load_ratio" && decayedNextTarget
-      ? nextLoadTarget(decayedNextTarget.threshold, bodyweightKg, preferredReps).reps
-      : metric === "reps"
-        ? (decayedNextTarget?.threshold ?? null)
+    // Ratchet-only peak snapshot: peak is locked in at the moment it's achieved and never
+    // recomputed retroactively against today's bodyweight, so a legitimate bodyweight increase
+    // alone can never erase a peak. `storedPeak` is null for a brand-new exercise (or one with no
+    // prior peak yet) — `ratchetPeak`'s own corroboration gate applies here exactly like
+    // everywhere else (`if (!isCorroborated) return storedPeak`), so a genuinely first-ever
+    // session does NOT seed a peak by itself; it stays null until a second, separate day matches
+    // or exceeds it (see the corroboration block below and
+    // tests/server/services/rankAntiCheat.test.ts).
+    const storedPeak =
+      previousRank?.peakTier != null &&
+      previousRank.peakDivision != null &&
+      previousRank.peakLp != null &&
+      previousRank.peakE1rm != null &&
+      previousRank.peakAchievedAt != null
+        ? {
+            tier: previousRank.peakTier,
+            division: previousRank.peakDivision,
+            lp: previousRank.peakLp,
+            e1rm: previousRank.peakE1rm,
+            achievedAt: previousRank.peakAchievedAt.getTime(),
+          }
         : null;
 
-  // Read-only history of this rank-up — not a new reward mechanic, just a log of the event
-  // `rankedUp` above already detects. Fires exactly once per genuine peak
-  // tier/division change, never per set logged and never on a decay-only recompute (decay can
-  // only move `currentBand`, which `rankedUp` no longer depends on).
-  if (rankedUp && peak) {
-    await insertRankEvent(db, userId, {
-      exerciseId,
-      tier: peak.tier,
-      division: peak.division,
-      occurredAt: bestSet.loggedAt,
-      plausibilityReason,
-    });
-  }
+    const previousCurrentBand = previousRank
+      ? { tier: previousRank.tier, division: previousRank.division, lp: previousRank.lp }
+      : null;
 
-  await upsertRank(db, userId, {
-    exerciseId,
-    tier: currentBand.tier,
-    division: currentBand.division,
-    lp: currentBand.lp,
-    e1rm: bestE1rm,
-    trust: rank.trust,
-    nextTargetWeightKg,
-    nextTargetReps,
-    peakTier: peak?.tier ?? null,
-    peakDivision: peak?.division ?? null,
-    peakLp: peak?.lp ?? null,
-    peakE1rm: peak?.e1rm ?? null,
-    peakAchievedAt: peak ? new Date(peak.achievedAt) : null,
+    const { rank, peak, rankedUp, currentBand } = computeRankCore({
+      thresholds,
+      dailyBest,
+      bestValue,
+      peakMetricValue: bestE1rm,
+      bestDayKey,
+      bestAchievedAtMs: bestSet.loggedAt.getTime(),
+      storedPeak,
+      previousCurrentBand,
+      peakEligible,
+      plausibilityMultiplier,
+      daysSinceLastTrained,
+    });
+
+    // Next-target predictions follow the *decayed* current band, not the freshly-resolved naive
+    // value — a softened display would otherwise show a next target the lifter has technically
+    // already cleared.
+    const currentOrdinal = ordinal(currentBand.tier, currentBand.division);
+    const decayedNextTarget = nextTargetAtOrdinal(thresholds, currentOrdinal);
+    const nextTargetWeightKg =
+      metric === "load_ratio" && decayedNextTarget
+        ? nextLoadTarget(decayedNextTarget.threshold, bodyweightKg, preferredReps).weightKg
+        : null;
+    const nextTargetReps =
+      metric === "load_ratio" && decayedNextTarget
+        ? nextLoadTarget(decayedNextTarget.threshold, bodyweightKg, preferredReps).reps
+        : metric === "reps"
+          ? (decayedNextTarget?.threshold ?? null)
+          : null;
+
+    // Read-only history of this rank-up — not a new reward mechanic, just a log of the event
+    // `rankedUp` above already detects. Fires exactly once per genuine peak
+    // tier/division change, never per set logged and never on a decay-only recompute (decay can
+    // only move `currentBand`, which `rankedUp` no longer depends on).
+    if (rankedUp && peak) {
+      insertRankEvent(tx, userId, {
+        exerciseId,
+        tier: peak.tier,
+        division: peak.division,
+        occurredAt: bestSet.loggedAt,
+        plausibilityReason,
+      }).run();
+    }
+
+    upsertRank(tx, userId, {
+      exerciseId,
+      tier: currentBand.tier,
+      division: currentBand.division,
+      lp: currentBand.lp,
+      e1rm: bestE1rm,
+      trust: rank.trust,
+      nextTargetWeightKg,
+      nextTargetReps,
+      peakTier: peak?.tier ?? null,
+      peakDivision: peak?.division ?? null,
+      peakLp: peak?.lp ?? null,
+      peakE1rm: peak?.e1rm ?? null,
+      peakAchievedAt: peak ? new Date(peak.achievedAt) : null,
+    }).run();
+
+    // PR detection: a new best e1RM (or, for rep-based exercises, a new best rep count) is a PR —
+    // but only when this session clears PR_ELIGIBILITY_FLOOR above. A badly-flagged session
+    // cannot produce a PR record at all, not merely a discounted one: `bestE1rm` itself is never
+    // discounted (unlike XP/LP), so without this gate a fabricated or mis-entered set would still
+    // write a permanent PR row even while its XP/LP contribution was heavily reduced. Read fresh
+    // (inside the transaction, same TOCTOU reasoning as `previousRank` above) rather than reusing
+    // an earlier async read.
+    const existingPr = findBestPrByKind(tx, userId, exerciseId, prKind).sync();
+    let newPr: RecomputeResult["newPr"] = null;
+    if (prEligible && (!existingPr || bestE1rm > existingPr.value)) {
+      insertPr(tx, userId, {
+        exerciseId,
+        kind: prKind,
+        value: bestE1rm,
+        setId: bestSet.id,
+        achievedAt: bestSet.loggedAt,
+      }).run();
+      newPr = { kind: prKind, value: bestE1rm };
+    }
+
+    return {
+      rankedUp,
+      newPr,
+      tier: currentBand.tier,
+      division: currentBand.division,
+      lp: currentBand.lp,
+      prevLp: previousRank?.lp ?? 0,
+    };
   });
-
-  // PR detection: a new best e1RM (or, for rep-based exercises, a new best rep count) is a PR —
-  // but only when this session clears PR_ELIGIBILITY_FLOOR above. A badly-flagged session cannot
-  // produce a PR record at all, not merely a discounted one: `bestE1rm` itself is never
-  // discounted (unlike XP/LP), so without this gate a fabricated or mis-entered set would still
-  // write a permanent PR row even while its XP/LP contribution was heavily reduced.
-  const prKind = metric === "reps" ? "reps" : "e1rm";
-  const existingPr = await findBestPrByKind(db, userId, exerciseId, prKind);
-  let newPr: RecomputeResult["newPr"] = null;
-  if (prEligible && (!existingPr || bestE1rm > existingPr.value)) {
-    await insertPr(db, userId, {
-      exerciseId,
-      kind: prKind,
-      value: bestE1rm,
-      setId: bestSet.id,
-      achievedAt: bestSet.loggedAt,
-    });
-    newPr = { kind: prKind, value: bestE1rm };
-  }
-
-  return {
-    rankedUp,
-    newPr,
-    tier: currentBand.tier,
-    division: currentBand.division,
-    lp: currentBand.lp,
-    prevLp: previousRank?.lp ?? 0,
-  };
 }
 
 export interface RankEventsByWeekday {
