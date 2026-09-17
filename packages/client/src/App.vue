@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import AppIcon from "./components/ui/AppIcon.vue";
 import AuthGate from "./components/ui/AuthGate.vue";
 import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
@@ -19,6 +19,7 @@ import { useStreakStore } from "./stores/streakStore";
 import { useXpStore } from "./stores/xpStore";
 
 const { t } = useI18n();
+const router = useRouter();
 const routineStore = useRoutineStore();
 const streak = useStreakStore();
 const xp = useXpStore();
@@ -46,7 +47,11 @@ onMounted(() => {
   if (isAndroid()) {
     const { check, updateAvailable, latestVersion } = useAppUpdate();
     void check().then(() => {
-      if (updateAvailable.value) useToast().toast(`Update verfügbar: v${latestVersion.value} — siehe Profil`);
+      if (updateAvailable.value) {
+        useToast().toast(`Update verfügbar: v${latestVersion.value} — antippen für Details`, () =>
+          router.push({ path: "/profile", query: { focus: "account-app" } }),
+        );
+      }
     });
   }
 });
