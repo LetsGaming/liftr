@@ -7,11 +7,19 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+### Added
+
+- **You'll now be signed out automatically after 90 days of inactivity.** Every action while using the app extends this window, so an account in regular use is never affected — this only bounds how long a lost or leaked login stays valid.
+
 ### Fixed
 
+- **Live GPS run tracking didn't work at all in the installed Android app.** The app never requested location permission, so starting a run silently failed to record any route. Fixed for the next release.
 - **A workout logged fully offline could silently vanish from history instead of syncing.** If the offline queue happened to flush out of order, finishing a workout could be reported as synced before it actually existed on the server, permanently losing that session with no error shown.
 - **A hung server connection (weak wifi, captive portal) could leave sync stuck "syncing" forever.** Requests now time out instead of waiting indefinitely.
 - **Pausing a live-tracked run didn't actually pause GPS recording.** Location fixes kept being added to the route while paused, inflating distance against a duration that correctly excluded the paused time — an artificially fast pace that could get a real run rejected.
+- **A sync item that could never succeed (a rejected or invalid entry) would silently retry forever on every reconnect.** After 3 days it now stops retrying and shows a sync-error indicator instead of quietly repeating in the background.
+- **Creating an account with a wrong invite code wasn't meaningfully rate-limited** — guessing the code with a fresh username each time bypassed the existing protection. Registration is now throttled per device regardless of the username tried.
+- **Creating or editing a planned route, or logging a manual/Health-Connect run, had no rate limit**, unlike every similar action elsewhere in the app.
 
 ### Changed
 
