@@ -55,7 +55,7 @@ was built on).
 
 ## CORS
 
-`packages/server/src/app.ts` registers `@fastify/cors` with `origin: env.allowedOrigins ?? true`.
+`packages/server/src/app.ts` registers `@fastify/cors` with `origin: corsOrigin(env.allowedOrigins)`.
 Unset (`LIFTR_ALLOWED_ORIGINS`, the default), CORS reflects any origin. `env.ts`'s own comment
 explains why that's an acceptable default rather than an oversight: auth here is a session bearer
 token sent in a header, not a cookie, so a malicious page gaining CORS "permission" to call the API
@@ -66,9 +66,12 @@ flip to fail-closed now" product decision, since real per-person passwords raise
 leaked token compared to the original single shared `LIFTR_TOKEN` — `LIFTR_ALLOWED_ORIGINS`
 already exists and works when set.
 
-Set `LIFTR_ALLOWED_ORIGINS` (a comma-separated allow-list, e.g.
-`https://liftr.example.com,capacitor://localhost`) once the server is reachable beyond the
-reverse proxy's own trusted network, to lock CORS down to known origins for real.
+Set `LIFTR_ALLOWED_ORIGINS` (a comma-separated allow-list, e.g. `https://liftr.example.com`) once
+the server is reachable beyond the reverse proxy's own trusted network, to lock CORS down to known
+origins for real. `corsOrigin` always appends the native app's own WebView origins
+(`NATIVE_APP_ORIGINS` in `app.ts`: `https://localhost` and `capacitor://localhost`) on top of
+whatever you list — those are the Capacitor app itself, not your deployment domain, so don't add
+them by hand and don't worry that a locked-down allow-list will lock the app out.
 
 ## File upload handling
 

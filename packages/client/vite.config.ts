@@ -24,6 +24,10 @@ export default defineConfig(({ command }) => ({
       registerType: "autoUpdate",
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
+        // Without this, workbox's default NavigationRoute answers *every* navigation with the
+        // precached app shell — so opening /api/health or an /images/ URL directly in a browser
+        // returns the onboarding page instead of the real response.
+        navigateFallbackDenylist: [/^\/api\//, /^\/images\//],
         runtimeCaching: [
           {
             urlPattern: /\/api\/exercises/,
