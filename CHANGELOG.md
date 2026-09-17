@@ -7,17 +7,19 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-17
+
 ### Fixed
 
 - **First login/setup on a new device could leave the app stuck with no data and no onboarding.** Setting the owner password (or logging in) on a device with no cached session left the level ring, streak, and onboarding wizard silently empty until the app was fully restarted — the app now reloads that data immediately after signing in.
 - **"Health Connect verbinden" crashed with `permissions.every is not a function`.** A wrong type in the Health Connect plugin masked a real runtime shape mismatch.
-- **The barbell/EZ-bar/trap-bar weight couldn't go below 5 kg**, even though some aluminum barbells weigh less. Lowered the floor to 1 kg, matching the dumbbell handle. Also fixed the settings page silently rejecting a dumbbell handle weight above its 10 kg cap.
+- **The barbell/EZ-bar/trap-bar weight couldn't go below 5 kg** , even though some aluminum barbells weigh less.
 
 ### Changed
 
-- **The app no longer draws under the Android status bar / camera notch**, including onboarding, the routine/route wizards, and the live-run screen.
-- **"Nach Updates suchen" now confirms when you're already up to date**, instead of appearing to do nothing.
-- **Profil page reorganized**: "Scheiben & Stange" merged into the Equipment card, and Server/Version/Diagnose/Abmelden merged into one "Konto & App" card. Trainingsprofil, Equipment, and Konto & App are now collapsed by default.
+- **The app no longer draws under the Android status bar / camera notch** , including onboarding, the routine/route wizards, and the live-run screen.
+- **"Nach Updates suchen" now confirms when you're already up to date** , instead of appearing to do nothing.
+- **Profil page reorganized** : "Scheiben & Stange" merged into the Equipment card, and Server/Version/Diagnose/Abmelden merged into one "Konto & App" card.
 
 ## [1.1.2] - 2026-09-17
 
