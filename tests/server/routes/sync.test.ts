@@ -143,4 +143,79 @@ describe("POST /api/sync", () => {
     expect(res.statusCode).toBe(400);
     expect(res.json()).toMatchObject({ error: "invalid_request" });
   });
+
+  describe("numeric bounds (DoS guard)", () => {
+    function logSetItem(payload: Record<string, unknown>) {
+      return {
+        items: [
+          {
+            clientId: "client-1",
+            type: "log_set",
+            payload: {
+              workoutExerciseId: "we-1",
+              setIndex: 0,
+              weightKg: 60,
+              reps: 8,
+              loggedAt: "2026-01-01T10:05:00Z",
+              ...payload,
+            },
+          },
+        ],
+      };
+    }
+
+    it("rejects an rpe below 1", async () => {
+      const res = await app.inject({ method: "POST", url: "/api/sync", payload: logSetItem({ rpe: 0 }) });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects an rpe above 10", async () => {
+      const res = await app.inject({ method: "POST", url: "/api/sync", payload: logSetItem({ rpe: 11 }) });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects an absurdly large weightKg", async () => {
+      const res = await app.inject({ method: "POST", url: "/api/sync", payload: logSetItem({ weightKg: 1_000_000 }) });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects a weightKg that overflows to Infinity", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/sync",
+        payload:
+          '{"items":[{"clientId":"client-1","type":"log_set","payload":{"workoutExerciseId":"we-1","setIndex":0,"weightKg":1e309,"reps":8,"loggedAt":"2026-01-01T10:05:00Z"}}]}',
+        headers: { "content-type": "application/json" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects an absurdly large reps count", async () => {
+      const res = await app.inject({ method: "POST", url: "/api/sync", payload: logSetItem({ reps: 1_000_001 }) });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects an absurdly large pausedSeconds on finish_workout", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/sync",
+        payload: {
+          items: [
+            {
+              clientId: "client-1",
+              type: "finish_workout",
+              payload: { workoutId: "workout-1", endedAt: "2026-01-01T11:00:00Z", pausedSeconds: 999_999 },
+            },
+          ],
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+  });
 });

@@ -156,7 +156,11 @@ export function xpAtLevel(level: number): number {
 }
 
 export function computeLevel(totalXp: number): LevelInfo {
-  const xp = Math.max(0, totalXp);
+  // Guard against non-finite/NaN input (e.g. a client-supplied Infinity reaching this via
+  // computeRunXp) before it can hang the `while` loops below or propagate as a NaN level.
+  // Falls back to level 0/0xp — the same shape as a brand-new user with no XP.
+  const safeXp = Number.isFinite(totalXp) ? totalXp : 0;
+  const xp = Math.max(0, safeXp);
   let level = Math.floor(Math.pow(xp / LEVEL_XP_SCALE, LEVEL_CURVE_EXPONENT));
 
   // Floating-point guard. `Math.pow` round-trips through logs, so at a level's exact boundary XP

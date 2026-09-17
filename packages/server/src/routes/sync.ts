@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AppDb } from "../db.js";
 import { userRateLimit } from "../lib/rateLimit.js";
 import { applySyncBatch } from "../services/syncService.js";
+import { boundedNumber } from "../schemas.js";
 import type { ZodFastifyInstance } from "../types.js";
 
 /**
@@ -31,9 +32,11 @@ const startWorkoutPayload = z.object({
 const logSetPayload = z.object({
   workoutExerciseId: z.string(),
   setIndex: z.number().int().min(0),
-  weightKg: z.number().min(0).nullable(),
-  reps: z.number().int().min(0),
-  rpe: z.number().nullable().optional(),
+  // 1000kg is far beyond any real lift but finite, so it can't hang downstream XP/level math.
+  weightKg: boundedNumber(0, 1000).nullable(),
+  reps: z.number().int().min(0).max(1000),
+  // RPE (rate of perceived exertion) is a 1-10 scale; the old schema had no upper/lower bound at all.
+  rpe: z.number().min(1).max(10).nullable().optional(),
   kind: z.enum(["normal", "warmup", "failure", "dropset"]).default("normal"),
   notes: z.string().max(500).nullable().optional(),
   loggedAt: z.coerce.date(),
@@ -42,7 +45,8 @@ const logSetPayload = z.object({
 const finishWorkoutPayload = z.object({
   workoutId: z.string(),
   endedAt: z.coerce.date(),
-  pausedSeconds: z.number().int().min(0).default(0),
+  // 86,400s = 24h, well beyond any real pause.
+  pausedSeconds: z.number().int().min(0).max(86_400).default(0),
   // Workout-level notes — see activeWorkoutStore.ts's finish(). Rides the same offline-safe
   // outbox path rather than a second online-only PATCH call bolted onto the finish flow.
   notes: z.string().max(500).nullable().optional(),
