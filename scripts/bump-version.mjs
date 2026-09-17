@@ -90,7 +90,12 @@ function summarizeUnreleasedBlock(rawUnreleasedText) {
   const categories = {};
   let currentCategory = "General";
 
-  const lines = rawUnreleasedText.split("\n");
+  // Split on \r?\n, not just \n: on a CRLF checkout (Windows, this repo's default), a bare "\n"
+  // split leaves a trailing \r on every line, and \r counts as a line terminator for regex `.`
+  // just like \n does — so `^###\s+(.+)$` silently never matches, every category comes back
+  // empty, and this whole function falls through to the generic "Internal updates and minor
+  // improvements." fallback, discarding every real changelog entry.
+  const lines = rawUnreleasedText.split(/\r?\n/);
   let currentItemRaw = "";
 
   const processAndFlushItem = () => {
