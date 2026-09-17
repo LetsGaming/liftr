@@ -54,7 +54,7 @@ if (props.defaultOpen) open.value = true;
   color: inherit;
 }
 .collapsible-head .eyebrow {
-  margin-bottom: 0;
+  margin: 0;
 }
 .chevron {
   width: 18px;
