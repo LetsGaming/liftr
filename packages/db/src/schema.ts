@@ -61,6 +61,13 @@ export const sessions = sqliteTable(
     lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch('subsec') * 1000)`),
+    /** Sliding-window expiry: set to `now + SESSION_TTL_MS` at creation (authRepository.ts's
+     *  `createSession`) and renewed to the same offset on every authenticated request
+     *  (`touchSession`, same UPDATE that already writes `lastUsedAt` per request — renewing here
+     *  costs nothing extra, so it isn't throttled). `requireAuth` rejects a request once this has
+     *  passed. Without this a leaked token stayed valid forever; a self-hosted household app still
+     *  wants *some* bound on that window, not just an explicit logout. */
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [uniqueIndex("sessions_token_hash_idx").on(t.tokenHash)],
 );
