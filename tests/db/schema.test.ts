@@ -143,7 +143,7 @@ describe("foreign key cascade behavior", () => {
 
   it("cascades session deletion when the owning user is deleted", async () => {
     const [user] = await db.insert(users).values({ username: "bob", name: "Bob", role: "member" }).returning();
-    await db.insert(sessions).values({ userId: user!.id, tokenHash: "abc" });
+    await db.insert(sessions).values({ userId: user!.id, tokenHash: "abc", expiresAt: new Date(Date.now() + 1000) });
     await db.delete(users).where(eq(users.id, user!.id));
     const remaining = await db.query.sessions.findMany({ where: eq(sessions.userId, user!.id) });
     expect(remaining).toEqual([]);

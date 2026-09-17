@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { LiftrDb } from "@liftr/db";
-import { findSessionByTokenHash, touchSession } from "./repositories/authRepository.js";
+import { deleteSessionByTokenHash, findSessionByTokenHash, touchSession } from "./repositories/authRepository.js";
 import { hashSessionToken } from "./lib/sessionTokens.js";
 
 /**
@@ -18,6 +18,12 @@ export function requireAuth(db: LiftrDb) {
     const tokenHash = hashSessionToken(token);
     const session = await findSessionByTokenHash(db, tokenHash);
     if (!session) {
+      return reply.code(401).send({ error: "unauthorized" });
+    }
+    if (session.expiresAt.getTime() <= Date.now()) {
+      // Lazily clean up the stale row here rather than relying on a separate sweep job — an
+      // expired session is only ever discovered at the point something tries to use it.
+      await deleteSessionByTokenHash(db, tokenHash);
       return reply.code(401).send({ error: "unauthorized" });
     }
     request.userId = session.userId;

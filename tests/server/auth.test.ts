@@ -1,8 +1,9 @@
 import Fastify from "fastify";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { LiftrDb } from "@liftr/db";
+import { eq } from "drizzle-orm";
+import { sessions, type LiftrDb } from "@liftr/db";
 import { hashSessionToken, generateSessionToken } from "~server/lib/sessionTokens.js";
-import { createSession } from "~server/repositories/authRepository.js";
+import { createSession, findSessionByTokenHash } from "~server/repositories/authRepository.js";
 import { requireAuth } from "~server/auth.js";
 import { createTestDb } from "./helpers/testDb.js";
 
@@ -39,5 +40,31 @@ describe("requireAuth", () => {
     const res = await app.inject({ method: "GET", url: "/protected", headers: { authorization: `Bearer ${token}` } });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ userId: "00000000-0000-4000-8000-000000000001", role: "owner" });
+  });
+
+  it("401s and deletes a session past its expiresAt", async () => {
+    const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
+    await createSession(db, "00000000-0000-4000-8000-000000000001", tokenHash);
+    await db.update(sessions).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(sessions.tokenHash, tokenHash));
+
+    const app = buildApp(db);
+    const res = await app.inject({ method: "GET", url: "/protected", headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(401);
+    expect(await findSessionByTokenHash(db, tokenHash)).toBeUndefined();
+  });
+
+  it("slides expiresAt forward on a valid request", async () => {
+    const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
+    await createSession(db, "00000000-0000-4000-8000-000000000001", tokenHash);
+    const before = (await findSessionByTokenHash(db, tokenHash))!.expiresAt.getTime();
+    await db.update(sessions).set({ expiresAt: new Date(before - 60_000) }).where(eq(sessions.tokenHash, tokenHash));
+
+    const app = buildApp(db);
+    const res = await app.inject({ method: "GET", url: "/protected", headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(200);
+    const after = (await findSessionByTokenHash(db, tokenHash))!.expiresAt.getTime();
+    expect(after).toBeGreaterThan(before - 60_000);
   });
 });
