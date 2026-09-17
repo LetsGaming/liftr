@@ -64,8 +64,17 @@ git pull
 docker compose up -d --build
 ```
 
-The bootstrap step is idempotent, so this is safe to run on every update — it won't re-seed or
-re-fetch anything that's already there.
+The bootstrap step (`packages/ingest/src/bootstrap.ts`) is safe to run on every update, but its
+idempotency check is coarse, not granular: it gates the *entire* catalog/standards/images/
+muscle-assets sequence on a single check ("does the `exercises` table have any row yet?"), not on
+each step having actually completed. On a normal update this is exactly "won't re-seed or re-fetch
+anything that's already there." But if a *first* run is interrupted after `ingestCatalog` has
+populated `exercises` and before a later step (e.g. `ingestImages`) finishes — a crash, an OOM
+kill, a network failure fetching images — the next start sees `exercises` non-empty and skips the
+whole sequence again, permanently, even though images/standards/muscle-assets never finished
+seeding. There's no per-step re-check or resume. Recovery in that case is the same as any other
+"start from scratch": wipe the `liftr-data` volume (or just `data/images` / the affected tables)
+and let bootstrap re-run from empty.
 
 ## Diagnosing problems
 

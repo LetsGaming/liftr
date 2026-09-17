@@ -3,19 +3,18 @@
 Liftr's security posture is scoped to what it actually is today: a self-hosted tracker meant to
 sit behind your own reverse proxy on your own network, with real per-person accounts (an owner
 plus any invited members) rather than one shared identity. This document describes what's
-actually implemented, not an aspirational threat model. See
-[audit/2026-09-14-security-pentest.md](../audit/2026-09-14-security-pentest.md) for the full
-pentest this posture was verified against, and
-[docs/superpowers/plans/2026-09-14-security-hardening.md](../docs/superpowers/plans/2026-09-14-security-hardening.md)
-for how the findings below were closed.
+actually implemented, not an aspirational threat model. (The 2026-09-14 pentest audit and its
+hardening implementation plan that this posture was originally verified against have since been
+removed from the repo; this document reflects the current, post-hardening state directly.)
 
 ## Auth model
 
 Every `/api/*` request (other than `/api/auth/{status,setup,login,register}`, which have to be
 reachable before a session exists) carries a session bearer token, checked against the `sessions`
 table (`packages/server/src/app.ts`'s `onRequest` hook calls `requireAuth`,
-`packages/server/src/auth.ts`), resolving to a real per-person `userId`/`role`
-(`packages/server/src/userContext.ts` no longer resolves a constant — see
+`packages/server/src/auth.ts`), resolving to a real per-person `userId`/`role` set on
+`request.userId`/`request.role` for the rest of the request to use (this used to live in a
+separate `userContext.ts` module; it's since been merged into `auth.ts`'s `requireAuth` — see
 [ADR 0006](adr/0006-multi-user-hardening.md) for the schema/scoping groundwork this login system
 was built on).
 
