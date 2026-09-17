@@ -59,6 +59,10 @@ export function useLiveRun() {
   });
 
   function onFix(pos: Position) {
+    // Dropped while paused too — otherwise distance (computed from points.value) keeps growing
+    // against elapsed time that correctly excludes the paused interval, feeding an artificially
+    // fast, implausible pace into the server's plausibility gate on finish.
+    if (status.value !== "tracking") return;
     if (pos.coords.accuracy != null && pos.coords.accuracy > MAX_FIX_ACCURACY_M) return;
     points.value = [
       ...points.value,
@@ -110,12 +114,14 @@ export function useLiveRun() {
     if (lastResumeMs != null) accumulatedMs += Date.now() - lastResumeMs;
     lastResumeMs = null;
     status.value = "paused";
+    stopTicking();
   }
 
   function resume() {
     if (status.value !== "paused") return;
     lastResumeMs = Date.now();
     status.value = "tracking";
+    startTicking();
   }
 
   async function clearWatch() {

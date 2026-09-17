@@ -52,12 +52,19 @@ describe("RecordsPage", () => {
   // dedicated tests further down override this per case.
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.assign(prState, { prs: [], loaded: false, error: false });
     Object.assign(runRankState, { prs: [], prsLoaded: true, prsError: false });
   });
 
   it("loads the PR list on mount", () => {
     mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
     expect(prState.load).toHaveBeenCalledOnce();
+  });
+
+  it("doesn't re-fetch PRs once already loaded (router.ts's beforeEnter already prefetched them)", () => {
+    prState.loaded = true;
+    mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    expect(prState.load).not.toHaveBeenCalled();
   });
 
   it("shows loading skeletons while prStore hasn't loaded yet", () => {

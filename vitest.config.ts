@@ -72,6 +72,17 @@ export default defineConfig({
         find: /^capacitor-health$/,
         replacement: fileURLToPath(new URL("./packages/client/node_modules/capacitor-health", import.meta.url)),
       },
+      // Same idb/@capacitor resolution mismatch as above, for useLiveRun.ts's `Geolocation`
+      // import — needed so tests/client/composables/useLiveRun.test.ts's
+      // vi.mock("@capacitor/geolocation", ...) actually intercepts the same module id
+      // useLiveRun.ts itself resolves (without this it silently falls through to the real web
+      // plugin, which throws "Permissions API not available" under node — a throw that happened
+      // to still land start() in the same catch branch its own tests were asserting on, masking
+      // the mock never having applied at all).
+      {
+        find: /^@capacitor\/geolocation$/,
+        replacement: fileURLToPath(new URL("./packages/client/node_modules/@capacitor/geolocation", import.meta.url)),
+      },
     ],
   },
   // useAppUpdate.ts reads __APP_VERSION__, normally injected by packages/client/vite.config.ts's
