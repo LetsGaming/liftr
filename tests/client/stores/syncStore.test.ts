@@ -88,9 +88,13 @@ function setOnline(online: boolean) {
 }
 
 function seedOutbox(n: number, prefix = "c"): void {
+  // Real (recent) timestamps, not raw indices — flush() now filters items older than
+  // STUCK_AFTER_MS by wall-clock age, and `queuedAt: i` would put every seeded item decades in
+  // the past relative to Date.now().
+  const base = Date.now();
   for (let i = 0; i < n; i++) {
     const clientId = `${prefix}-${String(i).padStart(4, "0")}`;
-    outbox.set(clientId, { clientId, type: "log_set", payload: { i }, queuedAt: i });
+    outbox.set(clientId, { clientId, type: "log_set", payload: { i }, queuedAt: base + i });
   }
 }
 
@@ -287,6 +291,69 @@ describe("syncStore — flush()", () => {
     expect(removeOutboxItemMock).toHaveBeenCalledWith("c-0001");
     expect(removeOutboxItemMock).not.toHaveBeenCalledWith("c-0002");
     expect(outbox.has("c-0002")).toBe(true);
+    expect(store.pendingCount).toBe(1);
+  });
+
+  it("keeps retrying a recent error-status item indefinitely across many flushes (e.g. unknown_workout waiting on a sibling per 04895e8) — pins current unbounded-while-fresh retry behavior", async () => {
+    seedOutbox(1);
+    apiPostMock.mockResolvedValue({ results: [{ clientId: "c-0000", status: "error", error: "unknown_workout" }] });
+    const store = useSyncStore();
+
+    for (let i = 0; i < 10; i++) {
+      await store.flush();
+    }
+
+    expect(apiPostMock).toHaveBeenCalledTimes(10);
+    expect(outbox.has("c-0000")).toBe(true);
+    expect(store.pendingCount).toBe(1);
+    expect(store.stuckCount).toBe(0);
+  });
+
+  it("surfaces a per-item error status via lastError instead of staying silent", async () => {
+    seedOutbox(1);
+    apiPostMock.mockResolvedValue({ results: [{ clientId: "c-0000", status: "error", error: "implausible_set" }] });
+    const store = useSyncStore();
+
+    await store.flush();
+
+    expect(store.lastError).toBe("implausible_set");
+  });
+
+  it("stops sending an item that has been erroring for more than 72h, keeps it queued, and counts it as stuck", async () => {
+    const store = useSyncStore();
+    const stuckClientId = "c-old";
+    outbox.set(stuckClientId, {
+      clientId: stuckClientId,
+      type: "log_set",
+      payload: {},
+      queuedAt: Date.now() - 73 * 60 * 60 * 1000, // 73h ago, past the 72h cutoff
+    });
+
+    const results = await store.flush();
+
+    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(results).toEqual([]);
+    expect(outbox.has(stuckClientId)).toBe(true);
+    expect(store.pendingCount).toBe(1);
+    expect(store.stuckCount).toBe(1);
+    expect(store.lastError).toContain("1 Eintrag");
+  });
+
+  it("sends fresh items but excludes stuck ones from the same flush, and drains the fresh one normally", async () => {
+    const store = useSyncStore();
+    outbox.set("c-fresh", { clientId: "c-fresh", type: "log_set", payload: {}, queuedAt: Date.now() });
+    outbox.set("c-old", { clientId: "c-old", type: "log_set", payload: {}, queuedAt: Date.now() - 73 * 60 * 60 * 1000 });
+    apiPostMock.mockResolvedValue({ results: [{ clientId: "c-fresh", status: "created" }] });
+
+    const results = await store.flush();
+
+    expect(apiPostMock).toHaveBeenCalledTimes(1);
+    const body = apiPostMock.mock.calls[0]![1] as { items: { clientId: string }[] };
+    expect(body.items.map((i) => i.clientId)).toEqual(["c-fresh"]);
+    expect(results).toEqual([{ clientId: "c-fresh", status: "created" }]);
+    expect(outbox.has("c-fresh")).toBe(false);
+    expect(outbox.has("c-old")).toBe(true);
+    expect(store.stuckCount).toBe(1);
     expect(store.pendingCount).toBe(1);
   });
 

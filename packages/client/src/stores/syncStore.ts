@@ -28,6 +28,17 @@ export type RankVerdict = NonNullable<SyncResult["ranks"]>[number];
  *  chunking is what keeps the queue draining instead of wedging permanently. */
 const SYNC_CHUNK_SIZE = 150;
 
+/** An item that's still erroring after this long stops being sent on every flush. Deliberately
+ *  generous — it has to comfortably outlive the self-resolving `unknown_workout`/
+ *  `unknown_workout_exercise` case from 04895e8, where the item is *expected* to error until its
+ *  sibling start_workout/add_exercise lands, which normally happens within the same or next
+ *  flush (seconds to minutes), not days. A genuinely permanent error (`implausible_set`, a
+ *  workout that will never exist) is rare, but when it happens this is what stops it from
+ *  retrying — and cluttering every future flush — forever. The item is never deleted (no data
+ *  loss); it just stops being attempted and is counted in `stuckCount` so the UI has somewhere
+ *  to surface it later. */
+const STUCK_AFTER_MS = 72 * 60 * 60 * 1000; // 72h
+
 function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
@@ -37,6 +48,10 @@ function chunk<T>(items: T[], size: number): T[][] {
 export const useSyncStore = defineStore("sync", {
   state: () => ({
     pendingCount: 0,
+    /** Items that have been erroring for longer than STUCK_AFTER_MS and are no longer being
+     *  retried automatically. Not surfaced in the UI yet (SyncIndicator.vue could be extended to
+     *  show it), but the data is available. */
+    stuckCount: 0,
     flushing: false,
     lastError: null as string | null,
   }),
@@ -78,17 +93,35 @@ export const useSyncStore = defineStore("sync", {
       this.lastError = null;
       try {
         const items = await listOutboxItems();
-        if (items.length === 0) return [];
+        if (items.length === 0) {
+          this.stuckCount = 0;
+          return [];
+        }
+
+        this.pendingCount = items.length;
+        const now = Date.now();
+        const sendable = items.filter((item) => now - item.queuedAt <= STUCK_AFTER_MS);
+        this.stuckCount = items.length - sendable.length;
+        if (this.stuckCount > 0) {
+          this.lastError = `${this.stuckCount} Eintrag/Einträge werden seit über 72 Stunden nicht synchronisiert und dauerhaft nicht mehr automatisch erneut versucht.`;
+        }
+        if (sendable.length === 0) return [];
 
         const allResults: SyncResult[] = [];
-        for (const batch of chunk(items, SYNC_CHUNK_SIZE)) {
+        for (const batch of chunk(sendable, SYNC_CHUNK_SIZE)) {
           const results = await postSyncBatch(batch.map(({ clientId, type, payload }) => ({ clientId, type, payload })));
 
           for (const r of results) {
             if (r.status === "created" || r.status === "already_synced") {
               await removeOutboxItem(r.clientId);
+            } else if (r.status === "error") {
+              // Left queued — retried on the next flush (e.g. a transient 500, or an
+              // unknown_workout/unknown_workout_exercise waiting on a sibling item to land, per
+              // 04895e8) unless/until it crosses STUCK_AFTER_MS above. Surfaced here (rather
+              // than staying silent) so SyncIndicator.vue's "error" state can actually trigger —
+              // previously only a thrown/network-level failure set lastError.
+              this.lastError = r.error ?? "unknown_error";
             }
-            // status "error" is left queued — retried on the next flush (e.g. a transient 500)
           }
           allResults.push(...results);
           this.pendingCount = (await listOutboxItems()).length;
