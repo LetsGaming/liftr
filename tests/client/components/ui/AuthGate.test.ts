@@ -115,6 +115,11 @@ describe("AuthGate", () => {
     expect(mockPost).toHaveBeenCalledWith("/api/auth/setup", { password: "ownerpass1" });
     expect(mockSetToken).toHaveBeenCalledWith("owner-token");
     expect(wrapper.find(".protected").exists()).toBe(true);
+    // App.vue re-runs its App-mount store loads (streak/xp/settings/overallRank) off this emit —
+    // without it, a fresh install's first-ever session stayed permanently stale-empty (the
+    // onboarding wizard never showing, the top HUD never populating) until a full app restart.
+    // See App.vue's loadAppState()/showOnboarding watcher comments for the full bug.
+    expect(wrapper.emitted("authenticated")).toHaveLength(1);
   });
 
   it("submitting login stores the token and reveals the slot", async () => {
@@ -134,6 +139,7 @@ describe("AuthGate", () => {
 
     expect(mockPost).toHaveBeenCalledWith("/api/auth/login", { username: "owner", password: "ownerpass1" });
     expect(wrapper.find(".protected").exists()).toBe(true);
+    expect(wrapper.emitted("authenticated")).toHaveLength(1);
   });
 
   it("submitting join redeems the invite and reveals the slot", async () => {
@@ -158,6 +164,7 @@ describe("AuthGate", () => {
       password: "memberpass1",
     });
     expect(wrapper.find(".protected").exists()).toBe(true);
+    expect(wrapper.emitted("authenticated")).toHaveLength(1);
   });
 
   it("shows an error and stays gated when login is rejected", async () => {
@@ -178,6 +185,7 @@ describe("AuthGate", () => {
     expect(wrapper.text()).toContain("Benutzername oder Passwort falsch.");
     expect(wrapper.find(".gate").exists()).toBe(true);
     expect(wrapper.find(".protected").exists()).toBe(false);
+    expect(wrapper.emitted("authenticated")).toBeUndefined();
   });
 
   it("shows a rate-limit message (not the generic wrong-password copy) on a 429 from login", async () => {

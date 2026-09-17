@@ -8,14 +8,16 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
+import CollapsibleCard from "../components/ui/CollapsibleCard.vue";
 import StatTile from "../components/ui/StatTile.vue";
 import { useAppUpdate } from "../composables/useAppUpdate";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useDataExport } from "../composables/useDataExport";
 import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
-import { useHealthConnectImport, isHealthConnectAvailable } from "../composables/useHealthConnectImport";
+import { useHealthConnectImport } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
 import { useServerConnection } from "../composables/useServerConnection";
+import { useToast } from "../composables/useToast";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
 import { isAndroid, isNative } from "../lib/platform";
 import {
@@ -47,16 +49,15 @@ const {
   equipment,
   equipmentSaving,
   toggleEquipment,
-  saveEquipmentCard,
   ownedBarTypes,
   gymSaving,
   plateCount,
   adjustPlateCount,
   barWeight,
   adjustBarWeight,
-  saveGymCard,
+  saveEquipmentAndGymCard,
 } = useGymSetup(settingsStore);
-const { healthConnectStatus, healthConnectBusy, connectHealthConnect } = useHealthConnectImport();
+const { healthConnectStatus, healthConnectBusy, healthConnectAvailable, connectHealthConnect } = useHealthConnectImport();
 const { exporting, exportError, exportData } = useDataExport();
 
 // Native-only — the web build always talks to whatever origin it's served from, no server
@@ -91,9 +92,21 @@ const {
   updateAvailable: appUpdateAvailable,
   checking: appUpdateChecking,
   error: appUpdateError,
+  lastChecked: appUpdateLastChecked,
   check: checkForAppUpdate,
   openDownload: openAppUpdateDownload,
 } = useAppUpdate();
+
+/** The manual "Nach Updates suchen" button always needs *some* visible reaction to a tap — the
+ *  automatic on-launch check (App.vue) usually already settled `updateAvailable`/`error` before
+ *  the user gets here, so re-running check() alone can look like a dead button when it finds
+ *  nothing new. A toast makes every tap visibly do something regardless of the outcome. */
+async function checkForAppUpdateManually() {
+  await checkForAppUpdate();
+  if (!appUpdateAvailable.value && !appUpdateError.value) {
+    useToast().toast("Du bist auf dem neuesten Stand.");
+  }
+}
 
 const me = ref<Me | null>(null);
 const members = ref<Member[]>([]);
@@ -212,102 +225,100 @@ async function saveWeight() {
     </section>
 
     <section class="card surface-hybrid">
-      <h2 class="eyebrow">Trainingsprofil</h2>
-      <p class="hint">Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast.</p>
-      <div class="profile-field">
-        <span class="profile-label">Geschlecht</span>
-        <div class="chip-row">
-          <button class="chip" :class="{ active: sex === 'male' }" @click="sex = 'male'">Männlich</button>
-          <button class="chip" :class="{ active: sex === 'female' }" @click="sex = 'female'">Weiblich</button>
+      <CollapsibleCard title="Trainingsprofil">
+        <p class="hint">Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast.</p>
+        <div class="profile-field">
+          <span class="profile-label">Geschlecht</span>
+          <div class="chip-row">
+            <button class="chip" :class="{ active: sex === 'male' }" @click="sex = 'male'">Männlich</button>
+            <button class="chip" :class="{ active: sex === 'female' }" @click="sex = 'female'">Weiblich</button>
+          </div>
         </div>
-      </div>
-      <div class="profile-field">
-        <span class="profile-label">Geburtsjahr</span>
-        <input v-model="birthYearInput" class="profile-input" type="text" inputmode="numeric" placeholder="z.B. 1995" />
-      </div>
-      <div class="profile-field">
-        <span class="profile-label">Trainingserfahrung</span>
-        <div class="chip-row">
-          <button class="chip" :class="{ active: experienceLevel === 'beginner' }" @click="experienceLevel = 'beginner'">Anfänger</button>
-          <button class="chip" :class="{ active: experienceLevel === 'intermediate' }" @click="experienceLevel = 'intermediate'">Fortgeschritten</button>
-          <button class="chip" :class="{ active: experienceLevel === 'advanced' }" @click="experienceLevel = 'advanced'">Erfahren</button>
+        <div class="profile-field">
+          <span class="profile-label">Geburtsjahr</span>
+          <input v-model="birthYearInput" class="profile-input" type="text" inputmode="numeric" placeholder="z.B. 1995" />
         </div>
-      </div>
-      <div class="profile-field">
-        <span class="profile-label">Workouts pro Woche</span>
-        <div class="stepper-row">
-          <button type="button" aria-label="Weniger" @click="workoutsPerWeek = Math.max(1, workoutsPerWeek - 1)">−</button>
-          <span class="tnum">{{ workoutsPerWeek }}</span>
-          <button type="button" aria-label="Mehr" @click="workoutsPerWeek = Math.min(14, workoutsPerWeek + 1)">+</button>
+        <div class="profile-field">
+          <span class="profile-label">Trainingserfahrung</span>
+          <div class="chip-row">
+            <button class="chip" :class="{ active: experienceLevel === 'beginner' }" @click="experienceLevel = 'beginner'">Anfänger</button>
+            <button class="chip" :class="{ active: experienceLevel === 'intermediate' }" @click="experienceLevel = 'intermediate'">Fortgeschritten</button>
+            <button class="chip" :class="{ active: experienceLevel === 'advanced' }" @click="experienceLevel = 'advanced'">Erfahren</button>
+          </div>
         </div>
-      </div>
-      <button class="btn-primary profile-save" :disabled="profileSaving" @click="saveProfileCard">
-        {{ profileSaving ? "Wird gespeichert…" : "Speichern" }}
-      </button>
+        <div class="profile-field">
+          <span class="profile-label">Workouts pro Woche</span>
+          <div class="stepper-row">
+            <button type="button" aria-label="Weniger" @click="workoutsPerWeek = Math.max(1, workoutsPerWeek - 1)">−</button>
+            <span class="tnum">{{ workoutsPerWeek }}</span>
+            <button type="button" aria-label="Mehr" @click="workoutsPerWeek = Math.min(14, workoutsPerWeek + 1)">+</button>
+          </div>
+        </div>
+        <button class="btn-primary profile-save" :disabled="profileSaving" @click="saveProfileCard">
+          {{ profileSaving ? "Wird gespeichert…" : "Speichern" }}
+        </button>
+      </CollapsibleCard>
     </section>
 
     <section class="card surface-hybrid">
-      <h2 class="eyebrow">Equipment</h2>
-      <p class="hint">Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause).</p>
-      <span class="profile-label">Trainingsgerät</span>
-      <div class="chip-row wrap">
-        <button
-          v-for="slug in EQUIPMENT_SLUGS"
-          :key="slug"
-          class="chip"
-          :class="{ active: equipment.has(slug), locked: slug === 'bodyweight' }"
-          :aria-disabled="slug === 'bodyweight' ? 'true' : undefined"
-          :title="slug === 'bodyweight' ? 'Körpergewicht ist immer aktiv' : undefined"
-          @click="toggleEquipment(slug)"
-        >
-          {{ EQUIPMENT_LABEL_DE[slug] }}<span v-if="slug === 'bodyweight'" class="lock-mark" aria-hidden="true"> 🔒</span>
-        </button>
-      </div>
-      <span class="profile-label support-label">Weiteres Equipment</span>
-      <div class="chip-row wrap">
-        <button
-          v-for="slug in supportEquipmentSlugs"
-          :key="slug"
-          class="chip"
-          :class="{ active: equipment.has(slug) }"
-          @click="toggleEquipment(slug)"
-        >
-          {{ SUPPORT_EQUIPMENT_LABEL_DE[slug] }}
-        </button>
-      </div>
-      <button class="btn-primary profile-save" :disabled="equipmentSaving" @click="saveEquipmentCard">
-        {{ equipmentSaving ? "Wird gespeichert…" : "Speichern" }}
-      </button>
-    </section>
+      <CollapsibleCard title="Equipment">
+        <p class="hint">Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause).</p>
+        <span class="profile-label">Trainingsgerät</span>
+        <div class="chip-row wrap">
+          <button
+            v-for="slug in EQUIPMENT_SLUGS"
+            :key="slug"
+            class="chip"
+            :class="{ active: equipment.has(slug), locked: slug === 'bodyweight' }"
+            :aria-disabled="slug === 'bodyweight' ? 'true' : undefined"
+            :title="slug === 'bodyweight' ? 'Körpergewicht ist immer aktiv' : undefined"
+            @click="toggleEquipment(slug)"
+          >
+            {{ EQUIPMENT_LABEL_DE[slug] }}<span v-if="slug === 'bodyweight'" class="lock-mark" aria-hidden="true"> 🔒</span>
+          </button>
+        </div>
+        <span class="profile-label support-label">Weiteres Equipment</span>
+        <div class="chip-row wrap">
+          <button
+            v-for="slug in supportEquipmentSlugs"
+            :key="slug"
+            class="chip"
+            :class="{ active: equipment.has(slug) }"
+            @click="toggleEquipment(slug)"
+          >
+            {{ SUPPORT_EQUIPMENT_LABEL_DE[slug] }}
+          </button>
+        </div>
 
-    <section v-if="ownedBarTypes.length > 0" class="card surface-hybrid">
-      <h2 class="eyebrow">Scheiben &amp; Stange</h2>
-      <p class="hint">Macht die Scheiben-Anzeige beim Training exakt: nur was du wirklich hast, wird zum Beladen vorgeschlagen.</p>
-      <span class="profile-label">Stangengewicht</span>
-      <div class="plate-rows">
-        <div v-for="type in ownedBarTypes" :key="type" class="plate-row">
-          <span>{{ BAR_LABEL_DE[type] }}</span>
-          <div class="stepper-row">
-            <button type="button" :aria-label="`Weniger ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, -1)">−</button>
-            <span class="tnum">{{ barWeight(type) }} kg</span>
-            <button type="button" :aria-label="`Mehr ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, 1)">+</button>
+        <template v-if="ownedBarTypes.length > 0">
+          <span class="profile-label support-label">Stangengewicht</span>
+          <div class="plate-rows">
+            <div v-for="type in ownedBarTypes" :key="type" class="plate-row">
+              <span>{{ BAR_LABEL_DE[type] }}</span>
+              <div class="stepper-row">
+                <button type="button" :aria-label="`Weniger ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, -1)">−</button>
+                <span class="tnum">{{ barWeight(type) }} kg</span>
+                <button type="button" :aria-label="`Mehr ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, 1)">+</button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <span class="profile-label support-label">Scheiben pro Größe</span>
-      <div class="plate-rows">
-        <div v-for="size in PLATE_SIZES_KG" :key="size" class="plate-row">
-          <span class="tnum">{{ size }} kg</span>
-          <div class="stepper-row">
-            <button type="button" :aria-label="`Weniger ${size}kg`" @click="adjustPlateCount(size, -1)">−</button>
-            <span class="tnum">{{ plateCount(size) }}</span>
-            <button type="button" :aria-label="`Mehr ${size}kg`" @click="adjustPlateCount(size, 1)">+</button>
+          <span class="profile-label support-label">Scheiben pro Größe</span>
+          <div class="plate-rows">
+            <div v-for="size in PLATE_SIZES_KG" :key="size" class="plate-row">
+              <span class="tnum">{{ size }} kg</span>
+              <div class="stepper-row">
+                <button type="button" :aria-label="`Weniger ${size}kg`" @click="adjustPlateCount(size, -1)">−</button>
+                <span class="tnum">{{ plateCount(size) }}</span>
+                <button type="button" :aria-label="`Mehr ${size}kg`" @click="adjustPlateCount(size, 1)">+</button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <button class="btn-primary profile-save" :disabled="gymSaving" @click="saveGymCard">
-        {{ gymSaving ? "Wird gespeichert…" : "Speichern" }}
-      </button>
+        </template>
+
+        <button class="btn-primary profile-save" :disabled="equipmentSaving || gymSaving" @click="saveEquipmentAndGymCard">
+          {{ equipmentSaving || gymSaving ? "Wird gespeichert…" : "Speichern" }}
+        </button>
+      </CollapsibleCard>
     </section>
 
     <h2 class="group-header">Fortschritt</h2>
@@ -337,47 +348,6 @@ async function saveWeight() {
       </div>
     </section>
 
-    <section v-if="isNativePlatform" class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Server</h2>
-      <template v-if="!editingServer">
-        <p class="hint">{{ serverUrl }}</p>
-        <button class="btn-secondary" @click="startEditingServer">Ändern</button>
-      </template>
-      <template v-else>
-        <input
-          v-model="serverInput"
-          type="text"
-          placeholder="liftr.example.com"
-          aria-label="Server-Adresse"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-        />
-        <p v-if="serverError" class="error">{{ serverError }}</p>
-        <div class="server-actions">
-          <button class="btn-secondary" @click="editingServer = false">Abbrechen</button>
-          <button class="btn-primary" :disabled="serverChecking || !serverInput.trim()" @click="saveServer">
-            {{ serverChecking ? "Prüfe…" : "Speichern" }}
-          </button>
-        </div>
-      </template>
-    </section>
-
-    <section class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Version</h2>
-      <p class="hint">{{ appVersion ? `v${appVersion}` : "…" }}</p>
-      <template v-if="isAndroidPlatform">
-        <p v-if="appUpdateAvailable" class="update-line">Update verfügbar: v{{ appLatestVersion }}</p>
-        <p v-if="appUpdateError" class="error">{{ appUpdateError }}</p>
-        <div class="server-actions">
-          <button class="btn-secondary" :disabled="appUpdateChecking" @click="checkForAppUpdate">
-            {{ appUpdateChecking ? "Prüfe…" : "Nach Updates suchen" }}
-          </button>
-          <button v-if="appUpdateAvailable" class="btn-primary" @click="openAppUpdateDownload">Herunterladen</button>
-        </div>
-      </template>
-    </section>
-
     <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Mitglieder</h2>
       <ul v-if="members.length" class="member-list">
@@ -394,29 +364,71 @@ async function saveWeight() {
       <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
     </section>
 
-    <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Diagnose</h2>
-      <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
-      <button class="btn-secondary btn-block" @click="toggleErrorLogs">
-        {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
-      </button>
-      <div v-if="errorLogsOpen" class="error-log-list">
-        <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
-        <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
-          Keine Fehler aufgezeichnet.
-        </p>
-        <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
-          <div class="error-log-meta">
-            <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>
-            <span>{{ entry.method }} {{ entry.url }}</span>
-          </div>
-          <div class="error-log-message">{{ entry.message }}</div>
-        </div>
-      </div>
-    </section>
-
     <section class="card card--quiet surface-hybrid">
-      <button class="btn-secondary btn-block" @click="handleLogout">Abmelden</button>
+      <CollapsibleCard title="Konto &amp; App">
+        <template v-if="isNativePlatform">
+          <h3 class="eyebrow sub-eyebrow">Server</h3>
+          <template v-if="!editingServer">
+            <p class="hint">{{ serverUrl }}</p>
+            <button class="btn-secondary" @click="startEditingServer">Ändern</button>
+          </template>
+          <template v-else>
+            <input
+              v-model="serverInput"
+              type="text"
+              placeholder="liftr.example.com"
+              aria-label="Server-Adresse"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+            />
+            <p v-if="serverError" class="error">{{ serverError }}</p>
+            <div class="server-actions">
+              <button class="btn-secondary" @click="editingServer = false">Abbrechen</button>
+              <button class="btn-primary" :disabled="serverChecking || !serverInput.trim()" @click="saveServer">
+                {{ serverChecking ? "Prüfe…" : "Speichern" }}
+              </button>
+            </div>
+          </template>
+        </template>
+
+        <h3 class="eyebrow sub-eyebrow">Version</h3>
+        <p class="hint">{{ appVersion ? `v${appVersion}` : "…" }}</p>
+        <template v-if="isAndroidPlatform">
+          <p v-if="appUpdateAvailable" class="update-line">Update verfügbar: v{{ appLatestVersion }}</p>
+          <p v-else-if="appUpdateError" class="error">{{ appUpdateError }}</p>
+          <p v-else-if="appUpdateLastChecked" class="hint">Du bist auf dem neuesten Stand.</p>
+          <div class="server-actions">
+            <button class="btn-secondary" :disabled="appUpdateChecking" @click="checkForAppUpdateManually">
+              {{ appUpdateChecking ? "Prüfe…" : "Nach Updates suchen" }}
+            </button>
+            <button v-if="appUpdateAvailable" class="btn-primary" @click="openAppUpdateDownload">Herunterladen</button>
+          </div>
+        </template>
+
+        <template v-if="me?.role === 'owner'">
+          <h3 class="eyebrow sub-eyebrow">Diagnose</h3>
+          <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
+          <button class="btn-secondary btn-block" @click="toggleErrorLogs">
+            {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
+          </button>
+          <div v-if="errorLogsOpen" class="error-log-list">
+            <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
+            <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
+              Keine Fehler aufgezeichnet.
+            </p>
+            <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
+              <div class="error-log-meta">
+                <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>
+                <span>{{ entry.method }} {{ entry.url }}</span>
+              </div>
+              <div class="error-log-message">{{ entry.message }}</div>
+            </div>
+          </div>
+        </template>
+
+        <button class="btn-secondary btn-block logout-btn" @click="handleLogout">Abmelden</button>
+      </CollapsibleCard>
     </section>
 
     <section v-if="me && me.role !== 'owner'" class="card card--quiet surface-hybrid">
@@ -435,7 +447,7 @@ async function saveWeight() {
       </button>
     </section>
 
-    <section v-if="isHealthConnectAvailable()" class="card card--quiet surface-hybrid">
+    <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Health Connect</h2>
       <p class="hint">
         Läufe, die du mit deiner Uhr aufgezeichnet hast, automatisch importieren — inklusive Route, sobald Health
@@ -522,6 +534,19 @@ async function saveWeight() {
 .card .eyebrow {
   display: block;
   margin-bottom: var(--sp2);
+  margin-top: 0;
+}
+/* Sub-section labels inside the merged "Konto & App" card (Server/Version/Diagnose used to each
+   be their own card with their own .eyebrow h2; now one card, so each block needs its own small
+   heading without re-adding a whole new card). */
+.sub-eyebrow {
+  margin-top: var(--sp4);
+}
+.sub-eyebrow:first-child {
+  margin-top: 0;
+}
+.logout-btn {
+  margin-top: var(--sp4);
 }
 /* Bodyweight directly feeds the rank engine (see .hint below it) — the one accent tying this
    settings card back to the app's core mechanic, using the same blue the rank bar itself falls

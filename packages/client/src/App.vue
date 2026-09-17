@@ -25,11 +25,20 @@ const xp = useXpStore();
 const settingsStore = useSettingsStore();
 const overallRank = useOverallRankStore();
 const activeWorkout = useActiveWorkoutStore();
-onMounted(() => {
+/** Re-run after `AuthGate` swaps in a fresh token (setup/login/join) too, not just on first mount
+ *  — otherwise these four stores stay stale-empty for the rest of that session: the very first
+ *  App-mount pass always races an unauthenticated 401 (no token exists yet pre-login), which
+ *  `withLoadState` swallows, so `needsOnboarding` never flips and the top HUD never shows until a
+ *  full app restart re-runs this with a real token already in place. */
+function loadAppState() {
   void streak.load();
   void xp.load();
   void settingsStore.load();
   void overallRank.load();
+}
+
+onMounted(() => {
+  loadAppState();
 
   // Android-only: the update itself is an APK asset, meaningless on iOS/web. Silent on failure
   // (see useAppUpdate.ts) — a launch-time check should never surface as an error to someone who
@@ -62,6 +71,11 @@ watch(
   (needs) => {
     if (needs) showOnboarding.value = true;
   },
+  // `immediate` so a `needsOnboarding` that's already true by the time this watcher registers
+  // (e.g. loadAppState() re-run from AuthGate's `authenticated` emit resolving before this line
+  // runs) still shows the wizard — without it we'd rely on the load always being async, which is
+  // exactly the assumption that broke the first-run flow this watcher exists for.
+  { immediate: true },
 );
 
 /** A streak that just grew gets one pulse on its flame, rather than looking identical whether
@@ -176,7 +190,7 @@ const forceActiveTo = computed(() => {
 
 <template>
   <ServerGate>
-    <AuthGate>
+    <AuthGate @authenticated="loadAppState">
       <OnboardingGuide v-if="showOnboarding" @close="showOnboarding = false" />
       <ToastHost />
       <h1 class="sr-only">{{ pageTitle }}</h1>

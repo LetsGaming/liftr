@@ -10,6 +10,8 @@ import AppIcon from "./AppIcon.vue";
 
 type Status = "checking" | "ok" | "setup" | "join" | "login" | "offline";
 
+const emit = defineEmits<{ authenticated: [] }>();
+
 const status = ref<Status>("checking");
 const username = ref("");
 const password = ref("");
@@ -76,6 +78,7 @@ async function submitSetup() {
     const { token } = await api.post<{ token: string }>("/api/auth/setup", { password: password.value });
     setToken(token);
     status.value = "ok";
+    emit("authenticated");
   } catch (err) {
     error.value = describeAuthError(err, "Einrichtung fehlgeschlagen.");
   } finally {
@@ -93,6 +96,7 @@ async function submitLogin() {
     });
     setToken(token);
     status.value = "ok";
+    emit("authenticated");
   } catch (err) {
     error.value = describeAuthError(err, "Benutzername oder Passwort falsch.");
   } finally {
@@ -111,6 +115,7 @@ async function submitJoin() {
     });
     setToken(token);
     status.value = "ok";
+    emit("authenticated");
   } catch (err) {
     error.value = describeAuthError(err, "Einladungscode ungültig oder Benutzername bereits vergeben.");
   } finally {
