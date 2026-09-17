@@ -106,7 +106,7 @@ jobs:
           mv "$apk" "$renamed"
           echo "path=$renamed" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: liftr-${{ steps.version.outputs.name }}.apk
           path: ${{ steps.apk.outputs.path }}
