@@ -4,13 +4,28 @@
  *  bar/desktop content, so it never covers the action that triggered it. */
 import { useToast } from "../../composables/useToast";
 
-const { toasts } = useToast();
+const { toasts, dismiss } = useToast();
+
+function handleClick(id: number, onClick: () => void) {
+  onClick();
+  dismiss(id);
+}
 </script>
 
 <template>
   <div class="toast-host" aria-live="polite">
     <TransitionGroup name="toast">
-      <div v-for="t in toasts" :key="t.id" class="toast">{{ t.text }}</div>
+      <button
+        v-for="t in toasts"
+        :key="t.id"
+        type="button"
+        class="toast"
+        :class="{ 'toast--actionable': !!t.onClick }"
+        :disabled="!t.onClick"
+        @click="t.onClick && handleClick(t.id, t.onClick)"
+      >
+        {{ t.text }}
+      </button>
     </TransitionGroup>
   </div>
 </template>
@@ -34,9 +49,15 @@ const { toasts } = useToast();
   background: var(--surface-3);
   border: 1px solid var(--line-2);
   color: var(--text);
+  font: inherit;
   font-size: 13.5px;
   font-weight: 700;
   box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.toast--actionable {
+  pointer-events: auto;
+  cursor: pointer;
 }
 .toast-enter-active,
 .toast-leave-active {

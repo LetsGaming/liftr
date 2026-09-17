@@ -9,6 +9,7 @@ import { reactive } from "vue";
 export interface ToastMessage {
   id: number;
   text: string;
+  onClick?: () => void;
 }
 
 const toasts = reactive<ToastMessage[]>([]);
@@ -16,14 +17,21 @@ let nextId = 0;
 const AUTO_DISMISS_MS = 2500;
 
 export function useToast() {
-  function toast(text: string) {
+  /** `onClick`, when given, makes the toast itself the action a notification implies (e.g.
+   *  navigating to where the user actually needs to go) instead of just naming that action in text. */
+  function toast(text: string, onClick?: () => void) {
     const id = nextId++;
-    toasts.push({ id, text });
+    toasts.push({ id, text, onClick });
     setTimeout(() => {
       const idx = toasts.findIndex((t) => t.id === id);
       if (idx !== -1) toasts.splice(idx, 1);
     }, AUTO_DISMISS_MS);
   }
 
-  return { toast, toasts };
+  function dismiss(id: number) {
+    const idx = toasts.findIndex((t) => t.id === id);
+    if (idx !== -1) toasts.splice(idx, 1);
+  }
+
+  return { toast, dismiss, toasts };
 }

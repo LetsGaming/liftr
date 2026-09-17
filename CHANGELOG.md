@@ -7,6 +7,10 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+### Changed
+
+- **The "Update verfügbar" notification now takes you straight to the download button** instead of just telling you which page to visit — tapping it opens Profil with the "Konto & App" card already expanded and scrolled into view.
+
 ## [1.1.3] - 2026-09-17
 
 ### Fixed

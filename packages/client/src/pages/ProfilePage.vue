@@ -6,7 +6,8 @@
 // six+ unrelated concerns directly in its script setup — see composables/use{ProfileForm,
 // GymSetup,HealthConnectImport,DataExport}.ts.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import CollapsibleCard from "../components/ui/CollapsibleCard.vue";
 import StatTile from "../components/ui/StatTile.vue";
@@ -36,6 +37,9 @@ import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useThemeStore } from "../stores/themeStore";
 import { useXpStore } from "../stores/xpStore";
+
+const route = useRoute();
+const accountAppCardOpen = ref(false);
 
 const bodyweight = useBodyweightStore();
 const theme = useThemeStore();
@@ -168,6 +172,14 @@ onMounted(async () => {
     members.value = await listMembers();
   }
   if (isAndroidPlatform) void checkForAppUpdate();
+
+  // Lets a toast/notification elsewhere ("Update verfügbar — siehe Profil") link straight to
+  // the section it's talking about instead of just naming it and leaving the user to find it.
+  if (route.query.focus === "account-app") {
+    accountAppCardOpen.value = true;
+    await nextTick();
+    document.getElementById("account-app-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 });
 
 const canSave = computed(() => {
@@ -364,8 +376,8 @@ async function saveWeight() {
       <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
     </section>
 
-    <section class="card card--quiet surface-hybrid">
-      <CollapsibleCard title="Konto &amp; App">
+    <section id="account-app-card" class="card card--quiet surface-hybrid">
+      <CollapsibleCard v-model:open="accountAppCardOpen" title="Konto &amp; App">
         <template v-if="isNativePlatform">
           <h3 class="eyebrow sub-eyebrow">Server</h3>
           <template v-if="!editingServer">

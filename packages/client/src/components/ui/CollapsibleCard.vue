@@ -9,12 +9,11 @@
  * `v-show` (not `v-if`) on the body — collapsing a card with unsaved form input shouldn't lose
  * it.
  */
-import { ref } from "vue";
-
-const props = withDefaults(defineProps<{ title: string; defaultOpen?: boolean }>(), {
-  defaultOpen: false,
-});
-const open = ref(props.defaultOpen);
+const props = defineProps<{ title: string; defaultOpen?: boolean }>();
+// Collapsed by default (or open via `defaultOpen`); a parent can also bind v-model:open to force
+// it open, e.g. jumping here from a notification elsewhere in the app.
+const open = defineModel<boolean>("open", { default: false });
+if (props.defaultOpen) open.value = true;
 </script>
 
 <template>
