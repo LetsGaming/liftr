@@ -16,7 +16,7 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # pnpm's own CLI (action below pins a floating v11.x) now requires Node >=22.13 just to
           # run `pnpm install` — this is about the tool, not the app itself (package.json's

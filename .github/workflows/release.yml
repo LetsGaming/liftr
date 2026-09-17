@@ -27,7 +27,7 @@ jobs:
         with:
           version: 11
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # see ci.yml's matching comment: pnpm's own CLI needs Node >=22.13 to run at all.
           node-version: 22
