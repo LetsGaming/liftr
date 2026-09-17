@@ -7,6 +7,10 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-17
+
+- Internal updates and minor improvements.
+
 ## [1.1.0] - 2026-09-17
 
 ### Added
