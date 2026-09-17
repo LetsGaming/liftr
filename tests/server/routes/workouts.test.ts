@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { prs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { registerWorkoutRoutes } from "~server/routes/workouts.js";
 import { createTestApp } from "../helpers/testApp.js";
-import { insertTestExercise } from "../helpers/testDb.js";
+import { insertTestExercise, insertTestUser } from "../helpers/testDb.js";
 
 describe("workout routes", () => {
   let app: Awaited<ReturnType<typeof createTestApp>>["app"];
@@ -101,6 +101,22 @@ describe("workout routes", () => {
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: "invalid_request" });
     });
+
+    it("returns 404 for a workout belonging to another user", async () => {
+      const otherUser = await insertTestUser(db);
+      const [workout] = await db
+        .insert(workouts)
+        .values({ userId: otherUser.id, clientId: "other-user-workout", startedAt: new Date("2026-01-01T10:00:00Z"), pausedSeconds: 0 })
+        .returning();
+
+      const res = await app.inject({
+        method: "PATCH",
+        url: `/api/workouts/${workout!.id}`,
+        payload: { notes: "hijacked" },
+      });
+
+      expect(res.statusCode).toBe(404);
+    });
   });
 
   describe("GET /api/workouts/:id", () => {
@@ -153,6 +169,18 @@ describe("workout routes", () => {
       expect(setsById.get(prSet!.id)).toBe(true);
       expect(setsById.get(plainSet!.id)).toBe(false);
     });
+
+    it("returns 404 for a workout belonging to another user", async () => {
+      const otherUser = await insertTestUser(db);
+      const [workout] = await db
+        .insert(workouts)
+        .values({ userId: otherUser.id, clientId: "other-user-workout-get", startedAt: new Date("2026-01-01T10:00:00Z"), pausedSeconds: 0 })
+        .returning();
+
+      const res = await app.inject({ method: "GET", url: `/api/workouts/${workout!.id}` });
+
+      expect(res.statusCode).toBe(404);
+    });
   });
 
   describe("DELETE /api/workouts/:id", () => {
@@ -177,6 +205,20 @@ describe("workout routes", () => {
 
       const row = await db.query.workouts.findFirst({ where: eq(workouts.id, workout!.id) });
       expect(row).toBeUndefined();
+    });
+
+    it("returns 404 for a workout belonging to another user, leaving it undeleted", async () => {
+      const otherUser = await insertTestUser(db);
+      const [workout] = await db
+        .insert(workouts)
+        .values({ userId: otherUser.id, clientId: "other-user-workout-delete", startedAt: new Date("2026-01-01T10:00:00Z"), pausedSeconds: 0 })
+        .returning();
+
+      const res = await app.inject({ method: "DELETE", url: `/api/workouts/${workout!.id}` });
+
+      expect(res.statusCode).toBe(404);
+      const row = await db.query.workouts.findFirst({ where: eq(workouts.id, workout!.id) });
+      expect(row).toBeDefined();
     });
   });
 });
