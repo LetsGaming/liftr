@@ -13,7 +13,7 @@ import type { WorkoutCardModel } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useExerciseName } from "../../composables/useExerciseName";
-import { formatDateLong } from "../../lib/format";
+import { formatDateLong, formatDurationMinutes } from "../../lib/format";
 import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../../lib/shareCard";
 import AppIcon from "../ui/AppIcon.vue";
 import { useCatalogStore } from "../../stores/catalogStore";
@@ -77,8 +77,7 @@ const durationLabel = computed(() => {
   const d = detail.value;
   if (!d?.endedAt) return "—";
   const s = Math.max(0, (new Date(d.endedAt).getTime() - new Date(d.startedAt).getTime()) / 1000 - d.pausedSeconds);
-  const m = Math.round(s / 60);
-  return `${m} min`;
+  return formatDurationMinutes(s);
 });
 
 const totalVolumeKg = computed(() =>

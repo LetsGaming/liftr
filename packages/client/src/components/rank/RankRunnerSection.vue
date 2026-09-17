@@ -11,6 +11,7 @@ import RankProgress from "./RankProgress.vue";
 import TierBadge from "./TierBadge.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunRankRow } from "../../stores/runRankStore";
+import { formatPace } from "../../lib/format";
 
 const runRankStore = useRunRankStore();
 onMounted(() => {
@@ -39,15 +40,11 @@ const runRankByCategory = computed(() => {
 /** RankProgress's built-in "next target" formatting assumes a weight×reps pair, which doesn't
  *  fit a running category's next target (a pace). Formatted here and passed through
  *  RankProgress's `nextTargetLabel` override instead of forking the component — see that prop's
- *  own comment. Mirrors RunDetail.vue's/RunsPage.vue's own `formatPace` convention (mm:ss/km),
- *  converting from the stored m/s speed the same way runRankService.ts's nextTargetSpeedMps is
- *  defined. */
+ *  own comment. Uses lib/format.ts's shared formatPace (mm:ss/km), converting from the stored
+ *  m/s speed the same way runRankService.ts's nextTargetSpeedMps is defined. */
 function formatNextSpeedTarget(speedMps: number | null): string {
   if (speedMps == null) return "Nächstes Ziel: ???";
-  const paceSecPerKm = Math.round(1000 / speedMps);
-  const mm = Math.floor(paceSecPerKm / 60);
-  const ss = String(paceSecPerKm % 60).padStart(2, "0");
-  return `Nächstes Ziel: ${mm}:${ss}/km`;
+  return `Nächstes Ziel: ${formatPace(1000 / speedMps)}`;
 }
 </script>
 

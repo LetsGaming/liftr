@@ -12,6 +12,7 @@ import LiveRunMap from "./LiveRunMap.vue";
 import { useLiveRun } from "../../composables/useLiveRun";
 import { useRunsStore } from "../../stores/runsStore";
 import { useToast } from "../../composables/useToast";
+import { formatClockLong, formatPace } from "../../lib/format";
 import type { PlannedRoute } from "../../services/plannedRouteService";
 import type { RunSummary } from "../../services/runService";
 
@@ -83,20 +84,6 @@ async function finishRun() {
   }
 }
 
-function fmtDuration(s: number) {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-    : `${m}:${String(sec).padStart(2, "0")}`;
-}
-function fmtPace(sPerKm: number | null) {
-  if (sPerKm == null) return "–";
-  const s = Math.round(sPerKm);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
-}
-
 const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
 </script>
 
@@ -131,11 +118,11 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
       </div>
       <div class="hud-stat">
         <span class="eyebrow">Zeit</span>
-        <b class="tnum">{{ fmtDuration(live.elapsedS.value) }}</b>
+        <b class="tnum">{{ formatClockLong(live.elapsedS.value) }}</b>
       </div>
       <div class="hud-stat">
         <span class="eyebrow">Tempo</span>
-        <b class="tnum">{{ fmtPace(live.paceSPerKm.value) }}</b>
+        <b class="tnum">{{ formatPace(live.paceSPerKm.value) }}</b>
       </div>
     </div>
 

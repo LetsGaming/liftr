@@ -14,7 +14,7 @@ import { useRunsStore, type RunDetail as RunDetailModel } from "../../stores/run
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
 import { useRunRankStore } from "../../stores/runRankStore";
 import { getPlannedRouteDetail, type Waypoint } from "../../services/plannedRouteService";
-import { formatClock, formatDateLong } from "../../lib/format";
+import { formatDateLong, formatDurationMinutes, formatPace } from "../../lib/format";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import AppIcon from "../ui/AppIcon.vue";
@@ -115,15 +115,6 @@ onMounted(async () => {
   }
 });
 
-function formatDuration(s: number) {
-  const m = Math.round(s / 60);
-  return `${m} min`;
-}
-function formatPace(sPerKm: number | null) {
-  if (sPerKm == null) return "–";
-  return `${formatClock(Math.round(sPerKm))}/km`;
-}
-
 // "Als Strecke speichern" — turns this run's recorded GPS track into a reusable planned route.
 // RouteWizard only ever takes user-placed waypoints, so the full point-by-point track (hundreds
 // of GPS fixes) is stride-sampled down to a manageable handful the user can still see/drag/edit
@@ -173,7 +164,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
       <div v-if="detailIsPr" class="route-chip pr-chip pop-in">Neuer Rekord</div>
       <div class="stat-row">
         <StatTile :value="`${(detail.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
-        <StatTile :value="formatDuration(detail.durationS)" label="Dauer" />
+        <StatTile :value="formatDurationMinutes(detail.durationS)" label="Dauer" />
         <StatTile :value="formatPace(detail.avgPaceSPerKm)" label="Pace ø" />
         <StatTile :value="detail.avgHr != null ? Math.round(detail.avgHr) + ' bpm' : '–'" label="Puls ø" />
         <StatTile v-if="detail.elevationGainM != null" :value="Math.round(detail.elevationGainM) + ' hm'" label="Höhenmeter" />

@@ -11,6 +11,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import RunMap from "./RunMap.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import type { RunPoint } from "../../stores/runsStore";
+import { formatClock, formatPace } from "../../lib/format";
 
 const props = defineProps<{ points: RunPoint[] }>();
 
@@ -128,13 +129,7 @@ function seek(pct: number) {
 onBeforeUnmount(pause);
 
 function fmt(ms: number): string {
-  const s = Math.round(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-function fmtPace(sPerKm: number | null): string {
-  if (sPerKm == null) return "–";
-  const s = Math.round(sPerKm);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}/km`;
+  return formatClock(Math.round(ms / 1000));
 }
 </script>
 
@@ -168,7 +163,7 @@ function fmtPace(sPerKm: number | null): string {
       <div class="readouts">
         <div class="readout">
           <span class="eyebrow">Pace</span>
-          <span class="tnum">{{ fmtPace(currentFrame?.paceSPerKm ?? null) }}</span>
+          <span class="tnum">{{ formatPace(currentFrame?.paceSPerKm ?? null) }}</span>
         </div>
         <div v-if="hasHr" class="readout">
           <span class="eyebrow">Puls</span>
