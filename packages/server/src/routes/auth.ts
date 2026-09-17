@@ -65,6 +65,20 @@ const authRateLimit = {
   },
 };
 
+/** 10 attempts per 15 minutes per IP, for `/api/auth/register` only. Unlike login/setup, the
+ *  attacker here is guessing an 8-character invite `code` and freely chooses their own `username`
+ *  on every attempt — keying by username (like `authRateLimit` above) would let them pick a fresh
+ *  throwaway username per attempt and land in a fresh, empty bucket every time, so the limit would
+ *  never actually engage. Keyed on `req.ip` instead, same fallback `authRateLimit` already uses. */
+const registerRateLimit = {
+  rateLimit: {
+    max: 10,
+    timeWindow: "15 minutes",
+    hook: "preHandler" as const,
+    keyGenerator: (req: import("fastify").FastifyRequest) => req.ip,
+  },
+};
+
 const tokenResponse = z.object({ token: z.string() });
 const statusResponse = z.object({ needsSetup: z.boolean() });
 const meResponse = z.object({ id: z.string(), username: z.string(), name: z.string(), role: z.enum(["owner", "member"]) });
@@ -123,7 +137,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
 
   app.post(
     "/api/auth/register",
-    { config: authRateLimit, schema: { body: registerInput, response: { 200: tokenResponse, 400: errorResponse, 409: errorResponse } } },
+    { config: registerRateLimit, schema: { body: registerInput, response: { 200: tokenResponse, 400: errorResponse, 409: errorResponse } } },
     async (req, reply) => {
       const invite = await findValidInviteCode(db, req.body.code.toUpperCase());
       if (!invite) return reply.code(400).send({ error: "invalid_invite_code" });

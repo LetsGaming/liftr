@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import rateLimit from "@fastify/rate-limit";
 import { plannedRoutes } from "@liftr/db";
 import { registerPlannedRouteRoutes } from "~server/routes/plannedRoutes.js";
 import { createTestApp } from "../helpers/testApp.js";
@@ -6,6 +7,15 @@ import { insertTestUser } from "../helpers/testDb.js";
 
 function waypoints() {
   return [{ lat: 52.4732, lon: 13.4021 }, { lat: 52.475, lon: 13.405 }];
+}
+
+// createTestApp() uses configureApp() directly, which (unlike production's buildApp()) doesn't
+// register @fastify/rate-limit — routes' `config.rateLimit` is otherwise silently inert in tests.
+// Mirrors app.ts's real registration (global: false — only routes with their own config.rateLimit
+// are limited), matching the pattern tests/server/routes/auth.test.ts already uses for this.
+async function withRateLimit(app: ReturnType<typeof createTestApp>["app"]) {
+  await app.register(rateLimit, { global: false });
+  return app;
 }
 
 describe("GET /api/planned-routes", () => {
@@ -215,5 +225,52 @@ describe("POST /api/planned-routes/preview", () => {
     expect(res.json()).toMatchObject({ geometrySource: "straight" });
     const list = await app.inject({ method: "GET", url: "/api/planned-routes" });
     expect(list.json()).toEqual([]);
+  });
+
+  it("returns 429 after exceeding the 30/min limit", async () => {
+    const { app, db } = createTestApp();
+    await withRateLimit(app);
+    registerPlannedRouteRoutes(app, db);
+
+    let lastStatus = 0;
+    for (let i = 0; i < 31; i++) {
+      const res = await app.inject({ method: "POST", url: "/api/planned-routes/preview", payload: { waypoints: waypoints() } });
+      lastStatus = res.statusCode;
+    }
+    expect(lastStatus).toBe(429);
+  });
+});
+
+// Both create and update call the same paid OpenRouteService geometry computation as /preview,
+// so they share its 30/min limit (see routes/plannedRoutes.ts's comments on each route).
+describe("POST /api/planned-routes rate limiting", () => {
+  it("returns 429 after exceeding the 30/min limit", async () => {
+    const { app, db } = createTestApp();
+    await withRateLimit(app);
+    registerPlannedRouteRoutes(app, db);
+
+    let lastStatus = 0;
+    for (let i = 0; i < 31; i++) {
+      const res = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: `Route ${i}`, waypoints: waypoints() } });
+      lastStatus = res.statusCode;
+    }
+    expect(lastStatus).toBe(429);
+  });
+});
+
+describe("PATCH /api/planned-routes/:id rate limiting", () => {
+  it("returns 429 after exceeding the 30/min limit", async () => {
+    const { app, db } = createTestApp();
+    await withRateLimit(app);
+    registerPlannedRouteRoutes(app, db);
+    const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });
+    const id = created.json().id;
+
+    let lastStatus = 0;
+    for (let i = 0; i < 31; i++) {
+      const res = await app.inject({ method: "PATCH", url: `/api/planned-routes/${id}`, payload: { name: `Renamed ${i}` } });
+      lastStatus = res.statusCode;
+    }
+    expect(lastStatus).toBe(429);
   });
 });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import multipart from "@fastify/multipart";
+import rateLimit from "@fastify/rate-limit";
 import { plannedRoutes, runPoints, runs, type LiftrDb } from "@liftr/db";
 import { registerRunRoutes } from "~server/routes/runs.js";
 import { createTestApp } from "../helpers/testApp.js";
@@ -52,6 +53,10 @@ describe("run routes", () => {
     const testApp = createTestApp();
     app = testApp.app;
     db = testApp.db;
+    // createTestApp() uses configureApp() directly, which (unlike production's buildApp()) doesn't
+    // register @fastify/rate-limit — routes' `config.rateLimit` is otherwise silently inert here.
+    // Mirrors app.ts's real registration (global: false), same pattern as auth.test.ts.
+    await app.register(rateLimit, { global: false });
     await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
     registerRunRoutes(app, db);
   });
@@ -256,6 +261,39 @@ describe("run routes", () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+  });
+
+  describe("POST /api/runs rate limiting", () => {
+    it("returns 429 after exceeding the 20/min limit", async () => {
+      let lastStatus = 0;
+      for (let i = 0; i < 21; i++) {
+        const res = await app.inject({
+          method: "POST",
+          url: "/api/runs",
+          payload: { startedAt: "2026-01-02T07:00:00Z", distanceM: 3000, durationS: 900 },
+        });
+        lastStatus = res.statusCode;
+      }
+      expect(lastStatus).toBe(429);
+    });
+  });
+
+  describe("POST /api/runs/healthconnect rate limiting", () => {
+    it("returns 429 after exceeding the 20/min limit", async () => {
+      let lastStatus = 0;
+      for (let i = 0; i < 21; i++) {
+        const res = await app.inject({
+          method: "POST",
+          url: "/api/runs/healthconnect",
+          payload: {
+            platformId: `hc-ratelimit-${i}`,
+            points: [{ t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 }],
+          },
+        });
+        lastStatus = res.statusCode;
+      }
+      expect(lastStatus).toBe(429);
     });
   });
 
