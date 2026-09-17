@@ -11,7 +11,7 @@ async function insertMuscle(db: LiftrDb, slug: string) {
 
 describe("POST /api/routines/suggest", () => {
   it("suggests exercises per requested muscle, attributing each pick to its muscle", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
     const chest = await insertMuscle(db, "chest");
     const bench = await insertTestExercise(db, { slug: "bench-press", movementPattern: "push" });
@@ -31,7 +31,7 @@ describe("POST /api/routines/suggest", () => {
   });
 
   it("returns an empty exercise list for a muscle slug that doesn't exist", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({
@@ -45,7 +45,7 @@ describe("POST /api/routines/suggest", () => {
   });
 
   it("defaults exercisesPerMuscle to 2 when omitted", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
     const chest = await insertMuscle(db, "chest");
     for (const slug of ["bench-press", "incline-press", "dips"]) {
@@ -64,7 +64,7 @@ describe("POST /api/routines/suggest", () => {
   });
 
   it("rejects an empty muscleSlugs array", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines/suggest", payload: { muscleSlugs: [] } });
@@ -74,7 +74,7 @@ describe("POST /api/routines/suggest", () => {
   });
 
   it("rejects a missing muscleSlugs field", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines/suggest", payload: {} });
@@ -84,7 +84,7 @@ describe("POST /api/routines/suggest", () => {
   });
 
   it("rejects exercisesPerMuscle out of range", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({
@@ -98,7 +98,7 @@ describe("POST /api/routines/suggest", () => {
   });
 
   it("rejects an invalid experienceLevel", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({
@@ -114,7 +114,7 @@ describe("POST /api/routines/suggest", () => {
 
 describe("POST /api/routines/recommend", () => {
   it("recommends sets/reps/weight for already-chosen exercises", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
     const exercise = await insertTestExercise(db, { slug: "overhead-press", movementPattern: "push" });
 
@@ -133,7 +133,7 @@ describe("POST /api/routines/recommend", () => {
   });
 
   it("rejects an empty exerciseIds array", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines/recommend", payload: { exerciseIds: [] } });
@@ -143,7 +143,7 @@ describe("POST /api/routines/recommend", () => {
   });
 
   it("rejects a missing exerciseIds field", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines/recommend", payload: {} });
@@ -153,7 +153,7 @@ describe("POST /api/routines/recommend", () => {
   });
 
   it("rejects an invalid experienceLevel", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineSuggestionRoutes(app, db);
     const exercise = await insertTestExercise(db);
 

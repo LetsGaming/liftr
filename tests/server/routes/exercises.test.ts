@@ -14,8 +14,8 @@ let db: LiftrDb;
 // to exist on disk for these tests, which never seed a real demo photo.
 const imagesRoot = path.join(os.tmpdir(), "liftr-test-images-does-not-exist");
 
-beforeEach(() => {
-  ({ app, db } = createTestApp());
+beforeEach(async () => {
+  ({ app, db } = await createTestApp());
   registerExerciseRoutes(app, db, imagesRoot);
 });
 

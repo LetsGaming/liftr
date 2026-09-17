@@ -6,7 +6,7 @@ import { insertTestExercise } from "../helpers/testDb.js";
 
 describe("GET /api/ranks", () => {
   it("returns an empty array when no ranks have been computed", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRankRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/ranks" });
@@ -16,7 +16,7 @@ describe("GET /api/ranks", () => {
   });
 
   it("returns each rank joined to its exercise, sorted by lp descending", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRankRoutes(app, db);
     const weak = await insertTestExercise(db, { slug: "weak-exercise" });
     const strong = await insertTestExercise(db, { slug: "strong-exercise", name: "Strong Custom" });

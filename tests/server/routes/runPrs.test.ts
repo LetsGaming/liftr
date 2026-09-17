@@ -7,7 +7,7 @@ import { createTestApp } from "../helpers/testApp.js";
 
 describe("GET /api/runs/prs", () => {
   it("returns an empty array when no run PRs exist yet", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunPrRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/runs/prs" });
@@ -17,7 +17,7 @@ describe("GET /api/runs/prs", () => {
   });
 
   it("returns a run PR with its category/kind/value and originating run id", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunPrRoutes(app, db);
     const run = await insertRun(db, OWNER_USER_ID, {
       source: "gpx",
@@ -51,7 +51,7 @@ describe("GET /api/runs/prs", () => {
   });
 
   it("sorts newest-first", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunPrRoutes(app, db);
     const run = await insertRun(db, OWNER_USER_ID, {
       source: "gpx",

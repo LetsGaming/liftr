@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import rateLimit from "@fastify/rate-limit";
 import { plannedRoutes } from "@liftr/db";
 import { registerPlannedRouteRoutes } from "~server/routes/plannedRoutes.js";
 import { createTestApp } from "../helpers/testApp.js";
@@ -9,18 +8,9 @@ function waypoints() {
   return [{ lat: 52.4732, lon: 13.4021 }, { lat: 52.475, lon: 13.405 }];
 }
 
-// createTestApp() uses configureApp() directly, which (unlike production's buildApp()) doesn't
-// register @fastify/rate-limit — routes' `config.rateLimit` is otherwise silently inert in tests.
-// Mirrors app.ts's real registration (global: false — only routes with their own config.rateLimit
-// are limited), matching the pattern tests/server/routes/auth.test.ts already uses for this.
-async function withRateLimit(app: ReturnType<typeof createTestApp>["app"]) {
-  await app.register(rateLimit, { global: false });
-  return app;
-}
-
 describe("GET /api/planned-routes", () => {
   it("returns an empty array when there are no routes", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/planned-routes" });
@@ -30,7 +20,7 @@ describe("GET /api/planned-routes", () => {
   });
 
   it("excludes a soft-archived route", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     await db.insert(plannedRoutes).values({
       name: "Archived",
@@ -49,7 +39,7 @@ describe("GET /api/planned-routes", () => {
 
 describe("POST /api/planned-routes", () => {
   it("creates a route with straight-line geometry when ORS is unconfigured", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     const res = await app.inject({
@@ -65,7 +55,7 @@ describe("POST /api/planned-routes", () => {
   });
 
   it("rejects fewer than 2 waypoints with a 400, never persisting a row", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     const res = await app.inject({
@@ -80,7 +70,7 @@ describe("POST /api/planned-routes", () => {
   });
 
   it("rejects more than 50 waypoints with a 400", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const tooMany = Array.from({ length: 51 }, (_, i) => ({ lat: 52 + i * 0.001, lon: 13 }));
 
@@ -92,7 +82,7 @@ describe("POST /api/planned-routes", () => {
   // Boundary values either side of the 400s above: exactly 2 (the floor) and exactly 50 (the
   // ceiling) must both succeed, not just fail one waypoint outside either bound.
   it("accepts exactly 2 waypoints (the floor)", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Floor", waypoints: waypoints() } });
@@ -102,7 +92,7 @@ describe("POST /api/planned-routes", () => {
   });
 
   it("accepts exactly 50 waypoints (the ceiling)", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const exactlyFifty = Array.from({ length: 50 }, (_, i) => ({ lat: 52 + i * 0.001, lon: 13 }));
 
@@ -115,7 +105,7 @@ describe("POST /api/planned-routes", () => {
 
 describe("GET /api/planned-routes/:id", () => {
   it("returns 404 for a route belonging to another user", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const otherUser = await insertTestUser(db);
     const [row] = await db
@@ -136,7 +126,7 @@ describe("GET /api/planned-routes/:id", () => {
   });
 
   it("still resolves a soft-archived route by id, unlike the list endpoint", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Tempelhof-Runde", waypoints: waypoints() } });
     const id = created.json().id;
@@ -151,7 +141,7 @@ describe("GET /api/planned-routes/:id", () => {
 
 describe("PATCH /api/planned-routes/:id", () => {
   it("renames without recomputing geometry", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });
     const id = created.json().id;
@@ -164,7 +154,7 @@ describe("PATCH /api/planned-routes/:id", () => {
   });
 
   it("returns 404 when patching a nonexistent id", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     const res = await app.inject({ method: "PATCH", url: "/api/planned-routes/nonexistent", payload: { name: "x" } });
@@ -173,7 +163,7 @@ describe("PATCH /api/planned-routes/:id", () => {
   });
 
   it("no-ops on an empty patch body instead of 500ing on an empty Drizzle .set({})", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });
     const id = created.json().id;
@@ -184,7 +174,7 @@ describe("PATCH /api/planned-routes/:id", () => {
   });
 
   it("recomputes geometry and replaces points transactionally when waypoints are patched", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });
     const id = created.json().id;
@@ -201,7 +191,7 @@ describe("PATCH /api/planned-routes/:id", () => {
 
 describe("DELETE /api/planned-routes/:id", () => {
   it("soft-archives — the route disappears from the list", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });
     const id = created.json().id;
@@ -216,7 +206,7 @@ describe("DELETE /api/planned-routes/:id", () => {
 
 describe("POST /api/planned-routes/preview", () => {
   it("returns computed stats without persisting anything", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/planned-routes/preview", payload: { waypoints: waypoints() } });
@@ -228,8 +218,7 @@ describe("POST /api/planned-routes/preview", () => {
   });
 
   it("returns 429 after exceeding the 30/min limit", async () => {
-    const { app, db } = createTestApp();
-    await withRateLimit(app);
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     let lastStatus = 0;
@@ -245,8 +234,7 @@ describe("POST /api/planned-routes/preview", () => {
 // so they share its 30/min limit (see routes/plannedRoutes.ts's comments on each route).
 describe("POST /api/planned-routes rate limiting", () => {
   it("returns 429 after exceeding the 30/min limit", async () => {
-    const { app, db } = createTestApp();
-    await withRateLimit(app);
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
 
     let lastStatus = 0;
@@ -260,8 +248,7 @@ describe("POST /api/planned-routes rate limiting", () => {
 
 describe("PATCH /api/planned-routes/:id rate limiting", () => {
   it("returns 429 after exceeding the 30/min limit", async () => {
-    const { app, db } = createTestApp();
-    await withRateLimit(app);
+    const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });
     const id = created.json().id;

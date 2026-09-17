@@ -6,7 +6,7 @@ import { insertTestExercise } from "../helpers/testDb.js";
 
 describe("GET /api/readiness", () => {
   it("returns every muscle with lastTrainedAt null when nothing has been logged", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerReadinessRoutes(app, db);
     await db.insert(muscles).values({ slug: "chest", svgRegionKey: "mb-chest" });
 
@@ -17,7 +17,7 @@ describe("GET /api/readiness", () => {
   });
 
   it("reports the most recent set that touched a muscle, and whether it was primary", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerReadinessRoutes(app, db);
     const [chest] = await db.insert(muscles).values({ slug: "chest", svgRegionKey: "mb-chest" }).returning();
     const exercise = await insertTestExercise(db, { slug: "bench-press" });
@@ -49,7 +49,7 @@ describe("GET /api/readiness", () => {
   });
 
   it("reports secondary involvement as wasPrimary false when that's the most recent role", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerReadinessRoutes(app, db);
     const [triceps] = await db.insert(muscles).values({ slug: "triceps", svgRegionKey: "ms-tri" }).returning();
     const exercise = await insertTestExercise(db, { slug: "bench-press" });

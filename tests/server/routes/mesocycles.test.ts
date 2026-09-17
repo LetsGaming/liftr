@@ -9,7 +9,7 @@ let db: LiftrDb;
 let routineId: string;
 
 beforeEach(async () => {
-  ({ app, db } = createTestApp());
+  ({ app, db } = await createTestApp());
   registerMesocycleRoutes(app, db);
   const [routine] = await db.insert(routines).values({ name: "Test Routine" }).returning();
   routineId = routine!.id;

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import multipart from "@fastify/multipart";
-import rateLimit from "@fastify/rate-limit";
 import { plannedRoutes, runPoints, runs, type LiftrDb } from "@liftr/db";
 import { registerRunRoutes } from "~server/routes/runs.js";
 import { createTestApp } from "../helpers/testApp.js";
@@ -46,17 +45,13 @@ async function seedRun(db: LiftrDb, overrides: Partial<typeof runs.$inferInsert>
 }
 
 describe("run routes", () => {
-  let app: ReturnType<typeof createTestApp>["app"];
+  let app: Awaited<ReturnType<typeof createTestApp>>["app"];
   let db: LiftrDb;
 
   beforeEach(async () => {
-    const testApp = createTestApp();
+    const testApp = await createTestApp();
     app = testApp.app;
     db = testApp.db;
-    // createTestApp() uses configureApp() directly, which (unlike production's buildApp()) doesn't
-    // register @fastify/rate-limit — routes' `config.rateLimit` is otherwise silently inert here.
-    // Mirrors app.ts's real registration (global: false), same pattern as auth.test.ts.
-    await app.register(rateLimit, { global: false });
     await app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024 } });
     registerRunRoutes(app, db);
   });
@@ -340,7 +335,7 @@ describe("run routes", () => {
 
 describe("POST /api/runs — planned route handoff", () => {
   it("defaults elevationGainM from the route and stores plannedRouteId", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunRoutes(app, db);
     const [route] = await db
       .insert(plannedRoutes)
@@ -367,7 +362,7 @@ describe("POST /api/runs — planned route handoff", () => {
   });
 
   it("rejects a plannedRouteId belonging to another user with 404", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunRoutes(app, db);
     const otherUser = await insertTestUser(db);
     const [route] = await db
@@ -392,7 +387,7 @@ describe("POST /api/runs — planned route handoff", () => {
   });
 
   it("keeps plannedRouteId null for a run logged without one — GET /api/runs still serializes the field", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunRoutes(app, db);
 
     await app.inject({ method: "POST", url: "/api/runs", payload: { startedAt: new Date().toISOString(), distanceM: 5000, durationS: 1500 } });

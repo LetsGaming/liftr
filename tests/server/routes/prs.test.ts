@@ -6,7 +6,7 @@ import { insertTestExercise } from "../helpers/testDb.js";
 
 describe("GET /api/prs", () => {
   it("returns an empty array when no PRs exist yet", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPrRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/prs" });
@@ -16,7 +16,7 @@ describe("GET /api/prs", () => {
   });
 
   it("returns a PR joined to its exercise slug/name and originating workout", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPrRoutes(app, db);
     const exercise = await insertTestExercise(db, { slug: "bench-press" });
     const [workout] = await db
@@ -64,7 +64,7 @@ describe("GET /api/prs", () => {
   });
 
   it("returns workoutId null when the originating set no longer exists", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPrRoutes(app, db);
     const exercise = await insertTestExercise(db);
     await db.insert(prs).values({
@@ -81,7 +81,7 @@ describe("GET /api/prs", () => {
   });
 
   it("sorts newest-first", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerPrRoutes(app, db);
     const exercise = await insertTestExercise(db);
     await db.insert(prs).values([

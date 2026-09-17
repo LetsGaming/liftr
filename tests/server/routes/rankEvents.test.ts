@@ -12,7 +12,7 @@ interface RankEventRow {
 
 describe("GET /api/rank-events", () => {
   it("returns all 7 weekdays, zero-filled, when nothing has happened", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRankEventsRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/rank-events" });
@@ -25,7 +25,7 @@ describe("GET /api/rank-events", () => {
   });
 
   it("counts rank-ups on today's weekday, splitting out plausibility-flagged ones", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRankEventsRoutes(app, db);
     const exercise = await insertTestExercise(db);
     const today = new Date();
@@ -44,7 +44,7 @@ describe("GET /api/rank-events", () => {
   });
 
   it("excludes rank events older than the 7-day rolling window", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRankEventsRoutes(app, db);
     const exercise = await insertTestExercise(db);
     const longAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

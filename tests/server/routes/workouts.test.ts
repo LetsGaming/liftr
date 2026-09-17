@@ -6,11 +6,11 @@ import { createTestApp } from "../helpers/testApp.js";
 import { insertTestExercise } from "../helpers/testDb.js";
 
 describe("workout routes", () => {
-  let app: ReturnType<typeof createTestApp>["app"];
+  let app: Awaited<ReturnType<typeof createTestApp>>["app"];
   let db: LiftrDb;
 
-  beforeEach(() => {
-    const testApp = createTestApp();
+  beforeEach(async () => {
+    const testApp = await createTestApp();
     app = testApp.app;
     db = testApp.db;
     registerWorkoutRoutes(app, db);

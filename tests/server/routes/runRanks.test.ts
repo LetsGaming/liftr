@@ -23,7 +23,7 @@ function baseRunRankUpsert(overrides: Partial<RunRankUpsert> = {}): RunRankUpser
 
 describe("GET /api/runs/ranks", () => {
   it("returns an empty array when no run ranks have been computed", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunRankRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/runs/ranks" });
@@ -33,7 +33,7 @@ describe("GET /api/runs/ranks", () => {
   });
 
   it("returns every category rank for this user, sorted by lp descending", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRunRankRoutes(app, db);
     await upsertRunRank(db, OWNER_USER_ID,"5k", baseRunRankUpsert({ tier: "initiate", division: 5, lp: 10 }));
     await upsertRunRank(db, OWNER_USER_ID,"marathon", baseRunRankUpsert({ tier: "athlete", division: 1, lp: 90 }));
