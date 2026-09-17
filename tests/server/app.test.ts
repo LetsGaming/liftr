@@ -1,9 +1,20 @@
 import Fastify from "fastify";
 import { describe, expect, it } from "vitest";
 import helmet from "@fastify/helmet";
-import { configureApp } from "~server/app.js";
+import { configureApp, corsOrigin, NATIVE_APP_ORIGINS } from "~server/app.js";
 import { requireAuth } from "~server/auth.js";
 import { createTestDb } from "./helpers/testDb.js";
+
+describe("cors origin", () => {
+  it("reflects any origin when LIFTR_ALLOWED_ORIGINS is unset", () => {
+    expect(corsOrigin(null)).toBe(true);
+  });
+
+  it("always allows the native app's WebView origins alongside a configured allow-list", () => {
+    const result = corsOrigin(["https://liftr.example.com"]);
+    expect(result).toEqual(["https://liftr.example.com", ...NATIVE_APP_ORIGINS]);
+  });
+});
 
 describe("security headers", () => {
   it("sets X-Content-Type-Options and X-Frame-Options on every response", async () => {

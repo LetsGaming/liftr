@@ -51,6 +51,16 @@ import { registerXpRoutes } from "./routes/xp.js";
  *  same as it never reaching `request.log.error`. Defaults to a no-op so every test file that
  *  builds its own bare `configureApp(Fastify())` (see this function's own doc comment) keeps
  *  working unchanged; `buildApp` below is the only caller that passes a real one. */
+/** The native app's WebView origin is Capacitor's own localhost (android: https, ios: capacitor:),
+ *  never the deployment's domain — so a locked-down LIFTR_ALLOWED_ORIGINS would otherwise silently
+ *  break every APK. Safe to always allow: auth is a bearer header out of localStorage, which no
+ *  other origin can read regardless of CORS. */
+export const NATIVE_APP_ORIGINS = ["https://localhost", "capacitor://localhost"];
+
+export function corsOrigin(allowed: string[] | null): string[] | true {
+  return allowed ? [...allowed, ...NATIVE_APP_ORIGINS] : true;
+}
+
 export function configureApp(
   app: FastifyInstance,
   opts?: { onUnexpectedError?: (error: FastifyError, request: FastifyRequest) => void },
@@ -135,7 +145,7 @@ export async function buildApp() {
     });
   }
 
-  await app.register(cors, { origin: env.allowedOrigins ?? true });
+  await app.register(cors, { origin: corsOrigin(env.allowedOrigins) });
   await app.register(helmet, {
     // This server also directly serves the built client PWA as static files (see the
     // clientDistRoot wiring below) — helmet's default CSP would block that app's own inline

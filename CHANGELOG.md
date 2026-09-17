@@ -7,6 +7,13 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+### Fixed
+
+- **Native app couldn't connect to a server with `LIFTR_ALLOWED_ORIGINS` set.** The Android app's
+  own WebView origin was never on the allow-list, so the server rejected its requests with no
+  useful error — the app just showed "Server nicht erreichbar". The app's origin is now always
+  allowed alongside your configured list.
+
 ### Changed
 
 - **New app icon and logo.** Replaced the plain blue hexagon with a new mark on the app's Nebula

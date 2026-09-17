@@ -34,7 +34,8 @@ export async function checkServerIdentity(url: string): Promise<{ ok: true } | {
     const service = body && typeof body === "object" ? (body as { service?: unknown }).service : undefined;
     if (service !== "liftr") return { ok: false, error: "Antwort erhalten, aber das scheint keine Liftr-Instanz zu sein." };
     return { ok: true };
-  } catch {
+  } catch (err) {
+    console.warn("server identity check failed", err);
     return { ok: false, error: "Server nicht erreichbar. Adresse und Verbindung prüfen." };
   } finally {
     clearTimeout(timeout);
