@@ -159,6 +159,24 @@ describe("applySyncBatch — finish_workout", () => {
     expect(result!.ranks).toEqual([]);
   });
 
+  it("rejects finishing a workout whose start_workout hasn't applied yet (out-of-order flush), instead of silently no-op'ing to 'created'", async () => {
+    // Deliberately no startWorkoutItem() applied first — mirrors an outbox flushed in
+    // clientId (UUID) order instead of queuedAt order, where finish_workout can land before its
+    // own start_workout.
+    const [result] = await applySyncBatch(db, OWNER_USER_ID, [
+      {
+        clientId: "client-finish-orphan",
+        type: "finish_workout",
+        payload: { workoutId: "no-such-workout", endedAt: new Date("2026-01-01T11:00:00Z"), pausedSeconds: 0 },
+      } as SyncItem,
+    ]);
+    expect(result).toMatchObject({ status: "error", error: "unknown_workout" });
+    // No side effects should have run for a workout that doesn't exist.
+    expect(result!.ranks).toBeUndefined();
+    const workoutRow = await db.query.workouts.findFirst({ where: eq(workouts.id, "no-such-workout") });
+    expect(workoutRow).toBeUndefined();
+  });
+
   it("persists workout-level notes sent in the finish_workout payload (Task 2)", async () => {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     await applySyncBatch(db, OWNER_USER_ID, [

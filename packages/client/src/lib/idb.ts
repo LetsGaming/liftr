@@ -45,7 +45,10 @@ export async function enqueueOutboxItem(item: OutboxItem) {
 
 export async function listOutboxItems(): Promise<OutboxItem[]> {
   const db = await getDb();
-  return db.getAll("outbox");
+  const items = await db.getAll("outbox");
+  // ponytail: in-memory sort, fine up to a few hundred items; add an IDB index if the outbox
+  // ever grows large. getAll() returns rows in clientId (UUID) key order, not queue order.
+  return items.sort((a, b) => a.queuedAt - b.queuedAt);
 }
 
 export async function removeOutboxItem(clientId: string) {
