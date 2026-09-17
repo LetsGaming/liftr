@@ -350,7 +350,7 @@ async function saveWeight() {
       </div>
     </section>
 
-    <h2 class="group-header">Daten &amp; Server</h2>
+    <h2 class="group-header">Darstellung</h2>
 
     <section class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Darstellung</h2>
@@ -359,6 +359,8 @@ async function saveWeight() {
         <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">Hell</button>
       </div>
     </section>
+
+    <h2 class="group-header">Konto</h2>
 
     <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Mitglieder</h2>
@@ -458,6 +460,8 @@ async function saveWeight() {
         {{ deletingAccount ? "Wird gelöscht…" : isDeleteAccountArmed() ? "Wirklich löschen?" : "Konto löschen" }}
       </button>
     </section>
+
+    <h2 class="group-header">Daten</h2>
 
     <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Health Connect</h2>
