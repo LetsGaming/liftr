@@ -16,6 +16,7 @@ import type { useRoutineStore, Routine } from "../stores/routineStore";
 import type { useStreakStore } from "../stores/streakStore";
 import type { useXpStore } from "../stores/xpStore";
 import type { RankUpSummary, StreakDay } from "../components/workout/FinishSequence.vue";
+import { formatDurationMinutes } from "../lib/format";
 
 export interface FinishedSummary {
   routineName: string;
@@ -258,7 +259,7 @@ export function useWorkoutFinish(
       })
       .filter((c) => c.recoveryGainLabel != null || c.plausibilityNote != null);
 
-    finishedSummary.value = { routineName, durationLabel: `${Math.round(elapsedS / 60)} min`, volumeKg, setCount, muscles, exercises: exercisesSnapshot };
+    finishedSummary.value = { routineName, durationLabel: formatDurationMinutes(elapsedS), volumeKg, setCount, muscles, exercises: exercisesSnapshot };
 
     // store.finish() already awaited the network round trip, so the streaks row and this
     // session's XP are already reflected server-side — no more guessing with a timeout.

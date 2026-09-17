@@ -16,6 +16,7 @@ import type { RunCategory } from "@liftr/shared";
 import { RUN_CATEGORIES } from "@liftr/shared";
 import RunDetail from "../components/run/RunDetail.vue";
 import { useExerciseName } from "../composables/useExerciseName";
+import { formatClockLong } from "../lib/format";
 import { usePrStore } from "../stores/prStore";
 import { useRunRankStore, type RunPrListItem } from "../stores/runRankStore";
 
@@ -83,18 +84,6 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-/** Seconds -> "m:ss" (or "h:mm:ss" once it crosses an hour, e.g. marathon times), matching the
- *  German locale's colon convention already used for pace elsewhere (RunsPage.vue's
- *  formatPace). */
-function formatRaceTime(totalSeconds: number): string {
-  const total = Math.round(totalSeconds);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  const ss = String(seconds).padStart(2, "0");
-  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${ss}`;
-  return `${minutes}:${ss}`;
-}
 </script>
 
 <template>
@@ -162,7 +151,7 @@ function formatRaceTime(totalSeconds: number): string {
               <b>{{ RUN_CATEGORY_LABEL[category] }}</b>
             </div>
             <div v-if="bestRunTimeByCategory[category]" class="pr-row-meta">
-              <span class="tnum pr-value">{{ formatRaceTime(bestRunTimeByCategory[category]!.value) }}</span>
+              <span class="tnum pr-value">{{ formatClockLong(bestRunTimeByCategory[category]!.value) }}</span>
               <span class="pr-date">{{ formatDate(bestRunTimeByCategory[category]!.achievedAt) }}</span>
             </div>
             <div v-else class="pr-row-meta">
