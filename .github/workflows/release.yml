@@ -99,7 +99,12 @@ jobs:
             echo "::error::No APK found under app/build/outputs/apk/release"
             exit 1
           fi
-          echo "path=$apk" >> "$GITHUB_OUTPUT"
+          # Gradle's own output name (app-release.apk, from its default archivesBaseName) — rename
+          # the actual file, not just the upload-artifact/release label below, which name the
+          # artifact zip / GitHub-UI display string but never touch the file inside.
+          renamed="$(dirname "$apk")/liftr-${{ steps.version.outputs.name }}.apk"
+          mv "$apk" "$renamed"
+          echo "path=$renamed" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
