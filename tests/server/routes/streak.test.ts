@@ -8,11 +8,11 @@ function toDateStr(d: Date): string {
 }
 
 describe("GET /api/streak", () => {
-  let app: ReturnType<typeof createTestApp>["app"];
+  let app: Awaited<ReturnType<typeof createTestApp>>["app"];
   let db: LiftrDb;
 
-  beforeEach(() => {
-    const testApp = createTestApp();
+  beforeEach(async () => {
+    const testApp = await createTestApp();
     app = testApp.app;
     db = testApp.db;
     registerStreakRoutes(app, db);

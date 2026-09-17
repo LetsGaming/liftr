@@ -9,8 +9,8 @@ import { insertTestExercise } from "../helpers/testDb.js";
 let app: FastifyInstance;
 let db: LiftrDb;
 
-beforeEach(() => {
-  ({ app, db } = createTestApp());
+beforeEach(async () => {
+  ({ app, db } = await createTestApp());
   registerOverallRankRoutes(app, db);
 });
 

@@ -6,7 +6,7 @@ import { insertTestExercise } from "../helpers/testDb.js";
 
 describe("GET /api/routines", () => {
   it("returns an empty array when there are no routines", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "GET", url: "/api/routines" });
@@ -16,7 +16,7 @@ describe("GET /api/routines", () => {
   });
 
   it("returns active routines with their exercises and active mesocycle, excluding archived ones", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const [active] = await db.insert(routines).values({ name: "Push Day", orderIndex: 0 }).returning();
     await db.insert(routines).values({ name: "Archived Day", orderIndex: 1, archivedAt: new Date() });
@@ -37,7 +37,7 @@ describe("GET /api/routines", () => {
   });
 
   it("reports mesocycle null for a routine with no active cycle", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     await db.insert(routines).values({ name: "No Cycle", orderIndex: 0 });
 
@@ -49,7 +49,7 @@ describe("GET /api/routines", () => {
 
 describe("POST /api/routines", () => {
   it("creates a routine with its exercise list", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const exercise = await insertTestExercise(db, { slug: "bench-press" });
 
@@ -75,7 +75,7 @@ describe("POST /api/routines", () => {
   });
 
   it("defaults exercises to an empty list when omitted", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines", payload: { name: "Empty Routine" } });
@@ -85,7 +85,7 @@ describe("POST /api/routines", () => {
   });
 
   it("rejects a missing name with the real 400 invalid_request shape", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines", payload: { orderIndex: 0 } });
@@ -95,7 +95,7 @@ describe("POST /api/routines", () => {
   });
 
   it("rejects an empty name", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "POST", url: "/api/routines", payload: { name: "" } });
@@ -105,7 +105,7 @@ describe("POST /api/routines", () => {
   });
 
   it("rejects a routine exercise with zero target sets", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const exercise = await insertTestExercise(db);
 
@@ -120,7 +120,7 @@ describe("POST /api/routines", () => {
   });
 
   it("rejects a negative restBetweenSetsSeconds (0 is legitimate, negative is not)", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const exercise = await insertTestExercise(db);
 
@@ -138,7 +138,7 @@ describe("POST /api/routines", () => {
   });
 
   it("rejects a routine name over the length cap with 400, not 500", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({
@@ -152,7 +152,7 @@ describe("POST /api/routines", () => {
   });
 
   it("rejects a body over Fastify's bodyLimit with 413, not a bare 500", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({
@@ -166,7 +166,7 @@ describe("POST /api/routines", () => {
   });
 
   it("accepts a zero restBetweenSetsSeconds (BUG-02 regression)", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const exercise = await insertTestExercise(db);
 
@@ -185,7 +185,7 @@ describe("POST /api/routines", () => {
 
 describe("PATCH /api/routines/:id", () => {
   it("updates name and orderIndex", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const [routine] = await db.insert(routines).values({ name: "Old Name", orderIndex: 0 }).returning();
 
@@ -203,7 +203,7 @@ describe("PATCH /api/routines/:id", () => {
   });
 
   it("replaces the exercise list wholesale when exercises is provided", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const exerciseA = await insertTestExercise(db, { slug: "a" });
     const exerciseB = await insertTestExercise(db, { slug: "b" });
@@ -228,7 +228,7 @@ describe("PATCH /api/routines/:id", () => {
   });
 
   it("leaves the exercise list untouched when exercises is omitted", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const exercise = await insertTestExercise(db);
     const createRes = await app.inject({
@@ -246,7 +246,7 @@ describe("PATCH /api/routines/:id", () => {
   });
 
   it("rejects a malformed body (wrong type for name)", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const [routine] = await db.insert(routines).values({ name: "R", orderIndex: 0 }).returning();
 
@@ -257,7 +257,7 @@ describe("PATCH /api/routines/:id", () => {
   });
 
   it("404s for an id that doesn't exist, rather than silently reporting ok for zero affected rows", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "PATCH", url: "/api/routines/does-not-exist", payload: { name: "New Name" } });
@@ -268,7 +268,7 @@ describe("PATCH /api/routines/:id", () => {
 
 describe("DELETE /api/routines/:id", () => {
   it("archives the routine so it drops out of the active list", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
     const [routine] = await db.insert(routines).values({ name: "To Delete", orderIndex: 0 }).returning();
 
@@ -282,7 +282,7 @@ describe("DELETE /api/routines/:id", () => {
   });
 
   it("404s for an id that doesn't exist", async () => {
-    const { app, db } = createTestApp();
+    const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);
 
     const res = await app.inject({ method: "DELETE", url: "/api/routines/does-not-exist" });
