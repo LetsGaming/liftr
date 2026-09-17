@@ -42,17 +42,16 @@ Source: [`packages/ingest/src/index.ts`](../../packages/ingest/src/index.ts) and
 
 ## Client (`@liftr/client`)
 
-Source: [`packages/client/src/lib/api.ts`](../../packages/client/src/lib/api.ts), read via Vite's
-`import.meta.env` (build-time, not `process.env`).
-
-| Variable | Default | Controls |
-|---|---|---|
-| `VITE_API_BASE` | *(unset → `""`)* | Base URL prepended to every API request. Empty string in the normal browser/dev-server case, so the Vite dev-server proxy (`/api` → `http://localhost:3001`, configured in [`vite.config.ts`](../../packages/client/vite.config.ts)) keeps working unchanged. Only needs to be set to an absolute LAN server URL for a Capacitor native build, where there's no dev-server proxy available on-device. Set at build time (Vite inlines `import.meta.env.*` into the bundle) — not a runtime-configurable value. |
-
-No other `VITE_*` variables are read anywhere in `packages/client/src`. The session token itself is
-*not* an env var — it's obtained by logging in (or completing first-run owner setup) via
-`AuthGate.vue` and stored in `localStorage` (`liftr.token`), scoped to whichever account the user
-authenticated as.
+No environment variables — `apiBase()` in
+[`packages/client/src/lib/api.ts`](../../packages/client/src/lib/api.ts) is `""` (same-origin) on
+web, and on native reads whatever server URL the user entered and verified at runtime via
+`ServerGate.vue`/`useServerConnection.ts`, never baked in at build time (a previous
+`VITE_API_BASE` build-time variable served this purpose; removed since a native build no longer
+needs to know its backend in advance). Both the session token and the server URL live in
+`localStorage` (`liftr.token`, `liftr.serverUrl`) — the token obtained by logging in (or
+completing first-run owner setup) via `AuthGate.vue`, the server URL by `ServerGate.vue`'s
+first-launch connection screen (native only; the web build has no such screen, same-origin is
+always correct there).
 
 ## Not environment-configured
 

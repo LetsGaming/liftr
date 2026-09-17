@@ -9,12 +9,15 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 import { computed, onMounted, ref } from "vue";
 import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import { useAppUpdate } from "../composables/useAppUpdate";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useDataExport } from "../composables/useDataExport";
 import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
 import { useHealthConnectImport, isHealthConnectAvailable } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
+import { useServerConnection } from "../composables/useServerConnection";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
+import { isAndroid, isNative } from "../lib/platform";
 import {
   createInvite,
   deleteMyAccount,
@@ -55,6 +58,42 @@ const {
 } = useGymSetup(settingsStore);
 const { healthConnectStatus, healthConnectBusy, connectHealthConnect } = useHealthConnectImport();
 const { exporting, exportError, exportData } = useDataExport();
+
+// Native-only — the web build always talks to whatever origin it's served from, no server
+// concept to show/change here. See ServerGate.vue for the first-launch counterpart of this flow.
+const isNativePlatform = isNative();
+const { serverUrl, checking: serverChecking, error: serverError, verifyAndSave: verifyAndSaveServer } = useServerConnection();
+const editingServer = ref(false);
+const serverInput = ref("");
+
+function startEditingServer() {
+  serverInput.value = serverUrl.value;
+  editingServer.value = true;
+}
+
+async function saveServer() {
+  if (await verifyAndSaveServer(serverInput.value)) {
+    // Every store/composable already reads apiBase() fresh per-request, but reloading is the
+    // simplest way to guarantee nothing in memory (already-fetched stores, in-flight requests)
+    // is left pointing at the old server.
+    window.location.reload();
+  }
+}
+
+// Android-only — the update is an APK asset, meaningless on iOS/web. App.vue already runs one
+// check on launch (silently); this page's own effectively re-checks on open too (shared module
+// state, see useAppUpdate.ts's header comment) so the section is never stuck showing a stale
+// "no update" from before a release went out mid-session.
+const isAndroidPlatform = isAndroid();
+const {
+  currentVersion: appVersion,
+  latestVersion: appLatestVersion,
+  updateAvailable: appUpdateAvailable,
+  checking: appUpdateChecking,
+  error: appUpdateError,
+  check: checkForAppUpdate,
+  openDownload: openAppUpdateDownload,
+} = useAppUpdate();
 
 const me = ref<Me | null>(null);
 const members = ref<Member[]>([]);
@@ -115,6 +154,7 @@ onMounted(async () => {
   if (me.value.role === "owner") {
     members.value = await listMembers();
   }
+  if (isAndroidPlatform) void checkForAppUpdate();
 });
 
 const canSave = computed(() => {
@@ -297,6 +337,47 @@ async function saveWeight() {
       </div>
     </section>
 
+    <section v-if="isNativePlatform" class="card card--quiet surface-hybrid">
+      <h2 class="eyebrow">Server</h2>
+      <template v-if="!editingServer">
+        <p class="hint">{{ serverUrl }}</p>
+        <button class="btn-secondary" @click="startEditingServer">Ändern</button>
+      </template>
+      <template v-else>
+        <input
+          v-model="serverInput"
+          type="text"
+          placeholder="liftr.example.com"
+          aria-label="Server-Adresse"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <p v-if="serverError" class="error">{{ serverError }}</p>
+        <div class="server-actions">
+          <button class="btn-secondary" @click="editingServer = false">Abbrechen</button>
+          <button class="btn-primary" :disabled="serverChecking || !serverInput.trim()" @click="saveServer">
+            {{ serverChecking ? "Prüfe…" : "Speichern" }}
+          </button>
+        </div>
+      </template>
+    </section>
+
+    <section class="card card--quiet surface-hybrid">
+      <h2 class="eyebrow">Version</h2>
+      <p class="hint">{{ appVersion ? `v${appVersion}` : "…" }}</p>
+      <template v-if="isAndroidPlatform">
+        <p v-if="appUpdateAvailable" class="update-line">Update verfügbar: v{{ appLatestVersion }}</p>
+        <p v-if="appUpdateError" class="error">{{ appUpdateError }}</p>
+        <div class="server-actions">
+          <button class="btn-secondary" :disabled="appUpdateChecking" @click="checkForAppUpdate">
+            {{ appUpdateChecking ? "Prüfe…" : "Nach Updates suchen" }}
+          </button>
+          <button v-if="appUpdateAvailable" class="btn-primary" @click="openAppUpdateDownload">Herunterladen</button>
+        </div>
+      </template>
+    </section>
+
     <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Mitglieder</h2>
       <ul v-if="members.length" class="member-list">
@@ -458,6 +539,35 @@ async function saveWeight() {
   font-size: 12px;
   color: var(--faint);
   margin-bottom: var(--sp3);
+}
+/* Same text-input recipe as .bw-row input below, for the "change server" field. */
+input[aria-label="Server-Adresse"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: var(--sp2);
+}
+.server-actions {
+  display: flex;
+  gap: var(--sp2);
+}
+.server-actions .btn-primary {
+  flex: 1;
+}
+.error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-bottom: var(--sp2);
+}
+.update-line {
+  color: var(--blue-hi);
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: var(--sp2);
 }
 .bw-row {
   display: flex;

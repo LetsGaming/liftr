@@ -7,6 +7,25 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+### Added
+- **In-app version display + update checks.** Every platform now shows the app's own version on
+  Profil → Version. On Android only, this also checks this repo's latest GitHub Release on
+  launch (and on demand) and, if newer, offers a one-tap download that opens the release APK in
+  the system browser — Android's own download manager and "tap to install" notification handle
+  the rest, no new permissions or native code needed. Web/other platforms show only the version,
+  with no update mechanism.
+- **Runtime server connection for the native app.** The Android app now asks for its server's
+  address on first launch and verifies it's actually a running Liftr instance
+  (`GET /api/health` now returns `service: "liftr"`) before proceeding, instead of baking a
+  fixed backend URL in at build time — the same pattern as Home Assistant/Jellyfin. Change it
+  later from Profil → Server. The web/PWA build is unaffected (same-origin, no picker needed).
+
+### Changed
+- Removed the `VITE_API_BASE` build-time variable and the `LIFTR_BACKEND_URL` CI variable it
+  read from — no longer needed now that the native app resolves its server at runtime.
+- Android now permits plain `http://` server addresses (previously blocked by default since
+  API 28), since a self-hosted instance often has no reverse-proxy/TLS in front yet.
+
 ## [1.0.1] - 2026-09-16
 
 - Internal updates and minor improvements.

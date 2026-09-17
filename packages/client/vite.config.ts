@@ -1,12 +1,23 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+
+const pkg = JSON.parse(readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8")) as {
+  version: string;
+};
 
 // Client shell (plan 1.2): Vue 3 PWA, offline-first (plan 1.3). The service worker precaches
 // the app shell; catalog + images use CacheFirst; API GETs use StaleWhileRevalidate, so the
 // core logging loop keeps working with no signal (audit's "gym basement" requirement).
 export default defineConfig(({ command }) => ({
   resolve: command === "serve" ? { conditions: ["development"] } : undefined,
+  // See src/vite-env.d.ts — useAppUpdate.ts reads this as the app version on platforms with no
+  // native build to ask (web/PWA); the native (Android) build reads its own real installed
+  // version via @capacitor/app's App.getInfo() instead, since that's the authoritative source
+  // there.
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     vue(),
     VitePWA({

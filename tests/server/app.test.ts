@@ -49,7 +49,7 @@ describe("public routes", () => {
         await requireAuth(db)(request, reply);
       }
     });
-    app.get("/api/health", async () => ({ ok: true }));
+    app.get("/api/health", async () => ({ ok: true, service: "liftr" }));
     app.get("/api/workouts", async () => ({ workouts: [] }));
     return app;
   }
@@ -58,7 +58,7 @@ describe("public routes", () => {
     const app = appWithAuthHook();
     const res = await app.inject({ method: "GET", url: "/api/health" });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true });
+    expect(res.json()).toEqual({ ok: true, service: "liftr" });
   });
 
   it("still requires auth on an ordinary /api/* route", async () => {

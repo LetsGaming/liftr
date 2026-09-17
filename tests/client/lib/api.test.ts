@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { api, ApiError, apiBase, getToken, setToken } from "~client/lib/api";
+
+// api.ts's own relative "./platform" import resolves to the same absolute file the ~client
+// alias points at (tests/README.md's note, same reasoning as AuthGate.test.ts's api mock).
+const { isNativeMock } = vi.hoisted(() => ({ isNativeMock: vi.fn().mockReturnValue(false) }));
+vi.mock("~client/lib/platform", () => ({ isNative: isNativeMock }));
+
+import { api, ApiError, apiBase, getServerUrl, getToken, setServerUrl, setToken } from "~client/lib/api";
 
 // localStorage is a true external (browser storage) boundary that doesn't exist under vitest's
 // default node environment — stub a minimal in-memory implementation rather than pulling in a
@@ -24,6 +30,7 @@ function fakeResponse(status: number, body?: unknown): Response {
 
 beforeEach(() => {
   installFakeLocalStorage();
+  isNativeMock.mockReturnValue(false);
 });
 
 afterEach(() => {
@@ -31,8 +38,31 @@ afterEach(() => {
 });
 
 describe("apiBase", () => {
-  it("returns an empty string when VITE_API_BASE isn't set (dev-server proxy case)", () => {
+  it("returns an empty string on web regardless of any stored server URL (same-origin/dev-proxy case)", () => {
+    setServerUrl("https://liftr.example.com");
     expect(apiBase()).toBe("");
+  });
+
+  it("returns the stored server URL on native", () => {
+    isNativeMock.mockReturnValue(true);
+    setServerUrl("https://liftr.example.com");
+    expect(apiBase()).toBe("https://liftr.example.com");
+  });
+
+  it("returns an empty string on native when no server URL was ever stored", () => {
+    isNativeMock.mockReturnValue(true);
+    expect(apiBase()).toBe("");
+  });
+});
+
+describe("getServerUrl / setServerUrl", () => {
+  it("returns an empty string when no server URL was ever stored", () => {
+    expect(getServerUrl()).toBe("");
+  });
+
+  it("round-trips a server URL through localStorage", () => {
+    setServerUrl("https://liftr.example.com");
+    expect(getServerUrl()).toBe("https://liftr.example.com");
   });
 });
 

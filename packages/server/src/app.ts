@@ -218,7 +218,9 @@ export async function buildApp() {
   registerExportRoutes(app, db);
   registerXpRoutes(app, db);
 
-  app.get("/api/health", async () => ({ ok: true }));
+  // `service: "liftr"` lets the native app's server-connection picker (ServerGate.vue) tell a
+  // real Liftr instance apart from any other server that happens to answer on the same path.
+  app.get("/api/health", async () => ({ ok: true, service: "liftr" }));
 
   return app;
 }

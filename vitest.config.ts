@@ -47,6 +47,15 @@ export default defineConfig({
         find: /^@capacitor\/network$/,
         replacement: fileURLToPath(new URL("./packages/client/node_modules/@capacitor/network", import.meta.url)),
       },
+      // Same idb/@capacitor resolution mismatch as above, for useAppUpdate.ts's Browser.open()
+      // call — needed so tests/client/composables/useAppUpdate.test.ts's
+      // vi.mock("@capacitor/browser", ...) actually intercepts the same module id useAppUpdate.ts
+      // itself resolves (without this, Browser.open falls through to the real web
+      // implementation, which throws "window is not defined" under this file's node environment).
+      {
+        find: /^@capacitor\/browser$/,
+        replacement: fileURLToPath(new URL("./packages/client/node_modules/@capacitor/browser", import.meta.url)),
+      },
       // Same idb/@capacitor resolution mismatch as above, for `leaflet` — RunMap.vue's own
       // `import L from "leaflet"` and a test file's `vi.mock("leaflet", ...)` need to resolve to
       // the exact same module id for the mock to actually intercept it (see
@@ -57,6 +66,10 @@ export default defineConfig({
       },
     ],
   },
+  // useAppUpdate.ts reads __APP_VERSION__, normally injected by packages/client/vite.config.ts's
+  // own `define` — value here doesn't need to match, tests that care about the exact version
+  // stub it via their own mocks instead.
+  define: { __APP_VERSION__: JSON.stringify("0.0.0-test") },
   test: {
     include: ["tests/**/*.{test,spec}.ts"],
     environment: "node",
