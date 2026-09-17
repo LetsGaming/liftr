@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -13,6 +13,11 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Lets env(safe-area-inset-top) report a real value on notched/cutout devices (only
+             matters on API 28+; ignored below that). Capacitor's own adjustMarginsForEdgeToEdge
+             (capacitor.config.ts) is the primary fix — this is the CSS-layer fallback it falls
+             back to if that setting is ever turned off, per that file's own comment. -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="28">shortEdges</item>
     </style>
 
 

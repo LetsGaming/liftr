@@ -51,6 +51,9 @@ const title = defineModel<string>("title", { default: "" });
 .wizard-head {
   flex: none;
   padding: var(--sp3) var(--sp4);
+  /* Full-bleed modal header (see SheetModal.vue), shared by RoutineWizard.vue and RouteWizard.vue
+     — without this, the title input and close button sit under the notch/status bar on Android. */
+  padding-top: calc(var(--sp3) + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
   display: flex;
   flex-direction: column;

@@ -20,7 +20,10 @@ export const DEFAULT_BAR_WEIGHTS_KG: Record<BarType, number> = { barbell: 20, "e
  *  everything else at 50kg). Onboarding's stepper must respect this or a saved value can fail
  *  server-side validation silently dropping the whole gym-setup save. */
 export const MAX_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 50, "ez-bar": 50, "trap-bar": 50, dumbbell: 10 };
-export const MIN_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 5, "ez-bar": 5, "trap-bar": 5, dumbbell: 1 };
+/** 1kg for every bar type, not just dumbbell — some aluminum barbells weigh under 5kg (they just
+ *  can't carry as much added plate weight, which isn't this app's concern). Used to be 5kg for
+ *  the barbell family, which made a genuinely lighter bar impossible to record accurately. */
+export const MIN_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 1, "ez-bar": 1, "trap-bar": 1, dumbbell: 1 };
 
 export interface OnboardingDraft {
   sex: "male" | "female" | null;

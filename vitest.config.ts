@@ -64,6 +64,14 @@ export default defineConfig({
         find: /^leaflet$/,
         replacement: fileURLToPath(new URL("./packages/client/node_modules/leaflet", import.meta.url)),
       },
+      // Same idb/@capacitor resolution mismatch as above, for healthConnect.ts's `Health` import
+      // (capacitor-health) — needed so tests/client/health/healthConnect.test.ts's
+      // vi.mock("capacitor-health", ...) actually intercepts the same module id healthConnect.ts
+      // itself resolves.
+      {
+        find: /^capacitor-health$/,
+        replacement: fileURLToPath(new URL("./packages/client/node_modules/capacitor-health", import.meta.url)),
+      },
     ],
   },
   // useAppUpdate.ts reads __APP_VERSION__, normally injected by packages/client/vite.config.ts's

@@ -15,6 +15,12 @@ vi.mock("~client/lib/platform", async (importOriginal) => {
 });
 vi.mock("@capacitor/app", () => ({ App: { getInfo: getInfoMock } }));
 vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpenMock } }));
+// useHealthConnectImport() runs isHealthConnectAvailable() unconditionally on every mount (its
+// result decides whether the Health Connect card even renders) — unmocked, Health.isHealthAvailable
+// throws "not implemented on web" under jsdom, same as any other native-only Capacitor plugin.
+vi.mock("capacitor-health", () => ({
+  Health: { isHealthAvailable: vi.fn().mockResolvedValue({ available: false }), requestHealthPermissions: vi.fn(), queryWorkouts: vi.fn() },
+}));
 
 import ProfilePage from "~client/pages/ProfilePage.vue";
 import { useAppUpdate } from "~client/composables/useAppUpdate";
@@ -74,6 +80,7 @@ beforeEach(async () => {
   appUpdate.latestVersion.value = null;
   appUpdate.downloadUrl.value = null;
   appUpdate.error.value = null;
+  appUpdate.lastChecked.value = null;
   Object.assign(bodyweightState, { entries: [], loaded: false, error: false, latest: null });
   Object.assign(themeState, { theme: "dark" });
   Object.assign(xpState, { level: 3, totalXp: 450, showXp: true, loaded: false });
@@ -225,7 +232,10 @@ describe("ProfilePage", () => {
     const wrapper = mountWithProviders(ProfilePage);
     // "Speichern" isn't unique to this section (bodyweight/profile/equipment/gym cards each have
     // their own) — scope every lookup after "Ändern" to the Server section itself.
-    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Server")!;
+    // Server/Version/Diagnose all live inside one merged "Konto & App" CollapsibleCard now, so a
+    // section can have several .eyebrow elements (the card's own title plus each sub-heading) —
+    // match any of them, not just the first.
+    const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Server"))!;
     await section.findAll("button").find((b) => b.text() === "Ändern")!.trigger("click");
     await section.find("input[aria-label='Server-Adresse']").setValue("new.example.com");
     await section.findAll("button").find((b) => b.text() === "Speichern")!.trigger("click");
@@ -238,10 +248,12 @@ describe("ProfilePage", () => {
   it("shows only the version (no update-check UI) on non-Android", () => {
     const wrapper = mountWithProviders(ProfilePage);
 
-    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Version")!;
+    const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Version"))!;
     expect(section.exists()).toBe(true);
     expect(section.text()).toContain("v0.0.0-test");
-    expect(section.findAll("button")).toHaveLength(0);
+    // No update-check buttons (Server/Diagnose/Abmelden share this now-merged card and do have
+    // their own buttons, so this checks specifically for the absence of update-check UI).
+    expect(section.findAll("button").some((b) => ["Nach Updates suchen", "Herunterladen"].includes(b.text()))).toBe(false);
     expect(getInfoMock).not.toHaveBeenCalled();
   });
 
@@ -259,7 +271,7 @@ describe("ProfilePage", () => {
     const wrapper = mountWithProviders(ProfilePage);
     await flushPromises();
 
-    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Version")!;
+    const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Version"))!;
     expect(section.text()).toContain("v1.0.0");
     expect(section.text()).toContain("Update verfügbar: v1.2.0");
 
@@ -277,7 +289,7 @@ describe("ProfilePage", () => {
     const wrapper = mountWithProviders(ProfilePage);
     await flushPromises();
 
-    const section = wrapper.findAll("section").find((s) => s.find(".eyebrow").text() === "Version")!;
+    const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Version"))!;
     expect(section.text()).not.toContain("Update verfügbar");
 
     await section.findAll("button").find((b) => b.text() === "Nach Updates suchen")!.trigger("click");

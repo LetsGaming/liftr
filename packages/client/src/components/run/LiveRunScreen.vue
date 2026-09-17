@@ -173,6 +173,9 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
   justify-content: space-between;
   gap: var(--sp3);
   padding: 10px 12px;
+  /* Full-bleed modal header (see SheetModal.vue) — without this the run title/close button sit
+     under the notch/status bar on Android during an active run. */
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
 }
 .live-head-title {
   display: flex;

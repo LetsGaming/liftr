@@ -7,10 +7,15 @@
  */
 import { computed, ref, watch } from "vue";
 import { useToast } from "./useToast";
+// DEFAULT_BAR_WEIGHTS_KG/MIN_BAR_WEIGHT_KG/MAX_BAR_WEIGHT_KG were previously duplicated here with
+// a different (looser, dumbbell-max-ignoring) clamp than onboarding's copy — reusing onboarding's
+// as the single source of truth instead, since it's the one that already mirrors the server's
+// barWeightsInput schema (settings.ts) exactly.
+import { DEFAULT_BAR_WEIGHTS_KG, MAX_BAR_WEIGHT_KG, MIN_BAR_WEIGHT_KG, type BarType } from "../components/onboarding/OnboardingDraft";
 import { SUPPORT_EQUIPMENT_SLUGS } from "../lib/equipmentIcons";
 import type { useSettingsStore } from "../stores/settingsStore";
 
-export type BarType = "barbell" | "ez-bar" | "trap-bar" | "dumbbell";
+export type { BarType };
 export const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar", "dumbbell"];
 export const BAR_LABEL_DE: Record<BarType, string> = {
   barbell: "Langhantel",
@@ -18,7 +23,6 @@ export const BAR_LABEL_DE: Record<BarType, string> = {
   "trap-bar": "Trap-Bar",
   dumbbell: "Kurzhantel-Griff",
 };
-const DEFAULT_BAR_WEIGHT_KG: Record<BarType, number> = { barbell: 20, "ez-bar": 10, "trap-bar": 25, dumbbell: 2.5 };
 export const PLATE_SIZES_KG = [25, 20, 15, 10, 5, 2.5, 1.25, 1];
 
 // "plates" is implied by owning a barbell/ez-bar/trap-bar (requirements.ts's withImpliedPlates)
@@ -62,6 +66,8 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
     try {
       await settingsStore.saveEquipment([...equipment.value]);
       toast("Equipment gespeichert.");
+    } catch {
+      toast("Speichern fehlgeschlagen.");
     } finally {
       equipmentSaving.value = false;
     }
@@ -92,10 +98,10 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
     else plateCounts.value.set(weightKg, next);
   }
   function barWeight(type: BarType): number {
-    return barWeightsKg.value.get(type) ?? DEFAULT_BAR_WEIGHT_KG[type];
+    return barWeightsKg.value.get(type) ?? DEFAULT_BAR_WEIGHTS_KG[type];
   }
   function adjustBarWeight(type: BarType, delta: number) {
-    barWeightsKg.value.set(type, Math.min(50, Math.max(1, barWeight(type) + delta)));
+    barWeightsKg.value.set(type, Math.min(MAX_BAR_WEIGHT_KG[type], Math.max(MIN_BAR_WEIGHT_KG[type], barWeight(type) + delta)));
   }
   async function saveGymCard() {
     gymSaving.value = true;
@@ -104,7 +110,31 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
       const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
       await settingsStore.saveGymSetup({ barWeights, plates });
       toast("Scheiben & Stange gespeichert.");
+    } catch {
+      // Previously unhandled — a rejection here (e.g. the server's per-type max, still enforced
+      // server-side even after the client clamp fix above) left the card looking saved with no
+      // indication anything failed.
+      toast("Speichern fehlgeschlagen.");
     } finally {
+      gymSaving.value = false;
+    }
+  }
+
+  /** ProfilePage.vue's merged Equipment+Scheiben card has one save button for what used to be two
+   *  cards/two requests (PUT /api/settings/equipment and PUT /api/settings/gym) — this fires both
+   *  and shows one combined toast instead of the two cards' separate ones stacking. */
+  async function saveEquipmentAndGymCard() {
+    equipmentSaving.value = true;
+    gymSaving.value = true;
+    try {
+      const plates = [...plateCounts.value.entries()].filter(([, count]) => count > 0).map(([weightKg, count]) => ({ weightKg, count }));
+      const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
+      await Promise.all([settingsStore.saveEquipment([...equipment.value]), settingsStore.saveGymSetup({ barWeights, plates })]);
+      toast("Equipment gespeichert.");
+    } catch {
+      toast("Speichern fehlgeschlagen.");
+    } finally {
+      equipmentSaving.value = false;
       gymSaving.value = false;
     }
   }
@@ -123,5 +153,6 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
     barWeight,
     adjustBarWeight,
     saveGymCard,
+    saveEquipmentAndGymCard,
   };
 }

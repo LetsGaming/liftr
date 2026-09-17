@@ -47,15 +47,15 @@ describe("PlatesStep", () => {
     expect(wrapper.find(".plate-row .tnum").text()).toContain("21");
   });
 
-  it("clamps a barbell's weight at its minimum of 5kg", async () => {
+  it("clamps a barbell's weight at its minimum of 1kg (some aluminum barbells weigh under 5kg)", async () => {
     const draft = createOnboardingDraft();
     draft.equipment.add("barbell");
-    draft.barWeightsKg.set("barbell", 5);
+    draft.barWeightsKg.set("barbell", 1);
     const { wrapper } = mountPlatesStep(draft);
 
     await wrapper.find('button[aria-label="Weniger Langhantel"]').trigger("click");
 
-    expect(draft.barWeightsKg.get("barbell")).toBe(5);
+    expect(draft.barWeightsKg.get("barbell")).toBe(1);
   });
 
   it("clamps a barbell's weight at its maximum of 50kg", async () => {

@@ -40,6 +40,10 @@ const latestVersion = ref<string | null>(null);
 const downloadUrl = ref<string | null>(null);
 const checking = ref(false);
 const error = ref<string | null>(null);
+// Set on every successful check (whether or not an update was found) — the only way
+// ProfilePage.vue's "Nach Updates suchen" button can show "you're current" instead of doing
+// nothing visible when the check succeeds but finds no newer release.
+const lastChecked = ref<Date | null>(null);
 
 const updateAvailable = computed(
   () => !!currentVersion.value && !!latestVersion.value && isNewerVersion(latestVersion.value, currentVersion.value),
@@ -63,11 +67,20 @@ export function useAppUpdate() {
       currentVersion.value = info.version;
 
       const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+      if (res.status === 404) {
+        // No release published yet — a real, distinct outcome from "GitHub unreachable", not a
+        // failure worth the generic retry-later message.
+        latestVersion.value = null;
+        downloadUrl.value = null;
+        lastChecked.value = new Date();
+        return;
+      }
       if (!res.ok) throw new Error(`GitHub API responded ${res.status}`);
       const release: GithubRelease = await res.json();
 
       latestVersion.value = release.tag_name.replace(/^v/, "");
       downloadUrl.value = release.assets.find((a) => a.name.endsWith(".apk"))?.browser_download_url ?? null;
+      lastChecked.value = new Date();
     } catch {
       // Silent by design for the automatic on-launch check (App.vue) — GitHub being briefly
       // unreachable shouldn't ever surface as an error to a user who didn't ask to be told
@@ -83,5 +96,5 @@ export function useAppUpdate() {
     if (downloadUrl.value) await Browser.open({ url: downloadUrl.value });
   }
 
-  return { currentVersion, latestVersion, updateAvailable, downloadUrl, checking, error, check, openDownload };
+  return { currentVersion, latestVersion, updateAvailable, downloadUrl, checking, error, lastChecked, check, openDownload };
 }

@@ -170,6 +170,11 @@ async function skip() {
 .wizard-head {
   flex: none;
   padding: var(--sp4);
+  /* Full-bleed modal header (SheetModal's #header slot bypasses .sheet's own padding entirely,
+     see that file), so the step label and "Später" button otherwise sit under the status bar /
+     notch on Android — reported bug. The footer below already handled safe-area-inset-bottom;
+     the top was simply forgotten. */
+  padding-top: calc(var(--sp4) + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
   display: flex;
   flex-direction: column;

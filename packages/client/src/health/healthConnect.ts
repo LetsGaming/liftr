@@ -13,17 +13,25 @@ import { isAndroid } from "../lib/platform";
 
 const LAST_CHECK_KEY = "liftr.healthconnect.lastCheck";
 
-/** Only meaningful on Android — Health Connect doesn't exist on iOS/web. */
-export function isHealthConnectAvailable(): boolean {
-  return isAndroid();
+/** Only meaningful on Android — Health Connect doesn't exist on iOS/web. Also initializes the
+ *  plugin's native `healthConnectClient` (a Kotlin `lateinit`), which nothing else in this file
+ *  did before — `queryWorkouts`/`checkHealthPermissions` throw if it was never touched. */
+export async function isHealthConnectAvailable(): Promise<boolean> {
+  if (!isAndroid()) return false;
+  const { available } = await Health.isHealthAvailable();
+  return available;
 }
 
 export async function requestHealthConnectPermissions(): Promise<boolean> {
-  if (!isHealthConnectAvailable()) return false;
+  if (!(await isHealthConnectAvailable())) return false;
   const res = await Health.requestHealthPermissions({
     permissions: ["READ_WORKOUTS", "READ_ROUTE", "READ_HEART_RATE"],
   });
-  return res.permissions.every((p) => Object.values(p).every(Boolean));
+  // capacitor-health@8.2.0's TS types claim `permissions` is an array of per-permission objects;
+  // the native Kotlin (HealthPlugin.kt grantedPermissionResult) actually returns one flat object
+  // keyed by permission name — typechecks, throws "permissions.every is not a function" at
+  // runtime. Verified against the plugin's own Kotlin source, not just its (wrong) .d.ts.
+  return Object.values(res.permissions as unknown as Record<string, boolean>).every(Boolean);
 }
 
 function getLastCheck(): string {
@@ -55,7 +63,7 @@ function nearestHr(samples: { timestamp: string; bpm: number }[], t: number): nu
 
 /** Checks Health Connect for workouts since the last check, importing any with a real route. */
 export async function importNewHealthConnectWorkouts(): Promise<number> {
-  if (!isHealthConnectAvailable()) return 0;
+  if (!(await isHealthConnectAvailable())) return 0;
 
   const startDate = getLastCheck();
   const endDate = new Date().toISOString();

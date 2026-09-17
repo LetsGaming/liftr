@@ -12,11 +12,14 @@ import {
   requestHealthConnectPermissions,
 } from "../health/healthConnect";
 
-export { isHealthConnectAvailable };
-
 export function useHealthConnectImport() {
   const healthConnectStatus = ref("");
   const healthConnectBusy = ref(false);
+  // isHealthConnectAvailable() is async (it initializes the native plugin's lateinit client via
+  // Health.isHealthAvailable() — see healthConnect.ts) so the card's v-if needs a resolved ref
+  // rather than calling the async function directly in the template.
+  const healthConnectAvailable = ref(false);
+  void isHealthConnectAvailable().then((v) => (healthConnectAvailable.value = v));
 
   async function connectHealthConnect() {
     healthConnectBusy.value = true;
@@ -35,5 +38,5 @@ export function useHealthConnectImport() {
     }
   }
 
-  return { healthConnectStatus, healthConnectBusy, connectHealthConnect };
+  return { healthConnectStatus, healthConnectBusy, healthConnectAvailable, connectHealthConnect };
 }
