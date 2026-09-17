@@ -7,6 +7,12 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+### Changed
+
+- **New app icon and logo.** Replaced the plain blue hexagon with a new mark on the app's Nebula
+  gradient — favicons, the installed-app icon, and the Android launcher/splash screens all
+  updated. The README banner and step-by-step graphic were refreshed to match.
+
 ## [1.1.1] - 2026-09-17
 
 - Internal updates and minor improvements.

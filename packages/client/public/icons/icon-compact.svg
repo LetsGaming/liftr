@@ -6,15 +6,15 @@
       <stop offset="100%" stop-color="#d63aff" />
     </linearGradient>
   </defs>
-  <g transform="translate(256,256) scale(0.72) translate(-256,-256)">
+  <g transform="translate(256,256) scale(1.12) translate(-256,-256)">
     <path
       d="M 120 150 L 120 362 L 216 362 L 320 258"
       fill="none"
       stroke="url(#nebula)"
-      stroke-width="54"
+      stroke-width="64"
       stroke-linecap="round"
       stroke-linejoin="round"
     />
-    <circle cx="386" cy="192" r="34" fill="url(#nebula)" />
+    <circle cx="372" cy="206" r="40" fill="url(#nebula)" />
   </g>
 </svg>

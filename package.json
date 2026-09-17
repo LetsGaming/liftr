@@ -16,6 +16,7 @@
     "typecheck:tests": "tsc --noEmit -p packages/shared/tsconfig.test.json && tsc --noEmit -p packages/db/tsconfig.test.json && tsc --noEmit -p packages/ingest/tsconfig.test.json && tsc --noEmit -p packages/server/tsconfig.test.json && pnpm --filter @liftr/client exec vue-tsc --noEmit -p tsconfig.test.json",
     "db:generate": "pnpm --filter @liftr/db generate",
     "db:migrate": "pnpm --filter @liftr/db migrate",
+    "icons:gen": "node scripts/gen-icons.mjs",
     "ingest": "pnpm --filter @liftr/ingest start",
     "bootstrap": "pnpm --filter @liftr/ingest bootstrap",
     "recompute": "pnpm --filter @liftr/server recompute"
@@ -44,6 +45,7 @@
     "leaflet": "^1.9.4",
     "pinia": "^2.3.0",
     "prettier": "^3.4.2",
+    "sharp": "^0.35.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
     "vue": "^3.5.13",

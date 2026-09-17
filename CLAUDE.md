@@ -106,6 +106,20 @@ human-facing version of this, and `scripts/dev-up.mjs`/`scripts/dev-down.mjs`/
   typecheck of that package (`.claude/settings.json`) — you don't need to run `pnpm typecheck`
   yourself after every small edit, just before calling non-trivial work done.
 
+## Changelog
+
+Add an entry to `CHANGELOG.md` under `## [Unreleased]` for any change that could plausibly
+bother or interest a user — a new feature, a behavior change, a UI change, a fixed bug they could
+have hit, a removed/renamed setting, anything touching data/migrations. Use the existing
+`### Added` / `### Changed` / `### Fixed` / `### Removed` subheadings (see entries below
+`[Unreleased]` for tone and format — short, user-facing, no internal jargon or file paths).
+
+Skip it only for genuinely internal-only changes: refactors with no behavior change, variable/
+function renames, test-only edits, comment/doc typo fixes, dependency bumps with no user-visible
+effect, dev-tooling changes (`scripts/dev-up.mjs` etc.). When in doubt, add the entry — it's
+cheap to write and easy to drop during release cleanup, but a missed one means a real change ships
+undocumented.
+
 ## Client work
 
 Liftr is used primarily on mobile; desktop is the adapted view, not the primary target. After any
