@@ -254,3 +254,25 @@ describe("POST /api/auth/login rate limiting", () => {
     20000,
   );
 });
+
+describe("POST /api/auth/register rate limiting", () => {
+  // Regression test: an attacker brute-forcing an invite code picks a fresh, never-before-seen
+  // username on every attempt. If register were keyed on username (like login's authRateLimit),
+  // each attempt would land in its own empty bucket and the limit would never engage. It must
+  // instead be keyed on IP (registerRateLimit in routes/auth.ts) so repeated attempts from the
+  // same source — all sharing app.inject's default IP — still get throttled.
+  it("returns 429 after exceeding the attempt limit, even with a fresh username each time", async () => {
+    const app = await buildApp(db);
+
+    let lastStatus = 0;
+    for (let i = 0; i < 11; i++) {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/register",
+        payload: { code: "NOTREAL1", username: `attempt${String(i).padStart(4, "0")}`, password: "memberpass1" },
+      });
+      lastStatus = res.statusCode;
+    }
+    expect(lastStatus).toBe(429);
+  });
+});

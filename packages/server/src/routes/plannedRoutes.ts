@@ -103,9 +103,14 @@ export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
+  // Rate-limited: create computes route geometry via the same paid OpenRouteService call as
+  // /preview (up to 2 outbound ORS requests per call for a closed loop) — same limit as /preview.
   app.post(
     "/api/planned-routes",
-    { schema: { body: createInput, response: { 201: plannedRouteResponse.extend({ points: z.array(routePointResponse) }) } } },
+    {
+      config: userRateLimit(30, "1 minute"),
+      schema: { body: createInput, response: { 201: plannedRouteResponse.extend({ points: z.array(routePointResponse) }) } },
+    },
     async (req, reply) => {
       const route = await createPlannedRoute(db, req.userId, req.body, req.log);
       reply.code(201);
@@ -113,9 +118,11 @@ export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
+  // Rate-limited: same reason as create above — update recomputes geometry via the same paid
+  // OpenRouteService call when waypoints change.
   app.patch(
     "/api/planned-routes/:id",
-    { schema: { params: routeIdParams, body: updateInput, response: { 200: okResponse } } },
+    { config: userRateLimit(30, "1 minute"), schema: { params: routeIdParams, body: updateInput, response: { 200: okResponse } } },
     async (req) => {
       const existing = await findPlannedRouteById(db, req.userId, req.params.id);
       if (!existing) throw new NotFoundError();

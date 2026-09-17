@@ -120,10 +120,12 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
     }
   });
 
-  // POST /api/runs/healthconnect — native in-app import via capacitor-health.
+  // POST /api/runs/healthconnect — native in-app import via capacitor-health. Rate-limited like
+  // the other run-creation routes for generic abuse prevention (not an external paid API, but
+  // still a DB write triggering rank/streak/XP recompute).
   app.post(
     "/api/runs/healthconnect",
-    { schema: { body: healthConnectRunInput } },
+    { config: userRateLimit(20, "1 minute"), schema: { body: healthConnectRunInput } },
     async (req) => {
       return importHealthConnectRun(db, req.userId, req.body.platformId, req.body.name ?? null, req.body.points);
     },
@@ -152,8 +154,9 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // POST /api/runs — manual fallback for runs without a file.
-  app.post("/api/runs", { schema: { body: manualRunInput } }, async (req, reply) => {
+  // POST /api/runs — manual fallback for runs without a file. Rate-limited for generic abuse
+  // prevention, matching /api/runs/import's limit.
+  app.post("/api/runs", { config: userRateLimit(20, "1 minute"), schema: { body: manualRunInput } }, async (req, reply) => {
     const run = await logManualRun(db, req.userId, {
       name: req.body.name ?? null,
       startedAt: req.body.startedAt,
