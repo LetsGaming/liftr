@@ -1,6 +1,13 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { exercises, prs, rankEvents, ranks, sets, standards, workoutExercises, type LiftrDb } from "@liftr/db";
 
+/** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx` —
+ *  same reasoning/pattern as plannedRouteRepository.ts's `PlannedRouteDbClient`: the read/write
+ *  helpers used inside rankService.ts's synchronous recompute transaction (findRankByExerciseId,
+ *  findBestPrByKind, upsertRank, insertPr, insertRankEvent) need to run against `tx` there, but
+ *  `tx`'s concrete type isn't structurally assignable to `LiftrDb` itself. */
+export type RankDbClient = Pick<LiftrDb, "query" | "insert">;
+
 /** Every computed rank for this user, joined with its exercise (for display fields like slug/name). */
 export function findAllRanksWithExercise(db: LiftrDb, userId: string) {
   return db.query.ranks.findMany({ where: eq(ranks.userId, userId), with: { exercise: true } });
@@ -36,7 +43,7 @@ export function findLoggedSetsForExercise(db: LiftrDb, userId: string, exerciseI
     .where(and(eq(workoutExercises.exerciseId, exerciseId), eq(sets.isWarmup, false), eq(sets.userId, userId)));
 }
 
-export function findRankByExerciseId(db: LiftrDb, userId: string, exerciseId: string) {
+export function findRankByExerciseId(db: RankDbClient, userId: string, exerciseId: string) {
   return db.query.ranks.findFirst({ where: and(eq(ranks.userId, userId), eq(ranks.exerciseId, exerciseId)) });
 }
 
@@ -59,7 +66,7 @@ export interface RankUpsert {
   peakAchievedAt: Date | null;
 }
 
-export function upsertRank(db: LiftrDb, userId: string, values: RankUpsert) {
+export function upsertRank(db: RankDbClient, userId: string, values: RankUpsert) {
   const row = { ...values, userId, computedAt: new Date() };
   return db
     .insert(ranks)
@@ -67,19 +74,19 @@ export function upsertRank(db: LiftrDb, userId: string, values: RankUpsert) {
     .onConflictDoUpdate({ target: [ranks.userId, ranks.exerciseId], set: row });
 }
 
-export function findBestPrByKind(db: LiftrDb, userId: string, exerciseId: string, kind: (typeof prs.$inferInsert)["kind"]) {
+export function findBestPrByKind(db: RankDbClient, userId: string, exerciseId: string, kind: (typeof prs.$inferInsert)["kind"]) {
   return db.query.prs.findFirst({
     where: and(eq(prs.userId, userId), eq(prs.exerciseId, exerciseId), eq(prs.kind, kind)),
     orderBy: desc(prs.value),
   });
 }
 
-export function insertPr(db: LiftrDb, userId: string, values: Omit<typeof prs.$inferInsert, "userId">) {
+export function insertPr(db: RankDbClient, userId: string, values: Omit<typeof prs.$inferInsert, "userId">) {
   return db.insert(prs).values({ ...values, userId });
 }
 
 /** History row for a genuine rank-up — mirrors `insertPr` above. */
-export function insertRankEvent(db: LiftrDb, userId: string, values: Omit<typeof rankEvents.$inferInsert, "userId">) {
+export function insertRankEvent(db: RankDbClient, userId: string, values: Omit<typeof rankEvents.$inferInsert, "userId">) {
   return db.insert(rankEvents).values({ ...values, userId });
 }
 
