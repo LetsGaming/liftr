@@ -168,6 +168,11 @@ async function applyLogSet(db: LiftrDb, userId: string, item: LogSetItem): Promi
 async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorkoutItem): Promise<SyncResult> {
   const existing = await findWorkoutById(db, userId, item.payload.workoutId);
   if (existing?.endedAt) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
+  // Guard against finishing a workout whose start_workout item hasn't applied yet (e.g. an
+  // out-of-order flush) — without this, patchWorkout below silently no-ops on a nonexistent row
+  // and this function would still fall through and report "created" for an item that touched
+  // nothing. Leave it queued for retry, same as applyAddExercise's unknown_workout guard.
+  if (!existing) return { clientId: item.clientId, status: "error", error: "unknown_workout" };
 
   await patchWorkout(db, userId, item.payload.workoutId, {
     endedAt: item.payload.endedAt,

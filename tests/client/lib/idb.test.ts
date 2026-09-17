@@ -63,6 +63,20 @@ describe("idb", () => {
     expect(result).toEqual([{ clientId: "a", type: "log_set", payload: {}, queuedAt: 1 }]);
   });
 
+  it("listOutboxItems sorts by queuedAt ascending, not by getAll's (UUID key) order", async () => {
+    // getAll on a clientId-keyed store returns rows in ascending UUID order, which has nothing
+    // to do with when the items were actually queued — these clientIds are deliberately NOT in
+    // queuedAt order, mirroring a real offline session's start_workout/log_set/finish_workout
+    // sequence, each minted with a fresh random UUID.
+    getAllMock.mockResolvedValueOnce([
+      { clientId: "b-uuid", type: "finish_workout", payload: {}, queuedAt: 300 },
+      { clientId: "a-uuid", type: "start_workout", payload: {}, queuedAt: 100 },
+      { clientId: "c-uuid", type: "log_set", payload: {}, queuedAt: 200 },
+    ]);
+    const result = await listOutboxItems();
+    expect(result.map((r) => r.clientId)).toEqual(["a-uuid", "c-uuid", "b-uuid"]);
+  });
+
   it("removeOutboxItem deletes the outbox entry by clientId", async () => {
     await removeOutboxItem("c3");
     expect(deleteMock).toHaveBeenCalledWith("outbox", "c3");
