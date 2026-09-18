@@ -22,14 +22,30 @@ export async function isHealthConnectAvailable(): Promise<boolean> {
   return available;
 }
 
-const HEALTH_CONNECT_PERMISSIONS = [
+export const HEALTH_CONNECT_PERMISSIONS = [
   "READ_WORKOUTS",
   "READ_ROUTE",
   "READ_HEART_RATE",
 ] as const;
 
-export async function requestHealthConnectPermissions(): Promise<boolean> {
-  if (!(await isHealthConnectAvailable())) return false;
+export const HEALTH_CONNECT_PERMISSION_LABELS: Record<
+  (typeof HEALTH_CONNECT_PERMISSIONS)[number],
+  string
+> = {
+  READ_WORKOUTS: "Aktivitäten",
+  READ_ROUTE: "Strecken",
+  READ_HEART_RATE: "Herzfrequenz",
+};
+
+export type HealthConnectPermissionResult = {
+  granted: boolean;
+  missing: string[];
+};
+
+export async function requestHealthConnectPermissions(): Promise<HealthConnectPermissionResult> {
+  if (!(await isHealthConnectAvailable())) {
+    return { granted: false, missing: [] };
+  }
 
   const res = await Health.requestHealthPermissions({
     permissions: [...HEALTH_CONNECT_PERMISSIONS],
@@ -38,15 +54,12 @@ export async function requestHealthConnectPermissions(): Promise<boolean> {
   const granted = res.permissions as unknown as Record<string, boolean>;
   const missing = HEALTH_CONNECT_PERMISSIONS.filter(
     (permission) => granted[permission] !== true,
-  );
+  ).map((permission) => HEALTH_CONNECT_PERMISSION_LABELS[permission]);
 
-  if (missing.length > 0) {
-    throw new Error(
-      `Health-Connect-Freigaben fehlen: ${missing.join(", ")}.`,
-    );
-  }
-
-  return true;
+  return {
+    granted: missing.length === 0,
+    missing,
+  };
 }
 
 function getLastCheck(): string {
