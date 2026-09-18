@@ -4,6 +4,8 @@ import { createTestDb } from "../helpers/testDb.js";
 import {
   createInviteCode,
   createSession,
+  deleteOtherSessionsForUser,
+  deleteSessionById,
   deleteSessionByTokenHash,
   deleteUser,
   findOwnerUser,
@@ -12,9 +14,12 @@ import {
   findUserById,
   findValidInviteCode,
   insertUser,
+  listSessionsForUser,
   listUsers,
   redeemInviteCode,
+  setDisplayName,
   setUserPassword,
+  setUsername,
   touchSession,
 } from "~server/repositories/authRepository.js";
 
@@ -72,21 +77,84 @@ describe("sessions", () => {
     await createSession(db, OWNER_USER_ID, "hash-1");
     const found = await findSessionByTokenHash(db, "hash-1");
     expect(found).toMatchObject({ userId: OWNER_USER_ID, role: "owner" });
+    expect(found?.absoluteExpiresAt).toBeInstanceOf(Date);
   });
 
   it("returns undefined for an unknown token hash", async () => {
     expect(await findSessionByTokenHash(db, "does-not-exist")).toBeUndefined();
   });
 
-  it("touchSession does not throw for an existing session", async () => {
+  it("touchSession does not throw for an existing session, and clamps to the absolute ceiling", async () => {
     await createSession(db, OWNER_USER_ID, "hash-2");
-    await expect(touchSession(db, "hash-2")).resolves.not.toThrow();
+    const before = await findSessionByTokenHash(db, "hash-2");
+    await expect(touchSession(db, "hash-2", before!.absoluteExpiresAt)).resolves.not.toThrow();
+    const after = await findSessionByTokenHash(db, "hash-2");
+    expect(after!.expiresAt.getTime()).toBeLessThanOrEqual(before!.absoluteExpiresAt.getTime());
+  });
+
+  it("touchSession never slides expiresAt past a near absolute ceiling", async () => {
+    await createSession(db, OWNER_USER_ID, "hash-2b");
+    const nearCeiling = new Date(Date.now() + 1000);
+    await touchSession(db, "hash-2b", nearCeiling);
+    const after = await findSessionByTokenHash(db, "hash-2b");
+    expect(after!.expiresAt.getTime()).toBe(nearCeiling.getTime());
   });
 
   it("deleteSessionByTokenHash removes the session", async () => {
     await createSession(db, OWNER_USER_ID, "hash-3");
     await deleteSessionByTokenHash(db, "hash-3");
     expect(await findSessionByTokenHash(db, "hash-3")).toBeUndefined();
+  });
+
+  it("listSessionsForUser returns only that user's sessions, newest-used first", async () => {
+    const other = await insertUser(db, { username: "greta", name: "Greta", role: "member", passwordHash: "x:y" });
+    await createSession(db, OWNER_USER_ID, "hash-4a");
+    await createSession(db, other.id, "hash-4b");
+    const rows = await listSessionsForUser(db, OWNER_USER_ID);
+    expect(rows.map((r) => r.tokenHash)).toEqual(["hash-4a"]);
+  });
+
+  it("deleteSessionById refuses to delete another user's session (IDOR)", async () => {
+    const other = await insertUser(db, { username: "harry", name: "Harry", role: "member", passwordHash: "x:y" });
+    await createSession(db, other.id, "hash-5");
+    const [victimSession] = await listSessionsForUser(db, other.id);
+    const deleted = await deleteSessionById(db, OWNER_USER_ID, victimSession!.id);
+    expect(deleted).toBe(false);
+    expect(await findSessionByTokenHash(db, "hash-5")).toBeDefined();
+  });
+
+  it("deleteSessionById deletes the caller's own session", async () => {
+    await createSession(db, OWNER_USER_ID, "hash-6");
+    const [own] = await listSessionsForUser(db, OWNER_USER_ID);
+    expect(await deleteSessionById(db, OWNER_USER_ID, own!.id)).toBe(true);
+    expect(await findSessionByTokenHash(db, "hash-6")).toBeUndefined();
+  });
+
+  it("deleteOtherSessionsForUser keeps the given token and removes every other session for that user", async () => {
+    await createSession(db, OWNER_USER_ID, "hash-7a");
+    await createSession(db, OWNER_USER_ID, "hash-7b");
+    await deleteOtherSessionsForUser(db, OWNER_USER_ID, "hash-7a");
+    expect(await findSessionByTokenHash(db, "hash-7a")).toBeDefined();
+    expect(await findSessionByTokenHash(db, "hash-7b")).toBeUndefined();
+  });
+
+  it("deleteOtherSessionsForUser with no token to keep removes every session for that user", async () => {
+    await createSession(db, OWNER_USER_ID, "hash-8a");
+    await createSession(db, OWNER_USER_ID, "hash-8b");
+    await deleteOtherSessionsForUser(db, OWNER_USER_ID);
+    expect(await listSessionsForUser(db, OWNER_USER_ID)).toHaveLength(0);
+  });
+});
+
+describe("setUsername / setDisplayName", () => {
+  it("updates the username", async () => {
+    await setUsername(db, OWNER_USER_ID, "newowner");
+    expect(await findUserByUsername(db, "newowner")).toMatchObject({ id: OWNER_USER_ID });
+  });
+
+  it("updates the display name", async () => {
+    await setDisplayName(db, OWNER_USER_ID, "New Name");
+    expect(await findUserById(db, OWNER_USER_ID)).toMatchObject({ name: "New Name" });
   });
 });
 

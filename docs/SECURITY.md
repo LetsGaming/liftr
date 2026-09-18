@@ -34,23 +34,53 @@ was built on).
   (Node's CSPRNG); only its SHA-256 hash is stored server-side (`packages/server/src/lib/
   sessionTokens.ts`), so reading the database doesn't hand out usable tokens. Logging out, or an
   owner removing a member, invalidates the token immediately — no stale-session window.
-- **Rate limiting**: `/api/auth/{setup,login,register}` — the only routes an attacker can use to
-  guess a credential or invite code — are limited to 10 attempts per 15 minutes via
-  `@fastify/rate-limit`, keyed on the request's `username` field (falling back to IP for a
-  malformed body) rather than IP alone, since this app's documented reverse-proxy deployment (see
-  [docker-deployment.md](operations/docker-deployment.md)) would otherwise collapse every real
-  user behind one shared IP-based bucket.
+- **Session lifetime — idle window + absolute cap**: every session row carries two independent
+  expiries (`packages/db/src/schema.ts`'s `sessions.expiresAt`/`absoluteExpiresAt`). `expiresAt` is
+  a 30-day idle window that slides forward on every authenticated request
+  (`authRepository.ts`'s `touchSession`), so a session in regular use never hits it.
+  `absoluteExpiresAt` is a 90-day hard ceiling set once at creation and never renewed —
+  `touchSession` clamps the sliding window so it can never push a session past this cap. This
+  bounds how long a *stolen* token stays valid even under continuous active use by whoever stole
+  it, which a purely-sliding expiry (the pre-hardening design) could not.
+- **Session visibility and revocation**: `GET /api/auth/sessions` lists every active session for
+  the current user (a coarse device label derived from the session's stored `User-Agent` — display
+  only, never compared during auth, since a UA string is trivially spoofed by whoever already has
+  the token), with `DELETE /api/auth/sessions/:id` (scoped to the caller's own sessions — another
+  user's session id 404s) and `DELETE /api/auth/sessions` (revoke everything but the current
+  session) alongside it. This is the "see and sign out other devices" UI a Discord/WhatsApp user
+  would expect, and the previously-missing half of session hardening: revocation existed (logout,
+  member removal) but nothing let a user see or kill a *specific other* session.
+- **Credential changes auto-revoke other sessions**: `PATCH /api/auth/me/password` and
+  `PATCH /api/auth/me/username` both call `deleteOtherSessionsForUser` on success, signing out
+  every session but the one that made the change. A stolen token can therefore be evicted by
+  changing the password/username from any still-trusted device, without needing to enumerate or
+  individually revoke the attacker's session.
+- **Rate limiting**: `/api/auth/{setup,login,register}` — the only *unauthenticated* routes an
+  attacker can use to guess a credential or invite code — are limited to 10 attempts per 15
+  minutes via `@fastify/rate-limit`, keyed on the request's `username` field (falling back to IP
+  for a malformed body) rather than IP alone, since this app's documented reverse-proxy deployment
+  (see [docker-deployment.md](operations/docker-deployment.md)) would otherwise collapse every real
+  user behind one shared IP-based bucket. The two password-gated PATCH routes above carry the same
+  10/15-minute budget, keyed on the authenticated `userId` instead (`lib/rateLimit.ts`'s
+  `userRateLimit`) since there's no IP-collapse concern once a session already exists.
 - **Username enumeration resistance**: a nonexistent username still pays the full scrypt cost
   against a dummy hash before returning `401`, so a wrong-password check and an unknown-username
   check take statistically indistinguishable time (`routes/auth.ts`'s `dummyPasswordHashPromise`).
+  The credential-change routes don't need this: the caller is already authenticated, so there's no
+  username to enumerate.
 - This is still deliberately minimal for a homelab-scale app: the design bet is that the reverse
   proxy in front of Liftr is the outer perimeter, real per-person login is the inner gate, and
   neither replaces the other. If you're exposing Liftr beyond your own trusted network, put real
   auth (e.g. your reverse proxy's own access control, a VPN) in front of it too rather than relying
   on the login system alone.
-- Not yet implemented: self-service password change/reset (a locked-out member's only recovery
-  today is the owner removing and re-inviting them via `DELETE /api/members/:id`) — tracked as an
-  open item in the pentest audit, not a bug.
+- **Forgotten-password recovery**: there is still no email/SMTP anywhere in this app, so recovery
+  is a host-side CLI, `pnpm reset-password -- --user <username> --password '<new password>'`
+  (`packages/server/src/resetPassword.ts`), which hashes the new password and signs the user out
+  everywhere. Host filesystem access to the server's SQLite file is the root of trust here — the
+  same bargain as any other self-hosted admin task (`pnpm db:migrate`, editing `.env`). The owner
+  account is deliberately excluded from both self-deletion routes (`DELETE /api/auth/me` and
+  `DELETE /api/members/:id`) — this is unchanged by the CLI, which only ever resets a password,
+  never deletes an account.
 
 ## CORS
 

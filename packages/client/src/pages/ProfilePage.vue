@@ -20,18 +20,26 @@ import { useProfileForm } from "../composables/useProfileForm";
 import { useServerConnection } from "../composables/useServerConnection";
 import { useToast } from "../composables/useToast";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
+import { ApiError } from "../lib/api";
 import { isAndroid, isNative } from "../lib/platform";
 import {
+  changeDisplayName,
+  changePassword,
+  changeUsername,
   createInvite,
   deleteMyAccount,
   getMe,
   getRecentErrors,
   listMembers,
+  listSessions,
   logout,
   removeMember,
+  revokeOtherSessions,
+  revokeSession,
   type ErrorLogEntry,
   type Me,
   type Member,
+  type Session,
 } from "../services/authService";
 import { useBodyweightStore } from "../stores/bodyweightStore";
 import { useSettingsStore } from "../stores/settingsStore";
@@ -132,6 +140,121 @@ async function removeMemberAndRefresh(id: string) {
   members.value = await listMembers();
 }
 
+/** Same shape as AuthGate.vue's `describeAuthError` — a 401 here means "wrong current password"
+ *  rather than "not logged in" (the app-wide auth hook already let the request through), so it
+ *  gets its own message per call site instead of AuthGate's generic one. */
+function describeCredentialError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.status === 429) return "Zu viele Versuche. Bitte warte 15 Minuten.";
+    if (err.status === 409) return "Benutzername bereits vergeben.";
+    if (err.status === 400 && err.detail?.includes("too common")) {
+      return "Passwort zu unsicher. Bitte wähle ein anderes Passwort.";
+    }
+  }
+  return fallback;
+}
+
+const displayNameInput = ref("");
+const displayNameSaving = ref(false);
+const displayNameError = ref<string | null>(null);
+const displayNameSuccess = ref(false);
+
+async function saveDisplayName() {
+  const name = displayNameInput.value.trim();
+  if (!name || !me.value) return;
+  displayNameSaving.value = true;
+  displayNameError.value = null;
+  displayNameSuccess.value = false;
+  try {
+    me.value = await changeDisplayName(name);
+    displayNameSuccess.value = true;
+  } catch (err) {
+    displayNameError.value = describeCredentialError(err, "Anzeigename konnte nicht geändert werden.");
+  } finally {
+    displayNameSaving.value = false;
+  }
+}
+
+const usernameInput = ref("");
+const usernameCurrentPassword = ref("");
+const usernameSaving = ref(false);
+const usernameError = ref<string | null>(null);
+const usernameSuccess = ref(false);
+
+async function saveUsername() {
+  const username = usernameInput.value.trim().toLowerCase();
+  if (!username || !usernameCurrentPassword.value || !me.value) return;
+  usernameSaving.value = true;
+  usernameError.value = null;
+  usernameSuccess.value = false;
+  try {
+    me.value = await changeUsername(usernameCurrentPassword.value, username);
+    usernameCurrentPassword.value = "";
+    usernameSuccess.value = true;
+  } catch (err) {
+    usernameError.value = describeCredentialError(err, "Aktuelles Passwort falsch.");
+  } finally {
+    usernameSaving.value = false;
+  }
+}
+
+const currentPasswordInput = ref("");
+const newPasswordInput = ref("");
+const passwordSaving = ref(false);
+const passwordError = ref<string | null>(null);
+const passwordSuccess = ref(false);
+
+async function savePassword() {
+  if (!currentPasswordInput.value || !newPasswordInput.value) return;
+  passwordSaving.value = true;
+  passwordError.value = null;
+  passwordSuccess.value = false;
+  try {
+    await changePassword(currentPasswordInput.value, newPasswordInput.value);
+    currentPasswordInput.value = "";
+    newPasswordInput.value = "";
+    passwordSuccess.value = true;
+  } catch (err) {
+    passwordError.value = describeCredentialError(err, "Aktuelles Passwort falsch.");
+  } finally {
+    passwordSaving.value = false;
+  }
+}
+
+const sessions = ref<Session[]>([]);
+const sessionsLoading = ref(false);
+const revokingSessionId = ref<string | null>(null);
+
+async function loadSessions() {
+  sessionsLoading.value = true;
+  try {
+    sessions.value = await listSessions();
+  } finally {
+    sessionsLoading.value = false;
+  }
+}
+
+async function revokeOneSession(id: string) {
+  revokingSessionId.value = id;
+  try {
+    await revokeSession(id);
+    sessions.value = sessions.value.filter((s) => s.id !== id);
+  } finally {
+    revokingSessionId.value = null;
+  }
+}
+
+const revokingOthers = ref(false);
+const { trigger: triggerRevokeOthers, isArmed: isRevokeOthersArmed } = useConfirmTap(async () => {
+  revokingOthers.value = true;
+  try {
+    await revokeOtherSessions();
+    sessions.value = sessions.value.filter((s) => s.current);
+  } finally {
+    revokingOthers.value = false;
+  }
+});
+
 const errorLogs = ref<ErrorLogEntry[]>([]);
 const errorLogsOpen = ref(false);
 const errorLogsLoading = ref(false);
@@ -168,9 +291,12 @@ onMounted(async () => {
   void bodyweight.load();
   if (!settingsStore.profileLoaded) void settingsStore.load();
   me.value = await getMe();
+  displayNameInput.value = me.value.name;
+  usernameInput.value = me.value.username;
   if (me.value.role === "owner") {
     members.value = await listMembers();
   }
+  void loadSessions();
   if (isAndroidPlatform) void checkForAppUpdate();
 
   // Lets a toast/notification elsewhere ("Update verfügbar — siehe Profil") link straight to
@@ -376,6 +502,93 @@ async function saveWeight() {
         {{ inviteBusy ? "…" : "Einladungscode erstellen" }}
       </button>
       <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
+    </section>
+
+    <section class="card card--quiet surface-hybrid">
+      <CollapsibleCard title="Anmeldedaten">
+        <div class="profile-field">
+          <span class="profile-label">Anzeigename</span>
+          <input v-model="displayNameInput" class="profile-input" type="text" autocomplete="name" />
+          <p v-if="displayNameError" class="error">{{ displayNameError }}</p>
+          <p v-else-if="displayNameSuccess" class="hint success">Gespeichert.</p>
+        </div>
+        <button
+          class="btn-primary profile-save"
+          :disabled="displayNameSaving || !displayNameInput.trim()"
+          @click="saveDisplayName"
+        >
+          {{ displayNameSaving ? "Wird gespeichert…" : "Anzeigename speichern" }}
+        </button>
+
+        <h3 class="eyebrow sub-eyebrow">Benutzername</h3>
+        <div class="profile-field">
+          <span class="profile-label">Neuer Benutzername</span>
+          <input v-model="usernameInput" class="profile-input" type="text" autocomplete="username" autocapitalize="off" />
+        </div>
+        <div class="profile-field">
+          <span class="profile-label">Aktuelles Passwort</span>
+          <input v-model="usernameCurrentPassword" class="profile-input" type="password" autocomplete="current-password" />
+        </div>
+        <p v-if="usernameError" class="error">{{ usernameError }}</p>
+        <p v-else-if="usernameSuccess" class="hint success">Benutzername geändert. Andere Geräte wurden abgemeldet.</p>
+        <button
+          class="btn-primary profile-save"
+          :disabled="usernameSaving || !usernameInput.trim() || !usernameCurrentPassword"
+          @click="saveUsername"
+        >
+          {{ usernameSaving ? "Wird geändert…" : "Benutzername ändern" }}
+        </button>
+
+        <h3 class="eyebrow sub-eyebrow">Passwort</h3>
+        <div class="profile-field">
+          <span class="profile-label">Aktuelles Passwort</span>
+          <input v-model="currentPasswordInput" class="profile-input" type="password" autocomplete="current-password" />
+        </div>
+        <div class="profile-field">
+          <span class="profile-label">Neues Passwort</span>
+          <input v-model="newPasswordInput" class="profile-input" type="password" autocomplete="new-password" />
+        </div>
+        <p v-if="passwordError" class="error">{{ passwordError }}</p>
+        <p v-else-if="passwordSuccess" class="hint success">Passwort geändert. Andere Geräte wurden abgemeldet.</p>
+        <button
+          class="btn-primary profile-save"
+          :disabled="passwordSaving || !currentPasswordInput || !newPasswordInput"
+          @click="savePassword"
+        >
+          {{ passwordSaving ? "Wird geändert…" : "Passwort ändern" }}
+        </button>
+      </CollapsibleCard>
+    </section>
+
+    <section class="card card--quiet surface-hybrid">
+      <CollapsibleCard title="Aktive Sitzungen">
+        <p v-if="sessionsLoading" class="hint">Wird geladen…</p>
+        <ul v-else class="member-list">
+          <li v-for="session in sessions" :key="session.id" class="member-row">
+            <span>
+              {{ session.device }}
+              <span v-if="session.current" class="session-badge">Dieses Gerät</span>
+            </span>
+            <button
+              v-if="!session.current"
+              class="btn-secondary"
+              :disabled="revokingSessionId === session.id"
+              @click="revokeOneSession(session.id)"
+            >
+              Abmelden
+            </button>
+          </li>
+        </ul>
+        <button
+          v-if="sessions.length > 1"
+          class="btn-secondary btn-block danger"
+          :class="{ confirming: isRevokeOthersArmed() }"
+          :disabled="revokingOthers"
+          @click="triggerRevokeOthers()"
+        >
+          {{ revokingOthers ? "Wird abgemeldet…" : isRevokeOthersArmed() ? "Wirklich alle abmelden?" : "Alle anderen Geräte abmelden" }}
+        </button>
+      </CollapsibleCard>
     </section>
 
     <section id="account-app-card" class="card card--quiet surface-hybrid">
@@ -652,6 +865,18 @@ input[aria-label="Server-Adresse"] {
   margin-top: var(--sp3);
   font-size: 13px;
   color: var(--dim);
+}
+.hint.success {
+  color: var(--blue-hi);
+}
+.session-badge {
+  margin-left: var(--sp2);
+  padding: 2px 8px;
+  border-radius: var(--r-full, 999px);
+  background: var(--surface-3);
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 700;
 }
 .error-log-list {
   display: flex;

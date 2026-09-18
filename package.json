@@ -19,7 +19,8 @@
     "icons:gen": "node scripts/gen-icons.mjs",
     "ingest": "pnpm --filter @liftr/ingest start",
     "bootstrap": "pnpm --filter @liftr/ingest bootstrap",
-    "recompute": "pnpm --filter @liftr/server recompute"
+    "recompute": "pnpm --filter @liftr/server recompute",
+    "reset-password": "pnpm --filter @liftr/server reset-password"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

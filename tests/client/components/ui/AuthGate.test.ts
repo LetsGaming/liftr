@@ -101,6 +101,27 @@ describe("AuthGate", () => {
     expect(wrapper.find(".protected").exists()).toBe(false);
   });
 
+  it("shows a forgot-password hint pointing at the server operator on the login form only", async () => {
+    mockGet.mockImplementation((path: string) => {
+      if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
+      return Promise.reject(new ApiError("unauthorized", 401));
+    });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Passwort vergessen?");
+  });
+
+  it("does not show the forgot-password hint on the setup form", async () => {
+    mockGet.mockResolvedValue({ needsSetup: true });
+
+    const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Passwort vergessen?");
+  });
+
   it("submitting setup stores the returned token and reveals the slot", async () => {
     mockGet.mockResolvedValue({ needsSetup: true });
     mockPost.mockResolvedValue({ token: "owner-token" });

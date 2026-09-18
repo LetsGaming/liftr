@@ -67,4 +67,34 @@ describe("requireAuth", () => {
     const after = (await findSessionByTokenHash(db, tokenHash))!.expiresAt.getTime();
     expect(after).toBeGreaterThan(before - 60_000);
   });
+
+  it("401s and deletes a session past its absoluteExpiresAt even though expiresAt hasn't lapsed", async () => {
+    const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
+    await createSession(db, "00000000-0000-4000-8000-000000000001", tokenHash);
+    // expiresAt (idle) is still far in the future — only the hard cap has passed.
+    await db
+      .update(sessions)
+      .set({ absoluteExpiresAt: new Date(Date.now() - 1000) })
+      .where(eq(sessions.tokenHash, tokenHash));
+
+    const app = buildApp(db);
+    const res = await app.inject({ method: "GET", url: "/protected", headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(401);
+    expect(await findSessionByTokenHash(db, tokenHash)).toBeUndefined();
+  });
+
+  it("never slides expiresAt past absoluteExpiresAt", async () => {
+    const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
+    await createSession(db, "00000000-0000-4000-8000-000000000001", tokenHash);
+    const nearCeiling = new Date(Date.now() + 1000);
+    await db.update(sessions).set({ absoluteExpiresAt: nearCeiling }).where(eq(sessions.tokenHash, tokenHash));
+
+    const app = buildApp(db);
+    const res = await app.inject({ method: "GET", url: "/protected", headers: { authorization: `Bearer ${token}` } });
+    expect(res.statusCode).toBe(200);
+    const after = (await findSessionByTokenHash(db, tokenHash))!.expiresAt.getTime();
+    expect(after).toBe(nearCeiling.getTime());
+  });
 });

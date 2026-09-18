@@ -3,8 +3,12 @@ import type { LiftrDb } from "@liftr/db";
 import { hashPassword, verifyPassword } from "../lib/passwords.js";
 import { generateSessionToken, hashSessionToken } from "../lib/sessionTokens.js";
 import { isCommonPassword } from "../lib/commonPasswords.js";
+import { deviceLabel } from "../lib/deviceLabel.js";
+import { userRateLimit } from "../lib/rateLimit.js";
 import {
   createSession,
+  deleteOtherSessionsForUser,
+  deleteSessionById,
   deleteSessionByTokenHash,
   deleteUser,
   findOwnerUser,
@@ -12,8 +16,11 @@ import {
   findUserById,
   findValidInviteCode,
   insertUser,
+  listSessionsForUser,
   redeemInviteCode,
+  setDisplayName,
   setUserPassword,
+  setUsername,
 } from "../repositories/authRepository.js";
 import type { ZodFastifyInstance } from "../types.js";
 
@@ -31,6 +38,9 @@ const passwordSchema = z
 const setupInput = z.object({ password: passwordSchema });
 const loginInput = z.object({ username: usernameSchema, password: z.string() });
 const registerInput = z.object({ code: z.string().length(8), username: usernameSchema, password: passwordSchema });
+const changePasswordInput = z.object({ currentPassword: z.string(), newPassword: passwordSchema });
+const changeUsernameInput = z.object({ currentPassword: z.string(), username: usernameSchema });
+const changeNameInput = z.object({ name: z.string().trim().min(1).max(40) });
 
 /** A real hash (in the same `scrypt:N:r:p:salt:hash` format `hashPassword` produces — see
  *  passwords.ts) computed once at module load and used only as a timing decoy in `/api/auth/login`
@@ -87,10 +97,25 @@ const okResponse = z.object({ ok: z.literal(true) });
  *  `schema.response` (fastify-type-provider-zod only lets `reply.code(n).send(...)` target a
  *  status the schema actually lists) so the error shape stays checked like everything else here. */
 const errorResponse = z.object({ error: z.string(), detail: z.string().optional() });
+const sessionSummaryResponse = z.object({
+  id: z.string(),
+  createdAt: z.date(),
+  lastUsedAt: z.date(),
+  expiresAt: z.date(),
+  absoluteExpiresAt: z.date(),
+  device: z.string(),
+  current: z.boolean(),
+});
 
-async function issueSession(db: LiftrDb, userId: string) {
+/** 10 attempts per 15 minutes per user — for the two authenticated routes that re-verify a
+ *  password (change password/username). Keyed on `req.userId` via `userRateLimit`, not on
+ *  `req.body.username` like `authRateLimit` above: the caller is already authenticated, so their
+ *  own id is a stable, spoof-proof key. */
+const credentialChangeRateLimit = userRateLimit(10, "15 minutes");
+
+async function issueSession(db: LiftrDb, userId: string, userAgent?: string | null) {
   const token = generateSessionToken();
-  await createSession(db, userId, hashSessionToken(token));
+  await createSession(db, userId, hashSessionToken(token), userAgent);
   return token;
 }
 
@@ -110,7 +135,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
       if (!owner) return reply.code(500).send({ error: "no_owner" });
       if (owner.passwordHash != null) return reply.code(409).send({ error: "already_set_up" });
       await setUserPassword(db, owner.id, await hashPassword(req.body.password));
-      return { token: await issueSession(db, owner.id) };
+      return { token: await issueSession(db, owner.id, req.headers["user-agent"]) };
     },
   );
 
@@ -131,7 +156,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
       if (!(await verifyPassword(req.body.password, user.passwordHash))) {
         return reply.code(401).send({ error: "invalid_credentials" });
       }
-      return { token: await issueSession(db, user.id) };
+      return { token: await issueSession(db, user.id, req.headers["user-agent"]) };
     },
   );
 
@@ -164,7 +189,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
         await deleteUser(db, user.id);
         return reply.code(400).send({ error: "invalid_invite_code" });
       }
-      return { token: await issueSession(db, user.id) };
+      return { token: await issueSession(db, user.id, req.headers["user-agent"]) };
     },
   );
 
@@ -192,6 +217,112 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
       const user = await findUserById(db, req.userId);
       if (user?.role === "owner") return reply.code(400).send({ error: "cannot_delete_owner" });
       await deleteUser(db, req.userId); // cascades to this user's sessions, workouts, runs, etc.
+      return { ok: true as const };
+    },
+  );
+
+  /** Every credential-changing route below revokes every *other* session for this user — the same
+   *  "sign out everywhere else" behavior a stolen-password recovery flow needs, applied
+   *  proactively on any password/username change rather than only via the reset-password CLI. The
+   *  caller's own token (identified by re-hashing its own bearer token, same as `/logout` above)
+   *  is kept so the change doesn't also log the user themselves out. */
+  app.patch(
+    "/api/auth/me/password",
+    {
+      config: credentialChangeRateLimit,
+      schema: { body: changePasswordInput, response: { 200: okResponse, 401: errorResponse } },
+    },
+    async (req, reply) => {
+      const user = await findUserById(db, req.userId);
+      if (!user?.passwordHash || !(await verifyPassword(req.body.currentPassword, user.passwordHash))) {
+        return reply.code(401).send({ error: "invalid_credentials" });
+      }
+      await setUserPassword(db, req.userId, await hashPassword(req.body.newPassword));
+      const header = req.headers.authorization;
+      const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+      await deleteOtherSessionsForUser(db, req.userId, token ? hashSessionToken(token) : undefined);
+      return { ok: true as const };
+    },
+  );
+
+  app.patch(
+    "/api/auth/me/username",
+    {
+      config: credentialChangeRateLimit,
+      schema: { body: changeUsernameInput, response: { 200: meResponse, 401: errorResponse, 409: errorResponse } },
+    },
+    async (req, reply) => {
+      const user = await findUserById(db, req.userId);
+      if (!user?.passwordHash || !(await verifyPassword(req.body.currentPassword, user.passwordHash))) {
+        return reply.code(401).send({ error: "invalid_credentials" });
+      }
+      if (req.body.username !== user.username) {
+        const existing = await findUserByUsername(db, req.body.username);
+        if (existing) return reply.code(409).send({ error: "username_taken" });
+        try {
+          await setUsername(db, req.userId, req.body.username);
+        } catch {
+          // Pre-check above is racy against a concurrent registration/rename claiming the same
+          // name between the check and this write — `users_username_idx` (schema.ts) is the
+          // actual guarantee; a unique-constraint failure here means someone else won the race.
+          return reply.code(409).send({ error: "username_taken" });
+        }
+        const header = req.headers.authorization;
+        const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+        await deleteOtherSessionsForUser(db, req.userId, token ? hashSessionToken(token) : undefined);
+      }
+      return { id: user.id, username: req.body.username, name: user.name, role: user.role };
+    },
+  );
+
+  app.patch(
+    "/api/auth/me/name",
+    { schema: { body: changeNameInput, response: { 200: meResponse } } },
+    async (req) => {
+      const user = await findUserById(db, req.userId);
+      if (!user) throw new Error("authenticated user not found"); // requireAuth already resolved this id
+      await setDisplayName(db, req.userId, req.body.name);
+      return { id: user.id, username: user.username, name: req.body.name, role: user.role };
+    },
+  );
+
+  app.get(
+    "/api/auth/sessions",
+    { schema: { response: { 200: z.array(sessionSummaryResponse) } } },
+    async (req) => {
+      const header = req.headers.authorization;
+      const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+      const currentHash = token ? hashSessionToken(token) : null;
+      const rows = await listSessionsForUser(db, req.userId);
+      return rows.map((row) => ({
+        id: row.id,
+        createdAt: row.createdAt,
+        lastUsedAt: row.lastUsedAt,
+        expiresAt: row.expiresAt,
+        absoluteExpiresAt: row.absoluteExpiresAt,
+        device: deviceLabel(row.userAgent),
+        current: row.tokenHash === currentHash,
+      }));
+    },
+  );
+
+  app.delete(
+    "/api/auth/sessions/:id",
+    { schema: { params: z.object({ id: z.string() }), response: { 200: okResponse, 404: errorResponse } } },
+    async (req, reply) => {
+      const deleted = await deleteSessionById(db, req.userId, req.params.id);
+      if (!deleted) return reply.code(404).send({ error: "not_found" });
+      return { ok: true as const };
+    },
+  );
+
+  app.delete(
+    "/api/auth/sessions",
+    { schema: { response: { 200: okResponse } } },
+    async (req) => {
+      const header = req.headers.authorization;
+      const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+      await deleteOtherSessionsForUser(db, req.userId, token ? hashSessionToken(token) : undefined);
       return { ok: true as const };
     },
   );

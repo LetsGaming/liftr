@@ -20,14 +20,16 @@ export function requireAuth(db: LiftrDb) {
     if (!session) {
       return reply.code(401).send({ error: "unauthorized" });
     }
-    if (session.expiresAt.getTime() <= Date.now()) {
+    const now = Date.now();
+    if (session.expiresAt.getTime() <= now || session.absoluteExpiresAt.getTime() <= now) {
       // Lazily clean up the stale row here rather than relying on a separate sweep job — an
-      // expired session is only ever discovered at the point something tries to use it.
+      // expired session (idle or past its hard cap) is only ever discovered at the point
+      // something tries to use it.
       await deleteSessionByTokenHash(db, tokenHash);
       return reply.code(401).send({ error: "unauthorized" });
     }
     request.userId = session.userId;
     request.role = session.role;
-    await touchSession(db, tokenHash);
+    await touchSession(db, tokenHash, session.absoluteExpiresAt);
   };
 }
