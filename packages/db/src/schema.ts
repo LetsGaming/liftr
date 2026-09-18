@@ -61,13 +61,31 @@ export const sessions = sqliteTable(
     lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch('subsec') * 1000)`),
-    /** Sliding-window expiry: set to `now + SESSION_TTL_MS` at creation (authRepository.ts's
-     *  `createSession`) and renewed to the same offset on every authenticated request
-     *  (`touchSession`, same UPDATE that already writes `lastUsedAt` per request — renewing here
-     *  costs nothing extra, so it isn't throttled). `requireAuth` rejects a request once this has
-     *  passed. Without this a leaked token stayed valid forever; a self-hosted household app still
-     *  wants *some* bound on that window, not just an explicit logout. */
+    /** Idle (sliding-window) expiry: set to `now + SESSION_IDLE_TTL_MS` at creation
+     *  (authRepository.ts's `createSession`) and renewed to the same offset on every authenticated
+     *  request (`touchSession`, same UPDATE that already writes `lastUsedAt` per request — renewing
+     *  here costs nothing extra, so it isn't throttled) — but never past `absoluteExpiresAt`.
+     *  `requireAuth` rejects a request once this has passed. Without this an idle-but-leaked token
+     *  stayed valid forever; a self-hosted household app still wants *some* bound on that window,
+     *  not just an explicit logout. */
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    /** Hard ceiling, set once at creation and never renewed by `touchSession` — bounds how long a
+     *  token stays valid even under continuous active use, so a stolen-but-actively-used token
+     *  can't ride the sliding `expiresAt` window forever. The default is a fixed timestamp (~90
+     *  days past when this migration was authored, matching `SESSION_ABSOLUTE_TTL_MS`) rather
+     *  than a computed `now + ...` expression: SQLite's `ALTER TABLE ADD COLUMN` rejects a
+     *  non-constant default outright ("Cannot add a column with non-constant default"), so this
+     *  can only be a literal. It only ever applies to the migration's one-time backfill of
+     *  sessions that existed before this column did — a grace window, not a precise expiry — since
+     *  every session created afterward gets an exact value from `createSession`, never this
+     *  default. */
+    absoluteExpiresAt: integer("absolute_expires_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`1797500898825`),
+    /** Raw `User-Agent` header at session creation, for the "Aktive Sitzungen" device list in the
+     *  Profil page — display only (e.g. "Chrome · Windows"), never compared during auth. Null for
+     *  sessions created before this column existed, or a request with no header. */
+    userAgent: text("user_agent"),
   },
   (t) => [uniqueIndex("sessions_token_hash_idx").on(t.tokenHash)],
 );

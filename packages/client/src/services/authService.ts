@@ -56,3 +56,37 @@ export async function deleteMyAccount(): Promise<void> {
   await api.del("/api/auth/me");
   setToken("");
 }
+
+export function changeDisplayName(name: string): Promise<Me> {
+  return api.patch<Me>("/api/auth/me/name", { name });
+}
+
+export function changeUsername(currentPassword: string, username: string): Promise<Me> {
+  return api.patch<Me>("/api/auth/me/username", { currentPassword, username });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.patch("/api/auth/me/password", { currentPassword, newPassword });
+}
+
+export interface Session {
+  id: string;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+  absoluteExpiresAt: string;
+  device: string;
+  current: boolean;
+}
+
+export function listSessions(): Promise<Session[]> {
+  return api.get<Session[]>("/api/auth/sessions");
+}
+
+export async function revokeSession(id: string): Promise<void> {
+  await api.del(`/api/auth/sessions/${id}`);
+}
+
+export async function revokeOtherSessions(): Promise<void> {
+  await api.del("/api/auth/sessions");
+}

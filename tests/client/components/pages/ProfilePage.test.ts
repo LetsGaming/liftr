@@ -1,4 +1,4 @@
-import { flushPromises } from "@vue/test-utils";
+import { flushPromises, type VueWrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
@@ -24,6 +24,7 @@ vi.mock("capacitor-health", () => ({
 
 import ProfilePage from "~client/pages/ProfilePage.vue";
 import { useAppUpdate } from "~client/composables/useAppUpdate";
+import { ApiError } from "~client/lib/api";
 
 // Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
@@ -60,6 +61,14 @@ vi.mock("~client/services/authService", () => ({
   createInvite: vi.fn(),
   removeMember: vi.fn(),
   logout: vi.fn(),
+  deleteMyAccount: vi.fn(),
+  getRecentErrors: vi.fn(),
+  changeDisplayName: vi.fn(),
+  changeUsername: vi.fn(),
+  changePassword: vi.fn(),
+  listSessions: vi.fn(),
+  revokeSession: vi.fn(),
+  revokeOtherSessions: vi.fn(),
 }));
 
 import * as authService from "~client/services/authService";
@@ -91,6 +100,7 @@ beforeEach(async () => {
   vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:mock"), revokeObjectURL: vi.fn() }));
   vi.mocked(authService.getMe).mockResolvedValue({ id: "u1", username: "owner", name: "Owner", role: "owner" });
   vi.mocked(authService.listMembers).mockResolvedValue([]);
+  vi.mocked(authService.listSessions).mockResolvedValue([]);
 });
 
 describe("ProfilePage", () => {
@@ -311,6 +321,113 @@ describe("ProfilePage", () => {
 
     expect(authService.logout).toHaveBeenCalledOnce();
     expect(reloadSpy).toHaveBeenCalledOnce();
+  });
+
+  function findCard(wrapper: VueWrapper, title: string) {
+    return wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === title))!;
+  }
+
+  it("saves a changed display name without asking for a password", async () => {
+    vi.mocked(authService.changeDisplayName).mockResolvedValue({ id: "u1", username: "owner", name: "Owner II", role: "owner" });
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    const card = findCard(wrapper, "Anmeldedaten");
+    await card.find("input[autocomplete='name']").setValue("Owner II");
+    await card.findAll("button").find((b) => b.text() === "Anzeigename speichern")!.trigger("click");
+    await flushAsync();
+
+    expect(authService.changeDisplayName).toHaveBeenCalledWith("Owner II");
+    expect(card.text()).toContain("Gespeichert.");
+  });
+
+  it("changes the username with the current password and reports other devices were signed out", async () => {
+    vi.mocked(authService.changeUsername).mockResolvedValue({ id: "u1", username: "newname", name: "Owner", role: "owner" });
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    const card = findCard(wrapper, "Anmeldedaten");
+    await card.find("input[autocomplete='username']").setValue("newname");
+    await card.find("input[autocomplete='current-password']").setValue("currentpass1");
+    await card.findAll("button").find((b) => b.text() === "Benutzername ändern")!.trigger("click");
+    await flushAsync();
+
+    expect(authService.changeUsername).toHaveBeenCalledWith("currentpass1", "newname");
+    expect(card.text()).toContain("Andere Geräte wurden abgemeldet.");
+  });
+
+  it("shows 'Aktuelles Passwort falsch.' when the username change is rejected with 401", async () => {
+    vi.mocked(authService.changeUsername).mockRejectedValue(new ApiError("unauthorized", 401));
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    const card = findCard(wrapper, "Anmeldedaten");
+    await card.find("input[autocomplete='username']").setValue("newname");
+    await card.find("input[autocomplete='current-password']").setValue("wrong");
+    await card.findAll("button").find((b) => b.text() === "Benutzername ändern")!.trigger("click");
+    await flushAsync();
+
+    expect(card.text()).toContain("Aktuelles Passwort falsch.");
+  });
+
+  it("changes the password and reports other devices were signed out", async () => {
+    vi.mocked(authService.changePassword).mockResolvedValue(undefined);
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushAsync();
+
+    const card = findCard(wrapper, "Anmeldedaten");
+    const passwordInputs = card.findAll("input[autocomplete='current-password'], input[autocomplete='new-password']");
+    await passwordInputs[1]!.setValue("currentpass1"); // second current-password field belongs to the password form
+    await passwordInputs[2]!.setValue("newpass1");
+    await card.findAll("button").find((b) => b.text() === "Passwort ändern")!.trigger("click");
+    await flushAsync();
+
+    expect(authService.changePassword).toHaveBeenCalledWith("currentpass1", "newpass1");
+    expect(card.text()).toContain("Andere Geräte wurden abgemeldet.");
+  });
+
+  it("lists active sessions with exactly one 'Dieses Gerät' badge and lets a non-current one be revoked", async () => {
+    vi.mocked(authService.listSessions).mockResolvedValue([
+      { id: "s1", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Chrome · Windows", current: true },
+      { id: "s2", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Safari · iPhone", current: false },
+    ]);
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushPromises();
+
+    const card = findCard(wrapper, "Aktive Sitzungen");
+    expect(card.text()).toContain("Dieses Gerät");
+    expect(card.findAll(".session-badge")).toHaveLength(1);
+
+    await card.findAll(".member-row button").find((b) => b.text() === "Abmelden")!.trigger("click");
+    await flushAsync();
+
+    expect(authService.revokeSession).toHaveBeenCalledWith("s2");
+    expect(card.text()).not.toContain("Safari · iPhone");
+  });
+
+  it("revokes every other session after a two-tap confirm", async () => {
+    vi.mocked(authService.listSessions).mockResolvedValue([
+      { id: "s1", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Chrome · Windows", current: true },
+      { id: "s2", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Safari · iPhone", current: false },
+    ]);
+    vi.mocked(authService.revokeOtherSessions).mockResolvedValue(undefined);
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushPromises();
+
+    const card = findCard(wrapper, "Aktive Sitzungen");
+    const revokeAllBtn = card.findAll("button").find((b) => b.text().includes("Alle anderen Geräte abmelden"))!;
+    await revokeAllBtn.trigger("click");
+    expect(authService.revokeOtherSessions).not.toHaveBeenCalled();
+    await revokeAllBtn.trigger("click");
+    await flushAsync();
+
+    expect(authService.revokeOtherSessions).toHaveBeenCalledOnce();
   });
 });
 

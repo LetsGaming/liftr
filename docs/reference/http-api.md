@@ -98,6 +98,60 @@ delete their own account this way, without needing the owner to do it via
 
 Response `200`: `{ ok: true }` · `400 { "error": "cannot_delete_owner" }`
 
+### `PATCH /api/auth/me/password`
+Changes the current user's password — owner or member, no special-casing. Requires the current
+password (rate-limited: 10 attempts / 15 minutes, keyed on the authenticated user). On success,
+revokes every *other* session for this user (`deleteOtherSessionsForUser` — the same "sign out
+everywhere else" behavior the `reset-password` CLI applies) while keeping the caller's own token
+valid.
+
+Request body: `{ currentPassword: string; newPassword: string }` (`newPassword`: same rules as
+setup/register — min 8 chars, not a common password)
+
+Response `200`: `{ ok: true }` · `401 { "error": "invalid_credentials" }` for a wrong current
+password · `400` for a weak/common new password · `429` if rate-limited
+
+### `PATCH /api/auth/me/username`
+Changes the current user's username. Requires the current password, same as the password route
+above, and also revokes every other session on success. `username` is unchanged from setup's
+rules (3-24 lowercase letters/digits/hyphens) and must not collide with an existing user.
+
+Request body: `{ currentPassword: string; username: string }`
+
+Response `200`: `{ id: string; username: string; name: string; role: "owner" | "member" }` ·
+`401 { "error": "invalid_credentials" }` · `409 { "error": "username_taken" }` · `429` if
+rate-limited
+
+### `PATCH /api/auth/me/name`
+Changes the current user's display `name` — the non-credential name shown in the UI (distinct
+from `username`, the login handle). No password required, since it isn't a credential; doesn't
+revoke any sessions.
+
+Request body: `{ name: string }` (1-40 chars, trimmed)
+
+Response `200`: `{ id: string; username: string; name: string; role: "owner" | "member" }`
+
+### `GET /api/auth/sessions`
+Lists every active session for the current user — the "Aktive Sitzungen" list in the Profil page.
+`device` is a coarse browser/OS label derived from the session's stored `User-Agent` (display
+only, never used to gate auth — see [SECURITY.md](../SECURITY.md#auth-model)); `current` marks the
+session making this very request.
+
+Response `200`: `Array<{ id: string; createdAt: Date; lastUsedAt: Date; expiresAt: Date;
+absoluteExpiresAt: Date; device: string; current: boolean }>`
+
+### `DELETE /api/auth/sessions/:id`
+Revokes one of the current user's own sessions by id. Scoped to `req.userId` — another user's
+session id 404s rather than succeeding or leaking whether it exists.
+
+Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404 { "error": "not_found" }`
+
+### `DELETE /api/auth/sessions`
+Revokes every session for the current user *except* the one making this request — "alle anderen
+Geräte abmelden" in the Profil page.
+
+Response `200`: `{ ok: true }`
+
 ---
 
 ## Member routes (`members.ts`)

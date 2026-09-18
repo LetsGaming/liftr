@@ -166,6 +166,9 @@ function submit() {
       >
         {{ submitting ? "…" : status === "setup" ? "Einrichten" : status === "join" ? "Beitreten" : "Anmelden" }}
       </button>
+      <p v-if="status === 'login'" class="hint">
+        Passwort vergessen? Der Server-Betreiber kann es zurücksetzen.
+      </p>
     </div>
   </div>
   <slot v-else />
@@ -225,5 +228,10 @@ function submit() {
 }
 .error {
   color: var(--danger);
+}
+.hint {
+  margin: var(--sp3) 0 0;
+  color: var(--faint);
+  font-size: 12px;
 }
 </style>

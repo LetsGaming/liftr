@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1789561902680,
+      "when": 1789728867011,
       "tag": "0000_initial_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1789679433542,
-      "tag": "0001_dashing_white_queen",
       "breakpoints": true
     }
   ]

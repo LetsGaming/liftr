@@ -155,6 +155,20 @@ see [adding-an-exercise.md](./adding-an-exercise.md).
 If you ever want a truly clean slate, delete `data/` and re-run `pnpm dev` — bootstrap will detect
 the empty `exercises` table and re-seed everything from scratch (see the bootstrap section above).
 
+## Resetting a forgotten password
+
+There's no email/SMTP in this app, so a forgotten password is recovered via a host-side script,
+not a web flow:
+
+```bash
+pnpm reset-password -- --user owner --password 'a new passphrase'
+```
+
+(`packages/server/src/resetPassword.ts`, run against `LIFTR_DB_PATH`/`env.ts`'s default like every
+other script here.) It hashes the new password and signs that user out everywhere — every existing
+session for them is deleted, in case the reset was needed because a session leaked. See
+[SECURITY.md#auth-model](../SECURITY.md#auth-model) for why this is CLI-only.
+
 ## Tests
 
 Not part of getting the app running, but worth knowing up front: `pnpm test` runs the full suite.
