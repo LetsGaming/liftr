@@ -7,14 +7,16 @@ Semantic Versioning strictly (no releases have been tagged before this one — s
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-18
+
 ### Added
 
-- **You can now change your display name, username, and password from Profil → Konto → Anmeldedaten**, and see and sign out your other logged-in devices from a new "Aktive Sitzungen" list there — no more needing to delete and re-invite an account just to fix a username or password.
-- **Forgotten a password? The server operator can reset it** with a new `pnpm reset-password` command — this app still has no email, so this replaces "there's no way to recover it at all."
+- **You can now change your display name, username, and password from Profil → Konto → Anmeldedaten** , and see and sign out your other logged-in devices from a new "Aktive Sitzungen" list there — no more needing to delete and re-invite an account just to fix a username or password.
+- **Forgotten a password? The server operator can reset it** with a new `pnpm reset-password` command — this app still has no email, so this replaces "there's no way to recover it at all.
 
 ### Changed
 
-- **Changing your password or username now signs out every other device you were logged in on**, so a leaked login can be cut off just by changing your credentials.
+- **Changing your password or username now signs out every other device you were logged in on** , so a leaked login can be cut off just by changing your credentials.
 - **The inactivity timeout for staying logged in is now 30 days (was 90), and logins now also expire after 90 days no matter how often you use the app.** Previously an actively-used login never expired at all — this bounds how long a leaked-but-actively-used login stays valid too.
 
 ## [1.2.0] - 2026-09-17
