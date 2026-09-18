@@ -22,16 +22,31 @@ export async function isHealthConnectAvailable(): Promise<boolean> {
   return available;
 }
 
+const HEALTH_CONNECT_PERMISSIONS = [
+  "READ_WORKOUTS",
+  "READ_ROUTE",
+  "READ_HEART_RATE",
+] as const;
+
 export async function requestHealthConnectPermissions(): Promise<boolean> {
   if (!(await isHealthConnectAvailable())) return false;
+
   const res = await Health.requestHealthPermissions({
-    permissions: ["READ_WORKOUTS", "READ_ROUTE", "READ_HEART_RATE"],
+    permissions: [...HEALTH_CONNECT_PERMISSIONS],
   });
-  // capacitor-health@8.2.0's TS types claim `permissions` is an array of per-permission objects;
-  // the native Kotlin (HealthPlugin.kt grantedPermissionResult) actually returns one flat object
-  // keyed by permission name — typechecks, throws "permissions.every is not a function" at
-  // runtime. Verified against the plugin's own Kotlin source, not just its (wrong) .d.ts.
-  return Object.values(res.permissions as unknown as Record<string, boolean>).every(Boolean);
+
+  const granted = res.permissions as unknown as Record<string, boolean>;
+  const missing = HEALTH_CONNECT_PERMISSIONS.filter(
+    (permission) => granted[permission] !== true,
+  );
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Health-Connect-Freigaben fehlen: ${missing.join(", ")}.`,
+    );
+  }
+
+  return true;
 }
 
 function getLastCheck(): string {
