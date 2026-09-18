@@ -33,17 +33,35 @@ describe("requestHealthConnectPermissions", () => {
 
   it("grants when every permission in the flat object response is true", async () => {
     requestHealthPermissionsMock.mockResolvedValue({
-      permissions: { READ_WORKOUTS: true, READ_ROUTE: true, READ_HEART_RATE: true },
+      permissions: {
+        READ_WORKOUTS: true,
+        READ_ROUTE: true,
+        READ_HEART_RATE: true,
+      },
     });
-    const { requestHealthConnectPermissions } = await import("~client/health/healthConnect");
-    await expect(requestHealthConnectPermissions()).resolves.toBe(true);
+    const { requestHealthConnectPermissions } =
+      await import("~client/health/healthConnect");
+    await expect(requestHealthConnectPermissions()).resolves.toEqual({
+      granted: true,
+      missing: [],
+    });
   });
 
   it("denies when any permission in the flat object response is false", async () => {
     requestHealthPermissionsMock.mockResolvedValue({
-      permissions: { READ_WORKOUTS: true, READ_ROUTE: false, READ_HEART_RATE: true },
+      permissions: {
+        READ_WORKOUTS: true,
+        READ_ROUTE: false,
+        READ_HEART_RATE: true,
+      },
     });
-    const { requestHealthConnectPermissions } = await import("~client/health/healthConnect");
-    await expect(requestHealthConnectPermissions()).resolves.toBe(false);
+
+    const { requestHealthConnectPermissions } =
+      await import("~client/health/healthConnect");
+
+    await expect(requestHealthConnectPermissions()).resolves.toEqual({
+      granted: false,
+      missing: ["Strecken"],
+    });
   });
 });

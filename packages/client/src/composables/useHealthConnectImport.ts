@@ -24,9 +24,12 @@ export function useHealthConnectImport() {
   async function connectHealthConnect() {
     healthConnectBusy.value = true;
     try {
-      const granted = await requestHealthConnectPermissions();
-      if (!granted) {
-        healthConnectStatus.value = "Health Connect hat nicht alle Freigaben bekommen — bitte in den Health-Connect-Einstellungen nachtragen.";
+      const result = await requestHealthConnectPermissions();
+      if (!result.granted) {
+        healthConnectStatus.value =
+          result.missing.length > 0
+            ? `Bitte folgende Health-Connect-Freigaben aktivieren: ${result.missing.join(", ")}.`
+            : "Health Connect ist nicht verfügbar.";
         return;
       }
       const count = await importNewHealthConnectWorkouts();
