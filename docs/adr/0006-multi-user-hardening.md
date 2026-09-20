@@ -3,6 +3,8 @@
 **Date:** 2026-09-07
 **Status:** Accepted
 **Supersedes:** [0002](0002-single-bearer-token-auth.md)'s "Single user, forever" framing
+**Superseded by:** [0010](0010-real-per-person-auth-and-sessions.md), which documents the actual
+login/session/multi-user-auth system this ADR only prepared the schema and backend for
 
 ## Context
 

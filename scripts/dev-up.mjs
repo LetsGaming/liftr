@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Run this BEFORE doing any manual/dashboard work in this repo. Starts an isolated backend
- * (Fastify) + dashboard (Vue/Vite) pair — own SQLite file, own log dir, own free ports — with
- * auth open (no LIFTR_TOKEN), migrates that database, ingests the exercise catalog into it, seeds
+ * (Fastify) + dashboard (Vue/Vite) pair — own SQLite file, own log dir, own free ports — then
+ * migrates that database, ingests the exercise catalog into it, seeds
  * it with realistic mock data (profile, equipment, bodyweight trend, a routine + mesocycle,
  * several weeks of workout history across multiple exercises, a run, a custom exercise), and
  * prints the URLs to use.
@@ -102,10 +102,6 @@ async function main() {
     LIFTR_DB_PATH: dbPath,
     LIFTR_IMAGES_DIR: sharedImagesDir,
   };
-  // No accounts/sessions today (see docs/adr/0002) — the server only enforces auth when
-  // LIFTR_TOKEN is set, so deleting it (regardless of what the parent shell happens to have)
-  // guarantees this session's dashboard never hits AuthGate's token prompt.
-  delete env.LIFTR_TOKEN;
   // Muted by default (see app.ts) — a dev/seed session otherwise logs a line per request for
   // every asset/API call the dashboard makes, bloating logDir for no real benefit. --verbose
   // restores full request logging when actually debugging server behavior.
@@ -184,7 +180,7 @@ async function main() {
   log("ready.");
   console.log(`  Dashboard:  http://localhost:${vitePort}`);
   console.log(`  Backend:    http://localhost:${backendPort}`);
-  console.log(`  Auth:       open (no LIFTR_TOKEN set) — no login screen`);
+  console.log(`  Auth:       seeded owner has no password set — you'll land on the first-run setup screen`);
   console.log(`  Logs:       ${logDir}`);
   console.log(`  When done:  node scripts/dev-down.mjs --id ${id}`);
   // Deliberately no process.exit(0) here: both children are already detached + unref'd, so the

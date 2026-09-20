@@ -1,17 +1,20 @@
 # Sync and offline
 
-Liftr is a single-user PWA meant to work at the gym, including in a basement with no signal. The
-entire core logging loop — start a workout, log a set, finish — has to survive being offline
-without the user noticing, and reconcile cleanly once connectivity returns. This document covers
-how that actually works: the client-side write queue, the server-side reconciliation, and a real
-bug (now fixed) that's worth understanding if you touch either side.
+Liftr ships real per-person accounts (an owner plus any invited members, each logging in
+separately — see [glossary.md](./glossary.md#auth-sessions-and-accounts)) as a PWA meant to work at
+the gym, including in a basement with no signal. The entire core logging loop — start a workout,
+log a set, finish — has to survive being offline without the user noticing, and reconcile cleanly
+once connectivity returns, regardless of which account is logged in. This document covers how that
+actually works: the client-side write queue, the server-side reconciliation, and a real bug (now
+fixed) that's worth understanding if you touch either side.
 
 ## The shape of the problem
 
 The client never blocks on the network for a logging action. Every mutation is written to
 IndexedDB first (optimistic, instant), then queued for a background flush to the server. This is
-what makes "log a set in 1–2 taps" (the app's core promise, `audit/finished/liftr-audit.md` §1)
-true even with a dead connection.
+what makes "log a set in 1–2 taps" — the app's core promise, from a point-in-time audit document
+that has since been removed from the repo (this document reflects the current implementation
+directly) — true even with a dead connection.
 
 ## IndexedDB: the two local stores
 
@@ -54,6 +57,11 @@ plainly: "never a duplicate set, workout, or run."
 - **`flush()`** — POSTs the whole outbox to `/api/sync`, and removes only the items the server
   confirms (`"created"` or `"already_synced"`). Anything the server returns as `"error"` for stays
   queued and is retried on the next flush — a transient 500 doesn't lose data.
+- **Permanent-retry backoff for stuck items**: an item that's been erroring for longer than
+  `STUCK_AFTER_MS` (72 hours) is excluded from the next retry batch — it's never deleted, just
+  stops being retried automatically, and is counted in `stuckCount` so the rest of the store has
+  somewhere to surface it. This isn't shown in the UI yet — a code comment in `syncStore.ts` notes
+  `SyncIndicator.vue` could be extended to display it, but doesn't today.
 
 Flush is triggered from several places: right after every `enqueue`, on the browser's `online`/
 `focus` events, on Capacitor's native `resume` event (a WebView's `window` doesn't reliably fire
@@ -131,6 +139,17 @@ not as a Zod schema constraint, deliberately: the batch schema validates the who
 atomically, so a schema-level `.max()` on one field would fail every item in the batch — including
 an unrelated `finish_workout` — over a single bad set. Checking it per-item inside the handler
 means one implausible set becomes one `"error"` result, not a whole-batch rejection.
+
+## Service-worker caching
+
+The outbox above handles offline *writes*; a `vite-plugin-pwa`-managed service worker
+(`packages/client/vite.config.ts`) handles offline *reads*. It precaches the app shell so the PWA
+itself loads with no network at all, then applies `workbox` runtime-caching rules per request
+type: `CacheFirst` for the exercise catalog (`/api/exercises`) and exercise images (`/images/`),
+`StaleWhileRevalidate` for other `/api/` GET requests (serve the last-known copy instantly, refresh
+it in the background), and dedicated `CacheFirst` rules with expiration for OSM/Esri map tiles used
+by run-tracking's map features. This is the other half of "offline-first" alongside the sync
+outbox — writes queue and replay, reads fall back to whatever was last cached.
 
 ## Further reading
 

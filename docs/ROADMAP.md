@@ -1,36 +1,40 @@
 # Roadmap
 
-Liftr's planning history lives in `docs/superpowers/plans/` (task-by-task implementation plans)
-and `docs/superpowers/specs/` (approved design specs, some implemented directly without a
-separate plan doc). This file is the honest, forward-looking summary of that material as of
-2026-09-07 — what's actually still open, not a restatement of what already shipped.
+Liftr's planning history was originally tracked in `docs/superpowers/plans/` (task-by-task
+implementation plans) and `docs/superpowers/specs/` (approved design specs, some implemented
+directly without a separate plan doc), plus a consolidated `audit/workplan-v1.md`. Those were
+point-in-time planning/audit documents and have since been removed from the repo; this document
+reflects the current, forward-looking state directly rather than restating what already shipped.
 
-**The short version: there is very little open right now.** Every major initiative tracked in
-`docs/superpowers/plans/` and `audit/workplan-v1.md` is marked shipped and independently
-re-verified (see each plan's own status header, and `audit/workplan-v1.md` §1). If you're looking
-for "what's next," it's mostly small, explicitly-deferred items below — not a backlog of
-unfinished large work.
+**The short version: there is very little open right now.** Every major initiative from that
+planning history is shipped and independently re-verified. If you're looking for "what's next,"
+it's mostly small, explicitly-deferred items below — not a backlog of unfinished large work.
+
+## Shipped
+
+- **Multi-user login.** Real per-person accounts shipped in v1.0.0 and were hardened through
+  v1.3.5: an owner (set up on first launch) can invite other people via time-limited invite codes,
+  and everyone logs in with their own username/password to a session-scoped bearer token — see
+  [ADR 0010](adr/0010-real-per-person-auth-and-sessions.md) (the login/session design itself),
+  [ADR 0006](adr/0006-multi-user-hardening.md) (the schema groundwork it supersedes), and
+  [`docs/SECURITY.md`](SECURITY.md) for the shipped design.
 
 ## Open work
 
-- **Multi-user login itself.** The schema and backend are already hardened for it (every per-user
-  table scoped by `user_id`, every repository/service/route threading a resolved `userId` — see
-  [ADR 0006](adr/0006-multi-user-hardening.md)), but there's still no login UI, no passwords, and
-  no per-person bearer tokens. `packages/server/src/userContext.ts`'s `resolveCurrentUserId` is
-  the one place that needs to change (from a constant to a real session lookup) once that's built.
 - **`landmine-press` exercise photo.** The only sourced candidate is a CC BY-SA SVG illustration
   (`bryllim/workout-guide`), not a raster photo — the catalog's image pipeline assumes
   `start.jpg`-style raster files, and browsers won't reliably render an SVG saved with a `.jpg`
   extension. Needs a small extension-aware change in three places (`packages/server/src/routes/
   exercises.ts`'s `hasImage` check, `ExerciseThumb.vue`, `ExerciseDemo.vue`) — deferred as
-  lower-priority than the other photo-gap fixes it shipped alongside. See
-  `audit/workplan-v1.md` §3.9 and `audit/missing-photo-sourcing-research.md` §4.
+  lower-priority than the other photo-gap fixes it shipped alongside. (Originally tracked in
+  `audit/workplan-v1.md` §3.9 and a `missing-photo-sourcing-research.md` doc §4, both since removed
+  from the repo; this bullet reflects the current state directly.)
 - **`goblet-lunge` exercise photo.** Genuinely unsourced — no match found in free-exercise-db,
   wger's ~374-image set, workout-guide, or Wikimedia Commons. Keeps the icon fallback
   indefinitely unless a source turns up.
 - **Full-catalog custom illustration.** Commissioning original art for the catalog (rather than
-  relying on openly-licensed third-party photos) is explicitly called out as a separate future
-  initiative in `audit/missing-photo-sourcing-research.md` §4 — not scheduled, not scoped.
+  relying on openly-licensed third-party photos) was called out as a separate future initiative in
+  the same now-removed photo-sourcing research doc — not scheduled, not scoped.
 
 ## Explicitly not planned (status quo is intentional)
 
@@ -49,24 +53,19 @@ proposed as "obvious" additions without the context of why they aren't happening
 - **Automatic dark/light switching from OS preference**, beyond the existing first-launch
   default. Would revisit only if user feedback specifically asks for it.
 - **Changing the 9-tier badge system's colors, or adding a second brand gradient.** Rejected
-  outright per `audit/nebula-design-system.md` §1.
+  outright per a now-removed `nebula-design-system.md` audit doc §1 (see the note above on
+  removed planning material).
 
 ## Where to look for more detail
 
-- `docs/superpowers/plans/*.md` — one file per implementation effort, each with a status header
-  stating shipped/superseded/partial as of its own last verification pass. Treat the status
-  header as current truth over the plan's body text, which describes intent at write-time.
-- `docs/superpowers/specs/*.md` — approved design specs. Most (rank engine v2, streak/XP
-  mechanics, the 2026-09-05 workout-flow and Nebula visual redesigns, the 2026-09-06 XP/rank
-  balancing rebalance) were fully implemented, in some cases via directly-committed
-  task-by-task work rather than a separate plan file — cross-check against `git log` for
-  matching commit prefixes (e.g. `feat(workout-flow): W1 —`, `feat(nebula): F1 —`) if you need
-  to confirm a specific spec section actually landed.
-- `audit/workplan-v1.md` — the consolidated, most-recently-corrected view of shipped-vs-open
-  status as of 2026-09-05, superseded only by the 2026-09-06/07 XP/rank balancing work
-  (`docs/adr/0001`, `docs/adr/0005`, and the commits in `git log --oneline` from `f880bb7`
-  through `5b7c6e2`), which is not yet folded back into that document.
-- If you find a claim in a plan or spec that seems to disagree with what the running app
+`docs/superpowers/plans/*.md`, `docs/superpowers/specs/*.md`, and `audit/workplan-v1.md` were the
+original planning/audit sources for this material (implementation plans, approved design specs,
+and a consolidated shipped-vs-open tracker respectively) — all have since been removed from the
+repo, and this document reflects their conclusions directly rather than pointing back to them. For
+whether a given design spec actually landed, cross-check `git log` for matching commit prefixes
+(e.g. `feat(workout-flow): W1 —`, `feat(nebula): F1 —`) and the ADRs under `docs/adr/` for anything
+that rose to the level of a lasting architectural decision.
+- If you find a claim in this roadmap that seems to disagree with what the running app
   actually does, trust the code and file an issue — every plan in this repo has a history of
   being corrected after live re-verification found drift, and that's a healthy pattern to
   continue, not a flaw unique to any one document.

@@ -2,8 +2,9 @@
 
 Liftr's founding bet is that **the rank system is the retention mechanism** — everything else
 in the app exists to support logging sets fast enough that engaging with rank doesn't feel like
-a chore (`audit/finished/liftr-audit.md` §1). This document explains how that system actually
-works today, and why it's shaped the way it is.
+a chore (§1 of the app's original audit document, a point-in-time planning/audit doc that has
+since been removed from the repo — this document reflects the current implementation directly).
+This document explains how that system actually works today, and why it's shaped the way it is.
 
 The engine lives almost entirely in `packages/shared/src/rank/` as pure, framework-free
 TypeScript — no DB access, no hidden state. The client can recompute optimistically offline and
@@ -11,7 +12,8 @@ the server recomputes authoritatively after sync, and the two are guaranteed to 
 they import the exact same functions.
 
 > **A note on staleness**: this system went through a significant redesign on 2026-09-07 (the
-> "XP/rank balancing redesign", see `docs/superpowers/specs/2026-09-06-xp-rank-balancing-design.md`).
+> "XP/rank balancing redesign" — its design doc was a point-in-time planning document that has
+> since been removed from the repo; this file reflects the current implementation directly).
 > If you find older material describing 5 tiers (bronze→diamond) × 3 divisions = 15 bands, or a
 > 9-tier ladder with 33 bands, that's history, not the current system. Always trust
 > `packages/shared/src/rank/tiers.ts`'s own comments over prose elsewhere, including this file —
@@ -25,10 +27,10 @@ that honestly rather than blending it into one number (the one exception is the 
 described in [Overall Lifter Rank](#overall-lifter-rank-the-one-aggregate) below, which is
 additive, not primary).
 
-This is a deliberate rejection of PvP-ranked-game conventions. Round 3 of the rank rework
-(§7.3 in the audit) did a comparative study of seven competitive games' ranked systems (League
-of Legends, Siege, Apex, Deadlock, VALORANT, CS2) specifically to see what transfers to a
-single-player strength tracker. Conclusion: almost nothing — hidden MMR, opponent-relative
+This is a deliberate rejection of PvP-ranked-game conventions. Round 3 of the rank rework (§7.3 in
+that same now-removed audit document) did a comparative study of seven competitive games' ranked
+systems (League of Legends, Siege, Apex, Deadlock, VALORANT, CS2) specifically to see what
+transfers to a single-player strength tracker. Conclusion: almost nothing — hidden MMR, opponent-relative
 scoring, demotion, placement matches, entry costs, and smurf detection all solve
 matchmaking-specific problems that don't exist with no opponents and no matches. What *does*
 transfer is general progression psychology: transparency over hidden math, and boundary
@@ -223,6 +225,12 @@ against the lifter's *old* peak, not one freshly advanced in the same recompute 
 same-day genuine PR with no decay backlog would display as throttled — see the function's own
 comment for the guard.
 
+The climb-back itself is also scaled by the session's own plausibility multiplier:
+`scaledPos = prevPos + (rawGainPos - prevPos) * plausibilityMultiplier`
+(`packages/server/src/services/rankAlgorithm.ts`). So a session flagged by the plausibility gate
+below doesn't just get discounted XP/PR/peak-eligibility — if it's also a comeback session
+recovering from decay, its climb-back is proportionally smaller too.
+
 ## The plausibility gate
 
 `computeWorkoutPlausibility` (`packages/shared/src/rank/plausibility.ts`) scores a finished
@@ -265,7 +273,14 @@ The gate is computed once per finished workout (`syncService.ts`'s `applyFinishW
 PR eligibility is deliberately the strictest of the three: a PR is a permanent, high-stakes claim
 ("you hit X on this exact date"), not a continuously-recomputable derived value the way peak and
 current rank are — see `rankService.ts`'s comment above `PR_ELIGIBILITY_FLOOR` for the exact
-math this works out to.
+math this works out to. That comment describes the ceiling check's *practical effect* on the PR
+floor as "a hard 0/1, not a gradient" — `computeWorkoutPlausibility` doesn't literally special-case
+it that way in code; `ceilingSeverity` is the same continuous ramp shape as the pace and
+improbable-jump heuristics (see [above](#the-plausibility-gate)). It just reaches a severity of 0.5
+(enough to fail the 0.5 PR-eligibility floor) once a session's best ratio clears roughly 1.9x the
+Apex threshold — well before the ramp's own maximal-severity point at 2.5x — so in effect, once a
+session is flagged badly enough to matter for PRs at all, it's already lost PR eligibility outright
+rather than being partially discounted.
 
 ## Overall Lifter Rank: the one aggregate
 
@@ -339,10 +354,10 @@ recompute in `packages/server/src/services/runRankService.ts`'s `recomputeRunRan
 
 ## Further reading
 
-- `docs/superpowers/specs/2026-08-31-rank-engine-v2-design.md` — the 9-tier ladder, decay, and
-  plausibility-gate design.
-- `docs/superpowers/specs/2026-09-06-xp-rank-balancing-design.md` — the level-curve rescale,
-  skill-score curve, peak corroboration, and tier-widening design.
-- `audit/finished/liftr-audit.md` §4 and §7 — narrative history across all four rework rounds.
+- The 9-tier ladder/decay/plausibility-gate design doc (2026-08-31), the level-curve rescale/
+  skill-score/peak-corroboration/tier-widening design doc (2026-09-06), and the narrative history
+  across all four rework rounds (§4 and §7 of the app's original audit document) were all
+  point-in-time planning/audit documents that have since been removed from the repo; this document
+  reflects the current implementation directly.
 - [xp-and-streaks.md](./xp-and-streaks.md) — how rank tier feeds into per-set XP, and how
   `computeRunXp` parallels it for running.
