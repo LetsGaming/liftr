@@ -70,6 +70,16 @@ genuinely are different runs:
   ([rank-engine.md](./rank-engine.md#running-ranks)) never runs against a manual entry, since there
   are no `run_points` to independently check `distanceM` against. A GPS-tracked run's XP is
   discounted by that same multiplier the same way its rank contribution is.
+- **A source bonus for Health Connect imports.** A run imported from Android Health Connect gets an
+  8% XP bonus over a GPX-imported or manually-logged run (`HEALTHCONNECT_XP_BONUS_MULTIPLIER =
+  1.08`), applied unconditionally on top of the plausibility multiplier and the repeat-distance
+  decay above:
+
+  ```
+  total += baseRunXp(distanceM) * repeatRunMultiplier(occurrence) * plausibilityMultiplier * sourceBonus
+  ```
+
+  where `sourceBonus` is `1.08` iff `run.source === "healthconnect"`, else `1`.
 - **Pure, no persistence.** `computeRunXp` sums a full run history fresh on every read (called by
   `getRunXpSummary`, Task 10's server-side summary), matching the "no XP ledger table" invariant
   `computeTotalXp` already established for strength.
@@ -198,10 +208,10 @@ happened to reach the server.
 
 ## Further reading
 
-- `docs/superpowers/specs/2026-09-04-streak-xp-mechanics-design.md` — the original consistency/
-  variety bonus design.
-- `docs/superpowers/specs/2026-09-06-xp-rank-balancing-design.md` §1 — the level-curve rescale
-  rationale and worked before/after table.
+- The original consistency/variety bonus design doc (2026-09-04) and the level-curve rescale
+  rationale/worked before/after table (2026-09-06 xp-rank balancing design, §1) were point-in-time
+  planning documents that have since been removed from the repo; this document reflects the
+  current implementation directly.
 - [rank-engine.md](./rank-engine.md) — the tier system that `TIER_XP_MULTIPLIER` reads from, and
   the plausibility gate whose multiplier flows into `computeSetXp`.
 - [sync-and-offline.md](./sync-and-offline.md) — how a finished workout actually reaches the

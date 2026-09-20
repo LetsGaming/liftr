@@ -140,8 +140,12 @@ real or derivable strength standards, each with:
   training frequency, equipment (including bodyweight and dumbbell-handle weight), and available
   plates, so rank/warm-up/plate-math all have real numbers to work from from day one.
 - **Bodyweight tracking** with a trend chart.
-- **API token management** — view/reveal/copy the bearer token used to authenticate the client
-  against the server (see `docs/adr/0002-single-bearer-token-auth.md`).
+- **Account settings** — change your username, password, or display name from your own profile.
+- **Session management** — list your active sessions (multi-device) and revoke any of them; a
+  member (not the owner) can also delete their own account. Owners additionally get an invite-code
+  flow for adding new members and can list/remove member accounts. See
+  [`docs/SECURITY.md`](SECURITY.md#auth) and [ADR 0006](adr/0006-multi-user-hardening.md) for the
+  underlying model.
 - **Data export** as CSV/ZIP, so your data is genuinely yours to take with you.
 - **Light/dark theme**, defaulting from first-launch preference (no OS-preference auto-switching
   beyond that initial default).
@@ -157,8 +161,9 @@ real or derivable strength standards, each with:
   `docs/adr/0003-offline-first-outbox-sync.md`. Logging a set never blocks on the network.
   Service-worker caching keeps the app shell, exercise catalog/images, and other API reads
   available offline too.
-- **Self-hosted, single-user.** Runs on your own server, data lives in one SQLite file you can
-  back up or move, no cloud account, no analytics, no third party in the loop\*\*.
+- **Self-hosted, real accounts.** Runs on your own server, data lives in one SQLite file you can
+  back up or move; the owner and any invited members log in with their own username/password, but
+  there's no third-party cloud account, no analytics, no third party in the loop\*\*.
 
 \*\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
 distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to

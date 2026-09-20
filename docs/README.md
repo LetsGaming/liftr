@@ -19,13 +19,18 @@ running, or extending Liftr.
   engine, XP/streaks, offline sync, the exercise catalog, and a glossary of the domain terms used
   throughout.
 - **[reference/](reference/)** — lookup material: the HTTP API, environment variables, pnpm
-  scripts.
+  scripts, and [loop-findings.md](reference/loop-findings.md)'s notes on running-loop closure
+  behavior.
 - **[guides/](guides/)** — task-oriented walkthroughs: local dev setup, adding an exercise,
   writing tests, getting the app on a phone.
 - **[operations/](operations/)** — running it for real: Android release signing, deployment,
   backups, troubleshooting.
 - **[adr/](adr/)** — architecture decision records: short, dated write-ups of significant
   technical choices and why they were made.
+- **[design/](design/)** — the Nebula visual/motion design system (`nebula-design-system.md`,
+  `nebula-design-plan.md`, `nebula-design-components.md`): tokens, component specs, and rationale
+  as last verified against the shipped app. Treat these as a design reference, not a
+  live-updated spec — see each file's own top-of-file note.
 - **[../tests/README.md](../tests/README.md)** — the test suite's own conventions (import
   aliases, shared helpers, environment rules). Lives next to the tests it documents, not under
   `docs/`, but linked from everywhere here that talks about testing.

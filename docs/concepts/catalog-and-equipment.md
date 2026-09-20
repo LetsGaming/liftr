@@ -8,8 +8,10 @@ automatically, with hand-curation only where automation can't be trusted.
 ## Why curated, not comprehensive
 
 `tools/catalog/curated.yaml` holds roughly 90 hand-picked movements, "biased toward movements
-with real or derivable strength standards" (`audit/finished/liftr-audit.md` §1). The catalog
-exists to **serve the rank system** — every entry needs a path to a threshold table, either
+with real or derivable strength standards" (§1 of the app's original audit document, a
+point-in-time planning/audit doc that has since been removed from the repo — this document
+reflects the current implementation directly). The catalog exists to **serve the rank system** —
+every entry needs a path to a threshold table, either
 directly (an anchor lift) or by ratio against one (everything else) — not to be an exhaustive
 exercise database. A long tail of exercises with no plausible strength-standard anchor would just
 be dead weight the rank engine can't use.

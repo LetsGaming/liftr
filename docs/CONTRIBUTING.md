@@ -108,7 +108,11 @@ Every push and pull request runs `.github/workflows/ci.yml`, which does, in orde
 2. `pnpm typecheck`
 3. `pnpm lint`
 4. `pnpm test`
+5. `pnpm -r --filter=./packages/* build`
+6. A smoke test that boots the compiled server (`node packages/server/dist/index.js`, with
+   `LIFTR_DB_PATH`/`PORT` set to throwaway test values) and polls `/api/health` for up to 10
+   seconds, failing the job if the server never becomes healthy in that window.
 
-All three checks (typecheck, lint, test) must pass — there's no partial/optional check. The same
-workflow is reused as the test gate for `release.yml` (tag-triggered Android APK builds) via
-`workflow_call`, so a red CI run also blocks releases, not just PRs.
+All six steps must pass — there's no partial/optional check. The same workflow is reused as the
+test gate for `release.yml` (tag-triggered Android APK builds) via `workflow_call`, so a red CI run
+also blocks releases, not just PRs.
