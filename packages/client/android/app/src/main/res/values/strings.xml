@@ -4,4 +4,8 @@
     <string name="title_activity_main">Liftr</string>
     <string name="package_name">dev.liftr.app</string>
     <string name="custom_url_scheme">dev.liftr.app</string>
+    <!-- Shown by Health Connect's "why does this app need this data" link (PermissionsRationaleActivity,
+         via capacitor-health). Liftr is self-hosted with no telemetry, so this points at the repo,
+         which documents that data never leaves your own server. -->
+    <string name="privacy_policy_url">https://github.com/LetsGaming/liftr</string>
 </resources>

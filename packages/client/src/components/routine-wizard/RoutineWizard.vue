@@ -13,7 +13,7 @@
  */
 import type { SetKind } from "@liftr/shared";
 import { computed, reactive, ref, watch } from "vue";
-import WizardHeader from "../ui/WizardHeader.vue";
+import BaseHeader from "../ui/BaseHeader.vue";
 import SheetModal from "../ui/SheetModal.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useToast } from "../../composables/useToast";
@@ -332,9 +332,9 @@ const isFastPathEligible = computed(() => {
 });
 const showFastPath = computed(() => isFastPathEligible.value && !fastPathOverride.value);
 
-/** WizardHeader's step indicator. "choose" and "pick" share one "1 Wählen" slot (PathChooser is
- *  just the entry into picking) — lost when the header markup was extracted into WizardHeader.vue
- *  without carrying this over; restored here rather than in WizardHeader itself, since the
+/** BaseHeader's step indicator. "choose" and "pick" share one "1 Wählen" slot (PathChooser is
+ *  just the entry into picking) — lost when the header markup was extracted into BaseHeader.vue
+ *  without carrying this over; restored here rather than in BaseHeader itself, since the
  *  "two states, one slot" collapse and the fast-path-dependent label/count are wizard-specific. */
 const wizardSteps = computed(() => {
   const steps = [
@@ -424,7 +424,7 @@ function useFullArrange() {
 <template>
   <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="emit('created')">
     <template #header>
-      <WizardHeader
+      <BaseHeader
         v-model:title="name"
         :title-placeholder="'Name der Routine'"
         :is-confirming-close="closeConfirm.isArmed()"
@@ -491,45 +491,3 @@ function useFullArrange() {
     />
   </SheetModal>
 </template>
-
-<style scoped>
-.wizard-head {
-  flex: none;
-  padding: var(--sp4);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp2);
-}
-.close-btn {
-  align-self: flex-end;
-}
-.close-btn.confirming {
-  width: auto;
-  padding: 0 12px;
-  border-radius: var(--r-md);
-  background: var(--danger-lo);
-  border-color: var(--danger);
-  font-size: 12px;
-  font-weight: 700;
-}
-.name-input {
-  padding: 10px 14px;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 17px;
-  font-weight: 700;
-}
-.steps {
-  display: flex;
-  gap: var(--sp3);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--faint);
-}
-.steps .active {
-  color: var(--blue-hi);
-}
-</style>

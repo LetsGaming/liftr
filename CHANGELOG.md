@@ -2,10 +2,15 @@
 
 All notable changes to this project are documented in this file. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow
-Semantic Versioning strictly (no releases have been tagged before this one — see
-`.github/workflows/release.yml` for how a release is cut).
+Semantic Versioning strictly — see `.github/workflows/release.yml` for how a release is cut.
 
 ## [Unreleased]
+
+### Fixed
+
+- **Opening the app on a server that already has an owner account no longer skips straight to the dashboard without logging in.** The startup check was pinging a public endpoint that always succeeds, so anyone reaching the app was treated as authenticated; it now checks against an authenticated endpoint, so you land on the login screen as expected.
+- **The Android app now shows up in Health Connect so its permissions can actually be granted.** Two things were missing: the manifest declaration Health Connect needs to list an app as a connected app at all, and a wrong permission name for reading GPS routes from workouts, which silently broke every permission request that included it.
+- **The routine and route builder headers, and the exercise detail sheet's header, no longer sit under the notch/status bar on Android.** Leftover styles from before those headers were extracted into a shared component were silently overriding the notch spacing; the shared header (now `BaseHeader`) has been hardened against this, and the exercise detail sheet's own header got the same fix.
 
 ## [1.3.5] - 2026-09-18
 

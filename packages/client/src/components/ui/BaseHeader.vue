@@ -1,4 +1,20 @@
 <script setup lang="ts">
+/**
+ * Shared pinned header for full-bleed screens (SheetModal's `sheet: false` flows — the routine
+ * and route wizards, and anything else that needs a title/close bar instead of scrolling content
+ * under the notch/status bar on Android — see .base-header's own comment below).
+ *
+ * Root element class name is deliberately namespaced (`base-header*`, not a generic name like
+ * `wizard-head`) — Vue applies a PARENT component's scoped styles to a CHILD component's root
+ * element too (by design, so a parent can adjust a child's outer layout). A previous version of
+ * this component was named WizardHeader and used generic class names; RoutineWizard.vue and
+ * RouteWizard.vue each still carried their own leftover `.wizard-head`/`.name-input`/`.close-btn`
+ * rules from before this component existed, and those leaked onto this component's root element
+ * and silently clobbered the safe-area padding-top below with a plain `padding: ...` shorthand —
+ * a real bug (the header sat under the notch despite this file's own CSS being "correct"). Give
+ * this component's root classes a name distinctive enough that no caller's own leftover styles
+ * are likely to collide with them again.
+ */
 import AppIcon from "./AppIcon.vue";
 
 const props = defineProps<{
@@ -16,17 +32,17 @@ const title = defineModel<string>("title", { default: "" });
 </script>
 
 <template>
-  <header class="wizard-head">
-    <div class="wizard-head-top">
+  <header class="base-header">
+    <div class="base-header-top">
       <input
         v-model="title"
-        class="name-input"
+        class="base-header-name-input"
         type="text"
         :placeholder="titlePlaceholder ?? 'Name der Routine'"
         :aria-label="titlePlaceholder ?? 'Name der Routine'"
       />
       <button
-        class="btn-close close-btn"
+        class="btn-close base-header-close-btn"
         :class="{ confirming: isConfirmingClose }"
         aria-label="Schließen"
         @click="emit('close')"
@@ -35,7 +51,7 @@ const title = defineModel<string>("title", { default: "" });
         <AppIcon v-else name="close" />
       </button>
     </div>
-    <div v-if="steps && steps.length > 0" class="steps">
+    <div v-if="steps && steps.length > 0" class="base-header-steps">
       <span
         v-for="step in steps"
         :key="step.key"
@@ -48,11 +64,12 @@ const title = defineModel<string>("title", { default: "" });
 </template>
 
 <style scoped>
-.wizard-head {
+.base-header {
   flex: none;
   padding: var(--sp3) var(--sp4);
-  /* Full-bleed modal header (see SheetModal.vue), shared by RoutineWizard.vue and RouteWizard.vue
-     — without this, the title input and close button sit under the notch/status bar on Android. */
+  /* Full-bleed modal header (see SheetModal.vue) — without this, the title input and close
+     button sit under the notch/status bar on Android. See this file's header comment for why a
+     caller must never redeclare `.base-header`/its descendants in its own <style scoped> block. */
   padding-top: calc(var(--sp3) + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -61,13 +78,13 @@ const title = defineModel<string>("title", { default: "" });
   background: var(--bg);
 }
 
-.wizard-head-top {
+.base-header-top {
   display: flex;
   align-items: center;
   gap: var(--sp2);
 }
 
-.name-input {
+.base-header-name-input {
   flex: 1;
   min-height: 44px;
   padding: 8px 12px;
@@ -79,7 +96,7 @@ const title = defineModel<string>("title", { default: "" });
   font-weight: 700;
 }
 
-.close-btn {
+.base-header-close-btn {
   flex: none;
   min-width: 44px;
   min-height: 44px;
@@ -89,7 +106,7 @@ const title = defineModel<string>("title", { default: "" });
   justify-content: center;
 }
 
-.close-btn.confirming {
+.base-header-close-btn.confirming {
   width: auto;
   padding: 0 12px;
   border-radius: var(--r-md);
@@ -99,7 +116,7 @@ const title = defineModel<string>("title", { default: "" });
   font-weight: 700;
 }
 
-.steps {
+.base-header-steps {
   display: flex;
   gap: var(--sp3);
   font-size: 11px;
@@ -107,7 +124,7 @@ const title = defineModel<string>("title", { default: "" });
   color: var(--faint);
 }
 
-.steps .active {
+.base-header-steps .active {
   color: var(--blue-hi);
 }
 </style>
