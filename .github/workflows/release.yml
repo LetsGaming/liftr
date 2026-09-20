@@ -12,13 +12,47 @@ on:
 
 permissions:
   contents: write # only actually needed by the create-release job (uploading a release asset)
+  checks: read # only needed by check-ci, to look up whether this commit already passed CI
 
 jobs:
+  # Tagging a commit that was JUST pushed to main (the normal `bump-version.mjs --push` flow)
+  # means ci.yml's own `push` trigger already ran the full suite for this exact SHA seconds
+  # earlier — re-running it via the `test` job below would just be paying for the same
+  # typecheck/lint/test/build/smoke-test twice. This looks up whether a "check" check-run
+  # already succeeded for `github.sha` and skips the redundant re-run when it did; anything not
+  # already covered (a manually-created tag, workflow_dispatch off a branch with no prior CI
+  # run) still gets tested for real below.
+  check-ci:
+    runs-on: ubuntu-latest
+    outputs:
+      already-passed: ${{ steps.check.outputs.already-passed }}
+    steps:
+      - name: Check for an existing successful CI run on this exact commit
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+            --jq '[.check_runs[] | select(.name == "check" and .conclusion == "success")] | length')
+          if [[ "$count" -gt 0 ]]; then
+            echo "already-passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already-passed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
+    needs: check-ci
+    if: needs.check-ci.outputs.already-passed != 'true'
     uses: ./.github/workflows/ci.yml
 
   build-apk:
-    needs: test
+    needs: [check-ci, test]
+    # `test` is legitimately skipped (not failed) when check-ci found this commit already green —
+    # `needs.test.result` is 'skipped' in that case, not 'success', so it has to be allowed here too.
+    if: |
+      always() &&
+      needs.check-ci.result == 'success' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,9 +145,17 @@ jobs:
           name: liftr-${{ steps.version.outputs.name }}.apk
           path: ${{ steps.apk.outputs.path }}
 
+      - name: Extract this version's changelog section
+        if: github.ref_type == 'tag'
+        run: |
+          version="${{ steps.version.outputs.name }}"
+          if ! node scripts/changelog-section.mjs "$version" > "${RUNNER_TEMP}/release-notes.md" 2>/dev/null; then
+            echo "No CHANGELOG.md section found for $version — falling back to generic notes." > "${RUNNER_TEMP}/release-notes.md"
+          fi
+
       - name: Attach APK to the GitHub Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.apk.outputs.path }}
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/release-notes.md

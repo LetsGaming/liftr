@@ -194,12 +194,16 @@ function missingBadge(req: TieredRequirement): string | null {
 
 <style scoped>
 /* #header slot content — replicates SheetModal's own (scoped-to-it, so not reachable here)
-   .sheet-head title bar, plus the new tab strip pinned right below it. */
+   .sheet-head title bar, plus the new tab strip pinned right below it. This sheet opens at
+   initial-breakpoint 1 (fully open, see SheetModal.vue's default) and can be dragged there again,
+   reaching the very top of the viewport — same notch/status-bar exposure as a full-bleed modal
+   (see BaseHeader.vue's own comment), so it needs the same safe-area padding-top fallback. */
 .sheet-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--sp5) var(--sp5) 0;
+  padding-top: calc(var(--sp5) + env(safe-area-inset-top, 0px));
 }
 .sheet-head b {
   font-size: 17px;

@@ -176,7 +176,7 @@ describe("RoutineWizard — create mode navigation", () => {
     const wrapper = mountWizard();
 
     expect(wrapper.find(".pathchooser-stub").exists()).toBe(true);
-    expect(wrapper.findAll(".steps span")[0]!.classes()).toContain("active");
+    expect(wrapper.findAll(".base-header-steps span")[0]!.classes()).toContain("active");
   });
 
   it("choosing manual routes to PickStep in manual mode", async () => {
@@ -199,8 +199,8 @@ describe("RoutineWizard — create mode navigation", () => {
     expect(fastPath.exists()).toBe(true);
     expect(fastPath.attributes("data-count")).toBe("1");
     // fast path collapses step 2/3 into one "Fertig" label and hides the 3rd indicator entirely
-    expect(wrapper.findAll(".steps span")).toHaveLength(2);
-    expect(wrapper.findAll(".steps span")[1]!.text()).toBe("2 Fertig");
+    expect(wrapper.findAll(".base-header-steps span")).toHaveLength(2);
+    expect(wrapper.findAll(".base-header-steps span")[1]!.text()).toBe("2 Fertig");
   });
 
   it("FastPathStep's customize event drops into the full ArrangeStep", async () => {
@@ -213,7 +213,7 @@ describe("RoutineWizard — create mode navigation", () => {
 
     expect(wrapper.find(".arrangestep-stub").exists()).toBe(true);
     expect(wrapper.find(".fastpath-stub").exists()).toBe(false);
-    expect(wrapper.findAll(".steps span")).toHaveLength(3);
+    expect(wrapper.findAll(".base-header-steps span")).toHaveLength(3);
   });
 
   it("ArrangeStep's addExercise returns to PickStep forced back to manual mode", async () => {
@@ -236,7 +236,7 @@ describe("RoutineWizard — create mode navigation", () => {
     await wrapper.find(".toggle-ex1").trigger("click");
     await wrapper.find(".continue-btn").trigger("click");
     await wrapper.find(".customize-btn").trigger("click");
-    await wrapper.find(".name-input").setValue("Push Day");
+    await wrapper.find(".base-header-name-input").setValue("Push Day");
 
     await wrapper.find(".arrangestep-stub .continue-btn").trigger("click");
 
@@ -269,7 +269,7 @@ describe("RoutineWizard — create mode navigation", () => {
 
     expect(wrapper.find(".fastpath-stub").attributes("data-can-save")).toBe("false");
 
-    await wrapper.find(".name-input").setValue("Legs");
+    await wrapper.find(".base-header-name-input").setValue("Legs");
     expect(wrapper.find(".fastpath-stub").attributes("data-can-save")).toBe("true");
   });
 });
@@ -343,7 +343,7 @@ describe("RoutineWizard — edit mode", () => {
     const arrange = wrapper.find(".arrangestep-stub");
     expect(arrange.exists()).toBe(true);
     expect(arrange.attributes("data-count")).toBe("2");
-    expect((wrapper.find(".name-input").element as HTMLInputElement).value).toBe("Push Day");
+    expect((wrapper.find(".base-header-name-input").element as HTMLInputElement).value).toBe("Push Day");
   });
 
   it("passes isEditing=true down to FastPathStep/ReviewStep", async () => {
@@ -369,7 +369,7 @@ describe("RoutineWizard — saving", () => {
     await wrapper.find(".choose-manual").trigger("click");
     await wrapper.find(".toggle-ex1").trigger("click");
     await wrapper.find(".continue-btn").trigger("click");
-    await wrapper.find(".name-input").setValue(name);
+    await wrapper.find(".base-header-name-input").setValue(name);
     return wrapper;
   }
 
@@ -423,7 +423,7 @@ describe("RoutineWizard — closing", () => {
   it("dismisses immediately when nothing has been picked yet", async () => {
     const wrapper = mountWizard();
 
-    await wrapper.find(".close-btn").trigger("click");
+    await wrapper.find(".base-header-close-btn").trigger("click");
 
     expect(sheetDismissSpy).toHaveBeenCalledTimes(1);
     expect(wrapper.emitted("created")).toHaveLength(1);
@@ -434,9 +434,9 @@ describe("RoutineWizard — closing", () => {
     await wrapper.find(".choose-manual").trigger("click");
     await wrapper.find(".toggle-ex1").trigger("click");
 
-    await wrapper.find(".close-btn").trigger("click");
+    await wrapper.find(".base-header-close-btn").trigger("click");
     expect(sheetDismissSpy).not.toHaveBeenCalled();
-    const closeBtn = wrapper.find(".close-btn");
+    const closeBtn = wrapper.find(".base-header-close-btn");
     expect(closeBtn.classes()).toContain("confirming");
     expect(closeBtn.text()).toBe("Verwerfen?");
 

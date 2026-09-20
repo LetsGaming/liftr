@@ -34,7 +34,7 @@ import {
   type RoutePoint,
   type Waypoint,
 } from "../../services/plannedRouteService";
-import WizardHeader from "../ui/WizardHeader.vue";
+import BaseHeader from "../ui/BaseHeader.vue";
 import { ApiError } from "../../lib/api";
 
 const props = defineProps<{
@@ -320,7 +320,7 @@ async function save() {
 <template>
   <SheetModal ref="sheetRef" :sheet="false" fill-body background="var(--bg)" @close="emit('close')">
     <template #header>
-      <WizardHeader
+      <BaseHeader
         v-model:title="name"
         :title-placeholder="'Name der Strecke'"
         :is-confirming-close="closeConfirm.isArmed()"
@@ -363,30 +363,6 @@ async function save() {
 </template>
 
 <style scoped>
-.wizard-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-}
-.name-input {
-  flex: 1;
-  min-height: 44px;
-  border: none;
-  background: transparent;
-  font-size: 1.05rem;
-}
-.close-btn {
-  min-width: 44px;
-  min-height: 44px;
-}
-/* Armed-to-discard state — mirrors WorkoutPage.vue's .cancel-btn.confirming and
-   RouteMapEditor.vue's own waypoint .confirming treatment for the same tap-to-arm pattern. */
-.close-btn.confirming {
-  background: var(--danger-lo);
-  border-color: var(--danger);
-  color: var(--text);
-}
 .wizard-map {
   flex: 1;
   min-height: 0;

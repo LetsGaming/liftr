@@ -55,7 +55,9 @@ async function check() {
       status.value = "setup";
       return;
     }
-    await api.get("/api/health");
+    // /api/health is intentionally public (see app.ts) and would succeed with no token — check an
+    // authenticated route instead, so an owner already existing on the server doesn't skip login.
+    await api.get("/api/auth/me");
     status.value = "ok";
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {

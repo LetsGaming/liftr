@@ -37,10 +37,10 @@ afterEach(() => {
 });
 
 describe("AuthGate", () => {
-  it("renders the slot immediately when status says setup is done and health succeeds", async () => {
+  it("renders the slot immediately when status says setup is done and the session is valid", async () => {
     mockGet.mockImplementation((path: string) => {
       if (path === "/api/auth/status") return Promise.resolve({ needsSetup: false });
-      if (path === "/api/health") return Promise.resolve({ ok: true });
+      if (path === "/api/auth/me") return Promise.resolve({ id: "u1", username: "owner", name: "Owner", role: "owner" });
       return Promise.reject(new Error(`unexpected path ${path}`));
     });
 

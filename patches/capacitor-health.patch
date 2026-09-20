@@ -1,0 +1,48 @@
+diff --git a/README.md b/README.md
+index d2daa16c74952e5bf070ce549f8d0c4e0b507fed..054c542aa32db598363635be684d9ebd593342e5 100644
+--- a/README.md
++++ b/README.md
+@@ -60,7 +60,7 @@ npx cap sync
+     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+-    <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTE" />
++    <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTES" />
+     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+     <uses-permission android:name="android.permission.health.READ_HEIGHT" />
+diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
+index 9f7d5bd58ec50aea6217c76b25f49dade602ec8e..c0c58008c356a50d10f6d2a45b37ac606f1f967b 100644
+--- a/android/src/main/AndroidManifest.xml
++++ b/android/src/main/AndroidManifest.xml
+@@ -5,7 +5,7 @@
+     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED"/>
+     <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
+-    <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTE"/>
++    <uses-permission android:name="android.permission.health.READ_EXERCISE_ROUTES"/>
+     <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
+     <uses-permission android:name="android.permission.health.READ_HEIGHT"/>
+     <uses-permission android:name="android.permission.health.READ_BODY_FAT"/>
+diff --git a/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt b/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt
+index 56c1be592a37d6bfa95b7caf381b0e3289eaac22..c8ea829b4d160f89d14f5be2f4a5efc503f08e6d 100644
+--- a/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt
++++ b/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt
+@@ -92,7 +92,7 @@ enum class CapHealthPermission {
+         ),
+         Permission(
+             alias = "READ_ROUTE",
+-            strings = ["android.permission.health.READ_EXERCISE_ROUTE"]
++            strings = ["android.permission.health.READ_EXERCISE_ROUTES"]
+         ),
+         Permission(
+             alias = "READ_WEIGHT",
+@@ -160,7 +160,7 @@ class HealthPlugin : Plugin() {
+ 
+     private val permissionMapping = mapOf(
+         Pair(CapHealthPermission.READ_WORKOUTS, "android.permission.health.READ_EXERCISE"),
+-        Pair(CapHealthPermission.READ_ROUTE, "android.permission.health.READ_EXERCISE_ROUTE"),
++        Pair(CapHealthPermission.READ_ROUTE, "android.permission.health.READ_EXERCISE_ROUTES"),
+         Pair(CapHealthPermission.READ_HEART_RATE, "android.permission.health.READ_HEART_RATE"),
+         Pair(CapHealthPermission.READ_ACTIVE_CALORIES, "android.permission.health.READ_ACTIVE_CALORIES_BURNED"),
+         Pair(CapHealthPermission.READ_TOTAL_CALORIES, "android.permission.health.READ_TOTAL_CALORIES_BURNED"),
