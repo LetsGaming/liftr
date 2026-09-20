@@ -30,7 +30,7 @@ import {
 } from "@liftr/shared";
 import { apiBase } from "./api";
 import { MUSCLE_META } from "./muscles";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "./tierIcons";
+import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, TIER_WING_BAND, type RankTier } from "./tierIcons";
 
 /** Hardcoded copy of tokens.css's live palette — see this file's header comment for why these
  *  are copies, not CSS-var reads. Keep in sync manually if tokens.css's palette changes. */
@@ -283,6 +283,82 @@ function cssAngleGradient(ctx: CanvasRenderingContext2D, angleDeg: number, x: nu
   return ctx.createLinearGradient(cx - dx * halfLen, cy - dy * halfLen, cx + dx * halfLen, cy + dy * halfLen);
 }
 
+/** Wing span per band, as a fraction of `size` — mirrors tokens.css's `.badge-wrap.w<N>`
+ *  `--wing-span` values (26%/38%/50%). Index 0 (Initiate) is unused since drawWings() returns
+ *  early for band 0. */
+const WING_SPAN = [0, 0.26, 0.38, 0.5];
+
+/** Fractional vertices for one wing blade, same 5-point taper as tokens.css's `.badge-wrap::before`
+ *  clip-path (`polygon(100% 8%, 100% 92%, 46% 74%, 0 40%, 44% 26%)`) — thick at the hex (x=1),
+ *  tapering to a point away from it (x=0). Mirrored horizontally (fx -> 1-fx) for the right wing,
+ *  the same way the CSS `scaleX(-1)` mirrors `::after`. */
+const WING_FRACTIONS: [number, number][] = [[1, 0.08], [1, 0.92], [0.46, 0.74], [0, 0.4], [0.44, 0.26]];
+function wingPath(x: number, y: number, w: number, h: number, mirror: boolean): Path2D {
+  const p = new Path2D();
+  WING_FRACTIONS.forEach(([fx, fy], i) => {
+    const px = x + (mirror ? 1 - fx! : fx!) * w;
+    const py = y + fy! * h;
+    if (i === 0) p.moveTo(px, py);
+    else p.lineTo(px, py);
+  });
+  p.closePath();
+  return p;
+}
+
+/** One wing blade, mirroring tokens.css's `.badge-wrap.w<N>::before`/`::after` layer-by-layer.
+ *  CSS lists its topmost background layer FIRST; canvas paints whatever's drawn LAST on top — so
+ *  band 2/3's extra layers are drawn here in the opposite order from how they're listed in
+ *  tokens.css, on purpose, to land in the same visual stacking. */
+function drawWingBlade(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, mirror: boolean, c: (typeof TIER_COLORS)[RankTier], band: number): void {
+  ctx.save();
+  ctx.clip(wingPath(x, y, w, h, mirror));
+
+  // base blade (CSS's bottom/last-listed layer) — drawn first here so later layers sit on top.
+  const base = cssAngleGradient(ctx, -25, x, y, w, h);
+  base.addColorStop(0, c.b3);
+  base.addColorStop(0.78, c.b1);
+  ctx.fillStyle = base;
+  ctx.fillRect(x, y, w, h);
+
+  if (band >= 2) {
+    // feather-notch shadow band (CSS's middle-listed layer)
+    const notch = cssAngleGradient(ctx, 100, x, y, w, h);
+    const shade = band === 2 ? "rgba(0,0,0,0.28)" : "rgba(0,0,0,0.3)";
+    const [n1, n2] = band === 2 ? [0.53, 0.57] : [0.49, 0.54];
+    notch.addColorStop(n1 - 0.01, "rgba(0,0,0,0)");
+    notch.addColorStop(n1, shade);
+    notch.addColorStop(n2, shade);
+    notch.addColorStop(n2 + 0.01, "rgba(0,0,0,0)");
+    ctx.fillStyle = notch;
+    ctx.fillRect(x, y, w, h);
+  }
+  if (band === 3) {
+    // --tt highlight edge (CSS's top/first-listed layer) — drawn last here so it ends up on top.
+    const hi = cssAngleGradient(ctx, -25, x, y, w, h);
+    hi.addColorStop(0, c.tt);
+    hi.addColorStop(0.22, "rgba(0,0,0,0)");
+    ctx.fillStyle = hi;
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.restore();
+}
+
+/** Draws both wings flanking the hex, escalating per `TIER_WING_BAND` — see tokens.css's
+ *  `.badge-wrap` comment for the band rationale. No-op for band 0 (Initiate stays a plain hex). */
+function drawWings(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
+  const band = TIER_WING_BAND[tier];
+  if (band === 0) return;
+  const c = TIER_COLORS[tier];
+  const span = size * WING_SPAN[band]!;
+  const wTop = topY + size * 0.18;
+  const wH = size * 0.58;
+  const gap = size * 0.04;
+  const left = cx - size / 2;
+  const right = cx + size / 2;
+  drawWingBlade(ctx, left - gap - span, wTop, span, wH, false, c, band);
+  drawWingBlade(ctx, right + gap, wTop, span, wH, true, c, band);
+}
+
 /** Per-tier `--face-grad` stop lists, ported verbatim from tokens.css's `.t-<tier>` blocks (all
  *  at the same 155deg the CSS uses) — three visual finishes: bronze-equivalent (broad/soft),
  *  silver-equivalent (compressed/polished), gold (non-monotonic double-bright), and iridescent
@@ -313,6 +389,10 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
   const c = TIER_COLORS[tier];
   const left = cx - size / 2;
   const midY = topY + size / 2;
+
+  // Wings sit furthest back — mirrors tokens.css's `.badge-wrap`, whose wings live on the wrapper
+  // outside the hex itself, drawn before its own extrusion plate/rim/face.
+  drawWings(ctx, cx, topY, size, tier);
 
   // Tier-hued halo, small and tight: since the badge itself is a corner stamp rather than the
   // headline, a large/bright halo would visually re-center attention on it regardless of where
@@ -398,7 +478,11 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
 function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: number, size: number, model: WorkoutCardModel): void {
   if (!model.tier) return;
   const tier = model.tier.tier as RankTier;
-  const badgeCx = width - pad - size / 2;
+  // Shift left by the wing span so a winged badge's outer wing never clips past the card's right
+  // edge — the live DOM avoids this via .badge-wrap's own padding-inline reserving that space;
+  // canvas has no layout pass, so the corner position accounts for it explicitly here instead.
+  const wingSpan = size * WING_SPAN[TIER_WING_BAND[tier]]!;
+  const badgeCx = width - pad - size / 2 - wingSpan;
   const badgeTopY = pad;
   drawTierBadge(ctx, badgeCx, badgeTopY, size, tier);
 

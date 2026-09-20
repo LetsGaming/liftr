@@ -109,6 +109,7 @@ describe("RankRunnerSection", () => {
     const wrapper = mountWithProviders(RankRunnerSection);
 
     expect(wrapper.text()).toContain("5:00/km");
-    expect(wrapper.text()).toContain("Nächstes Ziel: ???");
+    expect(wrapper.text()).toContain("Nächstes Ziel");
+    expect(wrapper.text()).toContain("???");
   });
 });

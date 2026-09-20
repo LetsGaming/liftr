@@ -84,15 +84,18 @@ const trustLabel = computed(() => {
   return null;
 });
 
-const nextLabel = computed(() => {
-  if (props.nextTargetLabel != null) return props.nextTargetLabel;
+/** 1-2 chip strings for the "next target" readout: outline chip first (weight, or the sole chip
+ *  when there's only one), filled chip second (reps) — a lone filled pill next to nothing reads
+ *  worse than a single outline one, so a reps-only/label-only target renders as one outline chip,
+ *  never a lone filled one. */
+const nextChips = computed<string[]>(() => {
+  if (props.nextTargetLabel != null) return [props.nextTargetLabel];
   // Both targets null means the top of the currently-modeled standards has been reached —
   // "???" invites "what's next?" instead of flatly stating there's nothing left, which reads as
   // a dead end. A real next target still renders normally below.
-  if (props.nextTargetReps == null) return "Nächstes Ziel: ???";
-  return props.nextTargetWeightKg != null
-    ? `Nächstes Ziel: ${props.nextTargetWeightKg} kg × ${props.nextTargetReps}`
-    : `Nächstes Ziel: ${props.nextTargetReps} Wdh.`;
+  if (props.nextTargetReps == null) return ["???"];
+  const reps = `${props.nextTargetReps} Wdh.`;
+  return props.nextTargetWeightKg != null ? [`${props.nextTargetWeightKg} kg`, reps] : [reps];
 });
 
 const isTopBand = computed(() => ordinal(props.tier as Tier, props.division as Division) === MAX_ORDINAL);
@@ -119,7 +122,10 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
       <div class="rankbar rp-bar">
         <i class="bar-fill" :style="{ transform: `scaleX(${lpBarPercent / 100})` }" />
       </div>
-      <div class="rp-next">{{ nextLabel }}</div>
+      <div class="rp-next">
+        <span class="rp-next-label">Nächstes Ziel</span>
+        <span v-for="(chip, i) in nextChips" :key="chip" class="rp-chip" :class="i === 0 ? 'outline' : 'fill'">{{ chip }}</span>
+      </div>
       <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
       <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
       <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
@@ -134,8 +140,8 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   align-items: center;
   gap: var(--sp3);
 }
-.rank-progress .badge {
-  width: 40px;
+.rank-progress .badge-wrap {
+  --badge-size: 40px;
   height: 46px;
   flex: none;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
@@ -177,9 +183,36 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   height: 7px;
 }
 .rp-next {
-  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rp-next-label {
+  font-size: 11px;
   font-weight: 700;
-  color: var(--dim);
+  color: var(--faint);
+}
+/* Twin stat chips (weight outline, reps filled) replacing a plain text line — the outline chip is
+   the sole chip for a reps-only/pace/label target (never a lone filled pill, see nextChips' own
+   comment). `.fill` uses --tier-deep (--b1), not --b3, so the on-metal --tt tint stays readable
+   against it — the same reasoning `.rp-tier` above already gives for avoiding --tt on lighter
+   surfaces. */
+.rp-chip {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.rp-chip.outline {
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--tier-accent, var(--line));
+}
+.rp-chip.fill {
+  color: var(--tt, var(--text));
+  background: var(--tier-deep, var(--surface-3));
+  box-shadow: inset 0 0 0 1px var(--tier-accent, var(--line));
 }
 /* A rank loss is the second-loudest thing on the card after the tier name — deliberately not
    faint text, since it's the loudest event a rank ladder can produce. */
@@ -211,8 +244,8 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
    collide with an unrelated global class of the same name — it did, once list-card.css's own
    `.card` became this component's typical container (RankLifterSection.vue/
    RankRunnerSection.vue), matching a descendant selector meant for the grid's own cards. */
-.rank-progress.variant-card .badge {
-  width: 46px;
+.rank-progress.variant-card .badge-wrap {
+  --badge-size: 46px;
   height: 52px;
 }
 .rank-progress.variant-card .rp-tier {

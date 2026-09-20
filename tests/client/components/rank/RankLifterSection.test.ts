@@ -5,27 +5,31 @@ import RankLifterSection from "~client/components/rank/RankLifterSection.vue";
 import { TIER_LABEL_DE } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-vi.mock("~client/services/exerciseService", () => ({ getExerciseHistory: vi.fn().mockResolvedValue([]) }));
-
 // Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
 // hoisting above these declarations never dereferences them before they exist.
 const ranksState = reactive({ ranks: [] as unknown[], loaded: false, error: false, load: vi.fn() });
 const overallRankState = reactive({
-  current: null as { tier: string; division: number } | null,
+  current: null as { tier: string; division: number; lp?: number } | null,
   peak: null as { tier: string; division: number } | null,
   loaded: false,
   error: false,
   load: vi.fn(),
 });
+const readinessState = reactive({ heat: {} as Record<string, number>, load: vi.fn() });
+// Not `reactive` — `byId` is a plain function reference (a Pinia getter would be), and reactive()
+// would wrap it in a way vi.fn() call-tracking doesn't expect.
+const catalogState = { byId: vi.fn(), load: vi.fn() };
 
 vi.mock("~client/stores/ranksStore", () => ({ useRanksStore: () => ranksState }));
 vi.mock("~client/stores/overallRankStore", () => ({ useOverallRankStore: () => overallRankState }));
+vi.mock("~client/stores/readinessStore", () => ({ useReadinessStore: () => readinessState }));
+vi.mock("~client/stores/catalogStore", () => ({ useCatalogStore: () => catalogState }));
 
-// RankDistributionDonut/RankUpCalendar/ProgressChart are self-fetching feature components
+// RankDistributionDonut/RankUpCalendar/ExerciseInfoPanel are self-fetching feature components
 // (own store/service reads) already covered at their own layer — stubbed so this test only
 // asserts *whether* they render, not their internals.
-const STUBS = { RankDistributionDonut: true, RankUpCalendar: true, ProgressChart: true };
+const STUBS = { RankDistributionDonut: true, RankUpCalendar: true, ExerciseInfoPanel: true };
 
 function makeRank(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -49,13 +53,17 @@ beforeEach(() => {
   vi.clearAllMocks();
   Object.assign(ranksState, { ranks: [], loaded: false, error: false });
   Object.assign(overallRankState, { current: null, peak: null, loaded: false, error: false });
+  Object.assign(readinessState, { heat: {} });
+  catalogState.byId.mockReturnValue(undefined);
 });
 
 describe("RankLifterSection", () => {
-  it("loads ranks and the overall rank band on mount", () => {
+  it("loads ranks, the overall rank band, readiness, and the catalog on mount", () => {
     mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
     expect(ranksState.load).toHaveBeenCalledOnce();
     expect(overallRankState.load).toHaveBeenCalledOnce();
+    expect(readinessState.load).toHaveBeenCalledOnce();
+    expect(catalogState.load).toHaveBeenCalledOnce();
   });
 
   it("shows skeleton placeholders while ranks are still loading", () => {
@@ -109,13 +117,37 @@ describe("RankLifterSection", () => {
     expect(ladder.props("peakDivision")).toBe(1);
   });
 
-  it("expands an exercise's chart slot on tap and fetches its history lazily", async () => {
+  it("flips a card to show the account's overall rank on tap, and back again on 'Zurück'", async () => {
     Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank()] });
+    Object.assign(overallRankState, { loaded: true, current: { tier: "silver", division: 2, lp: 40 }, peak: null });
     const wrapper = mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
 
-    expect(wrapper.find(".chart-slot").exists()).toBe(false);
+    expect(wrapper.findComponent(RankProgress).exists()).toBe(true);
+    expect(wrapper.findComponent({ name: "RankOverallBack" }).exists()).toBe(false);
+
     await wrapper.find(".card").trigger("click");
-    expect(wrapper.find(".chart-slot").exists()).toBe(true);
+
+    const back = wrapper.findComponent({ name: "RankOverallBack" });
+    expect(back.exists()).toBe(true);
+    expect(back.props("tier")).toBe("silver");
+    expect(back.props("division")).toBe(2);
+    expect(wrapper.findComponent(RankProgress).exists()).toBe(false);
+
+    await back.find("button:last-of-type").trigger("click"); // "Zurück"
+    expect(wrapper.findComponent({ name: "RankOverallBack" }).exists()).toBe(false);
+    expect(wrapper.findComponent(RankProgress).exists()).toBe(true);
+  });
+
+  it("opens the exercise's info panel from the flipped card's 'Rang-Statistiken' button", async () => {
+    Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank()] });
+    catalogState.byId.mockReturnValue({ id: "ex1", slug: "bench-press" });
+    const wrapper = mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
+
+    await wrapper.find(".card").trigger("click");
+    expect(wrapper.findComponent({ name: "ExerciseInfoPanel" }).exists()).toBe(false);
+
+    await wrapper.find(".card button").trigger("click"); // "Rang-Statistiken", the back's first button
+    expect(wrapper.findComponent({ name: "ExerciseInfoPanel" }).exists()).toBe(true);
   });
 
   describe("tier filter", () => {

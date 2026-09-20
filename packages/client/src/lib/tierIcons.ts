@@ -43,3 +43,19 @@ export const TIER_LABEL_DE: Record<RankTier, string> = {
 /** Roman numerals I-VI cover the widest tier (Initiate, 6 divisions); narrower tiers only ever
  *  index into the low end of this map (a 2-division tier only ever looks up 2 or 1). */
 export const DIVISION_LABEL: Record<number, string> = { 6: "VI", 5: "V", 4: "IV", 3: "III", 2: "II", 1: "I" };
+
+/** Wing span/detail band for the badge's side wings (tokens.css `.badge-wrap.w<N>`, mirrored on
+ *  canvas in shareCard.ts). 0 = no wings (Initiate stays a plain hex — the "just starting" tier).
+ *  1/2/3 escalate span+detail, grouped the same way `--face-grad`'s 3 material bands are (bronze/
+ *  silver-ish, gold, iridescent) so wings never need 9 bespoke variants. */
+export const TIER_WING_BAND: Record<RankTier, 0 | 1 | 2 | 3> = {
+  initiate: 0,
+  apprentice: 1,
+  trainee: 1,
+  athlete: 2,
+  lifter: 2,
+  advanced: 2,
+  elite: 3,
+  expert: 3,
+  apex: 3,
+};

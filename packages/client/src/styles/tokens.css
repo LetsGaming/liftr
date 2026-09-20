@@ -817,6 +817,72 @@ textarea::placeholder {
   fill: var(--tt, #fff);
   filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.45));
 }
+/* Wings — a swept blade either side of the hex, escalating with tier prestige. Lives on a
+   wrapper (.badge-wrap, TierBadge.vue) rather than another .badge pseudo-element, because both of
+   .badge's own pseudo-elements above are already the bevel rim and extrusion plate.
+     w0 — Initiate only: no wings at all, a bare hex ("just starting").
+     w1 — apprentice/trainee: a plain tier-tinted blade.
+     w2 — athlete/lifter/advanced: adds a feather-notch shadow band across the blade.
+     w3 — elite/expert/apex: adds a --tt highlight edge on top of the notch.
+   The 3 escalation bands mirror the same bronze/silver/gold/iridescent grouping --face-grad
+   already uses below, so wings never need 9 bespoke variants.
+
+   Sizing deliberately avoids CSS percentages here — two classic gotchas, hit and fixed during
+   implementation: (1) a percentage on `padding`/`width` resolves against the CONTAINING BLOCK
+   (here, the whole flex row), never against the element's own box, so `padding-inline: 50%`
+   reserved half the *row's* width, not half the *badge's*. (2) `top`/`height` given as a
+   percentage on an absolutely-positioned element are ignored (spec: treated as auto) when the
+   containing block's own height is itself auto-from-content, which `.badge-wrap` otherwise would
+   be. Both are avoided by giving `.badge-wrap` an EXPLICIT width/height at each call site
+   (TierLadder.vue/RankProgress.vue/rank-card.css's own `.badge-wrap` size rules) alongside a
+   `--badge-size` custom property mirroring that width, which every calc() below reads instead of
+   a bare percentage. `.badge` itself just fills its wrapper (100%/100%) rather than carrying its
+   own width/height, so there's exactly one place per context that states the size. */
+.badge-wrap {
+  display: inline-grid;
+  position: relative;
+  flex: none;
+  width: var(--badge-size, 26px);
+  height: var(--badge-size, 26px);
+}
+.badge-wrap .badge {
+  width: 100%;
+  height: 100%;
+}
+.badge-wrap.w1 { --wing-frac: 0.26; }
+.badge-wrap.w2 { --wing-frac: 0.38; }
+.badge-wrap.w3 { --wing-frac: 0.5; }
+.badge-wrap::before,
+.badge-wrap::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  width: calc(var(--badge-size, 26px) * var(--wing-frac, 0));
+  height: 58%;
+  pointer-events: none;
+  /* thick at the hex, tapering outward and down */
+  clip-path: polygon(100% 8%, 100% 92%, 46% 74%, 0 40%, 44% 26%);
+  background: linear-gradient(-25deg, var(--b3, var(--blue-hi)) 0%, var(--b1, var(--blue-ink)) 78%);
+}
+.badge-wrap::before { right: calc(100% + var(--badge-size, 26px) * 0.04); }
+.badge-wrap::after { left: calc(100% + var(--badge-size, 26px) * 0.04); transform: scaleX(-1); }
+.badge-wrap.w0::before,
+.badge-wrap.w0::after {
+  content: none;
+}
+.badge-wrap.w2::before,
+.badge-wrap.w2::after {
+  background:
+    linear-gradient(100deg, transparent 52%, rgba(0, 0, 0, 0.28) 53% 57%, transparent 58%),
+    linear-gradient(-25deg, var(--b3, var(--blue-hi)) 0%, var(--b1, var(--blue-ink)) 78%);
+}
+.badge-wrap.w3::before,
+.badge-wrap.w3::after {
+  background:
+    linear-gradient(-25deg, var(--tt, #fff) 0%, transparent 22%),
+    linear-gradient(100deg, transparent 48%, rgba(0, 0, 0, 0.3) 49% 54%, transparent 55%),
+    linear-gradient(-25deg, var(--b3, var(--blue-hi)) 0%, var(--b1, var(--blue-ink)) 78%);
+}
 /* Per-tier --face-grad shapes, per 0a's medal deep-dive: not a uniform 2-3 stop recipe reused
    across all nine tiers, but three distinct *shapes* grouped by how the reference material reads
    at that tier band. Bronze-equivalent (initiate/apprentice/trainee): broad soft highlight, ~25%

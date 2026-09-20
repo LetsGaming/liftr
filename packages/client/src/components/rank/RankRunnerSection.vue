@@ -40,11 +40,13 @@ const runRankByCategory = computed(() => {
 /** RankProgress's built-in "next target" formatting assumes a weight×reps pair, which doesn't
  *  fit a running category's next target (a pace). Formatted here and passed through
  *  RankProgress's `nextTargetLabel` override instead of forking the component — see that prop's
- *  own comment. Uses lib/format.ts's shared formatPace (mm:ss/km), converting from the stored
- *  m/s speed the same way runRankService.ts's nextTargetSpeedMps is defined. */
+ *  own comment. No "Nächstes Ziel:" prefix here — RankProgress's own `.rp-next-label` caption
+ *  already carries that, sitting beside whichever chip this label ends up as. Uses lib/format.ts's
+ *  shared formatPace (mm:ss/km), converting from the stored m/s speed the same way
+ *  runRankService.ts's nextTargetSpeedMps is defined. */
 function formatNextSpeedTarget(speedMps: number | null): string {
-  if (speedMps == null) return "Nächstes Ziel: ???";
-  return `Nächstes Ziel: ${formatPace(1000 / speedMps)}`;
+  if (speedMps == null) return "???";
+  return formatPace(1000 / speedMps);
 }
 </script>
 

@@ -8,6 +8,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Changed
 
+- **Rank cards, the rank ladder, and tier badges got a visual rework.** Rank tiles now carry a subtle tier-tinted wash and show your next weight/rep target as two small chips instead of a plain text line; tier badges above Initiate now grow escalating side "wings" as you climb; tapping a rank card flips it over to show your overall account rank (with a muscle-recovery figure and a link into that exercise's full stats) instead of expanding an inline chart; and the tier ladder now sits in front of a soft violet-to-blue backdrop, with tiers above your current one keeping their real color instead of fading to gray.
 - **Documentation overhaul (no app behavior changed).** Fixed several docs that still described the old single-account/single-shared-token login (now years out of date) as if it were current, corrected a handful of stale technical references (an old rate-limit description, a renamed internal module), documented a few real features that had no write-up yet (the Health Connect XP bonus, the Android update checker, offline sync's stuck-item handling), added a missing architecture decision record for the login/session system, and trimmed outdated status-tracking clutter from the design docs.
 
 ## [1.4.0] - 2026-09-20

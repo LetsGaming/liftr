@@ -11,11 +11,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { TIERS, type Tier } from "@liftr/shared";
 import AppIcon from "../ui/AppIcon.vue";
+import TierBadge from "../rank/TierBadge.vue";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
 import { haptics } from "../../lib/haptics";
 import { MUSCLE_LABEL_DE } from "../../lib/muscles";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 
 export interface RankUpSummary {
   exerciseName: string;
@@ -207,9 +208,7 @@ onBeforeUnmount(() => {
           :style="{ animationDelay: i * 90 + 'ms' }"
         >
           <span :class="r.plausibilityNote ? 'badge-ring-muted' : 'badge-ring'">
-            <span class="badge" :class="`t-${r.tier}`">
-              <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
-            </span>
+            <TierBadge :tier="r.tier" />
           </span>
           <div class="rankup-meta">
             <b>{{ r.exerciseName }}</b>
@@ -321,9 +320,10 @@ onBeforeUnmount(() => {
 /* Was 32x36px — the most important reward in a rank-ladder product rendered as a 32px hexagon on
    a gray row. --glow-blue (tokens.css) is a box-shadow value and gets clipped
    away by .badge's own clip-path if applied directly; drop-shadow follows the clipped hex shape
-   correctly instead, at the same blue/intensity. */
-.rankup-row .badge {
-  width: 56px;
+   correctly instead, at the same blue/intensity. Targets .badge-wrap (TierBadge.vue), not .badge,
+   so the glow covers a winged badge's wings too, not just the hex. */
+.rankup-row .badge-wrap {
+  --badge-size: 56px;
   height: 62px;
   flex: none;
   filter: drop-shadow(0 0 10px rgba(59, 140, 255, 0.55)) drop-shadow(0 0 3px rgba(59, 140, 255, 0.4));
@@ -341,6 +341,9 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   background: var(--nebula-grad);
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  /* ponytail: a higher-tier badge's wings extend past .badge-wrap's own box (they're absolutely
+     positioned, not reserved via layout space) and can clip against this ring's clip-path at wide
+     spans (elite/expert/apex). Widen this padding if that turns out to read badly in practice. */
 }
 /* Muted counterpart to .badge-ring — a plausibility-discounted session must never be visually
    indistinguishable from a genuine rank-up. Flat
