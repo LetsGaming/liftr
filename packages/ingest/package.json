@@ -15,7 +15,7 @@
     "@liftr/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "yaml": "^2.9.1",
-    "zod": "^3.25.76"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
