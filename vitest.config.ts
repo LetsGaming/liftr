@@ -83,6 +83,13 @@ export default defineConfig({
         find: /^@capacitor\/geolocation$/,
         replacement: fileURLToPath(new URL("./packages/client/node_modules/@capacitor/geolocation", import.meta.url)),
       },
+      // Keep tests and client components on the same vue-router module instance; with pnpm
+      // and vue-router@5, root tests can otherwise resolve a different copy than
+      // packages/client/src, which breaks useRouter()/useRoute() injections in jsdom.
+      {
+        find: /^vue-router$/,
+        replacement: fileURLToPath(new URL("./packages/client/node_modules/vue-router", import.meta.url)),
+      },
     ],
   },
   // useAppUpdate.ts reads __APP_VERSION__, normally injected by packages/client/vite.config.ts's
