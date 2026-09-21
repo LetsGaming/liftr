@@ -6,9 +6,11 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-09-21
+
 ### Fixed
 
-- **A single Health Connect workout with a bad GPS point could get stuck retrying forever, showing a bare "failed: 400" with no way to tell why.** One malformed route point (a real device data quirk, not a Liftr bug) used to reject the *entire* workout and block the sync from advancing past it, so every future "connect" tap or app-start sync re-hit the exact same broken workout. Bad points are now dropped individually instead of failing the whole workout; a failure in one workout no longer blocks the others or gets stuck retrying; and the error message shown now explains the actual reason instead of a generic status code.
+- **A single Health Connect workout with a bad GPS point could get stuck retrying forever, showing a bare "failed: 400" with no way to tell why.** One malformed route point (a real device data quirk, not a Liftr bug) used to reject the *entire* workout and block the sync from advancing past it, so every future "connect" tap or app-start sync re-hit the exact same broken workout.
 
 ### Changed
 
