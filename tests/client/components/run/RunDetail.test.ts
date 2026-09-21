@@ -213,7 +213,7 @@ describe("RunDetail", () => {
     const chip = wrapper.find(".rank-chip");
     expect(chip.exists()).toBe(true);
     expect(chip.text()).toContain("5 km");
-    expect(chip.text()).toContain("FORTGESCHRITTEN");
+    expect(chip.text()).toContain("GEÜBT");
     expect(chip.text()).toContain("III");
   });
 
