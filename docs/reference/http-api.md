@@ -34,11 +34,14 @@ wired up in `app.ts`'s `onRequest` hook for every request whose URL starts with 
 - A token is issued by `POST /api/auth/setup` (first-run owner setup), `POST /api/auth/login`, or
   `POST /api/auth/register` (invite-code redemption) — see [Auth routes](#auth-authts) below.
 - On failure: `401 { "error": "unauthorized" }`.
-- This resolves a real per-person `userId`/`role` (`packages/server/src/userContext.ts`), not a
+- This resolves a real per-person `userId`/`role` (inline in `auth.ts`'s `requireAuth`), not a
   single shared identity — every per-user table/route is scoped by that resolved `userId` (see
   [ADR 0006](../adr/0006-multi-user-hardening.md) for the schema groundwork this was built on).
-- `/api/auth/{setup,login,register}` are additionally rate-limited (10 attempts / 15 minutes,
-  keyed by username) — see [SECURITY.md](../SECURITY.md#auth-model).
+- `/api/auth/setup` and `/api/auth/login` are additionally rate-limited (10 attempts / 15 minutes,
+  keyed by username). `/api/auth/register` is separately rate-limited at the same 10/15-minute
+  budget but keyed purely by request IP, never by username — an attacker guessing an invite code
+  can pick a fresh throwaway username on every attempt, which would make a username-keyed bucket
+  never actually engage for that route. See [SECURITY.md](../SECURITY.md#auth-model).
 
 ## Auth routes (`auth.ts`)
 
@@ -429,6 +432,9 @@ against or manually linked to via `plannedRouteId` (see [Runs](#runs-runsts) bel
 [ADR 0007](../adr/0007-openrouteservice-external-routing-exception.md) for why this feature calls
 an external service at all.
 
+`POST`/`PATCH /api/planned-routes*` (create, update, and preview) are rate-limited to 30 requests
+per minute per user, since these routes can call the paid OpenRouteService API.
+
 Common shapes:
 ```ts
 type Waypoint = { lat: number; lon: number };
@@ -792,6 +798,9 @@ Tests: [`tests/server/routes/runs.test.ts`](../../tests/server/routes/runs.test.
 Both file-import and manual-entry paths converge on the same `runs`/`run_points` tables — see
 `services/runImportService.ts`.
 
+`POST /api/runs/import`, `POST /api/runs/healthconnect`, and `POST /api/runs` are each rate-limited
+to 20 requests per minute per user, due to the file-parsing/rank-recompute cost each one triggers.
+
 Common run shape (`runResponse`):
 ```ts
 {
@@ -974,6 +983,8 @@ Service (per-item behavior in full): [`packages/server/src/services/syncService.
 
 The offline outbox flush endpoint — the heart of Liftr's offline-first design. This route is only
 the schema wrapper; per-item idempotency/plausibility/XP decisions live in `syncService.ts`.
+
+`POST /api/sync` is rate-limited to 60 requests per minute per user.
 
 ### `POST /api/sync`
 Applies a batch of client-generated mutation items in order.

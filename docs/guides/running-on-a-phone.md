@@ -34,10 +34,23 @@ To install it:
    through (Settings → Apps → Special access → Install unknown apps — the exact path varies by
    Android version/OEM), since this isn't coming from the Play Store.
 3. Open the downloaded APK and install it.
+4. On first launch, enter your self-hosted server's address on the one-time server-URL screen
+   (`ServerGate`) before you can log in — unlike the PWA, a native build has no server address
+   baked in at build time, so it has to be told where to find your instance.
 
 Because every release is signed with the same keystore, installing a newer release's APK later
 will upgrade in place rather than requiring an uninstall — as long as that keystore hasn't
 changed (see the signing guide below).
+
+### Checking for updates (Android only)
+
+The installed Android app checks `https://api.github.com/repos/LetsGaming/liftr/releases/latest`
+directly from the client — no server involvement — both automatically on every launch and on
+demand via the **"Nach Updates suchen"** (Check for updates) button in the profile screen. This is
+a legitimate outbound request to a third party (GitHub's API), separate from anything your
+self-hosted server does. If a newer release is found, tapping through hands the APK download off
+to the system browser rather than downloading or installing it in-app — you still install the new
+APK the same way as above (Option 2's steps 1-3).
 
 ### Before this produces a properly-signed APK
 

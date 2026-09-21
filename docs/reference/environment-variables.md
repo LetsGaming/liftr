@@ -4,6 +4,11 @@ Every environment variable Liftr reads, across the server, db, ingest, and clien
 Grouped by which part of the app reads them. Source of truth is linked per variable — check there
 before trusting a default value written here, since defaults can drift.
 
+Android release signing has its own, separate set of build-time env vars (`LIFTR_KEYSTORE_PATH`,
+`LIFTR_KEYSTORE_PASSWORD`, `LIFTR_KEY_ALIAS`, `LIFTR_KEY_PASSWORD`), read by
+`packages/client/android/app/build.gradle` and set in CI from GitHub Actions secrets — out of this
+doc's scope; see [android-release-signing.md](../operations/android-release-signing.md).
+
 ## Server
 
 Source: [`packages/server/src/env.ts`](../../packages/server/src/env.ts) — this is the single
@@ -20,6 +25,7 @@ resulting `env` object rather than touching `process.env` directly.
 | `LIFTR_ORS_API_KEY` | *(unset)* | OpenRouteService API key for planned-route road-snapping and elevation. Unset is a fully supported degraded state — straight-line distance, no elevation — not a misconfiguration. See [ADR 0007](../adr/0007-openrouteservice-external-routing-exception.md) and [SECURITY.md](../SECURITY.md). |
 | `LIFTR_ORS_BASE_URL` | `https://api.openrouteservice.org` | ORS API base URL — point this at a self-hosted ORS instance to remove the third party entirely, no code change. |
 | `LIFTR_ORS_PROFILE` | `foot-walking` | ORS routing profile. |
+| `LIFTR_LOG_VERBOSE` | *(unset → off)* | When set to exactly `"1"`, logs every request verbosely; any other value or unset means off. Even when off, 4xx/5xx responses are still logged at `warn` via an `onResponse` hook. |
 
 ## Database package (`@liftr/db`)
 

@@ -50,7 +50,7 @@ deliberately front-loaded (more of them at the bottom, tapering to a single divi
 top-tier milestone stays a genuine, rare achievement rather than another grind — climbing is
 supposed to get harder, not just take longer.
 
-## Self-hosted, no accounts, offline-first
+## Self-hosted, real accounts, offline-first
 
 Liftr runs on hardware the user owns, keeps its data in a single SQLite file, and works offline as
 an installable PWA. This isn't a technical constraint that happened to shape the product — it's
@@ -59,11 +59,11 @@ the point:
 - **Privacy.** Workout and body data is personal. There's no reason a set logged in a home gym
   needs to leave that gym's network, sit in a third party's database, or feed an analytics
   pipeline. Self-hosting means the only copy of your data is the one you control.
-- **No accounts, today.** There's nothing to sign up for and nothing to lose access to. Auth is a
-  single bearer token gating API access on a network you already trust (see
-  [`docs/SECURITY.md`](SECURITY.md) for the actual mechanism). The schema and backend are already
-  hardened for multiple people sharing one instance (Home Assistant-style — see
-  [ADR 0006](adr/0006-multi-user-hardening.md)), but per-person login itself hasn't been built yet.
+- **Real per-person accounts, no shared token.** An owner is set up on first launch and can invite
+  other people who share the instance (Home Assistant-style) via time-limited invite codes.
+  Everyone logs in with their own username and password to a session-scoped bearer token — there's
+  no `LIFTR_TOKEN` shared identity to hand around anymore (see [`docs/SECURITY.md`](SECURITY.md)
+  for the actual mechanism).
 - **No third parties in the loop.** Run imports read GPX/FIT files you already have from any
   watch or app — no Strava account or third-party API required to get your own data into your own
   tracker. Catalog images are mirrored at ingest time rather than hotlinked at runtime, so the app

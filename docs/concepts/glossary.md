@@ -54,6 +54,14 @@ For the full mechanics behind any of these, follow the link to the concept doc t
 - **Overall Lifter Rank** — the one account-level aggregate: a trust-weighted average of
   continuous ordinal position across every ranked exercise. The single number answering "how good
   a lifter am I, overall," on top of otherwise-independent per-exercise ladders.
+- **Plausibility floor** — one of three composed anti-cheat gates (XP/LP discount floor, peak-
+  eligibility floor, PR-eligibility floor), each a minimum plausibility multiplier below which the
+  relevant thing is discounted or blocked outright. See
+  [rank-engine.md](./rank-engine.md#the-plausibility-gate).
+- **Trust-weighted average** / `TRUST_WEIGHT` — how Overall Lifter/Runner Rank aggregates across
+  exercises or categories: `real`/`derived` ranks count fully, `synthetic` ranks at half weight, so
+  the long-tail synthetic catalog can't dilute or inflate the headline number. See
+  [rank-engine.md](./rank-engine.md#overall-lifter-rank-the-one-aggregate).
 - **Category (running)** — one of five fixed running distances Liftr ranks against: Mile, 5K, 10K,
   Half Marathon, Marathon. Every run is bucketed into whichever category its actual distance is
   *nearest* to; a run's category is derived at read/recompute time, never stored as its own column.
@@ -113,3 +121,15 @@ For the full mechanics behind any of these, follow the link to the concept doc t
 - **Support equipment** — props (bench, rack, pull-up bar, etc.) that matter for "can I actually
   do this" but are deliberately excluded from the primary `Equipment` vocabulary used for
   icons/filtering.
+
+### Auth, sessions, and accounts
+
+- **Owner** — the account created during first-run setup. Can invite and remove members; cannot
+  delete their own account. See [SECURITY.md](../SECURITY.md#auth-model).
+- **Member** — an account created by redeeming an invite code. Can self-delete their own account,
+  unlike the owner.
+- **Session** — a bearer token issued at login, backing per-device access. Carries a 30-day idle
+  expiry that slides forward on each authenticated request, and a 90-day absolute cap that's set
+  once at creation and never renewed. See [SECURITY.md](../SECURITY.md#auth-model).
+- **Invite code** — an 8-character, 24-hour-expiring, single-use code an owner mints so someone
+  else can register an account.

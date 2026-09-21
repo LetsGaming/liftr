@@ -6,6 +6,12 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation overhaul (no app behavior changed).** Fixed several docs that still described the old single-account/single-shared-token login (now years out of date) as if it were current, corrected a handful of stale technical references (an old rate-limit description, a renamed internal module), documented a few real features that had no write-up yet (the Health Connect XP bonus, the Android update checker, offline sync's stuck-item handling), added a missing architecture decision record for the login/session system, and trimmed outdated status-tracking clutter from the design docs.
+
+## [1.4.0] - 2026-09-20
+
 ### Fixed
 
 - **Opening the app on a server that already has an owner account no longer skips straight to the dashboard without logging in.** The startup check was pinging a public endpoint that always succeeds, so anyone reaching the app was treated as authenticated; it now checks against an authenticated endpoint, so you land on the login screen as expected.

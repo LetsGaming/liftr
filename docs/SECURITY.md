@@ -56,13 +56,17 @@ was built on).
   changing the password/username from any still-trusted device, without needing to enumerate or
   individually revoke the attacker's session.
 - **Rate limiting**: `/api/auth/{setup,login,register}` — the only *unauthenticated* routes an
-  attacker can use to guess a credential or invite code — are limited to 10 attempts per 15
-  minutes via `@fastify/rate-limit`, keyed on the request's `username` field (falling back to IP
-  for a malformed body) rather than IP alone, since this app's documented reverse-proxy deployment
-  (see [docker-deployment.md](operations/docker-deployment.md)) would otherwise collapse every real
-  user behind one shared IP-based bucket. The two password-gated PATCH routes above carry the same
-  10/15-minute budget, keyed on the authenticated `userId` instead (`lib/rateLimit.ts`'s
-  `userRateLimit`) since there's no IP-collapse concern once a session already exists.
+  attacker can use to guess a credential or invite code — are all limited to 10 attempts per 15
+  minutes via `@fastify/rate-limit`, but not all keyed the same way. `setup` and `login` are keyed
+  on the request's `username` field (falling back to IP for a malformed body) rather than IP alone,
+  since this app's documented reverse-proxy deployment (see
+  [docker-deployment.md](operations/docker-deployment.md)) would otherwise collapse every real user
+  behind one shared IP-based bucket. `register` is deliberately keyed on IP alone instead: an
+  attacker guessing an invite code can pick a fresh throwaway username on every attempt, which
+  would make a username-keyed bucket never actually engage for that route. The two password-gated
+  PATCH routes above carry the same 10/15-minute budget, keyed on the authenticated `userId`
+  instead (`lib/rateLimit.ts`'s `userRateLimit`) since there's no IP-collapse concern once a
+  session already exists.
 - **Username enumeration resistance**: a nonexistent username still pays the full scrypt cost
   against a dummy hash before returning `401`, so a wrong-password check and an unknown-username
   check take statistically indistinguishable time (`routes/auth.ts`'s `dummyPasswordHashPromise`).
