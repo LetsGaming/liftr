@@ -9,6 +9,10 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/ingest/package.json packages/ingest/package.json
 COPY packages/client/package.json packages/client/package.json
+# pnpm-lock.yaml's patchedDependencies (capacitor-health, see docs/ARCHITECTURE.md) needs the
+# actual patch file present before install applies it — without this, `pnpm install` fails with
+# "Failed to read patch file /app/patches/capacitor-health.patch: No such file or directory".
+COPY patches patches
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
@@ -28,6 +32,7 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/ingest/package.json packages/ingest/package.json
 COPY packages/client/package.json packages/client/package.json
+COPY patches patches
 RUN pnpm install --prod --frozen-lockfile
 
 COPY --from=build /app/packages/server/dist packages/server/dist
