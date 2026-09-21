@@ -15,6 +15,7 @@ import AppIcon from "../components/ui/AppIcon.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import NoteCapture from "../components/workout/NoteCapture.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
+import TierBadge from "../components/rank/TierBadge.vue";
 import RestTimer from "../components/workout/RestTimer.vue";
 import RoutineList from "../components/routine/RoutineList.vue";
 import RpeCapture from "../components/workout/RpeCapture.vue";
@@ -37,7 +38,7 @@ import { useXpChip } from "../composables/useXpChip";
 import { haptics } from "../lib/haptics";
 import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
-import { TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { TIERS, type Tier } from "@liftr/shared";
 import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
@@ -377,9 +378,7 @@ const WORKOUT_RUNS_TABS = [
         <h2>{{ finishedSummary.routineName }}</h2>
 
         <div class="reward-recap panel-reward" :class="topRankUp ? `t-${topRankUp.tier}` : ''">
-          <span v-if="topRankUp" class="badge recap-badge" :class="`t-${topRankUp.tier}`">
-            <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[topRankUp.tier as RankTier]" /></svg>
-          </span>
+          <TierBadge v-if="topRankUp" class="recap-badge" :tier="topRankUp.tier" />
           <div class="recap-body">
             <b v-if="topRankUp">{{ TIER_LABEL_DE[topRankUp.tier as RankTier] }} erreicht</b>
             <b v-else>Lv. {{ xpStore.level }}</b>
@@ -716,9 +715,7 @@ const WORKOUT_RUNS_TABS = [
   margin-bottom: var(--sp3);
 }
 .recap-badge {
-  width: 44px;
-  height: 50px;
-  flex: none;
+  --badge-size: 44px;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 .recap-body {

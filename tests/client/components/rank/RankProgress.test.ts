@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import RankProgress from "~client/components/rank/RankProgress.vue";
-import { TIER_BADGE_PATH, TIER_LABEL_DE, DIVISION_LABEL } from "~client/lib/tierIcons";
+import { TIER_LABEL_DE, DIVISION_LABEL } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 describe("RankProgress", () => {
-  it("renders the tier badge path, label, division and LP for a basic card", () => {
+  it("renders the tier emblem, label, division and LP for a basic card", () => {
     const wrapper = mountWithProviders(RankProgress, {
       props: { tier: "athlete", division: 2, lp: 57 },
     });
 
     expect(wrapper.classes()).toContain("t-athlete");
     expect(wrapper.classes()).toContain("variant-card");
-    expect(wrapper.find(".badge svg path").attributes("d")).toBe(TIER_BADGE_PATH.athlete);
+    expect(wrapper.find(".tier-emblem").classes()).toContain("t-athlete");
     expect(wrapper.find(".rp-tier").text()).toContain(TIER_LABEL_DE.athlete);
     expect(wrapper.find(".rp-tier").text()).toContain(DIVISION_LABEL[2]);
     expect(wrapper.find(".rp-lp").text()).toBe("57 LP");

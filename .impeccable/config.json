@@ -110,6 +110,15 @@
         ],
         "createdAt": "2026-09-03T18:40:50.593Z",
         "reason": "matches existing Pulse-direction glow-shadow language used throughout sibling files' dark sections; this file's light sections use neutral elevation shadows instead"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "packages/client/src/components/rank/RankLifterSection.vue"
+        ],
+        "createdAt": "2026-09-21T11:47:36.004Z",
+        "reason": "false positive: literal '<img>' text inside a JSDoc comment, not an actual template <img> element"
       }
     ]
   }

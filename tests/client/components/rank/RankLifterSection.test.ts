@@ -16,14 +16,12 @@ const overallRankState = reactive({
   error: false,
   load: vi.fn(),
 });
-const readinessState = reactive({ heat: {} as Record<string, number>, load: vi.fn() });
 // Not `reactive` — `byId` is a plain function reference (a Pinia getter would be), and reactive()
 // would wrap it in a way vi.fn() call-tracking doesn't expect.
 const catalogState = { byId: vi.fn(), load: vi.fn() };
 
 vi.mock("~client/stores/ranksStore", () => ({ useRanksStore: () => ranksState }));
 vi.mock("~client/stores/overallRankStore", () => ({ useOverallRankStore: () => overallRankState }));
-vi.mock("~client/stores/readinessStore", () => ({ useReadinessStore: () => readinessState }));
 vi.mock("~client/stores/catalogStore", () => ({ useCatalogStore: () => catalogState }));
 
 // RankDistributionDonut/RankUpCalendar/ExerciseInfoPanel are self-fetching feature components
@@ -31,18 +29,22 @@ vi.mock("~client/stores/catalogStore", () => ({ useCatalogStore: () => catalogSt
 // asserts *whether* they render, not their internals.
 const STUBS = { RankDistributionDonut: true, RankUpCalendar: true, ExerciseInfoPanel: true };
 
+// Real 9-tier ids (@liftr/shared's TIERS), not the pre-migration "bronze/silver/gold" names —
+// TierBadge's emblem geometry now indexes TIER_PALETTE by this string directly and throws on an
+// unknown key, where the old CSS-only badge silently no-op'd on a class like `t-bronze` that
+// matched nothing. A fake tier name here used to be harmless; it no longer is.
 function makeRank(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     exerciseId: "ex1",
     slug: "bench-press",
     name: null,
-    tier: "bronze",
+    tier: "trainee",
     division: 3,
     lp: 40,
     nextTargetWeightKg: 80,
     nextTargetReps: 8,
     trust: "real",
-    peakTier: "bronze",
+    peakTier: "trainee",
     peakDivision: 3,
     isBodyweight: false,
     ...overrides,
@@ -53,16 +55,14 @@ beforeEach(() => {
   vi.clearAllMocks();
   Object.assign(ranksState, { ranks: [], loaded: false, error: false });
   Object.assign(overallRankState, { current: null, peak: null, loaded: false, error: false });
-  Object.assign(readinessState, { heat: {} });
   catalogState.byId.mockReturnValue(undefined);
 });
 
 describe("RankLifterSection", () => {
-  it("loads ranks, the overall rank band, readiness, and the catalog on mount", () => {
+  it("loads ranks, the overall rank band, and the catalog on mount", () => {
     mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
     expect(ranksState.load).toHaveBeenCalledOnce();
     expect(overallRankState.load).toHaveBeenCalledOnce();
-    expect(readinessState.load).toHaveBeenCalledOnce();
     expect(catalogState.load).toHaveBeenCalledOnce();
   });
 
@@ -117,33 +117,63 @@ describe("RankLifterSection", () => {
     expect(ladder.props("peakDivision")).toBe(1);
   });
 
-  it("flips a card to show the account's overall rank on tap, and back again on 'Zurück'", async () => {
-    Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank()] });
+  it("flips a card to show THAT exercise's own rank on tap (not the account's overall rank), and back again on a second tap", async () => {
+    // Regression test for the real bug this fixed: the back face used to bind overallRank's
+    // account-wide tier/division/lp, identical on every card, instead of this row's own RankRow.
+    Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank({ tier: "elite", division: 2, lp: 40, peakTier: "elite", peakDivision: 2 })] });
     Object.assign(overallRankState, { loaded: true, current: { tier: "silver", division: 2, lp: 40 }, peak: null });
     const wrapper = mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
 
     expect(wrapper.findComponent(RankProgress).exists()).toBe(true);
-    expect(wrapper.findComponent({ name: "RankOverallBack" }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: "RankExerciseBack" }).exists()).toBe(false);
+    expect(wrapper.find(".rank-flip-card").classes()).not.toContain("flipped");
 
-    await wrapper.find(".card").trigger("click");
+    await wrapper.find(".flip-face-front").trigger("click");
 
-    const back = wrapper.findComponent({ name: "RankOverallBack" });
+    const back = wrapper.findComponent({ name: "RankExerciseBack" });
     expect(back.exists()).toBe(true);
-    expect(back.props("tier")).toBe("silver");
+    // THIS exercise's own tier/division ("elite"/2, from makeRank() above), not the account's
+    // overall rank ("silver"/2, from overallRankState above) — the actual bug being fixed here.
+    expect(back.props("tier")).toBe("elite");
     expect(back.props("division")).toBe(2);
-    expect(wrapper.findComponent(RankProgress).exists()).toBe(false);
-
-    await back.find("button:last-of-type").trigger("click"); // "Zurück"
-    expect(wrapper.findComponent({ name: "RankOverallBack" }).exists()).toBe(false);
+    expect(wrapper.find(".rank-flip-card").classes()).toContain("flipped");
+    // The front face stays mounted (rotated away via CSS, not removed) — this is what makes the
+    // flip an actual transform instead of the old height-jumping content swap.
     expect(wrapper.findComponent(RankProgress).exists()).toBe(true);
+
+    // No "Zurück" button anymore — the whole back face is tappable to flip back, same as the front.
+    await wrapper.find(".flip-face-back").trigger("click");
+    expect(wrapper.find(".rank-flip-card").classes()).not.toContain("flipped");
+    // Stays mounted after unflipping (lazy-activated once, then kept via v-show-equivalent) so a
+    // second flip of the same card never remounts/reflows.
+    expect(wrapper.findComponent({ name: "RankExerciseBack" }).exists()).toBe(true);
+  });
+
+  it("passes this exercise's own primary/secondary trained muscles (from the catalog) to the back face, not an account-wide heat map", async () => {
+    Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank()] });
+    catalogState.byId.mockReturnValue({
+      id: "ex1",
+      slug: "bench-press",
+      muscles: [
+        { slug: "chest", role: "primary" },
+        { slug: "triceps", role: "secondary" },
+      ],
+    });
+    const wrapper = mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
+
+    await wrapper.find(".flip-face-front").trigger("click");
+
+    const back = wrapper.findComponent({ name: "RankExerciseBack" });
+    expect(back.props("primaryMuscles")).toEqual(["chest"]);
+    expect(back.props("secondaryMuscles")).toEqual(["triceps"]);
   });
 
   it("opens the exercise's info panel from the flipped card's 'Rang-Statistiken' button", async () => {
     Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank()] });
-    catalogState.byId.mockReturnValue({ id: "ex1", slug: "bench-press" });
+    catalogState.byId.mockReturnValue({ id: "ex1", slug: "bench-press", muscles: [] });
     const wrapper = mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
 
-    await wrapper.find(".card").trigger("click");
+    await wrapper.find(".flip-face-front").trigger("click");
     expect(wrapper.findComponent({ name: "ExerciseInfoPanel" }).exists()).toBe(false);
 
     await wrapper.find(".card button").trigger("click"); // "Rang-Statistiken", the back's first button

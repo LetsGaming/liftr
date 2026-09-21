@@ -72,7 +72,7 @@ function toggleExpand(tier: Tier) {
       :class="[`t-${tier}`, rungState(tier), { 'panel-reward': rungState(tier) === 'current', expanded: expandedTier === tier }]"
     >
       <button type="button" class="rung-row" :aria-expanded="expandedTier === tier" @click="toggleExpand(tier)">
-        <TierBadge :tier="tier" />
+        <TierBadge :tier="tier" small />
         <span class="rung-label">
           <span class="rung-label-row">
             {{ TIER_LABEL_DE[tier as RankTier] }}
@@ -111,6 +111,16 @@ function toggleExpand(tier: Tier) {
   max-width: var(--content-w-standard);
 }
 .rung {
+  /* --rung-gap: badge-to-label spacing, read by both .rung-row (the gap itself) and
+     .division-list (to align its chips under the label, not the badge) — set here on .rung, their
+     shared parent, rather than on .rung-row, since .division-list is a sibling of .rung-row, not a
+     descendant, and wouldn't inherit a var defined there. Widened from the old var(--sp3) (~12px):
+     wings now render at this size (TierBadge's `small` only hides the progress tick, not wings)
+     and escalate from Stufe 4 through a 4-blade span at Apex, so the label needs real room to its
+     left or the two collide. Even at this width the Apex wing still reaches close to the label —
+     if that reads as too tight in practice, cap ladder-context wing span smaller than the
+     hero/detail context rather than widening this further indefinitely. */
+  --rung-gap: 28px;
   border-radius: var(--r-sm);
   transition: opacity var(--dur-base) var(--ease-out);
 }
@@ -118,8 +128,8 @@ function toggleExpand(tier: Tier) {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--sp3);
-  padding: 6px var(--sp3);
+  gap: var(--rung-gap);
+  padding: 6px var(--sp3) 6px calc(var(--sp3) + 8px);
   background: transparent;
   border: none;
   color: inherit;
@@ -142,11 +152,13 @@ function toggleExpand(tier: Tier) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 0 var(--sp3) 10px calc(26px + var(--sp3) + var(--sp3));
+  /* Aligns under the label, not the badge: rung-row's own left padding + badge width + the
+     badge-to-label gap it defines (--rung-gap). */
+  padding: 0 var(--sp3) 10px calc(var(--sp3) + 8px + 26px + var(--rung-gap, 28px));
   animation: pop-in var(--dur-fast) var(--ease-out) both;
 }
 .rung.current .division-list {
-  padding-left: calc(34px + var(--sp3) + var(--sp3));
+  padding-left: calc(var(--sp3) + 8px + 34px + var(--rung-gap, 28px));
 }
 .division-chip {
   font-size: 11px;
@@ -178,7 +190,7 @@ function toggleExpand(tier: Tier) {
 .division-chip.current ~ .division-chip {
   opacity: 0.4;
 }
-.rung .badge-wrap {
+.rung .tier-emblem {
   --badge-size: 26px;
 }
 .rung-label {
@@ -225,7 +237,7 @@ function toggleExpand(tier: Tier) {
 .rung.current {
   opacity: 1;
 }
-.rung.current .badge-wrap {
+.rung.current .tier-emblem {
   --badge-size: 34px;
 }
 .rung.current .rung-label {
@@ -251,8 +263,12 @@ function toggleExpand(tier: Tier) {
   position: relative;
   isolation: isolate;
 }
+/* Dialed back from an earlier, much brighter 0 0 34px -6px at full --tier-accent opacity — that
+   read as too loud for a resting list row; a glow here is fine, it just needs to be a hint, not a
+   halo. Smaller blur, tighter spread, and color-mix'd down to partial opacity (same idiom
+   rank-card.css's tier wash already uses) instead of the accent color at full strength. */
 .rung.current {
-  box-shadow: 0 0 34px -6px var(--tier-accent);
+  box-shadow: 0 0 18px -8px color-mix(in srgb, var(--tier-accent) 55%, transparent);
 }
 .rung.ahead {
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), #000);
@@ -265,13 +281,23 @@ function toggleExpand(tier: Tier) {
    Nebula brand gradient onto the tier badges themselves (still forbidden — see the .t-<tier> rules
    above and docs/design/nebula-design-system.md). A static triangle spanning the ladder's own box,
    not positioned relative to the current-tier row — simpler, and correct in every state including
-   the no-rank-yet first-run ladder (OverviewPage.vue's null-current call site). */
+   the no-rank-yet first-run ladder (OverviewPage.vue's null-current call site).
+
+   Fixed a real bug here: this used to clip-path a 24%-wide flat chord at the top (`38% 0%, 62%
+   0%, ...`) instead of a single point, so it was a truncated trapezoid, not a triangle — and with
+   `inset: 0` giving it no headroom above the first rung, that flat top sat flush against the
+   ladder's own edge and read as cut off. Now a genuine single-point apex, in a box extended 28px
+   above the ladder itself so the point has real room to breathe above the Apex rung instead of
+   touching the container's edge. */
 .tier-ladder::before {
   content: "";
   position: absolute;
-  inset: 0;
+  top: -28px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: -1;
-  clip-path: polygon(38% 0%, 62% 0%, 100% 100%, 0% 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
   background: linear-gradient(
     to bottom,
     rgba(138, 109, 255, 0.03) 0%,

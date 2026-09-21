@@ -33,27 +33,23 @@ password there once per session (any value that clears the common-password check
 seeded data. This is a dev-tooling regression, not expected behavior; auto-provisioning an owner
 session in `dev-up.mjs`/`seed-mock-data.ts` is a follow-up, not done here.
 
-It then ingests the exercise catalog and
-the running-standards table into that database and seeds it with realistic mock data so the
-dashboard shows real content instead of empty states: an onboarded profile, owned equipment +
-gym/plate setup, a bodyweight trend, a custom exercise, three routines (Push/Pull/Bein Tag, one
-with a mesocycle) and ~4 weeks of finished workouts across 8 exercises — seeded through the real
-sync pipeline, not hand-faked, so ranks, PRs, streaks, and XP all come out correctly derived. The
-mock history is deliberately varied: most exercises get a locked-in (corroborated) peak rank, one
-is left intentionally uncorroborated, and one (chin-up) is trained early and then abandoned so
-current-vs-peak rank decay has something real to show too. Plus a short GPS-tracked run history —
-three 5k-category runs at varied paces on different days (corroborating a 5k rank) and one 8 km run
-that's off any category's exact distance, exercising the Riegel-adjustment path onto the 10k
-category, each run through the same plausibility-gate/rank-recompute pipeline a real GPX import
-uses — and one manually logged run (no route/HR/elevation, matching the real manual-entry contract,
-XP-only with no rank chip since it has no GPS points to rank-eligibility-check against). Plus two
-planned routes (Tempelhof-Runde with full ORS-style geometry, a second left as an unresolved
-straight-line fallback), with the manual run linked back to the first. It prints the dashboard URL,
-backend URL, and log paths to use.
+It then ingests the exercise catalog and the running-standards table into that database and seeds
+it with realistic mock data — through the real sync pipeline, not hand-faked, so ranks, PRs,
+streaks, and XP all come out correctly derived. See `scripts/seed-mock-data.ts` for exactly what's
+seeded. It prints the dashboard URL, backend URL, and log paths to use.
 
 Exercise catalog *images* are the one thing **not** scoped to your session — they're static,
 network-fetched, and identical across every session, so they live in the ordinary shared
 `data/images/` dir and are only ever fetched once per machine, not once per session.
+
+The other thing not scoped to your session is the **seed cache** (`data/.devcache/seed-db/`,
+`scripts/lib/seedCache.mjs`): catalog ingest + the full mock-data seed are the slow part of this
+script, and their output is fully determined by code/schema/catalog state, not by which session
+runs it. On a cache hit, `dev-up.mjs` copies a previously-seeded database straight into your
+session's own private `liftr.db` instead of re-running that pipeline — the cache is read-only from
+a session's point of view, so this never couples your database to another session's. It's not
+date-scoped (a cached database's mock-data timestamps stay fixed at whenever it was built); pass
+`--fresh` if you specifically need today-relative timestamps.
 
 **Never run bare `pnpm dev` directly, and never reuse another session's server or port.** Each
 agent/session gets its own `--id` and therefore its own isolated server, dashboard, and database —

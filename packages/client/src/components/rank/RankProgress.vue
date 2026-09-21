@@ -29,9 +29,13 @@ const props = withDefaults(
      *  letting a caller opt into fully custom wording instead of forking this component. */
     nextTargetLabel?: string | null;
     trust?: "real" | "derived" | "synthetic";
-    /** "card" — badge left, stacked text right (Ränge grid). "inline" — compact single row
-     *  for the active-workout focus column, where vertical space is scarce. */
-    variant?: "card" | "inline";
+    /** "card" — badge left, stacked text right. "inline" — compact single row for the
+     *  active-workout focus column, where vertical space is scarce. "hero" — vertical stack with
+     *  a large centered badge as the card's focal point (tier+LP header above it, labeled Kg/Wdh
+     *  fields and the bar below) — the Kraft grid's front face, modeled directly on the Liftoff
+     *  reference's own card layout rather than the compact badge-left row the other two variants
+     *  use. */
+    variant?: "card" | "inline" | "hero";
     /** When the displayed (possibly decayed) tier/division sits below peak, a caption names the
      *  peak instead of silently showing a lower number — never hide why the rank moved. Omit at
      *  call sites that don't have peak data (e.g. the in-session focus column, which never
@@ -98,6 +102,26 @@ const nextChips = computed<string[]>(() => {
   return props.nextTargetWeightKg != null ? [`${props.nextTargetWeightKg} kg`, reps] : [reps];
 });
 
+/** hero variant only — the same next-target data as `nextChips` above, but as separate labeled
+ *  fields (Liftoff's own "Kg" / "Wdh." boxes) instead of one combined pill string per value, since
+ *  the hero layout has room to label each field the way the compact card/inline rows don't. Same
+ *  ordering/fallback rules as nextChips (weight first when present, "???" at the top of modeled
+ *  standards, a single field for a custom label or a reps-only/bodyweight target) so the two never
+ *  disagree about what "next" means, just how it's laid out. */
+interface HeroField {
+  label: string;
+  value: string;
+  filled: boolean;
+}
+const heroFields = computed<HeroField[]>(() => {
+  if (props.nextTargetLabel != null) return [{ label: "Ziel", value: props.nextTargetLabel, filled: false }];
+  if (props.nextTargetReps == null) return [{ label: "Ziel", value: "???", filled: false }];
+  const fields: HeroField[] = [];
+  if (props.nextTargetWeightKg != null) fields.push({ label: "Kg", value: String(props.nextTargetWeightKg), filled: false });
+  fields.push({ label: "Wdh.", value: String(props.nextTargetReps), filled: true });
+  return fields;
+});
+
 const isTopBand = computed(() => ordinal(props.tier as Tier, props.division as Division) === MAX_ORDINAL);
 /** Feeds the bar's scaleX only — a plain [0,100] clamp so a decayed apex peak (which can
  *  legitimately sit anywhere between 0 and 100 LP) still shows a true partial fill instead of
@@ -110,27 +134,54 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 
 <template>
   <div class="rank-progress" :class="[`t-${tier}`, `variant-${variant}`, { 'panel-reward': variant === 'inline' }]">
-    <TierBadge v-if="badge" :tier="tier" />
-    <div class="rp-body">
-      <div class="rp-head">
-        <span class="rp-tier">
-          {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
-          <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
-        </span>
-        <span class="rp-lp tnum">{{ lpDisplay }} LP</span>
+    <!-- hero — vertical stack, badge as the card's focal point (Liftoff's own card layout: tier
+         + LP above a large centered medal, target fields and the bar below it). -->
+    <template v-if="variant === 'hero'">
+      <div class="rp-hero-tier">
+        {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
+        <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
       </div>
-      <div class="rankbar rp-bar">
+      <div class="rp-hero-lp tnum">{{ lpDisplay }} LP</div>
+      <TierBadge v-if="badge" class="rp-hero-badge" :tier="tier" />
+      <div class="rp-hero-fields">
+        <div v-for="f in heroFields" :key="f.label" class="rp-hero-field">
+          <span class="rp-hero-field-label">{{ f.label }}</span>
+          <span class="rp-hero-field-value" :class="{ fill: f.filled }">{{ f.value }}</span>
+        </div>
+      </div>
+      <div class="rankbar rp-hero-bar">
         <i class="bar-fill" :style="{ transform: `scaleX(${lpBarPercent / 100})` }" />
-      </div>
-      <div class="rp-next">
-        <span class="rp-next-label">Nächstes Ziel</span>
-        <span v-for="(chip, i) in nextChips" :key="chip" class="rp-chip" :class="i === 0 ? 'outline' : 'fill'">{{ chip }}</span>
       </div>
       <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
       <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
       <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
       <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
-    </div>
+    </template>
+
+    <!-- card/inline — compact badge-left row. -->
+    <template v-else>
+      <TierBadge v-if="badge" :tier="tier" />
+      <div class="rp-body">
+        <div class="rp-head">
+          <span class="rp-tier">
+            {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
+            <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
+          </span>
+          <span class="rp-lp tnum">{{ lpDisplay }} LP</span>
+        </div>
+        <div class="rankbar rp-bar">
+          <i class="bar-fill" :style="{ transform: `scaleX(${lpBarPercent / 100})` }" />
+        </div>
+        <div class="rp-next">
+          <span class="rp-next-label">Nächstes Ziel</span>
+          <span v-for="(chip, i) in nextChips" :key="chip" class="rp-chip" :class="i === 0 ? 'outline' : 'fill'">{{ chip }}</span>
+        </div>
+        <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
+        <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
+        <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
+        <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -140,10 +191,8 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   align-items: center;
   gap: var(--sp3);
 }
-.rank-progress .badge-wrap {
+.rank-progress .tier-emblem {
   --badge-size: 40px;
-  height: 46px;
-  flex: none;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 .rp-body {
@@ -244,9 +293,8 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
    collide with an unrelated global class of the same name — it did, once list-card.css's own
    `.card` became this component's typical container (RankLifterSection.vue/
    RankRunnerSection.vue), matching a descendant selector meant for the grid's own cards. */
-.rank-progress.variant-card .badge-wrap {
+.rank-progress.variant-card .tier-emblem {
   --badge-size: 46px;
-  height: 52px;
 }
 .rank-progress.variant-card .rp-tier {
   font-size: 12px;
@@ -263,5 +311,73 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 .rank-progress.variant-inline .rp-tier,
 .rank-progress.variant-inline .rp-lp {
   color: var(--dim);
+}
+
+/* hero variant (Kraft grid's flip-card front face) — modeled on the Liftoff reference's own card:
+   tier+LP as a header, a large centered medal as the card's actual focal point (the thing this
+   variant exists to fix — every other variant treats the badge as a small label next to text),
+   labeled Kg/Wdh. fields, the bar last. Column layout, centered, replacing the row layout the
+   other two variants share. */
+.rank-progress.variant-hero {
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  width: 100%;
+}
+.rp-hero-tier {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+.rp-hero-lp {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tier-accent, var(--dim));
+}
+.rank-progress.variant-hero .tier-emblem {
+  --badge-size: 96px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+  margin: 2px 0;
+}
+.rp-hero-fields {
+  display: flex;
+  gap: var(--sp3);
+  margin-top: 2px;
+}
+.rp-hero-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.rp-hero-field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--faint);
+}
+/* Same outline/fill vocabulary as .rp-chip (weight outline, reps filled — see that rule's own
+   comment), just laid out as a labeled box instead of a pill, to match Liftoff's boxed Kg/Wdh.
+   fields. */
+.rp-hero-field-value {
+  min-width: 52px;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--tier-accent, var(--line));
+}
+.rp-hero-field-value.fill {
+  color: var(--tt, var(--text));
+  background: var(--tier-deep, var(--surface-3));
+}
+.rp-hero-bar {
+  width: 100%;
+  max-width: 220px;
+  height: 7px;
+  margin-top: 4px;
 }
 </style>

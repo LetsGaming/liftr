@@ -87,7 +87,20 @@ node scripts/dev-down.mjs --id my-session   # stop + clean up when done
    they're static, network-fetched, and identical across every session, so they live in the
    ordinary `data/images/` dir (same one `pnpm dev`'s bootstrap uses) and are only fetched once per
    machine, the first session that needs them.
-3. Seeds realistic mock data via `scripts/seed-mock-data.ts` — an onboarded profile, owned
+3. Steps 2–4 below (catalog ingest + mock-data seed) are the slow part of this script, and their
+   output is fully determined by code/schema/catalog state, not by which session runs it — so
+   `dev-up.mjs` also maintains a **seed cache**: a content hash over the schema/migrations, ingest
+   code, seed script, and catalog data, keyed to a previously-seeded database snapshot under the
+   shared `data/.devcache/seed-db/` dir. On a cache hit, it copies that snapshot straight into this
+   session's own private `data/agent-<id>/liftr.db` instead of re-running catalog ingest and the
+   full mock-data seed — the cache is read-only from a session's point of view, and every session
+   still gets its own private, freely-mutable copy of the file, so this never couples one session's
+   database to another's. The cache is **not** date-scoped — a cached database's mock-data
+   timestamps (e.g. "last workout") stay fixed at whenever it was built, since these scripts'
+   concern is isolation between sessions, not wall-clock freshness of the mock data. Pass `--fresh`
+   to bypass the cache for a specific run (it still repopulates the cache afterward) when you
+   specifically need today-relative timestamps.
+4. Seeds realistic mock data via `scripts/seed-mock-data.ts` — an onboarded profile, owned
    equipment + gym/plate setup, a bodyweight trend, a custom exercise, three routines (one with a
    mesocycle), and ~4 weeks of finished workouts, fed through the real sync pipeline
    (`applySyncBatch`) so ranks, PRs, streaks, and XP are all correctly derived rather than
@@ -104,7 +117,8 @@ node scripts/dev-down.mjs --id my-session   # stop + clean up when done
 
 `dev-down.mjs --id my-session` stops exactly the two processes that id's `dev-up.mjs` started (by
 recorded PID, never a broad kill) and deletes `data/agent-<id>/` + `logs/agent-<id>/` — never the
-shared `data/images/` cache, and never another session's `--id`.
+shared `data/images/` cache, never the shared `data/.devcache/seed-db/` seed cache, and never
+another session's `--id`.
 
 Session state (PIDs, ports, paths) is recorded in `data/agent-<id>/dev-session.json` while a
 session is up.

@@ -30,7 +30,8 @@ import {
 } from "@liftr/shared";
 import { apiBase } from "./api";
 import { MUSCLE_META } from "./muscles";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, TIER_WING_BAND, type RankTier } from "./tierIcons";
+import { buildTierEmblem, wingReachUnits, type EmblemGradientDef, type EmblemShape } from "./tierEmblem";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "./tierIcons";
 
 /** Hardcoded copy of tokens.css's live palette — see this file's header comment for why these
  *  are copies, not CSS-var reads. Keep in sync manually if tokens.css's palette changes. */
@@ -66,22 +67,6 @@ const COLORS = {
  * card's headline color story matches the app's brand identity.
  */
 const STAT_COLORS = [COLORS.nebulaM, COLORS.nebula1, COLORS.fireHi, COLORS.pr];
-
-/** Per-tier hex badge fill stops + glyph-tint, copied from tokens.css's --<tier>-1/2/3/t custom
- *  properties (same rationale as COLORS above: canvas can't resolve CSS custom properties, and a
- *  small hardcoded copy is simpler/more reliable than resolving them at draw time). Keys match
- *  RankTier from lib/tierIcons.ts so the glyph paths and these fills never index out of sync. */
-const TIER_COLORS: Record<RankTier, { b1: string; b2: string; b3: string; tt: string }> = {
-  initiate: { b1: "#1a1a1a", b2: "#4a4a4a", b3: "#9a9a9a", tt: "#f0f0f0" },
-  apprentice: { b1: "#3a2109", b2: "#8a4f22", b3: "#e08a3c", tt: "#ffd9ab" },
-  trainee: { b1: "#2a2508", b2: "#7a6a1f", b3: "#c9b23e", tt: "#f5edb8" },
-  athlete: { b1: "#232a38", b2: "#69748a", b3: "#c7d1e4", tt: "#f2f6ff" },
-  lifter: { b1: "#0f2e1f", b2: "#2d8058", b3: "#5fd6a0", tt: "#d4fbe9" },
-  advanced: { b1: "#3a2a04", b2: "#a7820f", b3: "#ffd24a", tt: "#fff2c2" },
-  elite: { b1: "#2a0f2e", b2: "#785074", b3: "#c8a0cc", tt: "#f0dcf0" },
-  expert: { b1: "#0d2b2c", b2: "#416969", b3: "#96c0ba", tt: "#d6f5ec" },
-  apex: { b1: "#152449", b2: "#3b5fd0", b3: "#8fb4ff", tt: "#dbe7ff" },
-};
 
 /** tokens.css uses a two-face type system — Hanken Grotesk for body copy, Unbounded for
  *  display/numeral treatment (tier labels, .tnum stat numbers, celebratory numbers). Every
@@ -250,24 +235,6 @@ function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: numbe
   return lines;
 }
 
-/** Fractional hex vertices (same clip-path as tokens.css's `.badge`: `50% 0, 93% 25%, 93% 75%,
- *  50% 100%, 7% 75%, 7% 25%`), resolved against an arbitrary box — used for the face itself and
- *  for the two larger inflated hexes behind it (the bevel rim and extrusion plate both grow the
- *  box via CSS `inset` before applying the same shape, so this takes a box rather than assuming
- *  the badge's own square). */
-const HEX_FRACTIONS: [number, number][] = [[0.5, 0], [0.93, 0.25], [0.93, 0.75], [0.5, 1], [0.07, 0.75], [0.07, 0.25]];
-function hexPath(x: number, y: number, w: number, h: number): Path2D {
-  const p = new Path2D();
-  HEX_FRACTIONS.forEach(([fx, fy], i) => {
-    const px = x + fx! * w;
-    const py = y + fy! * h;
-    if (i === 0) p.moveTo(px, py);
-    else p.lineTo(px, py);
-  });
-  p.closePath();
-  return p;
-}
-
 /** Builds a canvas linear gradient matching a CSS `linear-gradient(<angleDeg>deg, ...)` over box
  *  (x, y, w, h) — CSS angle 0deg points "to top", increasing clockwise, and sizes the gradient
  *  line to the box's own projection onto that axis (the same formula the CSS spec uses), not an
@@ -283,187 +250,156 @@ function cssAngleGradient(ctx: CanvasRenderingContext2D, angleDeg: number, x: nu
   return ctx.createLinearGradient(cx - dx * halfLen, cy - dy * halfLen, cx + dx * halfLen, cy + dy * halfLen);
 }
 
-/** Wing span per band, as a fraction of `size` — mirrors tokens.css's `.badge-wrap.w<N>`
- *  `--wing-span` values (26%/38%/50%). Index 0 (Initiate) is unused since drawWings() returns
- *  early for band 0. */
-const WING_SPAN = [0, 0.26, 0.38, 0.5];
-
-/** Fractional vertices for one wing blade, same 5-point taper as tokens.css's `.badge-wrap::before`
- *  clip-path (`polygon(100% 8%, 100% 92%, 46% 74%, 0 40%, 44% 26%)`) — thick at the hex (x=1),
- *  tapering to a point away from it (x=0). Mirrored horizontally (fx -> 1-fx) for the right wing,
- *  the same way the CSS `scaleX(-1)` mirrors `::after`. */
-const WING_FRACTIONS: [number, number][] = [[1, 0.08], [1, 0.92], [0.46, 0.74], [0, 0.4], [0.44, 0.26]];
-function wingPath(x: number, y: number, w: number, h: number, mirror: boolean): Path2D {
-  const p = new Path2D();
-  WING_FRACTIONS.forEach(([fx, fy], i) => {
-    const px = x + (mirror ? 1 - fx! : fx!) * w;
-    const py = y + fy! * h;
-    if (i === 0) p.moveTo(px, py);
-    else p.lineTo(px, py);
-  });
-  p.closePath();
-  return p;
+/** Appends an alpha channel to a `#rrggbb` hex color as a 2-digit hex suffix (`#rrggbbaa`) — the
+ *  same convention the old hand-rolled halo code here used, and a valid CSS color canvas's
+ *  addColorStop accepts directly (WebKit/Blink/Gecko all parse 8-digit hex). */
+function hexAlpha(hex: string, opacity: number): string {
+  const a = Math.round(Math.min(1, Math.max(0, opacity)) * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `${hex}${a}`;
 }
-
-/** One wing blade, mirroring tokens.css's `.badge-wrap.w<N>::before`/`::after` layer-by-layer.
- *  CSS lists its topmost background layer FIRST; canvas paints whatever's drawn LAST on top — so
- *  band 2/3's extra layers are drawn here in the opposite order from how they're listed in
- *  tokens.css, on purpose, to land in the same visual stacking. */
-function drawWingBlade(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, mirror: boolean, c: (typeof TIER_COLORS)[RankTier], band: number): void {
-  ctx.save();
-  ctx.clip(wingPath(x, y, w, h, mirror));
-
-  // base blade (CSS's bottom/last-listed layer) — drawn first here so later layers sit on top.
-  const base = cssAngleGradient(ctx, -25, x, y, w, h);
-  base.addColorStop(0, c.b3);
-  base.addColorStop(0.78, c.b1);
-  ctx.fillStyle = base;
-  ctx.fillRect(x, y, w, h);
-
-  if (band >= 2) {
-    // feather-notch shadow band (CSS's middle-listed layer)
-    const notch = cssAngleGradient(ctx, 100, x, y, w, h);
-    const shade = band === 2 ? "rgba(0,0,0,0.28)" : "rgba(0,0,0,0.3)";
-    const [n1, n2] = band === 2 ? [0.53, 0.57] : [0.49, 0.54];
-    notch.addColorStop(n1 - 0.01, "rgba(0,0,0,0)");
-    notch.addColorStop(n1, shade);
-    notch.addColorStop(n2, shade);
-    notch.addColorStop(n2 + 0.01, "rgba(0,0,0,0)");
-    ctx.fillStyle = notch;
-    ctx.fillRect(x, y, w, h);
-  }
-  if (band === 3) {
-    // --tt highlight edge (CSS's top/first-listed layer) — drawn last here so it ends up on top.
-    const hi = cssAngleGradient(ctx, -25, x, y, w, h);
-    hi.addColorStop(0, c.tt);
-    hi.addColorStop(0.22, "rgba(0,0,0,0)");
-    ctx.fillStyle = hi;
-    ctx.fillRect(x, y, w, h);
-  }
-  ctx.restore();
-}
-
-/** Draws both wings flanking the hex, escalating per `TIER_WING_BAND` — see tokens.css's
- *  `.badge-wrap` comment for the band rationale. No-op for band 0 (Initiate stays a plain hex). */
-function drawWings(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
-  const band = TIER_WING_BAND[tier];
-  if (band === 0) return;
-  const c = TIER_COLORS[tier];
-  const span = size * WING_SPAN[band]!;
-  const wTop = topY + size * 0.18;
-  const wH = size * 0.58;
-  const gap = size * 0.04;
-  const left = cx - size / 2;
-  const right = cx + size / 2;
-  drawWingBlade(ctx, left - gap - span, wTop, span, wH, false, c, band);
-  drawWingBlade(ctx, right + gap, wTop, span, wH, true, c, band);
-}
-
-/** Per-tier `--face-grad` stop lists, ported verbatim from tokens.css's `.t-<tier>` blocks (all
- *  at the same 155deg the CSS uses) — three visual finishes: bronze-equivalent (broad/soft),
- *  silver-equivalent (compressed/polished), gold (non-monotonic double-bright), and iridescent
- *  (hue-rotating via each tier's own --tt tint). */
-type FaceKey = "b1" | "b2" | "b3" | "tt";
-const FACE_GRAD_STOPS: Record<RankTier, [number, FaceKey][]> = {
-  initiate: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
-  apprentice: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
-  trainee: [[0, "b1"], [0.38, "b2"], [0.58, "b3"], [1, "b2"]],
-  athlete: [[0, "b1"], [0.32, "b1"], [0.48, "b3"], [0.54, "b3"], [0.68, "b1"], [1, "b2"]],
-  lifter: [[0, "b1"], [0.32, "b1"], [0.48, "b3"], [0.54, "b3"], [0.68, "b1"], [1, "b2"]],
-  advanced: [[0, "b1"], [0.3, "b2"], [0.5, "b3"], [0.65, "tt"], [1, "b2"]],
-  elite: [[0, "b1"], [0.3, "b2"], [0.55, "tt"], [0.75, "b3"], [1, "tt"]],
-  expert: [[0, "b1"], [0.3, "b2"], [0.55, "tt"], [0.75, "b3"], [1, "tt"]],
-  apex: [[0, "b1"], [0.3, "b2"], [0.55, "tt"], [0.75, "b3"], [1, "tt"]],
-};
 
 /**
- * Redraws tokens.css's current layered `.badge` medal as canvas primitives, since `<canvas>`
- * can't reuse the CSS. Same three conceptual layers tokens.css's own `.badge` comment describes,
- * folded the same way: `::after` (extrusion plate, solid `b1`, offset further down than up —
- * material thickness), `::before` (bevel rim, gradient running the *opposite* direction from the
- * face — the strongest metal cue), then the face itself (per-tier `--face-grad` plus two hard
- * 35deg specular streak bands on top). Drawn back-to-front, unclipped-to-clipped, matching the
- * CSS z-index stacking (-2, -1, then the element).
+ * Resolves one EmblemGradientDef to a real CanvasGradient, in the SAME 0-128 coordinate space the
+ * shape geometry itself uses — the caller is expected to have already applied a ctx.translate +
+ * ctx.scale that maps that space onto the card, so the raw EMBLEM_LIGHT_AXIS/shape coordinates can
+ * be used as-is instead of re-deriving pixel positions. Radial gradients in this module are only
+ * ever used by the single ambient-glow circle each emblem draws (see tierEmblem.ts's
+ * buildTierEmblem) — SVG's default `objectBoundingBox` radial fills exactly the shape that
+ * references it, so that circle's own cx/cy/r double as the gradient's bounds here too.
  */
-function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
-  const c = TIER_COLORS[tier];
-  const left = cx - size / 2;
-  const midY = topY + size / 2;
+function resolveEmblemGradient(ctx: CanvasRenderingContext2D, def: EmblemGradientDef, ownerCx: number, ownerCy: number, ownerR: number): CanvasGradient {
+  if (def.kind === "linear") {
+    const g = ctx.createLinearGradient(18, 2, 110, 126); // EMBLEM_LIGHT_AXIS, inlined (see tierEmblem.ts)
+    g.addColorStop(0, def.from);
+    g.addColorStop(1, def.to);
+    return g;
+  }
+  const g = ctx.createRadialGradient(ownerCx, ownerCy, 0, ownerCx, ownerCy, ownerR);
+  g.addColorStop(0, hexAlpha(def.color, def.fromOpacity));
+  g.addColorStop(1, hexAlpha(def.color, 0));
+  return g;
+}
 
-  // Wings sit furthest back — mirrors tokens.css's `.badge-wrap`, whose wings live on the wrapper
-  // outside the hex itself, drawn before its own extrusion plate/rim/face.
-  drawWings(ctx, cx, topY, size, tier);
+/** Resolves a shape's `fill`/`stroke` string, which is either a literal CSS color or `url(#id)`
+ *  referencing one of the emblem's own gradients. */
+function resolveEmblemPaint(ctx: CanvasRenderingContext2D, defs: EmblemGradientDef[], value: string | undefined, ownerCx: number, ownerCy: number, ownerR: number): string | CanvasGradient | undefined {
+  if (!value) return undefined;
+  const match = /^url\(#(.+)\)$/.exec(value);
+  if (!match) return value;
+  const def = defs.find((d) => d.id === match[1]);
+  return def ? resolveEmblemGradient(ctx, def, ownerCx, ownerCy, ownerR) : undefined;
+}
 
-  // Tier-hued halo, small and tight: since the badge itself is a corner stamp rather than the
-  // headline, a large/bright halo would visually re-center attention on it regardless of where
-  // it sits. Kept faint and close so the hex still reads as a coherent object at thumbnail scale
-  // without competing with the muscle figures/exercise grid below.
-  const haloR = size * 1.1;
-  const halo = ctx.createRadialGradient(cx, midY, 0, cx, midY, haloR);
-  halo.addColorStop(0, `${c.b3}26`); // ~15% alpha
-  halo.addColorStop(1, `${c.b3}00`);
-  ctx.fillStyle = halo;
-  ctx.fillRect(cx - haloR, midY - haloR, haloR * 2, haloR * 2);
+/**
+ * Draws one EmblemShape (from lib/tierEmblem.ts's buildTierEmblem()) onto canvas, in the emblem's
+ * own 0-128 coordinate space — the caller applies the translate+scale, this function just walks
+ * the shape list and issues the matching canvas draw call per `kind`. This is the ONLY place the
+ * geometry gets turned into pixels for canvas; TierBadge.vue is the equivalent for SVG. Neither
+ * duplicates the ring/wing/mark math itself — see tierEmblem.ts.
+ */
+function drawEmblemShape(ctx: CanvasRenderingContext2D, shape: EmblemShape, defs: EmblemGradientDef[]): void {
+  const ownerCx = "cx" in shape ? shape.cx : 0;
+  const ownerCy = "cy" in shape ? shape.cy : 0;
+  const ownerR = "r" in shape ? shape.r : 0;
+  const fill = "fill" in shape ? resolveEmblemPaint(ctx, defs, shape.fill, ownerCx, ownerCy, ownerR) : undefined;
+  const stroke = "stroke" in shape ? resolveEmblemPaint(ctx, defs, shape.stroke, ownerCx, ownerCy, ownerR) : undefined;
+  const opacity = "opacity" in shape && shape.opacity !== undefined ? shape.opacity : 1;
 
-  // ::after — extrusion plate. CSS: inset -13% -13% -18% -13% (top/right/bottom/left), solid b1.
-  const exLeft = left - size * 0.13;
-  const exTop = topY - size * 0.13;
-  const exW = size + size * 0.26;
-  const exH = size + size * 0.13 + size * 0.18;
-  ctx.fillStyle = c.b1;
-  ctx.fill(hexPath(exLeft, exTop, exW, exH));
-
-  // ::before — bevel rim. CSS: inset -9% (all sides), linear-gradient(-25deg, b3 0%, b1 70%) —
-  // direction deliberately opposite the face's own ~155deg gradients.
-  const rmLeft = left - size * 0.09;
-  const rmTop = topY - size * 0.09;
-  const rmSize = size + size * 0.18;
-  const rimGrad = cssAngleGradient(ctx, -25, rmLeft, rmTop, rmSize, rmSize);
-  rimGrad.addColorStop(0, c.b3);
-  rimGrad.addColorStop(0.7, c.b1);
-  ctx.fillStyle = rimGrad;
-  ctx.fill(hexPath(rmLeft, rmTop, rmSize, rmSize));
-
-  // Face — per-tier --face-grad, clipped to the badge's own (unexpanded) hex, plus two hard
-  // specular streak bands painted on top (same stop positions as tokens.css's .badge background).
-  const face = hexPath(left, topY, size, size);
   ctx.save();
-  ctx.clip(face);
-
-  const faceGrad = cssAngleGradient(ctx, 155, left, topY, size, size);
-  for (const [offset, key] of FACE_GRAD_STOPS[tier]) faceGrad.addColorStop(offset, c[key]);
-  ctx.fillStyle = faceGrad;
-  ctx.fillRect(left, topY, size, size);
-
-  const streak1 = cssAngleGradient(ctx, 35, left, topY, size, size);
-  streak1.addColorStop(0.28, "rgba(255,255,255,0)");
-  streak1.addColorStop(0.38, "rgba(255,255,255,0.55)");
-  streak1.addColorStop(0.42, "rgba(255,255,255,0.55)");
-  streak1.addColorStop(0.52, "rgba(255,255,255,0)");
-  ctx.fillStyle = streak1;
-  ctx.fillRect(left, topY, size, size);
-
-  const streak2 = cssAngleGradient(ctx, 35, left, topY, size, size);
-  streak2.addColorStop(0.62, "rgba(255,255,255,0)");
-  streak2.addColorStop(0.7, "rgba(255,255,255,0.22)");
-  streak2.addColorStop(0.73, "rgba(255,255,255,0.22)");
-  streak2.addColorStop(0.8, "rgba(255,255,255,0)");
-  ctx.fillStyle = streak2;
-  ctx.fillRect(left, topY, size, size);
+  ctx.globalAlpha = opacity;
+  switch (shape.kind) {
+    case "polygon": {
+      const points = shape.points.split(" ").map((p) => p.split(",").map(Number) as [number, number]);
+      ctx.beginPath();
+      points.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      break;
+    }
+    case "path": {
+      const path = new Path2D(shape.d);
+      if (fill && fill !== "none") {
+        ctx.fillStyle = fill;
+        ctx.fill(path);
+      }
+      if (stroke && shape.strokeWidth) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = shape.strokeWidth;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.stroke(path);
+      }
+      break;
+    }
+    case "circle":
+      ctx.beginPath();
+      ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
+      if (fill && fill !== "none") {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke && shape.strokeWidth) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = shape.strokeWidth;
+        ctx.stroke();
+      }
+      break;
+    case "ellipse":
+      ctx.beginPath();
+      if (shape.transform) {
+        const m = /rotate\((-?[\d.]+) ([\d.]+) ([\d.]+)\)/.exec(shape.transform);
+        if (m) {
+          const [, deg, ox, oy] = m.map(Number);
+          ctx.translate(ox!, oy!);
+          ctx.rotate((deg! * Math.PI) / 180);
+          ctx.translate(-ox!, -oy!);
+        }
+      }
+      ctx.ellipse(shape.cx, shape.cy, shape.rx, shape.ry, 0, 0, Math.PI * 2);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      break;
+    case "line":
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = shape.strokeWidth;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(shape.x1, shape.y1);
+        ctx.lineTo(shape.x2, shape.y2);
+        ctx.stroke();
+      }
+      break;
+    case "rect": {
+      const rr = shape.rx ?? 0;
+      roundRectPath(ctx, shape.x, shape.y, shape.width, shape.height, rr);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      break;
+    }
+  }
   ctx.restore();
+}
 
-  // Glyph — the tier's own lighter --tt tint (never white, so it reads as part of the metal
-  // rather than a flat overlay), drop-shadow lifts it proud of the face.
-  const glyph = new Path2D(TIER_BADGE_PATH[tier]);
+/** Draws the tier medal — ring, mark, escalating wings — at real pixel position/size, using the
+ *  exact same geometry lib/tierEmblem.ts's buildTierEmblem() gives TierBadge.vue for SVG. The
+ *  translate+scale maps the emblem's fixed 0-128 coordinate space onto a `size`-px square whose
+ *  top-left is (cx - size/2, topY), matching the old drawTierBadge's own (cx, topY, size) contract. */
+function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, size: number, tier: RankTier): void {
+  const emblem = buildTierEmblem(tier, { small: size < 40 });
   ctx.save();
-  ctx.translate(cx - size * 0.26, topY + size * 0.26);
-  const s = (size * 0.52) / 24;
-  ctx.scale(s, s);
-  ctx.fillStyle = c.tt;
-  ctx.shadowColor = "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = 1;
-  ctx.shadowOffsetY = 1;
-  ctx.fill(glyph);
+  ctx.translate(cx - size / 2, topY);
+  ctx.scale(size / 128, size / 128);
+  for (const shape of emblem.shapes) drawEmblemShape(ctx, shape, emblem.gradients);
   ctx.restore();
 }
 
@@ -478,10 +414,13 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
 function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: number, size: number, model: WorkoutCardModel): void {
   if (!model.tier) return;
   const tier = model.tier.tier as RankTier;
-  // Shift left by the wing span so a winged badge's outer wing never clips past the card's right
-  // edge — the live DOM avoids this via .badge-wrap's own padding-inline reserving that space;
-  // canvas has no layout pass, so the corner position accounts for it explicitly here instead.
-  const wingSpan = size * WING_SPAN[TIER_WING_BAND[tier]]!;
+  // Shift left by however far this tier's wings actually reach past the emblem's own 128-unit
+  // viewBox — the live DOM avoids this via overflow:visible plus TierBadge.vue's layout box; canvas
+  // has no layout pass, so the corner position accounts for it explicitly here. wingReachUnits()
+  // mirrors buildTierEmblem's own escalation span table (lib/tierEmblem.ts) so this can't drift
+  // out of sync with what actually gets drawn.
+  const overflowUnits = Math.max(0, wingReachUnits(tier) - 64);
+  const wingSpan = (overflowUnits / 128) * size;
   const badgeCx = width - pad - size / 2 - wingSpan;
   const badgeTopY = pad;
   drawTierBadge(ctx, badgeCx, badgeTopY, size, tier);

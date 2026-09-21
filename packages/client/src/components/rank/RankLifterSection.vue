@@ -12,37 +12,50 @@ import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
 import { useRanksStore, type RankRow } from "../../stores/ranksStore";
-import { useReadinessStore } from "../../stores/readinessStore";
 import ExerciseInfoPanel from "../exercise/ExerciseInfoPanel.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import InfoToggle from "../ui/InfoToggle.vue";
-import ListCard from "../ui/ListCard.vue";
 import RankDistributionDonut from "./RankDistributionDonut.vue";
-import RankOverallBack from "./RankOverallBack.vue";
-import RankProgress from "./RankProgress.vue";
+import RankFlipCard from "./RankFlipCard.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
-import TierBadge from "./TierBadge.vue";
 import TierLadder from "./TierLadder.vue";
 
 const ranksStore = useRanksStore();
 const overallRank = useOverallRankStore();
-const readiness = useReadinessStore();
 const catalog = useCatalogStore();
 onMounted(() => {
   void ranksStore.load();
   void overallRank.load();
-  void readiness.load();
   void catalog.load();
 });
 
 const { exerciseName } = useExerciseName();
 
 /** One card flipped at a time (same accordion rule TierLadder.vue's division-expand already
- *  follows) — flipping shows RankOverallBack.vue's account-level rank on the back, replacing the
- *  old per-card e1RM chart-expand. */
+ *  follows) — flipping shows RankExerciseBack.vue's per-exercise rank + trained muscles on the
+ *  back, a real CSS 3D flip (see the template/style below), replacing both the old per-card e1RM
+ *  chart-expand AND, more recently, a height-jumping v-if/v-else content swap that only *looked*
+ *  like a flip (no rotateY/backface-visibility at all) and — the actual bug report — showed the
+ *  account's overall rank on every card's back instead of that card's own exercise.
+ *
+ *  `activatedBacks` lazily mounts each card's back face on its FIRST flip rather than always (a
+ *  RankExerciseBack renders a MuscleFigure, i.e. several <img> requests — pre-mounting all of them
+ *  for a 30-40-exercise grid, per this file's own comment on sortedRanks below, would cost real
+ *  load time nobody asked for) and then keeps it mounted via v-show from then on, so every flip
+ *  AFTER the first is a pure transform with zero remount/reflow — only the very first flip of a
+ *  given card can cost a one-time layout settle while its back face mounts. */
 const flipped = ref<string | null>(null);
+const activatedBacks = ref(new Set<string>());
 function toggleFlip(exerciseId: string) {
+  if (flipped.value !== exerciseId) activatedBacks.value.add(exerciseId);
   flipped.value = flipped.value === exerciseId ? null : exerciseId;
+}
+
+function primaryMusclesFor(r: RankRow): string[] {
+  return catalog.byId(r.exerciseId)?.muscles?.filter((m) => m.role === "primary").map((m) => m.slug) ?? [];
+}
+function secondaryMusclesFor(r: RankRow): string[] {
+  return catalog.byId(r.exerciseId)?.muscles?.filter((m) => m.role === "secondary").map((m) => m.slug) ?? [];
 }
 
 const openExercise = ref<CatalogExercise | null>(null);
@@ -147,42 +160,25 @@ const filteredRanks = computed(() =>
       </div>
 
       <CardGrid v-if="ranksStore.ranks.length > 0">
-        <ListCard
+        <RankFlipCard
           v-for="r in filteredRanks"
           :key="r.exerciseId"
-          :class="`t-${r.tier}`"
-          :title="exerciseName(r.slug, r.name)"
-          @open="toggleFlip(r.exerciseId)"
-        >
-          <template #badge>
-            <TierBadge :tier="r.tier" />
-          </template>
-          <RankOverallBack
-            v-if="flipped === r.exerciseId"
-            class="pop-in"
-            :tier="overallRank.current?.tier ?? null"
-            :division="overallRank.current?.division ?? null"
-            :lp="overallRank.current?.lp ?? null"
-            :peak-tier="overallRank.peak?.tier ?? null"
-            :peak-division="overallRank.peak?.division ?? null"
-            :heat="readiness.heat"
-            @stats="openStats(r)"
-            @back="flipped = null"
-          />
-          <RankProgress
-            v-else
-            variant="card"
-            :badge="false"
-            :tier="r.tier"
-            :division="r.division"
-            :lp="r.lp"
-            :next-target-weight-kg="r.nextTargetWeightKg"
-            :next-target-reps="r.nextTargetReps"
-            :trust="r.trust"
-            :peak-tier="r.peakTier"
-            :peak-division="r.peakDivision"
-          />
-        </ListCard>
+          :tier="r.tier"
+          :division="r.division"
+          :lp="r.lp"
+          :next-target-weight-kg="r.nextTargetWeightKg"
+          :next-target-reps="r.nextTargetReps"
+          :trust="r.trust"
+          :peak-tier="r.peakTier"
+          :peak-division="r.peakDivision"
+          :name="exerciseName(r.slug, r.name)"
+          :primary-muscles="primaryMusclesFor(r)"
+          :secondary-muscles="secondaryMusclesFor(r)"
+          :flipped="flipped === r.exerciseId"
+          :back-activated="activatedBacks.has(r.exerciseId)"
+          @flip="toggleFlip(r.exerciseId)"
+          @stats="openStats(r)"
+        />
       </CardGrid>
     </template>
 

@@ -60,6 +60,27 @@
   margin: var(--sp4) auto 0;
 }
 
+/* Kraft cards only, not Läufe: taller now (RankFlipCard.vue's fixed-height flip card) to give the
+   hero badge and the back face's muscle figure real room. A tall card that also stretches to fill
+   a whole grid column reads as oversized — the Liftoff reference this system is modeled on runs
+   its own rank cards two-up even at phone width, nothing like the full-width single column the
+   shared 260px/340px minmax (list-card.css) would otherwise give a lone card. Below 600px this
+   still collapses to one column (mobile, this app's primary target, stays untouched — a ~200px
+   minimum with unbounded max just prevents the single column from looking starved); at 600px+ the
+   column width is capped, not just floored, so the grid gains a second column instead of stretching
+   one card wider, and keeps adding narrow columns rather than a few huge ones as it grows from
+   there. 600px is a new breakpoint (the app's only other one, list-card.css's 900px, reads as
+   "desktop" — this needs to kick in earlier, at ordinary tablet/small-laptop widths, to actually
+   read as "medium" rather than "wide"). */
+.rank-lifter-section .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+@media (min-width: 600px) {
+  .rank-lifter-section .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 260px));
+  }
+}
+
 /* Muted tier wash — see this file's header comment for why this is a third, deliberately weaker
    attempt at the same idea the first two reverted. Reuses .panel-reward's own gradient shape
    (tokens.css) at roughly quarter strength via color-mix, layered as a background-image so it sits
@@ -77,12 +98,13 @@
   );
 }
 
-/* The small medal in a grid card's head (ListCard's #badge slot, next to the exercise name) reads
-   as a label, not a hero — sized down from TierBadge's default (RankProgress.vue's 46×52, meant to
-   sit beside a whole progress readout) to fit a 15.5px title line. Global for the same reason as
-   the centering rule above: TierBadge.vue's `.badge-wrap` root is rendered by a different SFC than
-   either rank section that puts it in the slot. */
-.card-head .badge-wrap {
-  --badge-size: 30px;
-  height: 34px;
+/* The medal in a Läufe grid card's head (ListCard's #badge slot, next to the category name) — the
+   Kraft grid no longer uses ListCard/`.card-head` at all (RankFlipCard.vue is a bespoke two-sided
+   card whose own hero badge is sized in RankProgress.vue's hero variant instead). Global for the
+   same reason as the centering rule above: TierBadge.vue's `.tier-emblem` root is rendered by a
+   different SFC than the section that puts it in the slot. Square (no separate height override) —
+   the emblem's own overflow:visible lets wings extend past this box without needing extra reserved
+   height the way the old CSS wing pseudo-elements did. */
+.card-head .tier-emblem {
+  --badge-size: 40px;
 }

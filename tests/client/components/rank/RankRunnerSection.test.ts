@@ -20,16 +20,19 @@ const runRankState = reactive({
 
 vi.mock("~client/stores/runRankStore", () => ({ useRunRankStore: () => runRankState }));
 
+// Real 9-tier ids (@liftr/shared's TIERS) — TierBadge's emblem geometry indexes TIER_PALETTE by
+// this string and throws on an unknown key, where the old CSS-only badge silently no-op'd on a
+// class like `t-bronze` that matched nothing.
 function makeRunRank(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     category: "5k",
-    tier: "bronze",
+    tier: "trainee",
     division: 3,
     lp: 40,
     bestSpeedMps: 3.5,
     trust: "real",
     nextTargetSpeedMps: 4,
-    peakTier: "bronze",
+    peakTier: "trainee",
     peakDivision: 3,
     ...overrides,
   };
@@ -81,8 +84,8 @@ describe("RankRunnerSection", () => {
       ranksLoaded: true,
       ranksError: false,
       ranks: [
-        makeRunRank({ category: "5k", tier: "silver", division: 2, lp: 70 }),
-        makeRunRank({ category: "marathon", tier: "bronze", division: 1, lp: 10 }),
+        makeRunRank({ category: "5k", tier: "athlete", division: 2, lp: 70 }),
+        makeRunRank({ category: "marathon", tier: "trainee", division: 1, lp: 10 }),
       ],
     });
     const wrapper = mountWithProviders(RankRunnerSection);
