@@ -11,11 +11,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { TIERS, type Tier } from "@liftr/shared";
 import AppIcon from "../ui/AppIcon.vue";
+import TierBadge from "../rank/TierBadge.vue";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
 import { haptics } from "../../lib/haptics";
 import { MUSCLE_LABEL_DE } from "../../lib/muscles";
-import { DIVISION_LABEL, TIER_BADGE_PATH, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 
 export interface RankUpSummary {
   exerciseName: string;
@@ -207,9 +208,7 @@ onBeforeUnmount(() => {
           :style="{ animationDelay: i * 90 + 'ms' }"
         >
           <span :class="r.plausibilityNote ? 'badge-ring-muted' : 'badge-ring'">
-            <span class="badge" :class="`t-${r.tier}`">
-              <svg viewBox="0 0 24 24"><path :d="TIER_BADGE_PATH[r.tier as RankTier]" /></svg>
-            </span>
+            <TierBadge :tier="r.tier" />
           </span>
           <div class="rankup-meta">
             <b>{{ r.exerciseName }}</b>
@@ -319,40 +318,47 @@ onBeforeUnmount(() => {
   animation-duration: var(--dur-cele);
 }
 /* Was 32x36px — the most important reward in a rank-ladder product rendered as a 32px hexagon on
-   a gray row. --glow-blue (tokens.css) is a box-shadow value and gets clipped
-   away by .badge's own clip-path if applied directly; drop-shadow follows the clipped hex shape
-   correctly instead, at the same blue/intensity. */
-.rankup-row .badge {
-  width: 56px;
-  height: 62px;
+   a gray row. --glow-blue (tokens.css) is a box-shadow value and would get clipped away by the
+   old .badge's own clip-path if applied directly; drop-shadow doesn't have that problem (it
+   follows the actual rendered alpha, not a box), so it's kept even though the badge itself isn't
+   clip-path'd anymore. Targets .tier-emblem (TierBadge.vue's root), not any inner element, so the
+   glow covers the wings too, not just the ring/mark. */
+.rankup-row .tier-emblem {
+  --badge-size: 56px;
   flex: none;
   filter: drop-shadow(0 0 10px rgba(59, 140, 255, 0.55)) drop-shadow(0 0 3px rgba(59, 140, 255, 0.4));
 }
 /* Nebula ring — this rank-up beat (Beat 1, activeIndex===0) is the one place in the app a
    rank-up is actually celebrated; the ring wraps only this
-   render site's .badge instances, not RankProgress.vue's shared card (Ränge grid, in-session
+   render site's badge instances, not RankProgress.vue's shared card (Ränge grid, in-session
    focus column, post-sequence plausibility/recovery captions) or TierLadder.vue's resting-state
    ladder. Structurally absent (not just hidden) outside this v-for — there is no boolean toggle
-   guarding it that a plausibility-discounted or same-band-recovery session could also satisfy. */
+   guarding it that a plausibility-discounted or same-band-recovery session could also satisfy.
+
+   No more clip-path here (previously a tight hex, `polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%,
+   25% 100%, 0% 50%)`, sized only to the 56px core). Wings now escalate from Stufe 4 (not just
+   Elite+) and reach roughly 2.3x the core's width at Apex — a clip-path sized to the small core
+   box would cut every one of those tiers' wings off, not just the top ones. This still frames the
+   core with a small Nebula-gradient hex via padding+background; it just no longer clips whatever
+   the badge renders past that frame. Properly resizing the frame to track wingspan per tier is an
+   open follow-up, not solved here — see docs/design/nebula-design-system.md's rank emblem note. */
 .badge-ring {
   display: inline-block;
   flex: none;
   padding: 3px;
   border-radius: 2px;
   background: var(--nebula-grad);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
 }
 /* Muted counterpart to .badge-ring — a plausibility-discounted session must never be visually
    indistinguishable from a genuine rank-up. Flat
    --surface-3 instead of the Nebula brand gradient — deliberately the one place in this beat
-   that does NOT get the gradient treatment. */
+   that does NOT get the gradient treatment. No clip-path, same reasoning as .badge-ring above. */
 .badge-ring-muted {
   display: inline-block;
   flex: none;
   padding: 3px;
   border-radius: 2px;
   background: var(--surface-3);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
 }
 /* Discounted row: desaturated + slightly dimmed, so it reads as "happened, but muted" rather
    than a full celebration — paired with .badge-ring-muted above and the plausibility-note line

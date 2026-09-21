@@ -15,12 +15,17 @@
    point competing with the exercise name, and a *third* reward-surface recipe alongside
    tokens.css's `.panel-reward` (which every other earned-status surface in the app already uses).
 
-   Now: the grid cards carry no fill at all. Tier identity comes from two things the card already
-   had — `list-card.css`'s `.card { outline: 1px solid var(--tier-accent) }` (set once `t-<tier>`
-   is on the ListCard) and the hex medal itself (TierBadge.vue, in ListCard's #badge slot) — so a
-   grid of these reads as "a normal card grid, one colorful medal each" rather than "a grid with a
-   colored box on every card". ExerciseInfoPanel.vue's single hero readout is a different shape (one
-   reward moment in a tab panel, no card rim to lean on) and uses `.panel-reward` directly instead. */
+   That state held until this file grew a THIRD attempt below: a `.panel-reward`-shaped wash at
+   roughly quarter strength, layered as a `background-image` over the card's existing glass rather
+   than replacing it — deliberately not a fourth bespoke recipe. The difference from the two
+   reverted attempts is strength, not shape: full saturation is what made a mixed-tier grid read as
+   a color clash; a muted tint plus the existing outline/medal is meant to read as tier identity
+   without drowning the exercise name. Re-check this the same skeptical way if it ever creeps back
+   toward full opacity — that's exactly how the first two attempts failed. Tier identity still also
+   comes from `list-card.css`'s `.card { outline: 1px solid var(--tier-accent) }` (set once
+   `t-<tier>` is on the ListCard) and the hex medal itself (TierBadge.vue, in ListCard's #badge
+   slot). ExerciseInfoPanel.vue's single hero readout is a different shape (one reward moment in a
+   tab panel, no card rim to lean on) and uses `.panel-reward` directly instead. */
 .page-note {
   color: var(--dim);
 }
@@ -55,12 +60,53 @@
   margin: var(--sp4) auto 0;
 }
 
-/* The small medal in a grid card's head (ListCard's #badge slot, next to the exercise name) reads
-   as a label, not a hero — sized down from TierBadge's default (RankProgress.vue's 46×52, meant to
-   sit beside a whole progress readout) to fit a 15.5px title line. Global for the same reason as
-   the centering rule above: TierBadge.vue's `.badge` root is rendered by a different SFC than
-   either rank section that puts it in the slot. */
-.card-head .badge {
-  width: 30px;
-  height: 34px;
+/* Kraft cards only, not Läufe: taller now (RankFlipCard.vue's fixed-height flip card) to give the
+   hero badge and the back face's muscle figure real room. A tall card that also stretches to fill
+   a whole grid column reads as oversized — the Liftoff reference this system is modeled on runs
+   its own rank cards two-up even at phone width, nothing like the full-width single column the
+   shared 260px/340px minmax (list-card.css) would otherwise give a lone card. Below 600px the
+   160px floor is chosen to actually get that two-up phone layout (two columns plus the grid's
+   var(--sp3) gap fits comfortably inside a ~360-430px phone viewport minus page padding — see
+   RankFlipCard.vue/RankProgress.vue's own narrow-card adjustments for what had to shrink to fit
+   a ~155-190px card without its content overflowing); at 600px+ the column width is capped, not
+   just floored, so the grid gains further columns instead of stretching cards wider, and keeps
+   adding narrow columns rather than a few huge ones as it grows from there. 600px is a new
+   breakpoint (the app's only other one, list-card.css's 900px, reads as "desktop" — this needs to
+   kick in earlier, at ordinary tablet/small-laptop widths, to actually read as "medium" rather
+   than "wide"). */
+.rank-lifter-section .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+}
+@media (min-width: 600px) {
+  .rank-lifter-section .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 260px));
+  }
+}
+
+/* Muted tier wash — see this file's header comment for why this is a third, deliberately weaker
+   attempt at the same idea the first two reverted. Reuses .panel-reward's own gradient shape
+   (tokens.css) at roughly quarter strength via color-mix, layered as a background-image so it sits
+   over `.surface-hybrid`'s background-color without touching that class's own ::after hairline
+   mask or `.card`'s --tier-accent outline. `var(--b2, transparent)` means an untiered card (e.g. a
+   running category with no rank yet) gets no wash at all, never a stray fallback hue. Built from
+   --b1/--b2 (the tier system), never --nebula-* — Nebula brand tokens don't apply to the resting
+   tier-badge/bar system (docs/design/nebula-design-system.md). */
+.rank-lifter-section .card-grid > .card,
+.rank-runner-section .card-grid > .card {
+  background-image: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--b2, transparent) 24%, transparent),
+    color-mix(in srgb, var(--b1, transparent) 32%, transparent) 70%
+  );
+}
+
+/* The medal in a Läufe grid card's head (ListCard's #badge slot, next to the category name) — the
+   Kraft grid no longer uses ListCard/`.card-head` at all (RankFlipCard.vue is a bespoke two-sided
+   card whose own hero badge is sized in RankProgress.vue's hero variant instead). Global for the
+   same reason as the centering rule above: TierBadge.vue's `.tier-emblem` root is rendered by a
+   different SFC than the section that puts it in the slot. Square (no separate height override) —
+   the emblem's own overflow:visible lets wings extend past this box without needing extra reserved
+   height the way the old CSS wing pseudo-elements did. */
+.card-head .tier-emblem {
+  --badge-size: 40px;
 }

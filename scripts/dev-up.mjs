@@ -17,7 +17,16 @@
  * live in the ordinary shared data/images/ dir (the same one plain `pnpm dev` already uses) and
  * are only ever downloaded once, the first time any session needs them.
  *
- * Usage: node scripts/dev-up.mjs [--id <name>]
+ * The other thing not namespaced per session is the *seed cache*: catalog ingest + the full mock-
+ * data seed pipeline (scripts/seed-mock-data.ts) are the slow part of this script, and their
+ * output is fully determined by code/schema/catalog state, not by which session is running it —
+ * see scripts/lib/seedCache.mjs. On a cache hit, this script copies a previously-seeded database
+ * straight into this session's own private dbPath instead of re-running the seed pipeline; the
+ * cache itself is read-only from a session's perspective, so this never couples one session's
+ * database to another's. Pass `--fresh` to bypass the cache (still repopulates it afterward) when
+ * you specifically need today-relative mock-data timestamps.
+ *
+ * Usage: node scripts/dev-up.mjs [--id <name>] [--verbose] [--fresh]
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
@@ -25,6 +34,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./lib/parseArgs.mjs";
+import { computeSeedHash, readSeedCache } from "./lib/seedCache.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -75,8 +85,34 @@ function spawnBackground(command, args, { cwd, env, logFile }) {
   return child;
 }
 
+/** `pnpm exec tsx ...` doesn't resolve here: tsx isn't a root-level devDependency (only
+ *  packages/{server,db,ingest} depend on it directly), and `pnpm exec` only looks at the *current*
+ *  package's node_modules/.bin — the workspace root has none — so this fails on every platform,
+ *  not just Windows, with "Command \"tsx\" not found". Invoking the packages/server copy's bin
+ *  shim directly sidesteps that. */
+function tsxBinPath() {
+  return path.join(repoRoot, "packages", "server", "node_modules", ".bin", process.platform === "win32" ? "tsx.CMD" : "tsx");
+}
+
+/** Runs a repoRoot-relative tsx script to completion, inheriting stdio. cwd stays repoRoot since
+ *  these scripts' own imports are file-relative, not cwd-relative — only `scriptPath` needs to
+ *  resolve against repoRoot, which it already does as a relative path passed straight through (no
+ *  shell involved). */
+function runTsxScript(scriptPath, env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(tsxBinPath(), ["--conditions=development", scriptPath], {
+      cwd: repoRoot,
+      env,
+      stdio: "inherit",
+      // Same Windows shim-resolution issue as spawnBackground above — tsx.CMD needs shell:true.
+      shell: process.platform === "win32",
+    });
+    child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${scriptPath} exited with code ${code}`))));
+  });
+}
+
 async function main() {
-  const { id, verbose } = parseArgs(process.argv.slice(2));
+  const { id, verbose, fresh } = parseArgs(process.argv.slice(2));
   const log = (msg) => console.log(`[dev-up:${id}] ${msg}`);
 
   const dataDir = path.join(repoRoot, "data", `agent-${id}`);
@@ -107,6 +143,19 @@ async function main() {
   // restores full request logging when actually debugging server behavior.
   if (verbose) env.LIFTR_LOG_VERBOSE = "1";
 
+  // Computed before the backend ever touches dbPath: on a hit, the cached snapshot is copied in
+  // as this session's own private dbPath *before* anything opens it, so the backend's own startup
+  // migration (see below) runs against an already-fully-seeded file and is simply a no-op.
+  const seedHash = computeSeedHash(repoRoot);
+  const cacheHit = !fresh && readSeedCache(repoRoot, seedHash, dbPath);
+  if (cacheHit) {
+    log(`seed cache hit (${seedHash}) — reusing a previously-seeded database, skipping full reseed.`);
+  } else if (fresh) {
+    log(`--fresh passed — skipping seed cache, reseeding from scratch.`);
+  } else {
+    log(`seed cache miss (${seedHash}) — will run the full seed pipeline.`);
+  }
+
   log(`starting backend on :${backendPort} (db: ${dbPath})`);
   const backendLog = path.join(logDir, "backend.out.log");
   // buildApp() runs migrations at module-load time (packages/server/src/db.ts), so the backend
@@ -124,26 +173,19 @@ async function main() {
   }
   log("backend ready");
 
-  log("ingesting exercise catalog + seeding mock data (first run on this machine also fetches catalog images — may take a while)...");
-  await new Promise((resolve, reject) => {
-    // `pnpm exec tsx ...` doesn't resolve here: tsx isn't a root-level devDependency (only
-    // packages/{server,db,ingest} depend on it directly), and `pnpm exec` only looks at the
-    // *current* package's node_modules/.bin — the workspace root has none — so this fails on
-    // every platform, not just Windows, with "Command \"tsx\" not found". Invoking the
-    // packages/server copy's bin shim directly sidesteps that; cwd stays repoRoot since
-    // seed-mock-data.ts's own imports are file-relative (`../packages/...`), not cwd-relative —
-    // only the script-path argument below needs to resolve against repoRoot, which it already
-    // does as a relative path passed straight through (no shell involved).
-    const tsxBin = path.join(repoRoot, "packages", "server", "node_modules", ".bin", process.platform === "win32" ? "tsx.CMD" : "tsx");
-    const seed = spawn(tsxBin, ["--conditions=development", "scripts/seed-mock-data.ts"], {
-      cwd: repoRoot,
-      env,
-      stdio: "inherit",
-      // Same Windows shim-resolution issue as spawnBackground above — tsx.CMD needs shell:true.
-      shell: process.platform === "win32",
-    });
-    seed.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`seed-mock-data.ts exited with code ${code}`))));
-  });
+  if (cacheHit) {
+    // The cached database already has everything except exercise/muscle images, which live in the
+    // shared images dir rather than in the cached db file — still need to fetch those on a
+    // machine that's never seeded before.
+    log("ensuring catalog images are present (first run on this machine only)...");
+    await runTsxScript("scripts/ensure-images.ts", env);
+  } else {
+    log("ingesting exercise catalog + seeding mock data (first run on this machine also fetches catalog images — may take a while)...");
+    // LIFTR_SEED_CACHE_HASH tells seed-mock-data.ts to publish its result to the seed cache under
+    // this hash once seeding succeeds, so the next dev-up.mjs run (any session, this hash) hits
+    // the fast path above instead of repeating all of this.
+    await runTsxScript("scripts/seed-mock-data.ts", { ...env, LIFTR_SEED_CACHE_HASH: seedHash });
+  }
 
   log(`starting dashboard on :${vitePort}`);
   const viteLog = path.join(logDir, "vite.out.log");

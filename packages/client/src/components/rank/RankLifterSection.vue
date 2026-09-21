@@ -8,29 +8,60 @@ import { ordinal, TIERS, type Tier } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
 import { LP_EXPLAINER } from "../../copy/rankCopy";
 import { TIER_LABEL_DE } from "../../lib/tierIcons";
-import { useExerciseHistoryCache } from "../../composables/useExerciseHistoryCache";
 import { useExerciseName } from "../../composables/useExerciseName";
+import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
-import { useRanksStore } from "../../stores/ranksStore";
+import { useRanksStore, type RankRow } from "../../stores/ranksStore";
+import ExerciseInfoPanel from "../exercise/ExerciseInfoPanel.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import InfoToggle from "../ui/InfoToggle.vue";
-import ListCard from "../ui/ListCard.vue";
-import ProgressChart from "./ProgressChart.vue";
 import RankDistributionDonut from "./RankDistributionDonut.vue";
-import RankProgress from "./RankProgress.vue";
+import RankFlipCard from "./RankFlipCard.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
-import TierBadge from "./TierBadge.vue";
 import TierLadder from "./TierLadder.vue";
 
 const ranksStore = useRanksStore();
 const overallRank = useOverallRankStore();
+const catalog = useCatalogStore();
 onMounted(() => {
   void ranksStore.load();
   void overallRank.load();
+  void catalog.load();
 });
 
 const { exerciseName } = useExerciseName();
-const { expanded, historyCache, toggleExpand } = useExerciseHistoryCache();
+
+/** One card flipped at a time (same accordion rule TierLadder.vue's division-expand already
+ *  follows) — flipping shows RankExerciseBack.vue's per-exercise rank + trained muscles on the
+ *  back, a real CSS 3D flip (see the template/style below), replacing both the old per-card e1RM
+ *  chart-expand AND, more recently, a height-jumping v-if/v-else content swap that only *looked*
+ *  like a flip (no rotateY/backface-visibility at all) and — the actual bug report — showed the
+ *  account's overall rank on every card's back instead of that card's own exercise.
+ *
+ *  `activatedBacks` lazily mounts each card's back face on its FIRST flip rather than always (a
+ *  RankExerciseBack renders a MuscleFigure, i.e. several <img> requests — pre-mounting all of them
+ *  for a 30-40-exercise grid, per this file's own comment on sortedRanks below, would cost real
+ *  load time nobody asked for) and then keeps it mounted via v-show from then on, so every flip
+ *  AFTER the first is a pure transform with zero remount/reflow — only the very first flip of a
+ *  given card can cost a one-time layout settle while its back face mounts. */
+const flipped = ref<string | null>(null);
+const activatedBacks = ref(new Set<string>());
+function toggleFlip(exerciseId: string) {
+  if (flipped.value !== exerciseId) activatedBacks.value.add(exerciseId);
+  flipped.value = flipped.value === exerciseId ? null : exerciseId;
+}
+
+function primaryMusclesFor(r: RankRow): string[] {
+  return catalog.byId(r.exerciseId)?.muscles?.filter((m) => m.role === "primary").map((m) => m.slug) ?? [];
+}
+function secondaryMusclesFor(r: RankRow): string[] {
+  return catalog.byId(r.exerciseId)?.muscles?.filter((m) => m.role === "secondary").map((m) => m.slug) ?? [];
+}
+
+const openExercise = ref<CatalogExercise | null>(null);
+function openStats(r: RankRow) {
+  openExercise.value = catalog.byId(r.exerciseId) ?? null;
+}
 
 /** Sorted by LP descending so the exercise closest to a rank-up surfaces first, rather than
  *  falling wherever it lands alphabetically or by load-date. LP already *is* "how close to the
@@ -129,36 +160,29 @@ const filteredRanks = computed(() =>
       </div>
 
       <CardGrid v-if="ranksStore.ranks.length > 0">
-        <ListCard
+        <RankFlipCard
           v-for="r in filteredRanks"
           :key="r.exerciseId"
-          :class="`t-${r.tier}`"
-          :title="exerciseName(r.slug, r.name)"
-          @open="toggleExpand(r.exerciseId)"
-        >
-          <template #badge>
-            <TierBadge :tier="r.tier" />
-          </template>
-          <RankProgress
-            variant="card"
-            :badge="false"
-            :tier="r.tier"
-            :division="r.division"
-            :lp="r.lp"
-            :next-target-weight-kg="r.nextTargetWeightKg"
-            :next-target-reps="r.nextTargetReps"
-            :trust="r.trust"
-            :peak-tier="r.peakTier"
-            :peak-division="r.peakDivision"
-          />
-          <template v-if="expanded.has(r.exerciseId)" #footer>
-            <div class="chart-slot pop-in" @click.stop>
-              <ProgressChart v-if="historyCache.has(r.exerciseId)" :sets="historyCache.get(r.exerciseId)!" :is-bodyweight="r.isBodyweight" />
-            </div>
-          </template>
-        </ListCard>
+          :tier="r.tier"
+          :division="r.division"
+          :lp="r.lp"
+          :next-target-weight-kg="r.nextTargetWeightKg"
+          :next-target-reps="r.nextTargetReps"
+          :trust="r.trust"
+          :peak-tier="r.peakTier"
+          :peak-division="r.peakDivision"
+          :name="exerciseName(r.slug, r.name)"
+          :primary-muscles="primaryMusclesFor(r)"
+          :secondary-muscles="secondaryMusclesFor(r)"
+          :flipped="flipped === r.exerciseId"
+          :back-activated="activatedBacks.has(r.exerciseId)"
+          @flip="toggleFlip(r.exerciseId)"
+          @stats="openStats(r)"
+        />
       </CardGrid>
     </template>
+
+    <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
   </div>
 </template>
 
@@ -168,8 +192,7 @@ const filteredRanks = computed(() =>
    shell itself comes from CardGrid.vue/ListCard.vue + global list-card.css, same as every other
    card grid in the app (RoutineList.vue/RouteList.vue) — including the grid's own self-centering
    (also in rank-card.css, shared with RankRunnerSection.vue's identical rule) — only this
-   section's own unique pieces (analytics tiles, tier filter, chart-expand panel) stay scoped
-   here. */
+   section's own unique pieces (analytics tiles, tier filter) stay scoped here. */
 .rank-analytics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -222,14 +245,5 @@ const filteredRanks = computed(() =>
   height: 90px;
   border-radius: var(--r-md);
   background-color: var(--surface-3);
-}
-/* The expand-on-click chart now lives in ListCard's own #footer slot (same slot RoutineList.vue's
-   mesocycle inline form uses), so it's just another stacked block inside the card's existing
-   padding/gap — no seam-fusion trick needed the way the old free-floating sibling panel needed
-   one. `@click.stop` on the wrapper in the template keeps a tap inside the chart from re-toggling
-   the card's own open/close (ListCard's root click handler covers the whole card). */
-.chart-slot {
-  padding-top: var(--sp2);
-  border-top: 1px solid var(--line);
 }
 </style>

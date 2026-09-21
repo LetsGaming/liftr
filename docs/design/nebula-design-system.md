@@ -36,24 +36,33 @@ badge system.
   (blue → violet → magenta). No situational second brand gradient — a distinct "streak color"
   separate from "rank-up color" was considered and rejected; it would recreate the inconsistent
   active-state color semantics elsewhere in the app that this system is meant to avoid.
-- **A hexagon is the one shape reserved for rank/tier identity** — not a circle, not a plain card.
-  Implemented as `.badge`'s `clip-path` in `tokens.css`; no second shape token.
+- **A circular ring is the one shape reserved for rank/tier identity** — "Orbit", the emblem
+  redesign that replaced the earlier hexagon (`lib/tierEmblem.ts`, rendered by `TierBadge.vue`): a
+  9-segment ring carrying the tier ordinal, around Liftr's own logomark, with wings escalating from
+  Stufe 4. No second shape token; the hexagon is gone from the app entirely, including from
+  `tokens.css`'s old `.badge` clip-path (removed along with it).
 - **Glow is rationed, not ambient.** It activates only on a state transition the user just caused,
   for the duration of that transition's existing motion primitive, then it is gone. A resting HUD
   chip, a resting badge on the Ranks list, a routine card — none of these get glow, ever, regardless
   of tier or streak length. See §4.
-- **Nebula is a second layer over the tier system, not a replacement for it.** `tokens.css` has a
-  mature, evidence-based 9-tier metal-gradient badge system (`.t-initiate` … `.t-apex` —
-  bronze/silver/gold/iridescent-equivalent per tier). That system answers *which* of nine tiers
-  something is; Nebula answers whether something is *interactive or just-earned*, independent of
-  tier. **The 9-tier badge system's own colors are explicitly out of scope for Nebula and must stay
-  untouched** — this is a rejected idea, not a deferred one. A rank-up event legitimately layers
-  both: the tier medallion renders in its own metal gradient (whichever tier was actually earned),
-  while the surrounding "you ranked up" chrome (the ring around the badge, the beat's background
-  wash, the continue CTA) uses Nebula, via `FinishSequence.vue`'s `.badge-ring`/`.badge-ring-muted`
-  split, structurally scoped to the rank-up beat only, never the resting Ranks list. The resting
-  `/ranks` tier bars stay bronze/silver, not violet-magenta — that is this rule working as designed,
-  not a defect. Do not "fix" this by adding Nebula to resting tier badges.
+- **Nebula is a second layer over the tier system, not a replacement for it — amended.** The
+  original rule here banned Nebula from the tier badge's own colors outright ("explicitly out of
+  scope... a rejected idea, not a deferred one"). The emblem redesign deliberately revisited that:
+  the 9-tier ramp (`lib/tierPalette.ts`'s `TIER_PALETTE`, mirrored in `tokens.css`'s
+  `--<tier>-1/-2/-3/-t`) is now **harmonised with** Nebula's hue family — bronze/silver/gold for the
+  bottom three tiers giving way to an abstract cyan → azure → indigo → violet → magenta →
+  incandescent climb above, the same blue-to-magenta direction `--nebula-1 → --nebula-m → --nebula-2`
+  travels. This is a coherence choice, not a literal recolor: no tier badge uses the Nebula gradient
+  tokens directly, and the two systems still answer different questions (tier identity vs.
+  interactive/just-earned) with independently-defined values that simply no longer fight each other
+  on the color wheel. What the original rule protected — that resting tier badges never get
+  Nebula's glow/gradient *treatment* (the CTA sweep, the rank-up ring, the HUD dot) — still holds:
+  a rank-up event layers the tier medallion in its own (now-harmonised) ramp, while the surrounding
+  "you ranked up" chrome (the ring around the badge, the beat's background wash, the continue CTA)
+  uses Nebula's literal gradient, via `FinishSequence.vue`'s `.badge-ring`/`.badge-ring-muted` split,
+  structurally scoped to the rank-up beat only, never the resting Ranks list. Do not "fix" this by
+  applying the Nebula gradient itself to resting tier badges — harmonised hue family, not a shared
+  gradient, is the whole point of the amendment.
 
 | Question the color answers | System | Where it lives |
 |---|---|---|

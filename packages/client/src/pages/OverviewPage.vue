@@ -536,8 +536,8 @@ function retryFailed() {
   padding: var(--sp4);
 }
 /* 2x2 on mobile so each tile gets ~2x the width a 4-across row would give it — a 4-across row at
-   ~90px per tile clips the longest tier label ("FORTGESCHRITTEN" via overallRankLabel,
-   TIER_LABEL_DE's longest entry). Widens back to 4-across only once there's room (>=560px,
+   ~90px per tile clips the longest tier label ("ANFÄNGER"/"LEHRLING"/"SPORTLER" via
+   overallRankLabel, TIER_LABEL_DE's longest entries). Widens back to 4-across only once there's room (>=560px,
    comfortably past every phone width this app targets); the value also wraps onto a second line
    at a smaller, responsive size instead of forcing one line that either fits or clips. */
 .status-strip {

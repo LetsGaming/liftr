@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import RankProgress from "~client/components/rank/RankProgress.vue";
-import { TIER_BADGE_PATH, TIER_LABEL_DE, DIVISION_LABEL } from "~client/lib/tierIcons";
+import { TIER_LABEL_DE, DIVISION_LABEL } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 describe("RankProgress", () => {
-  it("renders the tier badge path, label, division and LP for a basic card", () => {
+  it("renders the tier emblem, label, division and LP for a basic card", () => {
     const wrapper = mountWithProviders(RankProgress, {
       props: { tier: "athlete", division: 2, lp: 57 },
     });
 
     expect(wrapper.classes()).toContain("t-athlete");
     expect(wrapper.classes()).toContain("variant-card");
-    expect(wrapper.find(".badge svg path").attributes("d")).toBe(TIER_BADGE_PATH.athlete);
+    expect(wrapper.find(".tier-emblem").classes()).toContain("t-athlete");
     expect(wrapper.find(".rp-tier").text()).toContain(TIER_LABEL_DE.athlete);
     expect(wrapper.find(".rp-tier").text()).toContain(DIVISION_LABEL[2]);
     expect(wrapper.find(".rp-lp").text()).toBe("57 LP");
@@ -78,28 +78,50 @@ describe("RankProgress", () => {
     expect(wrapper.find(".rp-trust").text()).toBe("Geschätzter Standard");
   });
 
-  it("shows '???' as the next target when nextTargetReps is null (top of modeled standards)", () => {
+  it("shows '???' as a single outline chip when nextTargetReps is null (top of modeled standards)", () => {
     const wrapper = mountWithProviders(RankProgress, {
       props: { tier: "apex", division: 1, lp: 100, nextTargetReps: null, nextTargetWeightKg: null },
     });
 
-    expect(wrapper.find(".rp-next").text()).toBe("Nächstes Ziel: ???");
+    expect(wrapper.find(".rp-next-label").text()).toBe("Nächstes Ziel");
+    const chips = wrapper.findAll(".rp-chip");
+    expect(chips).toHaveLength(1);
+    expect(chips[0]!.text()).toBe("???");
+    expect(chips[0]!.classes()).toContain("outline");
   });
 
-  it("shows a weight x reps next target when both are present", () => {
+  it("shows a weight chip (outline) and a reps chip (fill) when both are present", () => {
     const wrapper = mountWithProviders(RankProgress, {
       props: { tier: "athlete", division: 2, lp: 40, nextTargetWeightKg: 82.5, nextTargetReps: 6 },
     });
 
-    expect(wrapper.find(".rp-next").text()).toBe("Nächstes Ziel: 82.5 kg × 6");
+    const chips = wrapper.findAll(".rp-chip");
+    expect(chips).toHaveLength(2);
+    expect(chips[0]!.text()).toBe("82.5 kg");
+    expect(chips[0]!.classes()).toContain("outline");
+    expect(chips[1]!.text()).toBe("6 Wdh.");
+    expect(chips[1]!.classes()).toContain("fill");
   });
 
-  it("shows a reps-only next target for a bodyweight exercise (no weight target)", () => {
+  it("shows a single reps outline chip for a bodyweight exercise (no weight target) — never a lone filled chip", () => {
     const wrapper = mountWithProviders(RankProgress, {
       props: { tier: "athlete", division: 2, lp: 40, nextTargetWeightKg: null, nextTargetReps: 12 },
     });
 
-    expect(wrapper.find(".rp-next").text()).toBe("Nächstes Ziel: 12 Wdh.");
+    const chips = wrapper.findAll(".rp-chip");
+    expect(chips).toHaveLength(1);
+    expect(chips[0]!.text()).toBe("12 Wdh.");
+    expect(chips[0]!.classes()).toContain("outline");
+  });
+
+  it("shows a single outline chip carrying a pre-formatted label override (e.g. a running pace)", () => {
+    const wrapper = mountWithProviders(RankProgress, {
+      props: { tier: "athlete", division: 2, lp: 40, nextTargetLabel: "5:00/km" },
+    });
+
+    const chips = wrapper.findAll(".rp-chip");
+    expect(chips).toHaveLength(1);
+    expect(chips[0]!.text()).toBe("5:00/km");
   });
 
   it("shows a decay caption naming the peak when the current position is below peak", () => {

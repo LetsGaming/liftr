@@ -32,7 +32,6 @@
  *     linked to the first via plannedRouteId.
  */
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDb, OWNER_USER_ID, runMigrations, type LiftrDb } from "@liftr/db";
@@ -40,8 +39,8 @@ import { createDb, OWNER_USER_ID, runMigrations, type LiftrDb } from "@liftr/db"
 import { loadCatalog, ingestCatalog } from "../packages/ingest/src/ingestCatalog.js";
 import { ingestStandards } from "../packages/ingest/src/ingestStandards.js";
 import { ingestRunStandards } from "../packages/ingest/src/ingestRunStandards.js";
-import { ingestImages } from "../packages/ingest/src/ingestImages.js";
-import { ingestMuscleAssets } from "../packages/ingest/src/ingestMuscleAssets.js";
+import { ensureCatalogImages } from "./lib/ensureCatalogImages.js";
+import { writeSeedCache } from "./lib/seedCache.mjs";
 
 import { writeJsonSetting } from "../packages/server/src/repositories/settingsRepository.js";
 import { upsertBodyweightLog } from "../packages/server/src/repositories/bodyweightRepository.js";
@@ -89,62 +88,7 @@ async function ensureCatalog(db: LiftrDb) {
   await ingestRunStandards(db);
   console.log(`  catalog + standards + run standards ingested (${entries.length} exercises).`);
 
-  // ingestImages writes to <IMAGES_DIR>/<slug>/ and ingestMuscleAssets writes to
-  // <IMAGES_DIR>/muscles/ — two independent fetches sharing one directory. Checking "does
-  // IMAGES_DIR have any content at all" treats them as one atomic unit: a machine that got
-  // exercise photos but was interrupted before muscle assets (or vice versa) would skip the
-  // missing half forever. Check each independently instead.
-  const hasExerciseImages = () =>
-    fs.existsSync(IMAGES_DIR) &&
-    fs.readdirSync(IMAGES_DIR).some((name) => name !== "muscles" && name !== ".lock");
-  const hasMuscleAssets = () => fs.existsSync(path.join(IMAGES_DIR, "muscles", "front-body.svg"));
-  if (hasExerciseImages() && hasMuscleAssets()) {
-    console.log(`  ${IMAGES_DIR} already has exercise images and muscle assets — skipping fetch.`);
-    return;
-  }
-
-  // data/images/ is shared across every concurrent dev-up.mjs session (unlike the per-session DB),
-  // so two sessions starting at once can both see it empty and ingest concurrently, corrupting
-  // muscle SVGs that ingestMuscleAssets writes then immediately re-reads. This lock dir makes that
-  // a single-writer critical section. ponytail: fixed poll count, no cross-process notify — fine
-  // for a handful of local dev sessions, revisit if that stops being true.
-  const lockDir = path.join(IMAGES_DIR, ".lock");
-  fs.mkdirSync(IMAGES_DIR, { recursive: true });
-  let haveLock = false;
-  for (let i = 0; i < 120; i++) {
-    try {
-      fs.mkdirSync(lockDir);
-      haveLock = true;
-      break;
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-      await new Promise((r) => setTimeout(r, 500));
-    }
-  }
-  if (!haveLock) {
-    console.warn(`  ! timed out waiting for ${lockDir} — proceeding without it (stale lock?).`);
-  }
-
-  try {
-    if (hasExerciseImages() && hasMuscleAssets()) {
-      console.log(`  ${IMAGES_DIR} was fully populated by another session while waiting — skipping fetch.`);
-      return;
-    }
-    if (!hasExerciseImages()) {
-      console.log("  fetching catalog exercise images, this can take a minute...");
-      await ingestImages(entries, IMAGES_DIR);
-    }
-    if (!hasMuscleAssets()) {
-      console.log("  fetching muscle-map assets...");
-      await ingestMuscleAssets(IMAGES_DIR);
-    }
-  } catch (err) {
-    // Not fatal: exercises without a photo already fall back to the icon UI — a real, supported
-    // state, not a broken one — so a flaky/offline network here shouldn't fail the whole session.
-    console.warn(`  ! image/muscle-asset fetch failed (continuing without photos): ${(err as Error).message}`);
-  } finally {
-    if (haveLock) fs.rmSync(lockDir, { recursive: true, force: true });
-  }
+  await ensureCatalogImages(CATALOG_PATH, IMAGES_DIR);
 }
 
 async function seedProfile(db: LiftrDb) {
@@ -690,6 +634,19 @@ async function main() {
   await seedManualRun(db, plannedRouteId);
 
   console.log("[seed] done.");
+
+  // Set by dev-up.mjs only on a seed-cache miss (see scripts/lib/seedCache.mjs) — publishes this
+  // freshly seeded database as the cached snapshot future dev-up.mjs runs can copy in directly
+  // instead of re-running all of the above. wal_checkpoint(TRUNCATE) merges the WAL back into the
+  // main db file first: createDb() runs in WAL mode, so a raw file copy without this would miss
+  // whatever's still sitting in the -wal sidecar file.
+  const cacheHash = process.env.LIFTR_SEED_CACHE_HASH;
+  if (cacheHash) {
+    db.$client.pragma("wal_checkpoint(TRUNCATE)");
+    db.$client.close();
+    writeSeedCache(repoRoot, cacheHash, DB_PATH!);
+    console.log(`  seed cache updated (${cacheHash}).`);
+  }
 }
 
 main().catch((err) => {

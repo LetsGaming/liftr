@@ -324,7 +324,10 @@ describe("WorkoutPage", () => {
   it("reveals the current exercise's cached rank card only after the rank-reveal toggle is tapped", async () => {
     store.isActive = true;
     store.currentExercise = makeExercise({ exerciseId: "ex1" });
-    ranksState.ranks = [{ exerciseId: "ex1", tier: "gold", division: 1, lp: 55, nextTargetWeightKg: 90, nextTargetReps: 8, trust: "real" }];
+    // Real tier id (@liftr/shared's TIERS), not the pre-migration "gold" — TierBadge's emblem
+    // geometry indexes TIER_PALETTE by this string and throws on an unknown key, where the old
+    // CSS-only badge silently no-op'd on a class like `t-gold` that matched nothing.
+    ranksState.ranks = [{ exerciseId: "ex1", tier: "advanced", division: 1, lp: 55, nextTargetWeightKg: 90, nextTargetReps: 8, trust: "real" }];
     const wrapper = mountWithProviders(WorkoutPage, { global: { stubs: STUBS } });
 
     expect(wrapper.findComponent(RankProgress).exists()).toBe(false);
@@ -332,7 +335,7 @@ describe("WorkoutPage", () => {
 
     const rank = wrapper.findComponent(RankProgress);
     expect(rank.exists()).toBe(true);
-    expect(rank.props("tier")).toBe("gold");
+    expect(rank.props("tier")).toBe("advanced");
     expect(rank.props("lp")).toBe(55);
   });
 

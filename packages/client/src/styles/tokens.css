@@ -136,50 +136,50 @@
   --k-failure-text: #2a0505;
   --k-dropset-text: #04302e;
 
-  /* saturated tier fills — the reward, full-card like the mockup's rank arena */
-  --initiate-1: #1a1a1a;
-  --initiate-2: #4a4a4a;
-  --initiate-3: #9a9a9a;
-  --initiate-t: #f0f0f0;
-  --apprentice-1: #3a2109;
-  --apprentice-2: #8a4f22;
-  --apprentice-3: #e08a3c;
-  --apprentice-t: #ffd9ab;
-  --trainee-1: #2a2508;
-  --trainee-2: #7a6a1f;
-  --trainee-3: #c9b23e;
-  --trainee-t: #f5edb8;
-  --athlete-1: #232a38;
-  --athlete-2: #69748a;
-  --athlete-3: #c7d1e4;
-  --athlete-t: #f2f6ff;
-  --lifter-1: #0f2e1f;
-  --lifter-2: #2d8058;
-  --lifter-3: #5fd6a0;
-  --lifter-t: #d4fbe9;
-  --advanced-1: #3a2a04;
-  --advanced-2: #a7820f;
-  --advanced-3: #ffd24a;
-  --advanced-t: #fff2c2;
-  /* Colorize finding (round 2): the first retune shifted hue off-wheel but stayed saturated
-     enough (max-min RGB channel spread >=50) to still trip the detector's ai-color-palette rule
-     at both its --b2 and --b3 stops. Pulled chroma down further here — into the same restrained
-     range silver (--athlete/--lifter, chroma ~29) already sits at — rather than pushing hue any
-     further, since a muted, worn-metal/gem read fits this system's established material
-     language (bronze/silver are both deliberately restrained, not neon) better than chasing a
-     louder hue just to dodge a threshold. --tt also nudged down for margin (was 47, now ~31). */
-  --elite-1: #2a0f2e;
-  --elite-2: #785074;
-  --elite-3: #c8a0cc;
-  --elite-t: #f0dcf0;
-  --expert-1: #0d2b2c;
-  --expert-2: #416969;
-  --expert-3: #96c0ba;
-  --expert-t: #d6f5ec;
-  --apex-1: #152449;
-  --apex-2: #3b5fd0;
-  --apex-3: #8fb4ff;
-  --apex-t: #dbe7ff;
+  /* Tier ramp — Nebula-harmonised (rank emblem redesign, see docs/design/nebula-design-system.md's
+     amended note). Bronze/silver/gold reads for the bottom three tiers, giving way to an abstract
+     cyan -> azure -> indigo -> violet -> magenta -> incandescent climb above, monotonic in both
+     luminance and chroma, with a hue SHIFT (not just a lightness change) between each tier's -1
+     (shadow) and -3 (highlight) stop — that shift is what keeps the ramp reading as metal/gem
+     material rather than one hue at three lightnesses ("plastic"). This is the single source of
+     truth for these 36 values; packages/client/src/lib/tierPalette.ts's TIER_PALETTE must be kept
+     in sync (a vitest test asserts the two match — see tests/client/lib/tierPalette.test.ts). */
+  --initiate-1: #141a26;
+  --initiate-2: #2a3448;
+  --initiate-3: #5a6a88;
+  --initiate-t: #9aa8c4;
+  --apprentice-1: #16202f;
+  --apprentice-2: #2d4260;
+  --apprentice-3: #5f86b8;
+  --apprentice-t: #a8c4e4;
+  --trainee-1: #0f2733;
+  --trainee-2: #1d5470;
+  --trainee-3: #3fa0c4;
+  --trainee-t: #9fd8ec;
+  --athlete-1: #0d2c3f;
+  --athlete-2: #1a6a9e;
+  --athlete-3: #2f9fe0;
+  --athlete-t: #a8ddf7;
+  --lifter-1: #0f2246;
+  --lifter-2: #1f5bb8;
+  --lifter-3: #3b8cff;
+  --lifter-t: #b3d2ff;
+  --advanced-1: #171d4e;
+  --advanced-2: #3a44c8;
+  --advanced-3: #6b74ff;
+  --advanced-t: #c3c8ff;
+  --elite-1: #231a52;
+  --elite-2: #5b45d4;
+  --elite-3: #8a6dff;
+  --elite-t: #cfc4ff;
+  --expert-1: #3a1152;
+  --expert-2: #9a2fd6;
+  --expert-3: #d63aff;
+  --expert-t: #efc0ff;
+  --apex-1: #4a1046;
+  --apex-2: #c23ad0;
+  --apex-3: #ff7bf0;
+  --apex-t: #fff0fb;
 
   --pl-red: #e23b34;
   --pl-blue: #2f6bd4;
@@ -757,137 +757,64 @@ textarea::placeholder {
   border: 1px solid var(--b3, var(--nebula-1));
 }
 
-/* hex tier badge (mockup .badge) — rebuilt per 0a's Liftoff medal deep-dive (engagement-audit-v3
-   Phase 1) as a layered "metal" stack instead of a flat hex + 2-stop gradient. Only two
-   pseudo-elements are available on this element without touching every call site's markup, so
-   the five conceptual layers 0a names are folded into three CSS layers:
-     ::after   — extrusion plate: a darker, larger hex offset further down than up, sitting
-                 furthest back (z-index -2). Reads as visible material thickness on the medal's
-                 bottom edges instead of the badge floating as a flat sticker.
-     ::before  — bevel rim: a larger hex sitting just behind the face (z-index -1) so its edges
-                 peek out as a ring. Its gradient direction is fixed opposite the face's (rim
-                 bright top-left, face bright top-centre/lower per tier) — 0a calls this
-                 mismatch "the single strongest metal cue."
-     .badge    — face + specular, as two background layers on the real element (multiple
-                 comma-separated backgrounds all clip to the element's own clip-path, so no third
-                 pseudo-element is needed): a hard ~35deg specular streak band on top of a
-                 per-tier-group 3-stop --face-grad underneath (see the t-<tier> blocks below for
-                 which shape: broad/soft, compressed/polished, non-monotonic gold, or
-                 hue-rotating iridescent — 2-stop gradients read flat regardless of hue, per 0a).
-   Pure CSS, no raster — holds the offline-PWA precache constraint. */
-.badge {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: none;
-  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-  background:
-    /* primary specular streak, upper-left third */
-    linear-gradient(35deg, transparent 28%, rgba(255, 255, 255, 0.55) 38% 42%, transparent 52%),
-    /* weaker parallel streak, lower-right */
-    linear-gradient(35deg, transparent 62%, rgba(255, 255, 255, 0.22) 70% 73%, transparent 80%),
-    var(--face-grad, linear-gradient(155deg, var(--b3, var(--blue-hi)), var(--b1, var(--blue-ink)) 65%));
-}
-.badge::before {
-  content: "";
-  position: absolute;
-  inset: -9%;
-  clip-path: inherit;
-  z-index: -1;
-  /* Opposite direction from the face's own 155deg-ish gradients on purpose (see comment above). */
-  background: linear-gradient(-25deg, var(--b3, var(--blue-hi)) 0%, var(--b1, var(--blue-ink)) 70%);
-}
-.badge::after {
-  content: "";
-  position: absolute;
-  inset: -13% -13% -18% -13%;
-  clip-path: inherit;
-  z-index: -2;
-  background: var(--b1, var(--blue-ink));
-}
-/* The hex shape alone read as a bare gradient swatch with no icon at all — an empty span,
-   not a badge. Restores a per-tier glyph inside it. Fill is the tier's own --tt token, which is
-   already a lighter TINT of that tier's metal (not literal white) — 0a names an all-tiers-white
-   glyph as the main thing that was killing the material read; drop-shadow lifts it proud of the
-   face instead of letting it sit flush. */
-.badge svg {
-  position: relative;
-  width: 52%;
-  height: 52%;
-  fill: var(--tt, #fff);
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.45));
-}
-/* Per-tier --face-grad shapes, per 0a's medal deep-dive: not a uniform 2-3 stop recipe reused
-   across all nine tiers, but three distinct *shapes* grouped by how the reference material reads
-   at that tier band. Bronze-equivalent (initiate/apprentice/trainee): broad soft highlight, ~25%
-   luminance spread, matte. Silver-equivalent (athlete/lifter): compressed highlight band, ~70%
-   spread, polished. Gold (advanced): non-monotonic — dark, then bright, then a near-white peak,
-   then back down — the double-bright inflection 0a calls out as what separates gold from plain
-   yellow. Platin/diamant-equivalent (elite/expert/apex): the tier's --tt tint (already
-   hue-shifted, not literal white) interleaved with --b3 for a rotating-hue iridescent read
-   instead of only lightening. */
+/* Tier medal ("Orbit") is now real SVG, built by lib/tierEmblem.ts and rendered by
+   TierBadge.vue — the old .badge/.badge-wrap clip-path + pseudo-element wing stack that used to
+   live here is gone. What's left is just the --b1/--b2/--b3/--tt mapping per tier, which other,
+   non-badge parts of the app still read directly: --tier-accent/--tier-deep (below), .panel-reward,
+   .rankbar (tokens.css), rank-card.css's tier wash, and WorkoutPage.vue's --tt-based text color. */
 .t-initiate {
   --b1: var(--initiate-1);
   --b2: var(--initiate-2);
   --b3: var(--initiate-3);
   --tt: var(--initiate-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 38%, var(--b3) 58%, var(--b2) 100%);
 }
 .t-apprentice {
   --b1: var(--apprentice-1);
   --b2: var(--apprentice-2);
   --b3: var(--apprentice-3);
   --tt: var(--apprentice-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 38%, var(--b3) 58%, var(--b2) 100%);
 }
 .t-trainee {
   --b1: var(--trainee-1);
   --b2: var(--trainee-2);
   --b3: var(--trainee-3);
   --tt: var(--trainee-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 38%, var(--b3) 58%, var(--b2) 100%);
 }
 .t-athlete {
   --b1: var(--athlete-1);
   --b2: var(--athlete-2);
   --b3: var(--athlete-3);
   --tt: var(--athlete-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b1) 32%, var(--b3) 48%, var(--b3) 54%, var(--b1) 68%, var(--b2) 100%);
 }
 .t-lifter {
   --b1: var(--lifter-1);
   --b2: var(--lifter-2);
   --b3: var(--lifter-3);
   --tt: var(--lifter-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b1) 32%, var(--b3) 48%, var(--b3) 54%, var(--b1) 68%, var(--b2) 100%);
 }
 .t-advanced {
   --b1: var(--advanced-1);
   --b2: var(--advanced-2);
   --b3: var(--advanced-3);
   --tt: var(--advanced-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--b3) 50%, var(--tt) 65%, var(--b2) 100%);
 }
 .t-elite {
   --b1: var(--elite-1);
   --b2: var(--elite-2);
   --b3: var(--elite-3);
   --tt: var(--elite-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--tt) 55%, var(--b3) 75%, var(--tt) 100%);
 }
 .t-expert {
   --b1: var(--expert-1);
   --b2: var(--expert-2);
   --b3: var(--expert-3);
   --tt: var(--expert-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--tt) 55%, var(--b3) 75%, var(--tt) 100%);
 }
 .t-apex {
   --b1: var(--apex-1);
   --b2: var(--apex-2);
   --b3: var(--apex-3);
   --tt: var(--apex-t);
-  --face-grad: linear-gradient(155deg, var(--b1) 0%, var(--b2) 30%, var(--tt) 55%, var(--b3) 75%, var(--tt) 100%);
 }
 
 /* Generic aliases for "whatever tier is in scope" (rework Phase 2 — the 9-tier ladder painted
