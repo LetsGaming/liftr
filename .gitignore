@@ -12,3 +12,4 @@ coverage/
 *.tsbuildinfo
 .impeccable/hook.cache.json
 .impeccable/critique/
+.playwright-mcp/*

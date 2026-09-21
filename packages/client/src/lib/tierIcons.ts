@@ -10,13 +10,17 @@ export type RankTier =
   | "initiate" | "apprentice" | "trainee" | "athlete" | "lifter"
   | "advanced" | "elite" | "expert" | "apex";
 
+/** "trainee"/"advanced" use "AZUBI"/"GEÜBT" — the everyday German short forms of
+ *  "Auszubildender"/"Fortgeschritten" — rather than the full words: at 14-15 characters those
+ *  were the two longest entries here by a wide margin, and didn't fit next to a tier badge on
+ *  the Kraft grid's two-up phone cards (rank-card.css) without wrapping mid-word. */
 export const TIER_LABEL_DE: Record<RankTier, string> = {
   initiate: "ANFÄNGER",
   apprentice: "LEHRLING",
-  trainee: "AUSZUBILDENDER",
+  trainee: "AZUBI",
   athlete: "SPORTLER",
   lifter: "HEBER",
-  advanced: "FORTGESCHRITTEN",
+  advanced: "GEÜBT",
   elite: "ELITE",
   expert: "EXPERTE",
   apex: "APEX",

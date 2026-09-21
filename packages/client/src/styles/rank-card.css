@@ -64,16 +64,18 @@
    hero badge and the back face's muscle figure real room. A tall card that also stretches to fill
    a whole grid column reads as oversized — the Liftoff reference this system is modeled on runs
    its own rank cards two-up even at phone width, nothing like the full-width single column the
-   shared 260px/340px minmax (list-card.css) would otherwise give a lone card. Below 600px this
-   still collapses to one column (mobile, this app's primary target, stays untouched — a ~200px
-   minimum with unbounded max just prevents the single column from looking starved); at 600px+ the
-   column width is capped, not just floored, so the grid gains a second column instead of stretching
-   one card wider, and keeps adding narrow columns rather than a few huge ones as it grows from
-   there. 600px is a new breakpoint (the app's only other one, list-card.css's 900px, reads as
-   "desktop" — this needs to kick in earlier, at ordinary tablet/small-laptop widths, to actually
-   read as "medium" rather than "wide"). */
+   shared 260px/340px minmax (list-card.css) would otherwise give a lone card. Below 600px the
+   160px floor is chosen to actually get that two-up phone layout (two columns plus the grid's
+   var(--sp3) gap fits comfortably inside a ~360-430px phone viewport minus page padding — see
+   RankFlipCard.vue/RankProgress.vue's own narrow-card adjustments for what had to shrink to fit
+   a ~155-190px card without its content overflowing); at 600px+ the column width is capped, not
+   just floored, so the grid gains further columns instead of stretching cards wider, and keeps
+   adding narrow columns rather than a few huge ones as it grows from there. 600px is a new
+   breakpoint (the app's only other one, list-card.css's 900px, reads as "desktop" — this needs to
+   kick in earlier, at ordinary tablet/small-laptop widths, to actually read as "medium" rather
+   than "wide"). */
 .rank-lifter-section .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
 }
 @media (min-width: 600px) {
   .rank-lifter-section .card-grid {

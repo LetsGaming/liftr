@@ -62,7 +62,7 @@ const decayCaption = computed(() => {
 <template>
   <div class="rank-exercise-back">
     <div class="reb-eyebrow">Trainierte Muskeln</div>
-    <MuscleFigure :primary="primaryMuscles" :secondary="secondaryMuscles" :size="76" />
+    <MuscleFigure :primary="primaryMuscles" :secondary="secondaryMuscles" :size="64" />
     <div class="reb-legend">
       <span><i class="pri" />Primär</span>
       <span><i class="sec" />Sekundär</span>
@@ -91,8 +91,22 @@ const decayCaption = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp2);
+  /* Tighter than --sp2 (8px) — this face already stacks 5 elements (muscle figure, legend,
+     badge row, actions) inside the flip card's fixed height, and the 76px MuscleFigure alone
+     renders ~140px tall (its own aspect ratio, not a square), so every px of gap here is one
+     the "Rang-Statistiken" button below needs to stay inside the card instead of being clipped
+     by its rounded corner. */
+  gap: 6px;
   text-align: center;
+  /* Without an explicit width, this element (a plain flex item, not itself flex-stretched) sizes
+     to its own content's natural width — on a narrow two-up phone card, `.reb-tier`'s badge+label
+     row could then grow past the card's real content width, and `align-items: center` on this
+     column would center that overflow, spilling it evenly past BOTH edges rather than wrapping.
+     width:100% + min-width:0 pins this to the card's actual width, so `.reb-tier` below is forced
+     to fit it (and its own min-width:0) instead of growing past it. Mirrors RankProgress.vue's
+     hero variant, which already has width:100% for the same reason. */
+  width: 100%;
+  min-width: 0;
 }
 .reb-eyebrow {
   font-size: 10px;
@@ -130,11 +144,14 @@ const decayCaption = computed(() => {
   gap: var(--sp2);
   margin-top: var(--sp2);
 }
-/* Matches RankProgress.vue's hero-variant badge size (both faces of the flip card now read at the
-   same scale) — this used to be TierBadge's `small` variant at ~26px, sized down purely to fit a
-   cramped auto-height card before the flip card got its own fixed-height, full-space redesign. */
+/* Matches the MuscleFigure's own 64px width above it, so the two visual anchors on this face
+   read at the same scale — mirroring the front face, where the hero badge (96px,
+   RankProgress.vue) is sized to be the card's sole focal point rather than a small label next
+   to text. Not the full 76px used elsewhere: at that size (plus the ~140px-tall figure it sits
+   under) the back face's content overflowed the flip card's fixed height and got clipped by its
+   rounded corner. */
 .reb-badge {
-  --badge-size: 40px;
+  --badge-size: 64px;
 }
 .reb-tier-body {
   display: flex;

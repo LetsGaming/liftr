@@ -343,7 +343,10 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 }
 .rp-hero-fields {
   display: flex;
-  gap: var(--sp3);
+  /* Tighter than --sp3 (12px) — the Kraft grid runs these cards two-up on phones (rank-card.css),
+     down to a ~160px column, and two field boxes at the old 52px min-width + 12px gap (116px)
+     plus the card's own side padding didn't fit that width. */
+  gap: 6px;
   margin-top: 2px;
 }
 .rp-hero-field {
@@ -359,10 +362,11 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 }
 /* Same outline/fill vocabulary as .rp-chip (weight outline, reps filled — see that rule's own
    comment), just laid out as a labeled box instead of a pill, to match Liftoff's boxed Kg/Wdh.
-   fields. */
+   fields. Sized to fit two side by side on the narrowest two-up phone card (see .rp-hero-fields'
+   own comment) — smaller than the old 52px/12px would allow. */
 .rp-hero-field-value {
-  min-width: 52px;
-  padding: 6px 12px;
+  min-width: 40px;
+  padding: 6px 8px;
   border-radius: var(--r-sm);
   font-size: 15px;
   font-weight: 800;

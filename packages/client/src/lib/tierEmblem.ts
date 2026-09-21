@@ -252,10 +252,14 @@ export function buildTierEmblem(tier: Tier, opts: BuildEmblemOptions = {}): Tier
   const cx = 64;
   const open = n >= 4;
   const cy = open ? 64 : 63;
-  const big = !open;
-  const r0 = big ? 47 : 38;
-  const r1 = big ? 55 : 45;
-  const gr = big ? 26 : 23;
+  // Ring/mark size no longer shrinks once wings open (Stufe 4+) — wings already render outside
+  // the 128 viewBox via `overflow: visible` (see wingReachUnits, which reaches well past the
+  // viewBox edge for every winged tier), so shrinking the ring to "make room" for them wasn't
+  // actually necessary and just made every winged badge read smaller than a non-winged one at
+  // the same --badge-size, which is the one thing a rank ladder can't afford to get backwards.
+  const r0 = 47;
+  const r1 = 55;
+  const gr = 26;
   const p = TIER_PALETTE[tier];
 
   shapes.push({ kind: "ellipse", cx, cy: 122, rx: 28, ry: 3.8, fill: "#000", opacity: 0.34 });

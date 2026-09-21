@@ -53,17 +53,19 @@ defineEmits<{ flip: []; stats: [] }>();
       @keydown.enter="$emit('flip')"
     >
       <b class="rfc-name">{{ name }}</b>
-      <RankProgress
-        variant="hero"
-        :tier="tier"
-        :division="division"
-        :lp="lp"
-        :next-target-weight-kg="nextTargetWeightKg"
-        :next-target-reps="nextTargetReps"
-        :trust="trust"
-        :peak-tier="peakTier"
-        :peak-division="peakDivision"
-      />
+      <div class="rfc-content">
+        <RankProgress
+          variant="hero"
+          :tier="tier"
+          :division="division"
+          :lp="lp"
+          :next-target-weight-kg="nextTargetWeightKg"
+          :next-target-reps="nextTargetReps"
+          :trust="trust"
+          :peak-tier="peakTier"
+          :peak-division="peakDivision"
+        />
+      </div>
     </div>
     <!-- Tappable to flip back, same as the front — there was no way back to the front except the
          explicit "Zurück" button before this; now the whole card is symmetric, tap it either way. -->
@@ -76,16 +78,18 @@ defineEmits<{ flip: []; stats: [] }>();
       @keydown.enter="$emit('flip')"
     >
       <b class="rfc-name">{{ name }}</b>
-      <RankExerciseBack
-        :tier="tier"
-        :division="division"
-        :lp="lp"
-        :peak-tier="peakTier"
-        :peak-division="peakDivision"
-        :primary-muscles="primaryMuscles"
-        :secondary-muscles="secondaryMuscles"
-        @stats="$emit('stats')"
-      />
+      <div class="rfc-content">
+        <RankExerciseBack
+          :tier="tier"
+          :division="division"
+          :lp="lp"
+          :peak-tier="peakTier"
+          :peak-division="peakDivision"
+          :primary-muscles="primaryMuscles"
+          :secondary-muscles="secondaryMuscles"
+          @stats="$emit('stats')"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -95,6 +99,12 @@ defineEmits<{ flip: []; stats: [] }>();
   position: relative;
   height: 380px;
   perspective: 1200px;
+  /* `.card`'s own padding (list-card.css) never actually applies here: `.flip-face` below is
+     `position: absolute; inset: 0`, and an absolutely-positioned child's containing block is its
+     ancestor's PADDING box — so inset:0 fills flush with the padding's own outer edge, covering
+     it entirely rather than sitting inside it. Zeroed here (not just dead weight) so it's not
+     read as "the padding" by anyone editing this file — `.flip-face` carries the real one. */
+  padding: 0;
 }
 .flip-face {
   position: absolute;
@@ -102,11 +112,35 @@ defineEmits<{ flip: []; stats: [] }>();
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* flex-start, not center: both faces put the title first, but front/back content below it
+     differs in height. Centering the whole stack would put the title at a different y on each
+     face. Pinning it to a fixed top offset and letting `.rfc-content` (flex: 1) center only the
+     part that varies keeps the title height identical on both faces — the two faces mirror each
+     other (same title row, same content-centering rule), not just share a component. */
+  justify-content: flex-start;
+  /* Same padding `.card` would have given this box, had `.rank-flip-card`'s own padding not been
+     neutralized by `inset: 0` above — the hero bar/back-face rank row were rendering flush
+     against the card's rounded edge without this. */
+  padding: var(--sp4);
   gap: var(--sp2);
   text-align: center;
   backface-visibility: hidden;
   transition: transform var(--dur-base) var(--ease-out);
+}
+@media (min-width: 900px) {
+  .flip-face {
+    padding: var(--sp6);
+  }
+}
+.rfc-content {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp2);
 }
 .flip-face-front {
   transform: rotateY(0deg);
