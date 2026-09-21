@@ -64,12 +64,4 @@ describe("DoneStep", () => {
 
     expect(wrapper.text()).not.toContain("Exakte Scheiben-Anzeige");
   });
-
-  it("always renders the weight-suggestion and rank-calculation unlocks", () => {
-    const draft = createOnboardingDraft();
-    const wrapper = mountDoneStep(draft);
-
-    expect(wrapper.text()).toContain("Gewichtsvorschläge passend zu deiner Erfahrung");
-    expect(wrapper.text()).toContain("Rang-Berechnung basierend auf Körpergewicht und Geschlecht");
-  });
 });

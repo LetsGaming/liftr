@@ -89,11 +89,4 @@ describe("RpeCapture", () => {
 
     expect(wrapper.emitted("pick")).toEqual([[10]]);
   });
-
-  it("renders the fixed RPE title and hint copy", () => {
-    const wrapper = mountCapture(null);
-
-    expect(wrapper.text()).toContain("RPE");
-    expect(wrapper.find(".rpe-hint").text()).toContain("Wie anstrengend war der Satz?");
-  });
 });

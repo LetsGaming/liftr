@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  riegelPredictedTimeS,
-  nearestRunCategory,
-  runRankValue,
-  RUN_CATEGORIES,
-  RUN_CATEGORY_DISTANCE_M,
-} from "@liftr/shared";
+import { riegelPredictedTimeS, nearestRunCategory, runRankValue } from "@liftr/shared";
 
 describe("riegelPredictedTimeS", () => {
   describe("default exponent (1.06) for non-mile target categories", () => {

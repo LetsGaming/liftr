@@ -6,6 +6,10 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Fixed
+
+- **Renaming a routine (or otherwise editing it without touching its exercises) could silently wipe its whole exercise list, or reset its position in the list back to the top.** A recent dependency update changed how partial edits were validated, so a save that only changed the name was treated as if it had also explicitly cleared the exercises and reset the order.
+
 ### Changed
 
 - **Documentation overhaul (no app behavior changed).** Fixed several docs that still described the old single-account/single-shared-token login (now years out of date) as if it were current, corrected a handful of stale technical references (an old rate-limit description, a renamed internal module), documented a few real features that had no write-up yet (the Health Connect XP bonus, the Android update checker, offline sync's stuck-item handling), added a missing architecture decision record for the login/session system, and trimmed outdated status-tracking clutter from the design docs.
