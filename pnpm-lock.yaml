@@ -8340,8 +8340,6 @@ snapshots:
 
   quick-format-unescaped@4.0.4: {}
 
-  quick-format-unescaped@4.0.4: {}
-
   readable-stream@3.6.2:
     dependencies:
       inherits: 2.0.4
