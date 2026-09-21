@@ -48,6 +48,17 @@ const routineInput = z.object({
   exercises: z.array(routineExerciseInput).default([]),
 });
 
+// A hand-written partial schema, not `routineInput.partial()` — zod 4's `.partial()` keeps
+// `.default(...)` on the partial'd fields (zod 3 stripped it), so an omitted `orderIndex`/
+// `exercises` would arrive here as `0`/`[]` rather than `undefined`, and the handler below
+// would silently reset the order or wipe the whole exercise list on a plain rename. See
+// plannedRoutes.ts's `updateInput` for the same pattern.
+const routinePatchInput = z.object({
+  name: z.string().min(1).max(500).optional(),
+  orderIndex: z.number().int().optional(),
+  exercises: z.array(routineExerciseInput).optional(),
+});
+
 const routineIdParams = z.object({ id: z.string() });
 const okResponse = z.object({ ok: z.literal(true) });
 
@@ -76,7 +87,7 @@ export function registerRoutineRoutes(app: ZodFastifyInstance, db: AppDb) {
   // PATCH /api/routines/:id — edit name/order, or replace the exercise list wholesale.
   app.patch(
     "/api/routines/:id",
-    { schema: { params: routineIdParams, body: routineInput.partial(), response: { 200: okResponse } } },
+    { schema: { params: routineIdParams, body: routinePatchInput, response: { 200: okResponse } } },
     async (req) => {
       const { id } = req.params;
       const body = req.body;
@@ -85,7 +96,7 @@ export function registerRoutineRoutes(app: ZodFastifyInstance, db: AppDb) {
       if (body.name !== undefined || body.orderIndex !== undefined) {
         await updateRoutineMeta(db, req.userId, id, { name: body.name, orderIndex: body.orderIndex });
       }
-      if (body.exercises) {
+      if (body.exercises !== undefined) {
         await deleteRoutineExercises(db, id);
         await insertRoutineExercises(db, id, body.exercises);
       }

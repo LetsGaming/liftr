@@ -19,9 +19,10 @@
 // into SheetModal's #header slot, which the stub below forwards unstubbed), not in RouteWizard.vue
 // itself.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defineComponent } from "vue";
 import RouteWizard from "~client/components/route-wizard/RouteWizard.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
+import { createSheetModalStub } from "../../helpers/stubRouteWizardSheet";
+import { RouteMapEditorStub } from "../../helpers/stubRouteMapEditor";
 
 const { createMock, updateMock, previewMock, detailMock, sheetDismissSpy } = vi.hoisted(() => ({
   createMock: vi.fn(),
@@ -39,23 +40,7 @@ vi.mock("~client/services/plannedRouteService", () => ({
   getPlannedRouteDetail: detailMock,
 }));
 
-const SheetModalStub = defineComponent({
-  emits: ["close"],
-  methods: {
-    dismiss() {
-      sheetDismissSpy();
-      this.$emit("close");
-    },
-  },
-  template: `<div class="sheet-stub"><slot name="header" /><div class="sheet-body"><slot /></div></div>`,
-});
-
-const RouteMapEditorStub = defineComponent({
-  name: "RouteMapEditor",
-  props: ["waypoints", "routedPoints", "approximate", "closed", "initialCenter"],
-  emits: ["add", "move", "remove"],
-  template: `<div class="map-stub" :data-count="waypoints.length"></div>`,
-});
+const SheetModalStub = createSheetModalStub(sheetDismissSpy);
 
 function mountWizard(props: Record<string, unknown> = {}) {
   return mountWithProviders(RouteWizard, {

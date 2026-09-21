@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { hashPassword, verifyPassword } from "~server/lib/passwords.js";
 
 describe("hashPassword / verifyPassword", () => {
@@ -26,7 +26,10 @@ describe("hashPassword / verifyPassword", () => {
     expect(parts).toHaveLength(6);
     const [algo, n, r, p, salt, digest] = parts;
     expect(algo).toBe("scrypt");
-    expect(n).toBe("131072");
+    // N is intentionally much lower than production under Vitest (see passwords.ts's own
+    // comment on SCRYPT_N) — the "production params are what actually ship" guarantee is
+    // pinned separately below, without this file's own tests paying full production cost.
+    expect(n).toBe("1024");
     expect(r).toBe("8");
     expect(p).toBe("1");
     expect(salt).toMatch(/^[0-9a-f]+$/);
@@ -37,4 +40,21 @@ describe("hashPassword / verifyPassword", () => {
     await expect(verifyPassword("whatever", "not-a-real-hash")).resolves.toBe(false);
     await expect(verifyPassword("whatever", "scrypt:131072:8:1:deadbeef")).resolves.toBe(false);
   });
+
+  it("uses full production-strength cost parameters (N=131072) outside of Vitest", async () => {
+    // Prove the test-speed shortcut in passwords.ts (SCRYPT_N gated on VITEST=true) can't
+    // accidentally ship a weakened hash: temporarily hide the env var Vitest itself sets, force
+    // a fresh module instance to pick that up, and check what it actually produces.
+    const originalVitestEnv = process.env.VITEST;
+    delete process.env.VITEST;
+    vi.resetModules();
+    try {
+      const prodModule = await import("~server/lib/passwords.js");
+      const hash = await prodModule.hashPassword("whatever");
+      expect(hash.split(":").slice(0, 4)).toEqual(["scrypt", "131072", "8", "1"]);
+    } finally {
+      process.env.VITEST = originalVitestEnv;
+      vi.resetModules();
+    }
+  }, 20000);
 });

@@ -43,16 +43,6 @@ describe("GET /api/rank-events", () => {
     expect(todayRow.flaggedCount).toBe(1);
   });
 
-  it("excludes rank events older than the 7-day rolling window", async () => {
-    const { app, db } = await createTestApp();
-    registerRankEventsRoutes(app, db);
-    const exercise = await insertTestExercise(db);
-    const longAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    await db.insert(rankEvents).values({ exerciseId: exercise.id, tier: "apprentice", division: 3, occurredAt: longAgo, plausibilityReason: null });
-
-    const res = await app.inject({ method: "GET", url: "/api/rank-events" });
-
-    const body = res.json() as RankEventRow[];
-    expect(body.reduce((sum, r) => sum + r.count, 0)).toBe(0);
-  });
+  // The 7-day rolling-window exclusion is `computeRankEventsByWeekday`'s own logic, not this
+  // route's — covered by tests/server/services/rankService.test.ts, which this thin route wraps.
 });
