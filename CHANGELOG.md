@@ -6,6 +6,8 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-09-21
+
 ### Fixed
 
 - **Failing Release CI/CD** A duplicate version entry for pnpm caused the release pipeline to fail.
