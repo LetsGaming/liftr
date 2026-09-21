@@ -76,6 +76,12 @@ export function configureApp(
   // server-side but returned to the client as a bare 500 with no internal detail.
   typedApp.setErrorHandler((error: FastifyError, request, reply) => {
     if (error instanceof ZodError || error.code === "FST_ERR_VALIDATION") {
+      // Always logged (not gated behind env.verboseLogging like the onResponse hook below) — a
+      // 400 body reaches the client with this same `detail`, but without this, the *server*
+      // side of a validation failure was otherwise unlogged entirely by default, making a
+      // recurring client-side bug (a bad request shape from a real device) undiagnosable from
+      // server logs alone.
+      request.log.warn({ method: request.method, url: request.url, detail: error.message }, "request validation failed");
       return reply.code(400).send({ error: "invalid_request", detail: error.message });
     }
     if (error instanceof NotFoundError) {

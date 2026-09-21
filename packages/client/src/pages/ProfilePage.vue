@@ -69,7 +69,13 @@ const {
   adjustBarWeight,
   saveEquipmentAndGymCard,
 } = useGymSetup(settingsStore);
-const { healthConnectStatus, healthConnectBusy, healthConnectAvailable, connectHealthConnect } = useHealthConnectImport();
+const {
+  healthConnectStatus,
+  healthConnectBusy,
+  healthConnectAvailable,
+  healthConnectConnected,
+  connectHealthConnect,
+} = useHealthConnectImport();
 const { exporting, exportError, exportData } = useDataExport();
 
 // Native-only — the web build always talks to whatever origin it's served from, no server
@@ -679,11 +685,12 @@ async function saveWeight() {
     <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Health Connect</h2>
       <p class="hint">
-        Läufe, die du mit deiner Uhr aufgezeichnet hast, automatisch importieren — inklusive Route, sobald Health
-        Connect sie liefert.
+        Läufe, die du mit deiner Uhr aufgezeichnet hast, importieren — inklusive Route, sobald Health Connect sie
+        liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button
+        stößt eine Synchronisierung jederzeit sofort an.
       </p>
       <button class="btn-primary" :disabled="healthConnectBusy" @click="connectHealthConnect">
-        {{ healthConnectBusy ? "Verbinde…" : "Health Connect verbinden" }}
+        {{ healthConnectBusy ? "Synchronisiere…" : healthConnectConnected ? "Jetzt synchronisieren" : "Health Connect verbinden" }}
       </button>
       <p v-if="healthConnectStatus" class="current">{{ healthConnectStatus }}</p>
     </section>

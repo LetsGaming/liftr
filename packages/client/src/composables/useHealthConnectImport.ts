@@ -1,16 +1,19 @@
 /**
  * Health Connect status/import card. Native-only (Android), so the whole card is hidden on
- * web/iOS builds rather than shown broken (see isHealthConnectAvailable() re-export). One-time
- * permission grant here; the actual import check then happens automatically on every app resume
- * (see syncStore.ts). Extracted out of ProfilePage.vue — that file mixed six+ unrelated settings
- * concerns together.
+ * web/iOS builds rather than shown broken (see isHealthConnectAvailable() re-export). Permission
+ * grant here; the actual import check then also happens automatically on every app resume (see
+ * syncStore.ts) — `healthConnectConnected` tracks which state the button is in (see its own
+ * comment) so that's visible in the UI instead of both states sharing one "verbinden" label.
+ * Extracted out of ProfilePage.vue — that file mixed six+ unrelated settings concerns together.
  */
 import { ref } from "vue";
 import {
+  checkHealthConnectPermissions,
   importNewHealthConnectWorkouts,
   isHealthConnectAvailable,
   requestHealthConnectPermissions,
 } from "../health/healthConnect";
+import { ApiError } from "../lib/api";
 
 export function useHealthConnectImport() {
   const healthConnectStatus = ref("");
@@ -19,12 +22,21 @@ export function useHealthConnectImport() {
   // Health.isHealthAvailable() — see healthConnect.ts) so the card's v-if needs a resolved ref
   // rather than calling the async function directly in the template.
   const healthConnectAvailable = ref(false);
-  void isHealthConnectAvailable().then((v) => (healthConnectAvailable.value = v));
+  // Drives the button's label ("Verbinden" vs "Jetzt synchronisieren") and the hint text below
+  // it — without this, a user who already granted permission (so the button's only remaining
+  // job is to trigger an immediate re-sync) saw the exact same "verbinden" wording as a first-time
+  // connect, with nothing telling them this tap is a sync, not a fresh connection.
+  const healthConnectConnected = ref(false);
+  void isHealthConnectAvailable().then(async (v) => {
+    healthConnectAvailable.value = v;
+    if (v) healthConnectConnected.value = (await checkHealthConnectPermissions()).granted;
+  });
 
   async function connectHealthConnect() {
     healthConnectBusy.value = true;
     try {
       const result = await requestHealthConnectPermissions();
+      healthConnectConnected.value = result.granted;
       if (!result.granted) {
         healthConnectStatus.value =
           result.missing.length > 0
@@ -32,14 +44,29 @@ export function useHealthConnectImport() {
             : "Health Connect ist nicht verfügbar.";
         return;
       }
-      const count = await importNewHealthConnectWorkouts();
-      healthConnectStatus.value = count > 0 ? `${count} Lauf/Läufe importiert.` : "Verbunden — keine neuen Läufe gefunden.";
+      const { imported, failed } = await importNewHealthConnectWorkouts();
+      if (imported === 0 && failed === 0) {
+        healthConnectStatus.value = "Verbunden — keine neuen Läufe gefunden.";
+      } else if (failed === 0) {
+        healthConnectStatus.value = `Verbunden — ${imported} Lauf/Läufe synchronisiert.`;
+      } else {
+        healthConnectStatus.value = `Verbunden — ${imported} Lauf/Läufe synchronisiert, ${failed} fehlgeschlagen (wird beim nächsten App-Start erneut versucht).`;
+      }
     } catch (err) {
-      healthConnectStatus.value = err instanceof Error ? err.message : "Verbindung fehlgeschlagen.";
+      // ApiError carries the server's actual validation reason (see api.ts) — surfacing it here
+      // (rather than the generic "POST ... failed: 400" from err.message) is what turned this
+      // failure mode from "no further logs" into something the user (and support) can act on.
+      healthConnectStatus.value = err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : "Verbindung fehlgeschlagen.";
     } finally {
       healthConnectBusy.value = false;
     }
   }
 
-  return { healthConnectStatus, healthConnectBusy, healthConnectAvailable, connectHealthConnect };
+  return {
+    healthConnectStatus,
+    healthConnectBusy,
+    healthConnectAvailable,
+    healthConnectConnected,
+    connectHealthConnect,
+  };
 }

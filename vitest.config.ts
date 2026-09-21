@@ -102,6 +102,8 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["tests/client/components/**", "jsdom"],
       ["tests/client/pages/**", "jsdom"],
+      // healthConnect.test.ts uses localStorage directly (lastCheck persistence).
+      ["tests/client/health/**", "jsdom"],
     ],
   },
 });
