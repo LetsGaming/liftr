@@ -17,7 +17,7 @@
  */
 import AppIcon from "./AppIcon.vue";
 
-const props = defineProps<{
+defineProps<{
   titlePlaceholder?: string;
   isConfirmingClose?: boolean;
   steps?: Array<{ key: string; label: string }>;

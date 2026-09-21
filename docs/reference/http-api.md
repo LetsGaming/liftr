@@ -657,7 +657,9 @@ Response `201`: the created routine row (no response schema declared on this rou
 ### `PATCH /api/routines/:id`
 Edit name/order, or replace the exercise list wholesale (any combination of fields).
 
-Params: `{ id: string }` · Body: `routineInput.partial()` (all fields above, all optional)
+Params: `{ id: string }` · Body: `routinePatchInput` (all fields above, all optional — a field
+that's omitted is left untouched, not reset to its create-time default; `exercises: []` sent
+explicitly still clears the list)
 
 Response `200`: `{ ok: true }`
 

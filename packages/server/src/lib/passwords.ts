@@ -13,8 +13,18 @@ const KEY_LENGTH = 64;
 
 /** OWASP-recommended scrypt cost parameters for an interactive login KDF (2024 guidance). scrypt's
  *  memory requirement is ~128 * N * r bytes, which for these values is ~128 MiB, so callers must
- *  pass an explicit `maxmem` above Node's 32 MiB default or scrypt throws ERR_CRYPTO_INVALID_SCRYPT_PARAMS. */
-const SCRYPT_N = 131072; // 2^17
+ *  pass an explicit `maxmem` above Node's 32 MiB default or scrypt throws ERR_CRYPTO_INVALID_SCRYPT_PARAMS.
+ *
+ *  Vitest sets `VITEST=true` for every process it runs — an env var a real deployment can never
+ *  have set, so this can't accidentally weaken production hashing. The test suite exercises the
+ *  real hashPassword/verifyPassword round-trip dozens of times (login, setup, rate-limit loops,
+ *  password/username changes), and at full cost (~0.5-1s/hash) that alone used to dominate the
+ *  whole suite's wall time. A drastically cheaper N only under Vitest keeps the real code path
+ *  under test while cutting CI time by tens of seconds; the stored format (scrypt:N:r:p:salt:hash)
+ *  is already parameter-agnostic per-hash (see verifyPassword below), so this changes nothing
+ *  about how any given hash is verified. See tests/server/lib/passwords.test.ts for a regression
+ *  test pinning that production parameters are what actually ship. */
+const SCRYPT_N = process.env.VITEST === "true" ? 1024 : 131072; // 2^10 (tests) vs 2^17 (production)
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const SCRYPT_MAXMEM = 256 * 1024 * 1024;

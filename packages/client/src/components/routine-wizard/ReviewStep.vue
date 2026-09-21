@@ -4,7 +4,7 @@
  *  for, did the generator swap in a substitute because you lack equipment, and does one exercise
  *  carry a lopsided share of the routine's sets. None of them block Save — they inform, they
  *  don't gate. Name stays editable via the wizard's persistent header field. */
-import { computed, toRef } from "vue";
+import { toRef } from "vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
