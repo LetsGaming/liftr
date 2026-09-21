@@ -6,9 +6,11 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.5.3] - 2026-09-21
+
 ### Fixed
 
-- **A fresh `docker compose up --build` failed outright** with `Failed to read patch file /app/patches/capacitor-health.patch: No such file or directory`. The build stages ran `pnpm install` without ever copying the `patches/` directory the lockfile's `capacitor-health` patch depends on — only worked before because of stale cached layers; a real rebuild always hit this.
+- **A fresh `docker compose up --build` failed outright** with `Failed to read patch file /app/patches/capacitor-health.
 
 ## [1.5.2] - 2026-09-21
 
