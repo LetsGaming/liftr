@@ -6,9 +6,11 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.5.4] - 2026-09-21
+
 ### Fixed
 
-- **A fresh `docker compose up --build` still failed after the previous fix**, this time with `better-sqlite3 install: node-gyp rebuild exited with exit status 1` / "Could not find any Python installation to use". `better-sqlite3`'s native addon needs Python plus a C++ toolchain to compile, which the `node:22-slim` base image doesn't include by default; the shipped image installs and removes that toolchain in the same layer so the final image doesn't carry it.
+- **A fresh `docker compose up --build` still failed after the previous fix** , this time with `better-sqlite3 install: node-gyp rebuild exited with exit status 1` / "Could not find any Python installation to use".
 
 ## [1.5.3] - 2026-09-21
 
