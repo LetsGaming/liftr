@@ -6,11 +6,15 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Fixed
+
+- **A fresh `docker compose up --build` still failed after the previous fix**, this time with `better-sqlite3 install: node-gyp rebuild exited with exit status 1` / "Could not find any Python installation to use". `better-sqlite3`'s native addon needs Python plus a C++ toolchain to compile, which the `node:22-slim` base image doesn't include by default; the shipped image installs and removes that toolchain in the same layer so the final image doesn't carry it.
+
 ## [1.5.3] - 2026-09-21
 
 ### Fixed
 
-- **A fresh `docker compose up --build` failed outright** with `Failed to read patch file /app/patches/capacitor-health.
+- **A fresh `docker compose up --build` failed outright** with `Failed to read patch file /app/patches/capacitor-health.patch: No such file or directory`. The build stages ran `pnpm install` without ever copying the `patches/` directory the lockfile's `capacitor-health` patch depends on — only worked before because of stale cached layers; a real rebuild always hit this.
 
 ## [1.5.2] - 2026-09-21
 
