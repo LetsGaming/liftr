@@ -256,6 +256,22 @@ describe("PATCH /api/routines/:id", () => {
     expect(listRes.json()[0].routineExercises).toHaveLength(1);
   });
 
+  it("leaves orderIndex untouched when it is omitted", async () => {
+    const { app, db } = await createTestApp();
+    registerRoutineRoutes(app, db);
+    const [routine] = await db.insert(routines).values({ name: "R", orderIndex: 3 }).returning();
+
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/routines/${routine!.id}`,
+      payload: { name: "Renamed" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const listRes = await app.inject({ method: "GET", url: "/api/routines" });
+    expect(listRes.json()[0]).toMatchObject({ name: "Renamed", orderIndex: 3 });
+  });
+
   it("rejects a malformed body (wrong type for name)", async () => {
     const { app, db } = await createTestApp();
     registerRoutineRoutes(app, db);

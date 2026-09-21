@@ -91,7 +91,6 @@ const {
   finishSequenceDone,
   sessionXp,
   sessionRankUps,
-  sessionCaptions,
   captionRows,
   logSetXp,
   consistencyBonusXp,

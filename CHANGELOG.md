@@ -6,6 +6,10 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Fixed
+
+- **Renaming a routine (or otherwise editing it without touching its exercises) could silently wipe its whole exercise list, or reset its position in the list back to the top.** A recent dependency update changed how partial edits were validated, so a save that only changed the name was treated as if it had also explicitly cleared the exercises and reset the order.
+
 ### Changed
 
 - **Rank cards, the rank ladder, and tier badges got a visual rework.** Rank tiles now carry a subtle tier-tinted wash and show your next weight/rep target as two small chips instead of a plain text line; tier badges above Initiate now grow escalating side "wings" as you climb; tapping a rank card flips it over to show your overall account rank (with a muscle-recovery figure and a link into that exercise's full stats) instead of expanding an inline chart; and the tier ladder now sits in front of a soft violet-to-blue backdrop, with tiers above your current one keeping their real color instead of fading to gray.

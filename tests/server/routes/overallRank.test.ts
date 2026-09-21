@@ -40,21 +40,12 @@ async function logSet(exerciseId: string, weightKg: number, reps: number, logged
   });
 }
 
-/** Peak corroboration (XP/rank balancing redesign §3) requires a second, distinct day at the
- *  same or stronger performance before a peak is established. */
-async function establishCorroboratedPeak(exerciseId: string, weightKg: number, reps: number) {
-  await logSet(exerciseId, weightKg, reps);
-  await logSet(exerciseId, weightKg, reps, new Date(Date.now() - 24 * 60 * 60 * 1000));
-}
-
 describe("GET /api/overall-rank", () => {
-  it("returns null current/peak when nothing has been ranked yet", async () => {
-    const res = await app.inject({ method: "GET", url: "/api/overall-rank" });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ current: null, peak: null });
-  });
-
+  // The empty-state (both null) and corroborated-peak cases are `getOverallRank`'s own logic,
+  // not this route's — both are covered by tests/server/services/overallRankService.test.ts,
+  // which this thin route wraps. This route's job is HTTP status + the Zod response shape,
+  // which the test below already pins (a populated current band alongside a still-null peak
+  // exercises the shared, nullable `bandSchema` both ways in one request).
   it("returns the aggregated current band once an exercise has a computed rank", async () => {
     const exercise = await insertTestExercise(db);
     await seedStandards(exercise.id);
@@ -69,18 +60,5 @@ describe("GET /api/overall-rank", () => {
     expect(typeof body.current.division).toBe("number");
     expect(typeof body.current.lp).toBe("number");
     expect(body.peak).toBeNull(); // a single, uncorroborated session doesn't establish a peak yet
-  });
-
-  it("returns the aggregated peak band once a corroborated peak exists", async () => {
-    const exercise = await insertTestExercise(db);
-    await seedStandards(exercise.id);
-    await establishCorroboratedPeak(exercise.id, 90, 8);
-    await recomputeRankForExercise(db, OWNER_USER_ID, exercise.id);
-
-    const res = await app.inject({ method: "GET", url: "/api/overall-rank" });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.peak).toMatchObject({ tier: "athlete" });
   });
 });

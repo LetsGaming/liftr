@@ -48,35 +48,7 @@ describe("GET /api/readiness", () => {
     expect(res.json()).toEqual([{ slug: "chest", lastTrainedAt: loggedAt.toISOString(), wasPrimary: true }]);
   });
 
-  it("reports secondary involvement as wasPrimary false when that's the most recent role", async () => {
-    const { app, db } = await createTestApp();
-    registerReadinessRoutes(app, db);
-    const [triceps] = await db.insert(muscles).values({ slug: "triceps", svgRegionKey: "ms-tri" }).returning();
-    const exercise = await insertTestExercise(db, { slug: "bench-press" });
-    await db.insert(exerciseMuscles).values({ exerciseId: exercise.id, muscleId: triceps!.id, role: "secondary" });
-    const [workout] = await db
-      .insert(workouts)
-      .values({ clientId: "w-1", startedAt: new Date(), pausedSeconds: 0 })
-      .returning();
-    const [we] = await db
-      .insert(workoutExercises)
-      .values({ workoutId: workout!.id, exerciseId: exercise.id, orderIndex: 0 })
-      .returning();
-    await db.insert(sets).values({
-      workoutExerciseId: we!.id,
-      setIndex: 0,
-      weightKg: 60,
-      reps: 8,
-      kind: "normal",
-      isWarmup: false,
-      loggedAt: new Date("2026-09-01T10:00:00Z"),
-      clientId: "s-1",
-    });
-
-    const res = await app.inject({ method: "GET", url: "/api/readiness" });
-
-    const body = res.json();
-    expect(body).toHaveLength(1);
-    expect(body[0]).toMatchObject({ slug: "triceps", wasPrimary: false });
-  });
+  // The secondary-role (wasPrimary: false) case is `readinessService`'s own logic, not this
+  // route's — covered by tests/server/services/readinessService.test.ts, which this thin route
+  // wraps. This route's job is HTTP status + the Zod response shape, already pinned above.
 });
