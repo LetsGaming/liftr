@@ -43,8 +43,19 @@ export async function buildExportZip(db: LiftrDb, userId: string): Promise<Buffe
   );
 
   const runsCsv = toCsv(
-    ["id", "source", "name", "startedAt", "distanceM", "durationS", "avgPaceSPerKm", "avgHr", "elevationGainM"],
-    runRows.map((r) => [r.id, r.source, r.name, r.startedAt.toISOString(), r.distanceM, r.durationS, r.avgPaceSPerKm, r.avgHr, r.elevationGainM]),
+    ["id", "source", "activityType", "name", "startedAt", "distanceM", "durationS", "avgPaceSPerKm", "avgHr", "elevationGainM"],
+    runRows.map((r) => [
+      r.id,
+      r.source,
+      r.activityType,
+      r.name,
+      r.startedAt.toISOString(),
+      r.distanceM,
+      r.durationS,
+      r.avgPaceSPerKm,
+      r.avgHr,
+      r.elevationGainM,
+    ]),
   );
 
   const bodyweightCsv = toCsv(

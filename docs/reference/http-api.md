@@ -717,14 +717,16 @@ Response `200` (no explicit schema): `{ exercises: [...] }` — shape produced b
 Source: [`packages/server/src/routes/runOverallRank.ts`](../../packages/server/src/routes/runOverallRank.ts)
 
 The running analog of [Overall rank](#overall-rank-overallrankts) above — see
-[rank-engine.md](../concepts/rank-engine.md#running-ranks) for why this is a genuinely separate
-aggregate from Overall Lifter Rank rather than folded into it.
+[rank-engine.md](../concepts/rank-engine.md#cardio-ranks-running-walking-hiking) for why this is a
+genuinely separate aggregate from Overall Lifter Rank rather than folded into it.
 
 ### `GET /api/runs/overall-rank`
-Account-level "how good a runner am I overall" aggregate. Thin schema wrapper — aggregation logic
+Account-level "how good a runner am I overall" aggregate. No query parameters — only activities
+whose registry entry sets `countsTowardOverallRunnerRank` feed it (running only, today; walking
+and hiking are excluded — see `cardioActivities.ts`). Thin schema wrapper — aggregation logic
 lives in `services/overallRunnerRankService.ts`, which reuses the exact same
-`computeOverallRank`/`computeOverallPeak` math as the strength version, just averaged over
-`runRanks` (one row per category) instead of `ranks` (one row per exercise).
+`computeOverallRank`/`computeOverallPeak` math as the strength version, just averaged over the
+counted activities' `runRanks` rows instead of `ranks` (one row per exercise).
 
 Response `200`:
 ```ts
@@ -745,16 +747,18 @@ The running analog of [PRs](#prs-prsts) above. Unlike `prs.ts`, no service layer
 off the repository.
 
 ### `GET /api/runs/prs`
-Running Personal Records ledger.
+Cardio Personal Records ledger — every ranked activity type (run/walk/hike) together, no filter.
 
 Response `200`:
 ```ts
 Array<{
   id: string;
-  category: RunCategory;   // "mile" | "5k" | "10k" | "half_marathon" | "marathon"
-  kind: "time" | "speed";
-  value: number;           // seconds for kind "time", m/s for kind "speed"
-  runId: string;           // links back to the run that set this PR
+  activityType: "run" | "walk" | "hike";
+  category: RunCategory | "all";  // "all" for a single-speed activity's one bucket (walk/hike)
+  kind: "time" | "speed";         // single-speed activities only ever have "speed" — no fixed
+                                   // category distance to derive a "time" PR from
+  value: number;                  // seconds for kind "time", m/s for kind "speed"
+  runId: string;                  // links back to the run that set this PR
   achievedAt: string;
 }>
 ```
@@ -765,22 +769,27 @@ Array<{
 
 Source: [`packages/server/src/routes/runRanks.ts`](../../packages/server/src/routes/runRanks.ts)
 
-The running analog of [Ranks](#ranks-ranksts) above — see
-[rank-engine.md](../concepts/rank-engine.md#running-ranks) for the five categories, the
-Riegel-adjustment step, and why manual runs never appear here (rank recompute only ever runs for
-GPS-tracked runs).
+The cardio analog of [Ranks](#ranks-ranksts) above — see
+[rank-engine.md](../concepts/rank-engine.md#cardio-ranks-running-walking-hiking) for the two rank
+shapes (running's five categories vs. walking/hiking's single bucket), the Riegel-adjustment step,
+and why manual runs never appear here (rank recompute only ever runs for GPS-tracked activities).
 
 ### `GET /api/runs/ranks`
-Every running category with a computed rank, sorted by `lp` descending.
+Every rank bucket with a computed rank for one activity type, sorted by `lp` descending.
+
+Query: `{ activityType?: "run" | "walk" | "hike" }` — defaults to `"run"`. Every rank bucket in
+the response belongs to this one activity type; fetch each activity type separately (the client's
+`runRankStore` does this and combines the results).
 
 Response `200`:
 ```ts
 Array<{
-  category: RunCategory;          // "mile" | "5k" | "10k" | "half_marathon" | "marathon"
+  activityType: "run" | "walk" | "hike";
+  category: RunCategory | "all";  // "all" for a single-speed activity's one bucket (walk/hike)
   tier: Tier;
   division: number;
   lp: number;
-  bestSpeedMps: number | null;    // Riegel-adjusted best speed, m/s
+  bestSpeedMps: number | null;    // Riegel-adjusted for running; raw average speed for walk/hike
   trust: "real" | "derived" | "synthetic" | null;
   nextTargetSpeedMps: number | null;
   // Peak snapshot — null only for a row never recomputed since peak tracking was added; a normal
@@ -808,6 +817,8 @@ Common run shape (`runResponse`):
 {
   id: string;
   source: "gpx" | "fit" | "manual" | "healthconnect";
+  activityType: "run" | "walk" | "hike" | "other"; // "run"/"walk"/"hike" get a rank ladder;
+                                                     // "other" earns XP/streak only
   name: string | null;
   startedAt: Date;
   distanceM: number;
@@ -848,24 +859,40 @@ Notable statuses (all inline, not the generic `invalid_request` shape):
 ### `POST /api/runs/healthconnect`
 Native in-app import via `capacitor-health`. `platformId` (Health Connect's own record id) is the
 idempotency key — replaying the same `platformId` returns the same run's `id` instead of
-duplicating it.
+duplicating it. `workoutType` is Health Connect's own raw exercise-type string (e.g. `"RUNNING"`,
+`"WALKING"`, `"HIKING"`, `"BIKING"`); classified server-side into an `activityType` via the
+registry in `cardioActivities.ts`, so the mapping stays re-classifiable without a client release.
+
+`points` may be empty for a workout Health Connect withheld the route for (consent not granted for
+that specific record, or no route ever recorded) — in that case `distanceM`/`durationS` (the
+watch's own aggregate) are the fallback and `startedAt` is required, since there's no first point
+to derive it from. At least one of `points` or `distanceM`+`durationS` must be present; a payload
+with neither is rejected. A route-less import still earns XP/streak, but never a rank — no GPS
+trace to independently check the claimed distance against.
 
 Request body:
 ```ts
 {
   platformId: string;    // min length 1
   name?: string | null;
-  points: Array<{
+  workoutType: string;   // min length 1 — Health Connect's raw exercise-type string
+  startedAt?: Date;      // coerced; required when points is empty
+  distanceM?: number;    // positive; required (with durationS) when points is empty
+  durationS?: number;    // positive
+  points?: Array<{
     t: Date;               // coerced
     lat: number;
     lon: number;
     ele?: number | null;
     hr?: number | null;
-  }>;                     // min 1
+  }>;                     // defaults to []
 }
 ```
 
 Response `200` (not 201 — this is an idempotent upsert): `runResponse`.
+
+Notable statuses: `400 { "error": "parse_failed", "detail": string }` — neither a usable route nor
+a distance/duration fallback was present.
 
 ### `DELETE /api/runs/:id`
 Cascades to `run_points` via FK. GPS-tracked runs *do* feed rank now (see
@@ -889,6 +916,7 @@ Request body:
   durationS: number;              // positive
   plannedRouteId?: string | null; // links this run back to a planned route (see Planned Routes below)
   elevationGainM?: number | null; // manual entry has no GPS track to derive this from, so it's taken as-is
+  activityType?: "run" | "walk" | "hike" | "other"; // defaults to "run"
 }
 ```
 

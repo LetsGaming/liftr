@@ -6,6 +6,35 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Added
+
+- **Walking and hiking are now tracked alongside running**, each with its own rank based on
+  average pace, its own Personal Records, and its own XP rate — separate from running because
+  they take real, different effort. Walking and hiking don't count toward your Overall Runner
+  Rank; the ranks page says so.
+- **A new Diagnose page** shows exactly what happened on every Health Connect sync — including
+  activities that were skipped and why (no route, route not shared, etc.) — so you can tell what
+  Liftr saw without guessing. Reachable from Profil → Konto & App → Diagnose; a re-scan button
+  lets you re-check the last 30 or 90 days if something was skipped before this existed.
+- A toast after an automatic Health Connect sync tells you what happened, when anything actually
+  imported or failed (a sync that found nothing new stays quiet, as before).
+
+### Changed
+
+- Health Connect imports now work even when a route wasn't shared for a workout — you still get
+  credit for the activity (distance, duration, XP), you just don't get a rank for it without GPS
+  data to verify the distance.
+- The "Letzte Aktivität" activity filter on the overview page now only shows filters for activity
+  types you actually have history for.
+- The Rekorde page's running-records section is now a cardio-records section, with walking and
+  hiking rows alongside the five running distances.
+
+### Fixed
+
+- A Health Connect workout whose route wasn't shared with Liftr (rather than never recorded at
+  all) used to be silently dropped — it now imports without a route, or is recorded as skipped
+  with a clear reason on the new Diagnose page.
+
 ## [1.5.4] - 2026-09-21
 
 ### Fixed

@@ -48,6 +48,7 @@ export async function getXpSummary(db: LiftrDb, userId: string): Promise<XpSumma
       loggedAt: r.startedAt,
       plausibilityMultiplier: r.plausibilityMultiplier ?? 1,
       source: r.source,
+      activityType: r.activityType,
     })),
   );
 

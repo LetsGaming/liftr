@@ -211,6 +211,7 @@ describe("run routes", () => {
         payload: {
           platformId: "hc-123",
           name: "HC run",
+          workoutType: "RUNNING",
           points: [
             { t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 },
             { t: "2026-01-03T08:01:00Z", lat: 52.001, lon: 13.001 },
@@ -219,12 +220,32 @@ describe("run routes", () => {
       });
 
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toMatchObject({ source: "healthconnect", name: "HC run" });
+      expect(res.json()).toMatchObject({ source: "healthconnect", activityType: "run", name: "HC run" });
+    });
+
+    it("classifies a WALKING workout as activityType 'walk'", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs/healthconnect",
+        payload: {
+          platformId: "hc-walk",
+          name: "HC walk",
+          workoutType: "WALKING",
+          points: [
+            { t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 },
+            { t: "2026-01-03T08:01:00Z", lat: 52.001, lon: 13.001 },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ activityType: "walk" });
     });
 
     it("is idempotent on platformId", async () => {
       const payload = {
         platformId: "hc-idempotent",
+        workoutType: "RUNNING",
         points: [
           { t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 },
           { t: "2026-01-03T08:01:00Z", lat: 52.001, lon: 13.001 },
@@ -240,22 +261,51 @@ describe("run routes", () => {
       const res = await app.inject({
         method: "POST",
         url: "/api/runs/healthconnect",
-        payload: { points: [{ t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 }] },
+        payload: { workoutType: "RUNNING", points: [{ t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 }] },
       });
 
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: "invalid_request" });
     });
 
-    it("rejects an empty points array", async () => {
+    it("rejects a body missing workoutType", async () => {
       const res = await app.inject({
         method: "POST",
         url: "/api/runs/healthconnect",
-        payload: { platformId: "hc-empty", points: [] },
+        payload: { platformId: "hc-no-type", points: [{ t: "2026-01-03T08:00:00Z", lat: 52.0, lon: 13.0 }] },
       });
 
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: "invalid_request" });
+    });
+
+    it("rejects an empty points array with neither distanceM nor durationS (nothing to import)", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs/healthconnect",
+        payload: { platformId: "hc-empty", workoutType: "RUNNING", points: [] },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({ error: "parse_failed" });
+    });
+
+    it("imports a route-less workout from distanceM/durationS when points is empty", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/runs/healthconnect",
+        payload: {
+          platformId: "hc-routeless",
+          workoutType: "WALKING",
+          startedAt: "2026-01-05T07:00:00Z",
+          distanceM: 4200,
+          durationS: 3000,
+          points: [],
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ activityType: "walk", distanceM: 4200, durationS: 3000 });
     });
   });
 

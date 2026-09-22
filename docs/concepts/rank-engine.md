@@ -295,62 +295,84 @@ a new catalog entry can't drag the aggregate down the moment it's added. Compute
 `GET /api/overall-rank` — no new derived-cache table, consistent with the "every derived value
 must be reconstructible from raw data" invariant.
 
-## Running ranks
+## Cardio ranks (running, walking, hiking)
 
-Runs get the same tier/division/LP treatment as lifts, computed **per category** rather than
-per exercise — parity with the section above, not a bolt-on. The engine lives in
+Cardio activities get the same tier/division/LP treatment as lifts, computed **per activity type
+and rank bucket** rather than per exercise — parity with the section above, not a bolt-on. Which
+activities exist, how each one ranks, and its trust/XP is declared in one registry,
+[`packages/shared/src/rank/cardioActivities.ts`](../../packages/shared/src/rank/cardioActivities.ts)
+— see `docs/adr/0011-cardio-activity-registry-and-single-speed-ladders.md` for why. The engine
+itself lives in
 [`packages/shared/src/rank/runStandards.ts`](../../packages/shared/src/rank/runStandards.ts) and
 [`packages/shared/src/math/riegel.ts`](../../packages/shared/src/math/riegel.ts), server-side
 recompute in `packages/server/src/services/runRankService.ts`'s `recomputeRunRank`.
 
-- **Five fixed categories**: Mile, 5K, 10K, Half Marathon, Marathon (`RUN_CATEGORIES` in
-  `riegel.ts`). Every run is bucketed into whichever category its distance is *nearest* to
-  (`nearestRunCategory`) — a category is derived from distance at read/recompute time, never
-  persisted as its own column.
-- **The Riegel-adjustment step**: a run's actual (distance, duration) is essentially never exactly
-  a category's canonical distance, so `riegelPredictedTimeS` predicts the equivalent finish time
-  *at* the assigned category's exact distance before ranking it, using Riegel's power-law
-  race-time-equivalence formula. The exponent is **not uniform across categories** — don't assume
-  or hardcode a single value; see `riegel.ts`'s own doc comment for the current numbers and the
-  Daniels'-VDOT validation behind picking a different exponent for Mile than for the rest. The
-  resulting Riegel-adjusted average speed (m/s, higher = better) is what actually gets resolved
-  against `resolveRank`'s thresholds — the same primitive lifts use, just fed a speed instead of a
-  skill score/load ratio.
-- **Standards data**: `RUN_ANCHOR_STANDARDS` in `runStandards.ts` supplies 5-tier per-category,
-  per-sex anchor speeds, run through the *exact same* `widenAnchorSpread` ->
+Two rank shapes, per the registry entry's `rank.mode`:
+
+- **`"distance-ladder"` (running only): five fixed categories** — Mile, 5K, 10K, Half Marathon,
+  Marathon (`RUN_CATEGORIES` in `riegel.ts`). Every run is bucketed into whichever category its
+  distance is *nearest* to (`nearestRunCategory`) — a category is derived from distance at
+  read/recompute time, never persisted as its own column. A run's actual (distance, duration) is
+  essentially never exactly a category's canonical distance, so `riegelPredictedTimeS` predicts
+  the equivalent finish time *at* the assigned category's exact distance before ranking it, using
+  Riegel's power-law race-time-equivalence formula. The exponent is **not uniform across
+  categories** — see `riegel.ts`'s own doc comment for the current numbers and the Daniels'-VDOT
+  validation behind picking a different exponent for Mile than for the rest.
+- **`"single-speed"` (walking, hiking): one bucket, no Riegel normalization.** The rank-comparable
+  speed is the activity's own raw `distanceM / durationS` — no category, no distance adjustment.
+  Additionally gated on `isRankEligible` (a minimum distance AND duration per activity — see
+  `cardioActivities.ts`): below the floor, an activity still earns XP/streak, it just never enters
+  the rank aggregate. This design replaced an earlier five-category walking ladder whose own
+  Riegel exponent contradicted its own anchor data (see ADR 0011) — walking/hiking pace is ranked
+  on quality (speed) alone, with XP already covering volume (distance).
+
+In both shapes, the resulting speed (m/s, higher = better) is what gets resolved against
+`resolveRank`'s thresholds — the same primitive lifts use, just fed a speed instead of a skill
+score/load ratio. Every rank bucket ("distance-ladder" or the single "all" bucket) is stored keyed
+by `(userId, activityType, category)`, where `category` is a `RunCategory` or the literal `"all"`.
+
+- **Standards data**: each registry entry's anchors (running's `RUN_ANCHOR_STANDARDS`,
+  walking's/hiking's single `SexedAnchors`) run through the *exact same* `widenAnchorSpread` ->
   `interpolateNineTierAnchors` -> `expand` pipeline described above for strength — no new
-  interpolation math, only new anchor data. See that file's own doc comment for the sourcing and
-  cross-validation this data went through before being trusted (it wasn't taken from a single
-  source at face value).
-- **Manual runs never earn rank.** `recomputeRunRank` only runs for GPS-tracked runs with points
-  (`services/runImportService.ts`'s `persistRun` gates the whole rank step on `source !== "manual"`
-  — see [Runs](../reference/http-api.md#runs-runsts) in the HTTP API reference). A manual entry has
+  interpolation math, only new anchor data. Running's anchors are `trust: "derived"` (independently
+  cross-validated against Daniels' VDOT); walking's and hiking's are `trust: "synthetic"`
+  (grounded in gait-speed research and a terrain-discount estimate respectively, neither
+  independently cross-validated) — see `cardioActivities.ts`'s own doc comments for the sourcing.
+- **Manual runs never earn rank.** `recomputeRunRank` only runs for GPS-tracked activities with
+  points (`services/runImportService.ts`'s `persistRun` gates the whole rank step on
+  `source !== "manual"` and the activity's `rank.mode !== "none"` — see
+  [Runs](../reference/http-api.md#runs-runsts) in the HTTP API reference). A manual entry has
   no `run_points` to independently corroborate distance against, so it's XP-only, same idea as the
   plausibility gate below being unable to run against it either. This mirrors the general "trust
   what can be independently checked" spirit of the whole rank engine.
 - **Peak, corroboration, decay, PR eligibility, and the plausibility floors** all reuse the exact
   same primitives lifts use (`ratchetPeak`, `computeCurrentBand`, `applySessionRecoveryGain`,
-  `PEAK_ELIGIBILITY_FLOOR`/`PR_ELIGIBILITY_FLOOR` from `rankService.ts`) — running doesn't fork any
-  of that machinery, only the metric (speed) and the recompute's data source (a category's run
-  history instead of an exercise's set history) differ.
-- **A run-specific plausibility gate**: `computeRunPlausibility`
-  (`packages/shared/src/rank/runPlausibility.ts`) is the run-side sibling of
+  `PEAK_ELIGIBILITY_FLOOR`/`PR_ELIGIBILITY_FLOOR` from `rankService.ts`) — cardio doesn't fork any
+  of that machinery, only the metric (speed) and the recompute's data source (a bucket's activity
+  history instead of an exercise's set history) differ. A single-speed activity's PR is
+  speed-only — there's no fixed category distance for a "time" PR to divide by.
+- **A cardio-specific plausibility gate**: `computeRunPlausibility`
+  (`packages/shared/src/rank/runPlausibility.ts`) is the cardio-side sibling of
   `computeWorkoutPlausibility` above — same "discount, never discard" spirit and the same
   `PLAUSIBILITY_FLOOR`, but two genuinely different heuristics: a **sustained-speed** check (a
-  same-run average pace faster than is physically sustainable) and a **distance-mismatch** check
-  (the stored `distanceM` disagreeing with an independent straight-line recomputation over the
-  run's own GPS points, `pathDistanceM`). Deliberately has no knowledge of `source` — the call
-  site is responsible for only ever invoking it for GPS-tracked runs, since a manual entry has
-  nothing to check `distanceM` against.
+  same-activity average pace faster than is physically sustainable, with a lower threshold for
+  walking/hiking than running) and a **distance-mismatch** check (the stored `distanceM`
+  disagreeing with an independent straight-line recomputation over the activity's own GPS points,
+  `pathDistanceM`). Deliberately has no knowledge of `source` — the call site is responsible for
+  only ever invoking it for GPS-tracked activities, since a manual entry has nothing to check
+  `distanceM` against.
 - **Overall Runner Rank is a separate aggregate from Overall Lifter Rank** — it is *not* merged
-  into the one aggregate described above. `getOverallRunnerRank`
+  into the one aggregate described above, and only counts activities whose registry entry sets
+  `countsTowardOverallRunnerRank` (running only, today — walking and hiking are excluded, both
+  because their standards are synthetic and because effort that takes no specific fitness
+  shouldn't move a number read as being about running; the client states this exclusion rather
+  than leaving it implicit). `getOverallRunnerRank`
   (`packages/server/src/services/overallRunnerRankService.ts`) reuses the exact same
-  `computeOverallRank`/`computeOverallPeak` math, just averaged over `runRanks` (one row per
-  category) instead of `ranks` (one row per exercise). Exposed via
+  `computeOverallRank`/`computeOverallPeak` math, just averaged over the counted activities'
+  `runRanks` rows instead of `ranks` (one row per exercise). Exposed via
   [`GET /api/runs/overall-rank`](../reference/http-api.md#run-overall-rank-runoverallrankts).
-  Keeping it separate rather than blending strength and running into one number preserves the same
-  "don't blend a lifter's squat with their 5K time into one meaningless composite" honesty the
-  per-exercise design already commits to at the top of this document.
+  There is no separate "Overall Walker/Hiker Rank" — each single-speed activity has exactly one
+  bucket, so that bucket's own rank card already is the aggregate.
 
 ## Further reading
 

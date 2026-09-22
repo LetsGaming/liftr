@@ -22,6 +22,7 @@ const getRunOverallRankMock = vi.mocked(getRunOverallRank);
 
 function makeRankRow(overrides: Partial<RunRankRow> = {}): RunRankRow {
   return {
+    activityType: "run",
     category: "5k",
     tier: "Silver",
     division: 2,
@@ -38,6 +39,7 @@ function makeRankRow(overrides: Partial<RunRankRow> = {}): RunRankRow {
 const prs: RunPrListItem[] = [
   {
     id: "run-pr-1",
+    activityType: "run",
     category: "10k",
     kind: "time",
     value: 2400,
@@ -70,9 +72,12 @@ describe("runRankStore", () => {
   });
 
   describe("loadRanks()", () => {
-    it("populates ranks on success", async () => {
+    // loadRanks() now fetches every ranked activity type (run/walk/hike) and flattens the
+    // results — mockImplementation keyed on the activityType argument mirrors that fan-out
+    // realistically, rather than a single queued return value per test.
+    it("populates ranks on success, combining every ranked activity type", async () => {
       const rows = [makeRankRow()];
-      getRunRanksMock.mockResolvedValue(rows);
+      getRunRanksMock.mockImplementation(async (activityType) => (activityType === "run" ? rows : []));
       const store = useRunRankStore();
 
       await store.loadRanks();
@@ -82,7 +87,7 @@ describe("runRankStore", () => {
       expect(store.ranksError).toBe(false);
     });
 
-    it("sets ranksError and leaves ranks alone on failure", async () => {
+    it("sets ranksError and leaves ranks alone if any activity type's fetch fails", async () => {
       getRunRanksMock.mockRejectedValue(new Error("network down"));
       const store = useRunRankStore();
 
@@ -94,13 +99,14 @@ describe("runRankStore", () => {
     });
 
     it("clears a previous ranksError on a subsequent successful call", async () => {
-      getRunRanksMock.mockRejectedValueOnce(new Error("network down"));
+      getRunRanksMock.mockRejectedValue(new Error("network down"));
       const store = useRunRankStore();
       await store.loadRanks();
       expect(store.ranksError).toBe(true);
 
       const rows = [makeRankRow()];
-      getRunRanksMock.mockResolvedValueOnce(rows);
+      getRunRanksMock.mockReset();
+      getRunRanksMock.mockImplementation(async (activityType) => (activityType === "run" ? rows : []));
       await store.loadRanks();
 
       expect(store.ranksError).toBe(false);
@@ -175,7 +181,7 @@ describe("runRankStore", () => {
   describe("loadAll()", () => {
     it("loads ranks, prs, and overall rank together", async () => {
       const rows = [makeRankRow()];
-      getRunRanksMock.mockResolvedValue(rows);
+      getRunRanksMock.mockImplementation(async (activityType) => (activityType === "run" ? rows : []));
       getRunPrsMock.mockResolvedValue(prs);
       getRunOverallRankMock.mockResolvedValue({
         current: { tier: "Gold", division: 2, lp: 1450 },

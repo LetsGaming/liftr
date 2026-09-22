@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { OWNER_USER_ID, runPrs, runStandards, type LiftrDb } from "@liftr/db";
 import { writeJsonSetting } from "~server/repositories/settingsRepository.js";
 import { insertRun, insertRunPoints, type NewRun } from "~server/repositories/runRepository.js";
-import { findRunRankByCategory, findAllRunRanks } from "~server/repositories/runRankRepository.js";
+import { findRunRankByBucket, findAllRunRanks } from "~server/repositories/runRankRepository.js";
 import { recomputeRunRank } from "~server/services/runRankService.js";
 import { createTestDb } from "../helpers/testDb.js";
 
@@ -28,6 +28,7 @@ async function seedStandards() {
 async function logRun(durationS: number, startedAt: Date = new Date(), overrides: Partial<NewRun> = {}) {
   const run = await insertRun(db, OWNER_USER_ID, {
     source: "gpx",
+    activityType: "run",
     name: null,
     startedAt,
     clientId: `run-${Math.random().toString(36).slice(2, 8)}`,
@@ -54,12 +55,12 @@ async function establishCorroboratedPeak(durationS: number, candidateDate: Date 
 describe("recomputeRunRank", () => {
   it("returns null when no standards are modeled for the category", async () => {
     await logRun(1500);
-    expect(await recomputeRunRank(db, OWNER_USER_ID, "5k")).toBeNull();
+    expect(await recomputeRunRank(db, OWNER_USER_ID, "5k", "run")).toBeNull();
   });
 
   it("returns null when there is no rank-eligible run history for the category", async () => {
     await seedStandards();
-    expect(await recomputeRunRank(db, OWNER_USER_ID, "5k")).toBeNull();
+    expect(await recomputeRunRank(db, OWNER_USER_ID, "5k", "run")).toBeNull();
   });
 
   it("resolves a tier from the best logged run's Riegel-adjusted speed (first-ever, no storedPeak)", async () => {
@@ -67,7 +68,7 @@ describe("recomputeRunRank", () => {
     // 5000/1500 = 3.333 m/s -> apprentice/III (>=3.0, <3.5), lp = (3.333-3.0)/(3.5-3.0)*100 ~ 66.7
     await logRun(1500);
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(result).not.toBeNull();
     expect(result!.tier).toBe("apprentice");
@@ -75,7 +76,7 @@ describe("recomputeRunRank", () => {
     expect(result!.lp).toBeCloseTo(66.67, 1);
     // First-ever result is uncorroborated (no second distinct day yet) -> no peak, no rank-up.
     expect(result!.rankedUp).toBe(false);
-    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(row?.peakTier).toBeNull();
   });
 
@@ -88,10 +89,10 @@ describe("recomputeRunRank", () => {
     await logRun(1500, today);
     await logRun(1500, new Date(today.getTime() + 60 * 60 * 1000)); // same day, an hour later
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(result!.rankedUp).toBe(false);
-    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(row?.peakTier).toBeNull();
   });
 
@@ -99,10 +100,10 @@ describe("recomputeRunRank", () => {
     await seedStandards();
     await establishCorroboratedPeak(1500);
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(result!.rankedUp).toBe(true);
-    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(row?.peakTier).toBe("apprentice");
     expect(row?.peakDivision).toBe(3);
     expect(row?.peakSpeedMps).toBeCloseTo(3.333, 2);
@@ -115,18 +116,18 @@ describe("recomputeRunRank", () => {
     // apprentice/IV/0, while the stored peak snapshot itself must stay apprentice/III.
     const candidateDate = new Date(Date.now() - 99 * 24 * 60 * 60 * 1000);
     await establishCorroboratedPeak(1500, candidateDate);
-    const first = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const first = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
     expect(first!.rankedUp).toBe(true);
 
     // Second recompute, no new runs logged — same stale history, so decay now applies.
-    const second = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const second = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(second!.rankedUp).toBe(false); // peak itself doesn't change on a decay-only recompute
     expect(second!.tier).toBe("apprentice");
     expect(second!.division).toBe(4); // floor of apprentice (TIER_DIVISION_COUNT.apprentice = 4)
     expect(second!.lp).toBe(0);
 
-    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(row?.peakTier).toBe("apprentice");
     expect(row?.peakDivision).toBe(3); // storedPeak untouched by decay
     expect(row?.peakSpeedMps).toBeCloseTo(3.333, 2);
@@ -141,6 +142,7 @@ describe("recomputeRunRank", () => {
     // resulting tier would be "athlete" instead of "apprentice".
     await insertRun(db, OWNER_USER_ID, {
       source: "manual",
+      activityType: "run",
       name: null,
       startedAt: new Date(),
       clientId: `manual-run-${Math.random().toString(36).slice(2, 8)}`,
@@ -149,10 +151,10 @@ describe("recomputeRunRank", () => {
       avgPaceSPerKm: 200,
     });
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(result!.tier).toBe("apprentice");
-    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(row?.bestSpeedMps).toBeCloseTo(3.333, 2);
   });
 
@@ -160,7 +162,7 @@ describe("recomputeRunRank", () => {
     await seedStandards();
     await logRun(1500);
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(result!.rankedUp).toBe(false); // uncorroborated, but PR detection doesn't care
     expect(result!.newPr).not.toBeNull();
@@ -172,14 +174,14 @@ describe("recomputeRunRank", () => {
 
     // Recompute #1: first-ever run, D1=1500s (3.333 m/s) -> inserts time PR value=1500.
     await logRun(1500);
-    const first = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const first = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
     expect(first!.newPr).not.toBeNull();
 
     // Recompute #2: a genuinely faster run, D2=1400s (3.571 m/s) becomes the new overall best
     // (both speed and time improve together since they're tied to the same run) -> inserts a
     // second time PR row, value=1400. Two "time" rows now exist: {1500, 1400}.
     await logRun(1400);
-    const second = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const second = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
     expect(second!.newPr).not.toBeNull();
 
     const timePrRowsAfterSecond = await db.query.runPrs.findMany({
@@ -193,7 +195,7 @@ describe("recomputeRunRank", () => {
     // ordering would incorrectly return the stale D1=1500 row as "existing", and
     // 1400 < 1500 would wrongly look like a new PR on every such call.
     await logRun(1450);
-    const third = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const third = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(third!.newPr).toBeNull();
     const timePrRowsAfterThird = await db.query.runPrs.findMany({
@@ -206,7 +208,7 @@ describe("recomputeRunRank", () => {
     await seedStandards();
     await logRun(1500);
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", 0.4, null);
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run", 0.4, null);
 
     expect(result!.newPr).toBeNull();
   });
@@ -220,11 +222,11 @@ describe("recomputeRunRank", () => {
     ]);
     await logRun(1500); // 3.333 m/s
 
-    const maleResult = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const maleResult = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
     expect(maleResult!.tier).toBe("apprentice"); // below the male athlete threshold of 50
 
     await writeJsonSetting(db, OWNER_USER_ID, "profile", { sex: "female" });
-    const femaleResult = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const femaleResult = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
     expect(femaleResult!.tier).toBe("athlete"); // 3.333 clears the female athlete threshold of 3.0
   });
 
@@ -239,6 +241,7 @@ describe("recomputeRunRank", () => {
     const startedAt = new Date();
     const run = await insertRun(db, OWNER_USER_ID, {
       source: "gpx",
+      activityType: "run",
       name: null,
       startedAt,
       clientId: "off-distance-run",
@@ -251,7 +254,7 @@ describe("recomputeRunRank", () => {
       { idx: 1, t: startedAt.getTime() + 2480 * 1000, lat: 52.01, lon: 13.01 },
     ]);
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "10k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "10k", "run");
     expect(result!.newPr).not.toBeNull();
 
     // Same formula runRankValue/riegelPredictedTimeS use internally (10k uses the 1.06 exponent).
@@ -275,6 +278,7 @@ describe("recomputeRunRank", () => {
     const degenerateStartedAt = new Date();
     const degenerateRun = await insertRun(db, OWNER_USER_ID, {
       source: "gpx",
+      activityType: "run",
       name: null,
       startedAt: degenerateStartedAt,
       clientId: "degenerate-run",
@@ -284,11 +288,11 @@ describe("recomputeRunRank", () => {
     });
     await insertRunPoints(db, degenerateRun.id, [{ idx: 0, t: degenerateStartedAt.getTime(), lat: 52.0, lon: 13.0 }]);
 
-    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k");
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(result).not.toBeNull();
     expect(Number.isFinite(result!.lp)).toBe(true);
-    const row = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(row?.bestSpeedMps).toBeCloseTo(3.333, 2);
   });
 
@@ -300,6 +304,7 @@ describe("recomputeRunRank", () => {
     await logRun(1500);
     await insertRun(db, OWNER_USER_ID, {
       source: "gpx",
+      activityType: "run",
       name: null,
       startedAt: new Date(),
       clientId: "10k-run",
@@ -310,10 +315,121 @@ describe("recomputeRunRank", () => {
       await insertRunPoints(db, run.id, [{ idx: 0, t: Date.now(), lat: 52.0, lon: 13.0 }]);
     });
 
-    await recomputeRunRank(db, OWNER_USER_ID, "5k");
-    await recomputeRunRank(db, OWNER_USER_ID, "10k");
+    await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
+    await recomputeRunRank(db, OWNER_USER_ID, "10k", "run");
 
-    const all = await findAllRunRanks(db, OWNER_USER_ID);
+    const all = await findAllRunRanks(db, OWNER_USER_ID, "run");
     expect(all.map((r) => r.category).sort()).toEqual(["10k", "5k"]);
+  });
+});
+
+describe("recomputeRunRank: walk (single-speed, bucket 'all')", () => {
+  /** Walk-equivalent of seedStandards() — same shape, "walk" activityType, bucket "all" (walking
+   *  has exactly one rank bucket, not five distance categories), deliberately different threshold
+   *  values so a test asserting the walk ladder resolved (not the run ladder) is actually
+   *  meaningful. */
+  async function seedWalkStandards() {
+    await db.insert(runStandards).values([
+      { activityType: "walk", category: "all", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "synthetic" },
+      { activityType: "walk", category: "all", sex: "male", tier: "apprentice", division: 2, threshold: 1.2, trust: "synthetic" },
+      { activityType: "walk", category: "all", sex: "male", tier: "athlete", division: 3, threshold: 1.5, trust: "synthetic" },
+    ]);
+  }
+
+  /** Distance/duration default clear walking's rank-eligibility floor (>=1000m, >=600s — see
+   *  cardioActivities.ts) unless overridden, so most cases don't need to think about the floor. */
+  async function logWalk(durationS: number, startedAt: Date = new Date(), distanceM = 5000) {
+    const run = await insertRun(db, OWNER_USER_ID, {
+      source: "healthconnect",
+      activityType: "walk",
+      name: null,
+      startedAt,
+      clientId: `walk-${Math.random().toString(36).slice(2, 8)}`,
+      distanceM,
+      durationS,
+      avgPaceSPerKm: (durationS / distanceM) * 1000,
+    });
+    await insertRunPoints(db, run.id, [
+      { idx: 0, t: startedAt.getTime(), lat: 52.0, lon: 13.0 },
+      { idx: 1, t: startedAt.getTime() + durationS * 1000, lat: 52.01, lon: 13.01 },
+    ]);
+    return run;
+  }
+
+  it("resolves against the walk standards (bucket 'all'), not the run standards", async () => {
+    await seedStandards(); // run ladder: 5k apprentice starts at 3.0 m/s
+    await seedWalkStandards(); // walk ladder: apprentice starts at 1.0 m/s
+    await logWalk(3846); // 5000/3846 ~= 1.3 m/s
+
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "all", "walk");
+    expect(result).not.toBeNull();
+    expect(result!.tier).toBe("apprentice"); // 1.3 m/s sits between apprentice's div 3 and 2
+
+    // The run ladder must be completely untouched by the walk recompute.
+    const runRank = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
+    expect(runRank).toBeUndefined();
+  });
+
+  it("uses the raw distance/duration average, no Riegel normalization", async () => {
+    await seedWalkStandards();
+    // An off-"5k" distance (8000m) at a pace that would be Riegel-adjusted if this were running —
+    // walking must NOT adjust it: raw average speed is 8000/6154 ~= 1.3 m/s, same tier as the 5k
+    // case above.
+    await logWalk(6154, new Date(), 8000);
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "all", "walk");
+    expect(result).not.toBeNull();
+    expect(result!.tier).toBe("apprentice");
+  });
+
+  it("below the eligibility floor (< 1000m or < 600s): no rank, XP/streak only", async () => {
+    await seedWalkStandards();
+    await logWalk(300, new Date(), 500); // both under the floor
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "all", "walk");
+    expect(result).toBeNull();
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "all", "walk");
+    expect(row).toBeUndefined();
+  });
+
+  it("exactly at the eligibility floor (1000m, 600s) counts", async () => {
+    await seedWalkStandards();
+    await logWalk(600, new Date(), 1000);
+    const result = await recomputeRunRank(db, OWNER_USER_ID, "all", "walk");
+    expect(result).not.toBeNull();
+  });
+
+  it("a walk run does not appear in the run ladder's history scan, even at the same distance", async () => {
+    await seedStandards();
+    await logRun(1500); // a real run at the same 5k distance
+    await logWalk(3846); // a walk at the same 5k distance
+
+    const runResult = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
+    expect(runResult).not.toBeNull();
+    // bestSpeedMps must reflect only the run (5000/1500 ~= 3.333), not be dragged down/up by the
+    // walk sharing the same distance.
+    const row = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
+    expect(row?.bestSpeedMps).toBeCloseTo(3.333, 2);
+  });
+
+  it("a walk PR is independent of the run PR", async () => {
+    await seedStandards();
+    await seedWalkStandards();
+    await logRun(1500);
+    await logWalk(3846);
+
+    await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
+    await recomputeRunRank(db, OWNER_USER_ID, "all", "walk");
+
+    const runPrRows = await db.query.runPrs.findMany({
+      where: and(eq(runPrs.userId, OWNER_USER_ID), eq(runPrs.activityType, "run"), eq(runPrs.category, "5k")),
+    });
+    const walkPrRows = await db.query.runPrs.findMany({
+      where: and(eq(runPrs.userId, OWNER_USER_ID), eq(runPrs.activityType, "walk"), eq(runPrs.category, "all")),
+    });
+    expect(runPrRows.length).toBeGreaterThan(0);
+    expect(walkPrRows.length).toBeGreaterThan(0);
+    expect(runPrRows.filter((r) => r.kind === "speed").every((r) => r.value > 3)).toBe(true); // run m/s
+    expect(walkPrRows.filter((r) => r.kind === "speed").every((r) => r.value < 2)).toBe(true); // walk m/s
+    // Single-speed activities have no "time" PR — there's no fixed distance to divide by.
+    expect(walkPrRows.some((r) => r.kind === "time")).toBe(false);
   });
 });

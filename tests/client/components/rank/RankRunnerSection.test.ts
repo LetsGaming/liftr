@@ -25,6 +25,7 @@ vi.mock("~client/stores/runRankStore", () => ({ useRunRankStore: () => runRankSt
 // class like `t-bronze` that matched nothing.
 function makeRunRank(overrides: Partial<Record<string, unknown>> = {}) {
   return {
+    activityType: "run",
     category: "5k",
     tier: "trainee",
     division: 3,

@@ -62,21 +62,34 @@ For the full mechanics behind any of these, follow the link to the concept doc t
   exercises or categories: `real`/`derived` ranks count fully, `synthetic` ranks at half weight, so
   the long-tail synthetic catalog can't dilute or inflate the headline number. See
   [rank-engine.md](./rank-engine.md#overall-lifter-rank-the-one-aggregate).
+- **Activity type** — which cardio activity a `runs` row is: `run`, `walk`, `hike`, or `other`.
+  Declared once per activity in the registry, `packages/shared/src/rank/cardioActivities.ts` (rank
+  shape, trust, XP rate, Health Connect classification) — every layer reads that registry instead
+  of hardcoding per-activity branches. See `docs/adr/0011-cardio-activity-registry-and-single-speed-ladders.md`.
+- **Rank bucket** — the key a cardio rank/PR row is stored under within one activity type: one of
+  the five running `RunCategory` values, or the literal `"all"` for a single-speed activity
+  (walk/hike), which has exactly one bucket rather than five distance categories. See
+  [rank-engine.md](./rank-engine.md#cardio-ranks-running-walking-hiking).
 - **Category (running)** — one of five fixed running distances Liftr ranks against: Mile, 5K, 10K,
   Half Marathon, Marathon. Every run is bucketed into whichever category its actual distance is
   *nearest* to; a run's category is derived at read/recompute time, never stored as its own column.
-  Otherwise uses the same Tier/Division/LP/Peak/Corroboration/Decay/Plausibility vocabulary above —
-  see [rank-engine.md](./rank-engine.md#running-ranks).
+  Distance-ladder categories are specific to running — walking and hiking rank on a single speed
+  bucket instead (see Rank bucket above). Otherwise uses the same
+  Tier/Division/LP/Peak/Corroboration/Decay/Plausibility vocabulary above — see
+  [rank-engine.md](./rank-engine.md#cardio-ranks-running-walking-hiking).
 - **Riegel equivalence** — the power-law race-time-prediction formula used to normalize a run's
   actual (distance, duration) onto its assigned category's exact distance before ranking it, so an
-  8km run and a "true" 10K aren't compared unfairly. See
-  [rank-engine.md](./rank-engine.md#running-ranks) and
+  8km run and a "true" 10K aren't compared unfairly. Running only — walking and hiking rank on raw
+  average speed with no Riegel normalization (see ADR 0011 for why). See
+  [rank-engine.md](./rank-engine.md#cardio-ranks-running-walking-hiking) and
   `packages/shared/src/math/riegel.ts` for the exponents (not restated here since they're a tuning
   value that could drift).
 - **Overall Runner Rank** — the running analog of Overall Lifter Rank: the same trust-weighted
   ordinal-position average, computed over running categories instead of exercises. A genuinely
-  separate aggregate, not blended into Overall Lifter Rank. See
-  [rank-engine.md](./rank-engine.md#running-ranks).
+  separate aggregate, not blended into Overall Lifter Rank. Only activities whose registry entry
+  sets `countsTowardOverallRunnerRank` feed it — walking and hiking are excluded (their standards
+  are synthetic, not physiologically cross-validated the way running's are), and that exclusion is
+  stated in the UI. See [rank-engine.md](./rank-engine.md#cardio-ranks-running-walking-hiking).
 
 ### XP, levels, and streaks
 

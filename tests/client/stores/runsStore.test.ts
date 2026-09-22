@@ -24,6 +24,7 @@ function makeRun(overrides: Partial<RunSummary> = {}): RunSummary {
   return {
     id: "run-1",
     source: "gpx",
+    activityType: "run",
     name: "Morning Run",
     startedAt: "2026-09-07T06:00:00Z",
     distanceM: 5000,

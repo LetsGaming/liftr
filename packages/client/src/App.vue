@@ -157,6 +157,7 @@ const pageTitle = computed(() => {
   // case above — otherwise they'd silently fall through to "Liftr".
   if (route.name === "records") return "Rekorde";
   if (route.name === "attributions") return "Quellen & Lizenzen";
+  if (route.name === "diagnostics") return "Diagnose";
   if (route.name === "routine-overview") {
     const routine = routineStore.byId(route.params.id as string);
     return routine ? routine.name : "Routine";

@@ -46,3 +46,4 @@ What does this cost or foreclose? What does it buy?
 | [0008](0008-heading-aware-loop-closure.md) | Heading-aware circular arc for closing a running loop |
 | [0009](0009-street-aware-loop-closure-via-avoid-polygons.md) | Street-aware loop closure via OpenRouteService's `avoid_polygons`, no live-edit API traffic |
 | [0010](0010-real-per-person-auth-and-sessions.md) | Real per-person accounts, password auth, and session management |
+| [0011](0011-cardio-activity-registry-and-single-speed-ladders.md) | Cardio activity registry, with walking/hiking on a single-speed rank |

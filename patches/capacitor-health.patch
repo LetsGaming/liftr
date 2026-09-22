@@ -25,7 +25,7 @@ index 9f7d5bd58ec50aea6217c76b25f49dade602ec8e..c0c58008c356a50d10f6d2a45b37ac60
      <uses-permission android:name="android.permission.health.READ_HEIGHT"/>
      <uses-permission android:name="android.permission.health.READ_BODY_FAT"/>
 diff --git a/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt b/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt
-index 56c1be592a37d6bfa95b7caf381b0e3289eaac22..c8ea829b4d160f89d14f5be2f4a5efc503f08e6d 100644
+index 56c1be592a37d6bfa95b7caf381b0e3289eaac22..9606063dd98f1ea22c18561ecbc18d3609ccef50 100644
 --- a/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt
 +++ b/android/src/main/java/com/fit_up/health/capacitor/HealthPlugin.kt
 @@ -92,7 +92,7 @@ enum class CapHealthPermission {
@@ -46,3 +46,27 @@ index 56c1be592a37d6bfa95b7caf381b0e3289eaac22..c8ea829b4d160f89d14f5be2f4a5efc5
          Pair(CapHealthPermission.READ_HEART_RATE, "android.permission.health.READ_HEART_RATE"),
          Pair(CapHealthPermission.READ_ACTIVE_CALORIES, "android.permission.health.READ_ACTIVE_CALORIES_BURNED"),
          Pair(CapHealthPermission.READ_TOTAL_CALORIES, "android.permission.health.READ_TOTAL_CALORIES_BURNED"),
+@@ -588,6 +588,23 @@ class HealthPlugin : Plugin() {
+                         workoutObject.put("heartRate", heartRates)
+                     }
+ 
++                    // Liftr: always report which of the three outcomes exerciseRouteResult is —
++                    // Data, ConsentRequired (the user has an EXERCISE_ROUTE-scoped consent gate
++                    // withholding this specific route, distinct from the general READ_ROUTE
++                    // permission), or neither (no route was ever recorded for this workout).
++                    // Previously this branch was all-or-nothing: NoData and ConsentRequired both
++                    // produced a workout object with no "route" key at all, so the two cases were
++                    // indistinguishable on the JS side. That ambiguity is exactly what caused a
++                    // watch-recorded walk to silently fail to import in the app: there was no way
++                    // to tell "Health Connect withheld the route" from "there never was one."
++                    workoutObject.put(
++                        "routeStatus",
++                        when (workout.exerciseRouteResult) {
++                            is ExerciseRouteResult.Data -> "data"
++                            is ExerciseRouteResult.ConsentRequired -> "consent_required"
++                            else -> "no_data"
++                        }
++                    )
+                     if (includeRoute && workout.exerciseRouteResult is ExerciseRouteResult.Data) {
+                         val route =
+                             queryRouteForWorkout(workout.exerciseRouteResult as ExerciseRouteResult.Data)

@@ -37,6 +37,7 @@ function makePr(overrides: Partial<Record<string, unknown>> = {}) {
 function makeRunPr(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: "runpr1",
+    activityType: "run",
     category: "5k",
     kind: "time" as const,
     value: 1500, // 25:00
@@ -137,18 +138,22 @@ describe("RecordsPage", () => {
       expect(runRankState.loadPrs).toHaveBeenCalledOnce();
     });
 
-    it("always renders all five categories, with an empty placeholder for categories with no time PR yet", () => {
+    it("always renders all five categories plus one row per single-speed activity (walk, hike), all with empty placeholders when no PR exists yet", () => {
       Object.assign(runRankState, { prs: [], prsLoaded: true, prsError: false });
       const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
 
+      // 5 running distance categories + 2 single-speed activities (walk, hike) — see
+      // cardioActivities.ts's registry.
       const rows = wrapper.findAll(".run-pr-row");
-      expect(rows).toHaveLength(5);
+      expect(rows).toHaveLength(7);
       expect(wrapper.text()).toContain("Meile");
       expect(wrapper.text()).toContain("5 km");
       expect(wrapper.text()).toContain("10 km");
       expect(wrapper.text()).toContain("Halbmarathon");
       expect(wrapper.text()).toContain("Marathon");
-      expect(wrapper.findAll(".run-pr-empty")).toHaveLength(5);
+      expect(wrapper.text()).toContain("Gehen");
+      expect(wrapper.text()).toContain("Wandern");
+      expect(wrapper.findAll(".run-pr-empty")).toHaveLength(7);
     });
 
     it("shows the fastest TIME per category (not speed), formatted as mm:ss, ignoring speed-kind PRs", () => {

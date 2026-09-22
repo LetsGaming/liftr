@@ -24,6 +24,9 @@ export interface PhoneGpsRunPoint {
 export interface RunSummary {
   id: string;
   source: "gpx" | "fit" | "manual" | "healthconnect";
+  /** "run"/"walk"/"hike" get their own rank ladder; "other" earns XP + streak only. See
+   *  @liftr/shared's cardioActivities.ts for the full registry. */
+  activityType: "run" | "walk" | "hike" | "other";
   name: string | null;
   startedAt: string;
   distanceM: number;

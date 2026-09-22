@@ -1,8 +1,9 @@
 import { api } from "../lib/api";
 
-/** Mirrors `routes/runRanks.ts`'s response shape — one row per running category with a
- *  computed rank. */
+/** Mirrors `routes/runRanks.ts`'s response shape — one row per rank bucket (a running category,
+ *  or "all" for a single-speed activity's one bucket) with a computed rank. */
 export interface RunRankRow {
+  activityType: string;
   category: string;
   tier: string;
   division: number;
@@ -17,9 +18,11 @@ export interface RunRankRow {
   peakDivision: number | null;
 }
 
-/** Mirrors `routes/runPrs.ts`'s response shape — the running Personal Records ledger. */
+/** Mirrors `routes/runPrs.ts`'s response shape — the cardio Personal Records ledger, across every
+ *  activity type at once. */
 export interface RunPrListItem {
   id: string;
+  activityType: string;
   category: string;
   kind: "time" | "speed";
   value: number;
@@ -34,14 +37,17 @@ export interface RunOverallRankBand {
 }
 
 /** Mirrors `routes/runOverallRank.ts`'s response shape — the account-level "how good a runner
- *  am I overall" aggregate. */
+ *  am I overall" aggregate. Running only (see cardioActivities.ts's
+ *  countsTowardOverallRunnerRank) — no activityType param. */
 export interface RunOverallRankResponse {
   current: RunOverallRankBand | null;
   peak: RunOverallRankBand | null;
 }
 
-export function getRunRanks(): Promise<RunRankRow[]> {
-  return api.get<RunRankRow[]>("/api/runs/ranks");
+/** `activityType` is required (not defaulted) — same "no silent single-ladder default" rule the
+ *  server repository layer follows, so a caller can't forget to ask for walk/hike ranks. */
+export function getRunRanks(activityType: string): Promise<RunRankRow[]> {
+  return api.get<RunRankRow[]>(`/api/runs/ranks?activityType=${activityType}`);
 }
 
 export function getRunPrs(): Promise<RunPrListItem[]> {

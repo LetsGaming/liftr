@@ -35,7 +35,7 @@ describe("getOverallRunnerRank", () => {
   });
 
   it("returns the aggregated current band once a category has a computed rank", async () => {
-    await upsertRunRank(db, OWNER_USER_ID, "5k", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
+    await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
 
     const result = await getOverallRunnerRank(db, OWNER_USER_ID);
 
@@ -44,18 +44,13 @@ describe("getOverallRunnerRank", () => {
   });
 
   it("returns the aggregated peak band once a peak snapshot exists", async () => {
-    await upsertRunRank(
-      db,
-      OWNER_USER_ID,
-      "5k",
-      baseRunRankUpsert({
+    await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({
         peakTier: "athlete",
         peakDivision: 3,
         peakLp: 50,
         peakSpeedMps: 4.0,
         peakAchievedAt: new Date("2026-08-01T00:00:00Z"),
-      }),
-    );
+      }));
 
     const result = await getOverallRunnerRank(db, OWNER_USER_ID);
 
@@ -63,11 +58,33 @@ describe("getOverallRunnerRank", () => {
   });
 
   it("aggregates across multiple categories", async () => {
-    await upsertRunRank(db, OWNER_USER_ID, "5k", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
-    await upsertRunRank(db, OWNER_USER_ID, "marathon", baseRunRankUpsert({ tier: "elite", division: 3, lp: 50 }));
+    await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
+    await upsertRunRank(db, OWNER_USER_ID, "marathon", "run", baseRunRankUpsert({ tier: "elite", division: 3, lp: 50 }));
 
     const result = await getOverallRunnerRank(db, OWNER_USER_ID);
 
     expect(result.current).not.toBeNull();
+  });
+
+  it("a walk rank row does not move Overall Runner Rank", async () => {
+    await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
+    const withRunOnly = await getOverallRunnerRank(db, OWNER_USER_ID);
+
+    // A wildly different walk rank must not shift the Runner aggregate at all — walking doesn't
+    // count toward Overall Runner Rank (cardioActivities.ts's countsTowardOverallRunnerRank).
+    await upsertRunRank(db, OWNER_USER_ID, "all", "walk", baseRunRankUpsert({ tier: "apex", division: 1, lp: 9999 }));
+    const withWalkAdded = await getOverallRunnerRank(db, OWNER_USER_ID);
+
+    expect(withWalkAdded).toEqual(withRunOnly);
+  });
+
+  it("a hike rank row does not move Overall Runner Rank either", async () => {
+    await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
+    const withRunOnly = await getOverallRunnerRank(db, OWNER_USER_ID);
+
+    await upsertRunRank(db, OWNER_USER_ID, "all", "hike", baseRunRankUpsert({ tier: "apex", division: 1, lp: 9999 }));
+    const withHikeAdded = await getOverallRunnerRank(db, OWNER_USER_ID);
+
+    expect(withHikeAdded).toEqual(withRunOnly);
   });
 });

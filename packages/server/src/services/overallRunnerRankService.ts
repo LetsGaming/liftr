@@ -7,14 +7,20 @@
  * `runRankRepository.ts`/`rankRepository.ts` are already separate sibling files for
  * running/strength — same "on-demand from a small per-user table, no second cache" reasoning as
  * `getOverallRank`.
+ *
+ * Only activities whose registry entry sets `countsTowardOverallRunnerRank` feed this aggregate
+ * (today: running only — see cardioActivities.ts's doc comment on why walking/hiking are
+ * excluded). There is no separate "Overall Walker Rank": walking/hiking each have exactly one
+ * rank bucket ("all"), so that bucket's own card IS the rank — no aggregate needed on top of it.
  */
 import type { LiftrDb } from "@liftr/db";
-import { computeOverallPeak, computeOverallRank } from "@liftr/shared";
+import { computeOverallPeak, computeOverallRank, rankedCardioActivities } from "@liftr/shared";
 import { findAllRunRanks } from "../repositories/runRankRepository.js";
 import type { OverallRankResult } from "./overallRankService.js";
 
 export async function getOverallRunnerRank(db: LiftrDb, userId: string): Promise<OverallRankResult> {
-  const rows = await findAllRunRanks(db, userId);
+  const countedActivities = rankedCardioActivities().filter((a) => a.countsTowardOverallRunnerRank);
+  const rows = (await Promise.all(countedActivities.map((a) => findAllRunRanks(db, userId, a.id)))).flat();
 
   // `runRanks.trust` is nullable at the schema level (unlike `ranks.trust`) — in practice
   // `recomputeRunRank` always sets it, but a row somehow missing it is excluded rather than

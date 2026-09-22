@@ -13,12 +13,13 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import type { RunCategory } from "@liftr/shared";
-import { RUN_CATEGORIES } from "@liftr/shared";
+import { RUN_CATEGORIES, rankedCardioActivities } from "@liftr/shared";
 import RunDetail from "../components/run/RunDetail.vue";
 import { useExerciseName } from "../composables/useExerciseName";
-import { formatClockLong } from "../lib/format";
+import { formatClockLong, formatPace } from "../lib/format";
 import { usePrStore } from "../stores/prStore";
 import { useRunRankStore, type RunPrListItem } from "../stores/runRankStore";
+import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
 
 const prStore = usePrStore();
 const runRankStore = useRunRankStore();
@@ -39,14 +40,6 @@ const KIND_LABEL: Record<string, string> = {
   volume: "Volumen",
 };
 
-const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
-  mile: "Meile",
-  "5k": "5 km",
-  "10k": "10 km",
-  half_marathon: "Halbmarathon",
-  marathon: "Marathon",
-};
-
 const sorted = computed(() => prStore.prs.slice().sort((a, b) => b.achievedAt.localeCompare(a.achievedAt)));
 
 // The fastest (lowest-value) "time"-kind PR per category. run_prs keeps every historical PR
@@ -56,12 +49,31 @@ const sorted = computed(() => prStore.prs.slice().sort((a, b) => b.achievedAt.lo
 const bestRunTimeByCategory = computed(() => {
   const out: Partial<Record<RunCategory, RunPrListItem>> = {};
   for (const pr of runRankStore.prs) {
-    if (pr.kind !== "time") continue;
+    if (pr.activityType !== "run" || pr.kind !== "time") continue;
     const current = out[pr.category as RunCategory];
     if (!current || pr.value < current.value) out[pr.category as RunCategory] = pr;
   }
   return out;
 });
+
+/** Single-speed activities (walk/hike) have no "time" PR — no fixed distance to divide by, see
+ *  runRankService.ts's PR-detection comment — so their record row shows the fastest (highest-
+ *  value) "speed" PR instead, rendered as a pace via formatPace. */
+const bestSpeedByActivity = computed(() => {
+  const out: Record<string, RunPrListItem> = {};
+  for (const pr of runRankStore.prs) {
+    if (pr.activityType === "run" || pr.kind !== "speed") continue;
+    const current = out[pr.activityType];
+    if (!current || pr.value > current.value) out[pr.activityType] = pr;
+  }
+  return out;
+});
+
+const singleSpeedActivityIds = computed(() =>
+  rankedCardioActivities()
+    .filter((a) => a.rank.mode === "single-speed")
+    .map((a) => a.id),
+);
 
 const openRunId = ref<string | null>(null);
 
@@ -127,7 +139,7 @@ function formatDate(iso: string): string {
         </li>
       </ul>
 
-      <h2 class="eyebrow run-pr-heading">Lauf-Rekorde</h2>
+      <h2 class="eyebrow run-pr-heading">Cardio-Rekorde</h2>
 
       <template v-if="!runRankStore.prsLoaded && !runRankStore.prsError">
         <div v-for="i in 5" :key="i" class="shimmer run-pr-skel-row" aria-hidden="true" />
@@ -153,6 +165,26 @@ function formatDate(iso: string): string {
             <div v-if="bestRunTimeByCategory[category]" class="pr-row-meta">
               <span class="tnum pr-value">{{ formatClockLong(bestRunTimeByCategory[category]!.value) }}</span>
               <span class="pr-date">{{ formatDate(bestRunTimeByCategory[category]!.achievedAt) }}</span>
+            </div>
+            <div v-else class="pr-row-meta">
+              <span class="pr-date">Noch kein Rekord</span>
+            </div>
+          </button>
+        </li>
+        <li v-for="activityId in singleSpeedActivityIds" :key="activityId">
+          <button
+            type="button"
+            class="panel run-pr-row"
+            :class="{ 'run-pr-empty': !bestSpeedByActivity[activityId] }"
+            :disabled="!bestSpeedByActivity[activityId]"
+            @click="openRunId = bestSpeedByActivity[activityId]!.runId"
+          >
+            <div class="pr-row-main">
+              <b>{{ ACTIVITY_LABEL[activityId] ?? activityId }}</b>
+            </div>
+            <div v-if="bestSpeedByActivity[activityId]" class="pr-row-meta">
+              <span class="tnum pr-value">{{ formatPace(1000 / bestSpeedByActivity[activityId]!.value) }}</span>
+              <span class="pr-date">{{ formatDate(bestSpeedByActivity[activityId]!.achievedAt) }}</span>
             </div>
             <div v-else class="pr-row-meta">
               <span class="pr-date">Noch kein Rekord</span>

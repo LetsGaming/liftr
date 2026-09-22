@@ -1,10 +1,15 @@
 <script setup lang="ts">
 /**
- * Lauf-Ränge: hero ladder + the fixed 5-category (mile/5k/10k/half_marathon/marathon) grid.
- * Extracted out of RanksPage.vue (which now just switches between this and
+ * Lauf-Ränge: hero ladder (Overall Runner Rank) + the fixed 5-category running grid, plus one
+ * card per single-speed cardio activity (Gehen, Wandern — each ranked on one "all" bucket, see
+ * cardioActivities.ts). Extracted out of RanksPage.vue (which now just switches between this and
  * RankLifterSection.vue) — self-contained, no props, same pattern as RoutineList.vue.
+ *
+ * Walking/hiking don't count toward Overall Runner Rank (their standards are synthetic estimates,
+ * not the physiologically cross-validated running table) — that exclusion is stated below the
+ * grid rather than left for the user to infer from the hero ladder simply never moving.
  */
-import { RUN_CATEGORIES, type RunCategory } from "@liftr/shared";
+import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
 import { computed, onMounted } from "vue";
 import CardGrid from "../ui/CardGrid.vue";
 import RankProgress from "./RankProgress.vue";
@@ -12,6 +17,7 @@ import TierBadge from "./TierBadge.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunRankRow } from "../../stores/runRankStore";
 import { formatPace } from "../../lib/format";
+import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
 
 const runRankStore = useRunRankStore();
 onMounted(() => {
@@ -23,22 +29,30 @@ onMounted(() => {
 // convention RecordsPage.vue's running section already uses — every category always renders,
 // with an honest placeholder for one with no rank yet, rather than a variable-length list like
 // the per-exercise strength grid.
-const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
-  mile: "Meile",
-  "5k": "5 km",
-  "10k": "10 km",
-  half_marathon: "Halbmarathon",
-  marathon: "Marathon",
-};
-
 const runRankByCategory = computed(() => {
   const out: Partial<Record<RunCategory, RunRankRow>> = {};
-  for (const r of runRankStore.ranks) out[r.category as RunCategory] = r;
+  for (const r of runRankStore.ranks) {
+    if (r.activityType === "run") out[r.category as RunCategory] = r;
+  }
   return out;
 });
 
+/** Single-speed activities (today: walk, hike) — the ones with rank.mode !== "distance-ladder" in
+ *  the shared registry — each get exactly one card, keyed by activity id rather than category
+ *  ("all" isn't a distance, so it has nothing to head a card with). Only an activity that has
+ *  actually produced a rank row renders a card at all, so a user who's never walked sees nothing
+ *  extra here — same "only show a real option" rule OverviewPage's activity filter follows. */
+const singleSpeedRanks = computed(() => {
+  const singleSpeedIds = new Set<string>(
+    rankedCardioActivities()
+      .filter((a) => a.rank.mode === "single-speed")
+      .map((a) => a.id),
+  );
+  return runRankStore.ranks.filter((r) => singleSpeedIds.has(r.activityType));
+});
+
 /** RankProgress's built-in "next target" formatting assumes a weight×reps pair, which doesn't
- *  fit a running category's next target (a pace). Formatted here and passed through
+ *  fit a cardio bucket's next target (a pace). Formatted here and passed through
  *  RankProgress's `nextTargetLabel` override instead of forking the component — see that prop's
  *  own comment. No "Nächstes Ziel:" prefix here — RankProgress's own `.rp-next-label` caption
  *  already carries that, sitting beside whichever chip this label ends up as. Uses lib/format.ts's
@@ -100,7 +114,34 @@ function formatNextSpeedTarget(speedMps: number | null): string {
         />
         <p v-else class="run-rank-empty-note">Noch kein Rang — lauf diese Distanz, um zu starten.</p>
       </div>
+
+      <div
+        v-for="row in singleSpeedRanks"
+        :key="row.activityType"
+        class="card surface-hybrid"
+        :class="`t-${row.tier}`"
+      >
+        <div class="card-head">
+          <b class="card-name">{{ ACTIVITY_LABEL[row.activityType] ?? row.activityType }}</b>
+          <TierBadge :tier="row.tier" />
+        </div>
+        <RankProgress
+          variant="card"
+          :badge="false"
+          :tier="row.tier"
+          :division="row.division"
+          :lp="row.lp"
+          :next-target-label="formatNextSpeedTarget(row.nextTargetSpeedMps)"
+          :trust="row.trust ?? 'synthetic'"
+          :peak-tier="row.peakTier"
+          :peak-division="row.peakDivision"
+        />
+      </div>
     </CardGrid>
+
+    <p v-if="singleSpeedRanks.length > 0" class="page-note overall-exclusion-note">
+      Gehen und Wandern zählen nicht in den Overall Runner Rank — sie haben ihre eigene Wertung.
+    </p>
   </div>
 </template>
 
@@ -113,5 +154,10 @@ function formatNextSpeedTarget(speedMps: number | null): string {
 .run-rank-empty-note {
   font-size: 12.5px;
   color: var(--dim);
+}
+.overall-exclusion-note {
+  margin-top: var(--sp3);
+  font-size: 12px;
+  color: var(--faint);
 }
 </style>

@@ -166,7 +166,7 @@ overrides:
   fast-uri: ^3.1.6
 
 patchedDependencies:
-  capacitor-health: 99ed1501013db315dcfc35505581666f6579842bf68dd0f6115253e14b5564bf
+  capacitor-health: 7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b
 
 importers:
 
@@ -297,7 +297,7 @@ importers:
         version: link:../shared
       capacitor-health:
         specifier: ^8.2.0
-        version: 8.2.0(patch_hash=99ed1501013db315dcfc35505581666f6579842bf68dd0f6115253e14b5564bf)(@capacitor/core@8.5.2)
+        version: 8.2.0(patch_hash=7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b)(@capacitor/core@8.5.2)
       idb:
         specifier: ^8.0.3
         version: 8.0.3
@@ -7134,7 +7134,7 @@ snapshots:
 
   caniuse-lite@1.0.30001810: {}
 
-  capacitor-health@8.2.0(patch_hash=99ed1501013db315dcfc35505581666f6579842bf68dd0f6115253e14b5564bf)(@capacitor/core@8.5.2):
+  capacitor-health@8.2.0(patch_hash=7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b)(@capacitor/core@8.5.2):
     dependencies:
       '@capacitor/core': 8.5.2
 

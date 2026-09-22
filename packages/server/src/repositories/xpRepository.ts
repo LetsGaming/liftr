@@ -54,6 +54,9 @@ export function findAllRunsForXp(db: LiftrDb, userId: string) {
       startedAt: runs.startedAt,
       plausibilityMultiplier: runs.plausibilityMultiplier,
       source: runs.source,
+      // Omitting this would silently price every walk (and "other" cardio) as a run — see
+      // runXp.ts's activity-aware base rate and decay-key namespacing.
+      activityType: runs.activityType,
     })
     .from(runs)
     .where(eq(runs.userId, userId));

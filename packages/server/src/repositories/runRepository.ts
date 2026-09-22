@@ -1,6 +1,6 @@
 import { runPoints, runs, type LiftrDb } from "@liftr/db";
 import { and, desc, eq } from "drizzle-orm";
-import type { RunPoint } from "@liftr/shared";
+import type { ActivityType, RunPoint } from "@liftr/shared";
 
 export function findRecentRuns(db: LiftrDb, userId: string, limit = 50) {
   return db.query.runs.findMany({ where: eq(runs.userId, userId), orderBy: desc(runs.startedAt), limit });
@@ -26,6 +26,9 @@ export function deleteRun(db: LiftrDb, userId: string, id: string) {
 
 export interface NewRun {
   source: "gpx" | "fit" | "manual" | "healthconnect";
+  /** "run"/"walk"/"hike" get their own rank ladder; "other" earns XP + streak only. See
+   *  cardioActivities.ts for the full registry. */
+  activityType: ActivityType;
   name: string | null;
   startedAt: Date;
   clientId: string;

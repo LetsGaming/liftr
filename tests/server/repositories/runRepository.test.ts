@@ -21,6 +21,7 @@ beforeEach(() => {
 function newRun(overrides: Partial<NewRun> = {}): NewRun {
   return {
     source: "manual",
+    activityType: "run",
     name: null,
     startedAt: new Date("2026-09-01T10:00:00Z"),
     clientId: `run-${Math.random().toString(36).slice(2, 8)}`,

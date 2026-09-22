@@ -28,6 +28,7 @@ import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { LP_EXPLAINER } from "../copy/rankCopy";
+import { ACTIVITY_LABEL } from "../copy/runCopy";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
 import { useBodyweightStore } from "../stores/bodyweightStore";
@@ -61,13 +62,31 @@ const openWorkoutTitle = ref<string | undefined>(undefined);
  *  which RunsPage.vue also relies on for the same detail view. */
 const openRunId = ref<string | null>(null);
 
-/** "Letzte Aktivität" filter pills — same .tab-strip/.tab-pill tablist RunsPage.vue's
- *  Verlauf/Strecken switcher uses (tokens.css), just with 3 options over the history feed's own
- *  `kind` discriminant instead of a page-level sub-tab. */
-const activityFilter = ref<"alle" | "workout" | "run">("alle");
-const filteredActivity = computed(() =>
-  activityFilter.value === "alle" ? history.items : history.items.filter((i) => i.kind === activityFilter.value),
-);
+/** "Letzte Aktivität" filter pills — same `.rank-tier-filter` pattern RankLifterSection.vue's
+ *  tier filter follows (a pill row that collapses to a `<select>` past 3 options, present only
+ *  when the underlying data actually has more than one option): filter values are derived from
+ *  what's actually in `history.items`, not a fixed list, so a user who's never walked never sees
+ *  a "Gehen" pill, and a future cardio activity type needs no change here to appear. `"workout"`
+ *  is the one non-activityType value (workouts have no activityType at all). */
+const activityFilter = ref<string>("alle");
+const availableActivityFilters = computed(() => {
+  const present = new Set<string>();
+  for (const item of history.items) {
+    present.add(item.kind === "workout" ? "workout" : ((item.meta.activityType as string | undefined) ?? "run"));
+  }
+  const order = ["workout", "run", "walk", "hike", "other"];
+  return order.filter((v) => present.has(v));
+});
+function activityFilterLabel(value: string): string {
+  if (value === "workout") return "Workout";
+  return ACTIVITY_LABEL[value] ?? value;
+}
+const filteredActivity = computed(() => {
+  if (activityFilter.value === "alle") return history.items;
+  return history.items.filter((i) =>
+    i.kind === "workout" ? activityFilter.value === "workout" : ((i.meta.activityType as string | undefined) ?? "run") === activityFilter.value,
+  );
+});
 /** Was every loaded item in one flat list (19+ rows with no cap) — a Miller's-Law violation.
  *  Shows a manageable first chunk, "Mehr anzeigen" reveals the rest already sitting in memory. */
 const activityShownCount = ref(8);
@@ -127,6 +146,16 @@ function runLabel(item: { kind: string; meta: Record<string, unknown> }) {
   if (item.kind !== "run") return "";
   const km = (item.meta.distanceM as number | undefined) ?? 0;
   return `${(km / 1000).toFixed(2)} km`;
+}
+
+/** AppIcon has no dedicated walk/hike glyph yet, so every cardio row (run/walk/hike) shares the
+ *  "running" icon — the row's own label/meta already says which one it is, and the activity
+ *  filter above narrows the list; only "other" (no honest icon for an unranked mixed bag of
+ *  activities) falls back to a generic "layers" glyph. */
+function feedIconName(item: { kind: string; meta: Record<string, unknown> }): "dumbbell" | "running" | "layers" {
+  if (item.kind !== "run") return "dumbbell";
+  const activityType = (item.meta.activityType as string | undefined) ?? "run";
+  return activityType === "other" ? "layers" : "running";
 }
 
 function openWorkout(itemId: string, title: string | null) {
@@ -369,33 +398,41 @@ function retryFailed() {
           </p>
 
           <template v-else>
-            <div class="tab-strip" role="tablist" aria-label="Aktivität filtern">
+            <!-- Same "up to 2 pills, past that a <select>" rule RankLifterSection.vue's
+                 .rank-tier-filter follows (see that file's comment) — a flat pill row per
+                 activity type stopped fitting 390px once a user has logged more than a couple
+                 of activity types; this is a secondary in-page filter, so it collapses into a
+                 dropdown rather than wrapping or truncating illegibly. -->
+            <div v-if="availableActivityFilters.length > 1" class="rank-tier-filter">
               <button
-                role="tab"
-                class="tab-pill"
+                type="button"
+                class="tab-pill tab-pill-sm"
                 :class="{ active: activityFilter === 'alle' }"
-                :aria-selected="activityFilter === 'alle'"
                 @click="activityFilter = 'alle'; activityShownCount = 8"
               >
                 Beides
               </button>
-              <button
-                role="tab"
-                class="tab-pill"
-                :class="{ active: activityFilter === 'workout' }"
-                :aria-selected="activityFilter === 'workout'"
-                @click="activityFilter = 'workout'; activityShownCount = 8"
+              <select
+                v-if="availableActivityFilters.length > 2"
+                class="rank-tier-select"
+                aria-label="Aktivität filtern"
+                :value="activityFilter === 'alle' ? '' : activityFilter"
+                @change="activityFilter = ($event.target as HTMLSelectElement).value || 'alle'; activityShownCount = 8"
               >
-                Workout
-              </button>
+                <option value="">Aktivität</option>
+                <option v-for="value in availableActivityFilters" :key="value" :value="value">
+                  {{ activityFilterLabel(value) }}
+                </option>
+              </select>
               <button
-                role="tab"
-                class="tab-pill"
-                :class="{ active: activityFilter === 'run' }"
-                :aria-selected="activityFilter === 'run'"
-                @click="activityFilter = 'run'; activityShownCount = 8"
+                v-for="value in availableActivityFilters.length <= 2 ? availableActivityFilters : []"
+                :key="value"
+                type="button"
+                class="tab-pill tab-pill-sm"
+                :class="{ active: activityFilter === value }"
+                @click="activityFilter = value; activityShownCount = 8"
               >
-                Läufe
+                {{ activityFilterLabel(value) }}
               </button>
             </div>
 
@@ -405,9 +442,9 @@ function retryFailed() {
                   class="feed-btn surface-hybrid"
                   @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
                 >
-                  <span class="icon" :class="item.kind"><AppIcon :name="item.kind === 'run' ? 'running' : 'dumbbell'" /></span>
+                  <span class="icon" :class="item.kind"><AppIcon :name="feedIconName(item)" /></span>
                   <div class="meta">
-                    <b>{{ item.title ?? (item.kind === "run" ? "Lauf" : "Workout") }}</b>
+                    <b>{{ item.title ?? (item.kind === "run" ? ACTIVITY_LABEL[(item.meta.activityType as string | undefined) ?? "run"] : "Workout") }}</b>
                     <span>{{ formatDate(item.at) }}</span>
                   </div>
                   <div class="value tnum">
@@ -674,7 +711,8 @@ function retryFailed() {
 .activity {
   padding-bottom: var(--sp4);
 }
-.activity .tab-strip {
+.activity .rank-tier-filter {
+  margin-top: 0;
   margin-bottom: var(--sp3);
 }
 .feed {

@@ -52,7 +52,16 @@ import { insertPlannedRoute, insertPlannedRoutePoints } from "../packages/server
 import { applySyncBatch, type SyncItem } from "../packages/server/src/services/syncService.js";
 import { recomputeRunRank } from "../packages/server/src/services/runRankService.js";
 import type { GymSetup } from "../packages/server/src/routes/settings.js";
-import { computeRunPlausibility, pathDistanceM, runRankValue, type RunPoint } from "@liftr/shared";
+import {
+  cardioActivity,
+  computeRunPlausibility,
+  pathDistanceM,
+  runRankValue,
+  type ActivityType,
+  type RankBucket,
+  type RankedActivityType,
+  type RunPoint,
+} from "@liftr/shared";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -482,21 +491,30 @@ interface RankedGpsRunInput {
   durationS: number;
   avgHr: number;
   elevationGainM: number;
+  /** Defaults to "run" so every existing call site is unaffected. */
+  activityType?: RankedActivityType;
 }
 
-/** Inserts one GPS-tracked run + its points, then runs it through the exact same
- *  plausibility-gate -> Riegel-category -> rank-recompute pipeline `runImportService.ts`'s
- *  `persistRun` uses for a real GPX/FIT import — this is the piece the original single-run seed
- *  skipped, which is why no amount of seeded run history ever produced rank/PR content before
+/** Inserts one GPS-tracked activity + its points, then runs it through the exact same
+ *  plausibility-gate -> rank-recompute pipeline `runImportService.ts`'s `persistRun` uses for a
+ *  real GPX/FIT/Health Connect import — this is the piece the original single-run seed skipped,
+ *  which is why no amount of seeded run history ever produced rank/PR content before
  *  (recomputeRunRank was simply never called). Requires run_standards already ingested (see
  *  ensureCatalog) and the profile's sex already written (see seedProfile), since recomputeRunRank
- *  reads both. */
+ *  reads both. Works for any ranked activity type: running Riegel-normalizes onto a distance
+ *  category, walking/hiking rank on raw average speed in the single "all" bucket (see
+ *  cardioActivities.ts) — recomputeRunRank itself decides which, this function just picks the
+ *  right bucket to pass it. A sub-floor walk/hike (below its activity's minDistanceM/minDurationS)
+ *  still goes through this same path; recomputeRunRank's own eligibility filter is what produces
+ *  no rank row for it, exactly like the real import path. */
 async function seedRankedGpsRun(db: LiftrDb, input: RankedGpsRunInput) {
+  const activityType = input.activityType ?? "run";
   const startedAt = daysAgo(input.daysAgo, input.hour, input.minute);
   const points = loopPoints(input.distanceM, input.durationS, startedAt, input.avgHr);
 
   const run = await insertRun(db, USER_ID, {
     source: "gpx",
+    activityType,
     name: input.name,
     startedAt,
     clientId: randomUUID(),
@@ -508,16 +526,60 @@ async function seedRankedGpsRun(db: LiftrDb, input: RankedGpsRunInput) {
   });
   await insertRunPoints(db, run.id, points);
 
-  const plausibility = computeRunPlausibility({ distanceM: input.distanceM, durationS: input.durationS, points });
+  const plausibility = computeRunPlausibility({
+    distanceM: input.distanceM,
+    durationS: input.durationS,
+    points,
+    activityType,
+  });
   await updateRunPlausibilityMultiplier(db, run.id, plausibility.multiplier);
-  const { category, speedMps } = runRankValue(input.distanceM, input.durationS);
-  await recomputeRunRank(db, USER_ID, category, plausibility.multiplier, plausibility.reason);
+
+  const rankMode = cardioActivity(activityType).rank.mode;
+  const bucket: RankBucket = rankMode === "distance-ladder" ? runRankValue(input.distanceM, input.durationS).category : "all";
+  const speedMps = input.distanceM / input.durationS;
+  const result = await recomputeRunRank(db, USER_ID, bucket, activityType, plausibility.multiplier, plausibility.reason);
 
   const flag = plausibility.reason ? ` [${plausibility.reason}]` : "";
+  const rankNote = result ? `category ${bucket}, ${speedMps.toFixed(2)} m/s` : "below rank-eligibility floor — XP only";
   console.log(
-    `  GPS run "${input.name}" seeded (${(input.distanceM / 1000).toFixed(1)} km, category ${category}, ` +
-      `${speedMps.toFixed(2)} m/s, plausibility ${plausibility.multiplier.toFixed(2)}${flag}).`,
+    `  ${activityType} "${input.name}" seeded (${(input.distanceM / 1000).toFixed(1)} km, ${rankNote}, ` +
+      `plausibility ${plausibility.multiplier.toFixed(2)}${flag}).`,
   );
+}
+
+/** For "other" cardio (cycling, rowing, ...): inserted + point-populated the same way, but never
+ *  runs the plausibility/rank pipeline at all — mirrors `runImportService.ts`'s `persistRun`,
+ *  whose rank block is gated on `cardioActivity(activityType).rank.mode !== "none"` and "other"
+ *  is the one activity whose mode is "none". XP/streak still apply (computed at read time from
+ *  the `runs` row itself, same as every other activity — see runXp.ts's "no XP ledger" note). */
+async function seedOtherCardio(db: LiftrDb, input: {
+  name: string;
+  daysAgo: number;
+  hour: number;
+  minute: number;
+  distanceM: number;
+  durationS: number;
+  avgHr: number;
+}) {
+  const activityType: ActivityType = "other";
+  const startedAt = daysAgo(input.daysAgo, input.hour, input.minute);
+  const points = loopPoints(input.distanceM, input.durationS, startedAt, input.avgHr);
+
+  const run = await insertRun(db, USER_ID, {
+    source: "gpx",
+    activityType,
+    name: input.name,
+    startedAt,
+    clientId: randomUUID(),
+    distanceM: input.distanceM,
+    durationS: input.durationS,
+    avgPaceSPerKm: Math.round(input.durationS / (input.distanceM / 1000)),
+    avgHr: input.avgHr,
+    elevationGainM: null,
+  });
+  await insertRunPoints(db, run.id, points);
+
+  console.log(`  other "${input.name}" seeded (${(input.distanceM / 1000).toFixed(1)} km, XP + streak only, no rank).`);
 }
 
 /** A short realistic GPS run history: three 5k-category runs (varied pace across different days,
@@ -585,6 +647,7 @@ async function seedManualRun(db: LiftrDb, plannedRouteId: string) {
 
   await insertRun(db, USER_ID, {
     source: "manual",
+    activityType: "run",
     name: null,
     startedAt,
     clientId: randomUUID(),
@@ -594,6 +657,74 @@ async function seedManualRun(db: LiftrDb, plannedRouteId: string) {
     plannedRouteId,
   });
   console.log(`  Manual run seeded (${(distanceM / 1000).toFixed(1)} km, no GPS points) linked to planned route ${plannedRouteId}.`);
+}
+
+/** Walk/hike/other cardio history — exercises the new single-speed rank buckets, the
+ *  rank-eligibility floor, and "other"'s XP-only path. Mirrors seedRunHistory's "same band,
+ *  different day" corroboration trick for the walk peak. */
+async function seedCardioHistory(db: LiftrDb) {
+  // Two walks at the same pace on different days -> a corroborated walk peak, same trick
+  // seedRunHistory uses for its 5k peak.
+  await seedRankedGpsRun(db, {
+    name: "Abendspaziergang",
+    daysAgo: 9,
+    hour: 19,
+    minute: 0,
+    distanceM: 5000,
+    durationS: 3600, // ~1.39 m/s
+    avgHr: 105,
+    elevationGainM: 8,
+    activityType: "walk",
+  });
+  await seedRankedGpsRun(db, {
+    name: "Sonntagsspaziergang",
+    daysAgo: 2,
+    hour: 10,
+    minute: 30,
+    distanceM: 5000,
+    durationS: 3600, // same pace, different day -> corroborates the walk peak
+    avgHr: 103,
+    elevationGainM: 8,
+    activityType: "walk",
+  });
+
+  // A short walk below the rank-eligibility floor (< 1000m and < 600s) — XP + streak only, no
+  // rank row. Proves the floor without needing a dedicated code path in the seed script.
+  await seedRankedGpsRun(db, {
+    name: "Kurzer Gang zum Briefkasten",
+    daysAgo: 4,
+    hour: 8,
+    minute: 15,
+    distanceM: 400,
+    durationS: 300,
+    avgHr: 95,
+    elevationGainM: 1,
+    activityType: "walk",
+  });
+
+  // One hike, well clear of its own (higher) floor.
+  await seedRankedGpsRun(db, {
+    name: "Waldwanderung",
+    daysAgo: 15,
+    hour: 9,
+    minute: 0,
+    distanceM: 9000,
+    durationS: 8100, // ~1.11 m/s
+    avgHr: 118,
+    elevationGainM: 210,
+    activityType: "hike",
+  });
+
+  // "other": earns XP + streak, never a rank ladder — no honest standards data for cycling exists.
+  await seedOtherCardio(db, {
+    name: "Radtour",
+    daysAgo: 7,
+    hour: 16,
+    minute: 0,
+    distanceM: 20_000,
+    durationS: 3000,
+    avgHr: 128,
+  });
 }
 
 async function main() {
@@ -632,6 +763,9 @@ async function main() {
   console.log("[seed] runs (GPS history + manual entry)...");
   await seedRunHistory(db);
   await seedManualRun(db, plannedRouteId);
+
+  console.log("[seed] cardio history (walk/hike/other)...");
+  await seedCardioHistory(db);
 
   console.log("[seed] done.");
 

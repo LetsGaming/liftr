@@ -11,6 +11,7 @@
  */
 
 import { MAX_PLAUSIBLE_SPEED_M_S, pathDistanceM } from "../math/gps.js";
+import type { RankedActivityType } from "../math/riegel.js";
 import { PLAUSIBILITY_FLOOR } from "./plausibility.js";
 
 /** Below this sustained average speed (m/s), no discount at all. Set comfortably above real-world
@@ -24,6 +25,16 @@ import { PLAUSIBILITY_FLOOR } from "./plausibility.js";
  *  discount starts must stay generous, the same design choice `plausibility.ts` makes for its own
  *  most-likely-to-catch-a-real-breakthrough heuristic (`JUMP_FINE_THRESHOLD`). */
 export const RUN_SPEED_FINE_THRESHOLD_M_S = 7.0;
+
+/** The walking sibling of `RUN_SPEED_FINE_THRESHOLD_M_S`. Today's gate only penalizes runs for
+ *  being implausibly *fast*; without a walk-specific floor, an activity mislabeled "walk" (e.g. a
+ *  jog misclassified by Health Connect, or a user picking the wrong type) would sail onto the
+ *  easier walking ladder at a full 1.0 multiplier. 3.0 m/s (~10:53 min/mile) sits comfortably
+ *  above even competitive race-walking pace (world-class 20K race walkers sustain ~4.3 m/s, but
+ *  that's a specialized gait most watches won't distinguish from a fast walk at the sample rate
+ *  Health Connect gives us) while catching anything that is unambiguously a run. Severity then
+ *  ramps up to `RUN_SPEED_FINE_THRESHOLD_M_S`, the speed at which it's unambiguously running. */
+export const WALK_SPEED_FINE_THRESHOLD_M_S = 3.0;
 
 /** A same-run independently-recomputed distance (via `pathDistanceM` over the run's own points)
  *  that differs from the stored `distanceM` by more than this fraction starts rising in severity.
@@ -42,6 +53,8 @@ export interface RunPlausibilityInput {
   distanceM: number;
   durationS: number;
   points: { t: number; lat: number; lon: number }[]; // run_points, chronological
+  /** Defaults to "run" so existing callers (all running today) are unaffected. */
+  activityType?: RankedActivityType;
 }
 
 export type RunPlausibilityReason = "sustained_speed" | "distance_mismatch";
@@ -65,6 +78,9 @@ function sustainedSpeedSeverity(input: RunPlausibilityInput): number {
   const avgSpeedMS = input.distanceM / input.durationS;
   // higher speed is worse, so negate to reuse the "lower value is worse" ramp convention (same
   // trick `ceilingSeverity` in plausibility.ts uses for its own "higher ratio is worse" check).
+  if (input.activityType === "walk" || input.activityType === "hike") {
+    return severityRamp(-avgSpeedMS, -WALK_SPEED_FINE_THRESHOLD_M_S, -RUN_SPEED_FINE_THRESHOLD_M_S);
+  }
   return severityRamp(-avgSpeedMS, -RUN_SPEED_FINE_THRESHOLD_M_S, -MAX_PLAUSIBLE_SPEED_M_S);
 }
 
