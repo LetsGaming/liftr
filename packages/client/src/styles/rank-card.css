@@ -76,10 +76,19 @@
    than "wide"). */
 .rank-lifter-section .card-grid {
   grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  /* Pinned to the same cap as .rank-analytics above it (both var(--content-w-wide)) — without
+     this, list-card.css's own 900px rule bumps a plain .card-grid to var(--content-w-xwide),
+     which drifts wider than the analytics tiles and throws their edges out of alignment. */
+  max-width: var(--content-w-wide);
 }
 @media (min-width: 600px) {
   .rank-lifter-section .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(210px, 260px));
+  }
+}
+@media (min-width: 900px) {
+  .rank-lifter-section .card-grid {
+    max-width: var(--content-w-wide);
   }
 }
 

@@ -12,8 +12,7 @@
 import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
 import { computed, onMounted } from "vue";
 import CardGrid from "../ui/CardGrid.vue";
-import RankProgress from "./RankProgress.vue";
-import TierBadge from "./TierBadge.vue";
+import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunRankRow } from "../../stores/runRankStore";
 import { formatPace } from "../../lib/format";
@@ -86,57 +85,24 @@ function formatNextSpeedTarget(speedMps: number | null): string {
     </p>
 
     <CardGrid v-else>
-      <!-- Not a ListCard: unlike the Kraft grid's cards, these don't do anything on tap (no
-           expand, no navigation) — a real <button>/role="button" here would be a false
-           affordance. Plain .card/.surface-hybrid (list-card.css), the same classes ListCard.vue
-           itself renders, so the shell still matches exactly; only the click affordance differs. -->
-      <div
+      <RankCategoryCard
         v-for="category in RUN_CATEGORIES"
         :key="category"
-        class="card surface-hybrid"
-        :class="runRankByCategory[category] ? `t-${runRankByCategory[category]!.tier}` : ''"
-      >
-        <div class="card-head">
-          <b class="card-name">{{ RUN_CATEGORY_LABEL[category] }}</b>
-          <TierBadge v-if="runRankByCategory[category]" :tier="runRankByCategory[category]!.tier" />
-        </div>
-        <RankProgress
-          v-if="runRankByCategory[category]"
-          variant="card"
-          :badge="false"
-          :tier="runRankByCategory[category]!.tier"
-          :division="runRankByCategory[category]!.division"
-          :lp="runRankByCategory[category]!.lp"
-          :next-target-label="formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
-          :trust="runRankByCategory[category]!.trust ?? 'real'"
-          :peak-tier="runRankByCategory[category]!.peakTier"
-          :peak-division="runRankByCategory[category]!.peakDivision"
-        />
-        <p v-else class="run-rank-empty-note">Noch kein Rang — lauf diese Distanz, um zu starten.</p>
-      </div>
+        :name="RUN_CATEGORY_LABEL[category]"
+        :row="runRankByCategory[category] ?? null"
+        :next-target-label="runRankByCategory[category] && formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
+        trust-fallback="real"
+        empty-note="Noch kein Rang — lauf diese Distanz, um zu starten."
+      />
 
-      <div
+      <RankCategoryCard
         v-for="row in singleSpeedRanks"
         :key="row.activityType"
-        class="card surface-hybrid"
-        :class="`t-${row.tier}`"
-      >
-        <div class="card-head">
-          <b class="card-name">{{ ACTIVITY_LABEL[row.activityType] ?? row.activityType }}</b>
-          <TierBadge :tier="row.tier" />
-        </div>
-        <RankProgress
-          variant="card"
-          :badge="false"
-          :tier="row.tier"
-          :division="row.division"
-          :lp="row.lp"
-          :next-target-label="formatNextSpeedTarget(row.nextTargetSpeedMps)"
-          :trust="row.trust ?? 'synthetic'"
-          :peak-tier="row.peakTier"
-          :peak-division="row.peakDivision"
-        />
-      </div>
+        :name="ACTIVITY_LABEL[row.activityType] ?? row.activityType"
+        :row="row"
+        :next-target-label="formatNextSpeedTarget(row.nextTargetSpeedMps)"
+        trust-fallback="synthetic"
+      />
     </CardGrid>
 
     <p v-if="singleSpeedRanks.length > 0" class="page-note overall-exclusion-note">
@@ -151,10 +117,6 @@ function formatNextSpeedTarget(speedMps: number | null): string {
    from main.ts); .card/.card-grid/.card-head/.card-name come from global list-card.css, same as
    every other card grid in the app — only this section's own empty-state note stays scoped
    here. */
-.run-rank-empty-note {
-  font-size: 12.5px;
-  color: var(--dim);
-}
 .overall-exclusion-note {
   margin-top: var(--sp3);
   font-size: 12px;

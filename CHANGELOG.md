@@ -34,6 +34,8 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - A Health Connect workout whose route wasn't shared with Liftr (rather than never recorded at
   all) used to be silently dropped — it now imports without a route, or is recorded as skipped
   with a clear reason on the new Diagnose page.
+- The Kraft-Ränge card grid no longer drifts wider than the rank-analytics tiles above it on
+  larger screens — both now line up to the same edge.
 
 ## [1.5.4] - 2026-09-21
 
