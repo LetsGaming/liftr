@@ -60,7 +60,7 @@ const decayCaption = computed(() => {
 </script>
 
 <template>
-  <div class="rank-exercise-back">
+  <div class="rank-card-back rank-exercise-back">
     <div class="reb-eyebrow">Trainierte Muskeln</div>
     <MuscleFigure :primary="primaryMuscles" :secondary="secondaryMuscles" :size="64" />
     <div class="reb-legend">
@@ -87,34 +87,10 @@ const decayCaption = computed(() => {
 </template>
 
 <style scoped>
-.rank-exercise-back {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* Tighter than --sp2 (8px) — this face already stacks 5 elements (muscle figure, legend,
-     badge row, actions) inside the flip card's fixed height, and the 76px MuscleFigure alone
-     renders ~140px tall (its own aspect ratio, not a square), so every px of gap here is one
-     the "Rang-Statistiken" button below needs to stay inside the card instead of being clipped
-     by its rounded corner. */
-  gap: 6px;
-  text-align: center;
-  /* Without an explicit width, this element (a plain flex item, not itself flex-stretched) sizes
-     to its own content's natural width — on a narrow two-up phone card, `.reb-tier`'s badge+label
-     row could then grow past the card's real content width, and `align-items: center` on this
-     column would center that overflow, spilling it evenly past BOTH edges rather than wrapping.
-     width:100% + min-width:0 pins this to the card's actual width, so `.reb-tier` below is forced
-     to fit it (and its own min-width:0) instead of growing past it. Mirrors RankProgress.vue's
-     hero variant, which already has width:100% for the same reason. */
-  width: 100%;
-  min-width: 0;
-}
-.reb-eyebrow {
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dim);
-}
+/* .rank-card-back (root) and .reb-eyebrow/.reb-tier/.reb-tier-body/.reb-tier-label/.reb-lp/
+   .reb-decay/.reb-badge/.reb-empty moved to the global styles/rank-card.css — identical between
+   this face (Kraft) and RankRunBack.vue (Läufe); only what's unique to a muscle-trained readout
+   (the figure, its legend, the stats action) stays scoped here. */
 .reb-legend {
   display: flex;
   gap: var(--sp3);
@@ -137,49 +113,6 @@ const decayCaption = computed(() => {
   /* Same --muscle-secondary token ExerciseInfoPanel.vue's own legend draws from, so both stay in
      sync across themes rather than a second hardcoded copy. */
   background: var(--muscle-secondary);
-}
-.reb-tier {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
-  margin-top: var(--sp2);
-}
-/* Matches the MuscleFigure's own 64px width above it, so the two visual anchors on this face
-   read at the same scale — mirroring the front face, where the hero badge (96px,
-   RankProgress.vue) is sized to be the card's sole focal point rather than a small label next
-   to text. Not the full 76px used elsewhere: at that size (plus the ~140px-tall figure it sits
-   under) the back face's content overflowed the flip card's fixed height and got clipped by its
-   rounded corner. */
-.reb-badge {
-  --badge-size: 64px;
-}
-.reb-tier-body {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-.reb-tier-label {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--text);
-}
-.reb-lp {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--tier-accent, var(--dim));
-}
-.reb-decay {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--warning-hi);
-  margin: 0;
-}
-.reb-empty {
-  font-size: 12.5px;
-  color: var(--dim);
-  margin: var(--sp2) 0 0;
 }
 /* The one action left now that "Zurück" is gone (tapping anywhere on the back face flips it,
    RankFlipCard.vue) — centers on its own via the parent's flex centering, same as everything

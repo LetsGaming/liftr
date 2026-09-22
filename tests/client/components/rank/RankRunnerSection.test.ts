@@ -5,17 +5,20 @@ import RankRunnerSection from "~client/components/rank/RankRunnerSection.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 // Task 13: running rank section — sourced from Task 10's runRankStore, same store also used by
-// RecordsPage's running records section. Only the `ranks`/`overallCurrent`/`overallPeak` slice is
-// exercised here; `prs`/prsLoaded etc. aren't read by this component so they're omitted from this
-// mock.
+// RecordsPage's running records section. `prs` is now also read here (RankCategoryCard.vue's back
+// face shows a per-category personal best, same PR data RecordsPage's cardio-records section
+// reduces) so it's part of this mock too, left empty by default (no PR-related assertions here —
+// RankRunBack.vue has its own test coverage for the formatting).
 const runRankState = reactive({
   ranks: [] as unknown[],
   ranksLoaded: false,
   ranksError: false,
+  prs: [] as unknown[],
   overallCurrent: null as { tier: string; division: number } | null,
   overallPeak: null as { tier: string; division: number } | null,
   loadRanks: vi.fn(),
   loadOverallRank: vi.fn(),
+  loadPrs: vi.fn(),
 });
 
 vi.mock("~client/stores/runRankStore", () => ({ useRunRankStore: () => runRankState }));
@@ -41,14 +44,15 @@ function makeRunRank(overrides: Partial<Record<string, unknown>> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(runRankState, { ranks: [], ranksLoaded: false, ranksError: false, overallCurrent: null, overallPeak: null });
+  Object.assign(runRankState, { ranks: [], ranksLoaded: false, ranksError: false, prs: [], overallCurrent: null, overallPeak: null });
 });
 
 describe("RankRunnerSection", () => {
-  it("loads running ranks and the overall runner rank on mount", () => {
+  it("loads running ranks, the overall runner rank, and PRs on mount", () => {
     mountWithProviders(RankRunnerSection);
     expect(runRankState.loadRanks).toHaveBeenCalledOnce();
     expect(runRankState.loadOverallRank).toHaveBeenCalledOnce();
+    expect(runRankState.loadPrs).toHaveBeenCalledOnce();
   });
 
   it("renders the tier ladder for the overall runner rank", () => {
@@ -95,7 +99,7 @@ describe("RankRunnerSection", () => {
     expect(cards).toHaveLength(5);
     expect(wrapper.findAll(".run-rank-empty-note")).toHaveLength(3);
 
-    const runProgressCards = wrapper.findAllComponents(RankProgress).filter((c) => c.props("variant") === "card");
+    const runProgressCards = wrapper.findAllComponents(RankProgress).filter((c) => c.props("variant") === "hero");
     expect(runProgressCards).toHaveLength(2);
     expect(wrapper.text()).toContain("5 km");
     expect(wrapper.text()).toContain("Marathon");
@@ -113,7 +117,9 @@ describe("RankRunnerSection", () => {
     const wrapper = mountWithProviders(RankRunnerSection);
 
     expect(wrapper.text()).toContain("5:00/km");
-    expect(wrapper.text()).toContain("Nächstes Ziel");
+    // "Ziel", not "Nächstes Ziel" — the hero variant's label (RankProgress.vue's heroFields),
+    // since RankCategoryCard.vue's front face is now the same hero variant the Kraft grid uses.
+    expect(wrapper.text()).toContain("Ziel");
     expect(wrapper.text()).toContain("???");
   });
 });

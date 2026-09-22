@@ -2,7 +2,9 @@
 
 Liftr is a self-hosted, single-maintainer project, but the workflow below is what's actually
 enforced by tooling — useful whether you're the maintainer coming back to this after a break or
-someone sending a PR.
+someone sending a PR. By participating, you're expected to follow the
+[Code of Conduct](../CODE_OF_CONDUCT.md); Liftr itself is licensed under
+[AGPL-3.0](../LICENSE).
 
 ## Project stage: pre-v1, no legacy
 

@@ -60,21 +60,25 @@
   margin: var(--sp4) auto 0;
 }
 
-/* Kraft cards only, not Läufe: taller now (RankFlipCard.vue's fixed-height flip card) to give the
-   hero badge and the back face's muscle figure real room. A tall card that also stretches to fill
-   a whole grid column reads as oversized — the Liftoff reference this system is modeled on runs
-   its own rank cards two-up even at phone width, nothing like the full-width single column the
-   shared 260px/340px minmax (list-card.css) would otherwise give a lone card. Below 600px the
-   160px floor is chosen to actually get that two-up phone layout (two columns plus the grid's
-   var(--sp3) gap fits comfortably inside a ~360-430px phone viewport minus page padding — see
-   RankFlipCard.vue/RankProgress.vue's own narrow-card adjustments for what had to shrink to fit
-   a ~155-190px card without its content overflowing); at 600px+ the column width is capped, not
-   just floored, so the grid gains further columns instead of stretching cards wider, and keeps
-   adding narrow columns rather than a few huge ones as it grows from there. 600px is a new
-   breakpoint (the app's only other one, list-card.css's 900px, reads as "desktop" — this needs to
-   kick in earlier, at ordinary tablet/small-laptop widths, to actually read as "medium" rather
-   than "wide"). */
-.rank-lifter-section .card-grid {
+/* Both grids now: taller (RankFlipCard.vue's fixed-height flip card, shared by Kraft and Läufe
+   cards alike) to give the hero badge and the back face's content real room. A tall card that
+   also stretches to fill a whole grid column reads as oversized — the Liftoff reference this
+   system is modeled on runs its own rank cards two-up even at phone width, nothing like the
+   full-width single column the shared 260px/340px minmax (list-card.css) would otherwise give a
+   lone card. Below 600px the 145px floor is chosen to actually get that two-up phone layout (two
+   columns plus the grid's var(--sp3) gap fits comfortably inside a ~360-430px phone viewport
+   minus page padding — see RankFlipCard.vue/RankProgress.vue's own narrow-card adjustments for
+   what had to shrink to fit a ~155-190px card without its content overflowing); at 600px+ the
+   column width is capped, not just floored, so the grid gains further columns instead of
+   stretching cards wider, and keeps adding narrow columns rather than a few huge ones as it grows
+   from there. 600px is a new breakpoint (the app's only other one, list-card.css's 900px, reads
+   as "desktop" — this needs to kick in earlier, at ordinary tablet/small-laptop widths, to
+   actually read as "medium" rather than "wide"). Was Kraft-only (see this file's own history) —
+   the Läufe grid used to render a shorter, non-flipping card that fit list-card.css's default
+   column recipe just fine; now that both grids share RankFlipCard.vue's fixed height, both need
+   this same recipe or their columns drift out of sync with each other. */
+.rank-lifter-section .card-grid,
+.rank-runner-section .card-grid {
   grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   /* Pinned to the same cap as .rank-analytics above it (both var(--content-w-wide)) — without
      this, list-card.css's own 900px rule bumps a plain .card-grid to var(--content-w-xwide),
@@ -82,12 +86,14 @@
   max-width: var(--content-w-wide);
 }
 @media (min-width: 600px) {
-  .rank-lifter-section .card-grid {
+  .rank-lifter-section .card-grid,
+  .rank-runner-section .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(210px, 260px));
   }
 }
 @media (min-width: 900px) {
-  .rank-lifter-section .card-grid {
+  .rank-lifter-section .card-grid,
+  .rank-runner-section .card-grid {
     max-width: var(--content-w-wide);
   }
 }
@@ -109,13 +115,75 @@
   );
 }
 
-/* The medal in a Läufe grid card's head (ListCard's #badge slot, next to the category name) — the
-   Kraft grid no longer uses ListCard/`.card-head` at all (RankFlipCard.vue is a bespoke two-sided
-   card whose own hero badge is sized in RankProgress.vue's hero variant instead). Global for the
-   same reason as the centering rule above: TierBadge.vue's `.tier-emblem` root is rendered by a
-   different SFC than the section that puts it in the slot. Square (no separate height override) —
-   the emblem's own overflow:visible lets wings extend past this box without needing extra reserved
-   height the way the old CSS wing pseudo-elements did. */
-.card-head .tier-emblem {
-  --badge-size: 40px;
+/* Shared "flip card back face" pieces for RankExerciseBack.vue (Kraft: trained muscles) and
+   RankRunBack.vue (Läufe: personal-best readout) — identical tier/LP/decay/empty-state chrome
+   between the two; only the content ABOVE this chrome (muscle figure vs. PR value+date) differs
+   per caller and stays in each component's own scoped style. Global for the same reason as the
+   rest of this file: RankFlipCard.vue's `.flip-face-back` (a third SFC) is what actually renders
+   these faces via a slot, so no single component's scoped style could reach them all. */
+.rank-card-back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Tighter than --sp2 (8px) — this face can stack up to 5 elements (lead content, legend/value,
+     badge row, decay caption, actions) inside the flip card's fixed height. */
+  gap: 6px;
+  text-align: center;
+  /* Without an explicit width, this element (a plain flex item, not itself flex-stretched) sizes
+     to its own content's natural width — on a narrow two-up phone card, `.reb-tier`'s badge+label
+     row could then grow past the card's real content width, and `align-items: center` on this
+     column would center that overflow, spilling it evenly past BOTH edges rather than wrapping.
+     width:100% + min-width:0 pins this to the card's actual width, so `.reb-tier` below is forced
+     to fit it (and its own min-width:0) instead of growing past it. Mirrors RankProgress.vue's
+     hero variant, which already has width:100% for the same reason. */
+  width: 100%;
+  min-width: 0;
+}
+.rank-card-back .reb-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+.rank-card-back .reb-tier {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  margin-top: var(--sp2);
+}
+/* 64px, not the full 76px used elsewhere — matches the Kraft face's MuscleFigure width above it
+   (see RankExerciseBack.vue), and at the full size the back face's content overflowed the flip
+   card's fixed height and got clipped by its rounded corner. Kept at the same size on the Läufe
+   face too so the two grids' back faces share one scale, not two. */
+.rank-card-back .reb-badge {
+  --badge-size: 64px;
+}
+.rank-card-back .reb-tier-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.rank-card-back .reb-tier-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.rank-card-back .reb-lp {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tier-accent, var(--dim));
+}
+.rank-card-back .reb-decay {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--warning-hi);
+  margin: 0;
+}
+.rank-card-back .reb-empty {
+  font-size: 12.5px;
+  color: var(--dim);
+  margin: var(--sp2) 0 0;
 }

@@ -10,19 +10,64 @@
  * grid rather than left for the user to infer from the hero ladder simply never moving.
  */
 import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import CardGrid from "../ui/CardGrid.vue";
 import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
-import { useRunRankStore, type RunRankRow } from "../../stores/runRankStore";
-import { formatPace } from "../../lib/format";
+import { useRunRankStore, type RunPrListItem, type RunRankRow } from "../../stores/runRankStore";
+import { formatClockLong, formatPace } from "../../lib/format";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
 
 const runRankStore = useRunRankStore();
 onMounted(() => {
   void runRankStore.loadRanks();
   void runRankStore.loadOverallRank();
+  void runRankStore.loadPrs();
 });
+
+/** One card flipped at a time, same accordion rule RankLifterSection.vue's Kraft grid already
+ *  follows (see that file's own comment on `flipped`/`activatedBacks`) — kept here rather than in
+ *  RankCategoryCard.vue itself so both grids share the exact same interaction, not two similar-
+ *  but-independent implementations. Keyed by category for the RUN_CATEGORIES loop below (stable
+ *  even before a rank row exists) and by activityType for the single-speed loop (always has a
+ *  row, since only a real rank ever renders a card there). */
+const flipped = ref<string | null>(null);
+const activatedBacks = ref(new Set<string>());
+function toggleFlip(id: string) {
+  if (flipped.value !== id) activatedBacks.value.add(id);
+  flipped.value = flipped.value === id ? null : id;
+}
+
+/** The current personal best per running category (fastest "time" PR) — RecordsPage.vue's own
+ *  cardio-records section does this exact reduction for the exact same reason: run_prs keeps
+ *  every historical PR event, not just the current best, so "current best" is an application-
+ *  level reduction over runRankStore.prs rather than something the API hands back pre-reduced. */
+const bestRunTimeByCategory = computed(() => {
+  const out: Partial<Record<RunCategory, RunPrListItem>> = {};
+  for (const pr of runRankStore.prs) {
+    if (pr.activityType !== "run" || pr.kind !== "time") continue;
+    const current = out[pr.category as RunCategory];
+    if (!current || pr.value < current.value) out[pr.category as RunCategory] = pr;
+  }
+  return out;
+});
+
+/** Single-speed activities (walk/hike) have no "time" PR — no fixed distance to divide by — so
+ *  their personal best is the fastest (highest-value) "speed" PR instead, same convention
+ *  RecordsPage.vue's own bestSpeedByActivity follows. */
+const bestSpeedByActivity = computed(() => {
+  const out: Record<string, RunPrListItem> = {};
+  for (const pr of runRankStore.prs) {
+    if (pr.activityType === "run" || pr.kind !== "speed") continue;
+    const current = out[pr.activityType];
+    if (!current || pr.value > current.value) out[pr.activityType] = pr;
+  }
+  return out;
+});
+
+function formatPrDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 // RUN_CATEGORIES is a fixed 5-entry list (mile/5k/10k/half_marathon/marathon), same fixed-row
 // convention RecordsPage.vue's running section already uses — every category always renders,
@@ -93,6 +138,11 @@ function formatNextSpeedTarget(speedMps: number | null): string {
         :next-target-label="runRankByCategory[category] && formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
         trust-fallback="real"
         empty-note="Noch kein Rang — lauf diese Distanz, um zu starten."
+        :flipped="flipped === category"
+        :back-activated="activatedBacks.has(category)"
+        :pr-label="bestRunTimeByCategory[category] ? formatClockLong(bestRunTimeByCategory[category]!.value) : null"
+        :pr-date="bestRunTimeByCategory[category] ? formatPrDate(bestRunTimeByCategory[category]!.achievedAt) : null"
+        @flip="toggleFlip(category)"
       />
 
       <RankCategoryCard
@@ -102,6 +152,11 @@ function formatNextSpeedTarget(speedMps: number | null): string {
         :row="row"
         :next-target-label="formatNextSpeedTarget(row.nextTargetSpeedMps)"
         trust-fallback="synthetic"
+        :flipped="flipped === row.activityType"
+        :back-activated="activatedBacks.has(row.activityType)"
+        :pr-label="bestSpeedByActivity[row.activityType] ? formatPace(1000 / bestSpeedByActivity[row.activityType]!.value) : null"
+        :pr-date="bestSpeedByActivity[row.activityType] ? formatPrDate(bestSpeedByActivity[row.activityType]!.achievedAt) : null"
+        @flip="toggleFlip(row.activityType)"
       />
     </CardGrid>
 

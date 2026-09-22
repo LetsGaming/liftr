@@ -1,70 +1,65 @@
 <script setup lang="ts">
 /**
- * A Kraft-Ränge grid card that's genuinely two full-size faces of ONE card, not a static header
- * with a rotating panel underneath. Earlier revisions of this card kept the exercise name in
- * ListCard.vue's own header (always visible, never rotating) and only flipped an inner content
- * div below it — which meant the back face was squeezed into a container smaller than the card's
- * actual footprint, and the interaction read as "expand and swap content inside the card" rather
- * than "the card turns over." This component drops ListCard entirely for the Kraft grid (it isn't
- * used for anything ListCard's drag-handle/menu/meta/footer slots provide) and makes the name part
- * of EACH face, so the whole card — identity included — is what rotates. Both faces get the exact
- * same full box (`.flip-face` fills `.rank-flip-card`'s own padded content area via `inset: 0`),
- * so the back face uses exactly as much space as the front, not a smaller nested container.
+ * Generic two-sided flip-card shell: genuinely two full-size faces of ONE card, not a static
+ * header with a rotating panel underneath. Earlier revisions kept the card's name in ListCard's
+ * own header (always visible, never rotating) and only flipped an inner content div below it —
+ * which meant the back face was squeezed into a container smaller than the card's actual
+ * footprint, and the interaction read as "expand and swap content inside the card" rather than
+ * "the card turns over." This drops ListCard entirely (it isn't used for anything ListCard's
+ * drag-handle/menu/meta/footer slots provide) and makes the name part of EACH face, so the whole
+ * card — identity included — is what rotates. Both faces get the exact same full box (`.flip-face`
+ * fills `.rank-flip-card`'s own padded content area via `inset: 0`), so the back face uses exactly
+ * as much space as the front, not a smaller nested container.
+ *
+ * Shared by both Ränge grids via the `front`/`back` slots — RankLifterSection.vue (Kraft) puts a
+ * hero RankProgress in front and RankExerciseBack (trained muscles) behind; RankRunnerSection.vue
+ * (Läufe) puts the same hero RankProgress in front and RankRunBack (personal-best readout) behind.
+ * Used to be Kraft-only (RankFlipCard's own name is what's left of that), with the Läufe grid
+ * hand-rolling a flat, non-flipping card instead (RankCategoryCard.vue) — this is the one shell
+ * both use now, so the two grids read as the same design language, not two drifting ones.
  *
  * `.rank-flip-card` itself carries `.card`/`surface-hybrid` (list-card.css/tokens.css) so it still
  * matches every other card grid's entrance animation, hover shadow, and tier-accent outline
  * (`.card-grid > .card`) — the two inner faces are plain positioned panes, not `.card`s themselves,
  * so they don't double up on that styling or break the grid's direct-child selectors.
  */
-import RankExerciseBack from "./RankExerciseBack.vue";
-import RankProgress from "./RankProgress.vue";
-
-defineProps<{
-  tier: string;
-  division: number;
-  lp: number;
-  nextTargetWeightKg?: number | null;
-  nextTargetReps?: number | null;
-  trust?: "real" | "derived" | "synthetic";
-  peakTier?: string | null;
-  peakDivision?: number | null;
-  name: string;
-  primaryMuscles: string[];
-  secondaryMuscles: string[];
-  flipped: boolean;
-  /** Lazily true after the first flip — see RankLifterSection.vue's own comment on
-   *  `activatedBacks` for why the back face isn't always mounted. */
-  backActivated: boolean;
-}>();
-defineEmits<{ flip: []; stats: [] }>();
+withDefaults(
+  defineProps<{
+    name: string;
+    /** Null for a card with no rank yet (e.g. a running category never raced) — renders with no
+     *  tier-accent outline/wash, same as an untiered `.card` elsewhere in the app. */
+    tier: string | null;
+    flipped: boolean;
+    /** Lazily true after the first flip — see RankLifterSection.vue's own comment on
+     *  `activatedBacks` for why the back face isn't always mounted. */
+    backActivated: boolean;
+    /** False for a card with nothing to flip to (no rank yet) — renders the front face as a plain
+     *  non-interactive pane instead of a tappable one, so a card that can never show a back face
+     *  doesn't look tappable and silently do nothing when tapped. */
+    flippable?: boolean;
+  }>(),
+  { flippable: true },
+);
+defineEmits<{ flip: [] }>();
 </script>
 
 <template>
-  <div class="rank-flip-card card surface-hybrid" :class="[`t-${tier}`, { flipped }]">
+  <div class="rank-flip-card card surface-hybrid" :class="[tier ? `t-${tier}` : '', { flipped }]">
     <!-- No aria-label: the accessible name comes from this button's own visible text content
          (name, tier, LP, target fields), same as ListCard's own role="button" pattern — an
          explicit label here would override that and silently drop the tier/LP/target context a
          screen reader user gets for free otherwise. -->
     <div
       class="flip-face flip-face-front"
-      role="button"
-      tabindex="0"
-      @click="$emit('flip')"
-      @keydown.enter="$emit('flip')"
+      :role="flippable ? 'button' : undefined"
+      :tabindex="flippable ? 0 : undefined"
+      :class="{ 'flip-face-inert': !flippable }"
+      @click="flippable && $emit('flip')"
+      @keydown.enter="flippable && $emit('flip')"
     >
       <b class="rfc-name">{{ name }}</b>
       <div class="rfc-content">
-        <RankProgress
-          variant="hero"
-          :tier="tier"
-          :division="division"
-          :lp="lp"
-          :next-target-weight-kg="nextTargetWeightKg"
-          :next-target-reps="nextTargetReps"
-          :trust="trust"
-          :peak-tier="peakTier"
-          :peak-division="peakDivision"
-        />
+        <slot name="front" />
       </div>
     </div>
     <!-- Tappable to flip back, same as the front — there was no way back to the front except the
@@ -79,16 +74,7 @@ defineEmits<{ flip: []; stats: [] }>();
     >
       <b class="rfc-name">{{ name }}</b>
       <div class="rfc-content">
-        <RankExerciseBack
-          :tier="tier"
-          :division="division"
-          :lp="lp"
-          :peak-tier="peakTier"
-          :peak-division="peakDivision"
-          :primary-muscles="primaryMuscles"
-          :secondary-muscles="secondaryMuscles"
-          @stats="$emit('stats')"
-        />
+        <slot name="back" />
       </div>
     </div>
   </div>
@@ -145,6 +131,9 @@ defineEmits<{ flip: []; stats: [] }>();
 .flip-face-front {
   transform: rotateY(0deg);
   cursor: pointer;
+}
+.flip-face-front.flip-face-inert {
+  cursor: default;
 }
 .flip-face-back {
   transform: rotateY(180deg);

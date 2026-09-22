@@ -71,6 +71,12 @@
 }
 
 :root {
+  /* Without this, the browser has no way to know the page defaults to dark and paints native
+     scrollbars/form controls with the OS's light UI regardless of --bg/--surface below — that
+     mismatch is exactly what made the default scrollbar look out of place against this dark
+     chrome. Re-pinned to "light" in the `:root[data-theme="light"]` block below so it always
+     tracks the *active* theme, not just this bare block's own default. */
+  color-scheme: dark;
   --bg: #0a0c14;
   /* Ramp widened from 1.09/1.18/1.23:1 steps to ~1.15/1.19/1.28:1 (critique finding: cards were
      mechanically indistinguishable from the page they sat on — no figure/ground, nothing read as
@@ -321,6 +327,7 @@
    Components that sit on top of those always-dark fills (e.g. .panel-reward, .rank-card) locally
    re-pin --text/--dim/--faint to light-on-dark values instead — see .panel-reward below. */
 :root[data-theme="light"] {
+  color-scheme: light;
   --bg: #f6f4fb;
   --surface: #ffffff;
   --surface-2: #f4f2f9;
@@ -360,6 +367,36 @@
     rgba(20, 16, 32, 0.02) 40%,
     rgba(47, 159, 224, 0.18)
   );
+}
+
+/* Custom scrollbar, both engines: `color-scheme` above fixes which native-control palette the
+   browser reaches for, but the actual scrollbar thumb/track colors still need styling directly —
+   otherwise even a `color-scheme: dark` page gets the OS's generic dark scrollbar instead of one
+   built from this app's own tokens. Firefox uses `scrollbar-color`/`scrollbar-width` (set on
+   :root; both properties inherit to every scrollable box in the page, no per-element rule
+   needed); WebKit/Blink (Chrome, Safari, Edge) use the ::-webkit-scrollbar pseudo-elements, which
+   only apply per scrollable element — `*` here so every internal scrollable container (not just
+   the page root) picks it up, matching whichever theme is active via the --surface-3/--line-2
+   tokens rather than a hardcoded color. */
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--surface-3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--line-2);
 }
 
 *,

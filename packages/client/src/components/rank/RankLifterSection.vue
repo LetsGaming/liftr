@@ -16,7 +16,9 @@ import ExerciseInfoPanel from "../exercise/ExerciseInfoPanel.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import InfoToggle from "../ui/InfoToggle.vue";
 import RankDistributionDonut from "./RankDistributionDonut.vue";
+import RankExerciseBack from "./RankExerciseBack.vue";
 import RankFlipCard from "./RankFlipCard.vue";
+import RankProgress from "./RankProgress.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
 import TierLadder from "./TierLadder.vue";
 
@@ -164,21 +166,37 @@ const filteredRanks = computed(() =>
           v-for="r in filteredRanks"
           :key="r.exerciseId"
           :tier="r.tier"
-          :division="r.division"
-          :lp="r.lp"
-          :next-target-weight-kg="r.nextTargetWeightKg"
-          :next-target-reps="r.nextTargetReps"
-          :trust="r.trust"
-          :peak-tier="r.peakTier"
-          :peak-division="r.peakDivision"
           :name="exerciseName(r.slug, r.name)"
-          :primary-muscles="primaryMusclesFor(r)"
-          :secondary-muscles="secondaryMusclesFor(r)"
           :flipped="flipped === r.exerciseId"
           :back-activated="activatedBacks.has(r.exerciseId)"
           @flip="toggleFlip(r.exerciseId)"
-          @stats="openStats(r)"
-        />
+        >
+          <template #front>
+            <RankProgress
+              variant="hero"
+              :tier="r.tier"
+              :division="r.division"
+              :lp="r.lp"
+              :next-target-weight-kg="r.nextTargetWeightKg"
+              :next-target-reps="r.nextTargetReps"
+              :trust="r.trust"
+              :peak-tier="r.peakTier"
+              :peak-division="r.peakDivision"
+            />
+          </template>
+          <template #back>
+            <RankExerciseBack
+              :tier="r.tier"
+              :division="r.division"
+              :lp="r.lp"
+              :peak-tier="r.peakTier"
+              :peak-division="r.peakDivision"
+              :primary-muscles="primaryMusclesFor(r)"
+              :secondary-muscles="secondaryMusclesFor(r)"
+              @stats="openStats(r)"
+            />
+          </template>
+        </RankFlipCard>
       </CardGrid>
     </template>
 

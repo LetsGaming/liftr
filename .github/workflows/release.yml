@@ -18,27 +18,56 @@ jobs:
   # Tagging a commit that was JUST pushed to main (the normal `bump-version.mjs --push` flow)
   # means ci.yml's own `push` trigger already ran the full suite for this exact SHA seconds
   # earlier — re-running it via the `test` job below would just be paying for the same
-  # typecheck/lint/test/build/smoke-test twice. This looks up whether a "check" check-run
-  # already succeeded for `github.sha` and skips the redundant re-run when it did; anything not
-  # already covered (a manually-created tag, workflow_dispatch off a branch with no prior CI
-  # run) still gets tested for real below.
+  # typecheck/lint/test/build/smoke-test twice. This polls for a "check" check-run on
+  # `github.sha` (it's usually still queued/in_progress when the tag lands, not finished yet)
+  # and skips the redundant re-run once it succeeds; anything not already covered (a
+  # manually-created tag, workflow_dispatch off a branch with no prior CI run) still gets
+  # tested for real below. Note: release.yml's own `test` job also produces a check-run named
+  # "check" on this same SHA, but it `needs: check-ci`, so it can't exist yet during this poll —
+  # this job never ends up waiting on itself.
   check-ci:
     runs-on: ubuntu-latest
     outputs:
       already-passed: ${{ steps.check.outputs.already-passed }}
     steps:
-      - name: Check for an existing successful CI run on this exact commit
+      - name: Wait for and check this commit's CI result
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          count=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
-            --jq '[.check_runs[] | select(.name == "check" and .conclusion == "success")] | length')
-          if [[ "$count" -gt 0 ]]; then
-            echo "already-passed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "already-passed=false" >> "$GITHUB_OUTPUT"
-          fi
+          deadline=$((SECONDS + 1800))       # give up polling after 30 minutes
+          grace=$((SECONDS + 120))           # allow 2 minutes for a check-run to appear at all
+          while true; do
+            runs=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+              --jq '[.check_runs[] | select(.name == "check")]')
+            count=$(jq 'length' <<<"$runs")
+
+            if [[ "$count" -eq 0 ]]; then
+              if [[ "$SECONDS" -ge "$grace" ]]; then
+                echo "No \"check\" check-run appeared for this commit — treating as untested."
+                echo "already-passed=false" >> "$GITHUB_OUTPUT"
+                break
+              fi
+            else
+              pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+              if [[ "$pending" -eq 0 ]]; then
+                succeeded=$(jq '[.[] | select(.conclusion == "success")] | length' <<<"$runs")
+                if [[ "$succeeded" -gt 0 ]]; then
+                  echo "already-passed=true" >> "$GITHUB_OUTPUT"
+                else
+                  echo "already-passed=false" >> "$GITHUB_OUTPUT"
+                fi
+                break
+              fi
+            fi
+
+            if [[ "$SECONDS" -ge "$deadline" ]]; then
+              echo "::warning::Timed out waiting for CI on ${{ github.sha }} — running tests for real instead of trusting a stuck check."
+              echo "already-passed=false" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            sleep 15
+          done
 
   test:
     needs: check-ci
