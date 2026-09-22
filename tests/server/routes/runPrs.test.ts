@@ -21,6 +21,7 @@ describe("GET /api/runs/prs", () => {
     registerRunPrRoutes(app, db);
     const run = await insertRun(db, OWNER_USER_ID, {
       source: "gpx",
+      activityType: "run",
       name: null,
       startedAt: new Date("2026-09-01T10:00:00Z"),
       clientId: "run-prs-1",

@@ -9,7 +9,7 @@ import {
   UnsupportedFileFormatError,
   type HealthConnectPoint,
 } from "~server/services/runImportService.js";
-import { findRunRankByCategory } from "~server/repositories/runRankRepository.js";
+import { findRunRankByBucket } from "~server/repositories/runRankRepository.js";
 import { createTestDb } from "../helpers/testDb.js";
 
 let db: LiftrDb;
@@ -99,7 +99,15 @@ describe("importHealthConnectRun", () => {
   ];
 
   it("persists a new run keyed by a healthconnect: prefixed clientId and credits the streak", async () => {
-    const result = await importHealthConnectRun(db, OWNER_USER_ID, "platform-123", "HC Run", points);
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-123",
+      name: "HC Run",
+      rawWorkoutType: "RUNNING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points: points,
+    });
 
     expect(result.source).toBe("healthconnect");
     expect(result.clientId).toBe("healthconnect:platform-123");
@@ -110,19 +118,145 @@ describe("importHealthConnectRun", () => {
   });
 
   it("is idempotent: importing the same platformId twice returns the existing run instead of duplicating it", async () => {
-    const first = await importHealthConnectRun(db, OWNER_USER_ID, "platform-abc", "First", points);
-    const second = await importHealthConnectRun(db, OWNER_USER_ID, "platform-abc", "Second name ignored", points);
+    const first = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-abc",
+      name: "First",
+      rawWorkoutType: "RUNNING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points: points,
+    });
+    const second = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-abc",
+      name: "Second name ignored",
+      rawWorkoutType: "RUNNING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points: points,
+    });
 
     expect(second.id).toBe(first.id);
     const allRuns = await db.select().from(runs).where(eq(runs.clientId, "healthconnect:platform-abc"));
     expect(allRuns).toHaveLength(1);
+  });
+
+  it("classifies WALKING as activityType 'walk'", async () => {
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-walk",
+      name: "HC Walk",
+      rawWorkoutType: "WALKING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points,
+    });
+    const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+    expect(persisted?.activityType).toBe("walk");
+  });
+
+  it("classifies an unrecognized type (e.g. BIKING) as activityType 'other'", async () => {
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-bike",
+      name: "HC Ride",
+      rawWorkoutType: "BIKING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points,
+    });
+    const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+    expect(persisted?.activityType).toBe("other");
+  });
+
+  it("an 'other' activity earns streak credit but never triggers a rank recompute, even with points", async () => {
+    await db.insert(runStandards).values([
+      { category: "5k", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "real" },
+    ]);
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-row",
+      name: "HC Row",
+      rawWorkoutType: "ROWING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points,
+    });
+
+    const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+    expect(persisted?.plausibilityMultiplier).toBeNull(); // plausibility gate never ran
+
+    const streakRows = await db.select().from(streaks).where(eq(streaks.date, "2026-09-02"));
+    expect(streakRows).toHaveLength(1); // XP/streak credit still applies
+  });
+
+  describe("route-less fallback (no GPS points, distance+duration only)", () => {
+    it("imports from the watch's own distance/duration when Health Connect withheld the route", async () => {
+      const startedAt = new Date("2026-09-10T07:00:00Z");
+      const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+        platformId: "platform-routeless",
+        name: "Routeless Walk",
+        rawWorkoutType: "WALKING",
+        startedAt,
+        distanceM: 4200,
+        durationS: 3000,
+        points: [],
+      });
+
+      expect(result.source).toBe("healthconnect");
+      expect(result.distanceM).toBe(4200);
+      expect(result.durationS).toBe(3000);
+      expect(result.avgPaceSPerKm).toBeCloseTo(3000 / 4.2, 2);
+
+      const points = await db.query.runPoints.findMany({ where: eq(runPoints.runId, result.id) });
+      expect(points).toHaveLength(0);
+
+      const streakRows = await db.select().from(streaks).where(eq(streaks.date, "2026-09-10"));
+      expect(streakRows).toHaveLength(1); // XP/streak credit still applies
+    });
+
+    it("never earns a rank, even with standards seeded (no GPS trace to check plausibility against)", async () => {
+      await db.insert(runStandards).values([
+        { activityType: "walk", category: "5k", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "synthetic" },
+      ]);
+      const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+        platformId: "platform-routeless-rank",
+        name: "Routeless Walk",
+        rawWorkoutType: "WALKING",
+        startedAt: new Date("2026-09-11T07:00:00Z"),
+        distanceM: 5000,
+        durationS: 3600,
+        points: [],
+      });
+
+      const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
+      expect(persisted?.plausibilityMultiplier).toBeNull();
+
+      const rank = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "walk");
+      expect(rank).toBeUndefined();
+    });
+
+    it("throws RunParseError when neither points nor distance/duration are present", async () => {
+      await expect(
+        importHealthConnectRun(db, OWNER_USER_ID, {
+          platformId: "platform-empty",
+          name: null,
+          rawWorkoutType: "WALKING",
+          startedAt: null,
+          distanceM: null,
+          durationS: null,
+          points: [],
+        }),
+      ).rejects.toBeInstanceOf(RunParseError);
+    });
   });
 });
 
 describe("logManualRun", () => {
   it("persists a manual run with a computed pace and credits the streak", async () => {
     const startedAt = new Date("2026-09-03T07:00:00Z");
-    const result = await logManualRun(db, OWNER_USER_ID, { name: "Manual 5k", startedAt, distanceM: 5000, durationS: 1500 });
+    const result = await logManualRun(db, OWNER_USER_ID, { name: "Manual 5k", startedAt, distanceM: 5000, durationS: 1500, activityType: "run" });
 
     expect(result.source).toBe("manual");
     expect(result.name).toBe("Manual 5k");
@@ -143,6 +277,7 @@ describe("logManualRun", () => {
       startedAt: new Date("2026-09-04T07:00:00Z"),
       distanceM: 0,
       durationS: 600,
+      activityType: "run",
     });
 
     expect(result.avgPaceSPerKm).toBeNull();
@@ -160,12 +295,13 @@ describe("logManualRun", () => {
       startedAt: new Date("2026-09-06T07:00:00Z"),
       distanceM: 5000,
       durationS: 1500,
+      activityType: "run",
     });
 
     const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
     expect(persisted?.plausibilityMultiplier).toBeNull();
 
-    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "5k");
+    const rank = await findRunRankByBucket(db, OWNER_USER_ID, "5k", "run");
     expect(rank).toBeUndefined();
   });
 });
@@ -186,12 +322,20 @@ describe("rank recompute on finish (GPS-tracked runs only)", () => {
       { category: "mile", sex: "male", tier: "apprentice", division: 3, threshold: 1.0, trust: "real" },
     ]);
 
-    const result = await importHealthConnectRun(db, OWNER_USER_ID, "platform-rank", "Rank Run", rankEligiblePoints);
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-rank",
+      name: "Rank Run",
+      rawWorkoutType: "RUNNING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points: rankEligiblePoints,
+    });
 
     const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
     expect(persisted?.plausibilityMultiplier).not.toBeNull();
 
-    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "mile");
+    const rank = await findRunRankByBucket(db, OWNER_USER_ID, "mile", "run");
     expect(rank).toBeDefined();
     expect(rank?.category).toBe("mile");
   });
@@ -203,18 +347,26 @@ describe("rank recompute on finish (GPS-tracked runs only)", () => {
 
     await importRunFile(db, OWNER_USER_ID, "Rank Check.gpx", Buffer.from(VALID_GPX, "utf-8"));
 
-    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "mile");
+    const rank = await findRunRankByBucket(db, OWNER_USER_ID, "mile", "run");
     expect(rank).toBeDefined();
   });
 
   it("no rank recompute (and no runRanks row) when standards aren't modeled for the category, even for a GPS-tracked run", async () => {
     // No runStandards seeded at all here — recomputeRunRank should no-op, not throw.
-    const result = await importHealthConnectRun(db, OWNER_USER_ID, "platform-no-standards", "No Standards", rankEligiblePoints);
+    const result = await importHealthConnectRun(db, OWNER_USER_ID, {
+      platformId: "platform-no-standards",
+      name: "No Standards",
+      rawWorkoutType: "RUNNING",
+      startedAt: null,
+      distanceM: null,
+      durationS: null,
+      points: rankEligiblePoints,
+    });
 
     const persisted = await db.query.runs.findFirst({ where: eq(runs.id, result.id) });
     expect(persisted?.plausibilityMultiplier).not.toBeNull(); // plausibility still computed...
 
-    const rank = await findRunRankByCategory(db, OWNER_USER_ID, "mile");
+    const rank = await findRunRankByBucket(db, OWNER_USER_ID, "mile", "run");
     expect(rank).toBeUndefined(); // ...but recomputeRunRank itself no-ops without standards
   });
 });

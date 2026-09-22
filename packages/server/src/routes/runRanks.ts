@@ -1,16 +1,20 @@
 /**
- * GET /api/runs/ranks — every running category with a computed rank. Own dedicated route file,
- * mirroring how `routes/ranks.ts` (the strength analog) is separate from `routes/workouts.ts` —
- * see Ruling 4 in this task's brief.
+ * GET /api/runs/ranks — every rank bucket with a computed rank, for one cardio activity type
+ * (`?activityType=run|walk|hike`, defaults to "run"). Own dedicated route file, mirroring how
+ * `routes/ranks.ts` (the strength analog) is separate from `routes/workouts.ts` — see Ruling 4 in
+ * this task's brief.
  */
 import { z } from "zod";
 import type { AppDb } from "../db.js";
 import { findAllRunRanks } from "../repositories/runRankRepository.js";
-import { runCategorySchema, tierSchema, trustSchema } from "../schemas.js";
+import { rankBucketSchema, rankedActivityTypeSchema, tierSchema, trustSchema } from "../schemas.js";
 import type { ZodFastifyInstance } from "../types.js";
 
+const runRanksQuery = z.object({ activityType: rankedActivityTypeSchema.default("run") });
+
 const runRankResponse = z.object({
-  category: runCategorySchema,
+  activityType: rankedActivityTypeSchema,
+  category: rankBucketSchema,
   tier: tierSchema,
   division: z.number(),
   lp: z.number(),
@@ -25,20 +29,25 @@ const runRankResponse = z.object({
 });
 
 export function registerRunRankRoutes(app: ZodFastifyInstance, db: AppDb) {
-  app.get("/api/runs/ranks", { schema: { response: { 200: z.array(runRankResponse) } } }, async (request) => {
-    const rows = await findAllRunRanks(db, request.userId);
-    return rows
-      .map((r) => ({
-        category: r.category,
-        tier: r.tier,
-        division: r.division,
-        lp: r.lp,
-        bestSpeedMps: r.bestSpeedMps,
-        trust: r.trust,
-        nextTargetSpeedMps: r.nextTargetSpeedMps,
-        peakTier: r.peakTier,
-        peakDivision: r.peakDivision,
-      }))
-      .sort((a, b) => b.lp - a.lp);
-  });
+  app.get(
+    "/api/runs/ranks",
+    { schema: { querystring: runRanksQuery, response: { 200: z.array(runRankResponse) } } },
+    async (request) => {
+      const rows = await findAllRunRanks(db, request.userId, request.query.activityType);
+      return rows
+        .map((r) => ({
+          activityType: r.activityType,
+          category: r.category,
+          tier: r.tier,
+          division: r.division,
+          lp: r.lp,
+          bestSpeedMps: r.bestSpeedMps,
+          trust: r.trust,
+          nextTargetSpeedMps: r.nextTargetSpeedMps,
+          peakTier: r.peakTier,
+          peakDivision: r.peakDivision,
+        }))
+        .sort((a, b) => b.lp - a.lp);
+    },
+  );
 }

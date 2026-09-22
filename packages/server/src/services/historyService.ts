@@ -76,7 +76,12 @@ export async function getHistoryPage(db: LiftrDb, userId: string, cursor: string
         id: r.id,
         at: r.startedAt,
         title: r.name,
-        meta: { distanceM: r.distanceM, durationS: r.durationS, avgPaceSPerKm: r.avgPaceSPerKm },
+        meta: {
+          distanceM: r.distanceM,
+          durationS: r.durationS,
+          avgPaceSPerKm: r.avgPaceSPerKm,
+          activityType: r.activityType,
+        },
       }),
     ),
   ].sort((a, b) => b.at.getTime() - a.at.getTime());

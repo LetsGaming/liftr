@@ -16,6 +16,7 @@ vi.mock("~client/stores/runsStore", () => ({
 }));
 
 interface RunRankRow {
+  activityType: string;
   category: string;
   tier: string;
   division: number;
@@ -53,6 +54,7 @@ vi.mock("~client/stores/runRankStore", () => ({
 
 function makeRankRow(overrides: Partial<RunRankRow> = {}): RunRankRow {
   return {
+    activityType: "run",
     category: "5k",
     tier: "advanced",
     division: 3,
@@ -110,6 +112,7 @@ function makeDetail(overrides: Partial<RunDetailModel> = {}): RunDetailModel {
   return {
     id: "run-1",
     source: "gpx",
+    activityType: "run",
     name: "Morning Run",
     startedAt: "2026-03-15T07:00:00.000Z",
     distanceM: 5230,

@@ -8,7 +8,7 @@
  * a modal before). Reuses RunReplay.vue (which itself wraps RunMap.vue) for the route visualization
  * exactly as RunsPage.vue does, rather than duplicating map/replay logic here.
  */
-import { nearestRunCategory, type RunCategory } from "@liftr/shared";
+import { cardioActivity, nearestRunCategory, type RankBucket } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
 import { useRunsStore, type RunDetail as RunDetailModel } from "../../stores/runsStore";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
@@ -17,6 +17,7 @@ import { getPlannedRouteDetail, type Waypoint } from "../../services/plannedRout
 import { formatDateLong, formatDurationMinutes, formatPace } from "../../lib/format";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import { useConfirmTap } from "../../composables/useConfirmTap";
+import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
 import AppIcon from "../ui/AppIcon.vue";
 import RouteWizard from "../route-wizard/RouteWizard.vue";
 import RunReplay from "./RunReplay.vue";
@@ -49,27 +50,25 @@ const deleteConfirm = useConfirmTap(async () => {
   }
 });
 
-// Rank/PR chip — same convention as RunsPage.vue's own selectedRunCategory/selectedRunRank/
-// selectedRunIsPr (see that file's comment for why manual runs are excluded explicitly rather
-// than relying on runRanks/runPrs simply having no matching rows), and the same
-// locally-duplicated RUN_CATEGORY_LABEL RanksPage.vue/RecordsPage.vue/RunsPage.vue each already
-// keep their own copy of.
-const RUN_CATEGORY_LABEL: Record<RunCategory, string> = {
-  mile: "Meile",
-  "5k": "5 km",
-  "10k": "10 km",
-  half_marathon: "Halbmarathon",
-  marathon: "Marathon",
-};
-const detailCategory = computed<RunCategory | null>(() => {
+// Rank/PR chip — manual runs are excluded explicitly (no run_points means no independent
+// plausibility check, so they never earn rank) rather than relying on runRanks/runPrs simply
+// having no matching rows. `detailBucket` is distance-derived only for running (the
+// distance-ladder activity); a single-speed activity (walk/hike) has exactly one bucket, "all",
+// regardless of distance — see cardioActivities.ts's RankMode.
+const detailBucket = computed<RankBucket | null>(() => {
   const d = detail.value;
   if (!d || d.source === "manual") return null;
-  return nearestRunCategory(d.distanceM);
+  // Defensive fallback: older cached RunDetail data (or a test fixture predating this field)
+  // may not carry activityType — treat it as "run", the pre-existing behavior.
+  const mode = cardioActivity(d.activityType ?? "run").rank.mode;
+  if (mode === "none") return null;
+  return mode === "distance-ladder" ? nearestRunCategory(d.distanceM) : "all";
 });
 const detailRank = computed(() => {
-  const category = detailCategory.value;
-  if (!category) return null;
-  return runRankStore.ranks.find((r) => r.category === category) ?? null;
+  const d = detail.value;
+  const bucket = detailBucket.value;
+  if (!d || !bucket) return null;
+  return runRankStore.ranks.find((r) => r.activityType === (d.activityType ?? "run") && r.category === bucket) ?? null;
 });
 const detailIsPr = computed(() => {
   const d = detail.value;
@@ -158,8 +157,8 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
            as the "Strecke:" chip) — kept only as a stable selector distinguishing this chip from
            its siblings (route/pr) for tests. -->
       <div v-if="detailRank" class="route-chip rank-chip pop-in">
-        {{ RUN_CATEGORY_LABEL[detailCategory!] }} · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }}
-        {{ DIVISION_LABEL[detailRank.division] }}
+        {{ ACTIVITY_LABEL[detail.activityType ?? "run"] }}<template v-if="detailBucket !== 'all'"> · {{ RUN_CATEGORY_LABEL[detailBucket!] }}</template>
+        · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }} {{ DIVISION_LABEL[detailRank.division] }}
       </div>
       <div v-if="detailIsPr" class="route-chip pr-chip pop-in">Neuer Rekord</div>
       <div class="stat-row">

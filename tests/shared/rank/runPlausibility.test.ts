@@ -5,6 +5,7 @@ import {
   DISTANCE_MISMATCH_FINE_FRACTION,
   DISTANCE_MISMATCH_MAX_SEVERITY_FRACTION,
   RUN_SPEED_FINE_THRESHOLD_M_S,
+  WALK_SPEED_FINE_THRESHOLD_M_S,
 } from "@liftr/shared/rank/runPlausibility";
 
 /** Builds a chronological run_points array walking east along the equator in fixed steps, so
@@ -116,6 +117,46 @@ describe("computeRunPlausibility", () => {
     expect(computeRunPlausibility({ distanceM: 5000, durationS: 0, points: [] })).toEqual({
       multiplier: 1,
       reason: null,
+    });
+  });
+
+  describe("activityType: 'walk'", () => {
+    it("does not flag a genuine brisk walk at/under WALK_SPEED_FINE_THRESHOLD_M_S", () => {
+      const result = computeRunPlausibility({
+        distanceM: WALK_SPEED_FINE_THRESHOLD_M_S * 1000,
+        durationS: 1000,
+        points: [],
+        activityType: "walk",
+      });
+      expect(result).toEqual({ multiplier: 1, reason: null });
+    });
+
+    it("flags a 'walk' sustained at running pace as implausible", () => {
+      const result = computeRunPlausibility({
+        distanceM: 5000,
+        durationS: 833, // 6 m/s, clearly running pace
+        points: [],
+        activityType: "walk",
+      });
+      expect(result.reason).toBe("sustained_speed");
+      expect(result.multiplier).toBeLessThan(1);
+    });
+
+    it("floors severity at/beyond RUN_SPEED_FINE_THRESHOLD_M_S for a walk", () => {
+      const result = computeRunPlausibility({
+        distanceM: RUN_SPEED_FINE_THRESHOLD_M_S * 1000,
+        durationS: 1000,
+        points: [],
+        activityType: "walk",
+      });
+      expect(result.multiplier).toBeCloseTo(PLAUSIBILITY_FLOOR, 6);
+    });
+
+    it("uses the run threshold, not the walk threshold, when activityType is omitted", () => {
+      // Same speed (4 m/s) is fine for a run but would be flagged for a walk -- confirms the
+      // default parameter doesn't leak the walk gate onto existing (run) callers.
+      const result = computeRunPlausibility({ distanceM: 4000, durationS: 1000, points: [] });
+      expect(result).toEqual({ multiplier: 1, reason: null });
     });
   });
 

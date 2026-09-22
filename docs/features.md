@@ -75,29 +75,40 @@ The **Recovery Zone** looks at your recent training load and gives a plain green
 read for today — an explicit heuristic, not a claim to know your physiology, surfaced as an
 `ErholungszoneCard` on the Overview page.
 
-## Running
+## Cardio (running, walking, hiking)
 
-Runs are a first-class second discipline alongside lifting, with no third-party dependency\* —
+Cardio is a first-class second discipline alongside lifting, with no third-party dependency\* —
 and, since the run XP/rank parity work, that's true of progression too, not just import/display:
-runs now earn XP and rank exactly like sets do.
+cardio activities earn XP and rank exactly like sets do. Beyond running, Health Connect imports
+now recognize walking and hiking as their own activity types (previously either dropped or
+scored against the running ladder), plus any other cardio activity as XP/streak-only.
 
 - **GPX/FIT file import** from any watch or app you already own — explicitly chosen over a Strava
   API integration, which was evaluated and rejected to avoid a load-bearing dependency on a
   third party's rate limits, paywalls, or terms.
 - **Health Connect import** on Android, checked opportunistically on app resume (no background
   service) via the `capacitor-health` plugin, to remove the manual GPX/FIT export ritual where
-  Health Connect is available.
+  Health Connect is available. A workout Health Connect withheld the route for (consent not
+  granted for that record, or no route ever recorded) still imports — with XP/streak credit, just
+  no rank — instead of silently vanishing. A **Diagnose page** (Profil → Konto & App) shows every
+  sync's outcome per workout, including why one was skipped, with a re-scan control to re-check
+  the last 30/90 days.
 - **Run detail view** with a rendered route map and a **replay** of the run.
 - **Manual run entry** as a fallback when there's no file/device data, with real inline
   validation errors instead of just disabling the save button.
 - A combined **workout/runs switcher** so both disciplines live in one place in the UI.
-- **Runs earn XP and rank.** Every logged run (manual or GPS-tracked) earns XP that feeds the same
-  global level as strength XP — see [xp-and-streaks.md](concepts/xp-and-streaks.md#run-xp). A
-  GPS-tracked run also gets ranked into one of five distance categories (Mile/5K/10K/Half
-  Marathon/Marathon), with its own peak/current rank, corroboration, decay, PRs, and a dedicated
-  Overall Runner Rank aggregate — same mechanics as the strength rank system, run in parallel, not
-  blended into it. Manual entries (no GPS track to independently verify) are XP-only, never
-  rank-eligible. See [rank-engine.md](concepts/rank-engine.md#running-ranks).
+- **Cardio activities earn XP and rank.** Every logged activity (manual or GPS-tracked) earns XP
+  that feeds the same global level as strength XP — see
+  [xp-and-streaks.md](concepts/xp-and-streaks.md#cardio-xp). A GPS-tracked run gets ranked into
+  one of five distance categories (Mile/5K/10K/Half Marathon/Marathon); a GPS-tracked walk or
+  hike gets ranked on its own single speed-based bucket instead (no fixed distances) once it
+  clears a minimum distance/duration — each with its own peak/current rank, corroboration, decay,
+  and PRs, same mechanics as the strength rank system, run in parallel, not blended into it.
+  Walking and hiking don't count toward the dedicated Overall Runner Rank aggregate (only running
+  does); the app says so. Any other cardio activity (cycling, rowing, ...) earns XP/streak only,
+  never rank — there's no honest standards data to rank it against yet. Manual entries (no GPS
+  track to independently verify) are XP-only, never rank-eligible regardless of activity type.
+  See [rank-engine.md](concepts/rank-engine.md#cardio-ranks-running-walking-hiking).
 
 \* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
 distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to

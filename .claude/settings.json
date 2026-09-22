@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v jq >/dev/null 2>&1 || exit 0; p=$(jq -r '.tool_input.file_path // empty'); [ -n \"$p\" ] || exit 0; case \"$p\" in *packages[/\\\\]db[/\\\\]*migrat*) printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Migration files under packages/db are generated via pnpm db:generate (drizzle-kit) and should not be hand-edited. Edit packages/db/src/schema.ts instead and regenerate.\"}}' ;; esac",
+            "command": "command -v jq >/dev/null 2>&1 || exit 0; p=$(jq -r '.tool_input.file_path // empty'); [ -n \"$p\" ] || exit 0; case \"$p\" in *packages[/\\\\]db[/\\\\]drizzle[/\\\\]*) printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Migration files under packages/db/drizzle are generated via pnpm db:generate (drizzle-kit) and should not be hand-edited. Edit packages/db/src/schema.ts instead and regenerate.\"}}' ;; esac",
             "timeout": 15
           }
         ]

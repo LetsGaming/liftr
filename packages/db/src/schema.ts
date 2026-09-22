@@ -474,6 +474,12 @@ export const runs = sqliteTable(
     id: id(),
     userId: userId(),
     source: text("source", { enum: ["gpx", "fit", "manual", "healthconnect"] }).notNull(),
+    /** Cardio modality. "run"/"walk" each get their own parallel rank ladder (own standards rows,
+     *  own run_ranks rows, own overall aggregate); "other" (bike, row, swim, ...) earns XP +
+     *  streak credit only — no rank/PR, since there's no honest standards data to rank it
+     *  against. Defaulted to "run" so the ADD COLUMN migration backfills every pre-existing row
+     *  correctly: every run logged before this column existed was, by construction, a run. */
+    activityType: text("activity_type", { enum: ["run", "walk", "hike", "other"] }).notNull().default("run"),
     name: text("name"),
     startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
     distanceM: real("distance_m").notNull(),
@@ -572,14 +578,25 @@ export const runStandards = sqliteTable(
   "run_standards",
   {
     id: id(),
-    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    /** Narrower than runs.activityType — "other" has no standards data and can never reach this
+     *  table; the type system enforces it via @liftr/shared's RankedActivityType. */
+    activityType: text("activity_type", { enum: ["run", "walk", "hike"] }).notNull().default("run"),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon", "all"] }).notNull(),
     sex: text("sex", { enum: ["male", "female"] }).notNull(),
     tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(), // N (weakest) down to 1 (strongest), N = TIER_DIVISION_COUNT[tier]
     threshold: real("threshold").notNull(), // m/s
     trust: text("trust", { enum: ["real", "derived", "synthetic"] }).notNull(),
   },
-  (t) => [uniqueIndex("run_standards_category_sex_tier_division_idx").on(t.category, t.sex, t.tier, t.division)],
+  (t) => [
+    uniqueIndex("run_standards_activity_category_sex_tier_division_idx").on(
+      t.activityType,
+      t.category,
+      t.sex,
+      t.tier,
+      t.division,
+    ),
+  ],
 );
 
 /** Derived cache, always rebuildable from runs + runStandards. Composite primary key
@@ -589,7 +606,8 @@ export const runRanks = sqliteTable(
   "run_ranks",
   {
     userId: userId(),
-    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    activityType: text("activity_type", { enum: ["run", "walk", "hike"] }).notNull().default("run"),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon", "all"] }).notNull(),
     tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(),
     lp: real("lp").notNull(),
@@ -605,7 +623,7 @@ export const runRanks = sqliteTable(
     peakSpeedMps: real("peak_speed_mps"),
     peakAchievedAt: integer("peak_achieved_at", { mode: "timestamp_ms" }),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.category] })],
+  (t) => [primaryKey({ columns: [t.userId, t.activityType, t.category] })],
 );
 
 /** Append-only history of every running rank-up — shape copied verbatim from `rankEvents`
@@ -615,7 +633,8 @@ export const runRankEvents = sqliteTable(
   {
     id: id(),
     userId: userId(),
-    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    activityType: text("activity_type", { enum: ["run", "walk", "hike"] }).notNull().default("run"),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon", "all"] }).notNull(),
     tier: text("tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }).notNull(),
     division: integer("division").notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
@@ -627,7 +646,7 @@ export const runRankEvents = sqliteTable(
      *  TS-only), so this column fix needs no migration. */
     plausibilityReason: text("plausibility_reason", { enum: ["sustained_speed", "distance_mismatch"] }),
   },
-  (t) => [index("run_rank_events_category_idx").on(t.category)],
+  (t) => [index("run_rank_events_activity_category_idx").on(t.activityType, t.category)],
 );
 
 export const runPrs = sqliteTable(
@@ -635,7 +654,8 @@ export const runPrs = sqliteTable(
   {
     id: id(),
     userId: userId(),
-    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon"] }).notNull(),
+    activityType: text("activity_type", { enum: ["run", "walk", "hike"] }).notNull().default("run"),
+    category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon", "all"] }).notNull(),
     /** Mirrors prs.kind's e1rm/weight/reps/volume split: one row per kind so both a category's
      *  "fastest time" and "highest average speed" (same underlying number, but time is what a
      *  runner actually cares about seeing) can be queried without recomputing from value each
@@ -648,7 +668,7 @@ export const runPrs = sqliteTable(
       .references(() => runs.id, { onDelete: "cascade" }),
     achievedAt: integer("achieved_at", { mode: "timestamp_ms" }).notNull(),
   },
-  (t) => [index("run_prs_category_idx").on(t.category)],
+  (t) => [index("run_prs_activity_category_idx").on(t.activityType, t.category)],
 );
 
 // ---------------------------------------------------------------------------

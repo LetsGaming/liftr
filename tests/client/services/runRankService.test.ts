@@ -27,9 +27,10 @@ beforeEach(() => {
 });
 
 describe("getRunRanks", () => {
-  it("GETs /api/runs/ranks and returns the response verbatim", async () => {
+  it("GETs /api/runs/ranks with the given activityType and returns the response verbatim", async () => {
     const ranks: RunRankRow[] = [
       {
+        activityType: "run",
         category: "5k",
         tier: "gold",
         division: 2,
@@ -43,16 +44,17 @@ describe("getRunRanks", () => {
     ];
     mockGet.mockResolvedValue(ranks);
 
-    const result = await getRunRanks();
+    const result = await getRunRanks("run");
 
     expect(mockGet).toHaveBeenCalledTimes(1);
-    expect(mockGet).toHaveBeenCalledWith("/api/runs/ranks");
+    expect(mockGet).toHaveBeenCalledWith("/api/runs/ranks?activityType=run");
     expect(result).toBe(ranks);
   });
 
   it("passes through rows with null trust/bestSpeedMps/peak snapshot unchanged", async () => {
     const ranks: RunRankRow[] = [
       {
+        activityType: "run",
         category: "marathon",
         tier: "bronze",
         division: 4,
@@ -66,9 +68,15 @@ describe("getRunRanks", () => {
     ];
     mockGet.mockResolvedValue(ranks);
 
-    const result = await getRunRanks();
+    const result = await getRunRanks("run");
 
     expect(result).toEqual(ranks);
+  });
+
+  it("uses the given activityType for a single-speed activity like walk", async () => {
+    mockGet.mockResolvedValue([]);
+    await getRunRanks("walk");
+    expect(mockGet).toHaveBeenCalledWith("/api/runs/ranks?activityType=walk");
   });
 });
 
@@ -77,6 +85,7 @@ describe("getRunPrs", () => {
     const prs: RunPrListItem[] = [
       {
         id: "run-pr-1",
+        activityType: "run",
         category: "10k",
         kind: "time",
         value: 2400,

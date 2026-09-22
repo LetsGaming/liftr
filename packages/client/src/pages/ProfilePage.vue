@@ -29,14 +29,12 @@ import {
   createInvite,
   deleteMyAccount,
   getMe,
-  getRecentErrors,
   listMembers,
   listSessions,
   logout,
   removeMember,
   revokeOtherSessions,
   revokeSession,
-  type ErrorLogEntry,
   type Me,
   type Member,
   type Session,
@@ -260,22 +258,6 @@ const { trigger: triggerRevokeOthers, isArmed: isRevokeOthersArmed } = useConfir
     revokingOthers.value = false;
   }
 });
-
-const errorLogs = ref<ErrorLogEntry[]>([]);
-const errorLogsOpen = ref(false);
-const errorLogsLoading = ref(false);
-
-async function toggleErrorLogs() {
-  errorLogsOpen.value = !errorLogsOpen.value;
-  if (errorLogsOpen.value && errorLogs.value.length === 0) {
-    errorLogsLoading.value = true;
-    try {
-      errorLogs.value = await getRecentErrors();
-    } finally {
-      errorLogsLoading.value = false;
-    }
-  }
-}
 
 async function handleLogout() {
   await logout();
@@ -639,26 +621,12 @@ async function saveWeight() {
           </div>
         </template>
 
-        <template v-if="me?.role === 'owner'">
-          <h3 class="eyebrow sub-eyebrow">Diagnose</h3>
-          <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
-          <button class="btn-secondary btn-block" @click="toggleErrorLogs">
-            {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
-          </button>
-          <div v-if="errorLogsOpen" class="error-log-list">
-            <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
-            <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
-              Keine Fehler aufgezeichnet.
-            </p>
-            <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
-              <div class="error-log-meta">
-                <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>
-                <span>{{ entry.method }} {{ entry.url }}</span>
-              </div>
-              <div class="error-log-message">{{ entry.message }}</div>
-            </div>
-          </div>
-        </template>
+        <h3 class="eyebrow sub-eyebrow">Diagnose</h3>
+        <p class="hint">
+          Sync-Protokoll{{ me?.role === "owner" ? " und Serverfehler" : "" }} — hilfreich, falls mal etwas nicht
+          funktioniert. Normalerweise brauchst du das nicht.
+        </p>
+        <RouterLink class="btn-secondary btn-block" to="/diagnostics">Protokoll öffnen</RouterLink>
 
         <button class="btn-secondary btn-block logout-btn" @click="handleLogout">Abmelden</button>
       </CollapsibleCard>
@@ -884,31 +852,6 @@ input[aria-label="Server-Adresse"] {
   color: var(--faint);
   font-size: 11px;
   font-weight: 700;
-}
-.error-log-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp2);
-  margin-top: var(--sp3);
-}
-.error-log-row {
-  padding: var(--sp2) var(--sp3);
-  border-radius: var(--r-md);
-  background: var(--surface-3);
-  border: 1px solid var(--line-2);
-}
-.error-log-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp2);
-  font-size: 12px;
-  color: var(--faint);
-}
-.error-log-message {
-  margin-top: 4px;
-  font-size: 13px;
-  color: var(--danger);
-  word-break: break-word;
 }
 .unit {
   color: var(--faint);

@@ -11,7 +11,7 @@ import {
   UnsupportedFileFormatError,
 } from "../services/runImportService.js";
 import type { ZodFastifyInstance } from "../types.js";
-import { boundedNumber } from "../schemas.js";
+import { activityTypeSchema, boundedNumber } from "../schemas.js";
 
 /**
  * Running: import a GPX you own, or log a run manually with no file. Both paths converge on the
@@ -29,27 +29,38 @@ const manualRunInput = z.object({
   durationS: boundedNumber(0, 86_400).positive(),
   plannedRouteId: z.string().nullable().optional(),
   elevationGainM: boundedNumber(-2000, 10_000).nullable().optional(),
+  activityType: activityTypeSchema.default("run"),
 });
 
-// Health Connect import: the client (capacitor-health's queryWorkouts, called
-// from the app itself — no separate companion app needed) already resolved a workout's route +
-// HR samples into this shape. `platformId` is Health Connect's own record id, reused as the
-// idempotency key (same clientId-uniqueness pattern as every other write path) so re-checking
-// on app resume never creates duplicate runs for a workout already imported.
+const healthConnectPointSchema = z.object({
+  t: z.coerce.date(),
+  lat: z.number(),
+  lon: z.number(),
+  ele: z.number().nullable().optional(),
+  hr: z.number().nullable().optional(),
+});
+
+// Health Connect import: the client (capacitor-health's queryWorkouts, called from the app
+// itself — no separate companion app needed) already resolved a workout's route + HR samples
+// into this shape. `platformId` is Health Connect's own record id, reused as the idempotency key
+// (same clientId-uniqueness pattern as every other write path) so re-checking on app resume never
+// creates duplicate runs for a workout already imported. `workoutType` is Health Connect's own
+// raw exercise-type string (e.g. "RUNNING", "WALKING", "BIKING") — classified server-side, see
+// runImportService.ts's `classifyHealthConnectWorkoutType`.
+//
+// `points` may be empty for a workout Health Connect withheld the route for (consent gate not
+// granted, or no route recorded at all) — in that case `distanceM`/`durationS` (the watch's own
+// aggregate, requested via READ_DISTANCE) are the fallback, and `startedAt` is required since
+// there's no first point to derive it from. At least one of "points" or "distanceM+durationS"
+// must be present; the service rejects a payload with neither.
 const healthConnectRunInput = z.object({
   platformId: z.string().min(1),
   name: z.string().nullable().optional(),
-  points: z
-    .array(
-      z.object({
-        t: z.coerce.date(),
-        lat: z.number(),
-        lon: z.number(),
-        ele: z.number().nullable().optional(),
-        hr: z.number().nullable().optional(),
-      }),
-    )
-    .min(1),
+  workoutType: z.string().min(1),
+  startedAt: z.coerce.date().optional(),
+  distanceM: z.number().positive().optional(),
+  durationS: z.number().positive().optional(),
+  points: z.array(healthConnectPointSchema).default([]),
 });
 
 const runIdParams = z.object({ id: z.string() });
@@ -58,6 +69,7 @@ const okResponse = z.object({ ok: z.literal(true) });
 const runResponse = z.object({
   id: z.string(),
   source: z.enum(["gpx", "fit", "manual", "healthconnect"]),
+  activityType: activityTypeSchema,
   name: z.string().nullable(),
   startedAt: z.date(),
   distanceM: z.number(),
@@ -126,8 +138,23 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.post(
     "/api/runs/healthconnect",
     { config: userRateLimit(20, "1 minute"), schema: { body: healthConnectRunInput } },
-    async (req) => {
-      return importHealthConnectRun(db, req.userId, req.body.platformId, req.body.name ?? null, req.body.points);
+    async (req, reply) => {
+      try {
+        return await importHealthConnectRun(db, req.userId, {
+          platformId: req.body.platformId,
+          name: req.body.name ?? null,
+          rawWorkoutType: req.body.workoutType,
+          startedAt: req.body.startedAt ?? null,
+          distanceM: req.body.distanceM ?? null,
+          durationS: req.body.durationS ?? null,
+          points: req.body.points,
+        });
+      } catch (err) {
+        if (err instanceof RunParseError) {
+          return reply.code(400).send({ error: "parse_failed", detail: err.message });
+        }
+        throw err;
+      }
     },
   );
 
@@ -164,6 +191,7 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
       durationS: req.body.durationS,
       plannedRouteId: req.body.plannedRouteId ?? null,
       elevationGainM: req.body.elevationGainM ?? null,
+      activityType: req.body.activityType,
     });
     reply.code(201);
     return run;

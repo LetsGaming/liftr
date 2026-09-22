@@ -8,13 +8,14 @@
 import { z } from "zod";
 import type { AppDb } from "../db.js";
 import { findAllRunPrs } from "../repositories/runRankRepository.js";
-import { runCategorySchema } from "../schemas.js";
+import { activityTypeSchema, rankBucketSchema } from "../schemas.js";
 import type { ZodFastifyInstance } from "../types.js";
 
 const runPrListResponse = z.array(
   z.object({
     id: z.string(),
-    category: runCategorySchema,
+    activityType: activityTypeSchema,
+    category: rankBucketSchema,
     kind: z.enum(["time", "speed"]),
     value: z.number(),
     runId: z.string(),
@@ -24,9 +25,12 @@ const runPrListResponse = z.array(
 
 export function registerRunPrRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.get("/api/runs/prs", { schema: { response: { 200: runPrListResponse } } }, async (request) => {
+    // No activityType filter — both ladders' PRs come back together, same list the client already
+    // renders; RecordsPage.vue distinguishes them by the new activityType field.
     const rows = await findAllRunPrs(db, request.userId);
     return rows.map((r) => ({
       id: r.id,
+      activityType: r.activityType,
       category: r.category,
       kind: r.kind,
       value: r.value,

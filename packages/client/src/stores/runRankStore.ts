@@ -1,10 +1,11 @@
-/** Running ranks/PRs/overall rank, backed by /api/runs/ranks, /api/runs/prs, and
- *  /api/runs/overall-rank. Combines what would be three separate stores on the strength side
- *  (ranksStore/prStore/overallRankStore) into one, since all three describe the same "run rank"
- *  concept and are expected to be consumed together — but each section keeps its own
- *  loaded/error pair and load action, same as its strength-side counterpart, so one section
- *  failing never blocks the others. */
+/** Running/walking/hiking ranks/PRs/overall rank, backed by /api/runs/ranks (per activity type),
+ *  /api/runs/prs (all activities together), and /api/runs/overall-rank (running only). Combines
+ *  what would be three separate stores on the strength side (ranksStore/prStore/overallRankStore)
+ *  into one, since all three describe the same "cardio rank" concept and are expected to be
+ *  consumed together — but each section keeps its own loaded/error pair and load action, same as
+ *  its strength-side counterpart, so one section failing never blocks the others. */
 import { defineStore } from "pinia";
+import { rankedCardioActivities } from "@liftr/shared";
 import { withLoadState } from "../lib/loadState";
 import {
   getRunOverallRank,
@@ -16,6 +17,14 @@ import {
 } from "../services/runRankService";
 
 export type { RunOverallRankBand, RunPrListItem, RunRankRow } from "../services/runRankService";
+
+/** Every activity that can produce a rank row (run/walk/hike today) — read from the shared
+ *  registry rather than hardcoded here, so a future ranked activity needs no client change to
+ *  start being fetched. */
+async function loadAllRanks(): Promise<RunRankRow[]> {
+  const rows = await Promise.all(rankedCardioActivities().map((a) => getRunRanks(a.id)));
+  return rows.flat();
+}
 
 export const useRunRankStore = defineStore("runRank", {
   state: () => ({
@@ -32,7 +41,7 @@ export const useRunRankStore = defineStore("runRank", {
   }),
   actions: {
     async loadRanks() {
-      await withLoadState(getRunRanks, {
+      await withLoadState(loadAllRanks, {
         apply: (ranks) => (this.ranks = ranks),
         setLoaded: (v) => (this.ranksLoaded = v),
         setError: (v) => (this.ranksError = v),

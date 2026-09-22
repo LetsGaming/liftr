@@ -1,4 +1,14 @@
-import { computeRunPlausibility, runRankValue, summarizeRun, type RunPoint } from "@liftr/shared";
+import {
+  cardioActivity,
+  classifyHealthConnectWorkoutType,
+  computeRunPlausibility,
+  runRankValue,
+  summarizeRun,
+  type ActivityType,
+  type RankBucket,
+  type RankedActivityType,
+  type RunPoint,
+} from "@liftr/shared";
 import type { LiftrDb } from "@liftr/db";
 import { parseFit } from "../fit.js";
 import { parseGpx } from "../gpx.js";
@@ -35,11 +45,29 @@ async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (Run
   await creditStreak(db, userId, dateStr, "run");
 
   let rankResult: Awaited<ReturnType<typeof recomputeRunRank>> = null;
-  if (run.source !== "manual" && points.length > 0) {
-    const plausibility = computeRunPlausibility({ distanceM: run.distanceM, durationS: run.durationS, points });
+  const rankMode = cardioActivity(run.activityType).rank.mode;
+  if (rankMode !== "none" && run.source !== "manual" && points.length > 0) {
+    // Narrowed by rankMode !== "none" above — today only "other" has that mode, so
+    // run.activityType here is genuinely RankedActivityType, not just cast for convenience.
+    const activityType = run.activityType as RankedActivityType;
+    const plausibility = computeRunPlausibility({
+      distanceM: run.distanceM,
+      durationS: run.durationS,
+      points,
+      activityType,
+    });
     inserted = await updateRunPlausibilityMultiplier(db, inserted.id, plausibility.multiplier);
-    const { category } = runRankValue(run.distanceM, run.durationS);
-    rankResult = await recomputeRunRank(db, userId, category, plausibility.multiplier, plausibility.reason);
+    // Distance-ladder (running) picks its bucket from distance; single-speed (walk/hike) has
+    // exactly one bucket, "all" — see cardioActivities.ts's RankMode.
+    const bucket: RankBucket = rankMode === "distance-ladder" ? runRankValue(run.distanceM, run.durationS).category : "all";
+    rankResult = await recomputeRunRank(
+      db,
+      userId,
+      bucket,
+      activityType,
+      plausibility.multiplier,
+      plausibility.reason,
+    );
   }
 
   return { ...inserted, rankResult };
@@ -70,6 +98,7 @@ export async function importRunFile(db: LiftrDb, userId: string, filename: strin
     userId,
     {
       source: isGpx ? "gpx" : "fit",
+      activityType: "run",
       name: filename.replace(/\.(gpx|fit)$/i, ""),
       startedAt,
       clientId: crypto.randomUUID(),
@@ -91,37 +120,85 @@ export interface HealthConnectPoint {
   hr?: number | null;
 }
 
+export interface HealthConnectImportInput {
+  platformId: string;
+  name: string | null;
+  /** Health Connect's own raw exercise-type string, classified via
+   *  `classifyHealthConnectWorkoutType` below. */
+  rawWorkoutType: string;
+  /** Required when `points` is empty — there's no first point to derive it from. */
+  startedAt: Date | null;
+  /** The watch's own aggregate distance/duration (READ_DISTANCE), used only when `points` is
+   *  empty — a workout Health Connect withheld the route for (consent gate, or none recorded)
+   *  still gets XP + streak credit from these, just never a rank (persistRun's rank gate
+   *  requires points, matching the existing "manual runs never earn rank" rule — no GPS trace
+   *  means no independent check against a claimed distance). */
+  distanceM: number | null;
+  durationS: number | null;
+  points: HealthConnectPoint[];
+}
+
 /** POST /api/runs/healthconnect — native in-app import via capacitor-health. */
-export async function importHealthConnectRun(
-  db: LiftrDb,
-  userId: string,
-  platformId: string,
-  name: string | null,
-  rawPoints: HealthConnectPoint[],
-) {
-  const clientId = `healthconnect:${platformId}`;
+export async function importHealthConnectRun(db: LiftrDb, userId: string, input: HealthConnectImportInput) {
+  const clientId = `healthconnect:${input.platformId}`;
   const existing = await findRunByClientId(db, userId, clientId);
   if (existing) return existing; // already imported this workout — idempotent, not an error
 
-  const points = rawPoints.map((p) => ({ t: p.t.getTime(), lat: p.lat, lon: p.lon, ele: p.ele ?? undefined, hr: p.hr ?? undefined }));
-  const summary = summarizeRun(points);
-  const startedAt = new Date(points[0]!.t);
+  const activityType: ActivityType = classifyHealthConnectWorkoutType(input.rawWorkoutType);
+  const rawPoints = input.points.map((p) => ({
+    t: p.t.getTime(),
+    lat: p.lat,
+    lon: p.lon,
+    ele: p.ele ?? undefined,
+    hr: p.hr ?? undefined,
+  }));
 
+  if (rawPoints.length > 0) {
+    const summary = summarizeRun(rawPoints);
+    const startedAt = new Date(rawPoints[0]!.t);
+    return persistRun(
+      db,
+      userId,
+      {
+        source: "healthconnect",
+        activityType,
+        name: input.name,
+        startedAt,
+        clientId,
+        distanceM: summary.distanceM,
+        durationS: summary.durationS,
+        avgPaceSPerKm: summary.avgPaceSPerKm,
+        avgHr: summary.avgHr,
+        elevationGainM: summary.elevationGainM,
+      },
+      rawPoints.map((p, idx) => ({ ...p, idx })),
+    );
+  }
+
+  // Route-less fallback: no GPS trace, so no independent plausibility check and no rank (the
+  // `points.length > 0` gate in persistRun already handles that) — XP + streak credit only, from
+  // the watch's own reported distance/duration.
+  if (input.distanceM == null || input.durationS == null || input.startedAt == null) {
+    throw new RunParseError(
+      "Health Connect hat für dieses Workout weder eine Strecke noch eine Distanz geliefert.",
+    );
+  }
   return persistRun(
     db,
     userId,
     {
       source: "healthconnect",
-      name,
-      startedAt,
+      activityType,
+      name: input.name,
+      startedAt: input.startedAt,
       clientId,
-      distanceM: summary.distanceM,
-      durationS: summary.durationS,
-      avgPaceSPerKm: summary.avgPaceSPerKm,
-      avgHr: summary.avgHr,
-      elevationGainM: summary.elevationGainM,
+      distanceM: input.distanceM,
+      durationS: input.durationS,
+      avgPaceSPerKm: input.durationS / (input.distanceM / 1000),
+      avgHr: null,
+      elevationGainM: null,
     },
-    points.map((p, idx) => ({ ...p, idx })),
+    [],
   );
 }
 
@@ -136,6 +213,7 @@ export async function logManualRun(
     durationS: number;
     plannedRouteId?: string | null;
     elevationGainM?: number | null;
+    activityType: ActivityType;
   },
 ) {
   let elevationGainM = input.elevationGainM ?? null;
@@ -150,6 +228,7 @@ export async function logManualRun(
     userId,
     {
       source: "manual",
+      activityType: input.activityType,
       name: input.name,
       startedAt: input.startedAt,
       clientId: crypto.randomUUID(),

@@ -200,33 +200,8 @@ const filteredRanks = computed(() =>
   margin: var(--sp4) auto 0;
   max-width: var(--content-w-wide);
 }
-.rank-tier-filter {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
-  margin: var(--sp4) auto 0;
-  max-width: var(--content-w-wide);
-}
-/* Smaller than the base .tab-pill (tokens.css) — that one's sized for a 2-3-item primary tab
-   strip; this is a secondary in-page filter that shouldn't compete for visual weight, and
-   `flex: none` since it no longer needs to stretch across a row alongside every tier. */
-.tab-pill-sm {
-  flex: none;
-  padding: 4px 12px;
-  font-size: 11.5px;
-}
-/* Same visual language as ExerciseList.vue's .filter-select — once there are more than two tiers
-   to filter by, a pill row per tier stops scaling (9-tier system), so the long tail collapses
-   into one dropdown instead of wrapping across lines. */
-.rank-tier-select {
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 700;
-}
+/* .rank-tier-filter/.tab-pill-sm/.rank-tier-select moved to tokens.css (global) — OverviewPage.vue
+   now uses the same secondary-filter pattern for its activity-type filter. */
 /* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep; `.surface-hybrid`
    (tokens.css) puts a loading Ränge screen on the same translucent/hairline system as the loaded
    content it stands in for, rather than reverting to flat --surface-2 while data is in flight.

@@ -48,50 +48,61 @@ and applies `computeSetXp` with the right occurrence number. `GET /api/xp` and a
 computing a total must go through this rather than re-summing `computeSetXp` directly, or the
 repeat-decay silently stops applying.
 
-## Run XP
+## Cardio XP
 
-`computeRunXp(runs)` in `packages/shared/src/math/runXp.ts` is the run-side sibling of
+`computeRunXp(runs)` in `packages/shared/src/math/runXp.ts` is the cardio-side sibling of
 `computeTotalXp` above — same anti-grinding philosophy (decay toward a floor on repetition, never
-to zero), adapted for the fact that, unlike a repeated identical set, two different run distances
-genuinely are different runs:
+to zero), adapted for the fact that, unlike a repeated identical set, two different distances
+genuinely are different activities. Covers all four activity types (run, walk, hike, other):
 
-- **Linear in distance, not flattened.** A single run's base XP is `(distanceM / 1000) *
-  RUN_XP_PER_KM` — unlike `computeSetXp`, which deliberately flattens out the weight typed, a run's
-  raw magnitude legitimately scales with how far it covered. The anti-grinding protection lives
-  entirely in the decay term below, not in the base formula.
-- **Repeat-distance decay keys on a rounded distance *bucket*, not an exact match.** Runs are
-  quantized to the nearest 500m (`quantizeDistanceForDecay`) before being tracked as an
-  "occurrence" of that bucket — a 5K, a 6K, and a 10K each get their own independent occurrence
-  counter, while cosmetic GPS-noise differences in an otherwise-repeated route (5.02 km vs.
-  4.98 km) collapse into the same bucket and correctly decay together. The decay curve itself
-  (`repeatRunMultiplier`) reuses the exact same shape and constants as `repeatSetMultiplier`.
-- **Manual runs are XP-only, always at full multiplier.** `plausibilityMultiplier` on
-  `RunXpInput` defaults to 1 — the run-specific plausibility gate
-  ([rank-engine.md](./rank-engine.md#running-ranks)) never runs against a manual entry, since there
-  are no `run_points` to independently check `distanceM` against. A GPS-tracked run's XP is
-  discounted by that same multiplier the same way its rank contribution is.
-- **A source bonus for Health Connect imports.** A run imported from Android Health Connect gets an
-  8% XP bonus over a GPX-imported or manually-logged run (`HEALTHCONNECT_XP_BONUS_MULTIPLIER =
-  1.08`), applied unconditionally on top of the plausibility multiplier and the repeat-distance
-  decay above:
+- **Linear in distance (run/walk/hike), linear in duration (other).** A single activity's base XP
+  is `(distanceM / 1000) * cardioXpPerKm(activityType)` for run/walk/hike — unlike `computeSetXp`,
+  which deliberately flattens out the weight typed, an activity's raw magnitude legitimately
+  scales with how far it covered. `"other"` (cycling, rowing, ...) pays by time instead
+  (`(durationS / 60) * OTHER_XP_PER_MINUTE`), since distance isn't comparable across those
+  activity types. Each activity has its own per-km/per-minute rate, declared on its registry entry
+  in `cardioActivities.ts` — running pays the most, walking the least of the distance-based three,
+  hiking in between. The anti-grinding protection lives entirely in the decay term below, not in
+  the base formula.
+- **Repeat-distance decay keys on a rounded distance *bucket*, namespaced by activity type.**
+  Runs/walks/hikes are quantized to the nearest 500m (`quantizeDistanceForDecay`) before being
+  tracked as an "occurrence" of that bucket; `"other"` quantizes on a 10-minute duration bucket
+  instead. The occurrence key (`runDecayKey`) is prefixed by activity type
+  (e.g. `"run:10"` vs. `"walk:10"`), so a daily walk can't burn down the decay counter for the
+  user's runs of the same distance, or vice versa — each activity type gets its own independent
+  occurrence sequence. The decay curve itself (`repeatRunMultiplier`) reuses the exact same shape
+  and constants as `repeatSetMultiplier`.
+- **Manual entries are XP-only, always at full multiplier.** `plausibilityMultiplier` on
+  `RunXpInput` defaults to 1 — the cardio-specific plausibility gate
+  ([rank-engine.md](./rank-engine.md#cardio-ranks-running-walking-hiking)) never runs against a
+  manual entry, since there are no `run_points` to independently check `distanceM` against. A
+  GPS-tracked activity's XP is discounted by that same multiplier the same way its rank
+  contribution is (for run/walk/hike — `"other"` never earns rank at all, see rank-engine.md).
+- **A source bonus for Health Connect imports.** An activity imported from Android Health Connect
+  gets an 8% XP bonus over a GPX-imported or manually-logged one
+  (`HEALTHCONNECT_XP_BONUS_MULTIPLIER = 1.08`), applied unconditionally on top of the plausibility
+  multiplier and the repeat-distance decay above, for every activity type alike — the bonus
+  rewards corroboration fidelity (watch-derived GPS+HR vs. phone-only), not the activity's
+  modality:
 
   ```
-  total += baseRunXp(distanceM) * repeatRunMultiplier(occurrence) * plausibilityMultiplier * sourceBonus
+  total += baseCardioXp(activityType, distanceM, durationS) * repeatRunMultiplier(occurrence) * plausibilityMultiplier * sourceBonus
   ```
 
   where `sourceBonus` is `1.08` iff `run.source === "healthconnect"`, else `1`.
-- **Pure, no persistence.** `computeRunXp` sums a full run history fresh on every read (called by
-  `getRunXpSummary`, Task 10's server-side summary), matching the "no XP ledger table" invariant
+- **Pure, no persistence.** `computeRunXp` sums a full cardio history fresh on every read (called
+  by `getRunXpSummary`, the server-side summary), matching the "no XP ledger table" invariant
   `computeTotalXp` already established for strength.
 
-### One level, two disciplines
+### One level, three disciplines
 
-Running and strength XP are **not** tracked as separate totals feeding separate level curves.
-Whatever `computeRunXp` returns is added straight into the same total that `computeTotalXp` feeds,
-and that combined total is what `computeLevel` converts into a level — there's exactly one global
-level, the same "no new reward currencies" principle the rest of this document already commits to.
-A lifter who never runs and a runner who never lifts climb the same curve; a lifter who does both
-just gets there from two directions at once.
+Cardio and strength XP are **not** tracked as separate totals feeding separate level curves.
+Whatever `computeRunXp` returns (across running, walking, hiking, and other cardio alike) is added
+straight into the same total that `computeTotalXp` feeds, and that combined total is what
+`computeLevel` converts into a level — there's exactly one global level, the same "no new reward
+currencies" principle the rest of this document already commits to. A lifter who never does cardio
+and a runner who never lifts climb the same curve; someone who does both just gets there from two
+directions at once.
 
 ## Session-level bonuses
 

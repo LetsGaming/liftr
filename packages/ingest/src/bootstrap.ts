@@ -11,7 +11,7 @@
  * `pnpm dev` once the environment is already seeded — it doesn't re-hit the network or re-walk
  * the catalog on every dev boot, only the first time (or after data/ is wiped again).
  */
-import { createDb, runMigrations } from "@liftr/db";
+import { createDb, resolveDbPath, runMigrations, warnIfDefaultDbPath } from "@liftr/db";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateExerciseI18n } from "./generateI18n.js";
@@ -24,7 +24,9 @@ import { ingestRunStandards } from "./ingestRunStandards.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const CATALOG_PATH = path.join(REPO_ROOT, "tools/catalog/curated.yaml");
-const DB_PATH = process.env.LIFTR_DB_PATH ?? path.join(REPO_ROOT, "data/liftr.db");
+const resolvedDbPath = resolveDbPath(REPO_ROOT);
+warnIfDefaultDbPath(resolvedDbPath);
+const DB_PATH = resolvedDbPath.path;
 const IMAGES_DIR = process.env.LIFTR_IMAGES_DIR ?? path.join(REPO_ROOT, "data/images");
 const I18N_OUT_PATH = path.join(REPO_ROOT, "packages/client/src/locales/exercises.de.json");
 

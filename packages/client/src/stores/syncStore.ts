@@ -8,9 +8,11 @@
 import { App as CapacitorApp } from "@capacitor/app";
 import { Network } from "@capacitor/network";
 import { defineStore } from "pinia";
+import { useToast } from "../composables/useToast";
 import { importNewHealthConnectWorkouts } from "../health/healthConnect";
 import { enqueueOutboxItem, listOutboxItems, removeOutboxItem, type OutboxItem } from "../lib/idb";
 import { isNative } from "../lib/platform";
+import { router } from "../router";
 import { postSyncBatch, type SyncResult } from "../services/syncService";
 
 export type { SyncResult };
@@ -147,7 +149,17 @@ export const useSyncStore = defineStore("sync", {
       if (isNative()) {
         void CapacitorApp.addListener("resume", () => {
           void this.flush();
-          void importNewHealthConnectWorkouts();
+          // Auto-sync stops being silent: a toast only when something actually happened
+          // (imports/failures) — a run of pure skips stays quiet (Health Connect withholding a
+          // route on every resume isn't news worth interrupting the user for), but every check,
+          // toast or not, is always recorded in the sync log (see healthConnect.ts) so it's never
+          // truly invisible, just not interrupting.
+          void importNewHealthConnectWorkouts("resume").then((result) => {
+            if (result.imported === 0 && result.failed === 0) return;
+            const parts = [`${result.imported} synchronisiert`];
+            if (result.failed > 0) parts.push(`${result.failed} fehlgeschlagen`);
+            useToast().toast(`Health Connect: ${parts.join(", ")}.`, () => router.push("/diagnostics"));
+          });
         });
         void Network.addListener("networkStatusChange", (status) => {
           if (status.connected) void this.flush();

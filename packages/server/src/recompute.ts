@@ -11,7 +11,7 @@
  * of truth.
  */
 import { exercises, users } from "@liftr/db";
-import { RUN_CATEGORIES } from "@liftr/shared";
+import { rankedCardioActivities } from "@liftr/shared";
 import { db } from "./db.js";
 import { recomputeRankForExercise } from "./services/rankService.js";
 import { recomputeRunRank } from "./services/runRankService.js";
@@ -39,18 +39,21 @@ async function main() {
   let runSkipped = 0;
 
   for (const user of allUsers) {
-    for (const category of RUN_CATEGORIES) {
-      const result = await recomputeRunRank(db, user.id, category);
-      if (result) {
-        runRecomputed++;
-      } else {
-        runSkipped++; // no rank-eligible runs yet, or no standards for this category
+    for (const activity of rankedCardioActivities()) {
+      const buckets = activity.rank.mode === "distance-ladder" ? activity.rank.categories : (["all"] as const);
+      for (const bucket of buckets) {
+        const result = await recomputeRunRank(db, user.id, bucket, activity.id);
+        if (result) {
+          runRecomputed++;
+        } else {
+          runSkipped++; // no rank-eligible activity yet, or no standards for this bucket
+        }
       }
     }
   }
 
   console.log(
-    `recompute: ${runRecomputed} run ranks updated, ${runSkipped} skipped (no runs or no standards)`,
+    `recompute: ${runRecomputed} cardio ranks updated, ${runSkipped} skipped (no activity or no standards)`,
   );
 }
 

@@ -6,10 +6,19 @@
  * No separate companion app, no WorkManager background job: this checks for new workouts on app
  * resume instead, which is enough to remove the manual GPX/FIT export step without the
  * complexity of a true background service.
+ *
+ * Every workout Health Connect returns gets an outcome recorded — imported, skipped (with a
+ * reason), or failed — never silently dropped. `patches/capacitor-health.patch` extends the
+ * plugin's Kotlin side to report `routeStatus` (`"data"` / `"consent_required"` / `"no_data"`) per
+ * workout, which is what makes "the route was withheld by consent" distinguishable from "there
+ * never was a route" — the ambiguity that originally let a real watch-recorded walk vanish with
+ * no trace anywhere. `syncLog.ts` persists these reports client-side (a skipped workout never
+ * reaches the server, so there's nothing for a server-side log to show).
  */
 import { Health } from "capacitor-health";
-import { api } from "../lib/api";
+import { ApiError, api } from "../lib/api";
 import { isAndroid } from "../lib/platform";
+import { recordSyncReport, type SyncTrigger } from "../lib/syncLog";
 
 const LAST_CHECK_KEY = "liftr.healthconnect.lastCheck";
 
@@ -26,6 +35,7 @@ export const HEALTH_CONNECT_PERMISSIONS = [
   "READ_WORKOUTS",
   "READ_ROUTE",
   "READ_HEART_RATE",
+  "READ_DISTANCE",
 ] as const;
 
 export const HEALTH_CONNECT_PERMISSION_LABELS: Record<
@@ -35,6 +45,11 @@ export const HEALTH_CONNECT_PERMISSION_LABELS: Record<
   READ_WORKOUTS: "Aktivitäten",
   READ_ROUTE: "Strecken",
   READ_HEART_RATE: "Herzfrequenz",
+  // Only used for the route-less fallback (a workout Health Connect withheld the route for) —
+  // an already-connected user shows this as "missing" until they re-grant, same as any other
+  // permission added after their first connect; the existing `missing` list already surfaces and
+  // explains that (see useHealthConnectImport.ts).
+  READ_DISTANCE: "Distanz",
 };
 
 export type HealthConnectPermissionResult = {
@@ -78,6 +93,14 @@ function setLastCheck(iso: string) {
   localStorage.setItem(LAST_CHECK_KEY, iso);
 }
 
+/** Re-scan control for the Diagnostics page: winds `lastCheck` back so a workout skipped once
+ *  (including the walk that originally prompted this whole feature) re-enters a future scan
+ *  window instead of staying permanently excluded — without this, nothing short of reinstalling
+ *  the app would ever let it be reconsidered. */
+export function resetHealthConnectScanWindow(daysBack: 30 | 90): void {
+  setLastCheck(new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString());
+}
+
 /**
  * Finds the nearest heart-rate sample (by timestamp) for a route point — Health Connect
  * doesn't return HR pre-merged onto route points, so this pairs them client-side, same spirit
@@ -112,58 +135,165 @@ function isValidPoint(r: { timestamp: string; lat: number; lng: number }): boole
   );
 }
 
-export type HealthConnectImportResult = {
-  imported: number;
-  /** Workouts that still failed after the point-level filtering above (e.g. the server was
-   *  unreachable, or every point in that workout was invalid) — surfaced so the caller can tell
-   *  the user something didn't make it across, instead of a silently-incomplete "done". */
-  failed: number;
-};
+/** The plugin's own `.d.ts` under-declares this shape (see this file's header comment) — `title`
+ *  and `routeStatus` are both real fields the patched Kotlin side emits but the types don't know
+ *  about yet. `routeStatus` is `undefined` only if the app is running against an unpatched build
+ *  of the plugin (shouldn't happen once `patches/capacitor-health.patch` is applied, but handled
+ *  defensively rather than assumed). */
+interface RawHealthConnectWorkout {
+  id?: string;
+  sourceName: string;
+  title?: string;
+  workoutType: string;
+  startDate: string;
+  endDate: string;
+  duration?: number;
+  distance?: number;
+  route?: { timestamp: string; lat: number; lng: number; alt?: number | null }[];
+  heartRate?: { timestamp: string; bpm: number }[];
+  routeStatus?: "data" | "consent_required" | "no_data";
+}
 
-/** Checks Health Connect for workouts since the last check, importing any with a real route.
- *  Per-workout failures are isolated (caught and counted, not thrown) so one bad workout can
- *  never block the rest of the batch, and `setLastCheck` always advances to `endDate` once
- *  every workout in this window has been attempted — otherwise a single stuck workout would
- *  make every future check (button tap or app-resume) re-fail on that same workout forever. */
-export async function importNewHealthConnectWorkouts(): Promise<HealthConnectImportResult> {
-  if (!(await isHealthConnectAvailable())) return { imported: 0, failed: 0 };
+export type HealthConnectSkipReason =
+  | "route_consent_required"
+  | "route_missing"
+  | "no_usable_data"
+  | "invalid_points";
+
+export type HealthConnectWorkoutOutcome =
+  | { kind: "imported"; runId: string }
+  | { kind: "skipped"; reason: HealthConnectSkipReason }
+  | { kind: "failed"; message: string };
+
+/** One workout's full sync report row — enough to render a plain-German explanation of what
+ *  happened and why (DiagnosticsPage.vue), plus a raw-data toggle for power users. */
+export interface HealthConnectWorkoutReport {
+  workoutId: string;
+  rawWorkoutType: string;
+  title: string | null;
+  startDate: string;
+  endDate: string;
+  durationS: number;
+  distanceM: number | null;
+  routePointCount: number;
+  routeStatus: "data" | "consent_required" | "no_data" | "unknown";
+  hrSampleCount: number;
+  outcome: HealthConnectWorkoutOutcome;
+}
+
+export interface HealthConnectImportResult {
+  imported: number;
+  skipped: number;
+  /** Workouts that still failed after all the point-level filtering/fallback logic below (e.g.
+   *  the server was unreachable) — counted separately from `skipped` since a failure is retried
+   *  on the next check (via `setLastCheck` still advancing), while a skip is a settled outcome. */
+  failed: number;
+  workouts: HealthConnectWorkoutReport[];
+}
+
+/** Checks Health Connect for workouts since the last check, importing what it can and recording
+ *  an outcome for every workout returned — no silent drops. `setLastCheck` always advances to
+ *  `endDate` once every workout in this window has been attempted, so one bad or stuck workout
+ *  can never make every future check re-fail on it forever (skips/failures are both terminal for
+ *  the window; a genuine transient failure gets picked up again only if the workout still falls
+ *  inside a future window, e.g. after `resetHealthConnectScanWindow`). `trigger` is passed through
+ *  to the sync log for display only — it doesn't change import behavior. */
+export async function importNewHealthConnectWorkouts(trigger: SyncTrigger = "resume"): Promise<HealthConnectImportResult> {
+  const empty: HealthConnectImportResult = { imported: 0, skipped: 0, failed: 0, workouts: [] };
+  if (!(await isHealthConnectAvailable())) return empty;
 
   const startDate = getLastCheck();
   const endDate = new Date().toISOString();
-  const { workouts } = await Health.queryWorkouts({
+  const { workouts } = (await Health.queryWorkouts({
     startDate,
     endDate,
     includeHeartRate: true,
     includeRoute: true,
     includeSteps: false,
-  });
+  })) as { workouts: RawHealthConnectWorkout[] };
 
   let imported = 0;
+  let skipped = 0;
   let failed = 0;
+  const reports: HealthConnectWorkoutReport[] = [];
+
   for (const workout of workouts) {
-    if (!workout.route || workout.route.length === 0 || !workout.id) continue; // no route, nothing to replay
     const heartRate = workout.heartRate ?? [];
-    const points = workout.route.filter(isValidPoint).map((r) => ({
+    const rawRoute = workout.route ?? [];
+    const validPoints = rawRoute.filter(isValidPoint);
+    const points = validPoints.map((r) => ({
       t: r.timestamp,
       lat: r.lat,
       lon: r.lng,
       ele: r.alt ?? null,
       hr: nearestHr(heartRate, new Date(r.timestamp).getTime()) ?? null,
     }));
-    if (points.length === 0) continue; // every point in this workout was invalid — nothing to replay
+
+    const routeStatus = workout.routeStatus ?? (rawRoute.length > 0 ? "data" : "no_data");
+    const base = {
+      workoutId: workout.id ?? "",
+      rawWorkoutType: workout.workoutType,
+      title: workout.title ?? workout.sourceName ?? null,
+      startDate: workout.startDate,
+      endDate: workout.endDate,
+      durationS: workout.duration ?? 0,
+      distanceM: workout.distance ?? null,
+      routePointCount: points.length,
+      routeStatus,
+      hrSampleCount: heartRate.length,
+    };
+
+    if (!workout.id) {
+      skipped++;
+      reports.push({ ...base, outcome: { kind: "skipped", reason: "no_usable_data" } });
+      continue;
+    }
+
+    const hasUsableRoute = points.length > 0;
+    const hasFallbackAggregate = workout.distance != null && workout.duration != null;
+
+    if (!hasUsableRoute && !hasFallbackAggregate) {
+      const reason: HealthConnectSkipReason =
+        routeStatus === "consent_required"
+          ? "route_consent_required"
+          : rawRoute.length > 0
+            ? "invalid_points" // every point failed isValidPoint
+            : "route_missing"; // Health Connect never recorded a route for this workout
+      skipped++;
+      reports.push({ ...base, outcome: { kind: "skipped", reason } });
+      continue;
+    }
 
     try {
-      await api.post("/api/runs/healthconnect", {
+      const body: Record<string, unknown> = {
         platformId: workout.id,
-        name: workout.sourceName ?? null,
-        points,
-      });
+        name: workout.title ?? workout.sourceName ?? null,
+        workoutType: workout.workoutType,
+      };
+      if (hasUsableRoute) {
+        body.points = points;
+      } else {
+        // Route-less fallback: Health Connect withheld or never recorded a route, but the watch's
+        // own aggregate distance/duration (READ_DISTANCE) is usable — XP + streak credit, no rank
+        // (see runImportService.ts's persistRun: no points means no independent check against the
+        // claimed distance).
+        body.distanceM = workout.distance;
+        body.durationS = workout.duration;
+        body.startedAt = workout.startDate;
+      }
+      const run = await api.post<{ id: string }>("/api/runs/healthconnect", body);
       imported++;
-    } catch {
+      reports.push({ ...base, outcome: { kind: "imported", runId: run.id } });
+    } catch (err) {
       failed++;
+      const message =
+        err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : "Unbekannter Fehler.";
+      reports.push({ ...base, outcome: { kind: "failed", message } });
     }
   }
 
   setLastCheck(endDate);
-  return { imported, failed };
+  const result: HealthConnectImportResult = { imported, skipped, failed, workouts: reports };
+  recordSyncReport(trigger, startDate, endDate, result);
+  return result;
 }

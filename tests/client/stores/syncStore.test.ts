@@ -113,7 +113,7 @@ beforeEach(() => {
   listOutboxItemsMock.mockClear();
   removeOutboxItemMock.mockClear();
   apiPostMock.mockReset();
-  importNewHealthConnectWorkoutsMock.mockReset();
+  importNewHealthConnectWorkoutsMock.mockReset().mockResolvedValue({ imported: 0, skipped: 0, failed: 0, workouts: [] });
   capacitorAppAddListenerMock.mockReset().mockResolvedValue(undefined);
   networkAddListenerMock.mockReset().mockResolvedValue(undefined);
   isNativePlatformMock.mockReset().mockReturnValue(false);

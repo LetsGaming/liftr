@@ -44,13 +44,16 @@ export function useHealthConnectImport() {
             : "Health Connect ist nicht verfügbar.";
         return;
       }
-      const { imported, failed } = await importNewHealthConnectWorkouts();
-      if (imported === 0 && failed === 0) {
-        healthConnectStatus.value = "Verbunden — keine neuen Läufe gefunden.";
-      } else if (failed === 0) {
-        healthConnectStatus.value = `Verbunden — ${imported} Lauf/Läufe synchronisiert.`;
+      const { imported, skipped, failed } = await importNewHealthConnectWorkouts("manual");
+      if (imported === 0 && failed === 0 && skipped === 0) {
+        healthConnectStatus.value = "Verbunden — keine neuen Aktivitäten gefunden.";
+      } else if (failed === 0 && skipped === 0) {
+        healthConnectStatus.value = `Verbunden — ${imported} Aktivität${imported === 1 ? "" : "en"} synchronisiert.`;
       } else {
-        healthConnectStatus.value = `Verbunden — ${imported} Lauf/Läufe synchronisiert, ${failed} fehlgeschlagen (wird beim nächsten App-Start erneut versucht).`;
+        const parts = [`${imported} synchronisiert`];
+        if (skipped > 0) parts.push(`${skipped} übersprungen`);
+        if (failed > 0) parts.push(`${failed} fehlgeschlagen`);
+        healthConnectStatus.value = `Verbunden — ${parts.join(", ")}. Details im Protokoll.`;
       }
     } catch (err) {
       // ApiError carries the server's actual validation reason (see api.ts) — surfacing it here

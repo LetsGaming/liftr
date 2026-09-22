@@ -550,6 +550,35 @@ textarea::placeholder {
   color: var(--text);
 }
 
+/* Secondary in-page filter row — was locally duplicated between RankLifterSection.vue (tier
+   filter) and OverviewPage.vue (activity-type filter): a small "Alle"/"Beides" pill plus either
+   up to 2 more pills or, past that, one <select> collapsing the long tail. Unlike .tab-strip
+   above (a primary 2-3-item tab switcher that fills its row edge to edge), this shouldn't
+   compete for visual weight and must never wrap or truncate once the option count grows past
+   what a flat pill row can hold at mobile width. */
+.rank-tier-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp2);
+  margin: var(--sp4) auto 0;
+  max-width: var(--content-w-wide);
+}
+.tab-pill-sm {
+  flex: none;
+  padding: 4px 12px;
+  font-size: 11.5px;
+}
+/* Same visual language as ExerciseList.vue's .filter-select. */
+.rank-tier-select {
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
 /* Primary/secondary action buttons — were locally redefined in 12 files with six different
    padding/font-size combinations (drift, not intent). One canonical size each; a call site
    that genuinely needs a different size adds a small modifier (e.g. .btn-primary.btn-lg)

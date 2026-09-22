@@ -29,7 +29,7 @@ describe("GET /api/runs/overall-rank", () => {
   it("returns the aggregated current band once a category has a computed rank", async () => {
     const { app, db } = await createTestApp();
     registerOverallRunnerRankRoutes(app, db);
-    await upsertRunRank(db, OWNER_USER_ID, "5k", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
+    await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
 
     const res = await app.inject({ method: "GET", url: "/api/runs/overall-rank" });
 

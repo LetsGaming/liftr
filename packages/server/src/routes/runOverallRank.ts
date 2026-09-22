@@ -4,6 +4,11 @@
  * separate from `routes/workouts.ts`/`routes/runs.ts` — see Ruling 4 in this task's brief. Same
  * thin-schema-wrapper shape as `routes/overallRank.ts`: the actual aggregation lives in
  * `overallRunnerRankService.ts`.
+ *
+ * No `?activityType=` query param — Overall Runner Rank only ever aggregates the activities whose
+ * registry entry counts toward it (today: running only; see cardioActivities.ts). Walking/hiking
+ * each have exactly one rank bucket, surfaced directly via `GET /api/runs/ranks?activityType=`
+ * instead of through this aggregate.
  */
 import { z } from "zod";
 import type { AppDb } from "../db.js";

@@ -32,7 +32,9 @@ describe("buildExportZip", () => {
     }
     expect(includesText(zip, "id,routineId,startedAt,endedAt,pausedSeconds,notes\r\n")).toBe(true);
     expect(includesText(zip, "id,workoutId,exerciseSlug,setIndex,weightKg,reps,rpe,isWarmup,notes,loggedAt\r\n")).toBe(true);
-    expect(includesText(zip, "id,source,name,startedAt,distanceM,durationS,avgPaceSPerKm,avgHr,elevationGainM\r\n")).toBe(true);
+    expect(
+      includesText(zip, "id,source,activityType,name,startedAt,distanceM,durationS,avgPaceSPerKm,avgHr,elevationGainM\r\n"),
+    ).toBe(true);
     expect(includesText(zip, "id,date,weightKg\r\n")).toBe(true);
   });
 
