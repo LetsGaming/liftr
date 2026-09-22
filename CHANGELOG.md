@@ -6,17 +6,16 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-09-22
+
 ### Added
 
-- Liftr is now licensed under AGPL-3.0, and the project has a Code of Conduct.
+- Liftr is now licensed under AGPL-3.
 
 ### Changed
 
-- The Läufe (running) rank cards now flip to a back face showing that distance's personal best,
-  same interaction the Kraft (strength) rank cards already had — the two grids now look and behave
-  like one design instead of two.
-- Scrollbars now match the app's own dark/light theme instead of falling back to the browser's
-  default light scrollbar.
+- The Läufe (running) rank cards now flip to a back face showing that distance's personal best, same interaction the Kraft (strength) rank cards already had — the two grids now look and behave like one design instead of two.
+- Scrollbars now match the app's own dark/light theme instead of falling back to the browser's default light scrollbar.
 
 ## [1.6.0] - 2026-09-22
 
