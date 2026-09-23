@@ -8,12 +8,14 @@ import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { ZodError } from "zod";
+import { syncCardioStandards } from "@liftr/db";
 import { requireAuth } from "./auth.js";
 import { db } from "./db.js";
 import { env } from "./env.js";
 import { dbErrorReporter, fileErrorReporter } from "./lib/errorReporters.js";
 import { reportError, type ErrorReporter } from "./lib/errorReporting.js";
 import { ConflictError, NotFoundError } from "./lib/errors.js";
+import { recomputeAllCardioRanks } from "./services/runRankService.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDiagnosticsRoutes } from "./routes/diagnostics.js";
 import { registerBodyweightRoutes } from "./routes/bodyweight.js";
@@ -233,6 +235,22 @@ export async function buildApp() {
       await requireAuth(db)(request, reply);
     }
   });
+
+  // Self-heals `run_standards`: an install that predates walk/hike becoming rankable activities
+  // never got those rows (the ingest bootstrap only runs once, against a completely empty
+  // `exercises` table), leaving every walk/hike rank recompute silently returning null forever.
+  // Cheap no-op on the overwhelmingly common already-in-sync boot; a failure here must never take
+  // the app down, since run_standards/run_ranks are derived caches, never the source of truth.
+  try {
+    const { changed } = await syncCardioStandards(db);
+    if (changed) {
+      app.log.info("run_standards was out of sync at boot — resyncing and recomputing cardio ranks");
+      const { recomputed, skipped } = await recomputeAllCardioRanks(db);
+      app.log.info({ recomputed, skipped }, "cardio rank recompute after run_standards resync complete");
+    }
+  } catch (err) {
+    app.log.error({ err }, "cardio standards self-heal failed");
+  }
 
   registerAuthRoutes(app, db);
   registerMemberRoutes(app, db);

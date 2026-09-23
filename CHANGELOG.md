@@ -6,6 +6,10 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Fixed
+
+- Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
+
 ## [1.7.2] - 2026-09-23
 
 ### Fixed

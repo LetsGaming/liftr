@@ -1,10 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
-import { OWNER_USER_ID, runPrs, runStandards, type LiftrDb } from "@liftr/db";
+import { OWNER_USER_ID, runPrs, runStandards, syncCardioStandards, type LiftrDb } from "@liftr/db";
+import { buildCardioStandards } from "@liftr/shared";
 import { writeJsonSetting } from "~server/repositories/settingsRepository.js";
 import { insertRun, insertRunPoints, type NewRun } from "~server/repositories/runRepository.js";
 import { findRunRankByBucket, findAllRunRanks } from "~server/repositories/runRankRepository.js";
-import { recomputeRunRank } from "~server/services/runRankService.js";
+import { recomputeAllCardioRanks, recomputeRunRank } from "~server/services/runRankService.js";
 import { createTestDb } from "../helpers/testDb.js";
 
 let db: LiftrDb;
@@ -431,5 +432,73 @@ describe("recomputeRunRank: walk (single-speed, bucket 'all')", () => {
     expect(walkPrRows.filter((r) => r.kind === "speed").every((r) => r.value < 2)).toBe(true); // walk m/s
     // Single-speed activities have no "time" PR — there's no fixed distance to divide by.
     expect(walkPrRows.some((r) => r.kind === "time")).toBe(false);
+  });
+});
+
+describe("boot-time cardio standards self-heal (syncCardioStandards + recomputeAllCardioRanks)", () => {
+  /** Mirrors exactly what app.ts's buildApp() runs at boot: rewrite run_standards if it's out of
+   *  sync, then recompute every user's cardio ranks. Seeds run_standards with only "run" rows —
+   *  the exact shape of a pre-walk/hike-rankable install — to reproduce the original bug (a
+   *  walk/hike recompute silently returning null forever) and confirm the self-heal fixes it. */
+  async function seedRunOnlyStandards() {
+    const runRows = buildCardioStandards().filter((r) => r.activityType === "run");
+    await db.insert(runStandards).values(
+      runRows.map((r) => ({
+        activityType: r.activityType,
+        category: r.category,
+        sex: r.sex,
+        tier: r.tier,
+        division: r.division,
+        threshold: r.threshold,
+        trust: r.trust,
+      })),
+    );
+  }
+
+  async function logWalk(durationS: number, distanceM = 5000) {
+    const startedAt = new Date();
+    const run = await insertRun(db, OWNER_USER_ID, {
+      source: "healthconnect",
+      activityType: "walk",
+      name: null,
+      startedAt,
+      clientId: `walk-${Math.random().toString(36).slice(2, 8)}`,
+      distanceM,
+      durationS,
+      avgPaceSPerKm: (durationS / distanceM) * 1000,
+    });
+    await insertRunPoints(db, run.id, [
+      { idx: 0, t: startedAt.getTime(), lat: 52.0, lon: 13.0 },
+      { idx: 1, t: startedAt.getTime() + durationS * 1000, lat: 52.01, lon: 13.01 },
+    ]);
+    return run;
+  }
+
+  it("a run-only run_standards table ends up with walk/hike rows after the heal, and a walk recompute stops returning null", async () => {
+    await seedRunOnlyStandards();
+    await logWalk(4000); // clears walk's eligibility floor (>=1000m, >=600s)
+
+    // Before the heal: exactly the original bug — no standards rows for walk, so the recompute
+    // silently no-ops.
+    expect(await recomputeRunRank(db, OWNER_USER_ID, "all", "walk")).toBeNull();
+
+    const { changed } = await syncCardioStandards(db);
+    expect(changed).toBe(true);
+    const rowsAfterSync = await db.select().from(runStandards);
+    expect(rowsAfterSync.some((r) => r.activityType === "walk")).toBe(true);
+    expect(rowsAfterSync.some((r) => r.activityType === "hike")).toBe(true);
+
+    await recomputeAllCardioRanks(db);
+
+    const walkRank = await findRunRankByBucket(db, OWNER_USER_ID, "all", "walk");
+    expect(walkRank).toBeDefined();
+    expect(walkRank?.tier).toBeDefined();
+  });
+
+  it("recomputeAllCardioRanks counts a skip for every bucket with no logged activity or no standards", async () => {
+    const db2 = createTestDb();
+    const result = await recomputeAllCardioRanks(db2);
+    expect(result.recomputed).toBe(0);
+    expect(result.skipped).toBeGreaterThan(0);
   });
 });
