@@ -61,6 +61,29 @@ export function corsOrigin(allowed: string[] | null): string[] | true {
   return allowed ? [...allowed, ...NATIVE_APP_ORIGINS] : true;
 }
 
+/** Collapses repeated validation issues (e.g. one bad field on every point of a 1000+ point
+ *  route) into a single "(xN)" summary per distinct path shape + message, so one malformed array
+ *  field can't blow up the log line or the 400 body sent back to the client. `error.validation`
+ *  is fastify-type-provider-zod's per-issue array (instancePath/message, ajv-shaped); a raw
+ *  ZodError's `.issues` is handled too for anywhere still throwing one directly. */
+export function summarizeValidationError(error: FastifyError | ZodError): string {
+  const issues =
+    "validation" in error && Array.isArray(error.validation)
+      ? error.validation.map((v) => ({ path: String(v.instancePath ?? "").replace(/^\//, ""), message: String(v.message) }))
+      : error instanceof ZodError
+        ? error.issues.map((i) => ({ path: i.path.join("/"), message: i.message }))
+        : null;
+  if (!issues) return error.message;
+
+  const counts = new Map<string, number>();
+  for (const issue of issues) {
+    const path = issue.path.replace(/\/\d+(?=\/|$)/g, "/*");
+    const key = `${path}: ${issue.message}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts].map(([key, count]) => (count > 1 ? `${key} (x${count})` : key)).join(", ");
+}
+
 export function configureApp(
   app: FastifyInstance,
   opts?: { onUnexpectedError?: (error: FastifyError, request: FastifyRequest) => void },
@@ -80,9 +103,12 @@ export function configureApp(
       // 400 body reaches the client with this same `detail`, but without this, the *server*
       // side of a validation failure was otherwise unlogged entirely by default, making a
       // recurring client-side bug (a bad request shape from a real device) undiagnosable from
-      // server logs alone.
-      request.log.warn({ method: request.method, url: request.url, detail: error.message }, "request validation failed");
-      return reply.code(400).send({ error: "invalid_request", detail: error.message });
+      // server logs alone. Issues are collapsed by path shape (summarizeValidationError) since a
+      // single bad field on every point of a long route would otherwise produce one issue per
+      // point.
+      const detail = summarizeValidationError(error);
+      request.log.warn({ method: request.method, url: request.url, detail }, "request validation failed");
+      return reply.code(400).send({ error: "invalid_request", detail });
     }
     if (error instanceof NotFoundError) {
       return reply.code(404).send({ error: "not_found" });

@@ -132,6 +132,24 @@ describe("importNewHealthConnectWorkouts", () => {
     expect(localStorage.getItem("liftr.healthconnect.lastCheck")).toBeTruthy();
   });
 
+  it("coerces a stringified altitude from the native bridge to a number", async () => {
+    queryWorkoutsMock.mockResolvedValue({
+      workouts: [
+        workout({
+          route: [{ timestamp: "2026-09-20T08:00:00.000Z", lat: 52.5, lng: 13.4, alt: "34" as unknown as number }],
+        }),
+      ],
+    });
+    apiPostMock.mockResolvedValue({ id: "run-1" });
+    const { importNewHealthConnectWorkouts } = await import("~client/health/healthConnect");
+
+    await importNewHealthConnectWorkouts();
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/api/runs/healthconnect",
+      expect.objectContaining({ points: [expect.objectContaining({ ele: 34 })] }),
+    );
+  });
+
   it("routeStatus 'consent_required' with no fallback aggregate: skipped with reason route_consent_required", async () => {
     queryWorkoutsMock.mockResolvedValue({
       workouts: [workout({ route: [], distance: undefined, duration: undefined, routeStatus: "consent_required" })],

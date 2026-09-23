@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import helmet from "@fastify/helmet";
 import { configureApp, corsOrigin, NATIVE_APP_ORIGINS } from "~server/app.js";
 import { requireAuth } from "~server/auth.js";
+import { registerRunRoutes } from "~server/routes/runs.js";
+import { createTestApp } from "./helpers/testApp.js";
 import { createTestDb } from "./helpers/testDb.js";
 
 describe("cors origin", () => {
@@ -39,6 +41,26 @@ describe("security headers", () => {
 
     const res = await app.inject({ method: "GET", url: "/test" });
     expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+  });
+});
+
+describe("validation error responses", () => {
+  it("collapses a repeated array-item issue (e.g. a stringified 'ele' on every route point) into a single count", async () => {
+    const { app } = await createTestApp();
+    registerRunRoutes(app, createTestDb());
+    await app.ready();
+
+    const points = Array.from({ length: 50 }, (_, i) => ({ t: "2026-09-21T14:23:52.477Z", lat: 52.5, lon: 13.4, ele: `${i}` }));
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/runs/healthconnect",
+      payload: { platformId: "hc-1", workoutType: "WALKING", points },
+    });
+
+    expect(res.statusCode).toBe(400);
+    const body = res.json();
+    expect(body.detail).toContain("(x50)");
+    expect(body.detail.length).toBeLessThan(500);
   });
 });
 

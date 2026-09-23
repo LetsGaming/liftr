@@ -225,7 +225,7 @@ export async function importNewHealthConnectWorkouts(trigger: SyncTrigger = "res
       t: r.timestamp,
       lat: r.lat,
       lon: r.lng,
-      ele: r.alt ?? null,
+      ele: r.alt != null && Number.isFinite(Number(r.alt)) ? Number(r.alt) : null,
       hr: nearestHr(heartRate, new Date(r.timestamp).getTime()) ?? null,
     }));
 
