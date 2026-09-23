@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import helmet from "@fastify/helmet";
 import { configureApp, corsOrigin, NATIVE_APP_ORIGINS } from "~server/app.js";
 import { requireAuth } from "~server/auth.js";
+import { env } from "~server/env.js";
 import { registerRunRoutes } from "~server/routes/runs.js";
 import { createTestApp } from "./helpers/testApp.js";
 import { createTestDb } from "./helpers/testDb.js";
@@ -82,7 +83,7 @@ describe("public routes", () => {
         await requireAuth(db)(request, reply);
       }
     });
-    app.get("/api/health", async () => ({ ok: true, service: "liftr" }));
+    app.get("/api/health", async () => ({ ok: true, service: "liftr", version: env.version }));
     app.get("/api/workouts", async () => ({ workouts: [] }));
     return app;
   }
@@ -91,12 +92,21 @@ describe("public routes", () => {
     const app = appWithAuthHook();
     const res = await app.inject({ method: "GET", url: "/api/health" });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true, service: "liftr" });
+    expect(res.json()).toEqual({ ok: true, service: "liftr", version: env.version });
   });
 
   it("still requires auth on an ordinary /api/* route", async () => {
     const app = appWithAuthHook();
     const res = await app.inject({ method: "GET", url: "/api/workouts" });
     expect(res.statusCode).toBe(401);
+  });
+});
+
+describe("/api/health version", () => {
+  it("matches packages/server/package.json's version, kept in sync by scripts/bump-version.mjs", async () => {
+    const pkgVersion = await import("../../packages/server/package.json", { with: { type: "json" } }).then(
+      (m) => m.default.version,
+    );
+    expect(env.version).toBe(pkgVersion);
   });
 });

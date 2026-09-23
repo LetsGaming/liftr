@@ -6,13 +6,13 @@
  */
 import { ordinal, TIERS, type Tier } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { LP_EXPLAINER } from "../../copy/rankCopy";
 import { TIER_LABEL_DE } from "../../lib/tierIcons";
 import { useExerciseName } from "../../composables/useExerciseName";
-import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
+import { useCatalogStore } from "../../stores/catalogStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
 import { useRanksStore, type RankRow } from "../../stores/ranksStore";
-import ExerciseInfoPanel from "../exercise/ExerciseInfoPanel.vue";
 import CardGrid from "../ui/CardGrid.vue";
 import InfoToggle from "../ui/InfoToggle.vue";
 import RankDistributionDonut from "./RankDistributionDonut.vue";
@@ -22,6 +22,7 @@ import RankProgress from "./RankProgress.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
 import TierLadder from "./TierLadder.vue";
 
+const router = useRouter();
 const ranksStore = useRanksStore();
 const overallRank = useOverallRankStore();
 const catalog = useCatalogStore();
@@ -60,9 +61,9 @@ function secondaryMusclesFor(r: RankRow): string[] {
   return catalog.byId(r.exerciseId)?.muscles?.filter((m) => m.role === "secondary").map((m) => m.slug) ?? [];
 }
 
-const openExercise = ref<CatalogExercise | null>(null);
 function openStats(r: RankRow) {
-  openExercise.value = catalog.byId(r.exerciseId) ?? null;
+  const exercise = catalog.byId(r.exerciseId);
+  if (exercise) void router.push(`/exercises/${exercise.slug}`);
 }
 
 /** Sorted by LP descending so the exercise closest to a rank-up surfaces first, rather than
@@ -199,8 +200,6 @@ const filteredRanks = computed(() =>
         </RankFlipCard>
       </CardGrid>
     </template>
-
-    <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
   </div>
 </template>
 

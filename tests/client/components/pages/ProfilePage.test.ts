@@ -28,6 +28,7 @@ vi.mock("capacitor-health", () => ({
 
 import ProfilePage from "~client/pages/ProfilePage.vue";
 import { useAppUpdate } from "~client/composables/useAppUpdate";
+import { useServerVersionInfo } from "~client/composables/useServerConnection";
 import { ApiError } from "~client/lib/api";
 
 // Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
@@ -94,6 +95,11 @@ beforeEach(async () => {
   appUpdate.downloadUrl.value = null;
   appUpdate.error.value = null;
   appUpdate.lastChecked.value = null;
+  // Same module-level-singleton reset reasoning as useAppUpdate above, for
+  // useServerConnection.ts's checkVersionMismatch result.
+  const serverVersionInfo = useServerVersionInfo();
+  serverVersionInfo.serverVersion.value = null;
+  serverVersionInfo.versionMismatch.value = false;
   Object.assign(bodyweightState, { entries: [], loaded: false, error: false, latest: null });
   Object.assign(themeState, { theme: "dark" });
   Object.assign(xpState, { level: 3, totalXp: 450, showXp: true, loaded: false });
@@ -272,6 +278,40 @@ describe("ProfilePage", () => {
 
     expect(localStorage.getItem("liftr.serverUrl")).toBe("https://new.example.com");
     expect(reloadSpy).toHaveBeenCalledOnce();
+  });
+
+  it("shows both versions with a mismatch indicator when the server's version differs from the app's", async () => {
+    isNativeMock.mockReturnValue(true);
+    localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ ok: true, service: "liftr", version: "9.9.9" }) }),
+    );
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushPromises();
+
+    const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Server"))!;
+    expect(section.text()).toContain("Server-Version: v9.9.9");
+    expect(section.text()).toContain("App-Version: v1.0.0");
+    expect(section.text()).toContain("stimmen nicht überein");
+    expect(section.findAll(".error").length).toBeGreaterThan(0);
+  });
+
+  it("shows no mismatch indicator when the server and app versions match", async () => {
+    isNativeMock.mockReturnValue(true);
+    localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ ok: true, service: "liftr", version: "1.0.0" }) }),
+    );
+
+    const wrapper = mountWithProviders(ProfilePage);
+    await flushPromises();
+
+    const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Server"))!;
+    expect(section.text()).toContain("Server-Version: v1.0.0");
+    expect(section.text()).not.toContain("stimmen nicht überein");
   });
 
   it("shows only the version (no update-check UI) on non-Android", () => {

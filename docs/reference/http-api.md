@@ -1166,10 +1166,13 @@ Response `200`:
 Registered directly in `app.ts`, outside the per-file route registrations above — no auth gate
 (only `/api/*` is gated):
 
-- `GET /api/health` — `{ ok: true }`. **Public** (no token required), despite the `/api/` prefix —
-  deliberately exempted in the auth `onRequest` hook alongside the public auth routes, since
-  liveness checks (Docker healthchecks, the CI boot-smoke test, monitoring) need to reach it with
-  no credentials.
+- `GET /api/health` — `{ ok: true, service: "liftr", version: <server version> }` (Zod-validated
+  response schema). **Public** (no token required), despite the `/api/` prefix — deliberately
+  exempted in the auth `onRequest` hook alongside the public auth routes, since liveness checks
+  (Docker healthchecks, the CI boot-smoke test, monitoring) need to reach it with no credentials.
+  `service`/`version` also let a native client tell a real Liftr instance apart from any other
+  server answering on that host/path, and detect a client/server version mismatch — see
+  `useServerConnection.ts`'s `checkServerIdentity`/`checkVersionMismatch`.
 - `GET /images/*` — static file server rooted at `LIFTR_IMAGES_DIR`, only registered if that
   directory exists on disk at startup.
 - `GET /*` — serves the built client SPA from `LIFTR_CLIENT_DIST`, only registered if that

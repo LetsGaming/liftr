@@ -13,6 +13,7 @@ import { isNative } from "./platform";
 
 const TOKEN_KEY = "liftr.token";
 const SERVER_URL_KEY = "liftr.serverUrl";
+const SERVER_VERSION_KEY = "liftr.serverVersion";
 
 export function apiBase(): string {
   return isNative() ? getServerUrl() : "";
@@ -24,6 +25,17 @@ export function getServerUrl(): string {
 
 export function setServerUrl(url: string) {
   localStorage.setItem(SERVER_URL_KEY, url);
+}
+
+/** Last version the saved server reported via /api/health (useServerConnection.ts's
+ *  checkVersionMismatch) — persisted so ProfilePage can show it immediately on open, before that
+ *  boot's own re-check has finished. */
+export function getServerVersion(): string | null {
+  return localStorage.getItem(SERVER_VERSION_KEY);
+}
+
+export function setServerVersion(version: string) {
+  localStorage.setItem(SERVER_VERSION_KEY, version);
 }
 
 export function getToken(): string {

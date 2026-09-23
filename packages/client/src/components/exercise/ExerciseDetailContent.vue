@@ -1,40 +1,48 @@
 <script setup lang="ts">
 /**
- * Exercise info slide-over/bottom sheet. Opening this must never leave the workout screen — it's
- * a sheet layered on top, not a navigation. Built on the shared SheetModal.vue (IonModal + header
- * + close button), which this component and WorkoutDetail.vue used to duplicate independently.
+ * Exercise detail content — the 4-tab (Über / Rang / Statistiken / Verlauf) body shared by every
+ * entry point: `ExerciseDetailPage.vue` (routed `/exercises/:slug`, wraps this in `BasePage`) and
+ * WorkoutPage.vue's mid-set ⓘ button (wraps this in a `SheetModal` instead, so opening it never
+ * navigates away from the active workout screen). Owns its own data fetching (catalog lookup,
+ * lazy history/rank fetch on tab switch) so neither host duplicates it.
  *
- * A 4-tab sheet (Über / Rang / Statistiken / Verlauf) — the tab strip + close button live in
- * SheetModal's `#header` slot so they stay pinned while each tab's content scrolls independently
- * in the body below. Always defaults to the Über tab on open (never remembers the last-viewed
- * tab) — this sheet is opened mid-set from the workout screen, and the how-to/muscle info is the
- * common case; anything that made getting back to it cost a tap would be a regression. History
- * (used by the Rang/Statistiken/Verlauf tabs) is fetched lazily on first switch to one of those
- * tabs, not on mount, for the same reason — the common "just check the how-to" open shouldn't
- * cost a request.
+ * The tab strip is sticky rather than placed in a host-specific pinned slot (`BasePage`'s
+ * `subheader` / `SheetModal`'s `#header`) — that would require splitting this component's own
+ * render output across two different host-owned DOM locations, which a single component instance
+ * can't do. Staying pinned via `position: sticky` inside whichever scrolling container the host
+ * provides works the same for both hosts without them needing to cooperate on layout.
  */
 import { estimateE1rm, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
-import { computed, ref } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
-import type { CatalogExercise } from "../../stores/catalogStore";
-import { useExerciseHistoryCache } from "../../composables/useExerciseHistoryCache";
-import { useExerciseName } from "../../composables/useExerciseName";
-import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
-import { useRanksStore } from "../../stores/ranksStore";
-import { useSettingsStore } from "../../stores/settingsStore";
-import ProgressChart from "../rank/ProgressChart.vue";
-import RankProgress from "../rank/RankProgress.vue";
-import StatTile from "../ui/StatTile.vue";
+import { computed, onMounted, ref } from "vue";
 import ExerciseDemo from "./ExerciseDemo.vue";
 import ExerciseHistoryList from "./ExerciseHistoryList.vue";
 import ExerciseIcon from "./ExerciseIcon.vue";
+import ProgressChart from "../rank/ProgressChart.vue";
+import RankProgress from "../rank/RankProgress.vue";
 import MuscleFigure from "../ui/MuscleFigure.vue";
-import SheetModal from "../ui/SheetModal.vue";
+import StatTile from "../ui/StatTile.vue";
+import { useExerciseHistoryCache } from "../../composables/useExerciseHistoryCache";
+import { useExerciseName } from "../../composables/useExerciseName";
+import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
+import { useCatalogStore } from "../../stores/catalogStore";
+import { useRanksStore } from "../../stores/ranksStore";
+import { useSettingsStore } from "../../stores/settingsStore";
 
-const props = defineProps<{ exercise: CatalogExercise }>();
-const emit = defineEmits<{ close: [] }>();
+const props = defineProps<{ slug: string }>();
 
-const { exerciseName, exerciseHowTo } = useExerciseName();
+const catalog = useCatalogStore();
+onMounted(() => {
+  // router.ts's beforeEnter already kicks catalog.load() off before this component mounts for the
+  // routed-page host — guarded here too so a component that outlives that prefetch (Fast Refresh,
+  // catalog already loaded from another route) or the sheet host (no router prefetch at all)
+  // doesn't skip loading, and doesn't fire a second concurrent full-catalog fetch either.
+  if (!catalog.loaded) void catalog.load();
+});
+
+const exercise = computed(() => catalog.bySlug(props.slug));
+const notFound = computed(() => catalog.loaded && !exercise.value);
+
+const { exerciseHowTo } = useExerciseName();
 const settingsStore = useSettingsStore();
 const ranksStore = useRanksStore();
 const { historyCache, toggleExpand } = useExerciseHistoryCache();
@@ -50,24 +58,24 @@ const activeTab = ref<TabKey>("ueber");
 
 function selectTab(tab: TabKey) {
   activeTab.value = tab;
-  if (tab === "ueber") return;
+  if (tab === "ueber" || !exercise.value) return;
   // Lazy fetch, keyed by exercise id — first switch to any non-Über tab only (data-wiring
   // rule above). historyCache already de-dupes repeat switches; toggleExpand() also flips an
   // `expanded` flag this component doesn't use, but calling it is harmless.
-  if (!historyCache.has(props.exercise.id)) void toggleExpand(props.exercise.id);
+  if (!historyCache.has(exercise.value.id)) void toggleExpand(exercise.value.id);
   if (tab === "rang" && !ranksStore.loaded) void ranksStore.load();
 }
 
-const historySets = computed(() => historyCache.get(props.exercise.id) ?? []);
+const historySets = computed(() => (exercise.value ? (historyCache.get(exercise.value.id) ?? []) : []));
 const nonWarmupHistorySets = computed(() => historySets.value.filter((s) => !s.isWarmup));
 
-const rankRow = computed(() => ranksStore.ranks.find((r) => r.exerciseId === props.exercise.id) ?? null);
+const rankRow = computed(() => (exercise.value ? (ranksStore.ranks.find((r) => r.exerciseId === exercise.value!.id) ?? null) : null));
 
 /** Best e1RM (loaded lifts) or best reps (bodyweight), matching ProgressChart.vue's own
  *  bodyweight-vs-loaded branch so the two never disagree about what "best" means. */
 const bestStatLabel = computed(() => {
-  if (nonWarmupHistorySets.value.length === 0) return "–";
-  if (props.exercise.isBodyweight) {
+  if (!exercise.value || nonWarmupHistorySets.value.length === 0) return "–";
+  if (exercise.value.isBodyweight) {
     const best = Math.max(...nonWarmupHistorySets.value.map((s) => s.reps));
     return `${best} Wdh.`;
   }
@@ -82,16 +90,17 @@ const bestStatLabel = computed(() => {
 const lifetimeVolumeKg = computed(() => nonWarmupHistorySets.value.reduce((sum, s) => sum + (s.weightKg ?? 0) * s.reps, 0));
 const totalSetsLogged = computed(() => historySets.value.length);
 
-const primary = props.exercise.muscles.filter((m) => m.role === "primary").map((m) => m.slug);
-const secondary = props.exercise.muscles.filter((m) => m.role === "secondary").map((m) => m.slug);
+const primary = computed(() => exercise.value?.muscles.filter((m) => m.role === "primary").map((m) => m.slug) ?? []);
+const secondary = computed(() => exercise.value?.muscles.filter((m) => m.role === "secondary").map((m) => m.slug) ?? []);
 
 // Falls back to just the primary `equipment` tag for a custom (user-created) exercise, which
 // never gets a `requiredEquipment` value (the custom-exercise creation form only collects a
 // single `equipment` string), so this section is never simply empty.
 const requirements = computed<TieredRequirement[]>(() => {
-  const list = props.exercise.requiredEquipment;
+  if (!exercise.value) return [];
+  const list = exercise.value.requiredEquipment;
   if (list && list.length > 0) return list;
-  return props.exercise.equipment ? [{ item: props.exercise.equipment as EquipmentRequirement, tier: "required" as const }] : [];
+  return exercise.value.equipment ? [{ item: exercise.value.equipment as EquipmentRequirement, tier: "required" as const }] : [];
 });
 const ownedEquipment = computed(() => settingsStore.ownedEquipment);
 // Only a `required` miss gets the hard red "fehlt" treatment here; recommended/optional misses
@@ -107,30 +116,25 @@ function missingBadge(req: TieredRequirement): string | null {
 </script>
 
 <template>
-  <SheetModal
-    desktop-variant="drawer"
-    desktop-width="480px"
-    @close="emit('close')"
-  >
-    <template #header>
-      <div class="sheet-head">
-        <b>{{ exerciseName(exercise.slug, exercise.name) }}</b>
-        <button class="btn-close" aria-label="Schließen" @click="emit('close')"><AppIcon name="close" /></button>
-      </div>
-      <div class="tab-strip" role="tablist">
-        <button
-          v-for="t in TABS"
-          :key="t.key"
-          role="tab"
-          class="tab-pill"
-          :class="{ active: activeTab === t.key }"
-          :aria-selected="activeTab === t.key"
-          @click="selectTab(t.key)"
-        >
-          {{ t.label }}
-        </button>
-      </div>
-    </template>
+  <div v-if="notFound" class="not-found">
+    <p>Diese Übung wurde nicht gefunden.</p>
+    <router-link to="/exercises" class="btn-secondary btn-block">Zu den Übungen →</router-link>
+  </div>
+
+  <template v-else-if="exercise">
+    <div class="tab-strip sticky-tabs" role="tablist">
+      <button
+        v-for="t in TABS"
+        :key="t.key"
+        role="tab"
+        class="tab-pill"
+        :class="{ active: activeTab === t.key }"
+        :aria-selected="activeTab === t.key"
+        @click="selectTab(t.key)"
+      >
+        {{ t.label }}
+      </button>
+    </div>
 
     <div v-if="activeTab === 'ueber'">
       <ExerciseDemo :slug="exercise.slug" />
@@ -189,49 +193,44 @@ function missingBadge(req: TieredRequirement): string | null {
     <div v-else-if="activeTab === 'verlauf'">
       <ExerciseHistoryList :sets="historySets" />
     </div>
-  </SheetModal>
+  </template>
 </template>
 
 <style scoped>
-/* #header slot content — replicates SheetModal's own (scoped-to-it, so not reachable here)
-   .sheet-head title bar, plus the new tab strip pinned right below it. This sheet opens at
-   initial-breakpoint 1 (fully open, see SheetModal.vue's default) and can be dragged there again,
-   reaching the very top of the viewport — same notch/status-bar exposure as a full-bleed modal
-   (see BaseHeader.vue's own comment), so it needs the same safe-area padding-top fallback. */
-.sheet-head {
+.not-found {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--sp5) var(--sp5) 0;
-  padding-top: calc(var(--sp5) + env(safe-area-inset-top, 0px));
-}
-.sheet-head b {
-  font-size: 17px;
-}
-/* .tab-strip/.tab-pill now live globally in tokens.css (promoted from here — this was the
-   only correct-a11y implementation of the sub-level tablist pattern in the app, RunsPage.vue's
-   Verlauf/Strecken switcher having hand-duplicated a worse copy of a *different* pattern,
-   TabSwitcher.vue's boxed .switcher). Markup here is unchanged (role="tablist" etc.
-   above); only the CSS moved. Unlike OverviewPage's usage, this strip sits directly in the
-   unpadded #header slot (not inside a padded page container), so it needs its own horizontal
-   padding here to keep the pills off the sheet edges and clear of the close button above. */
-.tab-strip {
-  padding: 0 var(--sp5) var(--sp4);
-  margin-top: var(--sp3);
+  flex-direction: column;
+  gap: var(--sp3);
+  padding: var(--sp5) 0;
+  color: var(--dim);
 }
 .hint {
   color: var(--dim);
   font-size: 13px;
+}
+/* Keeps the tab strip visible while the tab body scrolls beneath it, inside whichever scrolling
+   container the host provides (BasePage's IonContent, or SheetModal's sheet body) — see this
+   file's header comment for why sticky instead of a host-pinned slot. */
+.sticky-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* Cancels out the host's own content padding so the strip spans edge-to-edge while staying
+     sticky. Defaults to BasePage's ion-padding (--sp4); a host with a different content inset
+     (e.g. SheetModal's default --sp5 body padding) overrides --content-inset on an ancestor. */
+  margin: 0 calc(-1 * var(--content-inset, var(--sp4)));
+  padding: var(--sp2) var(--content-inset, var(--sp4)) var(--sp3);
+  background: var(--surface-hybrid-bg);
+  backdrop-filter: blur(var(--surface-hybrid-blur));
+  -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
 }
 
 /* The Rang tab's own hero readout — the one place <RankProgress variant="card"> still gets a
    full tier-fill background: this is a single reward moment in a tab panel, not a grid cell with
    its own tier-accent rim, so there's no card border to carry tier color instead. Reuses
    tokens.css's .panel-reward (the same recipe the app's other reward surfaces use) rather than a
-   bespoke plaque — that used to be a third divergent copy of this recipe alongside
-   RankLifterSection/RankRunnerSection's own, until all three were unified onto ListCard's rim +
-   medal for the grids and .panel-reward here. .panel-reward itself sets no padding (it's also
-   used un-padded elsewhere), so it's added locally. */
+   bespoke plaque. .panel-reward itself sets no padding (it's also used un-padded elsewhere), so
+   it's added locally. */
 .rank-reward {
   padding: var(--sp3) var(--sp4);
 }
@@ -240,7 +239,7 @@ function missingBadge(req: TieredRequirement): string | null {
   margin-bottom: var(--sp4);
 }
 /* ProgressChart.vue's own scoped layout is a compact flex row (fixed 140px spark + inline
-   latest-value label) sized for the Ränge grid's card slot. Full sheet width needs the spark to
+   latest-value label) sized for the Ränge grid's card slot. Full page width needs the spark to
    actually grow — stack chart-above-label instead of forcing the label to share a row it no
    longer fits. */
 .wide-chart :deep(.progress-chart) {

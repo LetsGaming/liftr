@@ -81,7 +81,8 @@ node scripts/dev-down.mjs --id my-session   # stop + clean up when done
    set any password there once per session to reach the seeded data; auto-provisioning this is a
    follow-up, not yet done.
 2. Ingests the exercise catalog *and* the running-standards table into that fresh database
-   (`tools/catalog/curated.yaml`, plus `ingestRunStandards`'s 270-row `run_standards` table) —
+   (`tools/catalog/curated.yaml`, plus `ingestRunStandards`'s `run_standards` table, covering run,
+   walk, and hike thresholds) —
    always, since a new database starts empty and running rank/PR recompute has nothing to resolve
    against without it. Catalog *images* are the one part of this that's shared, not per-session:
    they're static, network-fetched, and identical across every session, so they live in the

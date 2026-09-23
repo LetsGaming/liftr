@@ -28,9 +28,8 @@ onMounted(() => {
 /** One card flipped at a time, same accordion rule RankLifterSection.vue's Kraft grid already
  *  follows (see that file's own comment on `flipped`/`activatedBacks`) — kept here rather than in
  *  RankCategoryCard.vue itself so both grids share the exact same interaction, not two similar-
- *  but-independent implementations. Keyed by category for the RUN_CATEGORIES loop below (stable
- *  even before a rank row exists) and by activityType for the single-speed loop (always has a
- *  row, since only a real rank ever renders a card there). */
+ *  but-independent implementations. Keyed by category for the RUN_CATEGORIES loop below and by
+ *  activity id for the single-speed loop — both stable even before a rank row exists. */
 const flipped = ref<string | null>(null);
 const activatedBacks = ref(new Set<string>());
 function toggleFlip(id: string) {
@@ -81,18 +80,19 @@ const runRankByCategory = computed(() => {
   return out;
 });
 
-/** Single-speed activities (today: walk, hike) — the ones with rank.mode !== "distance-ladder" in
+/** Single-speed activities (today: walk, hike) — the ones with rank.mode === "single-speed" in
  *  the shared registry — each get exactly one card, keyed by activity id rather than category
- *  ("all" isn't a distance, so it has nothing to head a card with). Only an activity that has
- *  actually produced a rank row renders a card at all, so a user who's never walked sees nothing
- *  extra here — same "only show a real option" rule OverviewPage's activity filter follows. */
-const singleSpeedRanks = computed(() => {
-  const singleSpeedIds = new Set<string>(
-    rankedCardioActivities()
-      .filter((a) => a.rank.mode === "single-speed")
-      .map((a) => a.id),
-  );
-  return runRankStore.ranks.filter((r) => singleSpeedIds.has(r.activityType));
+ *  ("all" isn't a distance, so it has nothing to head a card with). Read from the registry rather
+ *  than derived from `runRankStore.ranks` so every ranked single-speed activity always renders a
+ *  card, with an empty-state placeholder for one with no rank row yet — same fixed-row convention
+ *  RUN_CATEGORIES above already follows, rather than a card simply not existing (indistinguishable
+ *  from broken) for someone who's never walked/hiked. */
+const singleSpeedActivities = computed(() => rankedCardioActivities().filter((a) => a.rank.mode === "single-speed"));
+
+const singleSpeedRankByActivity = computed(() => {
+  const out: Record<string, RunRankRow> = {};
+  for (const r of runRankStore.ranks) out[r.activityType] = r;
+  return out;
 });
 
 /** RankProgress's built-in "next target" formatting assumes a weight×reps pair, which doesn't
@@ -146,21 +146,24 @@ function formatNextSpeedTarget(speedMps: number | null): string {
       />
 
       <RankCategoryCard
-        v-for="row in singleSpeedRanks"
-        :key="row.activityType"
-        :name="ACTIVITY_LABEL[row.activityType] ?? row.activityType"
-        :row="row"
-        :next-target-label="formatNextSpeedTarget(row.nextTargetSpeedMps)"
+        v-for="activity in singleSpeedActivities"
+        :key="activity.id"
+        :name="ACTIVITY_LABEL[activity.id] ?? activity.id"
+        :row="singleSpeedRankByActivity[activity.id] ?? null"
+        :next-target-label="
+          singleSpeedRankByActivity[activity.id] && formatNextSpeedTarget(singleSpeedRankByActivity[activity.id]!.nextTargetSpeedMps)
+        "
         trust-fallback="synthetic"
-        :flipped="flipped === row.activityType"
-        :back-activated="activatedBacks.has(row.activityType)"
-        :pr-label="bestSpeedByActivity[row.activityType] ? formatPace(1000 / bestSpeedByActivity[row.activityType]!.value) : null"
-        :pr-date="bestSpeedByActivity[row.activityType] ? formatPrDate(bestSpeedByActivity[row.activityType]!.achievedAt) : null"
-        @flip="toggleFlip(row.activityType)"
+        empty-note="Noch kein Rang — sammle genug Distanz, um zu starten."
+        :flipped="flipped === activity.id"
+        :back-activated="activatedBacks.has(activity.id)"
+        :pr-label="bestSpeedByActivity[activity.id] ? formatPace(1000 / bestSpeedByActivity[activity.id]!.value) : null"
+        :pr-date="bestSpeedByActivity[activity.id] ? formatPrDate(bestSpeedByActivity[activity.id]!.achievedAt) : null"
+        @flip="toggleFlip(activity.id)"
       />
     </CardGrid>
 
-    <p v-if="singleSpeedRanks.length > 0" class="page-note overall-exclusion-note">
+    <p v-if="singleSpeedActivities.length > 0" class="page-note overall-exclusion-note">
       Gehen und Wandern zählen nicht in den Overall Runner Rank — sie haben ihre eigene Wertung.
     </p>
   </div>

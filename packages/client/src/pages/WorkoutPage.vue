@@ -7,8 +7,8 @@
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref, watch } from "vue";
+import ExerciseDetailContent from "../components/exercise/ExerciseDetailContent.vue";
 import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
-import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
 import FinishSequence from "../components/workout/FinishSequence.vue";
 import AppIcon from "../components/ui/AppIcon.vue";
@@ -193,10 +193,18 @@ const { showAddExercise, addExerciseSearch, addExerciseCandidates, addExerciseTo
 
 const { xpChip, trigger: triggerXpChip } = useXpChip();
 
-const infoExerciseId = ref<string | null>(null);
-const infoExercise = computed(() => (infoExerciseId.value ? catalog.byId(infoExerciseId.value) : undefined));
+/** Opened as a sheet, not a navigation — leaving the workout screen mid-set would unmount the
+ *  active rest timer/scroll position/open pickers even though the workout itself survives in the
+ *  store. Every other entry point (ExercisesPage, RankLifterSection, ...) still routes to
+ *  `/exercises/:slug`. */
+const infoExerciseSlug = ref<string | null>(null);
+const infoExerciseTitle = computed(() => {
+  const exercise = infoExerciseSlug.value ? catalog.bySlug(infoExerciseSlug.value) : undefined;
+  return exercise ? exerciseName(exercise.slug, exercise.name) : "Übung";
+});
 function openInfo(exerciseId: string) {
-  infoExerciseId.value = exerciseId;
+  const exercise = catalog.byId(exerciseId);
+  if (exercise) infoExerciseSlug.value = exercise.slug;
 }
 
 /** "Satzart auswählen" — which set's picker is open. */
@@ -665,10 +673,20 @@ const WORKOUT_RUNS_TABS = [
       </div>
     </div>
 
-    <ExerciseInfoPanel v-if="infoExercise" :exercise="infoExercise" @close="infoExerciseId = null" />
-
     <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
       <ExerciseRail @jump="showExerciseOverview = false" />
+    </SheetModal>
+
+    <SheetModal
+      v-if="infoExerciseSlug"
+      :title="infoExerciseTitle"
+      desktop-variant="drawer"
+      desktop-width="480px"
+      @close="infoExerciseSlug = null"
+    >
+      <div style="--content-inset: var(--sp5)">
+        <ExerciseDetailContent :slug="infoExerciseSlug" />
+      </div>
     </SheetModal>
     </div>
     </IonContent>

@@ -1,5 +1,14 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+declare module "vue-router" {
+  interface RouteMeta {
+    /** Drives App.vue's sr-only <h1> and the routes below with no navItems entry of their own
+     *  (App.vue's own pageTitle special-cases handle every other title source: navItems' nav
+     *  labels, /runs, and the dynamic per-routine title). */
+    title?: string;
+  }
+}
+
 /**
  * One codebase, two layouts: AppShell renders SideNav above the md breakpoint, TabBar below —
  * these routes are shared by both.
@@ -35,6 +44,7 @@ export const router = createRouter({
       path: "/records",
       name: "records",
       component: () => import("./pages/RecordsPage.vue"),
+      meta: { title: "Rekorde" },
       // Kick the PR fetch off as soon as navigation starts (not onMounted, which only runs once
       // the component actually mounts — see the beforeResolve prefetch comment below for why
       // that's too late) so data is already in flight while the chunk resolves and the outgoing
@@ -44,10 +54,58 @@ export const router = createRouter({
       },
     },
     { path: "/exercises", name: "exercises", component: () => import("./pages/ExercisesPage.vue") },
+    {
+      path: "/exercises/:slug",
+      name: "exercise-detail",
+      component: () => import("./pages/ExerciseDetailPage.vue"),
+      meta: { title: "Übung" },
+      // Same eager-prefetch pattern as /records above — get the fetch in flight while the chunk
+      // resolves. Guarded on !loaded (matching ExerciseDetailPage.vue's own onMounted guard and
+      // /records' prStore prefetch) since catalogStore.load() always re-fetches the whole
+      // exercise catalog, unlike prStore/historyStore's own per-id caching.
+      beforeEnter: () => {
+        void import("./stores/catalogStore").then(({ useCatalogStore }) => {
+          const catalog = useCatalogStore();
+          if (!catalog.loaded) void catalog.load();
+        });
+      },
+    },
     { path: "/runs", name: "runs", component: () => import("./pages/RunsPage.vue") },
+    {
+      path: "/workouts/:id",
+      name: "workout-detail",
+      component: () => import("./pages/WorkoutDetailPage.vue"),
+      meta: { title: "Workout-Details" },
+      // Same eager-prefetch pattern as /records and /exercises/:slug above — historyStore.loadWorkout()
+      // is safe to call again here even though the page's own onMounted calls it too: it's cached
+      // per id (see historyStore.ts), so a concurrent call while this one is still in flight is the
+      // only case that ever does two fetches, not a guaranteed double-fetch.
+      beforeEnter: (to) => {
+        void import("./stores/historyStore").then(({ useHistoryStore }) => useHistoryStore().loadWorkout(to.params.id as string));
+      },
+    },
+    {
+      path: "/runs/:id",
+      name: "run-detail",
+      component: () => import("./pages/RunDetailPage.vue"),
+      meta: { title: "Lauf-Details" },
+      beforeEnter: (to) => {
+        void import("./stores/runsStore").then(({ useRunsStore }) => useRunsStore().loadDetail(to.params.id as string));
+      },
+    },
     { path: "/profile", name: "profile", component: () => import("./pages/ProfilePage.vue") },
-    { path: "/attributions", name: "attributions", component: () => import("./pages/AttributionsPage.vue") },
-    { path: "/diagnostics", name: "diagnostics", component: () => import("./pages/DiagnosticsPage.vue") },
+    {
+      path: "/attributions",
+      name: "attributions",
+      component: () => import("./pages/AttributionsPage.vue"),
+      meta: { title: "Quellen & Lizenzen" },
+    },
+    {
+      path: "/diagnostics",
+      name: "diagnostics",
+      component: () => import("./pages/DiagnosticsPage.vue"),
+      meta: { title: "Diagnose" },
+    },
   ],
 });
 

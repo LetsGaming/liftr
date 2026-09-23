@@ -13,11 +13,12 @@
  * additionally gated on `isRankEligible` — a run below that activity's minimum distance/duration
  * never enters the aggregate (still earns XP/streak, just not rank). See cardioActivities.ts.
  */
-import type { LiftrDb } from "@liftr/db";
+import { users, type LiftrDb } from "@liftr/db";
 import {
   cardioActivity,
   isRankEligible,
   nextTargetAtOrdinal,
+  rankedCardioActivities,
   runRankValue,
   RUN_CATEGORY_DISTANCE_M,
   ordinal,
@@ -65,7 +66,13 @@ export async function recomputeRunRank(
 
   const sex = await getUserSex(db, userId);
   const thresholdRows = (await findRunStandardsForBucket(db, bucket, activityType)).filter((t) => t.sex === sex);
-  if (thresholdRows.length === 0) return null; // no standards ingested yet for this bucket/activity type
+  if (thresholdRows.length === 0) {
+    // A missing threshold table means every recompute for this bucket silently no-ops (import
+    // still succeeds, XP/streak still credit — just no rank row) with no other trace anywhere,
+    // so this is the only diagnostic signal an operator gets.
+    console.warn(`recomputeRunRank: no standards rows for activityType=${activityType} bucket=${bucket}`);
+    return null;
+  }
 
   const thresholds: StandardThreshold[] = thresholdRows.map((t) => ({
     tier: t.tier,
@@ -241,4 +248,31 @@ export async function recomputeRunRank(
     lp: currentBand.lp,
     prevLp: previousRank?.lp ?? 0,
   };
+}
+
+/**
+ * Recomputes every user's rank in every ranked cardio activity/bucket combination. Used by
+ * `recompute.ts`'s force-recompute CLI and by server-boot self-heal (app.ts) after a standards
+ * table rewrite, so both stay on this one loop.
+ */
+export async function recomputeAllCardioRanks(db: LiftrDb): Promise<{ recomputed: number; skipped: number }> {
+  const allUsers = await db.select({ id: users.id }).from(users);
+  let recomputed = 0;
+  let skipped = 0;
+
+  for (const user of allUsers) {
+    for (const activity of rankedCardioActivities()) {
+      const buckets = activity.rank.mode === "distance-ladder" ? activity.rank.categories : (["all"] as const);
+      for (const bucket of buckets) {
+        const result = await recomputeRunRank(db, user.id, bucket, activity.id);
+        if (result) {
+          recomputed++;
+        } else {
+          skipped++; // no rank-eligible activity yet, or no standards for this bucket
+        }
+      }
+    }
+  }
+
+  return { recomputed, skipped };
 }

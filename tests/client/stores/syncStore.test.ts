@@ -66,6 +66,11 @@ vi.mock("~client/health/healthConnect", () => ({
   requestHealthConnectPermissions: vi.fn(),
 }));
 
+const { refreshCardioDerivedStoresMock } = vi.hoisted(() => ({ refreshCardioDerivedStoresMock: vi.fn() }));
+vi.mock("~client/composables/useCardioDerivedStores", () => ({
+  refreshCardioDerivedStores: refreshCardioDerivedStoresMock,
+}));
+
 vi.mock("@capacitor/app", () => ({
   App: { addListener: capacitorAppAddListenerMock },
 }));
@@ -117,6 +122,7 @@ beforeEach(() => {
   capacitorAppAddListenerMock.mockReset().mockResolvedValue(undefined);
   networkAddListenerMock.mockReset().mockResolvedValue(undefined);
   isNativePlatformMock.mockReset().mockReturnValue(false);
+  refreshCardioDerivedStoresMock.mockClear();
   setOnline(true);
 });
 
@@ -500,6 +506,36 @@ describe("syncStore — startAutoFlush()", () => {
     await tick();
 
     expect(importNewHealthConnectWorkoutsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("the 'resume' listener refreshes XP/streak/rank once an import actually creates something", async () => {
+    isNativePlatformMock.mockReturnValue(true);
+    apiPostMock.mockResolvedValue({ results: [] });
+    importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 1, skipped: 0, failed: 0, workouts: [] });
+    const store = useSyncStore();
+    store.startAutoFlush();
+    await tick();
+
+    const resumeHandler = capacitorAppAddListenerMock.mock.calls.find(([event]) => event === "resume")?.[1] as () => void;
+    resumeHandler();
+    await tick();
+
+    expect(refreshCardioDerivedStoresMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("the 'resume' listener does not refresh XP/streak/rank on a no-op resync (nothing imported)", async () => {
+    isNativePlatformMock.mockReturnValue(true);
+    apiPostMock.mockResolvedValue({ results: [] });
+    importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 0, skipped: 2, failed: 0, workouts: [] });
+    const store = useSyncStore();
+    store.startAutoFlush();
+    await tick();
+
+    const resumeHandler = capacitorAppAddListenerMock.mock.calls.find(([event]) => event === "resume")?.[1] as () => void;
+    resumeHandler();
+    await tick();
+
+    expect(refreshCardioDerivedStoresMock).not.toHaveBeenCalled();
   });
 
   it("the networkStatusChange listener only flushes once connectivity actually returns", async () => {

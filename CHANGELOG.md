@@ -6,6 +6,32 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Added
+
+- Walking and hiking now show a rank card even before your first rank, matching the running categories.
+- The Health Connect sync log on the Diagnose page can now be cleared.
+- Speed (km/h) in the run replay view.
+- Liftr now warns when the app and the server are running different versions.
+
+### Changed
+
+- The "check last N days" Health Connect rescan on the Diagnose page now re-syncs immediately instead of only resetting the scan window.
+- Exercise details are now their own page: the back button and browser/phone back both work as expected, and the view can be linked to directly.
+- Workout and run details are now their own pages with a working back button and consistent presentation.
+
+### Fixed
+
+- The Diagnose and Lizenzen pages now have a back button.
+- Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
+- XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
+- A manual Health Connect sync no longer creates an extra "App-Start" log entry.
+- Concurrent Health Connect syncs can no longer overlap and race each other.
+- Replay readout values no longer shift sideways when their digit count changes.
+- The exercise/workout/run detail pages now show their name in the header on a phone; it used to be invisible below 900px width.
+- Tapping the ⓘ exercise-info button mid-workout now opens the exercise details in a sheet instead of navigating away, so the active workout screen (rest timer, scroll position, open pickers) no longer resets.
+- A "check last N/90 days" Health Connect rescan now also refreshes XP/Streak/Ränge when it imports something, matching every other Health Connect sync entry point.
+- A Health Connect rescan started while another sync is already running no longer has its widened scan window silently overwritten by that other sync.
+
 ## [1.7.2] - 2026-09-23
 
 ### Fixed

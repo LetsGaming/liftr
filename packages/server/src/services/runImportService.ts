@@ -47,8 +47,9 @@ async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (Run
   let rankResult: Awaited<ReturnType<typeof recomputeRunRank>> = null;
   const rankMode = cardioActivity(run.activityType).rank.mode;
   if (rankMode !== "none" && run.source !== "manual" && points.length > 0) {
-    // Narrowed by rankMode !== "none" above — today only "other" has that mode, so
-    // run.activityType here is genuinely RankedActivityType, not just cast for convenience.
+    // "other" is the only ActivityType with rank.mode "none", so rankMode !== "none" above
+    // narrows run.activityType to RankedActivityType for every other activity, walk/hike
+    // included — this cast is safe regardless of which ranked activity reaches here.
     const activityType = run.activityType as RankedActivityType;
     const plausibility = computeRunPlausibility({
       distanceM: run.distanceM,

@@ -17,7 +17,7 @@ import { useDataExport } from "../composables/useDataExport";
 import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
 import { useHealthConnectImport } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
-import { useServerConnection } from "../composables/useServerConnection";
+import { checkVersionMismatch, useServerConnection, useServerVersionInfo } from "../composables/useServerConnection";
 import { useToast } from "../composables/useToast";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
 import { ApiError } from "../lib/api";
@@ -80,6 +80,7 @@ const { exporting, exportError, exportData } = useDataExport();
 // concept to show/change here. See ServerGate.vue for the first-launch counterpart of this flow.
 const isNativePlatform = isNative();
 const { serverUrl, checking: serverChecking, error: serverError, verifyAndSave: verifyAndSaveServer } = useServerConnection();
+const { serverVersion, versionMismatch } = useServerVersionInfo();
 const editingServer = ref(false);
 const serverInput = ref("");
 
@@ -286,6 +287,7 @@ onMounted(async () => {
   }
   void loadSessions();
   if (isAndroidPlatform) void checkForAppUpdate();
+  if (isNativePlatform) void checkVersionMismatch();
 
   // Lets a toast/notification elsewhere ("Update verfügbar — siehe Profil") link straight to
   // the section it's talking about instead of just naming it and leaving the user to find it.
@@ -605,6 +607,12 @@ async function saveWeight() {
               </button>
             </div>
           </template>
+          <p v-if="serverVersion" class="hint" :class="{ error: versionMismatch }">
+            Server-Version: v{{ serverVersion }}{{ appVersion ? ` · App-Version: v${appVersion}` : "" }}
+          </p>
+          <p v-if="versionMismatch" class="error">
+            Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen.
+          </p>
         </template>
 
         <h3 class="eyebrow sub-eyebrow">Version</h3>

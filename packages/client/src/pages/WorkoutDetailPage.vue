@@ -1,33 +1,36 @@
 <script setup lang="ts">
 /**
- * Past-workout detail. Opens as a sheet from a dashboard/history row rather than a new route.
- * Built on the shared SheetModal.vue
- * (IonModal + header + close button), which this component and ExerciseInfoPanel.vue used to
- * duplicate independently.
+ * Past-workout detail — a routed page (was WorkoutDetail.vue's SheetModal sheet), reached via
+ * `/workouts/:id` for a real URL, back-button semantics, and a cold deep-link, converging with
+ * ExerciseDetailPage.vue and RunDetailPage.vue on the same BasePage shell.
  *
- * GET /api/workouts/:id has existed since the workout routes were first built, labeled in its
- * own server comment as "for the history detail view... and share cards" — this is the first
- * client code to ever call it.
+ * GET /api/workouts/:id doesn't carry the workout's own display title (the history feed's title
+ * is server-derived per list row, not stored on the workout itself) — the opening feed row passes
+ * it through as a `title` query param (same idiom as `/routes/:id?autostart=live`), falling back
+ * to a generic title for a cold/direct deep-link.
  */
 import type { WorkoutCardModel } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
-import { useConfirmTap } from "../../composables/useConfirmTap";
-import { useExerciseName } from "../../composables/useExerciseName";
-import { formatDateLong, formatDurationMinutes } from "../../lib/format";
-import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../../lib/shareCard";
-import AppIcon from "../ui/AppIcon.vue";
-import { useCatalogStore } from "../../stores/catalogStore";
-import { useHistoryStore, type WorkoutDetail } from "../../stores/historyStore";
-import { useOverallRankStore } from "../../stores/overallRankStore";
-import { useRanksStore } from "../../stores/ranksStore";
-import { useXpStore } from "../../stores/xpStore";
-import ExerciseRow from "../exercise/ExerciseRow.vue";
-import MuscleFigure from "../ui/MuscleFigure.vue";
-import SheetModal from "../ui/SheetModal.vue";
-import StatTile from "../ui/StatTile.vue";
+import { useRoute, useRouter } from "vue-router";
+import { useConfirmTap } from "../composables/useConfirmTap";
+import { useExerciseName } from "../composables/useExerciseName";
+import { formatDateLong, formatDurationMinutes } from "../lib/format";
+import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../lib/shareCard";
+import AppIcon from "../components/ui/AppIcon.vue";
+import BasePage from "../components/ui/BasePage.vue";
+import { useCatalogStore } from "../stores/catalogStore";
+import { useHistoryStore, type WorkoutDetail } from "../stores/historyStore";
+import { useOverallRankStore } from "../stores/overallRankStore";
+import { useRanksStore } from "../stores/ranksStore";
+import { useXpStore } from "../stores/xpStore";
+import ExerciseRow from "../components/exercise/ExerciseRow.vue";
+import MuscleFigure from "../components/ui/MuscleFigure.vue";
+import StatTile from "../components/ui/StatTile.vue";
 
-const props = defineProps<{ workoutId: string; title?: string }>();
-const emit = defineEmits<{ close: [] }>();
+const route = useRoute();
+const router = useRouter();
+const workoutId = computed(() => route.params.id as string);
+const title = computed(() => (route.query.title as string | undefined) ?? "Workout-Details");
 
 const history = useHistoryStore();
 const catalog = useCatalogStore();
@@ -41,30 +44,23 @@ const detail = ref<WorkoutDetail | null>(null);
 const shareCanvas = ref<HTMLCanvasElement | null>(null);
 const sharing = ref(false);
 const deleting = ref(false);
-const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
-/**
- * Deletion reverses LP server-side (routes/workouts.ts recomputes every touched exercise's
- * rank) and XP is never cached in the first place — reload both here so the rest of the app
- * (nav chips, Ränge tab) reflects the loss immediately instead of on next natural refresh.
- *
- * Closes via sheetRef.dismiss(), not `emit("close")` directly — a direct emit/unmount here used
- * to race Ionic's own modal teardown instead of cleanly finishing it, leaving the delete screen
- * stuck. See SheetModal.vue's header comment for why.
- */
+/** Deletion reverses LP server-side (routes/workouts.ts recomputes every touched exercise's
+ *  rank) and XP is never cached in the first place — reload both here so the rest of the app
+ *  (nav chips, Ränge tab) reflects the loss immediately instead of on next natural refresh. */
 const deleteConfirm = useConfirmTap(async () => {
   deleting.value = true;
   try {
-    await history.deleteWorkout(props.workoutId);
+    await history.deleteWorkout(workoutId.value);
     await Promise.all([ranksStore.load(), xpStore.load()]);
-    sheetRef.value?.dismiss();
+    router.back();
   } finally {
     deleting.value = false;
   }
 });
 
 onMounted(async () => {
-  detail.value = await history.loadWorkout(props.workoutId);
+  detail.value = await history.loadWorkout(workoutId.value);
   loading.value = false;
   void overallRank.load();
 });
@@ -115,7 +111,7 @@ async function share() {
   try {
     const model: WorkoutCardModel = {
       kind: "workout",
-      routineName: props.title ?? "Workout",
+      routineName: title.value,
       dateLabel: dateLabel.value,
       durationLabel: durationLabel.value,
       volumeKg: totalVolumeKg.value,
@@ -144,17 +140,7 @@ async function share() {
 </script>
 
 <template>
-  <SheetModal
-    ref="sheetRef"
-    :title="title ?? 'Workout-Details'"
-    width="100%"
-    max-width="94vw"
-    height="88%"
-    desktop-variant="drawer"
-    desktop-width="560px"
-    desktop-height="100%"
-    @close="emit('close')"
-  >
+  <BasePage :title="title" back-button variant="drawer">
     <p v-if="loading" class="hint">Lädt…</p>
     <p v-else-if="!detail" class="hint">Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server.</p>
 
@@ -204,7 +190,7 @@ async function share() {
       </button>
       <canvas ref="shareCanvas" class="share-canvas" aria-hidden="true" />
     </template>
-  </SheetModal>
+  </BasePage>
 </template>
 
 <style scoped>

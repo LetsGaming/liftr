@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 import ErholungszoneCard from "~client/components/ui/ErholungszoneCard.vue";
 import TierLadder from "~client/components/rank/TierLadder.vue";
-import WorkoutDetail from "~client/components/workout/WorkoutDetail.vue";
-import RunDetail from "~client/components/run/RunDetail.vue";
 import OverviewPage from "~client/pages/OverviewPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
@@ -60,10 +58,6 @@ vi.mock("~client/stores/bodyweightStore", () => ({ useBodyweightStore: () => bod
 vi.mock("~client/stores/catalogStore", () => ({ useCatalogStore: () => catalogState }));
 vi.mock("~client/stores/readinessStore", () => ({ useReadinessStore: () => readinessState }));
 
-// WorkoutDetail/RunDetail do their own store-backed fetching (already covered at their own
-// layer) — stubbed so this page's test only asserts *whether* they open, wired to the right id.
-const STUBS = { WorkoutDetail: true, RunDetail: true };
-
 beforeEach(() => {
   vi.clearAllMocks();
   Object.assign(historyState, { items: [], loaded: false, error: false, nextCursor: null, loadingMore: false });
@@ -84,7 +78,7 @@ function historyItem(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe("OverviewPage", () => {
   it("loads every dashboard store on mount", () => {
-    mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    mountWithProviders(OverviewPage);
     for (const store of [historyState, routineState, ranksState, bodyweightState, catalogState, readinessState, overallRankState]) {
       expect(store.load).toHaveBeenCalledOnce();
     }
@@ -93,7 +87,7 @@ describe("OverviewPage", () => {
 
   it("shows the first-run tier ladder instead of the loaded dashboard when history has genuinely loaded empty", () => {
     Object.assign(historyState, { loaded: true, items: [] });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     expect(wrapper.find(".first-run-ladder").exists()).toBe(true);
     expect(wrapper.findComponent(TierLadder).props("currentTier")).toBeNull();
@@ -104,7 +98,7 @@ describe("OverviewPage", () => {
   it("shows a load-error banner when any dashboard store failed, and retries only the failed ones", async () => {
     Object.assign(streakState, { error: true });
     Object.assign(xpState, { error: true });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     expect(wrapper.find(".load-error-banner").exists()).toBe(true);
     streakState.load.mockClear();
@@ -121,7 +115,7 @@ describe("OverviewPage", () => {
   it("launchpad: resumes an in-progress workout when one is active", () => {
     Object.assign(activeWorkoutState, { isActive: true, routineName: "Push Day", progressLabel: "2/5 Sätze" });
     Object.assign(historyState, { loaded: true, items: [historyItem()] }); // clears first-run
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     expect(wrapper.text()).toContain("Weiter machen");
     expect(wrapper.text()).toContain("Push Day");
@@ -132,7 +126,7 @@ describe("OverviewPage", () => {
   it("launchpad: suggests the first saved routine to start when none is active", () => {
     Object.assign(routineState, { routines: [{ id: "r1", name: "Leg Day", routineExercises: [{ exerciseId: "ex1" }] }] });
     Object.assign(historyState, { loaded: true, items: [historyItem()] });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     expect(wrapper.text()).toContain("Bereit für heute?");
     expect(wrapper.text()).toContain("Leg Day");
@@ -141,7 +135,7 @@ describe("OverviewPage", () => {
 
   it("launchpad: prompts to create a routine when none exist and nothing is active", () => {
     Object.assign(historyState, { loaded: true, items: [historyItem()] });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     expect(wrapper.text()).toContain("Noch keine Routine");
   });
@@ -151,7 +145,7 @@ describe("OverviewPage", () => {
     Object.assign(xpState, { loaded: true, level: 12 });
     Object.assign(overallRankState, { loaded: true, current: { tier: "silver", division: 2 } });
     Object.assign(historyState, { loaded: true, items: [historyItem()] });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     expect(wrapper.text()).toContain("Lv. 12");
     const tiles = wrapper.findAll(".status-strip .stat-tile b");
@@ -164,29 +158,28 @@ describe("OverviewPage", () => {
     // instead (see the test above); this is the "still has whatever was cached, fetch failed"
     // case, which keeps the normal dashboard shell and shows the activity section's own error line.
     Object.assign(historyState, { loaded: false, error: true, items: [] });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
     expect(wrapper.text()).toContain("Keine Verbindung zum Server");
   });
 
-  it("activity feed: opens WorkoutDetail for a workout row and RunDetail for a run row", async () => {
+  it("activity feed: navigates to the workout detail route for a workout row, and the run detail route for a run row", async () => {
     Object.assign(historyState, {
       loaded: true,
       items: [historyItem({ id: "w1", kind: "workout", title: "Push Day" }), historyItem({ id: "r1", kind: "run", title: "Morgenlauf", meta: { distanceM: 5000 } })],
     });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
-    expect(wrapper.findComponent(WorkoutDetail).exists()).toBe(false);
     const rows = wrapper.findAll(".feed-btn");
     await rows[0]!.trigger("click");
-    expect(wrapper.findComponent(WorkoutDetail).props("workoutId")).toBe("w1");
+    await vi.waitFor(() => expect(wrapper.vm.$router.currentRoute.value.fullPath).toBe(`/workouts/w1?title=${encodeURIComponent("Push Day")}`));
 
     await rows[1]!.trigger("click");
-    expect(wrapper.findComponent(RunDetail).props("runId")).toBe("r1");
+    await vi.waitFor(() => expect(wrapper.vm.$router.currentRoute.value.fullPath).toBe("/runs/r1"));
   });
 
   it("shows a 'load more' button only while history has another page, and calls loadMore on tap", async () => {
     Object.assign(historyState, { loaded: true, items: [historyItem()], nextCursor: "cursor-2" });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     const btn = wrapper.find(".activity .btn-secondary");
     expect(btn.exists()).toBe(true);
@@ -198,7 +191,7 @@ describe("OverviewPage", () => {
     Object.assign(routineState, { routines: [{ id: "r7", name: "Leg Day", routineExercises: [] }] });
     Object.assign(readinessState, { loaded: true, recoveredSlugs: ["quads"] });
     Object.assign(historyState, { loaded: true, items: [historyItem()] });
-    const wrapper = mountWithProviders(OverviewPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(OverviewPage);
 
     const card = wrapper.findComponent(ErholungszoneCard);
     expect(card.props("canStart")).toBe(true);

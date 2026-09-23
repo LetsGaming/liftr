@@ -1,5 +1,9 @@
+import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { reactive, ref } from "vue";
+import { defineComponent, reactive, ref } from "vue";
+import { createMemoryHistory, createRouter } from "vue-router";
+import ExerciseDetailContent from "~client/components/exercise/ExerciseDetailContent.vue";
 import ExerciseRail from "~client/components/exercise/ExerciseRail.vue";
 import FinishSequence from "~client/components/workout/FinishSequence.vue";
 import RestTimer from "~client/components/workout/RestTimer.vue";
@@ -7,6 +11,7 @@ import SetEntry from "~client/components/workout/SetEntry.vue";
 import SheetModal from "~client/components/ui/SheetModal.vue";
 import RankProgress from "~client/components/rank/RankProgress.vue";
 import RoutineList from "~client/components/routine/RoutineList.vue";
+import { i18n } from "~client/i18n";
 import WorkoutPage from "~client/pages/WorkoutPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
@@ -57,7 +62,13 @@ const store = reactive({
   setWorkoutNotes: vi.fn(),
   setCurrentSetNotes: vi.fn(),
 });
-const catalogState = reactive({ exercises: [] as unknown[], loaded: false, load: vi.fn(), byId: () => undefined });
+const catalogState = reactive({
+  exercises: [] as unknown[],
+  loaded: false,
+  load: vi.fn(),
+  byId: () => undefined,
+  bySlug: () => undefined,
+});
 const routineState = reactive({ routines: [] as unknown[], loaded: false, error: false, load: vi.fn() });
 const streakState = reactive({ streak: 0, tokensRemaining: 2, loaded: false, error: false, load: vi.fn() });
 const ranksState = reactive({ ranks: [] as { exerciseId: string; tier: string; division: number; lp: number; nextTargetWeightKg: number | null; nextTargetReps: number | null; trust: string }[], loaded: false, error: false, load: vi.fn() });
@@ -125,13 +136,28 @@ const STUBS = {
   SetEntry: true,
   RestTimer: true,
   ExerciseRail: true,
-  ExerciseInfoPanel: true,
+  ExerciseDetailContent: true,
   SheetModal: true,
   SetKindPicker: true,
   RpeCapture: true,
   NoteCapture: true,
   SyncIndicator: true,
 };
+
+// SheetModal.vue wraps @ionic/vue's real <IonModal> (a lazily-defined Stencil custom element) —
+// tests/README.md's convention is to stub that specific element rather than load it for real
+// under jsdom, same as SheetModal.test.ts/NoteCapture.test.ts/RpeCapture.test.ts's own stubs.
+const IonModalStub = defineComponent({
+  name: "IonModal",
+  props: {
+    isOpen: { type: Boolean, default: false },
+    breakpoints: { type: Array, default: undefined },
+    initialBreakpoint: { type: Number, default: undefined },
+    backdropDismiss: { type: Boolean, default: undefined },
+  },
+  emits: ["did-dismiss"],
+  template: `<div class="ion-modal-stub"><slot name="header" /><slot /></div>`,
+});
 
 function makeExercise(overrides: Partial<ActiveExercise> = {}): ActiveExercise {
   return {
@@ -337,6 +363,38 @@ describe("WorkoutPage", () => {
     expect(rank.exists()).toBe(true);
     expect(rank.props("tier")).toBe("advanced");
     expect(rank.props("lp")).toBe(55);
+  });
+
+  it("opens the exercise detail content in a sheet from the ⓘ button, without navigating away from the workout screen", async () => {
+    store.isActive = true;
+    store.currentExercise = makeExercise({ exerciseId: "ex1" });
+    catalogState.byId = () => ({ id: "ex1", slug: "bench-press", name: "Bankdrücken" }) as never;
+    catalogState.bySlug = () => ({ id: "ex1", slug: "bench-press", name: "Bankdrücken" }) as never;
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/workout", name: "workout", component: WorkoutPage },
+        { path: "/exercises/:slug", name: "exercise-detail", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/workout");
+    await router.isReady();
+    const wrapper = mount(WorkoutPage, {
+      global: { plugins: [createPinia(), i18n, router], stubs: { ...STUBS, SheetModal: false, IonModal: IonModalStub } },
+    });
+
+    expect(wrapper.findComponent(ExerciseDetailContent).exists()).toBe(false);
+
+    await wrapper.find('[aria-label="Übungsinfo"]').trigger("click");
+    await wrapper.vm.$nextTick();
+
+    // Still on the workout screen — the active workout's own DOM (rest timer, scroll position,
+    // set rows) never unmounted, unlike a route navigation.
+    expect(router.currentRoute.value.path).toBe("/workout");
+    const content = wrapper.findComponent(ExerciseDetailContent);
+    expect(content.exists()).toBe(true);
+    expect(content.props("slug")).toBe("bench-press");
+    expect(wrapper.findComponent(SheetModal).props("title")).toBe("bench-press");
   });
 
   it("opens the full exercise-jump sheet from the overview affordance", async () => {

@@ -198,7 +198,29 @@ export interface HealthConnectImportResult {
  *  the window; a genuine transient failure gets picked up again only if the workout still falls
  *  inside a future window, e.g. after `resetHealthConnectScanWindow`). `trigger` is passed through
  *  to the sync log for display only — it doesn't change import behavior. */
-export async function importNewHealthConnectWorkouts(trigger: SyncTrigger = "resume"): Promise<HealthConnectImportResult> {
+let inFlightImport: Promise<HealthConnectImportResult> | null = null;
+
+/** Guards against two overlapping calls racing the same `getLastCheck()`/`setLastCheck()` window —
+ *  a second concurrent caller awaits the first call's result instead of starting its own run. */
+export function importNewHealthConnectWorkouts(trigger: SyncTrigger = "resume"): Promise<HealthConnectImportResult> {
+  if (inFlightImport) return inFlightImport;
+  inFlightImport = runImport(trigger).finally(() => {
+    inFlightImport = null;
+  });
+  return inFlightImport;
+}
+
+/** Lets a caller that's about to change state `importNewHealthConnectWorkouts` reads (e.g.
+ *  `resetHealthConnectScanWindow`) wait out a run it doesn't control instead of racing it —
+ *  starting that change while one is in flight would let the other run's own `getLastCheck()`/
+ *  `setLastCheck()` (captured before the change) clobber it. Resolves once the in-flight run
+ *  settles, regardless of its outcome; a no-op if nothing is in flight. */
+export async function waitForInFlightHealthConnectImport(): Promise<void> {
+  if (!inFlightImport) return;
+  await inFlightImport.catch(() => undefined);
+}
+
+async function runImport(trigger: SyncTrigger): Promise<HealthConnectImportResult> {
   const empty: HealthConnectImportResult = { imported: 0, skipped: 0, failed: 0, workouts: [] };
   if (!(await isHealthConnectAvailable())) return empty;
 

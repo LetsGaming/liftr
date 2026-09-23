@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 const { isNativeMock } = vi.hoisted(() => ({ isNativeMock: vi.fn().mockReturnValue(false) }));
-vi.mock("~client/lib/platform", () => ({ isNative: isNativeMock }));
+// isAndroid is exported alongside isNative because useServerConnection.ts now imports
+// useAppUpdate.ts (checkVersionMismatch reuses its currentVersion resolution), which reads
+// isAndroid() at module scope.
+vi.mock("~client/lib/platform", () => ({ isNative: isNativeMock, isAndroid: () => false }));
 
 import ServerGate from "~client/components/ui/ServerGate.vue";
 

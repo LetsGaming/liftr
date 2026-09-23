@@ -8,9 +8,10 @@ import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
 import ServerGate from "./components/ui/ServerGate.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
 import { useAppUpdate } from "./composables/useAppUpdate";
+import { checkVersionMismatch } from "./composables/useServerConnection";
 import { useToast } from "./composables/useToast";
 import { showingFinishRecap } from "./composables/useWorkoutChrome";
-import { isAndroid } from "./lib/platform";
+import { isAndroid, isNative } from "./lib/platform";
 import { useActiveWorkoutStore } from "./stores/activeWorkoutStore";
 import { useOverallRankStore } from "./stores/overallRankStore";
 import { useRoutineStore } from "./stores/routineStore";
@@ -49,6 +50,20 @@ onMounted(() => {
     void check().then(() => {
       if (updateAvailable.value) {
         useToast().toast(`Update verfügbar: v${latestVersion.value} — antippen für Details`, () =>
+          router.push({ path: "/profile", query: { focus: "account-app" } }),
+        );
+      }
+    });
+  }
+
+  // Self-hosted client and server can be upgraded independently — a saved server URL is
+  // otherwise trusted indefinitely with no re-verification (see ServerGate.vue). Warn-only: never
+  // blocks app usage, just surfaces the mismatch the same tappable-toast way as the update check
+  // above.
+  if (isNative()) {
+    void checkVersionMismatch().then((mismatch) => {
+      if (mismatch) {
+        useToast().toast("Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen", () =>
           router.push({ path: "/profile", query: { focus: "account-app" } }),
         );
       }
@@ -141,9 +156,9 @@ const navItems = [
 /**
  * Every page has a visible <IonTitle>, but ion-title renders as a plain custom element with no
  * heading role — screen-reader heading navigation never lands anywhere. navItems' labels
- * already track each page's real title, so reuse them for a visually-hidden <h1> here rather
- * than inventing per-page route-meta titles. Falls back to the app name for routes not in
- * navItems (e.g. /attributions).
+ * already track each nav-bar page's real title, so reuse them for a visually-hidden <h1> here;
+ * routes with no navItems entry (drill-ins, /attributions, /diagnostics) set their title via
+ * route.meta.title (router.ts) instead. Falls back to the app name for anything with neither.
  */
 const route = useRoute();
 const pageTitle = computed(() => {
@@ -153,11 +168,9 @@ const pageTitle = computed(() => {
   // (WorkoutPage.vue/RunsPage.vue), but the route itself is unchanged and still needs a real
   // heading here, not the "Liftr" fallback.
   if (route.path === "/runs") return t("nav.runs");
-  // These two routes are drill-ins with no navItems entry, same reason /runs needs its own
-  // case above — otherwise they'd silently fall through to "Liftr".
-  if (route.name === "records") return "Rekorde";
-  if (route.name === "attributions") return "Quellen & Lizenzen";
-  if (route.name === "diagnostics") return "Diagnose";
+  // Drill-ins with no navItems entry set their title via route.meta.title (router.ts) instead —
+  // otherwise they'd silently fall through to "Liftr".
+  if (route.meta.title) return route.meta.title;
   if (route.name === "routine-overview") {
     const routine = routineStore.byId(route.params.id as string);
     return routine ? routine.name : "Routine";
@@ -169,7 +182,9 @@ const pageTitle = computed(() => {
  * The top-hud level/streak chips are hidden on the Workout tab while a set is active or the
  * finish recap is showing: they'd duplicate the same Lv./XP number FinishSequence's own
  * "Fortschritt" beat shows, and compete for space on the app's lowest-density-tolerance screen.
- * Every other screen keeps the chips as an ambient reminder.
+ * Every other screen keeps the chips as an ambient reminder — including pages with a BasePage
+ * header (back button/header-actions): BasePage's own header stacks above .top-hud (see
+ * .ion-page's z-index, BasePage.vue) rather than this hiding the whole HUD for them.
  */
 const hideTopHud = computed(
   () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
@@ -634,7 +649,13 @@ const forceActiveTo = computed(() => {
      --bottom-chrome-h, both independent of this element's own background — so the translucent
      fill below never leaves content unreachable underneath it. Text sitting on the sweep behind
      this always-visible translucent bar was checked for legibility in both themes and reads
-     clearly, so it stays translucent rather than opaque. */
+     clearly, so it stays translucent rather than opaque.
+
+     z-index: 7, above BasePage.vue's own `.ion-page { z-index: 6 }` (see its comment) — a
+     routed page's IonContent scroll container spatially spans this tab bar's whole band too
+     (not just the header's), so once a BasePage route needs to clear .top-hud (z-index: 5, just
+     below) for its own header controls, this needs to stay above THAT page too, not just above
+     .top-hud, or taps here would hit the page's scroll container instead of a tab RouterLink. */
   .bottom-chrome {
     display: flex;
     flex-direction: column;
@@ -642,7 +663,7 @@ const forceActiveTo = computed(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1;
+    z-index: 7;
     background: var(--surface-hybrid-bg);
     backdrop-filter: blur(var(--surface-hybrid-blur));
     -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));

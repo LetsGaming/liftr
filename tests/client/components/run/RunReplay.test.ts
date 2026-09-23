@@ -81,7 +81,7 @@ describe("RunReplay", () => {
 
   it("only shows HR/cadence readouts when the points actually carry that field", () => {
     const withNeither = mountReplay([makePoint()]);
-    expect(withNeither.find(".readouts").findAll(".readout")).toHaveLength(1); // pace only
+    expect(withNeither.find(".readouts").findAll(".readout")).toHaveLength(2); // pace + speed only
 
     const withHr = mountReplay([makePoint({ hr: 140 })]);
     expect(withHr.text()).toContain("Puls");
@@ -126,6 +126,21 @@ describe("RunReplay", () => {
 
     expect(wrapper.find(".play-btn svg").classes()).toContain("app-icon--play"); // seek() pauses
     expect(wrapper.find(".time").text()).toBe("0:05 / 0:10");
+  });
+
+  it("shows a km/h value mid-segment and em dashes at the start/end frames", async () => {
+    const points = [
+      makePoint({ idx: 0, t: "2026-03-15T07:00:00.000Z", lat: 52.5, lon: 13.4 }),
+      makePoint({ idx: 1, t: "2026-03-15T07:00:10.000Z", lat: 52.501, lon: 13.4 }), // ~111m in 10s
+    ];
+    const wrapper = mountReplay(points); // total = 10000ms
+
+    const speedReadout = wrapper.findAll(".readout")[1]!;
+    expect(speedReadout.find(".eyebrow").text()).toBe("Tempo");
+    expect(speedReadout.find(".tnum").text()).toBe("–"); // playhead at 0 -> no segment yet
+
+    await wrapper.find(".scrubber").setValue("50");
+    expect(speedReadout.find(".tnum").text()).toMatch(/^\d+\.\d km\/h$/);
   });
 
   it("clicking a speed button marks it active", async () => {

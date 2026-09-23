@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 import RecordsPage from "~client/pages/RecordsPage.vue";
-import RunDetail from "~client/components/run/RunDetail.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 // Plain top-of-file const (not vi.hoisted — `reactive` isn't available inside that factory, see
@@ -16,11 +15,6 @@ vi.mock("~client/stores/prStore", () => ({
 vi.mock("~client/stores/runRankStore", () => ({
   useRunRankStore: () => runRankState,
 }));
-
-// RunDetail does its own store-backed fetching (already covered at its own layer, same
-// convention as OverviewPage.test.ts's STUBS) — stubbed so this page's tests only assert
-// *whether* it opens, wired to the right runId.
-const STUBS = { RunDetail: true };
 
 function makePr(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -58,19 +52,19 @@ describe("RecordsPage", () => {
   });
 
   it("loads the PR list on mount", () => {
-    mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    mountWithProviders(RecordsPage);
     expect(prState.load).toHaveBeenCalledOnce();
   });
 
   it("doesn't re-fetch PRs once already loaded (router.ts's beforeEnter already prefetched them)", () => {
     prState.loaded = true;
-    mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    mountWithProviders(RecordsPage);
     expect(prState.load).not.toHaveBeenCalled();
   });
 
   it("shows loading skeletons while prStore hasn't loaded yet", () => {
     Object.assign(prState, { prs: [], loaded: false, error: false });
-    const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(RecordsPage);
 
     expect(wrapper.findAll(".pr-skel-row")).toHaveLength(4);
     expect(wrapper.find(".pr-list").exists()).toBe(false);
@@ -78,7 +72,7 @@ describe("RecordsPage", () => {
 
   it("shows a retry banner when the load failed", async () => {
     Object.assign(prState, { prs: [], loaded: false, error: true });
-    const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(RecordsPage);
 
     expect(wrapper.text()).toContain("Rekorde konnten nicht geladen werden.");
     prState.load.mockClear();
@@ -88,7 +82,7 @@ describe("RecordsPage", () => {
 
   it("shows the honest empty state once loaded with zero records", () => {
     Object.assign(prState, { prs: [], loaded: true, error: false });
-    const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(RecordsPage);
 
     expect(wrapper.text()).toContain("Noch keine Rekorde");
     expect(wrapper.find(".pr-list").exists()).toBe(false);
@@ -103,7 +97,7 @@ describe("RecordsPage", () => {
         makePr({ id: "recent", kind: "e1rm", value: 126.6666, achievedAt: new Date().toISOString() }),
       ],
     });
-    const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+    const wrapper = mountWithProviders(RecordsPage);
 
     const rows = wrapper.findAll(".pr-row");
     expect(rows).toHaveLength(2);
@@ -116,13 +110,13 @@ describe("RecordsPage", () => {
 
   describe("running records section", () => {
     it("loads the running PR list on mount", () => {
-      mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      mountWithProviders(RecordsPage);
       expect(runRankState.loadPrs).toHaveBeenCalledOnce();
     });
 
     it("shows loading skeletons while runRankStore hasn't loaded yet", () => {
       Object.assign(runRankState, { prs: [], prsLoaded: false, prsError: false });
-      const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      const wrapper = mountWithProviders(RecordsPage);
 
       expect(wrapper.findAll(".run-pr-skel-row")).toHaveLength(5);
       expect(wrapper.find(".run-pr-list").exists()).toBe(false);
@@ -130,7 +124,7 @@ describe("RecordsPage", () => {
 
     it("shows a retry banner when the running PR load failed", async () => {
       Object.assign(runRankState, { prs: [], prsLoaded: false, prsError: true });
-      const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      const wrapper = mountWithProviders(RecordsPage);
 
       expect(wrapper.text()).toContain("Lauf-Rekorde konnten nicht geladen werden.");
       runRankState.loadPrs.mockClear();
@@ -140,7 +134,7 @@ describe("RecordsPage", () => {
 
     it("always renders all five categories plus one row per single-speed activity (walk, hike), all with empty placeholders when no PR exists yet", () => {
       Object.assign(runRankState, { prs: [], prsLoaded: true, prsError: false });
-      const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      const wrapper = mountWithProviders(RecordsPage);
 
       // 5 running distance categories + 2 single-speed activities (walk, hike) — see
       // cardioActivities.ts's registry.
@@ -167,7 +161,7 @@ describe("RecordsPage", () => {
           makeRunPr({ id: "d", category: "marathon", kind: "time", value: 12345, runId: "run-marathon", achievedAt: "2024-03-01T00:00:00.000Z" }),
         ],
       });
-      const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      const wrapper = mountWithProviders(RecordsPage);
 
       expect(wrapper.text()).toContain("23:00");
       expect(wrapper.text()).not.toContain("25:00");
@@ -175,28 +169,28 @@ describe("RecordsPage", () => {
       expect(wrapper.text()).toContain("3:25:45");
     });
 
-    it("opens RunDetail with the achieving run's id when a category row with a PR is clicked", async () => {
+    it("navigates to the run detail route for the achieving run's id when a category row with a PR is clicked", async () => {
       Object.assign(runRankState, {
         prsLoaded: true,
         prsError: false,
         prs: [makeRunPr({ category: "10k", runId: "run-10k" })],
       });
-      const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      const wrapper = mountWithProviders(RecordsPage);
 
-      expect(wrapper.findComponent(RunDetail).exists()).toBe(false);
       const rows = wrapper.findAll(".run-pr-row");
       const tenKRow = rows.find((r) => r.text().includes("10 km"));
       await tenKRow!.trigger("click");
-      expect(wrapper.findComponent(RunDetail).props("runId")).toBe("run-10k");
+      await vi.waitFor(() => expect(wrapper.vm.$router.currentRoute.value.fullPath).toBe("/runs/run-10k"));
     });
 
-    it("does not open RunDetail when a category row with no PR is clicked", async () => {
+    it("does not navigate when a category row with no PR is clicked", async () => {
       Object.assign(runRankState, { prs: [], prsLoaded: true, prsError: false });
-      const wrapper = mountWithProviders(RecordsPage, { global: { stubs: STUBS } });
+      const wrapper = mountWithProviders(RecordsPage);
+      const startPath = wrapper.vm.$router.currentRoute.value.fullPath;
 
       const rows = wrapper.findAll(".run-pr-row");
       await rows[0]!.trigger("click");
-      expect(wrapper.findComponent(RunDetail).exists()).toBe(false);
+      expect(wrapper.vm.$router.currentRoute.value.fullPath).toBe(startPath);
     });
   });
 });

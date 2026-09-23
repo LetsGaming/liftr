@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -8,9 +9,17 @@ import path from "node:path";
 // outside version control that then drifted out of sync with the tracked migrations.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
+/** Same package.json scripts/bump-version.mjs keeps in sync with the git release tag — the
+ *  single source of truth for "what version is this server", exposed via /api/health so a
+ *  self-hosted client can detect it was upgraded independently of the server. */
+const serverVersion = (
+  JSON.parse(readFileSync(path.join(repoRoot, "packages/server/package.json"), "utf8")) as { version: string }
+).version;
+
 /** Minimal env config. Auth stays deliberately simple — present, not elaborate. */
 export const env = {
   port: Number(process.env.PORT ?? 3001),
+  version: serverVersion,
   dbPath: process.env.LIFTR_DB_PATH ?? path.join(repoRoot, "data/liftr.db"),
   imagesDir: process.env.LIFTR_IMAGES_DIR ?? path.join(repoRoot, "data/images"),
   clientDistDir: process.env.LIFTR_CLIENT_DIST ?? path.join(repoRoot, "packages/client/dist"),

@@ -276,6 +276,61 @@ describe("importNewHealthConnectWorkouts", () => {
   });
 });
 
+describe("importNewHealthConnectWorkouts — in-flight guard", () => {
+  it("a second concurrent call awaits the first call's result instead of starting its own run", async () => {
+    let resolveQuery!: (v: { workouts: unknown[] }) => void;
+    queryWorkoutsMock.mockReturnValue(new Promise((resolve) => (resolveQuery = resolve)));
+    const { importNewHealthConnectWorkouts } = await import("~client/health/healthConnect");
+
+    const first = importNewHealthConnectWorkouts("manual");
+    const second = importNewHealthConnectWorkouts("resume");
+    resolveQuery({ workouts: [] });
+
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+    expect(queryWorkoutsMock).toHaveBeenCalledTimes(1);
+    expect(firstResult).toBe(secondResult);
+  });
+
+  it("allows a fresh run once the in-flight one has completed", async () => {
+    queryWorkoutsMock.mockResolvedValue({ workouts: [] });
+    const { importNewHealthConnectWorkouts } = await import("~client/health/healthConnect");
+
+    await importNewHealthConnectWorkouts();
+    await importNewHealthConnectWorkouts();
+
+    expect(queryWorkoutsMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("waitForInFlightHealthConnectImport", () => {
+  it("resolves immediately when nothing is in flight", async () => {
+    const { waitForInFlightHealthConnectImport } = await import("~client/health/healthConnect");
+    await expect(waitForInFlightHealthConnectImport()).resolves.toBeUndefined();
+  });
+
+  it("resolves only once the in-flight run settles", async () => {
+    let resolveQuery!: (v: { workouts: unknown[] }) => void;
+    queryWorkoutsMock.mockReturnValue(new Promise((resolve) => (resolveQuery = resolve)));
+    const { importNewHealthConnectWorkouts, waitForInFlightHealthConnectImport } = await import(
+      "~client/health/healthConnect"
+    );
+
+    const importPromise = importNewHealthConnectWorkouts();
+    let waited = false;
+    const waitPromise = waitForInFlightHealthConnectImport().then(() => {
+      waited = true;
+    });
+
+    await Promise.resolve();
+    expect(waited).toBe(false);
+
+    resolveQuery({ workouts: [] });
+    await importPromise;
+    await waitPromise;
+    expect(waited).toBe(true);
+  });
+});
+
 describe("resetHealthConnectScanWindow", () => {
   it("winds lastCheck back by the given number of days", async () => {
     const { resetHealthConnectScanWindow } = await import("~client/health/healthConnect");

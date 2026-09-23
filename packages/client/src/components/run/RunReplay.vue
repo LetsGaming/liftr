@@ -11,7 +11,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import RunMap from "./RunMap.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import type { RunPoint } from "../../stores/runsStore";
-import { formatClock, formatPace } from "../../lib/format";
+import { formatClock, formatPace, formatSpeedKmh } from "../../lib/format";
 
 const props = defineProps<{ points: RunPoint[] }>();
 
@@ -47,6 +47,7 @@ interface Frame {
   hr: number | null;
   cadence: number | null;
   paceSPerKm: number | null;
+  speedKmh: number | null;
 }
 
 /** Find the bracketing pair of points for `ms` and linearly interpolate position/readouts. */
@@ -54,13 +55,13 @@ function frameAt(ms: number): Frame | null {
   const sched = schedule.value;
   const pts = props.points;
   if (pts.length === 0) return null;
-  if (ms <= 0) return { lat: pts[0]!.lat, lon: pts[0]!.lon, hr: pts[0]!.hr, cadence: pts[0]!.cadence, paceSPerKm: null };
+  if (ms <= 0) return { lat: pts[0]!.lat, lon: pts[0]!.lon, hr: pts[0]!.hr, cadence: pts[0]!.cadence, paceSPerKm: null, speedKmh: null };
 
   let i = 1;
   while (i < sched.length && sched[i]! < ms) i++;
   if (i >= sched.length) {
     const last = pts[pts.length - 1]!;
-    return { lat: last.lat, lon: last.lon, hr: last.hr, cadence: last.cadence, paceSPerKm: null };
+    return { lat: last.lat, lon: last.lon, hr: last.hr, cadence: last.cadence, paceSPerKm: null, speedKmh: null };
   }
 
   const a = pts[i - 1]!;
@@ -81,8 +82,9 @@ function frameAt(ms: number): Frame | null {
   const distM = 2 * R * Math.asin(Math.sqrt(h));
   const realDtS = (new Date(b.t).getTime() - new Date(a.t).getTime()) / 1000;
   const paceSPerKm = distM > 0.5 && realDtS > 0 ? realDtS / (distM / 1000) : null;
+  const speedKmh = paceSPerKm != null ? 3600 / paceSPerKm : null;
 
-  return { lat, lon, hr, cadence, paceSPerKm };
+  return { lat, lon, hr, cadence, paceSPerKm, speedKmh };
 }
 
 const currentFrame = computed(() => frameAt(playheadMs.value));
@@ -165,6 +167,10 @@ function fmt(ms: number): string {
           <span class="eyebrow">Pace</span>
           <span class="tnum">{{ formatPace(currentFrame?.paceSPerKm ?? null) }}</span>
         </div>
+        <div class="readout">
+          <span class="eyebrow">Tempo</span>
+          <span class="tnum">{{ formatSpeedKmh(currentFrame?.speedKmh ?? null) }}</span>
+        </div>
         <div v-if="hasHr" class="readout">
           <span class="eyebrow">Puls</span>
           <span class="tnum">{{ currentFrame?.hr != null ? Math.round(currentFrame.hr) + " bpm" : "–" }}</span>
@@ -241,13 +247,15 @@ function fmt(ms: number): string {
   color: #fff;
 }
 .readouts {
-  display: flex;
-  gap: var(--sp5);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp3) var(--sp5);
 }
 .readout {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 .readout span:last-child {
   font-size: 15px;

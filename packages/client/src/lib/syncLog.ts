@@ -14,6 +14,10 @@ const SYNC_LOG_KEY = "liftr.healthconnect.syncLog";
 /** Ring buffer size — enough sync history to spot a pattern (e.g. "every walk from this watch
  *  gets skipped") without the log growing unbounded across months of daily resumes. */
 const MAX_ENTRIES = 20;
+/** Per-entry cap on the stored `workouts` array — a 90-day rescan can return far more workouts
+ *  than the summary counts need kept in full, and each row embeds the whole raw report. Summary
+ *  counts (imported/skipped/failed) are never truncated, only the per-workout detail. */
+const MAX_WORKOUTS_PER_ENTRY = 50;
 
 export type SyncTrigger = "manual" | "resume";
 
@@ -52,11 +56,21 @@ export function recordSyncReport(
   result: HealthConnectImportResult,
 ): void {
   try {
-    const entry: SyncLogEntry = { at: new Date().toISOString(), trigger, windowStart, windowEnd, result };
+    const workouts =
+      result.workouts.length > MAX_WORKOUTS_PER_ENTRY ? result.workouts.slice(0, MAX_WORKOUTS_PER_ENTRY) : result.workouts;
+    const entry: SyncLogEntry = {
+      at: new Date().toISOString(),
+      trigger,
+      windowStart,
+      windowEnd,
+      result: { ...result, workouts },
+    };
     const next = [entry, ...readRaw()].slice(0, MAX_ENTRIES);
     localStorage.setItem(SYNC_LOG_KEY, JSON.stringify(next));
-  } catch {
-    // storage full/unavailable — the sync itself already succeeded or failed independently of this
+  } catch (err) {
+    // the sync itself already succeeded or failed independently of this — but a silently
+    // swallowed quota failure here would leave no trace anywhere that the log stopped updating
+    console.warn("Failed to persist Health Connect sync log entry", err);
   }
 }
 

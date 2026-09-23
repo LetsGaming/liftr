@@ -22,8 +22,8 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @liftr/db build \
- && pnpm --filter @liftr/shared build \
+RUN pnpm --filter @liftr/shared build \
+ && pnpm --filter @liftr/db build \
  && pnpm --filter @liftr/server build \
  && pnpm --filter @liftr/ingest build \
  && pnpm --filter @liftr/client build

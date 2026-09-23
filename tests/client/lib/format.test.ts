@@ -5,6 +5,7 @@ import {
   formatDateLong,
   formatDurationMinutes,
   formatPace,
+  formatSpeedKmh,
 } from "../../../packages/client/src/lib/format";
 
 describe("formatClock", () => {
@@ -35,6 +36,16 @@ describe("formatPace", () => {
 
   it("renders an em dash for unknown pace", () => {
     expect(formatPace(null)).toBe("–");
+  });
+});
+
+describe("formatSpeedKmh", () => {
+  it("formats km/h to one decimal", () => {
+    expect(formatSpeedKmh(10.96)).toBe("11.0 km/h");
+  });
+
+  it("renders an em dash for unknown speed", () => {
+    expect(formatSpeedKmh(null)).toBe("–");
   });
 });
 
