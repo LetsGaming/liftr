@@ -36,7 +36,12 @@ export function useHealthConnectImport() {
   async function connectHealthConnect() {
     healthConnectBusy.value = true;
     try {
-      const result = await requestHealthConnectPermissions();
+      // Only request (native permission activity, pauses the app) when not already granted — a
+      // plain re-sync tap must never trigger that pause/resume cycle (see healthConnect.ts).
+      let result = await checkHealthConnectPermissions();
+      if (!result.granted) {
+        result = await requestHealthConnectPermissions();
+      }
       healthConnectConnected.value = result.granted;
       if (!result.granted) {
         healthConnectStatus.value =

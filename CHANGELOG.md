@@ -9,11 +9,18 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 ### Added
 
 - Walking and hiking now show a rank card even before your first rank, matching the running categories.
+- The Health Connect sync log on the Diagnose page can now be cleared.
+
+### Changed
+
+- The "check last N days" Health Connect rescan on the Diagnose page now re-syncs immediately instead of only resetting the scan window.
 
 ### Fixed
 
 - Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
 - XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
+- A manual Health Connect sync no longer creates an extra "App-Start" log entry.
+- Concurrent Health Connect syncs can no longer overlap and race each other.
 
 ## [1.7.2] - 2026-09-23
 

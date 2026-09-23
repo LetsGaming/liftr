@@ -276,6 +276,32 @@ describe("importNewHealthConnectWorkouts", () => {
   });
 });
 
+describe("importNewHealthConnectWorkouts — in-flight guard", () => {
+  it("a second concurrent call awaits the first call's result instead of starting its own run", async () => {
+    let resolveQuery!: (v: { workouts: unknown[] }) => void;
+    queryWorkoutsMock.mockReturnValue(new Promise((resolve) => (resolveQuery = resolve)));
+    const { importNewHealthConnectWorkouts } = await import("~client/health/healthConnect");
+
+    const first = importNewHealthConnectWorkouts("manual");
+    const second = importNewHealthConnectWorkouts("resume");
+    resolveQuery({ workouts: [] });
+
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+    expect(queryWorkoutsMock).toHaveBeenCalledTimes(1);
+    expect(firstResult).toBe(secondResult);
+  });
+
+  it("allows a fresh run once the in-flight one has completed", async () => {
+    queryWorkoutsMock.mockResolvedValue({ workouts: [] });
+    const { importNewHealthConnectWorkouts } = await import("~client/health/healthConnect");
+
+    await importNewHealthConnectWorkouts();
+    await importNewHealthConnectWorkouts();
+
+    expect(queryWorkoutsMock).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("resetHealthConnectScanWindow", () => {
   it("winds lastCheck back by the given number of days", async () => {
     const { resetHealthConnectScanWindow } = await import("~client/health/healthConnect");

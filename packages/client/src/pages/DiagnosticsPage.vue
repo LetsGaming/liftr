@@ -14,14 +14,20 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
 import { getMe, getRecentErrors, type ErrorLogEntry, type Me } from "../services/authService";
-import { resetHealthConnectScanWindow, type HealthConnectSkipReason } from "../health/healthConnect";
-import { readSyncLog, type SyncLogEntry } from "../lib/syncLog";
+import {
+  importNewHealthConnectWorkouts,
+  resetHealthConnectScanWindow,
+  type HealthConnectSkipReason,
+} from "../health/healthConnect";
+import { clearSyncLog, readSyncLog, type SyncLogEntry } from "../lib/syncLog";
 import { useToast } from "../composables/useToast";
+import { useConfirmTap } from "../composables/useConfirmTap";
 
 const me = ref<Me | null>(null);
 const syncLog = ref<SyncLogEntry[]>([]);
 const expandedEntry = ref<number | null>(null); // index into syncLog, one report open at a time
 const rawDataOpen = ref(new Set<string>()); // workoutId set, per-row "Rohdaten anzeigen" toggle
+const rescanBusy = ref<30 | 90 | null>(null);
 
 const errorLogs = ref<ErrorLogEntry[]>([]);
 const errorLogsOpen = ref(false);
@@ -29,8 +35,17 @@ const errorLogsLoading = ref(false);
 
 const { toast } = useToast();
 
-onMounted(async () => {
+function refreshSyncLog() {
   syncLog.value = readSyncLog();
+}
+
+const { trigger: triggerClearLog, isArmed: isClearLogArmed } = useConfirmTap(() => {
+  clearSyncLog();
+  refreshSyncLog();
+});
+
+onMounted(async () => {
+  refreshSyncLog();
   me.value = await getMe();
 });
 
@@ -55,9 +70,23 @@ async function toggleErrorLogs() {
   }
 }
 
-function rescan(daysBack: 30 | 90) {
-  resetHealthConnectScanWindow(daysBack);
-  toast(`Nächster Sync prüft die letzten ${daysBack} Tage erneut.`);
+async function rescan(daysBack: 30 | 90) {
+  rescanBusy.value = daysBack;
+  try {
+    resetHealthConnectScanWindow(daysBack);
+    const result = await importNewHealthConnectWorkouts("manual");
+    refreshSyncLog();
+    if (result.imported === 0 && result.skipped === 0 && result.failed === 0) {
+      toast(`Letzte ${daysBack} Tage geprüft — keine neuen Aktivitäten gefunden.`);
+    } else {
+      const parts = [`${result.imported} importiert`];
+      if (result.skipped > 0) parts.push(`${result.skipped} übersprungen`);
+      if (result.failed > 0) parts.push(`${result.failed} fehlgeschlagen`);
+      toast(`Letzte ${daysBack} Tage geprüft — ${parts.join(", ")}.`);
+    }
+  } finally {
+    rescanBusy.value = null;
+  }
 }
 
 const SKIP_REASON_LABEL: Record<HealthConnectSkipReason, string> = {
@@ -115,15 +144,29 @@ function formatAt(iso: string): string {
           </p>
 
           <div class="rescan-row">
-            <button class="btn-secondary" @click="rescan(30)">Letzte 30 Tage erneut prüfen</button>
-            <button class="btn-secondary" @click="rescan(90)">Letzte 90 Tage erneut prüfen</button>
+            <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(30)">
+              {{ rescanBusy === 30 ? "Prüfe…" : "Letzte 30 Tage erneut prüfen" }}
+            </button>
+            <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(90)">
+              {{ rescanBusy === 90 ? "Prüfe…" : "Letzte 90 Tage erneut prüfen" }}
+            </button>
           </div>
 
           <p v-if="syncLog.length === 0" class="current" style="color: var(--faint)">
             Noch keine Synchronisierung aufgezeichnet.
           </p>
 
-          <ul v-else class="sync-log-list">
+          <button
+            v-else
+            type="button"
+            class="btn-secondary danger"
+            :class="{ confirming: isClearLogArmed() }"
+            @click="triggerClearLog()"
+          >
+            {{ isClearLogArmed() ? "Wirklich leeren?" : "Protokoll leeren" }}
+          </button>
+
+          <ul v-if="syncLog.length > 0" class="sync-log-list">
             <li v-for="(entry, idx) in syncLog" :key="entry.at" class="sync-log-entry surface-hybrid">
               <button type="button" class="sync-log-head" :aria-expanded="expandedEntry === idx" @click="toggleEntry(idx)">
                 <span class="sync-log-meta">

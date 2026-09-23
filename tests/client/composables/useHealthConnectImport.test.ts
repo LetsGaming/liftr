@@ -1,3 +1,4 @@
+import { flushPromises } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -60,5 +61,37 @@ describe("useHealthConnectImport — connectHealthConnect()", () => {
 
     expect(importNewHealthConnectWorkoutsMock).not.toHaveBeenCalled();
     expect(refreshCardioDerivedStoresMock).not.toHaveBeenCalled();
+  });
+
+  it("skips requestHealthConnectPermissions entirely when already granted (no permission activity, no pause/resume)", async () => {
+    checkHealthConnectPermissionsMock.mockResolvedValue({ granted: true, missing: [] });
+    importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 0, skipped: 0, failed: 0, workouts: [] });
+    const { connectHealthConnect } = useHealthConnectImport();
+    // The composable's own init effect (isHealthConnectAvailable().then(checkHealthConnectPermissions))
+    // also calls checkHealthConnectPermissions once — flush and clear that call before exercising
+    // connectHealthConnect()'s own permission check in isolation.
+    await flushPromises();
+    checkHealthConnectPermissionsMock.mockClear();
+
+    await connectHealthConnect();
+
+    expect(checkHealthConnectPermissionsMock).toHaveBeenCalledTimes(1);
+    expect(requestHealthConnectPermissionsMock).not.toHaveBeenCalled();
+    expect(importNewHealthConnectWorkoutsMock).toHaveBeenCalledWith("manual");
+  });
+
+  it("falls back to requestHealthConnectPermissions when the non-prompting check reports not granted", async () => {
+    checkHealthConnectPermissionsMock.mockResolvedValue({ granted: false, missing: [] });
+    requestHealthConnectPermissionsMock.mockResolvedValue({ granted: true, missing: [] });
+    importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 0, skipped: 0, failed: 0, workouts: [] });
+    const { connectHealthConnect } = useHealthConnectImport();
+    await flushPromises();
+    checkHealthConnectPermissionsMock.mockClear();
+
+    await connectHealthConnect();
+
+    expect(checkHealthConnectPermissionsMock).toHaveBeenCalledTimes(1);
+    expect(requestHealthConnectPermissionsMock).toHaveBeenCalledTimes(1);
+    expect(importNewHealthConnectWorkoutsMock).toHaveBeenCalledWith("manual");
   });
 });
