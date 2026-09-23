@@ -10,6 +10,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 - Walking and hiking now show a rank card even before your first rank, matching the running categories.
 - The Health Connect sync log on the Diagnose page can now be cleared.
+- Speed (km/h) in the run replay view.
 
 ### Changed
 
@@ -21,6 +22,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
 - A manual Health Connect sync no longer creates an extra "App-Start" log entry.
 - Concurrent Health Connect syncs can no longer overlap and race each other.
+- Replay readout values no longer shift sideways when their digit count changes.
 
 ## [1.7.2] - 2026-09-23
 

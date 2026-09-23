@@ -35,3 +35,9 @@ export function formatPace(sPerKm: number | null): string {
 export function formatDurationMinutes(seconds: number): string {
   return `${Math.round(seconds / 60)} min`;
 }
+
+/** Speed (km/h) to one decimal, or an em dash when unknown. */
+export function formatSpeedKmh(kmh: number | null): string {
+  if (kmh == null) return "–";
+  return `${kmh.toFixed(1)} km/h`;
+}
