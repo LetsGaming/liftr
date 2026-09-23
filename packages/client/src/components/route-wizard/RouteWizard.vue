@@ -322,6 +322,7 @@ async function save() {
     <template #header>
       <BaseHeader
         v-model:title="name"
+        variant="wizard"
         :title-placeholder="'Name der Strecke'"
         :is-confirming-close="closeConfirm.isArmed()"
         @close="requestClose"

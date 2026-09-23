@@ -182,12 +182,22 @@ const pageTitle = computed(() => {
  * The top-hud level/streak chips are hidden on the Workout tab while a set is active or the
  * finish recap is showing: they'd duplicate the same Lv./XP number FinishSequence's own
  * "Fortschritt" beat shows, and compete for space on the app's lowest-density-tolerance screen.
- * Every other screen keeps the chips as an ambient reminder — including pages with a BasePage
- * header (back button/header-actions): BasePage's own header stacks above .top-hud (see
- * .ion-page's z-index, BasePage.vue) rather than this hiding the whole HUD for them.
+ *
+ * Also hidden on every route whose page renders BasePage with a back button (router.ts's
+ * `meta.backButton`, kept alongside `meta.title` for the same routes). BasePage's own header
+ * used to be expected to stack visually above .top-hud purely via `.ion-page`'s raised z-index
+ * (see BasePage.vue's comment) — that raise does make the header's controls *reachable*
+ * (elementFromPoint/tap hit-testing resolves to the button, not the HUD underneath), but it
+ * turned out not to guarantee *paint* order too: the level-ring still rendered visually on top of
+ * the back button in testing, fully hiding it, even with the ring's z-index far below the
+ * header's. Rather than chase that further, the HUD is suppressed outright wherever a real
+ * back-button control would otherwise share its exact top-left corner — simpler and actually
+ * correct, unlike the z-index-only approach it replaces here.
  */
 const hideTopHud = computed(
-  () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
+  () =>
+    (route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value)) ||
+    route.meta.backButton === true,
 );
 
 /**

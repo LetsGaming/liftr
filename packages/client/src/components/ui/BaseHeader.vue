@@ -1,38 +1,72 @@
 <script setup lang="ts">
 /**
- * Shared pinned header for full-bleed screens (SheetModal's `sheet: false` flows — the routine
- * and route wizards, and anything else that needs a title/close bar instead of scrolling content
- * under the notch/status bar on Android — see .base-header's own comment below).
+ * Shared base for every screen header in the app. Two variants, chosen by `variant`, because a
+ * routed page's header and a full-bleed wizard's header are genuinely different DOM, not just
+ * different props on the same markup:
+ *   - "page" (default): a real `<IonHeader>`/`<IonToolbar>`/`<IonTitle>` — required so this
+ *     header participates in Ionic's own toolbar chrome (desktop border/shadow) and so the
+ *     `ion-title`/`.base-page-header` global selectors in ionic-theme.css (mobile title
+ *     show/hide) keep matching real elements. Static title, optional back button, optional
+ *     `header-actions` slot for trailing buttons. Used by BasePage.vue.
+ *   - "wizard": a plain custom `<header>`, styled to this app's own tokens rather than Ionic's
+ *     toolbar defaults — an editable title input, a close button (with an optional "confirm
+ *     discard" state), and an optional step indicator row. Used by RoutineWizard.vue/
+ *     RouteWizard.vue inside SheetModal's `#header` slot, which renders whatever it's given as a
+ *     plain flex child (see SheetModal.vue) — no Ionic toolbar wrapper wanted there.
  *
- * Root element class name is deliberately namespaced (`base-header*`, not a generic name like
- * `wizard-head`) — Vue applies a PARENT component's scoped styles to a CHILD component's root
- * element too (by design, so a parent can adjust a child's outer layout). A previous version of
- * this component was named WizardHeader and used generic class names; RoutineWizard.vue and
- * RouteWizard.vue each still carried their own leftover `.wizard-head`/`.name-input`/`.close-btn`
- * rules from before this component existed, and those leaked onto this component's root element
- * and silently clobbered the safe-area padding-top below with a plain `padding: ...` shorthand —
- * a real bug (the header sat under the notch despite this file's own CSS being "correct"). Give
- * this component's root classes a name distinctive enough that no caller's own leftover styles
- * are likely to collide with them again.
+ * Root element class names are deliberately namespaced (`base-header*`, not something generic
+ * like `wizard-head`) — Vue applies a PARENT component's scoped styles to a CHILD component's
+ * root element too (by design, so a parent can adjust a child's outer layout). A previous version
+ * of the wizard variant was its own component (WizardHeader) with generic class names, and
+ * RoutineWizard.vue/RouteWizard.vue each still carried their own leftover
+ * `.wizard-head`/`.name-input`/`.close-btn` rules from before that component existed; those
+ * leaked onto its root element and silently clobbered the safe-area padding-top below with a
+ * plain `padding: ...` shorthand — a real bug (the header sat under the notch despite this file's
+ * own CSS being "correct"). Keep these class names distinctive enough that no caller's own
+ * leftover styles are likely to collide with them again.
  */
+import { IonButtons, IonHeader, IonTitle, IonToolbar } from "@ionic/vue";
 import AppIcon from "./AppIcon.vue";
 
-defineProps<{
-  titlePlaceholder?: string;
-  isConfirmingClose?: boolean;
-  steps?: Array<{ key: string; label: string }>;
-  activeStepKey?: string;
-}>();
+withDefaults(
+  defineProps<{
+    variant?: "page" | "wizard";
+    backButton?: boolean;
+    titlePlaceholder?: string;
+    isConfirmingClose?: boolean;
+    steps?: Array<{ key: string; label: string }>;
+    activeStepKey?: string;
+  }>(),
+  {
+    variant: "page",
+    backButton: false,
+  },
+);
 
 const emit = defineEmits<{
   close: [];
+  "back-button-click": [];
 }>();
 
 const title = defineModel<string>("title", { default: "" });
 </script>
 
 <template>
-  <header class="base-header">
+  <IonHeader v-if="variant === 'page'" class="base-header base-page-header">
+    <IonToolbar>
+      <IonButtons v-if="backButton" slot="start">
+        <button class="base-page-back-btn" aria-label="Zurück" @click="emit('back-button-click')">
+          <AppIcon name="chevron-left" :size="18" />
+        </button>
+      </IonButtons>
+      <IonTitle>{{ title }}</IonTitle>
+      <IonButtons slot="end">
+        <slot name="header-actions" />
+      </IonButtons>
+    </IonToolbar>
+  </IonHeader>
+
+  <header v-else class="base-header base-header-wizard">
     <div class="base-header-top">
       <input
         v-model="title"
@@ -64,7 +98,39 @@ const title = defineModel<string>("title", { default: "" });
 </template>
 
 <style scoped>
-.base-header {
+.base-page-header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* Below 900px, ion-title is already hidden globally (ionic-theme.css) — the toolbar's only job
+   there used to be a decorative blurred backdrop App.vue's mobile .top-hud always painted over
+   (its translucency/blur was moot, nothing needed to be seen through it). BasePage.vue paints
+   this toolbar *above* .top-hud (see its own z-index comment), so that same translucency+blur
+   would instead wash out .top-hud's level-ring/streak chip behind it — stripped only at this
+   breakpoint, only on this variant's own toolbar, so every other IonToolbar in the app is
+   unaffected. */
+@media (max-width: 899px) {
+  .base-page-header ion-toolbar {
+    --background: transparent;
+    --border-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .base-page-header ion-toolbar::after {
+    content: none;
+  }
+}
+
+.base-page-back-btn {
+  display: grid;
+  place-items: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  background: none;
+  border: none;
+  color: var(--dim);
+}
+
+.base-header-wizard {
   flex: none;
   padding: var(--sp3) var(--sp4);
   /* Full-bleed modal header (see SheetModal.vue) — without this, the title input and close

@@ -22,9 +22,9 @@
  * notch. The same reasoning already applies to every modal duplicating this exact rule
  * (SheetModal.vue, BaseHeader.vue, etc.) without a reported double-inset issue.
  */
-import { IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonContent, IonPage } from "@ionic/vue";
 import { useRouter } from "vue-router";
-import AppIcon from "./AppIcon.vue";
+import BaseHeader from "./BaseHeader.vue";
 
 withDefaults(
   defineProps<{
@@ -46,19 +46,9 @@ function goBack() {
 
 <template>
   <IonPage :class="{ 'base-page-drawer': variant === 'drawer' }">
-    <IonHeader class="base-page-header">
-      <IonToolbar>
-        <IonButtons v-if="backButton" slot="start">
-          <button class="base-page-back-btn" aria-label="Zurück" @click="goBack">
-            <AppIcon name="chevron-left" :size="18" />
-          </button>
-        </IonButtons>
-        <IonTitle>{{ title }}</IonTitle>
-        <IonButtons slot="end">
-          <slot name="header-actions" />
-        </IonButtons>
-      </IonToolbar>
-    </IonHeader>
+    <BaseHeader :title="title" :back-button="backButton" @back-button-click="goBack">
+      <template #header-actions><slot name="header-actions" /></template>
+    </BaseHeader>
     <div v-if="$slots.subheader" class="base-page-subheader">
       <slot name="subheader" />
     </div>
@@ -94,40 +84,11 @@ function goBack() {
 .ion-page {
   z-index: 6;
 }
-.base-page-header {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-/* Below 900px, ion-title is already hidden globally (ionic-theme.css) — the toolbar's only job
-   there used to be a decorative blurred backdrop .top-hud always painted over (its
-   translucency/blur was moot, nothing needed to be seen through it). Now that this toolbar
-   paints *above* .top-hud (the z-index rule above), that same translucency+blur would instead
-   wash out .top-hud's level-ring/streak chip behind it — stripped only at this breakpoint, only
-   on this component's own toolbar, so every other IonToolbar in the app is unaffected. */
-@media (max-width: 899px) {
-  .base-page-header ion-toolbar {
-    --background: transparent;
-    --border-color: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .base-page-header ion-toolbar::after {
-    content: none;
-  }
-}
 /* Non-scrolling flex sibling of ion-content (not `position: sticky` inside it) — see the
    `subheader` slot's own doc comment above. Horizontal padding matches ion-content's own
    `.ion-padding` (16px == --sp4) so subheader content lines up with the page content below it. */
 .base-page-subheader {
   padding: 0 var(--sp4) var(--sp3);
-}
-.base-page-back-btn {
-  display: grid;
-  place-items: center;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-  background: none;
-  border: none;
-  color: var(--dim);
 }
 /* Lifted from SheetModal.vue's `.sheet-modal.drawer-modal::part(content)` desktop rule — same
    right-aligned/fixed-width/left-border/square-corner treatment, applied to the page's own

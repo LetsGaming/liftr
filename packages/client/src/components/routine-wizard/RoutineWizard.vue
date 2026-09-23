@@ -426,6 +426,7 @@ function useFullArrange() {
     <template #header>
       <BaseHeader
         v-model:title="name"
+        variant="wizard"
         :title-placeholder="'Name der Routine'"
         :is-confirming-close="closeConfirm.isArmed()"
         :steps="wizardSteps"

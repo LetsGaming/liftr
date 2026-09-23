@@ -6,6 +6,12 @@ declare module "vue-router" {
      *  (App.vue's own pageTitle special-cases handle every other title source: navItems' nav
      *  labels, /runs, and the dynamic per-routine title). */
     title?: string;
+    /** True for every route whose page renders BasePage with `back-button` — App.vue's
+     *  `hideTopHud` reads this to suppress the mobile top-hud (level ring/streak chip) there,
+     *  since it's pinned to the exact same top-left/top-right corners as BasePage's own back
+     *  button and header-actions slot (see App.vue's hideTopHud doc comment for why z-index
+     *  alone doesn't actually keep them visually apart). */
+    backButton?: boolean;
   }
 }
 
@@ -58,7 +64,7 @@ export const router = createRouter({
       path: "/exercises/:slug",
       name: "exercise-detail",
       component: () => import("./pages/ExerciseDetailPage.vue"),
-      meta: { title: "Übung" },
+      meta: { title: "Übung", backButton: true },
       // Same eager-prefetch pattern as /records above — get the fetch in flight while the chunk
       // resolves. Guarded on !loaded (matching ExerciseDetailPage.vue's own onMounted guard and
       // /records' prStore prefetch) since catalogStore.load() always re-fetches the whole
@@ -75,7 +81,7 @@ export const router = createRouter({
       path: "/workouts/:id",
       name: "workout-detail",
       component: () => import("./pages/WorkoutDetailPage.vue"),
-      meta: { title: "Workout-Details" },
+      meta: { title: "Workout-Details", backButton: true },
       // Same eager-prefetch pattern as /records and /exercises/:slug above — historyStore.loadWorkout()
       // is safe to call again here even though the page's own onMounted calls it too: it's cached
       // per id (see historyStore.ts), so a concurrent call while this one is still in flight is the
@@ -88,7 +94,7 @@ export const router = createRouter({
       path: "/runs/:id",
       name: "run-detail",
       component: () => import("./pages/RunDetailPage.vue"),
-      meta: { title: "Lauf-Details" },
+      meta: { title: "Lauf-Details", backButton: true },
       beforeEnter: (to) => {
         void import("./stores/runsStore").then(({ useRunsStore }) => useRunsStore().loadDetail(to.params.id as string));
       },
@@ -98,13 +104,13 @@ export const router = createRouter({
       path: "/attributions",
       name: "attributions",
       component: () => import("./pages/AttributionsPage.vue"),
-      meta: { title: "Quellen & Lizenzen" },
+      meta: { title: "Quellen & Lizenzen", backButton: true },
     },
     {
       path: "/diagnostics",
       name: "diagnostics",
       component: () => import("./pages/DiagnosticsPage.vue"),
-      meta: { title: "Diagnose" },
+      meta: { title: "Diagnose", backButton: true },
     },
   ],
 });
