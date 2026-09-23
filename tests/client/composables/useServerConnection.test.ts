@@ -186,6 +186,16 @@ describe("checkVersionMismatch", () => {
     expect(await checkVersionMismatch()).toBe(false);
   });
 
+  it("resolves to false (never rejects) when App.getInfo() rejects on-device — warn-only, no unhandled rejection", async () => {
+    localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeResponse(200, { ok: true, service: "liftr", version: "9.9.9" })));
+    getInfoMock.mockRejectedValue(new Error("plugin not available"));
+    const { checkVersionMismatch, useServerVersionInfo } = await import("~client/composables/useServerConnection");
+
+    await expect(checkVersionMismatch()).resolves.toBe(false);
+    expect(useServerVersionInfo().versionMismatch.value).toBe(false);
+  });
+
   it("has no internal run-once guard — the caller's own single onMounted is what makes this once-per-boot (App.vue only mounts once)", async () => {
     localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
     const fetchMock = vi.fn().mockResolvedValue(fakeResponse(200, { ok: true, service: "liftr", version: "9.9.9" }));

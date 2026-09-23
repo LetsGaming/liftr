@@ -74,8 +74,17 @@ export async function checkVersionMismatch(): Promise<boolean> {
   if (!result.ok || !result.version) return false;
   serverVersion.value = result.version;
   setServerVersion(result.version);
-  const clientVersion = await resolveCurrentVersion();
-  versionMismatch.value = clientVersion !== result.version;
+  try {
+    const clientVersion = await resolveCurrentVersion();
+    versionMismatch.value = clientVersion !== result.version;
+  } catch (err) {
+    // App.getInfo() (resolveCurrentVersion) can reject on-device (plugin misconfiguration, OS
+    // quirk) — same fail-silent contract as checkServerIdentity's own network-error catch above:
+    // this whole feature is warn-only, so a resolution failure just means no mismatch is flagged,
+    // never an unhandled rejection reaching App.vue's/ProfilePage.vue's un-caught `.then()`.
+    console.warn("client version resolution failed", err);
+    return false;
+  }
   return versionMismatch.value;
 }
 
