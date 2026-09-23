@@ -182,14 +182,12 @@ const pageTitle = computed(() => {
  * The top-hud level/streak chips are hidden on the Workout tab while a set is active or the
  * finish recap is showing: they'd duplicate the same Lv./XP number FinishSequence's own
  * "Fortschritt" beat shows, and compete for space on the app's lowest-density-tolerance screen.
- * Also hidden on any route whose own BasePage header needs that exact band for real controls
- * (see route.meta.suppressTopHud's own doc comment, router.ts). Every other screen keeps the
- * chips as an ambient reminder.
+ * Every other screen keeps the chips as an ambient reminder — including pages with a BasePage
+ * header (back button/header-actions): BasePage's own header stacks above .top-hud (see
+ * .base-page-header's z-index, BasePage.vue) rather than this hiding the whole HUD for them.
  */
 const hideTopHud = computed(
-  () =>
-    (route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value)) ||
-    !!route.meta.suppressTopHud,
+  () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
 );
 
 /**

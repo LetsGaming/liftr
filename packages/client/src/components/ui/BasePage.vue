@@ -61,8 +61,38 @@ function goBack() {
 </template>
 
 <style scoped>
+/* Ionic's own IonPage CSS sets `z-index: 0` (with `position: absolute`) on `.ion-page` — a
+   non-auto z-index on a positioned element creates a stacking context, so every routed page is
+   already its own isolated stacking context at level 0, sealed off from its own descendants'
+   z-index values. App.vue's mobile-only .top-hud (level ring/streak chip) is a `position: fixed`
+   overlay at z-index: 5 in the *same* parent stacking context .ion-page itself sits in — so a
+   z-index on the header alone (still trapped inside .ion-page's z:0 context) could never win
+   against it; only raising .ion-page's own level does. Content never actually collides with
+   .top-hud's band regardless (the header reserves that space in normal flow, IonContent starts
+   below it), so this only changes which one paints in front where they already overlap: the
+   header's real controls (backButton, header-actions). */
+.ion-page {
+  z-index: 6;
+}
 .base-page-header {
   padding-top: env(safe-area-inset-top, 0px);
+}
+/* Below 900px, ion-title is already hidden globally (ionic-theme.css) — the toolbar's only job
+   there used to be a decorative blurred backdrop .top-hud always painted over (its
+   translucency/blur was moot, nothing needed to be seen through it). Now that this toolbar
+   paints *above* .top-hud (the z-index rule above), that same translucency+blur would instead
+   wash out .top-hud's level-ring/streak chip behind it — stripped only at this breakpoint, only
+   on this component's own toolbar, so every other IonToolbar in the app is unaffected. */
+@media (max-width: 899px) {
+  .base-page-header ion-toolbar {
+    --background: transparent;
+    --border-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .base-page-header ion-toolbar::after {
+    content: none;
+  }
 }
 .base-page-back-btn {
   display: grid;

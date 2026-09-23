@@ -6,13 +6,6 @@ declare module "vue-router" {
      *  (App.vue's own pageTitle special-cases handle every other title source: navItems' nav
      *  labels, /runs, and the dynamic per-routine title). */
     title?: string;
-    /** Set on any route whose BasePage renders real controls in the header (backButton and/or
-     *  header-actions) — App.vue's mobile-only .top-hud is a `position: fixed` overlay pinned to
-     *  that exact header band (its own comment assumed "nothing docked to [IonTitle's] trailing
-     *  edge on any page", true before BasePage existed), so without this its level-ring/streak
-     *  chip visually and pointer-wise sit on top of those controls, making a back button
-     *  unreachable — the reason DiagnosticsPage/AttributionsPage need this set. */
-    suppressTopHud?: boolean;
   }
 }
 
@@ -67,13 +60,13 @@ export const router = createRouter({
       path: "/attributions",
       name: "attributions",
       component: () => import("./pages/AttributionsPage.vue"),
-      meta: { title: "Quellen & Lizenzen", suppressTopHud: true },
+      meta: { title: "Quellen & Lizenzen" },
     },
     {
       path: "/diagnostics",
       name: "diagnostics",
       component: () => import("./pages/DiagnosticsPage.vue"),
-      meta: { title: "Diagnose", suppressTopHud: true },
+      meta: { title: "Diagnose" },
     },
   ],
 });
