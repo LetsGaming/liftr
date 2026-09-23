@@ -242,6 +242,17 @@ function formatAt(iso: string): string {
   gap: var(--sp2);
   margin: var(--sp3) 0;
 }
+/* Same armed-confirm-tap treatment as ProfilePage.vue's "Konto löschen" button — duplicated here
+   since Vue's scoped styles don't cross component boundaries. */
+.btn-secondary.danger {
+  color: var(--danger);
+  margin-bottom: var(--sp3);
+}
+.btn-secondary.danger.confirming {
+  background: var(--danger-lo);
+  color: var(--text);
+  font-weight: 700;
+}
 .sync-log-list {
   list-style: none;
   display: flex;

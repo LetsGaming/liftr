@@ -68,8 +68,8 @@ export function recordSyncReport(
     const next = [entry, ...readRaw()].slice(0, MAX_ENTRIES);
     localStorage.setItem(SYNC_LOG_KEY, JSON.stringify(next));
   } catch (err) {
-    // the sync itself already succeeded or failed independently of this — but a swallowed quota
-    // failure here used to leave no trace anywhere that the log stopped updating
+    // the sync itself already succeeded or failed independently of this — but a silently
+    // swallowed quota failure here would leave no trace anywhere that the log stopped updating
     console.warn("Failed to persist Health Connect sync log entry", err);
   }
 }
