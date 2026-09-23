@@ -1,20 +1,18 @@
 // @vitest-environment jsdom
 //
-// WorkoutDetail.vue is a read-only summary of one finished workout, built on the real
-// historyStore/catalogStore/ranksStore/xpStore/overallRankStore (Pinia — real collaborators)
-// with only the true network boundary mocked: the service modules each store's actions call.
-// Only IonModal (SheetModal's own shell, see RpeCapture.test.ts's header comment) is stubbed —
-// SheetModal itself runs for real, including its dismiss()/did-dismiss/close plumbing.
+// WorkoutDetailPage.vue is a read-only summary of one finished workout, built on the real
+// historyStore/catalogStore/ranksStore/xpStore/overallRankStore (Pinia — real collaborators) with
+// only the true network boundary mocked: the service modules each store's actions call.
 // shareCard.ts is mocked outright — its drawWorkoutCard does real <canvas> 2D-context drawing,
 // which jsdom doesn't implement (see tests/client/lib/shareCard.test.ts's own header comment).
-import { flushPromises } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { defineComponent } from "vue";
-import WorkoutDetail from "~client/components/workout/WorkoutDetail.vue";
+import { flushPromises, mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createMemoryHistory, createRouter, type Router } from "vue-router";
+import WorkoutDetailPage from "~client/pages/WorkoutDetailPage.vue";
+import { i18n } from "~client/i18n";
 import { useCatalogStore } from "~client/stores/catalogStore";
 import type { WorkoutDetail as WorkoutDetailModel } from "~client/services/workoutService";
-import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 vi.mock("~client/services/workoutService", () => ({
   getWorkout: vi.fn(),
@@ -37,27 +35,6 @@ import { getWorkout, deleteWorkout } from "~client/services/workoutService";
 
 const getWorkoutMock = vi.mocked(getWorkout);
 const deleteWorkoutMock = vi.mocked(deleteWorkout);
-
-/** See RpeCapture.test.ts's header comment. WorkoutDetail's delete flow calls
- *  `sheetRef.value?.dismiss()` directly (not via the header close button), so this needs the
- *  fuller dismiss()-emitting stub. */
-const IonModalStub = defineComponent({
-  name: "IonModal",
-  props: {
-    isOpen: { type: Boolean, default: false },
-    breakpoints: { type: Array, default: undefined },
-    initialBreakpoint: { type: Number, default: undefined },
-    backdropDismiss: { type: Boolean, default: undefined },
-  },
-  emits: ["did-dismiss"],
-  mounted() {
-    (this.$el as HTMLElement & { dismiss?: () => Promise<boolean> }).dismiss = () => {
-      this.$emit("did-dismiss");
-      return Promise.resolve(true);
-    };
-  },
-  template: `<div class="ion-modal-stub"><slot name="header" /><slot /></div>`,
-});
 
 function workoutFixture(overrides: Partial<WorkoutDetailModel> = {}): WorkoutDetailModel {
   return {
@@ -91,53 +68,65 @@ function workoutFixture(overrides: Partial<WorkoutDetailModel> = {}): WorkoutDet
   };
 }
 
-async function mountDetail(workout: WorkoutDetailModel | null) {
-  getWorkoutMock.mockReset();
-  deleteWorkoutMock.mockReset();
-  if (workout) getWorkoutMock.mockResolvedValue(workout);
-  else getWorkoutMock.mockRejectedValue(new Error("network down"));
-  deleteWorkoutMock.mockResolvedValue(undefined);
-
-  const wrapper = mountWithProviders(WorkoutDetail, {
-    props: { workoutId: "w-1" },
-    global: { stubs: { IonModal: IonModalStub } },
+async function mountAtWorkout(id: string, query = "") {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/workouts/:id", name: "workout-detail", component: WorkoutDetailPage },
+      { path: "/", name: "overview", component: { template: "<div />" } },
+    ],
   });
+  await router.push(`/workouts/${id}${query}`);
+  await router.isReady();
+  const pinia = createPinia();
+  const wrapper = mount(WorkoutDetailPage, { global: { plugins: [pinia, i18n, router] } });
   await flushPromises();
-  await wrapper.vm.$nextTick();
-  return { wrapper };
+  return { wrapper, router: router as Router, pinia };
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia());
+  getWorkoutMock.mockReset();
+  deleteWorkoutMock.mockReset();
+  deleteWorkoutMock.mockResolvedValue(undefined);
   vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
     cb(0);
     return 0;
   });
 });
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
-describe("WorkoutDetail", () => {
-  it("shows a loading hint before the workout resolves", () => {
-    getWorkoutMock.mockReset().mockReturnValue(new Promise(() => {})); // never resolves
-    const wrapper = mountWithProviders(WorkoutDetail, {
-      props: { workoutId: "w-1" },
-      global: { stubs: { IonModal: IonModalStub } },
-    });
+describe("WorkoutDetailPage", () => {
+  it("shows a loading hint before the workout resolves", async () => {
+    getWorkoutMock.mockReturnValue(new Promise(() => {})); // never resolves
+    const { wrapper } = await mountAtWorkout("w-1");
 
     expect(wrapper.text()).toContain("Lädt…");
   });
 
+  it("shows a back button and falls back to a generic title with no title query param", async () => {
+    getWorkoutMock.mockReturnValue(new Promise(() => {}));
+    const { wrapper } = await mountAtWorkout("w-1");
+
+    expect(wrapper.find(".base-page-back-btn").exists()).toBe(true);
+    expect(wrapper.find("ion-title").text()).toBe("Workout-Details");
+  });
+
+  it("uses the title query param (from the opening feed row) as the page title", async () => {
+    getWorkoutMock.mockReturnValue(new Promise(() => {}));
+    const { wrapper } = await mountAtWorkout("w-1", "?title=Push%20Day");
+
+    expect(wrapper.find("ion-title").text()).toBe("Push Day");
+  });
+
   it("shows an error hint when the workout can't be loaded", async () => {
-    const { wrapper } = await mountDetail(null);
+    getWorkoutMock.mockRejectedValue(new Error("network down"));
+    const { wrapper } = await mountAtWorkout("w-1");
 
     expect(wrapper.text()).toContain("ließ sich nicht laden");
   });
 
   it("renders the date, duration (minus paused time), volume, set and exercise counts", async () => {
-    const { wrapper } = await mountDetail(workoutFixture());
+    getWorkoutMock.mockResolvedValue(workoutFixture());
+    const { wrapper } = await mountAtWorkout("w-1");
 
     expect(wrapper.find(".date-line").text()).toBe("05. September 2026");
 
@@ -157,13 +146,14 @@ describe("WorkoutDetail", () => {
   });
 
   it("shows '—' as the duration when the workout has no endedAt yet", async () => {
-    const { wrapper } = await mountDetail(workoutFixture({ endedAt: null }));
+    getWorkoutMock.mockResolvedValue(workoutFixture({ endedAt: null }));
+    const { wrapper } = await mountAtWorkout("w-1");
 
     expect(wrapper.findAll(".stat-tile")[0]!.find("b").text()).toBe("—");
   });
 
   it("orders exercises by orderIndex and renders each exercise's name and set chips", async () => {
-    const { wrapper } = await mountDetail(
+    getWorkoutMock.mockResolvedValue(
       workoutFixture({
         workoutExercises: [
           {
@@ -183,6 +173,7 @@ describe("WorkoutDetail", () => {
         ],
       }),
     );
+    const { wrapper } = await mountAtWorkout("w-1");
 
     const items = wrapper.findAll(".ex-list li");
     expect(items).toHaveLength(2);
@@ -192,7 +183,8 @@ describe("WorkoutDetail", () => {
   });
 
   it("renders each set as reps×weight, marks warmup/PR sets, and shows a trophy on a PR", async () => {
-    const { wrapper } = await mountDetail(workoutFixture());
+    getWorkoutMock.mockResolvedValue(workoutFixture());
+    const { wrapper } = await mountAtWorkout("w-1");
 
     const chips = wrapper.findAll(".ex-list li")[0]!.findAll(".set-chip");
     expect(chips).toHaveLength(3);
@@ -210,7 +202,8 @@ describe("WorkoutDetail", () => {
   });
 
   it("clicking share draws, blobs, and shares/downloads a workout card", async () => {
-    const { wrapper } = await mountDetail(workoutFixture());
+    getWorkoutMock.mockResolvedValue(workoutFixture());
+    const { wrapper } = await mountAtWorkout("w-1");
     const { drawWorkoutCard, canvasToBlob, shareOrDownloadBlob } = await import("~client/lib/shareCard");
 
     await wrapper.find(".btn-primary").trigger("click");
@@ -226,8 +219,12 @@ describe("WorkoutDetail", () => {
     expect(shareOrDownloadBlob).toHaveBeenCalledTimes(1);
   });
 
-  it("requires a second tap within the confirm window to actually delete the workout, then closes the sheet", async () => {
-    const { wrapper } = await mountDetail(workoutFixture());
+  it("requires a second tap within the confirm window to actually delete the workout, then navigates back", async () => {
+    getWorkoutMock.mockResolvedValue(workoutFixture());
+    const { wrapper, router } = await mountAtWorkout("w-1");
+    await router.push("/"); // simulate the overview screen already on the stack, for back() to land on
+    await router.push("/workouts/w-1");
+    const backSpy = vi.spyOn(router, "back");
 
     const deleteBtn = wrapper.find(".delete-btn");
     expect(deleteBtn.text()).toContain("Workout löschen");
@@ -240,24 +237,11 @@ describe("WorkoutDetail", () => {
     await flushPromises();
 
     expect(deleteWorkoutMock).toHaveBeenCalledWith("w-1");
-    // Real SheetModal.dismiss() -> did-dismiss -> deferred close emit (rAF stubbed synchronous).
-    expect(wrapper.emitted("close")).toHaveLength(1);
-  });
-
-  it("closing via the sheet's own close button emits close", async () => {
-    const { wrapper } = await mountDetail(workoutFixture());
-
-    await wrapper.find(".btn-close").trigger("click");
-
-    expect(wrapper.emitted("close")).toHaveLength(1);
+    expect(backSpy).toHaveBeenCalledOnce();
   });
 
   it("renders the primary/secondary trained muscles from the catalog's own muscle data", async () => {
-    const wrapper = mountWithProviders(WorkoutDetail, {
-      props: { workoutId: "w-1" },
-      global: { stubs: { IonModal: IonModalStub } },
-    });
-    getWorkoutMock.mockReset().mockResolvedValue(
+    getWorkoutMock.mockResolvedValue(
       workoutFixture({
         workoutExercises: [
           {
@@ -270,7 +254,8 @@ describe("WorkoutDetail", () => {
         ],
       }),
     );
-    useCatalogStore().$patch({
+    const { wrapper, pinia } = await mountAtWorkout("w-1");
+    useCatalogStore(pinia).$patch({
       exercises: [
         {
           id: "ex-1",
@@ -292,7 +277,6 @@ describe("WorkoutDetail", () => {
         },
       ],
     });
-    await flushPromises();
     await wrapper.vm.$nextTick();
 
     // MuscleFigure renders one <img class="overlay"> per trained muscle slug (front+back) once

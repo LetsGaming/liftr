@@ -100,6 +100,27 @@ describe("runsStore", () => {
       expect(result).toEqual(detail);
       expect(store.runs).toEqual([]);
     });
+
+    it("shares one in-flight fetch across concurrent calls for the same id (router beforeEnter + page onMounted)", async () => {
+      const detail: RunDetail = { ...makeRun(), points: [] };
+      let resolveFetch!: (v: RunDetail) => void;
+      getRunDetailMock.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+      );
+      const store = useRunsStore();
+
+      const first = store.loadDetail("run-1");
+      const second = store.loadDetail("run-1"); // should reuse the first's in-flight promise
+
+      resolveFetch(detail);
+      const [a, b] = await Promise.all([first, second]);
+
+      expect(a).toEqual(detail);
+      expect(b).toEqual(detail);
+      expect(getRunDetailMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("importFile()", () => {

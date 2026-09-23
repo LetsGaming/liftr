@@ -18,9 +18,12 @@ export const useHistoryStore = defineStore("history", {
     error: false,
     nextCursor: null as string | null,
     loadingMore: false,
-    // per-id cache for the detail modal — GET /api/workouts/:id existed and was never called
+    // per-id cache for the detail page — GET /api/workouts/:id existed and was never called
     // from anywhere in the client before this.
     detailCache: new Map<string, WorkoutDetail>(),
+    // In-flight requests per id, so the route's own beforeEnter prefetch and the page's onMounted
+    // load (both call loadWorkout for the same id) share one fetch instead of racing two.
+    detailInflight: new Map<string, Promise<WorkoutDetail | null>>(),
   }),
   actions: {
     async load() {
@@ -50,13 +53,21 @@ export const useHistoryStore = defineStore("history", {
     async loadWorkout(id: string): Promise<WorkoutDetail | null> {
       const cached = this.detailCache.get(id);
       if (cached) return cached;
-      try {
-        const detail = await getWorkout(id);
-        this.detailCache.set(id, detail);
-        return detail;
-      } catch {
-        return null;
-      }
+      const inflight = this.detailInflight.get(id);
+      if (inflight) return inflight;
+      const promise = (async () => {
+        try {
+          const detail = await getWorkout(id);
+          this.detailCache.set(id, detail);
+          return detail;
+        } catch {
+          return null;
+        } finally {
+          this.detailInflight.delete(id);
+        }
+      })();
+      this.detailInflight.set(id, promise);
+      return promise;
     },
 
     /** The server cascades sets and recomputes rank for every touched exercise

@@ -19,6 +19,9 @@ export const useRunsStore = defineStore("runs", {
   state: () => ({
     runs: [] as RunSummary[],
     loaded: false,
+    // In-flight detail requests per id, so the route's own beforeEnter prefetch and the page's
+    // onMounted load (both call loadDetail for the same id) share one fetch instead of racing two.
+    detailInflight: new Map<string, Promise<RunDetail>>(),
   }),
   actions: {
     async load() {
@@ -30,7 +33,11 @@ export const useRunsStore = defineStore("runs", {
     },
 
     async loadDetail(id: string): Promise<RunDetail> {
-      return getRunDetail(id);
+      const inflight = this.detailInflight.get(id);
+      if (inflight) return inflight;
+      const promise = getRunDetail(id).finally(() => this.detailInflight.delete(id));
+      this.detailInflight.set(id, promise);
+      return promise;
     },
 
     async importFile(file: File): Promise<RunSummary> {

@@ -1,31 +1,32 @@
 <script setup lang="ts">
 /**
- * Past-run detail sheet — "Letzte Aktivität" run rows on OverviewPage.vue were permanently
- * `disabled`, the only feed row that visibly did nothing when tapped, unlike workout rows which
- * already open WorkoutDetail.vue. Mirrors WorkoutDetail.vue's exact pattern: a sheet built on the
- * shared SheetModal.vue, loading full detail on mount via a store action that already existed
- * (runsStore.loadDetail()/getRunDetail — built for RunsPage.vue's inline layout, never reused from
- * a modal before). Reuses RunReplay.vue (which itself wraps RunMap.vue) for the route visualization
- * exactly as RunsPage.vue does, rather than duplicating map/replay logic here.
+ * Past-run detail — a routed page (was RunDetail.vue's SheetModal sheet), reached via `/runs/:id`
+ * for a real URL, back-button semantics, and a cold deep-link, converging with
+ * ExerciseDetailPage.vue and WorkoutDetailPage.vue on the same BasePage shell. Title is the run's
+ * own `name` (or a fallback), loaded from the fetched detail itself rather than a caller-passed
+ * prop — no extra plumbing needed for a cold/direct deep-link, unlike WorkoutDetailPage.vue's
+ * title (which isn't part of the workout detail payload).
  */
 import { cardioActivity, nearestRunCategory, type RankBucket } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
-import { useRunsStore, type RunDetail as RunDetailModel } from "../../stores/runsStore";
-import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
-import { useRunRankStore } from "../../stores/runRankStore";
-import { getPlannedRouteDetail, type Waypoint } from "../../services/plannedRouteService";
-import { formatDateLong, formatDurationMinutes, formatPace } from "../../lib/format";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
-import { useConfirmTap } from "../../composables/useConfirmTap";
-import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
-import AppIcon from "../ui/AppIcon.vue";
-import RouteWizard from "../route-wizard/RouteWizard.vue";
-import RunReplay from "./RunReplay.vue";
-import SheetModal from "../ui/SheetModal.vue";
-import StatTile from "../ui/StatTile.vue";
+import { useRoute, useRouter } from "vue-router";
+import { useRunsStore, type RunDetail as RunDetailModel } from "../stores/runsStore";
+import { usePlannedRouteStore } from "../stores/plannedRouteStore";
+import { useRunRankStore } from "../stores/runRankStore";
+import { getPlannedRouteDetail, type Waypoint } from "../services/plannedRouteService";
+import { formatDateLong, formatDurationMinutes, formatPace } from "../lib/format";
+import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { useConfirmTap } from "../composables/useConfirmTap";
+import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
+import AppIcon from "../components/ui/AppIcon.vue";
+import BasePage from "../components/ui/BasePage.vue";
+import RouteWizard from "../components/route-wizard/RouteWizard.vue";
+import RunReplay from "../components/run/RunReplay.vue";
+import StatTile from "../components/ui/StatTile.vue";
 
-const props = defineProps<{ runId: string }>();
-const emit = defineEmits<{ close: [] }>();
+const route = useRoute();
+const router = useRouter();
+const runId = computed(() => route.params.id as string);
 
 const runsStore = useRunsStore();
 const plannedRouteStore = usePlannedRouteStore();
@@ -33,18 +34,17 @@ const runRankStore = useRunRankStore();
 const loading = ref(true);
 const detail = ref<RunDetailModel | null>(null);
 const deleting = ref(false);
-const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
-/** Mirrors WorkoutDetail.vue's own delete pattern: refresh the rank/PR data this sheet itself
- *  displays (deleting a run can change or remove a rank-up/PR it earned), close via
- *  sheetRef.dismiss() rather than a direct emit — see SheetModal.vue's header comment for why a
- *  direct emit/unmount here would race Ionic's own modal teardown. */
+const pageTitle = computed(() => detail.value?.name ?? "Lauf-Details");
+
+/** Mirrors WorkoutDetailPage.vue's own delete pattern: refresh the rank/PR data this page itself
+ *  displays (deleting a run can change or remove a rank-up/PR it earned), then navigate back. */
 const deleteConfirm = useConfirmTap(async () => {
   deleting.value = true;
   try {
-    await runsStore.deleteRun(props.runId);
+    await runsStore.deleteRun(runId.value);
     await Promise.all([runRankStore.loadRanks(), runRankStore.loadPrs()]);
-    sheetRef.value?.dismiss();
+    router.back();
   } finally {
     deleting.value = false;
   }
@@ -94,7 +94,7 @@ onMounted(async () => {
   if (!runRankStore.ranksLoaded) void runRankStore.loadRanks();
   if (!runRankStore.prsLoaded) void runRankStore.loadPrs();
   try {
-    detail.value = await runsStore.loadDetail(props.runId);
+    detail.value = await runsStore.loadDetail(runId.value);
   } catch {
     // offline or request failed — `detail` stays null, template shows the "couldn't load" hint
   } finally {
@@ -135,17 +135,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
 </script>
 
 <template>
-  <SheetModal
-    ref="sheetRef"
-    :title="detail?.name ?? 'Lauf-Details'"
-    width="100%"
-    max-width="94vw"
-    height="88%"
-    desktop-variant="drawer"
-    desktop-width="560px"
-    desktop-height="100%"
-    @close="emit('close')"
-  >
+  <BasePage :title="pageTitle" back-button variant="drawer">
     <p v-if="loading" class="hint">Lädt…</p>
     <p v-else-if="!detail" class="hint">Dieser Lauf ließ sich nicht laden — möglicherweise keine Verbindung zum Server.</p>
 
@@ -195,7 +185,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
       @close="showRouteWizard = false"
       @saved="showRouteWizard = false"
     />
-  </SheetModal>
+  </BasePage>
 </template>
 
 <style scoped>
@@ -223,7 +213,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
 .route-chip + .route-chip {
   margin-left: var(--sp2);
 }
-/* Same --pr color token WorkoutDetail.vue's/WorkoutPage.vue's strength-side PR chip already
+/* Same --pr color token WorkoutDetailPage.vue's/WorkoutPage.vue's strength-side PR chip already
    uses — this is that same "you earned this" accent, not a new color introduced for running. */
 .pr-chip {
   color: var(--pr);

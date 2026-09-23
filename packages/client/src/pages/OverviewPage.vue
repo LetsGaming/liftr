@@ -21,10 +21,8 @@ import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
 import StatTile from "../components/ui/StatTile.vue";
-import RunDetail from "../components/run/RunDetail.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
-import WorkoutDetail from "../components/workout/WorkoutDetail.vue";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { LP_EXPLAINER } from "../copy/rankCopy";
@@ -53,14 +51,6 @@ const catalog = useCatalogStore();
 const readiness = useReadinessStore();
 const { exerciseName } = useExerciseName();
 const router = useRouter();
-
-const openWorkoutId = ref<string | null>(null);
-const openWorkoutTitle = ref<string | undefined>(undefined);
-/** "Letzte Aktivität" run rows are tappable, opening RunDetail.vue as a sheet — the same
- *  treatment workout rows get via WorkoutDetail.vue — so every row in the feed is a real
- *  interactive element rather than an inert one. Reuses runsStore.loadDetail()/RunReplay.vue,
- *  which RunsPage.vue also relies on for the same detail view. */
-const openRunId = ref<string | null>(null);
 
 /** "Letzte Aktivität" filter pills — same `.rank-tier-filter` pattern RankLifterSection.vue's
  *  tier filter follows (a pill row that collapses to a `<select>` past 3 options, present only
@@ -159,12 +149,11 @@ function feedIconName(item: { kind: string; meta: Record<string, unknown> }): "d
 }
 
 function openWorkout(itemId: string, title: string | null) {
-  openWorkoutId.value = itemId;
-  openWorkoutTitle.value = title ?? undefined;
+  void router.push(title ? `/workouts/${itemId}?title=${encodeURIComponent(title)}` : `/workouts/${itemId}`);
 }
 
 function openRun(itemId: string) {
-  openRunId.value = itemId;
+  void router.push(`/runs/${itemId}`);
 }
 
 /** "Last touched" isn't tracked per routine today (would need a lastUsedAt column) — the
@@ -470,9 +459,6 @@ function retryFailed() {
           </button>
         </section>
       </div>
-
-      <WorkoutDetail v-if="openWorkoutId" :workout-id="openWorkoutId" :title="openWorkoutTitle" @close="openWorkoutId = null" />
-      <RunDetail v-if="openRunId" :run-id="openRunId" @close="openRunId = null" />
     </IonContent>
   </IonPage>
 </template>

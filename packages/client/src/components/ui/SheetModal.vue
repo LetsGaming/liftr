@@ -232,8 +232,8 @@ defineExpose({ dismiss });
 /* Full-bleed modal at height:100% starts at the very top of the viewport, under the notch/status
    bar on Android — see capacitor.config.ts's adjustMarginsForEdgeToEdge comment for why the CSS
    inset is the fallback layer, not the primary fix. Covers every caller of the default `.sheet-
-   head` fallback below (WorkoutDetail, RunDetail, NoteCapture, RpeCapture, SetKindPicker,
-   RouteMapEditor, LiveRunMap) in one place instead of six. */
+   head` fallback below (NoteCapture, RpeCapture, SetKindPicker, RouteMapEditor, LiveRunMap) in
+   one place instead of several. */
 .sheet:not(.has-custom-header) {
   padding: var(--sp5);
   padding-top: calc(var(--sp5) + env(safe-area-inset-top, 0px));

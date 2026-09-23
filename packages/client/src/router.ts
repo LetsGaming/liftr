@@ -66,6 +66,28 @@ export const router = createRouter({
       },
     },
     { path: "/runs", name: "runs", component: () => import("./pages/RunsPage.vue") },
+    {
+      path: "/workouts/:id",
+      name: "workout-detail",
+      component: () => import("./pages/WorkoutDetailPage.vue"),
+      meta: { title: "Workout-Details" },
+      // Same eager-prefetch pattern as /records and /exercises/:slug above — historyStore.loadWorkout()
+      // is safe to call again here even though the page's own onMounted calls it too: it's cached
+      // per id (see historyStore.ts), so a concurrent call while this one is still in flight is the
+      // only case that ever does two fetches, not a guaranteed double-fetch.
+      beforeEnter: (to) => {
+        void import("./stores/historyStore").then(({ useHistoryStore }) => useHistoryStore().loadWorkout(to.params.id as string));
+      },
+    },
+    {
+      path: "/runs/:id",
+      name: "run-detail",
+      component: () => import("./pages/RunDetailPage.vue"),
+      meta: { title: "Lauf-Details" },
+      beforeEnter: (to) => {
+        void import("./stores/runsStore").then(({ useRunsStore }) => useRunsStore().loadDetail(to.params.id as string));
+      },
+    },
     { path: "/profile", name: "profile", component: () => import("./pages/ProfilePage.vue") },
     {
       path: "/attributions",

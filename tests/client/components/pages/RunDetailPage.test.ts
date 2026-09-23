@@ -1,14 +1,15 @@
-// RunDetail.vue loads its detail via runsStore.loadDetail() (a network boundary — mocked here)
-// on mount, then renders SheetModal (real shell wraps @ionic/vue's IonModal — stubbed per
-// tests/README.md's note, same as RoutineWizard.test.ts) and RunReplay (its own leaflet/map
-// rendering is covered by RunReplay.test.ts/RunMap.test.ts; stubbed here so this file tests only
-// RunDetail's own loading/formatting logic).
-import { flushPromises } from "@vue/test-utils";
+// RunDetailPage.vue loads its detail via runsStore.loadDetail() (a network boundary — mocked
+// here) on mount, then renders BasePage (real shell) and RunReplay (its own leaflet/map rendering
+// is covered by RunReplay.test.ts/RunMap.test.ts; stubbed here so this file tests only
+// RunDetailPage's own loading/formatting logic).
+import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { reactive } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import RunDetail from "~client/components/run/RunDetail.vue";
+import { createMemoryHistory, createRouter, type Router } from "vue-router";
+import RunDetailPage from "~client/pages/RunDetailPage.vue";
+import { i18n } from "~client/i18n";
 import type { RunDetail as RunDetailModel } from "~client/stores/runsStore";
-import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 const { loadDetailMock, deleteRunMock } = vi.hoisted(() => ({ loadDetailMock: vi.fn(), deleteRunMock: vi.fn() }));
 vi.mock("~client/stores/runsStore", () => ({
@@ -37,9 +38,6 @@ interface RunPrListItem {
   achievedAt: string;
 }
 
-// Task 11: mocked the same way runsStore is above — the chip/badge logic is driven directly
-// instead of depending on real network calls (which fail silently in jsdom the way the
-// un-mocked plannedRouteStore already does elsewhere in this file).
 const runRankStore = reactive({
   ranks: [] as RunRankRow[],
   prs: [] as RunPrListItem[],
@@ -80,32 +78,36 @@ function makePr(overrides: Partial<RunPrListItem> = {}): RunPrListItem {
   };
 }
 
-const SheetModalStub = {
-  props: ["title"],
-  emits: ["close"],
-  // dismiss() mirrors the real SheetModal's contract closely enough for this suite: RunDetail
-  // calls it (via sheetRef.value?.dismiss()) after a successful delete instead of emitting
-  // "close" directly — see RunDetail.vue's header comment on that component for why.
-  methods: { dismiss(this: { $emit: (e: string) => void }) { this.$emit("close"); } },
-  template: `<div class="sheet-stub" :data-title="title"><slot /></div>`,
-};
 const RunReplayStub = {
   props: ["points"],
   template: `<div class="runreplay-stub" :data-count="points.length"></div>`,
 };
 // RouteWizard.vue pulls in plannedRouteStore/RouteMapEditor/leaflet — stubbed here since this
-// file only tests that RunDetail opens it with the right seed props, not the wizard itself
+// file only tests that RunDetailPage opens it with the right seed props, not the wizard itself
 // (covered by tests/client/components/route-wizard/RouteWizard.test.ts).
 const RouteWizardStub = {
   props: ["seedWaypoints", "seedName"],
   template: `<div class="route-wizard-stub" :data-seed-name="seedName" :data-seed-count="seedWaypoints?.length ?? 0"></div>`,
 };
 
-function mountDetail(runId = "run-1") {
-  return mountWithProviders(RunDetail, {
-    props: { runId },
-    global: { stubs: { SheetModal: SheetModalStub, RunReplay: RunReplayStub, RouteWizard: RouteWizardStub } },
+async function mountAtRun(runId = "run-1") {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/runs/:id", name: "run-detail", component: RunDetailPage },
+      { path: "/", name: "overview", component: { template: "<div />" } },
+    ],
   });
+  await router.push("/"); // an overview entry on the stack, so back() below lands somewhere real
+  await router.push(`/runs/${runId}`);
+  await router.isReady();
+  const wrapper = mount(RunDetailPage, {
+    global: { plugins: [createPinia(), i18n, router], stubs: { RunReplay: RunReplayStub, RouteWizard: RouteWizardStub } },
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  return { wrapper, router: router as Router };
 }
 
 function makeDetail(overrides: Partial<RunDetailModel> = {}): RunDetailModel {
@@ -137,34 +139,38 @@ beforeEach(() => {
   runRankStore.loadPrs.mockReset();
 });
 
-describe("RunDetail", () => {
+describe("RunDetailPage", () => {
   it("shows a loading hint while the detail request is in flight", async () => {
     loadDetailMock.mockReturnValue(new Promise(() => {})); // never resolves
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.text()).toContain("Lädt…");
   });
 
-  it("requests the detail for the given runId", () => {
+  it("requests the detail for the route's id param", async () => {
     loadDetailMock.mockReturnValue(new Promise(() => {}));
-    mountDetail("run-42");
+    await mountAtRun("run-42");
 
     expect(loadDetailMock).toHaveBeenCalledWith("run-42");
   });
 
   it("shows a failure hint when the load rejects", async () => {
     loadDetailMock.mockRejectedValue(new Error("offline"));
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.text()).toContain("Dieser Lauf ließ sich nicht laden");
   });
 
+  it("shows a back button", async () => {
+    loadDetailMock.mockResolvedValue(makeDetail());
+    const { wrapper } = await mountAtRun();
+
+    expect(wrapper.find(".base-page-back-btn").exists()).toBe(true);
+  });
+
   it("renders formatted stats and the replay once loaded", async () => {
     loadDetailMock.mockResolvedValue(makeDetail());
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.text()).toContain("5.23 km");
     expect(wrapper.text()).toContain("27 min"); // round(1620/60)
@@ -177,8 +183,7 @@ describe("RunDetail", () => {
 
   it("formats a null pace and a null avg HR as a dash", async () => {
     loadDetailMock.mockResolvedValue(makeDetail({ avgPaceSPerKm: null, avgHr: null }));
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     // formatPace(null) -> "–"; avgHr null renders the bare fallback "–", not "– bpm"
     expect(wrapper.text()).not.toContain("bpm");
@@ -187,31 +192,27 @@ describe("RunDetail", () => {
 
   it("shows a manual-run hint instead of the replay when there are no points", async () => {
     loadDetailMock.mockResolvedValue(makeDetail({ points: [] }));
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".runreplay-stub").exists()).toBe(false);
     expect(wrapper.text()).toContain("Manuell erfasster Lauf — keine Route verfügbar.");
   });
 
-  it("passes the run name (or a fallback) as the sheet title", async () => {
+  it("uses the run name (or a fallback) as the page title", async () => {
     loadDetailMock.mockReturnValue(new Promise(() => {}));
-    const loading = mountDetail();
-    await flushPromises();
-    expect(loading.find(".sheet-stub").attributes("data-title")).toBe("Lauf-Details");
+    const { wrapper: loading } = await mountAtRun();
+    expect(loading.find("ion-title").text()).toBe("Lauf-Details");
 
     loadDetailMock.mockResolvedValue(makeDetail({ name: "Sunday Long Run" }));
-    const loaded = mountDetail();
-    await flushPromises();
-    expect(loaded.find(".sheet-stub").attributes("data-title")).toBe("Sunday Long Run");
+    const { wrapper: loaded } = await mountAtRun();
+    expect(loaded.find("ion-title").text()).toBe("Sunday Long Run");
   });
 
   it("shows a rank/category chip for the run's nearest category when it's rank-eligible", async () => {
     loadDetailMock.mockResolvedValue(makeDetail({ distanceM: 5000 }));
     runRankStore.ranks = [makeRankRow({ category: "5k", tier: "advanced", division: 3 })];
 
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     const chip = wrapper.find(".rank-chip");
     expect(chip.exists()).toBe(true);
@@ -224,8 +225,7 @@ describe("RunDetail", () => {
     loadDetailMock.mockResolvedValue(makeDetail({ distanceM: 5000 }));
     runRankStore.ranks = [makeRankRow({ category: "marathon" })];
 
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".rank-chip").exists()).toBe(false);
   });
@@ -234,8 +234,7 @@ describe("RunDetail", () => {
     loadDetailMock.mockResolvedValue(makeDetail({ id: "run-1", distanceM: 5000 }));
     runRankStore.prs = [makePr({ runId: "run-1" })];
 
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     const prBadge = wrapper.find(".pr-chip");
     expect(prBadge.exists()).toBe(true);
@@ -246,8 +245,7 @@ describe("RunDetail", () => {
     loadDetailMock.mockResolvedValue(makeDetail({ id: "run-1", distanceM: 5000 }));
     runRankStore.prs = [makePr({ runId: "some-other-run" })];
 
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".pr-chip").exists()).toBe(false);
   });
@@ -257,8 +255,7 @@ describe("RunDetail", () => {
     runRankStore.ranks = [makeRankRow({ category: "5k" })];
     runRankStore.prs = [makePr({ runId: "run-1" })];
 
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".rank-chip").exists()).toBe(false);
     expect(wrapper.find(".pr-chip").exists()).toBe(false);
@@ -269,18 +266,17 @@ describe("RunDetail", () => {
     runRankStore.ranks = [makeRankRow({ category: "5k" })];
     runRankStore.prs = [makePr({ runId: "run-1" })];
 
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".rank-chip").classes()).toContain("pop-in");
     expect(wrapper.find(".pr-chip").classes()).toContain("pop-in");
   });
 
-  it("requires a second tap to actually delete the run, then closes and refreshes rank/PR data", async () => {
+  it("requires a second tap to actually delete the run, then navigates back and refreshes rank/PR data", async () => {
     loadDetailMock.mockResolvedValue(makeDetail());
     deleteRunMock.mockResolvedValue(undefined);
-    const wrapper = mountDetail("run-1");
-    await flushPromises();
+    const { wrapper, router } = await mountAtRun("run-1");
+    const backSpy = vi.spyOn(router, "back");
 
     const btn = wrapper.find(".delete-btn");
     await btn.trigger("click");
@@ -288,13 +284,14 @@ describe("RunDetail", () => {
     expect(wrapper.find(".delete-btn").text()).toContain("Wirklich löschen?");
 
     await wrapper.find(".delete-btn").trigger("click");
-    await flushPromises();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(deleteRunMock).toHaveBeenCalledWith("run-1");
     // Once on mount (ranksLoaded/prsLoaded start false) + once more from the delete handler.
     expect(runRankStore.loadRanks).toHaveBeenCalledTimes(2);
     expect(runRankStore.loadPrs).toHaveBeenCalledTimes(2);
-    expect(wrapper.emitted("close")).toHaveLength(1);
+    expect(backSpy).toHaveBeenCalledOnce();
   });
 
   it("shows a 'save as route' action only for a GPS run, and opens the wizard seeded from its points", async () => {
@@ -308,8 +305,7 @@ describe("RunDetail", () => {
       cadence: null,
     }));
     loadDetailMock.mockResolvedValue(makeDetail({ name: "Sunday Long Run", points }));
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".route-wizard-stub").exists()).toBe(false);
 
@@ -329,19 +325,8 @@ describe("RunDetail", () => {
 
   it("hides the 'save as route' action for a manual run with no GPS points", async () => {
     loadDetailMock.mockResolvedValue(makeDetail({ points: [] }));
-    const wrapper = mountDetail();
-    await flushPromises();
+    const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".save-route-btn").exists()).toBe(false);
-  });
-
-  it("forwards the sheet's close event", async () => {
-    loadDetailMock.mockResolvedValue(makeDetail());
-    const wrapper = mountDetail();
-    await flushPromises();
-
-    await wrapper.findComponent(SheetModalStub).vm.$emit("close");
-
-    expect(wrapper.emitted("close")).toHaveLength(1);
   });
 });

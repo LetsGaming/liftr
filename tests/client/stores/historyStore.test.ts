@@ -187,6 +187,26 @@ describe("historyStore", () => {
       expect(result).toBeNull();
       expect(store.detailCache.has("missing")).toBe(false);
     });
+
+    it("shares one in-flight fetch across concurrent calls for the same id (router beforeEnter + page onMounted)", async () => {
+      let resolveFetch!: (v: WorkoutDetail) => void;
+      getWorkoutMock.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+      );
+      const store = useHistoryStore();
+
+      const first = store.loadWorkout("w-1");
+      const second = store.loadWorkout("w-1"); // should reuse the first's in-flight promise
+
+      resolveFetch(workoutDetail);
+      const [a, b] = await Promise.all([first, second]);
+
+      expect(a).toEqual(workoutDetail);
+      expect(b).toEqual(workoutDetail);
+      expect(getWorkoutMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("deleteWorkout()", () => {

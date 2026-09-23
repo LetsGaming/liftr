@@ -11,10 +11,10 @@
 // all five categories even when some have no PR yet — different enough shape to warrant its own
 // classes rather than forcing the existing list markup to do both jobs.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import type { RunCategory } from "@liftr/shared";
 import { RUN_CATEGORIES, rankedCardioActivities } from "@liftr/shared";
-import RunDetail from "../components/run/RunDetail.vue";
 import { useExerciseName } from "../composables/useExerciseName";
 import { formatClockLong, formatPace } from "../lib/format";
 import { usePrStore } from "../stores/prStore";
@@ -24,6 +24,7 @@ import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
 const prStore = usePrStore();
 const runRankStore = useRunRankStore();
 const { exerciseName } = useExerciseName();
+const router = useRouter();
 onMounted(() => {
   // router.ts's beforeEnter already prefetches prStore for this route, so guard against a
   // redundant re-fetch on mount (same pattern as RoutineOverviewPage.vue's onMounted). No such
@@ -74,8 +75,6 @@ const singleSpeedActivityIds = computed(() =>
     .filter((a) => a.rank.mode === "single-speed")
     .map((a) => a.id),
 );
-
-const openRunId = ref<string | null>(null);
 
 function isRecentlyAchieved(iso: string): boolean {
   return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
@@ -157,7 +156,7 @@ function formatDate(iso: string): string {
             class="panel run-pr-row"
             :class="{ 'run-pr-empty': !bestRunTimeByCategory[category] }"
             :disabled="!bestRunTimeByCategory[category]"
-            @click="openRunId = bestRunTimeByCategory[category]!.runId"
+            @click="router.push(`/runs/${bestRunTimeByCategory[category]!.runId}`)"
           >
             <div class="pr-row-main">
               <b>{{ RUN_CATEGORY_LABEL[category] }}</b>
@@ -177,7 +176,7 @@ function formatDate(iso: string): string {
             class="panel run-pr-row"
             :class="{ 'run-pr-empty': !bestSpeedByActivity[activityId] }"
             :disabled="!bestSpeedByActivity[activityId]"
-            @click="openRunId = bestSpeedByActivity[activityId]!.runId"
+            @click="router.push(`/runs/${bestSpeedByActivity[activityId]!.runId}`)"
           >
             <div class="pr-row-main">
               <b>{{ ACTIVITY_LABEL[activityId] ?? activityId }}</b>
@@ -192,8 +191,6 @@ function formatDate(iso: string): string {
           </button>
         </li>
       </ul>
-
-      <RunDetail v-if="openRunId" :run-id="openRunId" @close="openRunId = null" />
     </IonContent>
   </IonPage>
 </template>
