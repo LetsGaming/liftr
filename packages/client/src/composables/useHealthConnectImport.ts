@@ -7,6 +7,7 @@
  * Extracted out of ProfilePage.vue — that file mixed six+ unrelated settings concerns together.
  */
 import { ref } from "vue";
+import { refreshCardioDerivedStores } from "./useCardioDerivedStores";
 import {
   checkHealthConnectPermissions,
   importNewHealthConnectWorkouts,
@@ -45,6 +46,9 @@ export function useHealthConnectImport() {
         return;
       }
       const { imported, skipped, failed } = await importNewHealthConnectWorkouts("manual");
+      // Only an actual import changes XP/streak/rank — a no-op resync (nothing new to import) or
+      // an all-skipped/all-failed run has nothing for these stores to reflect.
+      if (imported > 0) refreshCardioDerivedStores();
       if (imported === 0 && failed === 0 && skipped === 0) {
         healthConnectStatus.value = "Verbunden — keine neuen Aktivitäten gefunden.";
       } else if (failed === 0 && skipped === 0) {

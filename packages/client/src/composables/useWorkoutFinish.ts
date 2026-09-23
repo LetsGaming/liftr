@@ -111,10 +111,11 @@ export function useWorkoutFinish(
   );
 
   /** Snapshot of xpStore's level/progress right before finishWorkout() triggers a reload —
-   *  xpStore is only ever refreshed at app boot (App.vue) and after a finish (below), so its
-   *  state at the moment finishWorkout() runs *is* "before this session's XP was added."
-   *  levelAfter/progressAfter are read live off xpStore instead, so they update reactively the
-   *  moment the post-finish reload lands. */
+   *  xpStore is only ever refreshed at app boot (App.vue), after a finish (below), and after a
+   *  Health Connect import (useCardioDerivedStores.ts), so its state at the moment
+   *  finishWorkout() runs *is* "before this session's XP was added." levelAfter/progressAfter
+   *  are read live off xpStore instead, so they update reactively the moment the post-finish
+   *  reload lands. */
   const finishXpSnapshot = ref<{ levelBefore: number; progressBefore: number } | null>(null);
 
   /** If a user made changes to the routine while in the workout (more weight/reps than the

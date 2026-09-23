@@ -8,6 +8,7 @@
 import { App as CapacitorApp } from "@capacitor/app";
 import { Network } from "@capacitor/network";
 import { defineStore } from "pinia";
+import { refreshCardioDerivedStores } from "../composables/useCardioDerivedStores";
 import { useToast } from "../composables/useToast";
 import { importNewHealthConnectWorkouts } from "../health/healthConnect";
 import { enqueueOutboxItem, listOutboxItems, removeOutboxItem, type OutboxItem } from "../lib/idb";
@@ -155,6 +156,9 @@ export const useSyncStore = defineStore("sync", {
           // toast or not, is always recorded in the sync log (see healthConnect.ts) so it's never
           // truly invisible, just not interrupting.
           void importNewHealthConnectWorkouts("resume").then((result) => {
+            // Only an actual import changes XP/streak/rank — a run that only skipped/failed has
+            // nothing new for these stores to reflect.
+            if (result.imported > 0) refreshCardioDerivedStores();
             if (result.imported === 0 && result.failed === 0) return;
             const parts = [`${result.imported} synchronisiert`];
             if (result.failed > 0) parts.push(`${result.failed} fehlgeschlagen`);

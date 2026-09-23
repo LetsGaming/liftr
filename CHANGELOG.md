@@ -6,9 +6,14 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Added
+
+- Walking and hiking now show a rank card even before your first rank, matching the running categories.
+
 ### Fixed
 
 - Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
+- XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
 
 ## [1.7.2] - 2026-09-23
 

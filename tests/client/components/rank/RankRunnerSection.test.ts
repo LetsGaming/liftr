@@ -95,14 +95,39 @@ describe("RankRunnerSection", () => {
     });
     const wrapper = mountWithProviders(RankRunnerSection);
 
+    // 5 running categories + walk + hike, each always rendering a card (ranked or placeholder).
     const cards = wrapper.findAll(".card-grid .card");
-    expect(cards).toHaveLength(5);
-    expect(wrapper.findAll(".run-rank-empty-note")).toHaveLength(3);
+    expect(cards).toHaveLength(7);
+    expect(wrapper.findAll(".run-rank-empty-note")).toHaveLength(5);
 
     const runProgressCards = wrapper.findAllComponents(RankProgress).filter((c) => c.props("variant") === "hero");
     expect(runProgressCards).toHaveLength(2);
     expect(wrapper.text()).toContain("5 km");
     expect(wrapper.text()).toContain("Marathon");
+  });
+
+  it("always renders a card for walking and hiking, with an empty-state placeholder and the overall-exclusion note when neither has ranked yet", () => {
+    Object.assign(runRankState, { ranksLoaded: true, ranksError: false, ranks: [] });
+    const wrapper = mountWithProviders(RankRunnerSection);
+
+    expect(wrapper.text()).toContain("Gehen");
+    expect(wrapper.text()).toContain("Wandern");
+    expect(wrapper.text()).toContain("Noch kein Rang — sammle genug Distanz, um zu starten.");
+    expect(wrapper.text()).toContain("Gehen und Wandern zählen nicht in den Overall Runner Rank");
+  });
+
+  it("renders walking's real rank card once it has a row, alongside hiking's still-empty placeholder", () => {
+    Object.assign(runRankState, {
+      ranksLoaded: true,
+      ranksError: false,
+      ranks: [makeRunRank({ activityType: "walk", category: "all", tier: "trainee", division: 3, lp: 40 })],
+    });
+    const wrapper = mountWithProviders(RankRunnerSection);
+
+    const runProgressCards = wrapper.findAllComponents(RankProgress).filter((c) => c.props("variant") === "hero");
+    expect(runProgressCards).toHaveLength(1); // just the real walk card
+    // 5 running categories + hike, all still placeholders.
+    expect(wrapper.findAll(".run-rank-empty-note")).toHaveLength(6);
   });
 
   it("shows the next speed target as a formatted pace, and '???' when no next target exists", () => {
