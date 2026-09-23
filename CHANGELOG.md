@@ -6,6 +6,8 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-09-23
+
 ### Fixed
 
 - The backup download on the profile page now hands off to the native share sheet (or a real "Save As" dialog on desktop) instead of clicking a plain download link, which could silently fail to save the file from the app's in-app browser.
