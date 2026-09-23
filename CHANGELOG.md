@@ -6,10 +6,12 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-09-23
+
 ### Fixed
 
 - Health Connect runs with a route could fail to import entirely when the device reported elevation as text instead of a number; elevation is now coerced properly before syncing.
-- A request validation failure on a long list (e.g. every point of a route) no longer produces one log line/error message per item — repeated issues on the same field are now collapsed into a single count.
+- A request validation failure on a long list (e.
 
 ## [1.7.0] - 2026-09-22
 
