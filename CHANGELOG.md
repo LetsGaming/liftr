@@ -11,6 +11,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - Walking and hiking now show a rank card even before your first rank, matching the running categories.
 - The Health Connect sync log on the Diagnose page can now be cleared.
 - Speed (km/h) in the run replay view.
+- Liftr now warns when the app and the server are running different versions.
 
 ### Changed
 

@@ -1,5 +1,7 @@
 import { ref } from "vue";
-import { getServerUrl, setServerUrl } from "../lib/api";
+import { getServerUrl, getServerVersion, setServerUrl, setServerVersion } from "../lib/api";
+import { isNative } from "../lib/platform";
+import { resolveCurrentVersion } from "./useAppUpdate";
 
 /** How long a candidate server gets to answer before this gives up and reports "unreachable" —
  *  generous enough for a slow LAN/cold-start container, short enough not to leave the picker
@@ -23,23 +25,62 @@ export function normalizeServerUrl(input: string): string | null {
 
 /** Hits `${url}/api/health` and checks for the `service: "liftr"` marker (app.ts) — the same
  *  path/shape check Docker healthchecks and CI already rely on, plus the one field that tells a
- *  real Liftr instance apart from any other server answering on that host/path. */
-export async function checkServerIdentity(url: string): Promise<{ ok: true } | { ok: false; error: string }> {
+ *  real Liftr instance apart from any other server answering on that host/path. `version` is
+ *  whatever the server reports (app.ts's env.version) — absent for an older server that predates
+ *  this field, which is fine, checkVersionMismatch below just skips comparing in that case. */
+export async function checkServerIdentity(
+  url: string,
+): Promise<{ ok: true; version?: string } | { ok: false; error: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
   try {
     const res = await fetch(`${url}/api/health`, { signal: controller.signal });
     if (!res.ok) return { ok: false, error: "Server antwortet nicht wie erwartet." };
     const body: unknown = await res.json().catch(() => null);
-    const service = body && typeof body === "object" ? (body as { service?: unknown }).service : undefined;
-    if (service !== "liftr") return { ok: false, error: "Antwort erhalten, aber das scheint keine Liftr-Instanz zu sein." };
-    return { ok: true };
+    const record = body && typeof body === "object" ? (body as { service?: unknown; version?: unknown }) : undefined;
+    if (record?.service !== "liftr") return { ok: false, error: "Antwort erhalten, aber das scheint keine Liftr-Instanz zu sein." };
+    return { ok: true, version: typeof record.version === "string" ? record.version : undefined };
   } catch (err) {
     console.warn("server identity check failed", err);
     return { ok: false, error: "Server nicht erreichbar. Adresse und Verbindung prüfen." };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// Module-level (not per-call refs — same shared-state pattern as useAppUpdate.ts) so App.vue's
+// launch-time check and ProfilePage.vue's connection section agree on one result instead of each
+// firing its own request.
+const serverVersion = ref<string | null>(getServerVersion());
+const versionMismatch = ref(false);
+
+/**
+ * Compares the saved server's version (via checkServerIdentity) against this app's own version
+ * (useAppUpdate.ts's resolveCurrentVersion — the one place that knows APK versionName vs
+ * __APP_VERSION__, reused rather than reimplemented here). Native-only: a web/PWA build is
+ * same-origin with its server and deploys together, so they can't mismatch. Skipped until a
+ * server URL is actually saved (first-run setup already runs checkServerIdentity itself via
+ * verifyAndSave). Non-blocking — it only ever sets `versionMismatch`, never throws or prevents
+ * app usage. No internal "already ran" guard, same as useAppUpdate.ts's check(): App.vue's own
+ * onMounted (which only ever runs once per real app boot) is what makes this "once per boot" in
+ * practice, and ProfilePage.vue calling it again on its own mount is a deliberate re-check (same
+ * pattern as its "Nach Updates suchen" re-check), not a bug.
+ */
+export async function checkVersionMismatch(): Promise<boolean> {
+  if (!isNative()) return false;
+  const url = getServerUrl();
+  if (!url) return false;
+  const result = await checkServerIdentity(url);
+  if (!result.ok || !result.version) return false;
+  serverVersion.value = result.version;
+  setServerVersion(result.version);
+  const clientVersion = await resolveCurrentVersion();
+  versionMismatch.value = clientVersion !== result.version;
+  return versionMismatch.value;
+}
+
+export function useServerVersionInfo() {
+  return { serverVersion, versionMismatch };
 }
 
 /**
@@ -69,6 +110,10 @@ export function useServerConnection() {
       }
       setServerUrl(normalized);
       serverUrl.value = normalized;
+      if (result.version) {
+        setServerVersion(result.version);
+        serverVersion.value = result.version;
+      }
       return true;
     } finally {
       checking.value = false;

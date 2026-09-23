@@ -62,13 +62,24 @@ const updateAvailable = computed(
  * ACTION_VIEW intent for any top-level navigation to a host outside the app's own origin, handing
  * it to the OS — which for a github.com release asset means the real system browser.
  */
+/** The Android versionName from @capacitor/app, written into the shared `currentVersion` ref —
+ *  shared with `check()` below (same ref) and with useServerConnection.ts's version-mismatch
+ *  check, so both read "this app's own version" the exact same way instead of each resolving
+ *  platform version separately. Callers must gate calling this on isAndroid() themselves
+ *  (App.getInfo() throws "not implemented" on web) — everywhere else `currentVersion` is already
+ *  correct from its __APP_VERSION__ initializer above. */
+export async function resolveCurrentVersion(): Promise<string> {
+  const info = await App.getInfo();
+  currentVersion.value = info.version;
+  return info.version;
+}
+
 export function useAppUpdate() {
   async function check(): Promise<void> {
     checking.value = true;
     error.value = null;
     try {
-      const info = await App.getInfo();
-      currentVersion.value = info.version;
+      await resolveCurrentVersion();
 
       const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
       if (res.status === 404) {

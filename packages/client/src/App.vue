@@ -8,9 +8,10 @@ import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
 import ServerGate from "./components/ui/ServerGate.vue";
 import ToastHost from "./components/ui/ToastHost.vue";
 import { useAppUpdate } from "./composables/useAppUpdate";
+import { checkVersionMismatch } from "./composables/useServerConnection";
 import { useToast } from "./composables/useToast";
 import { showingFinishRecap } from "./composables/useWorkoutChrome";
-import { isAndroid } from "./lib/platform";
+import { isAndroid, isNative } from "./lib/platform";
 import { useActiveWorkoutStore } from "./stores/activeWorkoutStore";
 import { useOverallRankStore } from "./stores/overallRankStore";
 import { useRoutineStore } from "./stores/routineStore";
@@ -49,6 +50,20 @@ onMounted(() => {
     void check().then(() => {
       if (updateAvailable.value) {
         useToast().toast(`Update verfügbar: v${latestVersion.value} — antippen für Details`, () =>
+          router.push({ path: "/profile", query: { focus: "account-app" } }),
+        );
+      }
+    });
+  }
+
+  // Self-hosted client and server can be upgraded independently — a saved server URL is
+  // otherwise trusted indefinitely with no re-verification (see ServerGate.vue). Warn-only: never
+  // blocks app usage, just surfaces the mismatch the same tappable-toast way as the update check
+  // above.
+  if (isNative()) {
+    void checkVersionMismatch().then((mismatch) => {
+      if (mismatch) {
+        useToast().toast("Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen", () =>
           router.push({ path: "/profile", query: { focus: "account-app" } }),
         );
       }

@@ -7,7 +7,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyRequest }
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import { syncCardioStandards } from "@liftr/db";
 import { requireAuth } from "./auth.js";
 import { db } from "./db.js";
@@ -280,7 +280,14 @@ export async function buildApp() {
 
   // `service: "liftr"` lets the native app's server-connection picker (ServerGate.vue) tell a
   // real Liftr instance apart from any other server that happens to answer on the same path.
-  app.get("/api/health", async () => ({ ok: true, service: "liftr" }));
+  // `version` lets the client detect it and this self-hosted server were upgraded independently
+  // (see useServerConnection.ts's checkServerIdentity).
+  const healthResponse = z.object({ ok: z.literal(true), service: z.literal("liftr"), version: z.string() });
+  app.get("/api/health", { schema: { response: { 200: healthResponse } } }, async () => ({
+    ok: true as const,
+    service: "liftr" as const,
+    version: env.version,
+  }));
 
   return app;
 }
