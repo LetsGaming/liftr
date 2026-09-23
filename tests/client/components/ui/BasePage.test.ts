@@ -57,4 +57,24 @@ describe("BasePage", () => {
 
     expect(wrapper.classes()).toContain("base-page-drawer");
   });
+
+  it("renders no subheader element when the slot is unused", () => {
+    const wrapper = mountWithProviders(BasePage, { props: { title: "Diagnose" } });
+
+    expect(wrapper.find(".base-page-subheader").exists()).toBe(false);
+  });
+
+  it("renders the subheader slot, pinned outside the scrolling content area", () => {
+    const wrapper = mountWithProviders(BasePage, {
+      props: { title: "Diagnose" },
+      slots: { subheader: "<div class=\"tabs\">Tabs</div>", default: "<p class=\"body\">Body</p>" },
+    });
+
+    const subheader = wrapper.find(".base-page-subheader");
+    expect(subheader.exists()).toBe(true);
+    expect(subheader.find(".tabs").exists()).toBe(true);
+    // A non-scrolling sibling of ion-content, not nested inside it — the whole point of the slot.
+    expect(wrapper.find("ion-content .tabs").exists()).toBe(false);
+    expect(wrapper.find("ion-content .body").exists()).toBe(true);
+  });
 });

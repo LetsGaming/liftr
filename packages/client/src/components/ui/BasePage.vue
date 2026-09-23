@@ -8,6 +8,11 @@
  * aligned, fixed width, left border, square corners, ≥900px only) for a routed page that plays
  * the same "reference panel beside the page behind it" role a modal drawer used to.
  *
+ * `subheader` slot: optional, sits between the toolbar and the scrolling `IonContent` as a
+ * normal (non-scrolling) flex child of `IonPage` — a tab strip or similar control belt that must
+ * stay visible while the page content scrolls beneath it, without needing `position: sticky`
+ * inside the scroll container. Omit it and nothing renders here at all.
+ *
  * Owns the app's one `env(safe-area-inset-top, 0px)` rule for routed pages. Safe alongside
  * capacitor.config.ts's `adjustMarginsForEdgeToEdge: 'force'` (Android-only): that setting
  * reserves the notch/status-bar band as a real WebView margin, which shrinks the WebView's own
@@ -54,6 +59,9 @@ function goBack() {
         </IonButtons>
       </IonToolbar>
     </IonHeader>
+    <div v-if="$slots.subheader" class="base-page-subheader">
+      <slot name="subheader" />
+    </div>
     <IonContent class="ion-padding">
       <slot />
     </IonContent>
@@ -105,6 +113,12 @@ function goBack() {
   .base-page-header ion-toolbar::after {
     content: none;
   }
+}
+/* Non-scrolling flex sibling of ion-content (not `position: sticky` inside it) — see the
+   `subheader` slot's own doc comment above. Horizontal padding matches ion-content's own
+   `.ion-padding` (16px == --sp4) so subheader content lines up with the page content below it. */
+.base-page-subheader {
+  padding: 0 var(--sp4) var(--sp3);
 }
 .base-page-back-btn {
   display: grid;

@@ -29,7 +29,13 @@ const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 
 const catalog = useCatalogStore();
-onMounted(() => catalog.load());
+onMounted(() => {
+  // router.ts's beforeEnter already kicks catalog.load() off before this component mounts —
+  // guarded here too (RecordsPage.vue's own onMounted/beforeEnter idiom) so a component that
+  // outlives that one prefetch (e.g. Fast Refresh, or catalog already loaded from another route)
+  // doesn't fire a second concurrent full-catalog fetch.
+  if (!catalog.loaded) void catalog.load();
+});
 
 const exercise = computed(() => catalog.bySlug(slug.value));
 const notFound = computed(() => catalog.loaded && !exercise.value);
@@ -111,12 +117,7 @@ function missingBadge(req: TieredRequirement): string | null {
 
 <template>
   <BasePage :title="pageTitle" back-button variant="drawer">
-    <div v-if="notFound" class="not-found">
-      <p>Diese Übung wurde nicht gefunden.</p>
-      <router-link to="/exercises" class="btn-secondary btn-block">Zu den Übungen →</router-link>
-    </div>
-
-    <template v-else-if="exercise">
+    <template v-if="exercise" #subheader>
       <div class="tab-strip" role="tablist">
         <button
           v-for="t in TABS"
@@ -130,7 +131,14 @@ function missingBadge(req: TieredRequirement): string | null {
           {{ t.label }}
         </button>
       </div>
+    </template>
 
+    <div v-if="notFound" class="not-found">
+      <p>Diese Übung wurde nicht gefunden.</p>
+      <router-link to="/exercises" class="btn-secondary btn-block">Zu den Übungen →</router-link>
+    </div>
+
+    <template v-else-if="exercise">
       <div v-if="activeTab === 'ueber'">
         <ExerciseDemo :slug="exercise.slug" />
 
@@ -199,9 +207,6 @@ function missingBadge(req: TieredRequirement): string | null {
   gap: var(--sp3);
   padding: var(--sp5) 0;
   color: var(--dim);
-}
-.tab-strip {
-  margin-bottom: var(--sp4);
 }
 .hint {
   color: var(--dim);
