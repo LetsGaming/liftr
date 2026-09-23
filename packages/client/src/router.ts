@@ -1,5 +1,21 @@
 import { createRouter, createWebHistory } from "vue-router";
 
+declare module "vue-router" {
+  interface RouteMeta {
+    /** Drives App.vue's sr-only <h1> and the routes below with no navItems entry of their own
+     *  (App.vue's own pageTitle special-cases handle every other title source: navItems' nav
+     *  labels, /runs, and the dynamic per-routine title). */
+    title?: string;
+    /** Set on any route whose BasePage renders real controls in the header (backButton and/or
+     *  header-actions) — App.vue's mobile-only .top-hud is a `position: fixed` overlay pinned to
+     *  that exact header band (its own comment assumed "nothing docked to [IonTitle's] trailing
+     *  edge on any page", true before BasePage existed), so without this its level-ring/streak
+     *  chip visually and pointer-wise sit on top of those controls, making a back button
+     *  unreachable — the reason DiagnosticsPage/AttributionsPage need this set. */
+    suppressTopHud?: boolean;
+  }
+}
+
 /**
  * One codebase, two layouts: AppShell renders SideNav above the md breakpoint, TabBar below —
  * these routes are shared by both.
@@ -35,6 +51,7 @@ export const router = createRouter({
       path: "/records",
       name: "records",
       component: () => import("./pages/RecordsPage.vue"),
+      meta: { title: "Rekorde" },
       // Kick the PR fetch off as soon as navigation starts (not onMounted, which only runs once
       // the component actually mounts — see the beforeResolve prefetch comment below for why
       // that's too late) so data is already in flight while the chunk resolves and the outgoing
@@ -46,8 +63,18 @@ export const router = createRouter({
     { path: "/exercises", name: "exercises", component: () => import("./pages/ExercisesPage.vue") },
     { path: "/runs", name: "runs", component: () => import("./pages/RunsPage.vue") },
     { path: "/profile", name: "profile", component: () => import("./pages/ProfilePage.vue") },
-    { path: "/attributions", name: "attributions", component: () => import("./pages/AttributionsPage.vue") },
-    { path: "/diagnostics", name: "diagnostics", component: () => import("./pages/DiagnosticsPage.vue") },
+    {
+      path: "/attributions",
+      name: "attributions",
+      component: () => import("./pages/AttributionsPage.vue"),
+      meta: { title: "Quellen & Lizenzen", suppressTopHud: true },
+    },
+    {
+      path: "/diagnostics",
+      name: "diagnostics",
+      component: () => import("./pages/DiagnosticsPage.vue"),
+      meta: { title: "Diagnose", suppressTopHud: true },
+    },
   ],
 });
 

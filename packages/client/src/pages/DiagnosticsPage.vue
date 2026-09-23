@@ -11,8 +11,8 @@
  *    outcome is recorded at all.
  * 2. Serverfehler — the previous owner-only list from ProfilePage.vue, moved here unchanged.
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
+import BasePage from "../components/ui/BasePage.vue";
 import { getMe, getRecentErrors, type ErrorLogEntry, type Me } from "../services/authService";
 import {
   importNewHealthConnectWorkouts,
@@ -128,104 +128,97 @@ function formatAt(iso: string): string {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Diagnose</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-      <div class="diagnostics-content">
-        <section class="card card--quiet surface-hybrid">
-          <h2 class="eyebrow">Synchronisierung</h2>
-          <p class="hint">
-            Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst,
-            warum.
-          </p>
+  <BasePage title="Diagnose" back-button>
+    <div class="diagnostics-content">
+      <section class="card card--quiet surface-hybrid">
+        <h2 class="eyebrow">Synchronisierung</h2>
+        <p class="hint">
+          Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst,
+          warum.
+        </p>
 
-          <div class="rescan-row">
-            <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(30)">
-              {{ rescanBusy === 30 ? "Prüfe…" : "Letzte 30 Tage erneut prüfen" }}
-            </button>
-            <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(90)">
-              {{ rescanBusy === 90 ? "Prüfe…" : "Letzte 90 Tage erneut prüfen" }}
-            </button>
-          </div>
-
-          <p v-if="syncLog.length === 0" class="current" style="color: var(--faint)">
-            Noch keine Synchronisierung aufgezeichnet.
-          </p>
-
-          <button
-            v-else
-            type="button"
-            class="btn-secondary danger"
-            :class="{ confirming: isClearLogArmed() }"
-            @click="triggerClearLog()"
-          >
-            {{ isClearLogArmed() ? "Wirklich leeren?" : "Protokoll leeren" }}
+        <div class="rescan-row">
+          <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(30)">
+            {{ rescanBusy === 30 ? "Prüfe…" : "Letzte 30 Tage erneut prüfen" }}
           </button>
-
-          <ul v-if="syncLog.length > 0" class="sync-log-list">
-            <li v-for="(entry, idx) in syncLog" :key="entry.at" class="sync-log-entry surface-hybrid">
-              <button type="button" class="sync-log-head" :aria-expanded="expandedEntry === idx" @click="toggleEntry(idx)">
-                <span class="sync-log-meta">
-                  <span class="tnum">{{ formatAt(entry.at) }}</span>
-                  <span class="sync-log-trigger">{{ entry.trigger === "manual" ? "manuell" : "App-Start" }}</span>
-                </span>
-                <span class="sync-log-counts">
-                  <span v-if="entry.result.imported > 0">{{ entry.result.imported }} importiert</span>
-                  <span v-if="entry.result.skipped > 0">{{ entry.result.skipped }} übersprungen</span>
-                  <span v-if="entry.result.failed > 0" class="error">{{ entry.result.failed }} fehlgeschlagen</span>
-                  <span v-if="entry.result.imported === 0 && entry.result.skipped === 0 && entry.result.failed === 0">
-                    keine Aktivitäten
-                  </span>
-                </span>
-              </button>
-
-              <div v-if="expandedEntry === idx" class="sync-log-body">
-                <p v-if="entry.result.workouts.length === 0" class="hint">Keine Workouts in diesem Zeitraum.</p>
-                <div v-for="w in entry.result.workouts" :key="w.workoutId" class="sync-workout-row">
-                  <p
-                    class="sync-workout-summary"
-                    :class="{ 'is-error': w.outcome.kind === 'failed', 'is-skip': w.outcome.kind === 'skipped' }"
-                  >
-                    {{ workoutSummary(w) }}
-                  </p>
-                  <button type="button" class="raw-toggle" @click="toggleRawData(w.workoutId)">
-                    {{ rawDataOpen.has(w.workoutId) ? "Rohdaten ausblenden" : "Rohdaten anzeigen" }}
-                  </button>
-                  <pre v-if="rawDataOpen.has(w.workoutId)" class="raw-data">{{ JSON.stringify(w, null, 2) }}</pre>
-                </div>
-                <button type="button" class="btn-secondary copy-btn" @click="copyReport(entry)">Bericht kopieren</button>
-              </div>
-            </li>
-          </ul>
-        </section>
-
-        <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
-          <h2 class="eyebrow">Serverfehler</h2>
-          <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
-          <button class="btn-secondary btn-block" @click="toggleErrorLogs">
-            {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
+          <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(90)">
+            {{ rescanBusy === 90 ? "Prüfe…" : "Letzte 90 Tage erneut prüfen" }}
           </button>
-          <div v-if="errorLogsOpen" class="error-log-list">
-            <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
-            <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
-              Keine Fehler aufgezeichnet.
-            </p>
-            <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
-              <div class="error-log-meta">
-                <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>
-                <span>{{ entry.method }} {{ entry.url }}</span>
+        </div>
+
+        <p v-if="syncLog.length === 0" class="current" style="color: var(--faint)">
+          Noch keine Synchronisierung aufgezeichnet.
+        </p>
+
+        <button
+          v-else
+          type="button"
+          class="btn-secondary danger"
+          :class="{ confirming: isClearLogArmed() }"
+          @click="triggerClearLog()"
+        >
+          {{ isClearLogArmed() ? "Wirklich leeren?" : "Protokoll leeren" }}
+        </button>
+
+        <ul v-if="syncLog.length > 0" class="sync-log-list">
+          <li v-for="(entry, idx) in syncLog" :key="entry.at" class="sync-log-entry surface-hybrid">
+            <button type="button" class="sync-log-head" :aria-expanded="expandedEntry === idx" @click="toggleEntry(idx)">
+              <span class="sync-log-meta">
+                <span class="tnum">{{ formatAt(entry.at) }}</span>
+                <span class="sync-log-trigger">{{ entry.trigger === "manual" ? "manuell" : "App-Start" }}</span>
+              </span>
+              <span class="sync-log-counts">
+                <span v-if="entry.result.imported > 0">{{ entry.result.imported }} importiert</span>
+                <span v-if="entry.result.skipped > 0">{{ entry.result.skipped }} übersprungen</span>
+                <span v-if="entry.result.failed > 0" class="error">{{ entry.result.failed }} fehlgeschlagen</span>
+                <span v-if="entry.result.imported === 0 && entry.result.skipped === 0 && entry.result.failed === 0">
+                  keine Aktivitäten
+                </span>
+              </span>
+            </button>
+
+            <div v-if="expandedEntry === idx" class="sync-log-body">
+              <p v-if="entry.result.workouts.length === 0" class="hint">Keine Workouts in diesem Zeitraum.</p>
+              <div v-for="w in entry.result.workouts" :key="w.workoutId" class="sync-workout-row">
+                <p
+                  class="sync-workout-summary"
+                  :class="{ 'is-error': w.outcome.kind === 'failed', 'is-skip': w.outcome.kind === 'skipped' }"
+                >
+                  {{ workoutSummary(w) }}
+                </p>
+                <button type="button" class="raw-toggle" @click="toggleRawData(w.workoutId)">
+                  {{ rawDataOpen.has(w.workoutId) ? "Rohdaten ausblenden" : "Rohdaten anzeigen" }}
+                </button>
+                <pre v-if="rawDataOpen.has(w.workoutId)" class="raw-data">{{ JSON.stringify(w, null, 2) }}</pre>
               </div>
-              <div class="error-log-message">{{ entry.message }}</div>
+              <button type="button" class="btn-secondary copy-btn" @click="copyReport(entry)">Bericht kopieren</button>
             </div>
+          </li>
+        </ul>
+      </section>
+
+      <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
+        <h2 class="eyebrow">Serverfehler</h2>
+        <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
+        <button class="btn-secondary btn-block" @click="toggleErrorLogs">
+          {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
+        </button>
+        <div v-if="errorLogsOpen" class="error-log-list">
+          <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
+          <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
+            Keine Fehler aufgezeichnet.
+          </p>
+          <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
+            <div class="error-log-meta">
+              <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>
+              <span>{{ entry.method }} {{ entry.url }}</span>
+            </div>
+            <div class="error-log-message">{{ entry.message }}</div>
           </div>
-        </section>
-      </div>
-    </IonContent>
-  </IonPage>
+        </div>
+      </section>
+    </div>
+  </BasePage>
 </template>
 
 <style scoped>

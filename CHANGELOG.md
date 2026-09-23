@@ -19,6 +19,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Fixed
 
+- The Diagnose and Lizenzen pages now have a back button.
 - Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
 - XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
 - A manual Health Connect sync no longer creates an extra "App-Start" log entry.

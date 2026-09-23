@@ -156,9 +156,9 @@ const navItems = [
 /**
  * Every page has a visible <IonTitle>, but ion-title renders as a plain custom element with no
  * heading role — screen-reader heading navigation never lands anywhere. navItems' labels
- * already track each page's real title, so reuse them for a visually-hidden <h1> here rather
- * than inventing per-page route-meta titles. Falls back to the app name for routes not in
- * navItems (e.g. /attributions).
+ * already track each nav-bar page's real title, so reuse them for a visually-hidden <h1> here;
+ * routes with no navItems entry (drill-ins, /attributions, /diagnostics) set their title via
+ * route.meta.title (router.ts) instead. Falls back to the app name for anything with neither.
  */
 const route = useRoute();
 const pageTitle = computed(() => {
@@ -168,11 +168,9 @@ const pageTitle = computed(() => {
   // (WorkoutPage.vue/RunsPage.vue), but the route itself is unchanged and still needs a real
   // heading here, not the "Liftr" fallback.
   if (route.path === "/runs") return t("nav.runs");
-  // These two routes are drill-ins with no navItems entry, same reason /runs needs its own
-  // case above — otherwise they'd silently fall through to "Liftr".
-  if (route.name === "records") return "Rekorde";
-  if (route.name === "attributions") return "Quellen & Lizenzen";
-  if (route.name === "diagnostics") return "Diagnose";
+  // Drill-ins with no navItems entry set their title via route.meta.title (router.ts) instead —
+  // otherwise they'd silently fall through to "Liftr".
+  if (route.meta.title) return route.meta.title;
   if (route.name === "routine-overview") {
     const routine = routineStore.byId(route.params.id as string);
     return routine ? routine.name : "Routine";
@@ -184,10 +182,14 @@ const pageTitle = computed(() => {
  * The top-hud level/streak chips are hidden on the Workout tab while a set is active or the
  * finish recap is showing: they'd duplicate the same Lv./XP number FinishSequence's own
  * "Fortschritt" beat shows, and compete for space on the app's lowest-density-tolerance screen.
- * Every other screen keeps the chips as an ambient reminder.
+ * Also hidden on any route whose own BasePage header needs that exact band for real controls
+ * (see route.meta.suppressTopHud's own doc comment, router.ts). Every other screen keeps the
+ * chips as an ambient reminder.
  */
 const hideTopHud = computed(
-  () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),
+  () =>
+    (route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value)) ||
+    !!route.meta.suppressTopHud,
 );
 
 /**

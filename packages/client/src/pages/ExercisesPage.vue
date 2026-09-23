@@ -7,11 +7,11 @@
  * routine wizard's picker step reuses the same list in "select" mode — one filterable/searchable
  * implementation, not two).
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { onMounted, ref } from "vue";
 import AddCustomExerciseForm from "../components/exercise/AddCustomExerciseForm.vue";
 import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseList from "../components/exercise/ExerciseList.vue";
+import BasePage from "../components/ui/BasePage.vue";
 import SheetModal from "../components/ui/SheetModal.vue";
 import { useCatalogStore, type CatalogExercise } from "../stores/catalogStore";
 
@@ -33,25 +33,18 @@ function onExerciseCreated() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Übungen</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-      <div class="ex-page">
-        <ExerciseList mode="browse" @open="openExercise = $event" />
-        <button class="add-custom-btn surface-hybrid" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
-      </div>
+  <BasePage title="Übungen">
+    <div class="ex-page">
+      <ExerciseList mode="browse" @open="openExercise = $event" />
+      <button class="add-custom-btn surface-hybrid" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
+    </div>
 
-      <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
+    <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
 
-      <SheetModal v-if="showAddForm" ref="addFormSheetRef" title="Eigene Übung hinzufügen" @close="showAddForm = false">
-        <AddCustomExerciseForm @created="onExerciseCreated" @cancel="addFormSheetRef?.dismiss()" />
-      </SheetModal>
-    </IonContent>
-  </IonPage>
+    <SheetModal v-if="showAddForm" ref="addFormSheetRef" title="Eigene Übung hinzufügen" @close="showAddForm = false">
+      <AddCustomExerciseForm @created="onExerciseCreated" @cancel="addFormSheetRef?.dismiss()" />
+    </SheetModal>
+  </BasePage>
 </template>
 
 <style scoped>
