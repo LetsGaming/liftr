@@ -65,9 +65,12 @@ const updateAvailable = computed(
 /** The Android versionName from @capacitor/app, written into the shared `currentVersion` ref —
  *  shared with `check()` below (same ref) and with useServerConnection.ts's version-mismatch
  *  check, so both read "this app's own version" the exact same way instead of each resolving
- *  platform version separately. Callers must gate calling this on isAndroid() themselves
- *  (App.getInfo() throws "not implemented" on web) — everywhere else `currentVersion` is already
- *  correct from its __APP_VERSION__ initializer above. */
+ *  platform version separately. Callers must gate calling this on a native-only check themselves
+ *  (App.getInfo() throws "not implemented" on web) — isAndroid() (App.vue, ProfilePage.vue,
+ *  since Android is the only platform this app ships an update-checkable build for) or the
+ *  broader isNative() (useServerConnection.ts's checkVersionMismatch — self-hosted server version
+ *  skew isn't an Android-only concern) are both valid gates; everywhere else `currentVersion` is
+ *  already correct from its __APP_VERSION__ initializer above. */
 export async function resolveCurrentVersion(): Promise<string> {
   const info = await App.getInfo();
   currentVersion.value = info.version;

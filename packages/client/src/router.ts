@@ -59,10 +59,15 @@ export const router = createRouter({
       name: "exercise-detail",
       component: () => import("./pages/ExerciseDetailPage.vue"),
       meta: { title: "Übung" },
-      // Same eager-prefetch pattern as /records above — catalogStore.load() is cheap to call
-      // again (always re-fetches), so get it in flight while the chunk resolves.
+      // Same eager-prefetch pattern as /records above — get the fetch in flight while the chunk
+      // resolves. Guarded on !loaded (matching ExerciseDetailPage.vue's own onMounted guard and
+      // /records' prStore prefetch) since catalogStore.load() always re-fetches the whole
+      // exercise catalog, unlike prStore/historyStore's own per-id caching.
       beforeEnter: () => {
-        void import("./stores/catalogStore").then(({ useCatalogStore }) => useCatalogStore().load());
+        void import("./stores/catalogStore").then(({ useCatalogStore }) => {
+          const catalog = useCatalogStore();
+          if (!catalog.loaded) void catalog.load();
+        });
       },
     },
     { path: "/runs", name: "runs", component: () => import("./pages/RunsPage.vue") },

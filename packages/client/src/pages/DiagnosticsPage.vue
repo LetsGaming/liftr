@@ -17,8 +17,10 @@ import { getMe, getRecentErrors, type ErrorLogEntry, type Me } from "../services
 import {
   importNewHealthConnectWorkouts,
   resetHealthConnectScanWindow,
+  waitForInFlightHealthConnectImport,
   type HealthConnectSkipReason,
 } from "../health/healthConnect";
+import { refreshCardioDerivedStores } from "../composables/useCardioDerivedStores";
 import { clearSyncLog, readSyncLog, type SyncLogEntry } from "../lib/syncLog";
 import { useToast } from "../composables/useToast";
 import { useConfirmTap } from "../composables/useConfirmTap";
@@ -73,9 +75,15 @@ async function toggleErrorLogs() {
 async function rescan(daysBack: 30 | 90) {
   rescanBusy.value = daysBack;
   try {
+    // A resume-triggered import (e.g. the app briefly backgrounding) may already be running and
+    // have captured the *old* scan window before this call started — waiting it out first means
+    // resetHealthConnectScanWindow below can never be undone by that other run's own
+    // setLastCheck(), which would otherwise consume the widened window before this rescan sees it.
+    await waitForInFlightHealthConnectImport();
     resetHealthConnectScanWindow(daysBack);
     const result = await importNewHealthConnectWorkouts("manual");
     refreshSyncLog();
+    if (result.imported > 0) refreshCardioDerivedStores();
     if (result.imported === 0 && result.skipped === 0 && result.failed === 0) {
       toast(`Letzte ${daysBack} Tage geprüft — keine neuen Aktivitäten gefunden.`);
     } else {

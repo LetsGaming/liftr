@@ -106,6 +106,16 @@ ion-title {
     display: none;
   }
 }
+/* BasePage.vue's own header (Diagnose/Lizenzen/Übungen, and the routed exercise/workout/run
+   detail pages) is exempt from the rule above: unlike the top-hud tab pages, BasePage's header is
+   the page's only on-screen title — there's no level/streak readout standing in for it, and the
+   detail pages in particular (exercise/workout/run name) would otherwise show a back button and
+   content with no indication of what's being viewed. */
+@media (max-width: 899px) {
+  .base-page-header ion-title {
+    display: block;
+  }
+}
 
 /* Nebula Foundation F5 — header hybrid (complete-redesign spec §3.5). All 8 pages share this
    identical IonHeader > IonToolbar skeleton with no per-page styling, so this one global rule

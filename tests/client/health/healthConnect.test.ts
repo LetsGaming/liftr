@@ -302,6 +302,35 @@ describe("importNewHealthConnectWorkouts — in-flight guard", () => {
   });
 });
 
+describe("waitForInFlightHealthConnectImport", () => {
+  it("resolves immediately when nothing is in flight", async () => {
+    const { waitForInFlightHealthConnectImport } = await import("~client/health/healthConnect");
+    await expect(waitForInFlightHealthConnectImport()).resolves.toBeUndefined();
+  });
+
+  it("resolves only once the in-flight run settles", async () => {
+    let resolveQuery!: (v: { workouts: unknown[] }) => void;
+    queryWorkoutsMock.mockReturnValue(new Promise((resolve) => (resolveQuery = resolve)));
+    const { importNewHealthConnectWorkouts, waitForInFlightHealthConnectImport } = await import(
+      "~client/health/healthConnect"
+    );
+
+    const importPromise = importNewHealthConnectWorkouts();
+    let waited = false;
+    const waitPromise = waitForInFlightHealthConnectImport().then(() => {
+      waited = true;
+    });
+
+    await Promise.resolve();
+    expect(waited).toBe(false);
+
+    resolveQuery({ workouts: [] });
+    await importPromise;
+    await waitPromise;
+    expect(waited).toBe(true);
+  });
+});
+
 describe("resetHealthConnectScanWindow", () => {
   it("winds lastCheck back by the given number of days", async () => {
     const { resetHealthConnectScanWindow } = await import("~client/health/healthConnect");

@@ -184,7 +184,7 @@ const pageTitle = computed(() => {
  * "Fortschritt" beat shows, and compete for space on the app's lowest-density-tolerance screen.
  * Every other screen keeps the chips as an ambient reminder — including pages with a BasePage
  * header (back button/header-actions): BasePage's own header stacks above .top-hud (see
- * .base-page-header's z-index, BasePage.vue) rather than this hiding the whole HUD for them.
+ * .ion-page's z-index, BasePage.vue) rather than this hiding the whole HUD for them.
  */
 const hideTopHud = computed(
   () => route.path === "/workout" && (activeWorkout.isActive || showingFinishRecap.value),

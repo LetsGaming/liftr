@@ -5,12 +5,16 @@ import { mountWithProviders } from "../../helpers/mountWithProviders";
 const {
   importNewHealthConnectWorkoutsMock,
   resetHealthConnectScanWindowMock,
+  waitForInFlightHealthConnectImportMock,
+  refreshCardioDerivedStoresMock,
   readSyncLogMock,
   clearSyncLogMock,
   getMeMock,
 } = vi.hoisted(() => ({
   importNewHealthConnectWorkoutsMock: vi.fn(),
   resetHealthConnectScanWindowMock: vi.fn(),
+  waitForInFlightHealthConnectImportMock: vi.fn().mockResolvedValue(undefined),
+  refreshCardioDerivedStoresMock: vi.fn(),
   readSyncLogMock: vi.fn(),
   clearSyncLogMock: vi.fn(),
   getMeMock: vi.fn(),
@@ -19,6 +23,10 @@ const {
 vi.mock("~client/health/healthConnect", () => ({
   importNewHealthConnectWorkouts: importNewHealthConnectWorkoutsMock,
   resetHealthConnectScanWindow: resetHealthConnectScanWindowMock,
+  waitForInFlightHealthConnectImport: waitForInFlightHealthConnectImportMock,
+}));
+vi.mock("~client/composables/useCardioDerivedStores", () => ({
+  refreshCardioDerivedStores: refreshCardioDerivedStoresMock,
 }));
 vi.mock("~client/lib/syncLog", () => ({
   readSyncLog: readSyncLogMock,
@@ -60,6 +68,49 @@ describe("DiagnosticsPage — rescan", () => {
     expect(importNewHealthConnectWorkoutsMock).toHaveBeenCalledWith("manual");
     expect(readSyncLogMock).toHaveBeenCalledTimes(2);
     expect(wrapper.text()).toContain("1 importiert");
+  });
+
+  it("refreshes XP/streak/rank stores when the rescan actually imports something", async () => {
+    importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 2, skipped: 0, failed: 0, workouts: [] });
+    const wrapper = mountWithProviders(DiagnosticsPage);
+    await flushPromises();
+
+    await wrapper.find("button.btn-secondary").trigger("click");
+    await flushPromises();
+
+    expect(refreshCardioDerivedStoresMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not refresh those stores when nothing was imported", async () => {
+    importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 0, skipped: 1, failed: 0, workouts: [] });
+    const wrapper = mountWithProviders(DiagnosticsPage);
+    await flushPromises();
+
+    await wrapper.find("button.btn-secondary").trigger("click");
+    await flushPromises();
+
+    expect(refreshCardioDerivedStoresMock).not.toHaveBeenCalled();
+  });
+
+  it("waits out an already in-flight import before resetting the scan window, so it can't consume the widened window", async () => {
+    const callOrder: string[] = [];
+    waitForInFlightHealthConnectImportMock.mockImplementation(async () => {
+      callOrder.push("wait");
+    });
+    resetHealthConnectScanWindowMock.mockImplementation(() => {
+      callOrder.push("reset");
+    });
+    importNewHealthConnectWorkoutsMock.mockImplementation(async () => {
+      callOrder.push("import");
+      return { imported: 0, skipped: 0, failed: 0, workouts: [] };
+    });
+    const wrapper = mountWithProviders(DiagnosticsPage);
+    await flushPromises();
+
+    await wrapper.find("button.btn-secondary").trigger("click");
+    await flushPromises();
+
+    expect(callOrder).toEqual(["wait", "reset", "import"]);
   });
 });
 
