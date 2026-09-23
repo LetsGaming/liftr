@@ -649,7 +649,13 @@ const forceActiveTo = computed(() => {
      --bottom-chrome-h, both independent of this element's own background — so the translucent
      fill below never leaves content unreachable underneath it. Text sitting on the sweep behind
      this always-visible translucent bar was checked for legibility in both themes and reads
-     clearly, so it stays translucent rather than opaque. */
+     clearly, so it stays translucent rather than opaque.
+
+     z-index: 7, above BasePage.vue's own `.ion-page { z-index: 6 }` (see its comment) — a
+     routed page's IonContent scroll container spatially spans this tab bar's whole band too
+     (not just the header's), so once a BasePage route needs to clear .top-hud (z-index: 5, just
+     below) for its own header controls, this needs to stay above THAT page too, not just above
+     .top-hud, or taps here would hit the page's scroll container instead of a tab RouterLink. */
   .bottom-chrome {
     display: flex;
     flex-direction: column;
@@ -657,7 +663,7 @@ const forceActiveTo = computed(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1;
+    z-index: 7;
     background: var(--surface-hybrid-bg);
     backdrop-filter: blur(var(--surface-hybrid-blur));
     -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));

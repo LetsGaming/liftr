@@ -61,16 +61,28 @@ function goBack() {
 </template>
 
 <style scoped>
-/* Ionic's own IonPage CSS sets `z-index: 0` (with `position: absolute`) on `.ion-page` — a
-   non-auto z-index on a positioned element creates a stacking context, so every routed page is
-   already its own isolated stacking context at level 0, sealed off from its own descendants'
-   z-index values. App.vue's mobile-only .top-hud (level ring/streak chip) is a `position: fixed`
-   overlay at z-index: 5 in the *same* parent stacking context .ion-page itself sits in — so a
-   z-index on the header alone (still trapped inside .ion-page's z:0 context) could never win
-   against it; only raising .ion-page's own level does. Content never actually collides with
-   .top-hud's band regardless (the header reserves that space in normal flow, IonContent starts
-   below it), so this only changes which one paints in front where they already overlap: the
-   header's real controls (backButton, header-actions). */
+/* Ionic's own IonPage CSS forces `.ion-page` into its own stacking context two ways at once:
+   `position: absolute` + `z-index: 0`, AND `contain: layout size style` — the latter alone
+   already creates a stacking context regardless of z-index (per spec, `contain: layout`/
+   `content`/`paint`/`strict` isolates an element the same way `isolation: isolate` does). That
+   second one matters: it means a descendant's z-index (e.g. giving `.base-page-header` its own
+   z-index, or even overriding `.ion-page`'s own z-index to `auto` to try to remove *that*
+   stacking context) can never let the header escape and out-rank a sibling of `.ion-page` — the
+   `contain` alone keeps it sealed in regardless. Confirmed by testing exactly that: with
+   `.ion-page { z-index: auto }` and the header elevated instead, `elementFromPoint` at the back
+   button's own coordinates still hit App.vue's mobile-only .top-hud (level-ring/streak chip,
+   `position: fixed`, `z-index: 5`) sitting in front of it, not the button.
+
+   So the only place this can be fixed is by moving `.ion-page`'s own (necessarily whole-page)
+   stacking level *and* keeping every other fixed overlay it needs to stay under, under it too.
+   `.ion-page` here is raised to 6, clearing .top-hud (5) so the header's real controls
+   (backButton, header-actions) become reachable — but .top-hud isn't the only fixed overlay in
+   that same .app-shell-level context: App.vue's mobile tab bar (.bottom-chrome) is also a
+   sibling, at z-index: 1. Since .ion-page's whole subtree (including IonContent's full-height
+   scroll container, which spatially spans the tab bar's band too, not just the header's) now
+   sits at 6, it would also clear bottom-chrome's 1, breaking tab-bar tap-through — so
+   .bottom-chrome's own z-index is bumped in App.vue (see its comment there) to stay above
+   whatever `.ion-page` is set to here, keeping the tab bar itself in front regardless. */
 .ion-page {
   z-index: 6;
 }
