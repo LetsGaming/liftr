@@ -7,8 +7,8 @@
  */
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
-import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
 import FinishSequence from "../components/workout/FinishSequence.vue";
 import AppIcon from "../components/ui/AppIcon.vue";
@@ -49,6 +49,7 @@ import { useRoutineStore } from "../stores/routineStore";
 import { useStreakStore } from "../stores/streakStore";
 import { useXpStore } from "../stores/xpStore";
 
+const router = useRouter();
 const catalog = useCatalogStore();
 const store = useActiveWorkoutStore();
 const routineStore = useRoutineStore();
@@ -193,10 +194,9 @@ const { showAddExercise, addExerciseSearch, addExerciseCandidates, addExerciseTo
 
 const { xpChip, trigger: triggerXpChip } = useXpChip();
 
-const infoExerciseId = ref<string | null>(null);
-const infoExercise = computed(() => (infoExerciseId.value ? catalog.byId(infoExerciseId.value) : undefined));
 function openInfo(exerciseId: string) {
-  infoExerciseId.value = exerciseId;
+  const exercise = catalog.byId(exerciseId);
+  if (exercise) void router.push(`/exercises/${exercise.slug}`);
 }
 
 /** "Satzart auswählen" — which set's picker is open. */
@@ -664,8 +664,6 @@ const WORKOUT_RUNS_TABS = [
         <button class="btn-primary btn-lg" @click="finishWorkout">Workout beenden</button>
       </div>
     </div>
-
-    <ExerciseInfoPanel v-if="infoExercise" :exercise="infoExercise" @close="infoExerciseId = null" />
 
     <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
       <ExerciseRail @jump="showExerciseOverview = false" />

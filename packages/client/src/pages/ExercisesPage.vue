@@ -1,24 +1,23 @@
 <script setup lang="ts">
 /**
  * Übungen — the exercise library, browsable any time. Every exercise's demo photos, how-to
- * text, and muscle figure already exist in ExerciseInfoPanel.vue, otherwise only reachable from
- * inside an active workout on that workout's current exercise (WorkoutPage.vue's ⓘ button). This
- * page opens the same panel standalone via the shared ExerciseList.vue in "browse" mode (the
- * routine wizard's picker step reuses the same list in "select" mode — one filterable/searchable
- * implementation, not two).
+ * text, and muscle figure live at the routed `/exercises/:slug` detail page (ExerciseDetailPage.vue),
+ * otherwise only reachable from inside an active workout on that workout's current exercise
+ * (WorkoutPage.vue's ⓘ button). This page opens that route via the shared ExerciseList.vue in
+ * "browse" mode (the routine wizard's picker step reuses the same list in "select" mode — one
+ * filterable/searchable implementation, not two).
  */
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import AddCustomExerciseForm from "../components/exercise/AddCustomExerciseForm.vue";
-import ExerciseInfoPanel from "../components/exercise/ExerciseInfoPanel.vue";
 import ExerciseList from "../components/exercise/ExerciseList.vue";
 import BasePage from "../components/ui/BasePage.vue";
 import SheetModal from "../components/ui/SheetModal.vue";
-import { useCatalogStore, type CatalogExercise } from "../stores/catalogStore";
+import { useCatalogStore } from "../stores/catalogStore";
 
+const router = useRouter();
 const catalog = useCatalogStore();
 onMounted(() => catalog.load());
-
-const openExercise = ref<CatalogExercise | null>(null);
 
 // Add-custom-exercise sheet: the form's created/cancel actions call dismiss() via this ref
 // rather than flipping `showAddForm` directly, so only SheetModal's own @close (fired after
@@ -35,11 +34,9 @@ function onExerciseCreated() {
 <template>
   <BasePage title="Übungen">
     <div class="ex-page">
-      <ExerciseList mode="browse" @open="openExercise = $event" />
+      <ExerciseList mode="browse" @open="router.push(`/exercises/${$event.slug}`)" />
       <button class="add-custom-btn surface-hybrid" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
     </div>
-
-    <ExerciseInfoPanel v-if="openExercise" :exercise="openExercise" @close="openExercise = null" />
 
     <SheetModal v-if="showAddForm" ref="addFormSheetRef" title="Eigene Übung hinzufügen" @close="showAddForm = false">
       <AddCustomExerciseForm @created="onExerciseCreated" @cancel="addFormSheetRef?.dismiss()" />

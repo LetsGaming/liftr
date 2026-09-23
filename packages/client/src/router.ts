@@ -54,6 +54,17 @@ export const router = createRouter({
       },
     },
     { path: "/exercises", name: "exercises", component: () => import("./pages/ExercisesPage.vue") },
+    {
+      path: "/exercises/:slug",
+      name: "exercise-detail",
+      component: () => import("./pages/ExerciseDetailPage.vue"),
+      meta: { title: "Übung" },
+      // Same eager-prefetch pattern as /records above — catalogStore.load() is cheap to call
+      // again (always re-fetches), so get it in flight while the chunk resolves.
+      beforeEnter: () => {
+        void import("./stores/catalogStore").then(({ useCatalogStore }) => useCatalogStore().load());
+      },
+    },
     { path: "/runs", name: "runs", component: () => import("./pages/RunsPage.vue") },
     { path: "/profile", name: "profile", component: () => import("./pages/ProfilePage.vue") },
     {

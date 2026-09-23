@@ -1,7 +1,11 @@
+import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
+import { createMemoryHistory, createRouter } from "vue-router";
 import RankProgress from "~client/components/rank/RankProgress.vue";
 import RankLifterSection from "~client/components/rank/RankLifterSection.vue";
+import { i18n } from "~client/i18n";
 import { TIER_LABEL_DE } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
@@ -24,10 +28,10 @@ vi.mock("~client/stores/ranksStore", () => ({ useRanksStore: () => ranksState })
 vi.mock("~client/stores/overallRankStore", () => ({ useOverallRankStore: () => overallRankState }));
 vi.mock("~client/stores/catalogStore", () => ({ useCatalogStore: () => catalogState }));
 
-// RankDistributionDonut/RankUpCalendar/ExerciseInfoPanel are self-fetching feature components
-// (own store/service reads) already covered at their own layer — stubbed so this test only
-// asserts *whether* they render, not their internals.
-const STUBS = { RankDistributionDonut: true, RankUpCalendar: true, ExerciseInfoPanel: true };
+// RankDistributionDonut/RankUpCalendar are self-fetching feature components (own store/service
+// reads) already covered at their own layer — stubbed so this test only asserts *whether* they
+// render, not their internals.
+const STUBS = { RankDistributionDonut: true, RankUpCalendar: true };
 
 // Real 9-tier ids (@liftr/shared's TIERS), not the pre-migration "bronze/silver/gold" names —
 // TierBadge's emblem geometry now indexes TIER_PALETTE by this string directly and throws on an
@@ -168,16 +172,24 @@ describe("RankLifterSection", () => {
     expect(back.props("secondaryMuscles")).toEqual(["triceps"]);
   });
 
-  it("opens the exercise's info panel from the flipped card's 'Rang-Statistiken' button", async () => {
+  it("navigates to the exercise's detail route from the flipped card's 'Rang-Statistiken' button", async () => {
     Object.assign(ranksState, { loaded: true, error: false, ranks: [makeRank()] });
     catalogState.byId.mockReturnValue({ id: "ex1", slug: "bench-press", muscles: [] });
-    const wrapper = mountWithProviders(RankLifterSection, { global: { stubs: STUBS } });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/ranks", name: "ranks", component: RankLifterSection },
+        { path: "/exercises/:slug", name: "exercise-detail", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/ranks");
+    await router.isReady();
+    const wrapper = mount(RankLifterSection, { global: { plugins: [createPinia(), i18n, router], stubs: STUBS } });
 
     await wrapper.find(".flip-face-front").trigger("click");
-    expect(wrapper.findComponent({ name: "ExerciseInfoPanel" }).exists()).toBe(false);
-
     await wrapper.find(".card button").trigger("click"); // "Rang-Statistiken", the back's first button
-    expect(wrapper.findComponent({ name: "ExerciseInfoPanel" }).exists()).toBe(true);
+
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe("/exercises/bench-press"));
   });
 
   describe("tier filter", () => {

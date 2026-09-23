@@ -16,6 +16,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 ### Changed
 
 - The "check last N days" Health Connect rescan on the Diagnose page now re-syncs immediately instead of only resetting the scan window.
+- Exercise details are now their own page: the back button and browser/phone back both work as expected, and the view can be linked to directly.
 
 ### Fixed
 

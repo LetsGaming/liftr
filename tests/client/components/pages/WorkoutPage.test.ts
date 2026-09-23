@@ -1,5 +1,8 @@
+import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive, ref } from "vue";
+import { createMemoryHistory, createRouter } from "vue-router";
 import ExerciseRail from "~client/components/exercise/ExerciseRail.vue";
 import FinishSequence from "~client/components/workout/FinishSequence.vue";
 import RestTimer from "~client/components/workout/RestTimer.vue";
@@ -7,6 +10,7 @@ import SetEntry from "~client/components/workout/SetEntry.vue";
 import SheetModal from "~client/components/ui/SheetModal.vue";
 import RankProgress from "~client/components/rank/RankProgress.vue";
 import RoutineList from "~client/components/routine/RoutineList.vue";
+import { i18n } from "~client/i18n";
 import WorkoutPage from "~client/pages/WorkoutPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
@@ -125,7 +129,6 @@ const STUBS = {
   SetEntry: true,
   RestTimer: true,
   ExerciseRail: true,
-  ExerciseInfoPanel: true,
   SheetModal: true,
   SetKindPicker: true,
   RpeCapture: true,
@@ -337,6 +340,26 @@ describe("WorkoutPage", () => {
     expect(rank.exists()).toBe(true);
     expect(rank.props("tier")).toBe("advanced");
     expect(rank.props("lp")).toBe(55);
+  });
+
+  it("navigates to the exercise detail route from the ⓘ button", async () => {
+    store.isActive = true;
+    store.currentExercise = makeExercise({ exerciseId: "ex1" });
+    catalogState.byId = () => ({ id: "ex1", slug: "bench-press" }) as never;
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/workout", name: "workout", component: WorkoutPage },
+        { path: "/exercises/:slug", name: "exercise-detail", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/workout");
+    await router.isReady();
+    const wrapper = mount(WorkoutPage, { global: { plugins: [createPinia(), i18n, router], stubs: STUBS } });
+
+    await wrapper.find('[aria-label="Übungsinfo"]').trigger("click");
+
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe("/exercises/bench-press"));
   });
 
   it("opens the full exercise-jump sheet from the overview affordance", async () => {
