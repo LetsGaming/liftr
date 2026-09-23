@@ -6,6 +6,11 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Fixed
+
+- The backup download on the profile page now hands off to the native share sheet (or a real "Save As" dialog on desktop) instead of clicking a plain download link, which could silently fail to save the file from the app's in-app browser.
+- The app-update download link (Android) now opens the device's actual default browser instead of an in-app browser tab, which could have trouble downloading and installing the APK.
+
 ## [1.7.1] - 2026-09-23
 
 ### Fixed

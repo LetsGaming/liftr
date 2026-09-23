@@ -1,14 +1,15 @@
+// @vitest-environment jsdom
 // useAppUpdate.ts keeps its state as module-level singletons (App.vue's launch check and
 // ProfilePage.vue's own display/recheck share one result — see the file's header comment), so
 // every test here resets modules and re-imports fresh, same convention as useToast.test.ts.
+// jsdom (not this project's default node environment for composables) because openDownload()
+// now navigates window.location directly rather than calling out to @capacitor/browser.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getInfoMock, browserOpenMock } = vi.hoisted(() => ({
+const { getInfoMock } = vi.hoisted(() => ({
   getInfoMock: vi.fn(),
-  browserOpenMock: vi.fn(),
 }));
 vi.mock("@capacitor/app", () => ({ App: { getInfo: getInfoMock } }));
-vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpenMock } }));
 
 function fakeRelease(tagName: string, apkUrl: string | null): Response {
   const assets = apkUrl ? [{ name: "liftr.apk", browser_download_url: apkUrl }] : [];
@@ -18,7 +19,6 @@ function fakeRelease(tagName: string, apkUrl: string | null): Response {
 beforeEach(() => {
   vi.resetModules();
   getInfoMock.mockReset().mockResolvedValue({ version: "1.0.0" });
-  browserOpenMock.mockReset();
 });
 
 afterEach(() => {
@@ -121,25 +121,29 @@ describe("useAppUpdate", () => {
     expect(second.latestVersion.value).toBe("1.2.0");
   });
 
-  it("openDownload opens downloadUrl in the system browser", async () => {
+  it("openDownload navigates the WebView itself to downloadUrl, not an in-app browser tab (Capacitor hands external-host navigation off to the system browser by default)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeRelease("v1.2.0", "https://example.com/liftr.apk")));
+    const location = { ...window.location, href: "" };
+    vi.stubGlobal("location", location);
     const { useAppUpdate } = await import("~client/composables/useAppUpdate");
     const { check, openDownload } = useAppUpdate();
     await check();
 
-    await openDownload();
+    openDownload();
 
-    expect(browserOpenMock).toHaveBeenCalledWith({ url: "https://example.com/liftr.apk" });
+    expect(location.href).toBe("https://example.com/liftr.apk");
   });
 
   it("openDownload does nothing when there's no download URL", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeRelease("v1.0.0", null)));
+    const location = { ...window.location, href: "" };
+    vi.stubGlobal("location", location);
     const { useAppUpdate } = await import("~client/composables/useAppUpdate");
     const { check, openDownload } = useAppUpdate();
     await check();
 
-    await openDownload();
+    openDownload();
 
-    expect(browserOpenMock).not.toHaveBeenCalled();
+    expect(location.href).toBe("");
   });
 });

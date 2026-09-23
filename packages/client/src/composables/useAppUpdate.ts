@@ -1,5 +1,4 @@
 import { App } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
 import { computed, ref } from "vue";
 import { isAndroid } from "../lib/platform";
 
@@ -54,9 +53,14 @@ const updateAvailable = computed(
  * involvement, since the server has no idea what APK version is installed on anyone's phone.
  * `check()` is meaningful on Android only (callers gate calling it on isAndroid() — App.vue,
  * ProfilePage.vue); web/iOS only ever read the pre-filled `currentVersion`, no update concept.
- * Downloading hands off to the system browser (Browser.open) rather than downloading+installing
- * in-app: Android's own download manager and "tap to install" notification already do this,
- * with no new permissions, FileProvider wiring, or native code needed on our side.
+ * Downloading hands off to the device's actual default browser rather than downloading+installing
+ * in-app: Android's own download manager and "tap to install" notification already do this, with
+ * no new permissions, FileProvider wiring, or native code needed on our side. A plain top-level
+ * navigation (not @capacitor/browser's Browser.open, which opens an in-app Chrome Custom Tab —
+ * itself just another embedded WebView, the exact thing we're trying to get the download out of)
+ * is what makes this work: Capacitor's own WebViewClient (Bridge.launchIntent) already fires an
+ * ACTION_VIEW intent for any top-level navigation to a host outside the app's own origin, handing
+ * it to the OS — which for a github.com release asset means the real system browser.
  */
 export function useAppUpdate() {
   async function check(): Promise<void> {
@@ -92,8 +96,8 @@ export function useAppUpdate() {
     }
   }
 
-  async function openDownload(): Promise<void> {
-    if (downloadUrl.value) await Browser.open({ url: downloadUrl.value });
+  function openDownload(): void {
+    if (downloadUrl.value) window.location.href = downloadUrl.value;
   }
 
   return { currentVersion, latestVersion, updateAvailable, downloadUrl, checking, error, lastChecked, check, openDownload };

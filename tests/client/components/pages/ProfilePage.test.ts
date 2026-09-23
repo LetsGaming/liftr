@@ -3,18 +3,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-const { isNativeMock, isAndroidMock, getInfoMock, browserOpenMock } = vi.hoisted(() => ({
+const { isNativeMock, isAndroidMock, getInfoMock, shareOrDownloadBlobMock } = vi.hoisted(() => ({
   isNativeMock: vi.fn().mockReturnValue(false),
   isAndroidMock: vi.fn().mockReturnValue(false),
   getInfoMock: vi.fn().mockResolvedValue({ version: "1.0.0" }),
-  browserOpenMock: vi.fn(),
+  shareOrDownloadBlobMock: vi.fn().mockResolvedValue(undefined),
 }));
+// useDataExport hands the fetched blob to shareOrDownloadBlob (native share sheet / save picker)
+// instead of clicking a plain `<a download>` itself — Capacitor's Android WebView is known to
+// silently drop blob: downloads triggered that way. Mocked here since shareCard.ts's own logic
+// already has dedicated tests (tests/client/lib/shareCard.test.ts).
+vi.mock("~client/lib/shareCard", () => ({ shareOrDownloadBlob: shareOrDownloadBlobMock }));
 vi.mock("~client/lib/platform", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~client/lib/platform")>();
   return { ...actual, isNative: isNativeMock, isAndroid: isAndroidMock };
 });
 vi.mock("@capacitor/app", () => ({ App: { getInfo: getInfoMock } }));
-vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpenMock } }));
 // useHealthConnectImport() runs isHealthConnectAvailable() unconditionally on every mount (its
 // result decides whether the Health Connect card even renders) — unmocked, Health.isHealthAvailable
 // throws "not implemented on web" under jsdom, same as any other native-only Capacitor plugin.
@@ -170,6 +174,21 @@ describe("ProfilePage", () => {
     expect(wrapper.text()).toContain("Export fehlgeschlagen: 500");
   });
 
+  it("hands the fetched backup to shareOrDownloadBlob rather than clicking a plain <a download> itself", async () => {
+    const { fetchExportZip } = await import("~client/services/exportService");
+    const blob = new Blob(["zip-bytes"], { type: "application/zip" });
+    vi.mocked(fetchExportZip).mockResolvedValueOnce(blob);
+
+    const wrapper = mountWithProviders(ProfilePage);
+    const exportBtn = wrapper.findAll(".card--quiet button").find((b) => b.text().includes("Backup herunterladen"))!;
+
+    await exportBtn.trigger("click");
+    await flushAsync();
+
+    expect(shareOrDownloadBlobMock).toHaveBeenCalledOnce();
+    expect(shareOrDownloadBlobMock).toHaveBeenCalledWith(blob, expect.stringMatching(/^liftr-export-\d{4}-\d{2}-\d{2}\.zip$/), expect.any(String));
+  });
+
   it("shows the members section and lets the owner generate an invite code", async () => {
     vi.mocked(authService.createInvite).mockResolvedValue({ code: "ABCD2345", expiresAt: new Date().toISOString() });
 
@@ -277,6 +296,10 @@ describe("ProfilePage", () => {
         json: () => Promise.resolve({ tag_name: "v1.2.0", assets: [{ name: "liftr.apk", browser_download_url: "https://gh.example/liftr.apk" }] }),
       }),
     );
+    // openAppUpdateDownload navigates the WebView itself (not @capacitor/browser's in-app Custom
+    // Tab) so Capacitor's own external-host handoff takes over — see useAppUpdate.ts's comment.
+    const location = { ...window.location, href: "" };
+    vi.stubGlobal("location", location);
 
     const wrapper = mountWithProviders(ProfilePage);
     await flushPromises();
@@ -286,7 +309,7 @@ describe("ProfilePage", () => {
     expect(section.text()).toContain("Update verfügbar: v1.2.0");
 
     await section.findAll("button").find((b) => b.text() === "Herunterladen")!.trigger("click");
-    expect(browserOpenMock).toHaveBeenCalledWith({ url: "https://gh.example/liftr.apk" });
+    expect(location.href).toBe("https://gh.example/liftr.apk");
   });
 
   it("re-checks for an update on demand", async () => {

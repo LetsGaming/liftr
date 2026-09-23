@@ -776,9 +776,10 @@ export async function shareOrDownloadBlob(blob: Blob, filename: string, shareTit
   const showSaveFilePicker = (window as WindowWithSavePicker).showSaveFilePicker;
   if (showSaveFilePicker) {
     try {
+      const ext = filename.includes(".") ? filename.slice(filename.lastIndexOf(".")) : "";
       const handle = await showSaveFilePicker({
         suggestedName: filename,
-        types: [{ description: "PNG-Bild", accept: { "image/png": [".png"] } }],
+        types: [{ description: filename, accept: { [blob.type || "application/octet-stream"]: [ext] } }],
       });
       const writable = await handle.createWritable();
       await writable.write(blob);
