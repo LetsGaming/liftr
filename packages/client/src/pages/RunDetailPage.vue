@@ -14,7 +14,7 @@ import { useRunsStore, type RunDetail as RunDetailModel } from "../stores/runsSt
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 import { useRunRankStore } from "../stores/runRankStore";
 import { getPlannedRouteDetail, type Waypoint } from "../services/plannedRouteService";
-import { formatDateLong, formatDurationMinutes, formatPace } from "../lib/format";
+import { formatDateLong, formatDistanceKm, formatDurationMinutes, formatPace } from "../lib/format";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
@@ -154,7 +154,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
       </Chip>
       <Chip v-if="detailIsPr" size="sm" class="route-chip pr-chip pop-in">Neuer Rekord</Chip>
       <div class="stat-row">
-        <StatTile :value="`${(detail.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
+        <StatTile :value="formatDistanceKm(detail.distanceM)" label="Distanz" />
         <StatTile :value="formatDurationMinutes(detail.durationS)" label="Dauer" />
         <StatTile :value="formatPace(detail.avgPaceSPerKm)" label="Pace ø" />
         <StatTile :value="detail.avgHr != null ? Math.round(detail.avgHr) + ' bpm' : '–'" label="Puls ø" />

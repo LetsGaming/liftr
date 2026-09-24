@@ -30,6 +30,7 @@ import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
+import { formatDistanceKm } from "../lib/format";
 import { LP_EXPLAINER } from "../copy/rankCopy";
 import { ACTIVITY_LABEL } from "../copy/runCopy";
 import { useExerciseName } from "../composables/useExerciseName";
@@ -146,8 +147,7 @@ function volumeLabel(item: { kind: string; meta: Record<string, unknown> }) {
 }
 function runLabel(item: { kind: string; meta: Record<string, unknown> }) {
   if (item.kind !== "run") return "";
-  const km = (item.meta.distanceM as number | undefined) ?? 0;
-  return `${(km / 1000).toFixed(2)} km`;
+  return formatDistanceKm((item.meta.distanceM as number | undefined) ?? 0);
 }
 
 /** AppIcon has no dedicated walk/hike glyph yet, so every cardio row (run/walk/hike) shares the

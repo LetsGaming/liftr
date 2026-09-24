@@ -13,7 +13,7 @@
  */
 import type { SetKind } from "@liftr/shared";
 import { computed, reactive, ref, watch } from "vue";
-import BaseHeader from "../patterns/BaseHeader.vue";
+import WizardHeader from "../patterns/WizardHeader.vue";
 import SheetModal from "../patterns/SheetModal.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useToast } from "../../composables/useToast";
@@ -23,7 +23,8 @@ import { useRoutineStore, type Routine, type RoutineExerciseInput, type SetTarge
 import ArrangeStep from "./ArrangeStep.vue";
 import FastPathStep from "./FastPathStep.vue";
 import PathChooser from "./PathChooser.vue";
-import PickStep from "./PickStep.vue";
+import PickStepManual from "./PickStepManual.vue";
+import PickStepMuscles from "./PickStepMuscles.vue";
 import ReviewStep from "./ReviewStep.vue";
 
 const props = defineProps<{ routine?: Routine | null }>();
@@ -48,13 +49,12 @@ export interface DraftExercise {
 
 const name = ref("");
 const selected = reactive(new Map<string, DraftExercise>());
-/** "choose" only ever appears in create mode, before any exercise is picked — see hydrateFrom. */
-const step = ref<"choose" | "pick" | "arrange" | "review">("pick");
+/** "choose" only ever appears in create mode, before any exercise is picked — see hydrateFrom.
+ *  "pick-manual"/"pick-muscles" replace a single "pick" + a separate pickMode ref: PathChooser's
+ *  step-0 choice (or goToPick's re-entry) picks the step directly now. */
+const step = ref<"choose" | "pick-manual" | "pick-muscles" | "arrange" | "review">("pick-manual");
 const saving = ref(false);
 const suggesting = ref(false);
-/** Which PickStep sub-screen to show once "pick" is reached — set by PathChooser's step-0
- *  choice, or forced to "manual" whenever Pick is re-entered mid-build (see goToPick). */
-const pickMode = ref<"manual" | "muscles">("manual");
 /** Set by FastPathStep's "Alle Details anpassen" escape hatch — once a user asks for the full
  *  flow, respect that for the rest of this create/edit session even if the routine still looks
  *  simple, rather than snapping back to the condensed screen mid-edit. */
@@ -107,7 +107,6 @@ function hydrateFrom(routine: Routine | null | undefined) {
   // starts this bookkeeping fresh rather than mixing it with a prior create-session's state.
   for (const key of Object.keys(suggestionMeta)) delete suggestionMeta[key];
   requestedMuscleSlugs.value = [];
-  pickMode.value = "manual";
   fastPathOverride.value = false;
   if (!routine) {
     name.value = "";
@@ -332,10 +331,12 @@ const isFastPathEligible = computed(() => {
 });
 const showFastPath = computed(() => isFastPathEligible.value && !fastPathOverride.value);
 
-/** BaseHeader's step indicator. "choose" and "pick" share one "1 Wählen" slot (PathChooser is
- *  just the entry into picking) — lost when the header markup was extracted into BaseHeader.vue
- *  without carrying this over; restored here rather than in BaseHeader itself, since the
- *  "two states, one slot" collapse and the fast-path-dependent label/count are wizard-specific. */
+/** WizardHeader's step indicator. "choose", "pick-manual" and "pick-muscles" all share one
+ *  "1 Wählen" slot (PathChooser is just the entry into picking, and the two Pick screens are the
+ *  same step of the wizard from the user's point of view) — lost when the header markup was
+ *  first extracted into its own component without carrying this over; restored here rather than
+ *  in WizardHeader itself, since the "three states, one slot" collapse and the fast-path-dependent
+ *  label/count are wizard-specific. */
 const wizardSteps = computed(() => {
   const steps = [
     { key: "pick", label: "1 Wählen" },
@@ -344,7 +345,7 @@ const wizardSteps = computed(() => {
   if (!showFastPath.value) steps.push({ key: "review", label: "3 Fertig" });
   return steps;
 });
-const activeStepKey = computed(() => (step.value === "choose" ? "pick" : step.value));
+const activeStepKey = computed(() => (step.value === "arrange" || step.value === "review" ? step.value : "pick"));
 
 const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
@@ -398,17 +399,15 @@ function requestClose() {
   closeConfirm.trigger();
 }
 
-/** PathChooser's step-0 choice — the only place `pickMode` is set to "muscles". */
+/** PathChooser's step-0 choice. */
 function choosePath(mode: "manual" | "muscles") {
-  pickMode.value = mode;
-  step.value = "pick";
+  step.value = mode === "muscles" ? "pick-muscles" : "pick-manual";
 }
 /** Re-entry into Pick mid-build (ArrangeStep's/FastPathStep's "+ Übung hinzufügen") always means
  *  "add one more exercise by hand" — never a re-run of the muscle-group suggester, so this skips
  *  PathChooser entirely rather than asking the question again. */
 function goToPick() {
-  pickMode.value = "manual";
-  step.value = "pick";
+  step.value = "pick-manual";
 }
 function goToArrange() {
   step.value = "arrange";
@@ -424,9 +423,8 @@ function useFullArrange() {
 <template>
   <SheetModal ref="sheetRef" :sheet="false" background="var(--bg)" @close="emit('created')">
     <template #header>
-      <BaseHeader
+      <WizardHeader
         v-model:title="name"
-        variant="wizard"
         :title-placeholder="'Name der Routine'"
         :is-confirming-close="closeConfirm.isArmed()"
         :steps="wizardSteps"
@@ -436,13 +434,15 @@ function useFullArrange() {
     </template>
 
     <PathChooser v-if="step === 'choose'" @choose="choosePath" />
-    <PickStep
-      v-else-if="step === 'pick'"
+    <PickStepManual
+      v-else-if="step === 'pick-manual'"
       :selected-ids="selectedIds"
-      :suggesting="suggesting"
-      :mode="pickMode"
       @toggle="toggleSelect"
       @continue="goToArrange"
+    />
+    <PickStepMuscles
+      v-else-if="step === 'pick-muscles'"
+      :suggesting="suggesting"
       @suggest="applySuggestions"
     />
     <FastPathStep

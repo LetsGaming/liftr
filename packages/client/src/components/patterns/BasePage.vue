@@ -25,11 +25,11 @@
  * `env(safe-area-inset-top)` itself resolves back to 0, making this rule a no-op there. It only
  * does real work on iOS/web, where no such margin exists and the WebView still draws under the
  * notch. The same reasoning already applies to every modal duplicating this exact rule
- * (SheetModal.vue, BaseHeader.vue, etc.) without a reported double-inset issue.
+ * (SheetModal.vue, WizardHeader.vue, etc.) without a reported double-inset issue.
  */
 import { IonContent, IonPage } from "@ionic/vue";
 import { useRouter } from "vue-router";
-import BaseHeader from "./BaseHeader.vue";
+import PageHeader from "./PageHeader.vue";
 
 withDefaults(
   defineProps<{
@@ -53,9 +53,9 @@ function goBack() {
 
 <template>
   <IonPage :class="{ 'base-page-drawer': variant === 'drawer' }">
-    <BaseHeader :title="title" :back-button="backButton" @back-button-click="goBack">
+    <PageHeader :title="title" :back-button="backButton" @back-button-click="goBack">
       <template #header-actions><slot name="header-actions" /></template>
-    </BaseHeader>
+    </PageHeader>
     <div v-if="$slots.subheader" class="base-page-subheader">
       <slot name="subheader" />
     </div>

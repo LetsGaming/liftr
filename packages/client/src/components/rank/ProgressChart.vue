@@ -8,6 +8,7 @@
  */
 import { computed } from "vue";
 import { estimateE1rm } from "@liftr/shared";
+import { useSparklinePoints } from "../../composables/useSparklinePoints";
 import EmptyNote from "../base/EmptyNote.vue";
 
 interface HistorySet {
@@ -40,21 +41,10 @@ const W = 280;
 const H = 64;
 const PAD = 4;
 
-const points = computed(() => {
-  const s = series.value;
-  if (s.length === 0) return "";
-  const min = Math.min(...s.map((d) => d.value));
-  const max = Math.max(...s.map((d) => d.value));
-  const span = max - min || 1;
-  const stepX = s.length > 1 ? (W - PAD * 2) / (s.length - 1) : 0;
-  return s
-    .map((d, i) => {
-      const x = PAD + i * stepX;
-      const y = H - PAD - ((d.value - min) / span) * (H - PAD * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-});
+const { points } = useSparklinePoints(
+  computed(() => series.value.map((d) => d.value)),
+  { width: W, height: H, pad: PAD },
+);
 
 const latest = computed(() => series.value[series.value.length - 1]?.value ?? null);
 const trendUp = computed(() => {

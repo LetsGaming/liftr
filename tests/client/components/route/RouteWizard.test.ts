@@ -15,7 +15,7 @@
 //
 // Selectors below (input.base-header-name-input, .loop-toggle input, button.btn-primary) were confirmed
 // against the real template as this task's first step — see the task's own note if they ever
-// drift from the component again. input.base-header-name-input lives in the nested BaseHeader.vue (rendered
+// drift from the component again. input.base-header-name-input lives in the nested WizardHeader.vue (rendered
 // into SheetModal's #header slot, which the stub below forwards unstubbed), not in RouteWizard.vue
 // itself.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

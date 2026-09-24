@@ -70,8 +70,8 @@ const tagAttrs = computed(() => {
 .list-row-chevron {
   flex: none;
   color: var(--faint);
-  /* AppIcon only ships a left-pointing chevron path (see BaseHeader.vue/CollapsibleCard.vue's
-     identical rotation for the same reason) — rotated to read as a right-pointing disclosure. */
+  /* AppIcon only ships a left-pointing chevron path (see CollapsibleCard.vue's identical
+     rotation for the same reason) — rotated to read as a right-pointing disclosure. */
   transform: rotate(180deg);
 }
 </style>

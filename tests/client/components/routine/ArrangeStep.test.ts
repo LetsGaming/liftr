@@ -1,7 +1,7 @@
 // ArrangeStep.vue renders one card per selected exercise with real ExerciseRow/NumberStepper/
 // AppIcon children (no store/service boundary crossed rendering those) plus useCatalogStore /
 // useExerciseName / useDragReorder. catalogStore is seeded via a Pinia built and passed in
-// directly (see PickStep.test.ts's header comment for why). useDragReorder's actual drag gesture
+// directly (see PickStepManual.test.ts's header comment for why). useDragReorder's actual drag gesture
 // is driven by native PointerEvent (pointerdown/pointermove/pointerup + setPointerCapture) which
 // this repo's jsdom (25.x) doesn't implement at all — dispatching synthetic pointer events would
 // either no-op or throw on the missing setPointerCapture call, so the drag-to-reorder gesture
