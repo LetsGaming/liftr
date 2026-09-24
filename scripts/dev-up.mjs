@@ -222,7 +222,7 @@ async function main() {
   log("ready.");
   console.log(`  Dashboard:  http://localhost:${vitePort}`);
   console.log(`  Backend:    http://localhost:${backendPort}`);
-  console.log(`  Auth:       seeded owner has no password set — you'll land on the first-run setup screen`);
+  console.log(`  Auth:       owner / liftr-dev-session (see scripts/seed-mock-data.ts's DEV_OWNER_PASSWORD)`);
   console.log(`  Logs:       ${logDir}`);
   console.log(`  When done:  node scripts/dev-down.mjs --id ${id}`);
   // Deliberately no process.exit(0) here: both children are already detached + unref'd, so the

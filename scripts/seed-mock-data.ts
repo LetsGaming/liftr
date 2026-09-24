@@ -42,6 +42,8 @@ import { ingestRunStandards } from "../packages/ingest/src/ingestRunStandards.js
 import { ensureCatalogImages } from "./lib/ensureCatalogImages.js";
 import { writeSeedCache } from "./lib/seedCache.mjs";
 
+import { setUserPassword } from "../packages/server/src/repositories/authRepository.js";
+import { hashPassword } from "../packages/server/src/lib/passwords.js";
 import { writeJsonSetting } from "../packages/server/src/repositories/settingsRepository.js";
 import { upsertBodyweightLog } from "../packages/server/src/repositories/bodyweightRepository.js";
 import { insertCustomExercise } from "../packages/server/src/repositories/exerciseRepository.js";
@@ -74,6 +76,10 @@ if (!DB_PATH) throw new Error("LIFTR_DB_PATH must be set — run this via script
 
 const USER_ID = OWNER_USER_ID;
 const BODYWEIGHT_KG = 82;
+// Not a secret — every dev-up.mjs session's DB is disposable and local-only. Clears the
+// setup screen's common-password check (see routes/auth.ts's passwordSchema) so every session
+// lands straight on seeded content instead of the first-run setup screen.
+export const DEV_OWNER_PASSWORD = "liftr-dev-session";
 
 function daysAgo(n: number, hour = 18, minute = 0): Date {
   const d = new Date();
@@ -766,6 +772,9 @@ async function main() {
 
   console.log("[seed] cardio history (walk/hike/other)...");
   await seedCardioHistory(db);
+
+  console.log("[seed] owner password...");
+  await setUserPassword(db, USER_ID, await hashPassword(DEV_OWNER_PASSWORD));
 
   console.log("[seed] done.");
 
