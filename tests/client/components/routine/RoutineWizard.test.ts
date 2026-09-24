@@ -1,11 +1,11 @@
 // RoutineWizard.vue is the orchestrator: it owns the whole draft (`selected`), decides which step
-// renders, and wires each step's emits back into that state. Its five step children (PathChooser/
-// PickStep/FastPathStep/ArrangeStep/ReviewStep) each have their own full rendering/emit-logic test
-// file already — testing THIS component's own logic again through their real markup would just
-// re-test them. So every step child (plus SheetModal, whose real shell wraps @ionic/vue's
-// IonModal — see tests/README.md's note on stubbing an Ionic-backed element rather than loading
-// the real Stencil runtime) is stubbed here with a minimal template exposing exactly the
-// prop/emit surface this component's own logic reads and reacts to.
+// renders, and wires each step's emits back into that state. Its six step children (PathChooser/
+// PickStepManual/PickStepMuscles/FastPathStep/ArrangeStep/ReviewStep) each have their own full
+// rendering/emit-logic test file already — testing THIS component's own logic again through their
+// real markup would just re-test them. So every step child (plus SheetModal, whose real shell
+// wraps @ionic/vue's IonModal — see tests/README.md's note on stubbing an Ionic-backed element
+// rather than loading the real Stencil runtime) is stubbed here with a minimal template exposing
+// exactly the prop/emit surface this component's own logic reads and reacts to.
 //
 // External boundaries mocked: routineStore (real create/update/suggest hit the network) and
 // routineService's recommendExercises (called directly by toggleSelect's fire-and-forget
@@ -55,12 +55,19 @@ const PathChooserStub = {
   </div>`,
 };
 
-const PickStepStub = {
-  props: ["selectedIds", "suggesting", "mode"],
-  emits: ["toggle", "continue", "suggest"],
-  template: `<div class="pickstep-stub" :data-mode="mode" :data-count="selectedIds.size" :data-suggesting="suggesting">
+const PickStepManualStub = {
+  props: ["selectedIds"],
+  emits: ["toggle", "continue"],
+  template: `<div class="pickstep-manual-stub" :data-count="selectedIds.size">
     <button class="toggle-ex1" @click="$emit('toggle', 'ex-1')">toggle</button>
     <button class="continue-btn" @click="$emit('continue')">continue</button>
+  </div>`,
+};
+
+const PickStepMusclesStub = {
+  props: ["suggesting"],
+  emits: ["suggest"],
+  template: `<div class="pickstep-muscles-stub" :data-suggesting="suggesting">
     <button class="suggest-btn" @click="$emit('suggest', ['chest'])">suggest</button>
   </div>`,
 };
@@ -117,7 +124,8 @@ function mountWizard(props: { routine?: Routine | null } = {}) {
       stubs: {
         SheetModal: SheetModalStub,
         PathChooser: PathChooserStub,
-        PickStep: PickStepStub,
+        PickStepManual: PickStepManualStub,
+        PickStepMuscles: PickStepMusclesStub,
         FastPathStep: FastPathStepStub,
         ArrangeStep: ArrangeStepStub,
         ReviewStep: ReviewStepStub,
@@ -179,14 +187,13 @@ describe("RoutineWizard — create mode navigation", () => {
     expect(wrapper.findAll(".base-header-steps span")[0]!.classes()).toContain("active");
   });
 
-  it("choosing manual routes to PickStep in manual mode", async () => {
+  it("choosing manual routes to PickStepManual", async () => {
     const wrapper = mountWizard();
 
     await wrapper.find(".choose-manual").trigger("click");
 
-    const pick = wrapper.find(".pickstep-stub");
-    expect(pick.exists()).toBe(true);
-    expect(pick.attributes("data-mode")).toBe("manual");
+    expect(wrapper.find(".pickstep-manual-stub").exists()).toBe(true);
+    expect(wrapper.find(".pickstep-muscles-stub").exists()).toBe(false);
   });
 
   it("toggling an exercise then continuing reaches the fast path for a small, untouched selection", async () => {
@@ -216,18 +223,21 @@ describe("RoutineWizard — create mode navigation", () => {
     expect(wrapper.findAll(".base-header-steps span")).toHaveLength(3);
   });
 
-  it("ArrangeStep's addExercise returns to PickStep forced back to manual mode", async () => {
+  it("ArrangeStep's addExercise returns to PickStepManual, even after entering via the muscle-guided path", async () => {
+    suggestMock.mockResolvedValue([
+      { exerciseId: "ex-9", slug: "squat", targetSets: [{ reps: 5, weightKg: 60 }, { reps: 5, weightKg: 60 }, { reps: 5, weightKg: 60 }] },
+    ]);
     const wrapper = mountWizard();
-    await wrapper.find(".choose-manual").trigger("click");
-    await wrapper.find(".toggle-ex1").trigger("click");
-    await wrapper.find(".continue-btn").trigger("click");
-    await wrapper.find(".customize-btn").trigger("click"); // -> full ArrangeStep
+    await wrapper.find(".choose-muscles").trigger("click");
+    await wrapper.find(".suggest-btn").trigger("click");
+    await flush();
+    await flush();
+    await wrapper.find(".customize-btn").trigger("click"); // -> full ArrangeStep, if the fast path caught it
 
     await wrapper.find(".arrangestep-stub .add-ex-btn").trigger("click");
 
-    const pick = wrapper.find(".pickstep-stub");
-    expect(pick.exists()).toBe(true);
-    expect(pick.attributes("data-mode")).toBe("manual");
+    expect(wrapper.find(".pickstep-manual-stub").exists()).toBe(true);
+    expect(wrapper.find(".pickstep-muscles-stub").exists()).toBe(false);
   });
 
   it("ArrangeStep's continue reaches ReviewStep with the current name/entries/totalSets", async () => {
@@ -275,25 +285,25 @@ describe("RoutineWizard — create mode navigation", () => {
 });
 
 describe("RoutineWizard — muscle-guided suggestion flow", () => {
-  it("emits suggest, applies the result to the draft, and advances past PickStep on a non-empty response", async () => {
+  it("emits suggest, applies the result to the draft, and advances past PickStepMuscles on a non-empty response", async () => {
     suggestMock.mockResolvedValue([
       { exerciseId: "ex-9", slug: "squat", targetSets: [{ reps: 5, weightKg: 60 }], matchedMuscleSlug: "chest" },
     ]);
     const wrapper = mountWizard();
     await wrapper.find(".choose-muscles").trigger("click");
-    expect(wrapper.find(".pickstep-stub").attributes("data-mode")).toBe("muscles");
+    expect(wrapper.find(".pickstep-muscles-stub").exists()).toBe(true);
 
     await wrapper.find(".suggest-btn").trigger("click");
     await flush();
     await flush();
 
     expect(suggestMock).toHaveBeenCalledWith(["chest"]);
-    expect(wrapper.find(".pickstep-stub").exists()).toBe(false);
+    expect(wrapper.find(".pickstep-muscles-stub").exists()).toBe(false);
     const stepStub = wrapper.find(".fastpath-stub").exists() ? wrapper.find(".fastpath-stub") : wrapper.find(".arrangestep-stub");
     expect(stepStub.attributes("data-count")).toBe("1");
   });
 
-  it("stays on PickStep when the suggestion comes back empty", async () => {
+  it("stays on PickStepMuscles when the suggestion comes back empty", async () => {
     suggestMock.mockResolvedValue([]);
     const wrapper = mountWizard();
     await wrapper.find(".choose-muscles").trigger("click");
@@ -301,7 +311,7 @@ describe("RoutineWizard — muscle-guided suggestion flow", () => {
     await wrapper.find(".suggest-btn").trigger("click");
     await flush();
 
-    expect(wrapper.find(".pickstep-stub").exists()).toBe(true);
+    expect(wrapper.find(".pickstep-muscles-stub").exists()).toBe(true);
   });
 
   it("passes suggesting=true down while the request is in flight, then clears it", async () => {
@@ -311,12 +321,12 @@ describe("RoutineWizard — muscle-guided suggestion flow", () => {
     await wrapper.find(".choose-muscles").trigger("click");
 
     await wrapper.find(".suggest-btn").trigger("click");
-    expect(wrapper.find(".pickstep-stub").attributes("data-suggesting")).toBe("true");
+    expect(wrapper.find(".pickstep-muscles-stub").attributes("data-suggesting")).toBe("true");
 
     resolveSuggest([]);
     await flush();
 
-    expect(wrapper.find(".pickstep-stub").attributes("data-suggesting")).toBe("false");
+    expect(wrapper.find(".pickstep-muscles-stub").attributes("data-suggesting")).toBe("false");
   });
 
   it("ignores a second suggest request while one is already in flight", async () => {
@@ -339,7 +349,8 @@ describe("RoutineWizard — edit mode", () => {
     const wrapper = mountWizard({ routine: makeRoutine() });
 
     expect(wrapper.find(".pathchooser-stub").exists()).toBe(false);
-    expect(wrapper.find(".pickstep-stub").exists()).toBe(false);
+    expect(wrapper.find(".pickstep-manual-stub").exists()).toBe(false);
+    expect(wrapper.find(".pickstep-muscles-stub").exists()).toBe(false);
     const arrange = wrapper.find(".arrangestep-stub");
     expect(arrange.exists()).toBe(true);
     expect(arrange.attributes("data-count")).toBe("2");

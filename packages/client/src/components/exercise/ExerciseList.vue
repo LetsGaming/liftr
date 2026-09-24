@@ -2,7 +2,7 @@
 /**
  * Filterable/searchable exercise list — search + equipment/muscle filters + thumbnail cards.
  * Extracted out of ExercisesPage.vue (the library tab) so the routine wizard's exercise picker
- * (PickStep.vue) reuses the exact same list instead of a second, drifting implementation. Two
+ * (PickStepManual.vue) reuses the exact same list instead of a second, drifting implementation. Two
  * modes on the same markup:
  *   - "browse" (the library tab): tap a card to open its info sheet.
  *   - "select" (the wizard): tap toggles membership in the caller's selection; selected cards
@@ -43,7 +43,7 @@ const equipmentFilter = ref("");
 const muscleFilter = ref("");
 // Defaults ON in "browse" mode — hiding exercises the user can't do with their owned equipment
 // is the useful default there. In "select" mode (the routine wizard's manual picker) the caller
-// decides via `defaultOnlyDoable` (PickStep.vue passes true — building a routine you intend to
+// decides via `defaultOnlyDoable` (PickStepManual.vue passes true — building a routine you intend to
 // actually do should default to only showing what's doable; see UX-05). Either way, only
 // offered/applied once there's actually an owned-equipment list to filter by (an unset/empty list
 // means "no restriction configured", not "owns nothing"), and uses the full requiredEquipment

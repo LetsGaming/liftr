@@ -34,7 +34,7 @@ import {
   type RoutePoint,
   type Waypoint,
 } from "../../services/plannedRouteService";
-import BaseHeader from "../patterns/BaseHeader.vue";
+import WizardHeader from "../patterns/WizardHeader.vue";
 import Button from "../base/Button.vue";
 import { ApiError } from "../../lib/api";
 
@@ -321,9 +321,8 @@ async function save() {
 <template>
   <SheetModal ref="sheetRef" :sheet="false" fill-body background="var(--bg)" @close="emit('close')">
     <template #header>
-      <BaseHeader
+      <WizardHeader
         v-model:title="name"
-        variant="wizard"
         :title-placeholder="'Name der Strecke'"
         :is-confirming-close="closeConfirm.isArmed()"
         @close="requestClose"

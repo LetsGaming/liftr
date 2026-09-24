@@ -1,6 +1,6 @@
 // FastPathStep.vue renders real ExerciseRow/AppIcon children plus useCatalogStore /
 // useExerciseName / useRoutineReviewChecks — all real, no network boundary crossed by rendering,
-// so this seeds a real Pinia catalog rather than mocking anything (see PickStep.test.ts's header
+// so this seeds a real Pinia catalog rather than mocking anything (see PickStepManual.test.ts's header
 // comment for why a Pinia has to be built and passed in directly here instead of relying on
 // mountWithProviders' own fresh one).
 import { createPinia } from "pinia";
