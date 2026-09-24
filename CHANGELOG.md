@@ -19,6 +19,8 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - Exercise details are now their own page: the back button and browser/phone back both work as expected, and the view can be linked to directly.
 - Workout and run details are now their own pages with a working back button and consistent presentation.
 - Text fields across the app now show the same accent-tinted focus highlight when you tap into them, instead of some fields having a plainer look.
+- The Rekorde, Routine-, and Strecken-Übersicht pages now have a proper back button.
+- The Workout/Läufe and Kraft/Lauf tab switchers stay visible at the top of the screen while you scroll, instead of scrolling away with the content.
 
 ### Fixed
 

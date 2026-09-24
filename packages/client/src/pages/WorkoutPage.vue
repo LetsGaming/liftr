@@ -5,7 +5,7 @@
  * exists yet, since it's still useful to exercise the loop on a fresh install before you've
  * built anything.
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import ExerciseDetailContent from "../components/exercise/ExerciseDetailContent.vue";
 import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
@@ -359,14 +359,10 @@ const WORKOUT_RUNS_TABS = [
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Workout</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-    <TabSwitcher v-if="!store.isActive && !finishedSummary" :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
+  <BasePage title="Workout">
+    <template v-if="!store.isActive && !finishedSummary" #subheader>
+      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
+    </template>
     <div class="workout-page">
     <div v-if="finishedSummary" class="finished-summary">
       <FinishSequence
@@ -695,8 +691,7 @@ const WORKOUT_RUNS_TABS = [
       </div>
     </SheetModal>
     </div>
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

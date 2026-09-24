@@ -5,7 +5,7 @@
 // Split into composables (each owns its own loading/error state) since this page used to mix
 // six+ unrelated concerns directly in its script setup — see composables/use{ProfileForm,
 // GymSetup,HealthConnectImport,DataExport}.ts.
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import { computed, nextTick, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import BodyweightTrend from "../components/overview/BodyweightTrend.vue";
@@ -322,13 +322,7 @@ async function saveWeight() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Profil &amp; Einstellungen</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
+  <BasePage title="Profil & Einstellungen">
     <div class="profile-content">
     <p style="color: var(--dim)">Dein Server, dein Konto, deine Daten.</p>
 
@@ -688,8 +682,7 @@ async function saveWeight() {
 
     <RouterLink to="/attributions" class="attributions-link">Quellen &amp; Lizenzen →</RouterLink>
     </div>
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

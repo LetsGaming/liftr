@@ -6,11 +6,11 @@
  * always the mannequin, never a text/tag list — this copies the exact existing aggregation
  * pattern verbatim from RoutineList.vue/OverviewPage.vue rather than inventing a new one.
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import DrillInScreen from "../components/patterns/DrillInScreen.vue";
 import IconButton from "../components/patterns/IconButton.vue";
 import ListRow from "../components/patterns/ListRow.vue";
@@ -89,14 +89,9 @@ async function jetztStarten() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>{{ routine ? routine.name : "Routine" }}</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
+  <BasePage :title="routine ? routine.name : 'Routine'" back-button>
       <DrillInScreen
+        hide-back-button
         :title="routine ? routine.name : 'Routine'"
         :loading="!routineStore.loaded"
         :not-found="routineStore.loaded && !routine"
@@ -162,8 +157,7 @@ async function jetztStarten() {
         </template>
       </DrillInScreen>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

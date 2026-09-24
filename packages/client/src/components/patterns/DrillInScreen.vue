@@ -25,6 +25,11 @@ defineProps<{
    *  every row not spent on chrome is a row the map below gets instead, which matters more here
    *  than on a normal scrolling drill-in. */
   fillHeight?: boolean;
+  /** True when the page wrapping this screen already renders a real back button of its own
+   *  (patterns/BasePage.vue's header) — suppresses this component's own inline back affordance so
+   *  the user isn't shown two of them at once. Default false preserves this component's original
+   *  "no nav-bar entry of its own" behavior for any caller that still owns its own bare header. */
+  hideBackButton?: boolean;
 }>();
 
 const router = useRouter();
@@ -43,7 +48,7 @@ function goBack() {
          below for why that height matters more here than on a normal scrolling drill-in. Loading
          and not-found have no title yet to combine it with, so it stays standalone in both
          modes for those two states. -->
-    <button v-if="!fillHeight || loading || notFound" class="ro-back-btn" aria-label="Zurück" @click="goBack">
+    <button v-if="!hideBackButton && (!fillHeight || loading || notFound)" class="ro-back-btn" aria-label="Zurück" @click="goBack">
       <AppIcon name="chevron-left" :size="18" />
       <span>Zurück</span>
     </button>
@@ -58,7 +63,7 @@ function goBack() {
 
     <template v-else>
       <div class="ro-header" :class="{ 'ro-header-combined': fillHeight }">
-        <button v-if="fillHeight" class="ro-back-btn-inline" aria-label="Zurück" @click="goBack">
+        <button v-if="fillHeight && !hideBackButton" class="ro-back-btn-inline" aria-label="Zurück" @click="goBack">
           <AppIcon name="chevron-left" :size="18" />
         </button>
         <h2>{{ title }}</h2>

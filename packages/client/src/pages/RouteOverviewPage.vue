@@ -7,11 +7,11 @@
  * list) and what "starting" means (a choice between live GPS tracking and manual entry, instead
  * of one unconditional start).
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import DrillInScreen from "../components/patterns/DrillInScreen.vue";
 import RunMap from "../components/run/RunMap.vue";
 import LiveRunScreen from "../components/run/LiveRunScreen.vue";
@@ -65,15 +65,10 @@ function onLiveRunFinished() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>{{ plannedRoute ? plannedRoute.name : "Strecke" }}</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding" :scroll-y="false">
+  <BasePage :title="plannedRoute ? plannedRoute.name : 'Strecke'" back-button :scroll-y="false">
       <DrillInScreen
         fill-height
+        hide-back-button
         :title="plannedRoute ? plannedRoute.name : 'Strecke'"
         :loading="!plannedRouteStore.loaded"
         :not-found="plannedRouteStore.loaded && !plannedRoute"
@@ -121,8 +116,7 @@ function onLiveRunFinished() {
         @finished="onLiveRunFinished"
         @close="showLiveRun = false"
       />
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

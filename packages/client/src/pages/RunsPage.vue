@@ -3,12 +3,12 @@
 // the page's primary content, same as saved routines are Workout's. Individual-run browsing
 // (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here — that's
 // where Workout's own finished-session history lives too, so neither tab duplicates it locally.
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import Button from "../components/base/Button.vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route/RouteWizard.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import TabSwitcher from "../components/patterns/TabSwitcher.vue";
 import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
@@ -120,14 +120,10 @@ const WORKOUT_RUNS_TABS = [
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Läufe</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-    <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
+  <BasePage title="Läufe">
+    <template #subheader>
+      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
+    </template>
 
     <div class="pagehead">
       <div>
@@ -182,8 +178,7 @@ const WORKOUT_RUNS_TABS = [
       :initial-center="initialCenter"
       @close="showRouteWizard = false"
     />
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

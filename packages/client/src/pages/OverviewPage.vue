@@ -12,7 +12,8 @@
  *      trend.
  *   4. Recent activity — a feed of past workouts and runs; rows open the past-item detail modal.
  */
-import { IonContent, IonHeader, IonPage, IonRefresher, IonRefresherContent, IonTitle, IonToolbar } from "@ionic/vue";
+import { IonRefresher, IonRefresherContent } from "@ionic/vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import AppIcon from "../components/base/AppIcon.vue";
@@ -259,13 +260,7 @@ function retryFailed() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Übersicht</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
+  <BasePage title="Übersicht">
       <IonRefresher slot="fixed" @ion-refresh="onRefresh">
         <IonRefresherContent />
       </IonRefresher>
@@ -474,8 +469,7 @@ function retryFailed() {
           </Button>
         </section>
       </div>
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

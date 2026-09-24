@@ -10,7 +10,7 @@
 // every kind, sorted newest first), this section is a fixed 5-row grid that must always render
 // all five categories even when some have no PR yet — different enough shape to warrant its own
 // classes rather than forcing the existing list markup to do both jobs.
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import type { RunCategory } from "@liftr/shared";
@@ -101,13 +101,7 @@ function formatDate(iso: string): string {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Rekorde</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
+  <BasePage title="Rekorde" back-button>
       <p style="color: var(--dim)">Deine Rekord-Historie — jeder neue Bestwert automatisch erfasst.</p>
 
       <template v-if="!prStore.loaded && !prStore.error">
@@ -201,8 +195,7 @@ function formatDate(iso: string): string {
           </ListRow>
         </li>
       </ul>
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

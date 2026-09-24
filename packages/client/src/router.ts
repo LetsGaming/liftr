@@ -28,6 +28,7 @@ export const router = createRouter({
       path: "/routines/:id",
       name: "routine-overview",
       component: () => import("./pages/RoutineOverviewPage.vue"),
+      meta: { backButton: true },
       // Kicks the routine fetch off as soon as navigation starts (routineStore.load() is cheap
       // to call again; it always re-fetches the full list) so data is in flight while the chunk
       // resolves, rather than waiting for onMounted after the leave-transition already started.
@@ -39,6 +40,7 @@ export const router = createRouter({
       path: "/routes/:id",
       name: "route-overview",
       component: () => import("./pages/RouteOverviewPage.vue"),
+      meta: { backButton: true },
       // Same eager-prefetch pattern as /routines/:id above — get the fetch in flight while the
       // route's own chunk resolves, rather than waiting for onMounted.
       beforeEnter: () => {
@@ -50,7 +52,7 @@ export const router = createRouter({
       path: "/records",
       name: "records",
       component: () => import("./pages/RecordsPage.vue"),
-      meta: { title: "Rekorde" },
+      meta: { title: "Rekorde", backButton: true },
       // Kick the PR fetch off as soon as navigation starts (not onMounted, which only runs once
       // the component actually mounts — see the beforeResolve prefetch comment below for why
       // that's too late) so data is already in flight while the chunk resolves and the outgoing

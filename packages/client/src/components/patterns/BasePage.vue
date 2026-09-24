@@ -13,6 +13,11 @@
  * stay visible while the page content scrolls beneath it, without needing `position: sticky`
  * inside the scroll container. Omit it and nothing renders here at all.
  *
+ * `scrollY: false` disables IonContent's own scroll gesture — for a page whose default-slot
+ * content is a fill-height interactive map (RouteOverviewPage.vue): without this, dragging the
+ * map can be captured by the page's own scroll gesture recognizer instead of the map's, even
+ * though the map's flex layout already fills the viewport and has nothing to scroll to.
+ *
  * Owns the app's one `env(safe-area-inset-top, 0px)` rule for routed pages. Safe alongside
  * capacitor.config.ts's `adjustMarginsForEdgeToEdge: 'force'` (Android-only): that setting
  * reserves the notch/status-bar band as a real WebView margin, which shrinks the WebView's own
@@ -31,10 +36,12 @@ withDefaults(
     title: string;
     backButton?: boolean;
     variant?: "page" | "drawer";
+    scrollY?: boolean;
   }>(),
   {
     backButton: false,
     variant: "page",
+    scrollY: true,
   },
 );
 
@@ -52,7 +59,7 @@ function goBack() {
     <div v-if="$slots.subheader" class="base-page-subheader">
       <slot name="subheader" />
     </div>
-    <IonContent class="ion-padding">
+    <IonContent class="ion-padding" :scroll-y="scrollY">
       <slot />
     </IonContent>
   </IonPage>
