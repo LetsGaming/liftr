@@ -21,6 +21,8 @@ import ProgressChart from "../rank/ProgressChart.vue";
 import RankProgress from "../rank/RankProgress.vue";
 import MuscleFigure from "../ui/MuscleFigure.vue";
 import StatTile from "../ui/StatTile.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
 import { useExerciseHistoryCache } from "../../composables/useExerciseHistoryCache";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
@@ -118,7 +120,7 @@ function missingBadge(req: TieredRequirement): string | null {
 <template>
   <div v-if="notFound" class="not-found">
     <p>Diese Übung wurde nicht gefunden.</p>
-    <router-link to="/exercises" class="btn-secondary btn-block">Zu den Übungen →</router-link>
+    <Button as="router-link" to="/exercises" variant="secondary" block>Zu den Übungen →</Button>
   </div>
 
   <template v-else-if="exercise">
@@ -143,16 +145,16 @@ function missingBadge(req: TieredRequirement): string | null {
 
       <div v-if="requirements.length > 0" class="eyebrow equipment-eyebrow">Benötigtes Equipment</div>
       <div v-if="requirements.length > 0" class="equipment-list">
-        <span
+        <Chip
           v-for="req in requirements"
           :key="req.item"
           class="equipment-chip"
           :class="{ missing: missingBadge(req) === 'fehlt', soft: missingBadge(req) != null && missingBadge(req) !== 'fehlt' }"
         >
-          <ExerciseIcon :equipment="req.item" :size="16" />
+          <template #leading><ExerciseIcon :equipment="req.item" :size="16" /></template>
           {{ equipmentRequirementLabelDe(req.item) }}
           <span v-if="missingBadge(req)" class="missing-badge">{{ missingBadge(req) }}</span>
-        </span>
+        </Chip>
       </div>
 
       <div class="eyebrow muscles-eyebrow">Trainierte Muskeln</div>
@@ -269,18 +271,6 @@ function missingBadge(req: TieredRequirement): string | null {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp2);
-}
-.equipment-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
 }
 .equipment-chip.missing {
   border-color: var(--danger);

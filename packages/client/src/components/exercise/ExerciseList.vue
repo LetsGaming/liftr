@@ -18,6 +18,11 @@ import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
 import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import ExerciseRow from "./ExerciseRow.vue";
+import Chip from "../base/Chip.vue";
+import EmptyNote from "../base/EmptyNote.vue";
+import Input from "../base/Input.vue";
+import Select from "../base/Select.vue";
+import Button from "../base/Button.vue";
 
 const props = withDefaults(defineProps<{ mode?: "browse" | "select"; selectedIds?: Set<string>; defaultOnlyDoable?: boolean }>(), {
   mode: "browse",
@@ -100,37 +105,38 @@ function equipmentLabel(eq: string | null): string {
 
 <template>
   <div class="exercise-list">
-    <input v-model="search" class="search-input" type="text" placeholder="Übung suchen…" aria-label="Übung suchen" />
+    <Input v-model="search" class="search-input" type="text" placeholder="Übung suchen…" aria-label="Übung suchen" />
 
     <div class="filters">
-      <select v-model="equipmentFilter" class="filter-select" aria-label="Nach Gerät filtern">
+      <Select v-model="equipmentFilter" class="filter-select" aria-label="Nach Gerät filtern">
         <option value="">Alle Geräte</option>
         <option v-for="eq in equipmentOptions" :key="eq" :value="eq">{{ equipmentLabel(eq) }}</option>
-      </select>
-      <select v-model="muscleFilter" class="filter-select" aria-label="Nach Muskelgruppe filtern">
+      </Select>
+      <Select v-model="muscleFilter" class="filter-select" aria-label="Nach Muskelgruppe filtern">
         <option value="">Alle Muskeln</option>
         <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ MUSCLE_LABEL_DE[m] ?? m }}</option>
-      </select>
+      </Select>
     </div>
 
-    <button
+    <Chip
       v-if="hasEquipmentFilter"
+      as="button"
       class="equipment-toggle"
-      :class="{ active: onlyDoableEquipment }"
+      :active="onlyDoableEquipment"
       @click="onlyDoableEquipment = !onlyDoableEquipment"
     >
-      <template v-if="onlyDoableEquipment"><AppIcon name="check" /> Nur machbare Übungen</template>
-      <template v-else>Nur machbare Übungen</template>
-    </button>
+      <template v-if="onlyDoableEquipment" #leading><AppIcon name="check" /></template>
+      Nur machbare Übungen
+    </Chip>
 
     <div v-if="catalog.loaded && filtered.length === 0" class="empty">
-      <p v-if="onlyDoableEquipment && hasEquipmentFilter">
+      <EmptyNote v-if="onlyDoableEquipment && hasEquipmentFilter" align="start">
         Keine Übung passt zu diesen Filtern — "Nur machbare Übungen" blendet dabei möglicherweise passende Übungen aus.
-      </p>
-      <p v-else>Keine Übung passt zu diesen Filtern.</p>
-      <button v-if="onlyDoableEquipment && hasEquipmentFilter" class="btn-secondary" type="button" @click="onlyDoableEquipment = false">
+      </EmptyNote>
+      <EmptyNote v-else align="start">Keine Übung passt zu diesen Filtern.</EmptyNote>
+      <Button v-if="onlyDoableEquipment && hasEquipmentFilter" variant="secondary" @click="onlyDoableEquipment = false">
         Filter "Nur machbare Übungen" ausschalten
-      </button>
+      </Button>
     </div>
 
     <ul class="ex-grid">
@@ -164,49 +170,30 @@ function equipmentLabel(eq: string | null): string {
   flex-direction: column;
   gap: var(--sp3);
 }
-.search-input {
-  padding: 10px 14px;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 14px;
-}
 .filters {
   display: flex;
   gap: var(--sp2);
 }
-.filter-select {
+/* Select's own root is a wrapper div, not the <select> the fallthrough `.filter-select` class
+   lands on — so the flex-grow that used to sit directly on the flex child now targets it
+   generically by position instead. */
+.filters > * {
   flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 13px;
+  min-width: 0;
 }
 .equipment-toggle {
   align-self: flex-start;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 12.5px;
-  font-weight: 600;
 }
-.equipment-toggle.active {
+button.equipment-toggle.active {
   background: var(--blue-lo);
   border-color: var(--blue);
   color: var(--on-blue-lo);
-  font-weight: 800;
 }
 .empty {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp2);
-  color: var(--dim);
 }
 .ex-grid {
   list-style: none;
