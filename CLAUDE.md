@@ -30,9 +30,13 @@ its own automatically-picked free port, backed by its own disposable SQLite data
 It then ingests the exercise catalog and the running-standards table into that database and seeds
 it with realistic mock data — through the real sync pipeline, not hand-faked, so ranks, PRs,
 streaks, and XP all come out correctly derived. See `scripts/seed-mock-data.ts` for exactly what's
-seeded. The seed also sets the owner's password (`DEV_OWNER_PASSWORD` in that file), so the printed
-dashboard URL goes straight to seeded content — no first-run setup screen. It prints the dashboard
-URL, backend URL, login credentials, and log paths to use.
+seeded. The seed also sets the owner's password (`scripts/lib/devOwner.mjs`'s
+`DEV_OWNER_PASSWORD`), and by default `dev-up.mjs` logs itself in as that owner too — it prints a
+dashboard URL that's already authenticated, so it goes straight to seeded content with no
+setup/login screen at all. Pass `--loggedout` to get a plain URL that lands on the login screen
+instead (e.g. to manually exercise the login flow itself). It prints the dashboard URL, backend
+URL, login credentials (useful even when auto-logged-in, e.g. to test logging in as the owner on
+a second device/tab), and log paths to use.
 
 **When you add a feature, extend the seed in the same change.** `scripts/seed-mock-data.ts` is a
 living inventory of what every screen needs to render real, non-empty data for manual/agent

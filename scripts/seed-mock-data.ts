@@ -41,6 +41,7 @@ import { ingestStandards } from "../packages/ingest/src/ingestStandards.js";
 import { ingestRunStandards } from "../packages/ingest/src/ingestRunStandards.js";
 import { ensureCatalogImages } from "./lib/ensureCatalogImages.js";
 import { writeSeedCache } from "./lib/seedCache.mjs";
+import { DEV_OWNER_PASSWORD } from "./lib/devOwner.mjs";
 
 import { setUserPassword } from "../packages/server/src/repositories/authRepository.js";
 import { hashPassword } from "../packages/server/src/lib/passwords.js";
@@ -76,10 +77,6 @@ if (!DB_PATH) throw new Error("LIFTR_DB_PATH must be set — run this via script
 
 const USER_ID = OWNER_USER_ID;
 const BODYWEIGHT_KG = 82;
-// Not a secret — every dev-up.mjs session's DB is disposable and local-only. Clears the
-// setup screen's common-password check (see routes/auth.ts's passwordSchema) so every session
-// lands straight on seeded content instead of the first-run setup screen.
-export const DEV_OWNER_PASSWORD = "liftr-dev-session";
 
 function daysAgo(n: number, hour = 18, minute = 0): Date {
   const d = new Date();

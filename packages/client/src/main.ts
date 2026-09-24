@@ -1,3 +1,6 @@
+// Must run — and therefore be imported — before ./router: see devAutoLogin.ts's own doc comment.
+import "./lib/devAutoLogin";
+
 import { IonicVue } from "@ionic/vue";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
