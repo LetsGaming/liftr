@@ -35,6 +35,7 @@ import {
   type Waypoint,
 } from "../../services/plannedRouteService";
 import BaseHeader from "../ui/BaseHeader.vue";
+import Button from "../base/Button.vue";
 import { ApiError } from "../../lib/api";
 
 const props = defineProps<{
@@ -358,7 +359,7 @@ async function save() {
           Schleife schließen
         </label>
       </div>
-      <button class="btn-primary btn-block" :disabled="!canSave || saving" @click="save">Speichern</button>
+      <Button block :disabled="!canSave || saving" @click="save">Speichern</Button>
     </footer>
   </SheetModal>
 </template>

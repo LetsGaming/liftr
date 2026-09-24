@@ -10,6 +10,8 @@ import { useCatalogStore } from "../../stores/catalogStore";
 import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
 import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
 import type { DraftExercise } from "./RoutineWizard.vue";
 
 const props = defineProps<{
@@ -52,6 +54,11 @@ const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
   props.suggestionMeta,
 );
 const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", partial: "indirekt", missing: "fehlt" };
+const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire"> = {
+  covered: "success",
+  partial: "neutral",
+  missing: "fire",
+};
 </script>
 
 <template>
@@ -64,9 +71,15 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
     <div v-if="coverage" class="coverage">
       <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">Muskelabdeckung</span>
       <div class="coverage-chips">
-        <span v-for="c in coverage" :key="c.slug" class="coverage-chip" :class="`cov-${c.state}`">
+        <Chip
+          v-for="c in coverage"
+          :key="c.slug"
+          size="sm"
+          class="coverage-chip"
+          :variant="COVERAGE_CHIP_VARIANT[c.state]"
+        >
           {{ c.label }} · {{ COVERAGE_LABEL[c.state] }}
-        </span>
+        </Chip>
       </div>
     </div>
 
@@ -91,10 +104,10 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
     </ul>
 
     <div class="actions">
-      <button class="btn-secondary review-back" @click="emit('back')">← Zurück</button>
-      <button class="btn-primary review-save" :disabled="!canSave || saving" @click="emit('save')">
+      <Button variant="secondary" class="review-back" @click="emit('back')">← Zurück</Button>
+      <Button class="review-save" :disabled="!canSave || saving" @click="emit('save')">
         {{ saving ? "Wird gespeichert…" : isEditing ? "Änderungen speichern" : "Routine speichern" }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -128,27 +141,6 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp2);
-}
-.coverage-chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-}
-.coverage-chip.cov-covered {
-  border-color: var(--success);
-  color: var(--text);
-}
-.coverage-chip.cov-partial {
-  border-color: var(--line-2);
-  color: var(--dim);
-}
-.coverage-chip.cov-missing {
-  border-color: var(--warning);
-  color: var(--warning-hi);
 }
 .ex-summary {
   list-style: none;

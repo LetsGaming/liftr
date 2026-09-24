@@ -17,6 +17,9 @@ import { useRoutineReviewChecks, type CoverageState } from "../../composables/us
 import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import AppIcon from "../ui/AppIcon.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
+import IconButton from "../patterns/IconButton.vue";
 import type { DraftExercise } from "./RoutineWizard.vue";
 
 const props = defineProps<{
@@ -68,6 +71,11 @@ const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
   props.suggestionMeta,
 );
 const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", partial: "indirekt", missing: "fehlt" };
+const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire"> = {
+  covered: "success",
+  partial: "neutral",
+  missing: "fire",
+};
 </script>
 
 <template>
@@ -100,7 +108,7 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
               <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
             </template>
           </ExerciseRow>
-          <button class="remove-btn" aria-label="Entfernen" @click="emit('removeExercise', exerciseId)"><AppIcon name="trash" /></button>
+          <IconButton icon="trash" label="Entfernen" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
         </div>
         <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
@@ -114,17 +122,23 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
     <div v-if="coverage" class="coverage">
       <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">Muskelabdeckung</span>
       <div class="coverage-chips">
-        <span v-for="c in coverage" :key="c.slug" class="coverage-chip" :class="`cov-${c.state}`">
+        <Chip
+          v-for="c in coverage"
+          :key="c.slug"
+          size="sm"
+          class="coverage-chip"
+          :variant="COVERAGE_CHIP_VARIANT[c.state]"
+        >
           {{ c.label }} · {{ COVERAGE_LABEL[c.state] }}
-        </span>
+        </Chip>
       </div>
     </div>
 
     <button class="customize-btn" @click="emit('customize')">Alle Details anpassen (Sätze, Pausen, Supersets)</button>
 
-    <button class="btn-primary btn-lg" :disabled="!canSave || saving" @click="emit('save')">
+    <Button size="lg" :disabled="!canSave || saving" @click="emit('save')">
       {{ saving ? "Wird gespeichert…" : isEditing ? "Änderungen speichern" : "Routine speichern" }}
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -180,16 +194,6 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   font-size: 12px;
   flex: none;
 }
-.remove-btn {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--danger);
-  font-size: 12px;
-}
 .ex-note {
   margin-top: 6px;
   padding-left: 4px;
@@ -214,27 +218,6 @@ const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", pa
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp2);
-}
-.coverage-chip {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-}
-.coverage-chip.cov-covered {
-  border-color: var(--success);
-  color: var(--text);
-}
-.coverage-chip.cov-partial {
-  border-color: var(--line-2);
-  color: var(--dim);
-}
-.coverage-chip.cov-missing {
-  border-color: var(--warning);
-  color: var(--warning-hi);
 }
 .customize-btn {
   padding: 10px;
