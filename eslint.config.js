@@ -98,5 +98,13 @@ export default [
       "vue/require-default-prop": "off",
     },
   },
+  {
+    // base/ primitives deliberately name themselves after the native HTML element they wrap
+    // (Chip, Button, Input, Select) rather than a Liftr-specific compound name — that's the
+    // point of the tier (see docs/adr/0012-component-tiers.md), not an accidental collision risk
+    // this rule is meant to catch.
+    files: ["packages/client/src/components/base/**/*.vue"],
+    rules: { "vue/multi-word-component-names": "off" },
+  },
   prettier,
 ];
