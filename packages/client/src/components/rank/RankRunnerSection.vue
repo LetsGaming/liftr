@@ -11,7 +11,7 @@
  */
 import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
-import CardGrid from "../ui/CardGrid.vue";
+import CardGrid from "../patterns/CardGrid.vue";
 import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunPrListItem, type RunRankRow } from "../../stores/runRankStore";

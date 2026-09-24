@@ -15,12 +15,12 @@
 import { IonContent, IonHeader, IonPage, IonRefresher, IonRefresherContent, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import AppIcon from "../components/ui/AppIcon.vue";
-import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
-import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
-import MuscleFigure from "../components/ui/MuscleFigure.vue";
-import InfoToggle from "../components/ui/InfoToggle.vue";
-import StatTile from "../components/ui/StatTile.vue";
+import AppIcon from "../components/base/AppIcon.vue";
+import BodyweightTrend from "../components/overview/BodyweightTrend.vue";
+import ErholungszoneCard from "../components/overview/ErholungszoneCard.vue";
+import MuscleFigure from "../components/exercise/MuscleFigure.vue";
+import InfoToggle from "../components/patterns/InfoToggle.vue";
+import StatTile from "../components/patterns/StatTile.vue";
 import Button from "../components/base/Button.vue";
 import EmptyNote from "../components/base/EmptyNote.vue";
 import Select from "../components/base/Select.vue";

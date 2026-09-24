@@ -11,7 +11,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { TIERS, type Tier } from "@liftr/shared";
 import Button from "../base/Button.vue";
-import AppIcon from "../ui/AppIcon.vue";
+import AppIcon from "../base/AppIcon.vue";
 import TierBadge from "../rank/TierBadge.vue";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";

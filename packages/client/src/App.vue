@@ -2,12 +2,12 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import AppIcon from "./components/ui/AppIcon.vue";
-import AuthGate from "./components/ui/AuthGate.vue";
+import AppIcon from "./components/base/AppIcon.vue";
+import AuthGate from "./components/shell/AuthGate.vue";
 import Chip from "./components/base/Chip.vue";
-import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
-import ServerGate from "./components/ui/ServerGate.vue";
-import ToastHost from "./components/ui/ToastHost.vue";
+import OnboardingGuide from "./components/shell/OnboardingGuide.vue";
+import ServerGate from "./components/shell/ServerGate.vue";
+import ToastHost from "./components/shell/ToastHost.vue";
 import { useAppUpdate } from "./composables/useAppUpdate";
 import { checkVersionMismatch } from "./composables/useServerConnection";
 import { useToast } from "./composables/useToast";

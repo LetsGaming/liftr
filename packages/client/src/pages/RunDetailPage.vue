@@ -18,13 +18,13 @@ import { formatDateLong, formatDurationMinutes, formatPace } from "../lib/format
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
-import AppIcon from "../components/ui/AppIcon.vue";
-import BasePage from "../components/ui/BasePage.vue";
+import AppIcon from "../components/base/AppIcon.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import Button from "../components/base/Button.vue";
 import Chip from "../components/base/Chip.vue";
-import RouteWizard from "../components/route-wizard/RouteWizard.vue";
+import RouteWizard from "../components/route/RouteWizard.vue";
 import RunReplay from "../components/run/RunReplay.vue";
-import StatTile from "../components/ui/StatTile.vue";
+import StatTile from "../components/patterns/StatTile.vue";
 
 const route = useRoute();
 const router = useRouter();

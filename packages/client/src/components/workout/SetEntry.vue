@@ -6,8 +6,8 @@ import { computed, ref } from "vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
-import AppIcon from "../ui/AppIcon.vue";
-import NumberStepper from "../ui/NumberStepper.vue";
+import AppIcon from "../base/AppIcon.vue";
+import NumberStepper from "../patterns/NumberStepper.vue";
 
 const store = useActiveWorkoutStore();
 const settingsStore = useSettingsStore();

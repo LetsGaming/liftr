@@ -21,7 +21,7 @@
  * dismiss animation/teardown finishes.
  */
 import { ref } from "vue";
-import SheetModal from "../ui/SheetModal.vue";
+import SheetModal from "../patterns/SheetModal.vue";
 
 defineProps<{ currentRpe: number | null }>();
 const emit = defineEmits<{ pick: [rpe: number]; close: [] }>();

@@ -5,7 +5,7 @@
  *  responsive treatment. `variant="horizontal"` is the mobile-parity fix: a compact scroll-snap
  *  strip so the rail doesn't push the current exercise below the fold on narrow viewports.
  *  Desktop keeps the default vertical variant unchanged. */
-import AppIcon from "../ui/AppIcon.vue";
+import AppIcon from "../base/AppIcon.vue";
 import ListRow from "../patterns/ListRow.vue";
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
 

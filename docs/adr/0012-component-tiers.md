@@ -57,8 +57,19 @@ rather than something a call site reaches for directly.
 
 ## Consequences
 
-- `components/ui/` ceases to exist as a folder: its contents are redistributed into `base/`,
-  `patterns/`, and per-feature folders based on the rule above, not kept as a grab-bag.
+- `components/ui/` no longer exists as a folder: its 24 files were redistributed by the rule
+  above — `base/` (`AppIcon`, `TruncatingLabel`, plus the new `Chip`/`Button`/`Input`/`Select`/
+  `EmptyNote`), `patterns/` (`BaseHeader`, `BasePage`, `SheetModal`, `DrillInScreen`,
+  `CardListScreen`, `CardGrid`, `ListCard`, `StatTile`, `TabSwitcher`, `NumberStepper`,
+  `CollapsibleCard`, `InfoToggle`, `EmptyStateCard`, plus the new `IconButton`/`ListRow`/
+  `FormField`), `exercise/` (`MuscleFigure`), a new `overview/` folder (`ErholungszoneCard`,
+  `BodyweightTrend` — OverviewPage's own two bespoke widgets), and a new `shell/` folder
+  (`ToastHost`, `SyncIndicator`, `ServerGate`, `AuthGate`, `OnboardingGuide` — the app-chrome
+  singletons App.vue mounts once at the root). `AppDropdownMenu.vue` was deleted outright (zero
+  references, superseded by `useCardMenu`/`ListCard`'s own menu slot).
+- `components/routine-wizard/` and `components/route-wizard/` no longer exist either: their
+  contents moved into `routine/` and `route/` respectively, per the singleton-folder rule (a
+  folder is keyed by domain noun, never a sub-flow).
 - ~5 previously pure-CSS duplication categories (chips/badges, list-rows, icon-buttons, inline
   empty-notes, form inputs) become real shared components instead of copy-pasted markup, even
   though this codebase's usual convention for zero-behavior patterns is a `tokens.css` utility

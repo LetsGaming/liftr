@@ -10,9 +10,9 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AppIcon from "../components/ui/AppIcon.vue";
+import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
-import DrillInScreen from "../components/ui/DrillInScreen.vue";
+import DrillInScreen from "../components/patterns/DrillInScreen.vue";
 import RunMap from "../components/run/RunMap.vue";
 import LiveRunScreen from "../components/run/LiveRunScreen.vue";
 import { useManualRunEntry } from "../composables/useManualRunEntry";

@@ -9,7 +9,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import ExerciseDetailContent from "../components/exercise/ExerciseDetailContent.vue";
-import BasePage from "../components/ui/BasePage.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useCatalogStore } from "../stores/catalogStore";
 

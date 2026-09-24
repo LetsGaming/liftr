@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
-import AppIcon from "../ui/AppIcon.vue";
+import AppIcon from "../base/AppIcon.vue";
 
 const props = withDefaults(
   defineProps<{

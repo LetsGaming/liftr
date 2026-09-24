@@ -7,8 +7,8 @@
  */
 import { SET_KIND_LABEL, type SetKind } from "../../stores/activeWorkoutStore";
 import ListRow from "../patterns/ListRow.vue";
-import AppIcon from "../ui/AppIcon.vue";
-import SheetModal from "../ui/SheetModal.vue";
+import AppIcon from "../base/AppIcon.vue";
+import SheetModal from "../patterns/SheetModal.vue";
 
 defineProps<{ workoutExerciseId: string; setIndex: number }>();
 const emit = defineEmits<{ close: []; pick: [kind: SetKind]; remove: [] }>();

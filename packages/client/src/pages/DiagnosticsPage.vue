@@ -12,7 +12,7 @@
  * 2. Serverfehler — the previous owner-only list from ProfilePage.vue, moved here unchanged.
  */
 import { onMounted, ref } from "vue";
-import BasePage from "../components/ui/BasePage.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import Button from "../components/base/Button.vue";
 import EmptyNote from "../components/base/EmptyNote.vue";
 import { getMe, getRecentErrors, type ErrorLogEntry, type Me } from "../services/authService";

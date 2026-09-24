@@ -27,7 +27,7 @@
 import { computed } from "vue";
 import { ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
-import MuscleFigure from "../ui/MuscleFigure.vue";
+import MuscleFigure from "../exercise/MuscleFigure.vue";
 import TierBadge from "./TierBadge.vue";
 import EmptyNote from "../base/EmptyNote.vue";
 import Button from "../base/Button.vue";

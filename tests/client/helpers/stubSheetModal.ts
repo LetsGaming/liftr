@@ -12,7 +12,7 @@ import { vi } from "vitest";
  * SheetModal is otherwise untestable.
  *
  * Stubs the *whole* SheetModal (not just the inner IonModal) — a simpler, coarser alternative to
- * the IonModal-only stub tests/client/components/ui/SheetModal.test.ts and
+ * the IonModal-only stub tests/client/components/patterns/SheetModal.test.ts and
  * tests/client/components/exercise/ExerciseInfoPanel.test.ts use on themselves (which lets the
  * real SheetModal run and gets its actual dismiss()/did-dismiss/close plumbing for free). Reach
  * for that pattern instead when a test cares about SheetModal's own header/close-button/dismiss

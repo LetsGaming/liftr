@@ -6,7 +6,7 @@ import SetKindPicker from "~client/components/workout/SetKindPicker.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 /** See RpeCapture.test.ts for why only IonModal (not SheetModal itself) is stubbed — same
- *  stub as tests/client/components/ui/SheetModal.test.ts uses on itself. Even though
+ *  stub as tests/client/components/patterns/SheetModal.test.ts uses on itself. Even though
  *  SetKindPicker never calls dismiss() itself, SheetModal's own "X" close button does (its
  *  internal dismiss() -> modalRef.value.$el?.dismiss()), so this still needs the fuller
  *  dismiss()-emitting stub, not the bare-slot version. */

@@ -6,7 +6,7 @@
 import { computed, type Ref } from "vue";
 import { useCatalogStore } from "../stores/catalogStore";
 import { aggregateMuscles, MUSCLE_LABEL_DE } from "../lib/muscles";
-import type { DraftExercise } from "../components/routine-wizard/RoutineWizard.vue";
+import type { DraftExercise } from "../components/routine/RoutineWizard.vue";
 
 export type CoverageState = "covered" | "partial" | "missing";
 export interface CoverageChip {

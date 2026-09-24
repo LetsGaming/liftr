@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
-import CardGrid from "../ui/CardGrid.vue";
-import CardListScreen from "../ui/CardListScreen.vue";
-import EmptyStateCard from "../ui/EmptyStateCard.vue";
-import ListCard from "../ui/ListCard.vue";
+import AppIcon from "../base/AppIcon.vue";
+import CardGrid from "../patterns/CardGrid.vue";
+import CardListScreen from "../patterns/CardListScreen.vue";
+import EmptyStateCard from "../patterns/EmptyStateCard.vue";
+import ListCard from "../patterns/ListCard.vue";
 import RouteThumbnail from "./RouteThumbnail.vue";
 import Button from "../base/Button.vue";
 import IconButton from "../patterns/IconButton.vue";

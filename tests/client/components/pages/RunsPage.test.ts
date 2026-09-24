@@ -8,7 +8,7 @@ import { flushPromises } from "@vue/test-utils";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { reactive } from "vue";
 import RouteList from "~client/components/route/RouteList.vue";
-import RouteWizard from "~client/components/route-wizard/RouteWizard.vue";
+import RouteWizard from "~client/components/route/RouteWizard.vue";
 import RunsPage from "~client/pages/RunsPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 

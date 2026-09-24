@@ -5,14 +5,14 @@
  * fallback. No props/emits: every dependency below is a Pinia store or a composable that
  * already instantiates its own store references, so this mounts standalone.
  */
-import AppIcon from "../ui/AppIcon.vue";
-import CardGrid from "../ui/CardGrid.vue";
-import CardListScreen from "../ui/CardListScreen.vue";
-import EmptyStateCard from "../ui/EmptyStateCard.vue";
-import ListCard from "../ui/ListCard.vue";
-import MuscleFigure from "../ui/MuscleFigure.vue";
-import NumberStepper from "../ui/NumberStepper.vue";
-import RoutineWizard from "../routine-wizard/RoutineWizard.vue";
+import AppIcon from "../base/AppIcon.vue";
+import CardGrid from "../patterns/CardGrid.vue";
+import CardListScreen from "../patterns/CardListScreen.vue";
+import EmptyStateCard from "../patterns/EmptyStateCard.vue";
+import ListCard from "../patterns/ListCard.vue";
+import MuscleFigure from "../exercise/MuscleFigure.vue";
+import NumberStepper from "../patterns/NumberStepper.vue";
+import RoutineWizard from "./RoutineWizard.vue";
 import Chip from "../base/Chip.vue";
 import Button from "../base/Button.vue";
 import IconButton from "../patterns/IconButton.vue";

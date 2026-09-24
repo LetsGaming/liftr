@@ -7,7 +7,7 @@
  * own `useConfirmTap` state — this component never owns a confirm timer itself.
  */
 import { useSlots, onMounted } from "vue";
-import AppIcon, { type AppIconName } from "../ui/AppIcon.vue";
+import AppIcon, { type AppIconName } from "../base/AppIcon.vue";
 
 const props = withDefaults(
   defineProps<{

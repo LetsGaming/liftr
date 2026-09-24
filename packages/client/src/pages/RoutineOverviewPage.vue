@@ -9,13 +9,13 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AppIcon from "../components/ui/AppIcon.vue";
+import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
-import DrillInScreen from "../components/ui/DrillInScreen.vue";
+import DrillInScreen from "../components/patterns/DrillInScreen.vue";
 import IconButton from "../components/patterns/IconButton.vue";
 import ListRow from "../components/patterns/ListRow.vue";
-import MuscleFigure from "../components/ui/MuscleFigure.vue";
-import RoutineWizard from "../components/routine-wizard/RoutineWizard.vue";
+import MuscleFigure from "../components/exercise/MuscleFigure.vue";
+import RoutineWizard from "../components/routine/RoutineWizard.vue";
 import { useRoutineManagement } from "../composables/useRoutineManagement";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { aggregateMuscles } from "../lib/muscles";

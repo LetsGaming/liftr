@@ -12,11 +12,11 @@
 // case. Section content itself lives in RankLifterSection.vue/RankRunnerSection.vue.
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { ref } from "vue";
-import AppIcon from "../components/ui/AppIcon.vue";
+import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
 import RankLifterSection from "../components/rank/RankLifterSection.vue";
 import RankRunnerSection from "../components/rank/RankRunnerSection.vue";
-import TabSwitcher, { type TabSwitcherTab } from "../components/ui/TabSwitcher.vue";
+import TabSwitcher, { type TabSwitcherTab } from "../components/patterns/TabSwitcher.vue";
 
 const section = ref<"workout" | "Läufe">("workout");
 const RANK_TABS: TabSwitcherTab[] = [

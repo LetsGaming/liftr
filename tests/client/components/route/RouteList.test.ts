@@ -1,5 +1,5 @@
 // RouteList.vue renders through the same CardGrid/ListCard base components as
-// RoutineList.vue (components/ui/CardGrid.vue, components/ui/ListCard.vue) — this test focuses
+// RoutineList.vue (components/patterns/CardGrid.vue, components/patterns/ListCard.vue) — this test focuses
 // on RouteList's own wiring (menu open/edit/delete, start/create emits, empty state), not the
 // shared card shape itself (covered by RoutineList.test.ts).
 const { getPlannedRoutesMock, deletePlannedRouteMock } = vi.hoisted(() => ({

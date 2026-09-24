@@ -6,8 +6,8 @@
  * submits straight to runsStore.submitLiveRun instead of the manual form.
  */
 import { computed, onMounted, ref } from "vue";
-import SheetModal from "../ui/SheetModal.vue";
-import AppIcon from "../ui/AppIcon.vue";
+import SheetModal from "../patterns/SheetModal.vue";
+import AppIcon from "../base/AppIcon.vue";
 import LiveRunMap from "./LiveRunMap.vue";
 import Chip from "../base/Chip.vue";
 import Button from "../base/Button.vue";

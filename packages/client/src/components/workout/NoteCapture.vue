@@ -18,7 +18,7 @@
  */
 import { ref } from "vue";
 import Button from "../base/Button.vue";
-import SheetModal from "../ui/SheetModal.vue";
+import SheetModal from "../patterns/SheetModal.vue";
 
 const props = defineProps<{ title: string; modelValue: string | null }>();
 const emit = defineEmits<{ save: [value: string | null]; close: [] }>();

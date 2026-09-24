@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
-import ErholungszoneCard from "~client/components/ui/ErholungszoneCard.vue";
+import ErholungszoneCard from "~client/components/overview/ErholungszoneCard.vue";
 import TierLadder from "~client/components/rank/TierLadder.vue";
 import OverviewPage from "~client/pages/OverviewPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";

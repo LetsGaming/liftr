@@ -11,7 +11,7 @@
  */
 import { canPerform, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, ref } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
+import AppIcon from "../base/AppIcon.vue";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { EQUIPMENT_LABEL_DE, equipmentRequirementLabelDe, type Equipment } from "../../lib/equipmentIcons";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";

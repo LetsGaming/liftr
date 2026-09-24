@@ -2,7 +2,7 @@
  * Per-card ⋮ menu open/close — one open id at a time, dismissed by an outside click or Escape.
  * Shared by RoutineList.vue (via useRoutineManagement, which layers routine-specific actions on
  * top) and RouteList.vue directly. The dismiss-on-outside-click check looks for `.card-menu-wrap`
- * (components/ui/ListCard.vue's menu-slot wrapper, styled in styles/list-card.css) so clicks on
+ * (components/patterns/ListCard.vue's menu-slot wrapper, styled in styles/list-card.css) so clicks on
  * the trigger button or inside the open dropdown don't immediately close it.
  */
 import { onUnmounted, ref } from "vue";

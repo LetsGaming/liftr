@@ -8,9 +8,9 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, nextTick, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
-import CollapsibleCard from "../components/ui/CollapsibleCard.vue";
-import StatTile from "../components/ui/StatTile.vue";
+import BodyweightTrend from "../components/overview/BodyweightTrend.vue";
+import CollapsibleCard from "../components/patterns/CollapsibleCard.vue";
+import StatTile from "../components/patterns/StatTile.vue";
 import Button from "../components/base/Button.vue";
 import Chip from "../components/base/Chip.vue";
 import Input from "../components/base/Input.vue";

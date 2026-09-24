@@ -9,7 +9,7 @@ import { mountWithProviders } from "../../helpers/mountWithProviders";
  *  (confirmed: mounting SheetModal unstubbed produces an empty <ion-modal></ion-modal>). Stubbing
  *  just IonModal (not SheetModal itself, which still runs its own real header/body wiring and
  *  dismiss()/close plumbing) is the targeted fix tests/README.md's "stub that specific element"
- *  guidance describes — same stub tests/client/components/ui/SheetModal.test.ts uses on itself.
+ *  guidance describes — same stub tests/client/components/patterns/SheetModal.test.ts uses on itself.
  *  RpeCapture calls `sheetRef.value?.dismiss()` on pick, which SheetModal.vue resolves down to
  *  `modalRef.value.$el?.dismiss()` — this stub attaches that method in `mounted()`. */
 const IonModalStub = defineComponent({
