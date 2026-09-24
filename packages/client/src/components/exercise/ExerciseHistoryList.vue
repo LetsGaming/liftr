@@ -7,6 +7,7 @@
  */
 import { computed } from "vue";
 import { formatDateLong } from "../../lib/format";
+import EmptyNote from "../base/EmptyNote.vue";
 
 interface HistorySet {
   weightKg: number | null;
@@ -45,7 +46,7 @@ const groups = computed<DayGroup[]>(() => {
 
 <template>
   <div class="history-list">
-    <p v-if="groups.length === 0" class="empty">Diese Übung hast du noch nie geloggt.</p>
+    <EmptyNote v-if="groups.length === 0" class="empty" align="start">Diese Übung hast du noch nie geloggt.</EmptyNote>
     <div v-for="g in groups" :key="g.day" class="day-group">
       <div class="day-label">{{ g.dateLabel }}</div>
       <ul class="set-rows">
@@ -66,10 +67,6 @@ const groups = computed<DayGroup[]>(() => {
   display: flex;
   flex-direction: column;
   gap: var(--sp4);
-}
-.empty {
-  font-size: 12px;
-  color: var(--faint);
 }
 .day-group {
   display: flex;

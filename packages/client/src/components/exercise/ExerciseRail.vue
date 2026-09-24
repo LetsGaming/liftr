@@ -6,6 +6,7 @@
  *  strip so the rail doesn't push the current exercise below the fold on narrow viewports.
  *  Desktop keeps the default vertical variant unchanged. */
 import AppIcon from "../ui/AppIcon.vue";
+import ListRow from "../patterns/ListRow.vue";
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
 
 withDefaults(defineProps<{ variant?: "vertical" | "horizontal" }>(), { variant: "vertical" });
@@ -32,14 +33,17 @@ function workingReps(ex: ActiveExercise): number | null {
 
 <template>
   <div class="exercise-rail" :class="{ horizontal: variant === 'horizontal' }">
-    <button
+    <ListRow
       v-for="(ex, i) in store.exercises"
       :key="ex.workoutExerciseId"
+      as="button"
       class="rail-item surface-hybrid"
       :class="{ active: i === store.currentExerciseIndex, done: ex.sets.every((s) => s.logged), grouped: ex.supersetGroup != null }"
       @click="jump(i)"
     >
-      <span class="n"><AppIcon v-if="ex.sets.every((s) => s.logged)" name="check" /><template v-else>{{ i + 1 }}</template></span>
+      <template #leading>
+        <span class="n"><AppIcon v-if="ex.sets.every((s) => s.logged)" name="check" /><template v-else>{{ i + 1 }}</template></span>
+      </template>
       <span class="meta">
         <b><span v-if="ex.supersetGroup != null" class="superset-dot" aria-hidden="true" />{{ ex.name }}</b>
         <span>
@@ -47,7 +51,7 @@ function workingReps(ex: ActiveExercise): number | null {
           <template v-if="workingReps(ex) !== null"> · {{ workingReps(ex) }} Wdh.</template>
         </span>
       </span>
-    </button>
+    </ListRow>
   </div>
 </template>
 
@@ -58,12 +62,8 @@ function workingReps(ex: ActiveExercise): number | null {
   gap: 4px;
 }
 .rail-item {
-  display: flex;
-  align-items: center;
-  gap: var(--sp3);
   padding: var(--sp3);
   border-radius: var(--r-md);
-  text-align: left;
   /* Every row is a real dark surface, always — state is expressed by accent (active fill,
      done dimming), never by flipping to a lighter background. A bare native <button> falls
      back to the browser's own light chrome if you don't set this explicitly.

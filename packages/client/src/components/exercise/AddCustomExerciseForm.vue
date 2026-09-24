@@ -16,6 +16,10 @@ import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
 import { createExercise } from "../../services/exerciseService";
 import { useCatalogStore } from "../../stores/catalogStore";
+import Chip from "../base/Chip.vue";
+import Input from "../base/Input.vue";
+import Select from "../base/Select.vue";
+import Button from "../base/Button.vue";
 
 const emit = defineEmits<{ created: []; cancel: [] }>();
 
@@ -116,15 +120,15 @@ async function save() {
   <div class="add-exercise-form">
     <label class="field">
       <span class="field-label">Name</span>
-      <input v-model="displayName" type="text" placeholder="z. B. Kabelzug Facepull" />
+      <Input v-model="displayName" type="text" placeholder="z. B. Kabelzug Facepull" />
       <span v-if="slug" class="slug-preview">wird gespeichert als: {{ slug }}</span>
     </label>
 
     <label class="field">
       <span class="field-label">Bewegungsmuster</span>
-      <select v-model="movementPattern">
+      <Select v-model="movementPattern">
         <option v-for="p in MOVEMENT_PATTERNS" :key="p.value" :value="p.value">{{ p.label }}</option>
-      </select>
+      </Select>
     </label>
 
     <label class="field checkbox-field">
@@ -134,51 +138,51 @@ async function save() {
 
     <label v-if="!isBodyweight" class="field">
       <span class="field-label">Gerät</span>
-      <select v-model="equipment">
+      <Select v-model="equipment">
         <option value="">Kein primäres Gerät</option>
         <option v-for="eq in EQUIPMENT_SLUGS" :key="eq" :value="eq">{{ EQUIPMENT_LABEL_DE[eq] }}</option>
-      </select>
+      </Select>
     </label>
 
     <div class="field">
       <span class="field-label">Hauptmuskel</span>
       <div class="chip-grid">
-        <button
+        <Chip
           v-for="m in MUSCLE_SLUGS"
           :key="m"
-          type="button"
+          as="button"
           class="muscle-chip"
-          :class="{ active: primaryMuscle === m }"
+          :active="primaryMuscle === m"
           @click="primaryMuscle = m"
         >
           {{ MUSCLE_LABEL_DE[m] ?? m }}
-        </button>
+        </Chip>
       </div>
     </div>
 
     <div class="field">
       <span class="field-label">Weitere Muskeln (optional)</span>
       <div class="chip-grid">
-        <button
+        <Chip
           v-for="m in MUSCLE_SLUGS.filter((s) => s !== primaryMuscle)"
           :key="m"
-          type="button"
+          as="button"
           class="muscle-chip"
-          :class="{ active: secondaryMuscles.has(m) }"
+          :active="secondaryMuscles.has(m)"
           @click="toggleSecondary(m)"
         >
           {{ MUSCLE_LABEL_DE[m] ?? m }}
-        </button>
+        </Chip>
       </div>
     </div>
 
     <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
 
     <div class="actions">
-      <button class="btn-secondary" @click="emit('cancel')">Abbrechen</button>
-      <button class="btn-primary" :disabled="!canSave" @click="save">
+      <Button variant="secondary" @click="emit('cancel')">Abbrechen</Button>
+      <Button variant="primary" :disabled="!canSave" @click="save">
         {{ saving ? "Wird gespeichert…" : "Übung speichern" }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -200,15 +204,6 @@ async function save() {
   color: var(--dim);
   font-weight: 600;
 }
-.field input[type="text"],
-.field select {
-  padding: 10px 14px;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 14px;
-}
 .slug-preview {
   font-size: 11px;
   color: var(--faint);
@@ -223,20 +218,10 @@ async function save() {
   flex-wrap: wrap;
   gap: var(--sp2);
 }
-.muscle-chip {
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 13px;
-  font-weight: 600;
-}
-.muscle-chip.active {
+button.muscle-chip.active {
   background: var(--blue-lo);
   border-color: var(--blue);
   color: var(--on-blue-lo);
-  font-weight: 800;
 }
 .error-msg {
   color: var(--danger);
