@@ -24,6 +24,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Fixed
 
+- On a short exercise, the "Satz speichern" button no longer renders hidden behind the bottom tab bar on a phone.
 - The Diagnose and Lizenzen pages now have a back button.
 - Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
 - XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
