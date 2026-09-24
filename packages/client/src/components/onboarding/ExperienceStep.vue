@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ExperienceLevel } from "../../stores/settingsStore";
+import ListRow from "../patterns/ListRow.vue";
 import { useOnboardingDraft } from "./OnboardingDraft";
 
 const draft = useOnboardingDraft();
@@ -17,16 +18,19 @@ const options: { value: ExperienceLevel; label: string; hint: string }[] = [
     <p class="step-hint">Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast.</p>
 
     <div class="option-list">
-      <button
+      <ListRow
         v-for="opt in options"
         :key="opt.value"
+        as="button"
         class="option-row"
         :class="{ active: draft.experienceLevel === opt.value }"
         @click="draft.experienceLevel = opt.value"
       >
-        <b>{{ opt.label }}</b>
-        <span>{{ opt.hint }}</span>
-      </button>
+        <div class="option-meta">
+          <b>{{ opt.label }}</b>
+          <span>{{ opt.hint }}</span>
+        </div>
+      </ListRow>
     </div>
   </div>
 </template>
@@ -50,11 +54,10 @@ const options: { value: ExperienceLevel; label: string; hint: string }[] = [
   flex-direction: column;
   gap: var(--sp3);
 }
-.option-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+/* ListRow (patterns/ListRow.vue) supplies the interactive-button reset; the specific element
+   qualifier here (not just the class) keeps this recipe's background/color from losing to
+   ListRow's own `.list-row-interactive` reset regardless of the two components' CSS load order. */
+button.option-row {
   padding: var(--sp4);
   border-radius: var(--r-md);
   background: var(--surface-2);
@@ -65,7 +68,12 @@ const options: { value: ExperienceLevel; label: string; hint: string }[] = [
      for the *unselected* rows: it reads as "available but not chosen" against the active row's
      full-brightness ink, same hierarchy EquipmentStep/AboutStep use for their inactive state. */
   color: var(--dim);
-  text-align: left;
+}
+.option-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 .option-row b {
   font-size: 15px;
@@ -81,7 +89,7 @@ const options: { value: ExperienceLevel; label: string; hint: string }[] = [
    --blue-lo fill, so the selected row ties visually to the app's gradient system.
    --nebula-ink-on-fill is already the app's proven AA-safe ink for this exact gradient (worst
    stop ~5:1, see tokens.css's .btn-primary comment). */
-.option-row.active {
+button.option-row.active {
   background: var(--nebula-grad-cta);
   border-color: transparent;
   color: var(--nebula-ink-on-fill);

@@ -17,6 +17,7 @@
  * animation/teardown finishes.
  */
 import { ref } from "vue";
+import Button from "../base/Button.vue";
 import SheetModal from "../ui/SheetModal.vue";
 
 const props = defineProps<{ title: string; modelValue: string | null }>();
@@ -35,7 +36,7 @@ function onSave() {
 <template>
   <SheetModal ref="sheetRef" :title="props.title" height="50%" @close="emit('close')">
     <textarea v-model="draft" class="note-textarea" rows="6" maxlength="500" placeholder="Notiz…" />
-    <button class="btn-primary btn-block note-save" @click="onSave">Speichern</button>
+    <Button variant="primary" block class="note-save" @click="onSave">Speichern</Button>
   </SheetModal>
 </template>
 

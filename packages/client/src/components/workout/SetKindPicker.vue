@@ -6,6 +6,7 @@
  * activeWorkoutStore.ts's setSetKind()/removeSet() for why.
  */
 import { SET_KIND_LABEL, type SetKind } from "../../stores/activeWorkoutStore";
+import ListRow from "../patterns/ListRow.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import SheetModal from "../ui/SheetModal.vue";
 
@@ -23,14 +24,14 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
 <template>
   <SheetModal title="Satzart auswählen" height="45%" @close="emit('close')">
     <div class="kind-list">
-      <button v-for="opt in OPTIONS" :key="opt.kind" class="kind-row surface-hybrid" @click="emit('pick', opt.kind)">
-        <span class="kind-letter" :class="`k-${opt.kind}`">{{ opt.letter }}</span>
+      <ListRow v-for="opt in OPTIONS" :key="opt.kind" as="button" class="kind-row surface-hybrid" @click="emit('pick', opt.kind)">
+        <template #leading><span class="kind-letter" :class="`k-${opt.kind}`">{{ opt.letter }}</span></template>
         {{ opt.label }}
-      </button>
-      <button class="kind-row danger surface-hybrid" @click="emit('remove')">
-        <span class="kind-letter k-remove"><AppIcon name="trash" /></span>
+      </ListRow>
+      <ListRow as="button" class="kind-row danger surface-hybrid" @click="emit('remove')">
+        <template #leading><span class="kind-letter k-remove"><AppIcon name="trash" /></span></template>
         Satz entfernen
-      </button>
+      </ListRow>
     </div>
   </SheetModal>
 </template>
@@ -45,17 +46,16 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
    recipe as every other row/card converted to it. This sheet's own backdrop (SheetModal.vue)
    still defaults to an opaque --surface fill, so the backdrop-blur this utility adds has no
    visible effect here — kept anyway for the translucent bg + gradient hairline, so this row
-   still reads as "in the system" rather than needing a second, sheet-specific treatment. */
-.kind-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp3);
+   still reads as "in the system" rather than needing a second, sheet-specific treatment.
+   ListRow (patterns/ListRow.vue) supplies the row's flex layout and interactive-button reset;
+   the element qualifier here keeps padding/color/font from losing to ListRow's own
+   `.list-row-interactive` reset regardless of the two components' CSS load order. */
+button.kind-row {
   padding: var(--sp3) var(--sp4);
   border-radius: var(--r-lg);
   color: var(--text);
   font-size: 14.5px;
   font-weight: 700;
-  text-align: left;
   transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .kind-row:active {
@@ -66,7 +66,7 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
     background: var(--surface-3);
   }
 }
-.kind-row.danger {
+button.kind-row.danger {
   color: var(--danger);
 }
 .kind-letter {
