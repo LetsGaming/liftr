@@ -10,6 +10,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { TIERS, type Tier } from "@liftr/shared";
+import Button from "../base/Button.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import TierBadge from "../rank/TierBadge.vue";
 import { useCelebrate } from "../../composables/useCelebrate";
@@ -220,15 +221,17 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-      <router-link
+      <Button
         v-if="hasPr"
+        as="router-link"
         to="/records"
-        class="btn-secondary"
+        variant="secondary"
         style="display: inline-flex; margin-top: var(--sp3)"
         @click.stop
       >
-        <AppIcon name="trophy" /> Rekorde ansehen
-      </router-link>
+        <template #leading><AppIcon name="trophy" /></template>
+        Rekorde ansehen
+      </Button>
     </div>
 
     <div v-else-if="celebrate.activeIndex.value === 1" class="beat pop-in">

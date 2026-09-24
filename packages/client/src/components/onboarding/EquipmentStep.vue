@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Chip from "../base/Chip.vue";
 import ExerciseIcon from "../exercise/ExerciseIcon.vue";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE, SUPPORT_EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
 import { useOnboardingDraft } from "./OnboardingDraft";
@@ -32,33 +33,38 @@ function toggle(slug: string) {
 
     <div class="eyebrow group-label">Trainingsgerät</div>
     <div class="chip-grid">
-      <button
+      <Chip
         v-for="slug in EQUIPMENT_SLUGS"
         :key="slug"
+        as="button"
+        variant="accent"
         class="equip-chip"
-        :class="{ active: draft.equipment.has(slug), locked: slug === 'bodyweight' }"
+        :class="{ locked: slug === 'bodyweight' }"
+        :active="draft.equipment.has(slug)"
         :aria-pressed="draft.equipment.has(slug)"
         :aria-disabled="slug === 'bodyweight' ? 'true' : undefined"
         @click="toggle(slug)"
       >
-        <ExerciseIcon :equipment="slug" :size="22" />
+        <template #leading><ExerciseIcon :equipment="slug" :size="22" /></template>
         <span class="equip-chip-label">{{ EQUIPMENT_LABEL_DE[slug] }}</span>
         <span v-if="slug === 'bodyweight'" class="lock-hint">Immer aktiv</span>
-      </button>
+      </Chip>
     </div>
 
     <div class="eyebrow group-label">Weiteres Equipment</div>
     <div class="chip-grid">
-      <button
+      <Chip
         v-for="slug in supportSlugs"
         :key="slug"
+        as="button"
+        variant="accent"
         class="equip-chip"
-        :class="{ active: draft.equipment.has(slug) }"
+        :active="draft.equipment.has(slug)"
         @click="toggle(slug)"
       >
-        <ExerciseIcon :equipment="slug" :size="22" />
+        <template #leading><ExerciseIcon :equipment="slug" :size="22" /></template>
         {{ SUPPORT_EQUIPMENT_LABEL_DE[slug] }}
-      </button>
+      </Chip>
     </div>
   </div>
 </template>
@@ -85,36 +91,22 @@ function toggle(slug: string) {
   grid-template-columns: repeat(2, 1fr);
   gap: var(--sp2);
 }
+/* Chip's own recipe (base/Chip.vue) supplies shape/color/active-state; this only adds the
+   grid-item layout (icon + growing label, left-aligned, full column width) Chip's default pill
+   shape doesn't assume. */
 .equip-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 13px;
-  font-weight: 600;
+  width: 100%;
+  justify-content: flex-start;
   text-align: left;
 }
 .equip-chip-label {
   flex: 1;
 }
-/* Selected state uses the same CTA gradient .btn-primary uses (tokens.css), not a flat --blue-lo
-   fill. --nebula-ink-on-fill is the app's proven AA-safe ink for this exact gradient (worst stop
-   ~5:1, see tokens.css's .btn-primary comment). */
-.equip-chip.active {
-  background: var(--nebula-grad-cta);
-  border-color: transparent;
-  color: var(--nebula-ink-on-fill);
-  font-weight: 800;
-}
 /* Bodyweight is always-on, not optional equipment — a lock cue plus a non-interactive cursor
    communicates why the click did nothing, rather than the chip silently ignoring taps like a
-   broken toggle would. Stays on the active/gradient fill (never grayed out): it's not disabled
+   broken toggle would. Stays on the active state (never grayed out): it's not disabled
    functionality, it's a permanently-true fact about the user. */
-.equip-chip.locked {
+button.equip-chip.locked {
   cursor: default;
 }
 .lock-hint {
