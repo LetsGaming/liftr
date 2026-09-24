@@ -1,11 +1,11 @@
-/* Shape for components/ui/CardGrid.vue + components/ui/ListCard.vue, the shared base components
+/* Shape for components/patterns/CardGrid.vue + components/patterns/ListCard.vue, the shared base components
    behind RoutineList.vue's routine cards and RouteList.vue's route cards. Global (not scoped):
    the grid's `.card-grid > .card:nth-child()` stagger selector has to match a `.card` rendered by
    a *different* SFC (ListCard.vue) than the one owning `.card-grid` (CardGrid.vue), which
    Vue's scoped-CSS attribute matching can't do across component boundaries. Loaded once from
    main.ts, same as tokens.css/motion.css. Content each card wraps (preview, thumbnail, meso
    form, drag handle, empty state) stays local to each list's own component. */
-/* Root layout for components/ui/CardListScreen.vue — the "not started" screen shell wrapping a
+/* Root layout for components/patterns/CardListScreen.vue — the "not started" screen shell wrapping a
    CardGrid (or its empty state) plus whatever "+ Neue X" / primary CTA buttons follow it.
    RouteList.vue previously had no equivalent wrapper at all, so unlike RoutineList.vue its own
    CTA button never picked up the desktop centering below — same class of bug as the grid/card

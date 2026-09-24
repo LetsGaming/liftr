@@ -5,7 +5,7 @@ import NoteCapture from "~client/components/workout/NoteCapture.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 /** See RpeCapture.test.ts for why only IonModal (not SheetModal itself) is stubbed — same
- *  stub as tests/client/components/ui/SheetModal.test.ts uses on itself. NoteCapture calls
+ *  stub as tests/client/components/patterns/SheetModal.test.ts uses on itself. NoteCapture calls
  *  `sheetRef.value?.dismiss()` on save, which needs this stub's `.dismiss()` on `$el`. */
 const IonModalStub = defineComponent({
   name: "IonModal",

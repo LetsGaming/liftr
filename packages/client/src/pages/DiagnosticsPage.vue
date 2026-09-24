@@ -6,16 +6,19 @@
  * "reachable, not surfaced" pattern AttributionsPage.vue already follows for /attributions.
  *
  * Two sections:
- * 1. Synchronisierung — every user, not owner-gated. The client-side Health Connect sync log
- *    (syncLog.ts) — a skipped workout never reaches the server, so this is the only place its
- *    outcome is recorded at all.
+ * 1. Synchronisierung — every user, not owner-gated, but Health-Connect-only (native Android) like
+ *    ProfilePage.vue's own Health Connect card — the client-side sync log (syncLog.ts) lives in
+ *    this device's localStorage, so it's always empty on web/iOS anyway, never a stale display.
  * 2. Serverfehler — the previous owner-only list from ProfilePage.vue, moved here unchanged.
  */
 import { onMounted, ref } from "vue";
-import BasePage from "../components/ui/BasePage.vue";
+import BasePage from "../components/patterns/BasePage.vue";
+import Button from "../components/base/Button.vue";
+import EmptyNote from "../components/base/EmptyNote.vue";
 import { getMe, getRecentErrors, type ErrorLogEntry, type Me } from "../services/authService";
 import {
   importNewHealthConnectWorkouts,
+  isHealthConnectAvailable,
   resetHealthConnectScanWindow,
   waitForInFlightHealthConnectImport,
   type HealthConnectSkipReason,
@@ -24,6 +27,8 @@ import { refreshCardioDerivedStores } from "../composables/useCardioDerivedStore
 import { clearSyncLog, readSyncLog, type SyncLogEntry } from "../lib/syncLog";
 import { useToast } from "../composables/useToast";
 import { useConfirmTap } from "../composables/useConfirmTap";
+
+const healthConnectAvailable = ref(false);
 
 const me = ref<Me | null>(null);
 const syncLog = ref<SyncLogEntry[]>([]);
@@ -49,6 +54,7 @@ const { trigger: triggerClearLog, isArmed: isClearLogArmed } = useConfirmTap(() 
 onMounted(async () => {
   refreshSyncLog();
   me.value = await getMe();
+  healthConnectAvailable.value = await isHealthConnectAvailable();
 });
 
 function toggleEntry(idx: number) {
@@ -138,7 +144,7 @@ function formatAt(iso: string): string {
 <template>
   <BasePage title="Diagnose" back-button>
     <div class="diagnostics-content">
-      <section class="card card--quiet surface-hybrid">
+      <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
         <h2 class="eyebrow">Synchronisierung</h2>
         <p class="hint">
           Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst,
@@ -146,27 +152,27 @@ function formatAt(iso: string): string {
         </p>
 
         <div class="rescan-row">
-          <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(30)">
+          <Button variant="secondary" :disabled="rescanBusy !== null" @click="rescan(30)">
             {{ rescanBusy === 30 ? "Prüfe…" : "Letzte 30 Tage erneut prüfen" }}
-          </button>
-          <button class="btn-secondary" :disabled="rescanBusy !== null" @click="rescan(90)">
+          </Button>
+          <Button variant="secondary" :disabled="rescanBusy !== null" @click="rescan(90)">
             {{ rescanBusy === 90 ? "Prüfe…" : "Letzte 90 Tage erneut prüfen" }}
-          </button>
+          </Button>
         </div>
 
-        <p v-if="syncLog.length === 0" class="current" style="color: var(--faint)">
+        <EmptyNote v-if="syncLog.length === 0" align="start" class="current" style="color: var(--faint)">
           Noch keine Synchronisierung aufgezeichnet.
-        </p>
+        </EmptyNote>
 
-        <button
+        <Button
           v-else
-          type="button"
-          class="btn-secondary danger"
+          variant="secondary"
+          class="danger"
           :class="{ confirming: isClearLogArmed() }"
           @click="triggerClearLog()"
         >
           {{ isClearLogArmed() ? "Wirklich leeren?" : "Protokoll leeren" }}
-        </button>
+        </Button>
 
         <ul v-if="syncLog.length > 0" class="sync-log-list">
           <li v-for="(entry, idx) in syncLog" :key="entry.at" class="sync-log-entry surface-hybrid">
@@ -199,7 +205,7 @@ function formatAt(iso: string): string {
                 </button>
                 <pre v-if="rawDataOpen.has(w.workoutId)" class="raw-data">{{ JSON.stringify(w, null, 2) }}</pre>
               </div>
-              <button type="button" class="btn-secondary copy-btn" @click="copyReport(entry)">Bericht kopieren</button>
+              <Button variant="secondary" class="copy-btn" @click="copyReport(entry)">Bericht kopieren</Button>
             </div>
           </li>
         </ul>
@@ -208,14 +214,14 @@ function formatAt(iso: string): string {
       <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
         <h2 class="eyebrow">Serverfehler</h2>
         <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
-        <button class="btn-secondary btn-block" @click="toggleErrorLogs">
+        <Button variant="secondary" block @click="toggleErrorLogs">
           {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
-        </button>
+        </Button>
         <div v-if="errorLogsOpen" class="error-log-list">
           <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
-          <p v-else-if="errorLogs.length === 0" class="current" style="color: var(--faint)">
+          <EmptyNote v-else-if="errorLogs.length === 0" align="start" class="current" style="color: var(--faint)">
             Keine Fehler aufgezeichnet.
-          </p>
+          </EmptyNote>
           <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
             <div class="error-log-meta">
               <span class="tnum">{{ new Date(entry.occurredAt).toLocaleString("de-DE") }}</span>

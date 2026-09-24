@@ -15,6 +15,7 @@
 import { computed } from "vue";
 import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import { useRanksStore } from "../../stores/ranksStore";
+import ListRow from "../patterns/ListRow.vue";
 
 const TIER_ORDER: RankTier[] = ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"];
 const TIER_COLOR_VAR: Record<RankTier, string> = {
@@ -87,11 +88,11 @@ const total = computed(() => ranksStore.ranks.length);
         <text x="50" y="62" text-anchor="middle" class="rd-total-label">Übungen</text>
       </svg>
       <ul class="rd-legend">
-        <li v-for="s in segments" :key="s.tier" class="rd-legend-row">
-          <span class="rd-swatch" :style="{ background: s.color }" />
+        <ListRow v-for="s in segments" :key="s.tier" as="li" :interactive="false" dense class="rd-legend-row">
+          <template #leading><span class="rd-swatch" :style="{ background: s.color }" /></template>
           <span class="rd-legend-label">{{ TIER_LABEL_DE[s.tier] }}</span>
-          <span class="rd-legend-count tnum">{{ s.count }}</span>
-        </li>
+          <template #trailing><span class="rd-legend-count tnum">{{ s.count }}</span></template>
+        </ListRow>
       </ul>
     </div>
   </div>
@@ -150,9 +151,6 @@ const total = computed(() => ranksStore.ranks.length);
   list-style: none;
 }
 .rd-legend-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
   font-size: 12.5px;
 }
 .rd-swatch {

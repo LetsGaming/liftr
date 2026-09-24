@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reactive, ref } from "vue";
 import { createMemoryHistory, createRouter, type Router } from "vue-router";
 import { i18n } from "~client/i18n";
-import RoutineWizard from "~client/components/routine-wizard/RoutineWizard.vue";
+import RoutineWizard from "~client/components/routine/RoutineWizard.vue";
 import RoutineOverviewPage from "~client/pages/RoutineOverviewPage.vue";
 
 // Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see

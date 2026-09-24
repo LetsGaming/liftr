@@ -14,6 +14,7 @@ import { computed } from "vue";
 import { MAX_ORDINAL, ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
+import Chip from "../base/Chip.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -174,7 +175,15 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
         </div>
         <div class="rp-next">
           <span class="rp-next-label">Nächstes Ziel</span>
-          <span v-for="(chip, i) in nextChips" :key="chip" class="rp-chip" :class="i === 0 ? 'outline' : 'fill'">{{ chip }}</span>
+          <Chip
+            v-for="(chip, i) in nextChips"
+            :key="chip"
+            variant="tier"
+            size="sm"
+            class="rp-chip"
+            :class="i === 0 ? 'outline' : 'fill'"
+            :active="i !== 0"
+          >{{ chip }}</Chip>
         </div>
         <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
         <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
@@ -248,20 +257,15 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
    against it — the same reasoning `.rp-tier` above already gives for avoiding --tt on lighter
    surfaces. */
 .rp-chip {
-  font-size: 11.5px;
-  font-weight: 800;
-  padding: 2px 9px;
-  border-radius: 999px;
   font-variant-numeric: tabular-nums;
 }
 .rp-chip.outline {
+  background: transparent;
   color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--tier-accent, var(--line));
 }
 .rp-chip.fill {
   color: var(--tt, var(--text));
   background: var(--tier-deep, var(--surface-3));
-  box-shadow: inset 0 0 0 1px var(--tier-accent, var(--line));
 }
 /* A rank loss is the second-loudest thing on the card after the tier name — deliberately not
    faint text, since it's the loudest event a rank ladder can produce. */

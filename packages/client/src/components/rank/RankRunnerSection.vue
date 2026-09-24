@@ -11,12 +11,13 @@
  */
 import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
-import CardGrid from "../ui/CardGrid.vue";
+import CardGrid from "../patterns/CardGrid.vue";
 import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunPrListItem, type RunRankRow } from "../../stores/runRankStore";
 import { formatClockLong, formatPace } from "../../lib/format";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
+import Button from "../base/Button.vue";
 
 const runRankStore = useRunRankStore();
 onMounted(() => {
@@ -126,7 +127,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
 
     <p v-else-if="runRankStore.ranksError" class="page-note load-error run-rank-load-error" style="margin-top: var(--sp4)">
       Lauf-Ränge konnten nicht geladen werden.
-      <button type="button" class="btn-secondary" @click="runRankStore.loadRanks()">Erneut versuchen</button>
+      <Button variant="secondary" @click="runRankStore.loadRanks()">Erneut versuchen</Button>
     </p>
 
     <CardGrid v-else>

@@ -18,11 +18,13 @@ import { formatDateLong, formatDurationMinutes, formatPace } from "../lib/format
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
-import AppIcon from "../components/ui/AppIcon.vue";
-import BasePage from "../components/ui/BasePage.vue";
-import RouteWizard from "../components/route-wizard/RouteWizard.vue";
+import AppIcon from "../components/base/AppIcon.vue";
+import BasePage from "../components/patterns/BasePage.vue";
+import Button from "../components/base/Button.vue";
+import Chip from "../components/base/Chip.vue";
+import RouteWizard from "../components/route/RouteWizard.vue";
 import RunReplay from "../components/run/RunReplay.vue";
-import StatTile from "../components/ui/StatTile.vue";
+import StatTile from "../components/patterns/StatTile.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -142,15 +144,15 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
     <template v-else>
       <div class="date-line tnum">{{ formatDateLong(detail.startedAt) }}</div>
 
-      <div v-if="sourceRouteName" class="route-chip">Strecke: {{ sourceRouteName }}</div>
+      <Chip v-if="sourceRouteName" size="sm" class="route-chip">Strecke: {{ sourceRouteName }}</Chip>
       <!-- rank-chip carries no CSS of its own (it shares .route-chip's look on purpose, same row
            as the "Strecke:" chip) — kept only as a stable selector distinguishing this chip from
            its siblings (route/pr) for tests. -->
-      <div v-if="detailRank" class="route-chip rank-chip pop-in">
+      <Chip v-if="detailRank" size="sm" class="route-chip rank-chip pop-in">
         {{ ACTIVITY_LABEL[detail.activityType ?? "run"] }}<template v-if="detailBucket !== 'all'"> · {{ RUN_CATEGORY_LABEL[detailBucket!] }}</template>
         · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }} {{ DIVISION_LABEL[detailRank.division] }}
-      </div>
-      <div v-if="detailIsPr" class="route-chip pr-chip pop-in">Neuer Rekord</div>
+      </Chip>
+      <Chip v-if="detailIsPr" size="sm" class="route-chip pr-chip pop-in">Neuer Rekord</Chip>
       <div class="stat-row">
         <StatTile :value="`${(detail.distanceM / 1000).toFixed(2)} km`" label="Distanz" />
         <StatTile :value="formatDurationMinutes(detail.durationS)" label="Dauer" />
@@ -162,12 +164,15 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
       <RunReplay v-if="detail.points.length > 0" :points="detail.points" />
       <p v-else class="hint">Manuell erfasster Lauf — keine Route verfügbar.</p>
 
-      <button v-if="detail.points.length > 0" class="btn-secondary btn-block save-route-btn" @click="showRouteWizard = true">
-        <AppIcon name="running" /> Als Strecke speichern
-      </button>
+      <Button v-if="detail.points.length > 0" variant="secondary" block class="save-route-btn" @click="showRouteWizard = true">
+        <template #leading><AppIcon name="running" /></template>
+        Als Strecke speichern
+      </Button>
 
-      <button
-        class="btn-secondary btn-block delete-btn"
+      <Button
+        variant="secondary"
+        block
+        class="delete-btn"
         :class="{ confirming: deleteConfirm.isArmed() }"
         :disabled="deleting"
         @click="deleteConfirm.trigger()"
@@ -175,7 +180,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
         <template v-if="deleting">Wird gelöscht…</template>
         <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen?</template>
         <template v-else><AppIcon name="trash" /> Lauf löschen</template>
-      </button>
+      </Button>
     </template>
 
     <RouteWizard
@@ -198,15 +203,8 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
   margin-bottom: var(--sp4);
 }
 .route-chip {
-  display: inline-block;
   margin-bottom: var(--sp3);
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
   font-size: 12.5px;
-  font-weight: 700;
 }
 /* Sits next to the route chip (same visual pattern, reused rather than invented) when
    consecutive chips wrap onto the same line. */

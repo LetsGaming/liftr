@@ -2,11 +2,12 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import AppIcon from "./components/ui/AppIcon.vue";
-import AuthGate from "./components/ui/AuthGate.vue";
-import OnboardingGuide from "./components/ui/OnboardingGuide.vue";
-import ServerGate from "./components/ui/ServerGate.vue";
-import ToastHost from "./components/ui/ToastHost.vue";
+import AppIcon from "./components/base/AppIcon.vue";
+import AuthGate from "./components/shell/AuthGate.vue";
+import Chip from "./components/base/Chip.vue";
+import OnboardingGuide from "./components/shell/OnboardingGuide.vue";
+import ServerGate from "./components/shell/ServerGate.vue";
+import ToastHost from "./components/shell/ToastHost.vue";
 import { useAppUpdate } from "./composables/useAppUpdate";
 import { checkVersionMismatch } from "./composables/useServerConnection";
 import { useToast } from "./composables/useToast";
@@ -236,9 +237,9 @@ const forceActiveTo = computed(() => {
           >
             <span>{{ xp.level }}</span>
           </div>
-          <div v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">
+          <Chip v-if="streak.loaded && streak.streak > 0" class="streak-chip mobile" :class="{ 'streak-pulse': streakJustExtended }">
             <AppIcon name="flame" /> {{ streak.streak }}
-          </div>
+          </Chip>
         </div>
         <nav class="side-nav" aria-label="Hauptnavigation">
           <RouterLink
@@ -259,9 +260,9 @@ const forceActiveTo = computed(() => {
             <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
             <span class="xp-amount"><AppIcon name="sparkle" /> {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
           </div>
-          <div v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
+          <Chip v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
             <AppIcon name="flame" /> {{ streak.streak }} Tage Serie
-          </div>
+          </Chip>
         </nav>
         <main class="main-content">
           <RouterView v-slot="{ Component }">
@@ -478,10 +479,7 @@ const forceActiveTo = computed(() => {
   margin-top: auto;
   padding: var(--sp2) var(--sp3);
   font-size: 12.5px;
-  font-weight: 700;
   color: var(--warning-hi);
-  background: var(--surface-2);
-  border-radius: var(--r-sm);
 }
 /* --fire-hi/--surface-2 measured at 1.82:1 in light mode (need 4.5:1 for AA); darkened via
    color-mix rather than inventing a new brand hex (measures ~5.3:1 against --surface-2 light). */
@@ -618,10 +616,6 @@ const forceActiveTo = computed(() => {
   .top-hud .streak-chip {
     margin-top: 0;
     padding: 5px 10px;
-    font-size: 12.5px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
   }
   /* The XP-progress ring — level number centered inside a conic-gradient ring sized to
      xp.progressPercent (0-100 -> 0-360deg). Deliberately compact/quiet: this replaces a title,

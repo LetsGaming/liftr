@@ -11,8 +11,8 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import AddCustomExerciseForm from "../components/exercise/AddCustomExerciseForm.vue";
 import ExerciseList from "../components/exercise/ExerciseList.vue";
-import BasePage from "../components/ui/BasePage.vue";
-import SheetModal from "../components/ui/SheetModal.vue";
+import BasePage from "../components/patterns/BasePage.vue";
+import SheetModal from "../components/patterns/SheetModal.vue";
 import { useCatalogStore } from "../stores/catalogStore";
 
 const router = useRouter();

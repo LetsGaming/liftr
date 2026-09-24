@@ -5,14 +5,17 @@
  * fallback. No props/emits: every dependency below is a Pinia store or a composable that
  * already instantiates its own store references, so this mounts standalone.
  */
-import AppIcon from "../ui/AppIcon.vue";
-import CardGrid from "../ui/CardGrid.vue";
-import CardListScreen from "../ui/CardListScreen.vue";
-import EmptyStateCard from "../ui/EmptyStateCard.vue";
-import ListCard from "../ui/ListCard.vue";
-import MuscleFigure from "../ui/MuscleFigure.vue";
-import NumberStepper from "../ui/NumberStepper.vue";
-import RoutineWizard from "../routine-wizard/RoutineWizard.vue";
+import AppIcon from "../base/AppIcon.vue";
+import CardGrid from "../patterns/CardGrid.vue";
+import CardListScreen from "../patterns/CardListScreen.vue";
+import EmptyStateCard from "../patterns/EmptyStateCard.vue";
+import ListCard from "../patterns/ListCard.vue";
+import MuscleFigure from "../exercise/MuscleFigure.vue";
+import NumberStepper from "../patterns/NumberStepper.vue";
+import RoutineWizard from "./RoutineWizard.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
+import IconButton from "../patterns/IconButton.vue";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useRoutineStore, type Routine } from "../../stores/routineStore";
 import { useMesocycleControls } from "../../composables/useMesocycleControls";
@@ -128,13 +131,13 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
             </button>
           </template>
           <template v-if="routine.mesocycle" #badge>
-            <span class="meso-badge">
+            <Chip variant="accent" size="sm" class="meso-badge">
               Woche {{ routine.mesocycle.currentWeek }}/{{ routine.mesocycle.totalWeeks }} ·
               {{ routine.mesocycle.weekPercents[routine.mesocycle.currentWeek - 1] }}%
-            </span>
+            </Chip>
           </template>
           <template #menu>
-            <button class="btn-icon" aria-label="Mehr" @click="toggleMenu(routine.id)"><AppIcon name="more" /></button>
+            <IconButton icon="more" label="Mehr" @click="toggleMenu(routine.id)" />
             <div v-if="openMenuId === routine.id" class="card-menu">
               <button @click="editRoutine(routine); openMenuId = null"><AppIcon name="edit" /> Bearbeiten</button>
               <button @click="duplicateRoutine(routine)">Duplizieren</button>
@@ -163,14 +166,14 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           <template #meta>{{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</template>
 
           <template #actions>
-            <button class="btn-secondary" :disabled="starting" @click="startFromCard(routine)">Starten</button>
+            <Button variant="secondary" :disabled="starting" @click="startFromCard(routine)">Starten</Button>
           </template>
 
           <template v-if="mesoFormRoutineId === routine.id" #footer>
             <div class="meso-form" @click.stop>
               <NumberStepper size="sm" :model-value="mesoWeeksInput.get(routine.id) ?? 4" @adjust="(d) => adjustMesoWeeks(routine.id, d)" />
               <span>Wochen</span>
-              <button class="btn-secondary" @click="startMesocycle(routine.id)">Starten</button>
+              <Button variant="secondary" @click="startMesocycle(routine.id)">Starten</Button>
             </div>
           </template>
         </ListCard>
@@ -180,16 +183,16 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
         Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür braucht
         es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten.
         <template #action>
-          <button class="btn-primary btn-block" @click="showBuilder = true">+ Neue Routine</button>
+          <Button block @click="showBuilder = true">+ Neue Routine</Button>
         </template>
       </EmptyStateCard>
 
-      <button v-if="routineStore.routines.length > 0" class="btn-secondary" @click="showBuilder = true">+ Neue Routine</button>
+      <Button v-if="routineStore.routines.length > 0" variant="secondary" @click="showBuilder = true">+ Neue Routine</Button>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
 
-      <button class="btn-primary btn-lg btn-block" :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
+      <Button size="lg" block :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
         {{ starting ? "Wird gestartet…" : "Ohne Routine loslegen · die ersten 4 Übungen" }}
-      </button>
+      </Button>
     </CardListScreen>
 </template>
 
@@ -219,12 +222,6 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
   font-style: italic;
 }
 .rc-muscles {
-  flex: none;
-}
-.meso-badge {
-  color: var(--blue-hi);
-  font-weight: 700;
-  font-size: 11px;
   flex: none;
 }
 .meso-form {

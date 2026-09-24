@@ -19,6 +19,7 @@ import { computed, ref } from "vue";
 import { ordinal, TIER_DIVISION_COUNT, TIERS, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
+import Chip from "../base/Chip.vue";
 
 const props = defineProps<{
   currentTier: string | null;
@@ -88,14 +89,18 @@ function toggleExpand(tier: Tier) {
         </svg>
       </button>
       <ul v-if="expandedTier === tier" class="division-list">
-        <li
+        <Chip
           v-for="d in divisions(tier)"
           :key="d"
+          as="li"
+          variant="tier"
+          size="sm"
           class="division-chip"
           :class="{ current: rungState(tier) === 'current' && currentDivision === d }"
+          :active="rungState(tier) === 'current' && currentDivision === d"
         >
           {{ DIVISION_LABEL[d] ?? d }}
-        </li>
+        </Chip>
       </ul>
     </li>
   </ol>
@@ -160,19 +165,8 @@ function toggleExpand(tier: Tier) {
 .rung.current .division-list {
   padding-left: calc(var(--sp3) + 8px + 34px + var(--rung-gap, 28px));
 }
-.division-chip {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--dim);
-  background: var(--surface-3);
-  border-radius: 999px;
-  padding: 3px 10px;
-}
 .division-chip.current {
-  color: var(--tt, var(--text));
-  background: var(--tier-accent, var(--nebula-1));
   box-shadow: 0 0 0 2px var(--tier-accent, var(--nebula-1));
-  font-weight: 800;
 }
 /* Divisions render worst-to-best (III -> I, see `divisions()` above), so a chip with a later
    `.current` sibling was already climbed past this rung, and one after `.current` hasn't been

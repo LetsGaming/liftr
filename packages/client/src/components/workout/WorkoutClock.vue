@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
+import IconButton from "../patterns/IconButton.vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 
 const store = useActiveWorkoutStore();
@@ -42,9 +42,12 @@ onBeforeUnmount(() => {
       <span class="tnum">{{ display }}</span>
     </div>
     <div class="clock-actions">
-      <button class="icon-btn surface-hybrid" :aria-label="store.isPaused ? 'Fortsetzen' : 'Pausieren'" @click="store.togglePause()">
-        <AppIcon :name="store.isPaused ? 'play' : 'pause'" />
-      </button>
+      <IconButton
+        class="icon-btn surface-hybrid"
+        :icon="store.isPaused ? 'play' : 'pause'"
+        :label="store.isPaused ? 'Fortsetzen' : 'Pausieren'"
+        @click="store.togglePause()"
+      />
       <slot name="actions" />
     </div>
   </div>
@@ -73,14 +76,5 @@ onBeforeUnmount(() => {
 .clock-time span {
   font-size: 22px;
   font-weight: 800;
-}
-/* Was a flat --surface-2 fill — .surface-hybrid instead (see WorkoutPage.vue's .next-ex-row
-   comment for the general rationale). */
-.icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-md);
-  color: var(--text);
-  font-size: 16px;
 }
 </style>

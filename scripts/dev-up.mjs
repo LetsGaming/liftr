@@ -12,6 +12,10 @@
  * collide on the same database file or port. Always pair with `scripts/dev-down.mjs --id <name>`
  * when done.
  *
+ * By default, the printed dashboard URL logs itself in as the seeded owner (see "auto-login"
+ * below) — pass `--loggedout` to get a plain URL that lands on the login screen instead, e.g. to
+ * manually exercise the login/logout flow itself.
+ *
  * Exercise catalog images (photos, muscle-diagram SVGs) are the one thing NOT namespaced per
  * session — they're static, network-fetched, content-identical assets, not session data, so they
  * live in the ordinary shared data/images/ dir (the same one plain `pnpm dev` already uses) and
@@ -26,7 +30,7 @@
  * database to another's. Pass `--fresh` to bypass the cache (still repopulates it afterward) when
  * you specifically need today-relative mock-data timestamps.
  *
- * Usage: node scripts/dev-up.mjs [--id <name>] [--verbose] [--fresh]
+ * Usage: node scripts/dev-up.mjs [--id <name>] [--verbose] [--fresh] [--loggedout]
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
@@ -35,6 +39,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./lib/parseArgs.mjs";
 import { computeSeedHash, readSeedCache } from "./lib/seedCache.mjs";
+import { DEV_OWNER_USERNAME, DEV_OWNER_PASSWORD } from "./lib/devOwner.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -112,7 +117,7 @@ function runTsxScript(scriptPath, env) {
 }
 
 async function main() {
-  const { id, verbose, fresh } = parseArgs(process.argv.slice(2));
+  const { id, verbose, fresh, loggedout } = parseArgs(process.argv.slice(2));
   const log = (msg) => console.log(`[dev-up:${id}] ${msg}`);
 
   const dataDir = path.join(repoRoot, "data", `agent-${id}`);
@@ -187,6 +192,25 @@ async function main() {
     await runTsxScript("scripts/seed-mock-data.ts", { ...env, LIFTR_SEED_CACHE_HASH: seedHash });
   }
 
+  // The dashboard reads this token off the URL once (main.ts, dev-only) and stores it via the
+  // same setToken() AuthGate.vue itself calls, then strips it from the URL — so by default the
+  // very first paint is already past the login screen, matching what a human actually wants from
+  // a disposable per-session seeded database. --loggedout skips this to deliberately land on the
+  // login screen instead (e.g. to exercise the login flow itself).
+  let devToken = null;
+  if (!loggedout) {
+    const res = await fetch(`http://localhost:${backendPort}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: DEV_OWNER_USERNAME, password: DEV_OWNER_PASSWORD }),
+    });
+    if (res.ok) {
+      devToken = (await res.json()).token;
+    } else {
+      log(`auto-login failed (${res.status}) — printing a plain URL instead; check ${backendLog}`);
+    }
+  }
+
   log(`starting dashboard on :${vitePort}`);
   const viteLog = path.join(logDir, "vite.out.log");
   const vite = spawnBackground("pnpm", ["exec", "vite", "--port", String(vitePort), "--strictPort"], {
@@ -218,11 +242,13 @@ async function main() {
     ),
   );
 
+  const dashboardUrl = devToken ? `http://localhost:${vitePort}/?devToken=${devToken}` : `http://localhost:${vitePort}`;
+
   console.log("");
   log("ready.");
-  console.log(`  Dashboard:  http://localhost:${vitePort}`);
+  console.log(`  Dashboard:  ${dashboardUrl}`);
   console.log(`  Backend:    http://localhost:${backendPort}`);
-  console.log(`  Auth:       seeded owner has no password set — you'll land on the first-run setup screen`);
+  console.log(`  Auth:       ${DEV_OWNER_USERNAME} / ${DEV_OWNER_PASSWORD}${devToken ? " (already logged in via the dashboard URL above)" : ""}`);
   console.log(`  Logs:       ${logDir}`);
   console.log(`  When done:  node scripts/dev-down.mjs --id ${id}`);
   // Deliberately no process.exit(0) here: both children are already detached + unref'd, so the

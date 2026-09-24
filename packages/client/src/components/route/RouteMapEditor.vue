@@ -8,6 +8,8 @@ import { onBeforeUnmount, watch } from "vue";
 import { cssVar } from "../../lib/leafletTheme";
 import LeafletMapBase from "../map/LeafletMapBase.vue";
 import BasemapToggle from "../map/BasemapToggle.vue";
+import IconButton from "../patterns/IconButton.vue";
+import Button from "../base/Button.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
 import { useLastKnownLocation } from "../../composables/useLastKnownLocation";
 import type { RoutePoint, Waypoint } from "../../services/plannedRouteService";
@@ -135,17 +137,17 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
       @ready="handleReady"
     />
     <BasemapToggle class="basemap-toggle-slot" />
-    <button v-if="!readonly" type="button" class="locate-btn" aria-label="Meinen Standort verwenden" @click="locate">
+    <IconButton v-if="!readonly" label="Meinen Standort verwenden" class="locate-btn" @click="locate">
       📍
-    </button>
-    <button
+    </IconButton>
+    <Button
       v-if="!readonly && waypoints.length > 0"
-      type="button"
+      variant="secondary"
       class="remove-last-btn"
       @click="emit('remove', waypoints.length - 1)"
     >
       Letzten Punkt entfernen
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -179,11 +181,6 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   top: 64px;
   right: 12px;
   z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 1px solid var(--line);
   font-size: 20px;
 }
 .remove-last-btn {
@@ -191,15 +188,6 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   bottom: 12px;
   left: 12px;
   z-index: 1000;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: var(--r-md);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  /* No global button-text-color reset exists, so without this the browser's default button text
-     color (near-black) was used unconditionally — fine against light mode's white --surface, but
-     unreadable against dark mode's near-black one. */
-  color: var(--text);
 }
 
 /* Waypoint marker badge: L.divIcon's `className` REPLACES Leaflet's default class rather than

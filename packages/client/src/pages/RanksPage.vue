@@ -10,12 +10,13 @@
 // already know). No `to` on either tab here, since Kraft/Lauf are two views of one /ranks route,
 // not two real routes — TabSwitcher renders local-toggle buttons instead of RouterLinks in that
 // case. Section content itself lives in RankLifterSection.vue/RankRunnerSection.vue.
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { ref } from "vue";
-import AppIcon from "../components/ui/AppIcon.vue";
+import AppIcon from "../components/base/AppIcon.vue";
+import Button from "../components/base/Button.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import RankLifterSection from "../components/rank/RankLifterSection.vue";
 import RankRunnerSection from "../components/rank/RankRunnerSection.vue";
-import TabSwitcher, { type TabSwitcherTab } from "../components/ui/TabSwitcher.vue";
+import TabSwitcher, { type TabSwitcherTab } from "../components/patterns/TabSwitcher.vue";
 
 const section = ref<"workout" | "Läufe">("workout");
 const RANK_TABS: TabSwitcherTab[] = [
@@ -25,24 +26,20 @@ const RANK_TABS: TabSwitcherTab[] = [
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Ränge</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-        <TabSwitcher
-          :tabs="RANK_TABS"
-          :model-value="section"
-          nav-label="Workout- oder Lauf-Ränge"
-          @update:model-value="section = $event as 'workout' | 'Läufe'"
-        />
-        <router-link to="/records" class="btn-secondary">
-          <AppIcon name="trophy" /> Rekorde ansehen
-        </router-link>
-      <RankLifterSection v-if="section === 'workout'" />
-      <RankRunnerSection v-else />
-    </IonContent>
-  </IonPage>
+  <BasePage title="Ränge">
+    <template #subheader>
+      <TabSwitcher
+        :tabs="RANK_TABS"
+        :model-value="section"
+        nav-label="Workout- oder Lauf-Ränge"
+        @update:model-value="section = $event as 'workout' | 'Läufe'"
+      />
+    </template>
+    <Button as="router-link" to="/records" variant="secondary">
+      <template #leading><AppIcon name="trophy" /></template>
+      Rekorde ansehen
+    </Button>
+    <RankLifterSection v-if="section === 'workout'" />
+    <RankRunnerSection v-else />
+  </BasePage>
 </template>

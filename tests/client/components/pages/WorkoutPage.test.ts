@@ -8,7 +8,7 @@ import ExerciseRail from "~client/components/exercise/ExerciseRail.vue";
 import FinishSequence from "~client/components/workout/FinishSequence.vue";
 import RestTimer from "~client/components/workout/RestTimer.vue";
 import SetEntry from "~client/components/workout/SetEntry.vue";
-import SheetModal from "~client/components/ui/SheetModal.vue";
+import SheetModal from "~client/components/patterns/SheetModal.vue";
 import RankProgress from "~client/components/rank/RankProgress.vue";
 import RoutineList from "~client/components/routine/RoutineList.vue";
 import { i18n } from "~client/i18n";

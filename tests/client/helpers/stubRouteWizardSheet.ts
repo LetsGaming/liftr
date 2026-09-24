@@ -1,6 +1,6 @@
 import { defineComponent } from "vue";
 
-/** Minimal SheetModal stub for tests/client/components/route-wizard/RouteWizard.test.ts — just
+/** Minimal SheetModal stub for tests/client/components/route/RouteWizard.test.ts — just
  *  the header/default slots plus a spy-backed `dismiss()`. Split into its own file (rather than
  *  living inline in the test, alongside stubRouteMapEditor.ts) so this file and the test file
  *  each define one component, satisfying `vue/one-component-per-file` — which, unlike

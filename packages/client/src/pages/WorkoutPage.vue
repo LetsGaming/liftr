@@ -5,14 +5,14 @@
  * exists yet, since it's still useful to exercise the loop on a fresh install before you've
  * built anything.
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
-import { computed, onMounted, ref, watch } from "vue";
+import BasePage from "../components/patterns/BasePage.vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import ExerciseDetailContent from "../components/exercise/ExerciseDetailContent.vue";
 import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
 import FinishSequence from "../components/workout/FinishSequence.vue";
-import AppIcon from "../components/ui/AppIcon.vue";
-import MuscleFigure from "../components/ui/MuscleFigure.vue";
+import AppIcon from "../components/base/AppIcon.vue";
+import MuscleFigure from "../components/exercise/MuscleFigure.vue";
 import NoteCapture from "../components/workout/NoteCapture.vue";
 import RankProgress from "../components/rank/RankProgress.vue";
 import TierBadge from "../components/rank/TierBadge.vue";
@@ -21,11 +21,15 @@ import RoutineList from "../components/routine/RoutineList.vue";
 import RpeCapture from "../components/workout/RpeCapture.vue";
 import SetEntry from "../components/workout/SetEntry.vue";
 import SetKindPicker from "../components/workout/SetKindPicker.vue";
-import SheetModal from "../components/ui/SheetModal.vue";
-import StatTile from "../components/ui/StatTile.vue";
-import SyncIndicator from "../components/ui/SyncIndicator.vue";
-import TabSwitcher from "../components/ui/TabSwitcher.vue";
-import TruncatingLabel from "../components/ui/TruncatingLabel.vue";
+import SheetModal from "../components/patterns/SheetModal.vue";
+import StatTile from "../components/patterns/StatTile.vue";
+import Button from "../components/base/Button.vue";
+import Input from "../components/base/Input.vue";
+import IconButton from "../components/patterns/IconButton.vue";
+import ListRow from "../components/patterns/ListRow.vue";
+import SyncIndicator from "../components/shell/SyncIndicator.vue";
+import TabSwitcher from "../components/patterns/TabSwitcher.vue";
+import TruncatingLabel from "../components/base/TruncatingLabel.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import { useAddExerciseToSession } from "../composables/useAddExerciseToSession";
 import { useMesocycleControls } from "../composables/useMesocycleControls";
@@ -267,7 +271,21 @@ const showStalePrompt = ref(false);
 onMounted(async () => {
   await Promise.all([catalog.load(), store.restore(), routineStore.load(), ranksStore.load(), historyStore.load(), overallRank.load()]);
   showStalePrompt.value = store.isStale;
+  await ensureLogButtonVisible();
 });
+
+/** On a short exercise, "Satz speichern" can render entirely within the fixed mobile tab bar's
+ *  own band — geometrically inside ion-content's scrollport, but visually covered by a sibling
+ *  the browser's own visibility check knows nothing about. `scroll-margin-bottom` (see
+ *  .log-set-wrap) tells `scrollIntoView` to treat that band as off-screen too, so this only
+ *  scrolls when the button would otherwise land there. */
+const logSetWrapRef = ref<HTMLElement | null>(null);
+async function ensureLogButtonVisible() {
+  await nextTick();
+  // Optional chaining on the call itself, not just the ref: jsdom (tests/README.md's environment
+  // for this file) has no layout engine and doesn't implement scrollIntoView at all.
+  logSetWrapRef.value?.scrollIntoView?.({ block: "nearest" });
+}
 
 /** A single compact line — the next exercise's name plus its *first set's* weight/reps (e.g.
  *  "Nächste Übung: Schulterdrücken · 40 kg × 10"), letting a lifter prep plates/equipment before
@@ -344,6 +362,7 @@ async function logSet() {
     }, 260);
   }
   if (wasLastUnloggedSet) void haptics.bump();
+  void ensureLogButtonVisible();
 }
 
 // Same two tabs as RunsPage.vue's own TabSwitcher — kept as a literal here rather than a shared
@@ -355,14 +374,10 @@ const WORKOUT_RUNS_TABS = [
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Workout</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-    <TabSwitcher v-if="!store.isActive && !finishedSummary" :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
+  <BasePage title="Workout">
+    <template v-if="!store.isActive && !finishedSummary" #subheader>
+      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
+    </template>
     <div class="workout-page">
     <div v-if="finishedSummary" class="finished-summary">
       <FinishSequence
@@ -430,10 +445,10 @@ const WORKOUT_RUNS_TABS = [
           </ul>
           <p v-if="routineUpdated" class="beat-done"><AppIcon name="check" /> Routine aktualisiert.</p>
           <div v-else class="beat-actions">
-            <button class="btn-secondary" @click="routineBeats = []">Nicht jetzt</button>
-            <button class="btn-primary" :disabled="updatingRoutine" @click="updateRoutineWithBeats">
+            <Button variant="secondary" @click="routineBeats = []">Nicht jetzt</Button>
+            <Button :disabled="updatingRoutine" @click="updateRoutineWithBeats">
               {{ updatingRoutine ? "Wird gespeichert…" : "Routine aktualisieren" }}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -443,15 +458,15 @@ const WORKOUT_RUNS_TABS = [
           <StatTile :value="finishedSummary.setCount" label="Sätze" />
         </div>
 
-        <button class="btn-primary btn-lg btn-block" :disabled="sharingFinished" @click="shareFinished">
+        <Button size="lg" block :disabled="sharingFinished" @click="shareFinished">
           <template v-if="sharingFinished">Erstelle Bild…</template>
           <template v-else><AppIcon name="share" /> Als Bild teilen</template>
-        </button>
-        <button v-if="canCopyShareImage" class="btn-secondary btn-block" :disabled="copyingFinished" @click="onCopyFinished">
+        </Button>
+        <Button v-if="canCopyShareImage" variant="secondary" block :disabled="copyingFinished" @click="onCopyFinished">
           <template v-if="copyingFinished">Kopiere…</template>
           <template v-else><AppIcon name="clipboard" /> In Zwischenablage kopieren</template>
-        </button>
-        <button class="btn-secondary btn-block" @click="finishedSummary = null">Fertig</button>
+        </Button>
+        <Button variant="secondary" block @click="finishedSummary = null">Fertig</Button>
         <canvas ref="finishedCanvas" class="share-canvas" aria-hidden="true" />
       </template>
     </div>
@@ -465,8 +480,8 @@ const WORKOUT_RUNS_TABS = [
           vergessen, es zu beenden?
         </p>
         <div class="stale-actions">
-          <button class="btn-secondary" @click="showStalePrompt = false">Läuft noch</button>
-          <button class="btn-primary" @click="showStalePrompt = false; finishWorkout()">Jetzt beenden</button>
+          <Button variant="secondary" @click="showStalePrompt = false">Läuft noch</Button>
+          <Button @click="showStalePrompt = false; finishWorkout()">Jetzt beenden</Button>
         </div>
       </div>
 
@@ -481,7 +496,7 @@ const WORKOUT_RUNS_TABS = [
         <div v-if="showCancelConfirm" class="cancel-confirm panel">
           <p>Workout wirklich abbrechen? Der gesamte Fortschritt geht verloren.</p>
           <div class="cancel-confirm-actions">
-            <button class="btn-secondary" @click="showCancelConfirm = false">Nein</button>
+            <Button variant="secondary" @click="showCancelConfirm = false">Nein</Button>
             <button class="btn-cancel-confirm" @click="confirmCancelWorkout">Ja, abbrechen</button>
           </div>
         </div>
@@ -500,15 +515,17 @@ const WORKOUT_RUNS_TABS = [
         <div v-if="showAddExercise" class="add-ex-panel panel">
           <div class="add-ex-panel-head">
             <b>Übung hinzufügen</b>
-            <button class="btn-close" aria-label="Schließen" @click="showAddExercise = false">✕</button>
+            <IconButton variant="close" label="Schließen" @click="showAddExercise = false">✕</IconButton>
           </div>
-          <input v-model="addExerciseSearch" class="add-ex-search" type="text" placeholder="Übung suchen…" />
+          <Input v-model="addExerciseSearch" class="add-ex-search" type="text" placeholder="Übung suchen…" />
           <ul class="add-ex-list">
             <li v-for="ex in addExerciseCandidates" :key="ex.id">
-              <button @click="addExerciseToSession(ex)">
-                <ExerciseIcon :equipment="ex.equipment ?? 'bodyweight'" :size="16" />
+              <ListRow as="button" @click="addExerciseToSession(ex)">
+                <template #leading>
+                  <ExerciseIcon :equipment="ex.equipment ?? 'bodyweight'" :size="16" />
+                </template>
                 {{ exerciseName(ex.slug, ex.name) }}
-              </button>
+              </ListRow>
             </li>
           </ul>
         </div>
@@ -533,7 +550,7 @@ const WORKOUT_RUNS_TABS = [
             <TruncatingLabel as="h2">{{ store.currentExercise.name }}</TruncatingLabel>
           </div>
           <div class="focus-head-actions">
-            <button v-if="store.exercises.length > 1" class="skip-btn surface-hybrid" @click="store.skipCurrentExercise()">
+            <button v-if="store.exercises.length > 1" class="skip-btn surface-hybrid" @click="store.skipCurrentExercise(); ensureLogButtonVisible()">
               Übung überspringen <AppIcon name="skip-forward" />
             </button>
             <div class="focus-head-info-group">
@@ -579,11 +596,11 @@ const WORKOUT_RUNS_TABS = [
         </div>
         <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
 
-        <div class="log-set-wrap">
+        <div ref="logSetWrapRef" class="log-set-wrap">
           <template v-if="store.currentSet">
-            <button class="btn-primary btn-lg btn-block log-set-btn" :disabled="store.currentSet.reps <= 0" @click="logSet">
+            <Button size="lg" block class="log-set-btn" :disabled="store.currentSet.reps <= 0" @click="logSet">
               Satz speichern
-            </button>
+            </Button>
             <p class="reps-hint" :class="{ 'reps-hint-hidden': store.currentSet.reps > 0 }">
               Erst Wiederholungen, dann speichern.
             </p>
@@ -669,12 +686,12 @@ const WORKOUT_RUNS_TABS = [
 
       <div v-if="!(store.currentExercise && !store.allSetsLogged)" class="workout-complete">
         <p>Alle Übungen erledigt.</p>
-        <button class="btn-primary btn-lg" @click="finishWorkout">Workout beenden</button>
+        <Button size="lg" @click="finishWorkout">Workout beenden</Button>
       </div>
     </div>
 
     <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
-      <ExerciseRail @jump="showExerciseOverview = false" />
+      <ExerciseRail @jump="showExerciseOverview = false; ensureLogButtonVisible()" />
     </SheetModal>
 
     <SheetModal
@@ -689,8 +706,7 @@ const WORKOUT_RUNS_TABS = [
       </div>
     </SheetModal>
     </div>
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>
@@ -1028,14 +1044,6 @@ const WORKOUT_RUNS_TABS = [
 .add-ex-panel-head b {
   font-size: 13.5px;
 }
-.add-ex-search {
-  padding: 8px 12px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 13px;
-}
 .add-ex-list {
   list-style: none;
   max-height: 240px;
@@ -1045,16 +1053,12 @@ const WORKOUT_RUNS_TABS = [
   gap: 2px;
 }
 .add-ex-list button {
-  width: 100%;
-  display: flex;
-  align-items: center;
   gap: var(--sp2);
   padding: var(--sp2) var(--sp3);
   border-radius: var(--r-sm);
   background: var(--surface-3);
   color: var(--text);
   font-size: 13px;
-  text-align: left;
 }
 .add-ex-list svg {
   color: var(--blue-hi);
@@ -1099,6 +1103,11 @@ const WORKOUT_RUNS_TABS = [
    rare moment — the finish sequence's rank-up beat (FinishSequence.vue). */
 .log-set-wrap {
   position: relative;
+  /* On a short exercise (little "Letztes Mal"/RPE/note content above it), this button can land
+     exactly in the fixed mobile tab bar's band on first paint — --bottom-chrome-h (0 on desktop,
+     where there's no tab bar) tells scrollIntoView's visibility check to treat that band as
+     "not actually visible", so the auto-scroll below (see logSetWrapRef) clears it. */
+  scroll-margin-bottom: var(--bottom-chrome-h, 0px);
 }
 .log-set-btn {
   margin: var(--sp3) 0;

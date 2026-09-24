@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { reactive } from "vue";
 import { createMemoryHistory, createRouter } from "vue-router";
 import ExerciseList from "~client/components/exercise/ExerciseList.vue";
-import SheetModal from "~client/components/ui/SheetModal.vue";
+import SheetModal from "~client/components/patterns/SheetModal.vue";
 import { i18n } from "~client/i18n";
 import ExercisesPage from "~client/pages/ExercisesPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";

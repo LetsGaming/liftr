@@ -8,6 +8,7 @@
  */
 import { computed, onMounted } from "vue";
 import { useRankEventsStore } from "../../stores/rankEventsStore";
+import EmptyNote from "../base/EmptyNote.vue";
 
 /** Same JS `Date.getDay()`-indexed labels as useWorkoutFinish.ts's DAY_ABBR, reordered Mo-So
  *  (weekday 1..6 then 0) to match the calendar-strip convention this component renders. */
@@ -47,7 +48,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
         <span class="dl">{{ d.label }}</span>
       </div>
     </div>
-    <p v-if="total === 0" class="ruc-empty">Dein nächster Rangaufstieg wartet — leg los!</p>
+    <EmptyNote v-if="total === 0" class="ruc-empty" align="start">Dein nächster Rangaufstieg wartet — leg los!</EmptyNote>
   </div>
 </template>
 
@@ -121,9 +122,5 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 .dl {
   font-size: 11px;
   color: var(--faint);
-}
-.ruc-empty {
-  font-size: 12px;
-  color: var(--dim);
 }
 </style>

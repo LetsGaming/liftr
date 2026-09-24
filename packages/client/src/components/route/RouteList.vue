@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
-import CardGrid from "../ui/CardGrid.vue";
-import CardListScreen from "../ui/CardListScreen.vue";
-import EmptyStateCard from "../ui/EmptyStateCard.vue";
-import ListCard from "../ui/ListCard.vue";
+import AppIcon from "../base/AppIcon.vue";
+import CardGrid from "../patterns/CardGrid.vue";
+import CardListScreen from "../patterns/CardListScreen.vue";
+import EmptyStateCard from "../patterns/EmptyStateCard.vue";
+import ListCard from "../patterns/ListCard.vue";
 import RouteThumbnail from "./RouteThumbnail.vue";
+import Button from "../base/Button.vue";
+import IconButton from "../patterns/IconButton.vue";
 import { usePlannedRouteStore } from "../../stores/plannedRouteStore";
 import { useCardMenu } from "../../composables/useCardMenu";
 import { useConfirmTap } from "../../composables/useConfirmTap";
@@ -90,14 +92,12 @@ function editFromMenu(route: PlannedRoute) {
           </button>
         </template>
         <template #menu>
-          <button
-            class="btn-icon"
-            aria-label="Mehr"
+          <IconButton
+            icon="more"
+            label="Mehr"
             :aria-expanded="openMenuId === route.id"
             @click="toggleMenu(route.id)"
-          >
-            <AppIcon name="more" />
-          </button>
+          />
           <div v-if="openMenuId === route.id" class="card-menu">
             <button @click="editFromMenu(route)"><AppIcon name="edit" /> Bearbeiten</button>
             <button
@@ -119,7 +119,7 @@ function editFromMenu(route: PlannedRoute) {
         </template>
 
         <template #actions>
-          <button class="btn-secondary" @click="emit('start', route)">Starten</button>
+          <Button variant="secondary" @click="emit('start', route)">Starten</Button>
         </template>
       </ListCard>
     </CardGrid>
@@ -127,10 +127,10 @@ function editFromMenu(route: PlannedRoute) {
     <EmptyStateCard v-else eyebrow="Noch keine Strecke">
       Platziere Wegpunkte auf der Karte und speichere sie als wiederverwendbare Strecke.
       <template #action>
-        <button class="btn-primary" @click="emit('create')">+ Neue Strecke</button>
+        <Button @click="emit('create')">+ Neue Strecke</Button>
       </template>
     </EmptyStateCard>
-    <button v-if="plannedRouteStore.routes.length > 0" class="btn-secondary route-list-add" @click="emit('create')">+ Neue Strecke</button>
+    <Button v-if="plannedRouteStore.routes.length > 0" variant="secondary" class="route-list-add" @click="emit('create')">+ Neue Strecke</Button>
   </CardListScreen>
 </template>
 

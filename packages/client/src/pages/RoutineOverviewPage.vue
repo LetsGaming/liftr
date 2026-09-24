@@ -6,13 +6,16 @@
  * always the mannequin, never a text/tag list — this copies the exact existing aggregation
  * pattern verbatim from RoutineList.vue/OverviewPage.vue rather than inventing a new one.
  */
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AppIcon from "../components/ui/AppIcon.vue";
-import DrillInScreen from "../components/ui/DrillInScreen.vue";
-import MuscleFigure from "../components/ui/MuscleFigure.vue";
-import RoutineWizard from "../components/routine-wizard/RoutineWizard.vue";
+import AppIcon from "../components/base/AppIcon.vue";
+import Button from "../components/base/Button.vue";
+import BasePage from "../components/patterns/BasePage.vue";
+import DrillInScreen from "../components/patterns/DrillInScreen.vue";
+import IconButton from "../components/patterns/IconButton.vue";
+import ListRow from "../components/patterns/ListRow.vue";
+import MuscleFigure from "../components/exercise/MuscleFigure.vue";
+import RoutineWizard from "../components/routine/RoutineWizard.vue";
 import { useRoutineManagement } from "../composables/useRoutineManagement";
 import { useStartRoutine } from "../composables/useStartRoutine";
 import { aggregateMuscles } from "../lib/muscles";
@@ -86,14 +89,9 @@ async function jetztStarten() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>{{ routine ? routine.name : "Routine" }}</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
+  <BasePage :title="routine ? routine.name : 'Routine'" back-button>
       <DrillInScreen
+        hide-back-button
         :title="routine ? routine.name : 'Routine'"
         :loading="!routineStore.loaded"
         :not-found="routineStore.loaded && !routine"
@@ -102,18 +100,18 @@ async function jetztStarten() {
         <template #not-found>
           <div class="eyebrow">Routine nicht gefunden</div>
           <p>Diese Routine existiert nicht (mehr). Vielleicht wurde sie gelöscht.</p>
-          <router-link to="/workout" class="btn-secondary btn-block">Zur Übersicht →</router-link>
+          <Button as="router-link" to="/workout" variant="secondary" block>Zur Übersicht →</Button>
         </template>
 
         <template v-if="routine" #header-extra>
           <span class="ro-count">
             {{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}
           </span>
-          <button class="ro-edit-btn" aria-label="Routine bearbeiten" @click="editRoutine(routine)">
+          <IconButton variant="ghost" size="sm" label="Routine bearbeiten" class="ro-edit-btn" @click="editRoutine(routine)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
             </svg>
-          </button>
+          </IconButton>
         </template>
 
         <div class="eyebrow">Trainierte Muskeln</div>
@@ -122,26 +120,29 @@ async function jetztStarten() {
         <div class="eyebrow ro-ex-eyebrow">Übungen</div>
         <ul class="ro-ex-list">
           <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-item surface-hybrid">
-            <button
+            <ListRow
+              as="button"
               class="ro-ex-row"
               :aria-expanded="!!expandedExercises[re.id]"
               @click="toggleExpanded(re.id)"
             >
               <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
-              <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
-              <svg
-                class="ro-ex-chevron"
-                :class="{ open: expandedExercises[re.id] }"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+              <template #trailing>
+                <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
+                <svg
+                  class="ro-ex-chevron"
+                  :class="{ open: expandedExercises[re.id] }"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </template>
+            </ListRow>
             <ul v-if="expandedExercises[re.id]" class="ro-ex-sets">
               <li v-for="(set, i) in re.targetSets" :key="i">{{ setLine(set, i) }}</li>
             </ul>
@@ -149,28 +150,19 @@ async function jetztStarten() {
         </ul>
 
         <template #start-bar>
-          <button class="btn-primary btn-lg btn-block" :disabled="starting" @click="jetztStarten">
+          <Button size="lg" block :disabled="starting" @click="jetztStarten">
             <template v-if="starting">Wird gestartet…</template>
             <template v-else><AppIcon name="play" /> Jetzt starten</template>
-          </button>
+          </Button>
         </template>
       </DrillInScreen>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>
 .ro-edit-btn {
   flex: none;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--dim);
 }
 .ro-edit-btn svg {
   width: 18px;
@@ -198,17 +190,7 @@ async function jetztStarten() {
   overflow: hidden;
 }
 .ro-ex-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp3);
   padding: var(--sp3);
-  background: none;
-  border: none;
-  text-align: left;
-  color: var(--text);
-  font: inherit;
 }
 .ro-ex-chevron {
   flex: none;

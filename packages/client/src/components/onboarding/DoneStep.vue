@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import AppIcon from "../ui/AppIcon.vue";
+import AppIcon from "../base/AppIcon.vue";
 import { needsPlatesStep, useOnboardingDraft } from "./OnboardingDraft";
 
 const draft = useOnboardingDraft();

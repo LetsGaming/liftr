@@ -5,7 +5,7 @@
  * to clear Leaflet's own control panes). Purely a dumb button: the shared preference itself lives
  * in useBasemap.ts so every mounted map can react to it at once.
  */
-import AppIcon from "../ui/AppIcon.vue";
+import AppIcon from "../base/AppIcon.vue";
 import { useBasemap } from "../../composables/useBasemap";
 
 const { basemap, toggle } = useBasemap();

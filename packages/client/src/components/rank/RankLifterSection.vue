@@ -13,14 +13,15 @@ import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
 import { useRanksStore, type RankRow } from "../../stores/ranksStore";
-import CardGrid from "../ui/CardGrid.vue";
-import InfoToggle from "../ui/InfoToggle.vue";
+import CardGrid from "../patterns/CardGrid.vue";
+import InfoToggle from "../patterns/InfoToggle.vue";
 import RankDistributionDonut from "./RankDistributionDonut.vue";
 import RankExerciseBack from "./RankExerciseBack.vue";
 import RankFlipCard from "./RankFlipCard.vue";
 import RankProgress from "./RankProgress.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
 import TierLadder from "./TierLadder.vue";
+import Button from "../base/Button.vue";
 
 const router = useRouter();
 const ranksStore = useRanksStore();
@@ -120,7 +121,7 @@ const filteredRanks = computed(() =>
 
     <p v-else-if="ranksStore.error" class="page-note load-error" style="margin-top: var(--sp4)">
       Ränge konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.
-      <button type="button" class="btn-secondary" @click="ranksStore.load()">Erneut versuchen</button>
+      <Button variant="secondary" @click="ranksStore.load()">Erneut versuchen</Button>
     </p>
 
     <template v-else>

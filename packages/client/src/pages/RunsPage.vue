@@ -3,12 +3,13 @@
 // the page's primary content, same as saved routines are Workout's. Individual-run browsing
 // (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here — that's
 // where Workout's own finished-session history lives too, so neither tab duplicates it locally.
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import Button from "../components/base/Button.vue";
 import RouteList from "../components/route/RouteList.vue";
-import RouteWizard from "../components/route-wizard/RouteWizard.vue";
-import TabSwitcher from "../components/ui/TabSwitcher.vue";
+import RouteWizard from "../components/route/RouteWizard.vue";
+import BasePage from "../components/patterns/BasePage.vue";
+import TabSwitcher from "../components/patterns/TabSwitcher.vue";
 import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { useStartPlannedRoute } from "../composables/useStartPlannedRoute";
 import { useToast } from "../composables/useToast";
@@ -119,24 +120,20 @@ const WORKOUT_RUNS_TABS = [
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Läufe</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
-    <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
+  <BasePage title="Läufe">
+    <template #subheader>
+      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
+    </template>
 
     <div class="pagehead">
       <div>
         <p style="color: var(--dim)">Strecke starten oder Lauf manuell erfassen</p>
       </div>
       <div class="actions">
-        <button class="btn-secondary" @click="showManualForm = !showManualForm">Manuell</button>
-        <button class="btn-primary" :disabled="importing" @click="triggerImport">
+        <Button variant="secondary" @click="showManualForm = !showManualForm">Manuell</Button>
+        <Button :disabled="importing" @click="triggerImport">
           {{ importing ? "Importiere…" : "GPX/FIT importieren" }}
-        </button>
+        </Button>
         <input ref="fileInput" type="file" accept=".gpx,.fit" style="display: none" @change="onFileChosen" />
       </div>
     </div>
@@ -166,7 +163,7 @@ const WORKOUT_RUNS_TABS = [
         placeholder="Minuten"
         aria-label="Dauer in Minuten"
       />
-      <button class="btn-primary" :disabled="submitting" @click="saveManual">Speichern</button>
+      <Button :disabled="submitting" @click="saveManual">Speichern</Button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 
@@ -181,8 +178,7 @@ const WORKOUT_RUNS_TABS = [
       :initial-center="initialCenter"
       @close="showRouteWizard = false"
     />
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>

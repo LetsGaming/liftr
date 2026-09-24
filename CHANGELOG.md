@@ -18,9 +18,13 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - The "check last N days" Health Connect rescan on the Diagnose page now re-syncs immediately instead of only resetting the scan window.
 - Exercise details are now their own page: the back button and browser/phone back both work as expected, and the view can be linked to directly.
 - Workout and run details are now their own pages with a working back button and consistent presentation.
+- Text fields across the app now show the same accent-tinted focus highlight when you tap into them, instead of some fields having a plainer look.
+- The Rekorde, Routine-, and Strecken-Übersicht pages now have a proper back button.
+- The Workout/Läufe and Kraft/Lauf tab switchers stay visible at the top of the screen while you scroll, instead of scrolling away with the content.
 
 ### Fixed
 
+- On a short exercise, the "Satz speichern" button no longer renders hidden behind the bottom tab bar on a phone.
 - The Diagnose and Lizenzen pages now have a back button.
 - Walk/hike ranks now appear on installs upgraded from before walking/hiking became rankable, with no manual step required.
 - XP, Streak, and Ränge now update immediately after a Health Connect import instead of only after restarting the app.
@@ -29,6 +33,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - Replay readout values no longer shift sideways when their digit count changes.
 - The exercise/workout/run detail pages now show their name in the header on a phone; it used to be invisible below 900px width.
 - The level ring and streak chip no longer overlap the back button and title on the exercise/workout/run detail, Diagnose, and Lizenzen pages.
+- The Health Connect sync section on the Diagnose page no longer shows on devices/platforms where Health Connect isn't available (it's Android-only), matching the Health Connect card on the Profil page.
 - Tapping the ⓘ exercise-info button mid-workout now opens the exercise details in a sheet instead of navigating away, so the active workout screen (rest timer, scroll position, open pickers) no longer resets.
 - A "check last N/90 days" Health Connect rescan now also refreshes XP/Streak/Ränge when it imports something, matching every other Health Connect sync entry point.
 - A Health Connect rescan started while another sync is already running no longer has its widened scan window silently overwritten by that other sync.

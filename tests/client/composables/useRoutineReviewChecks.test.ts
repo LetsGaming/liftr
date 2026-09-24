@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { ref } from "vue";
 import { useCatalogStore, type CatalogExercise } from "~client/stores/catalogStore";
 import { useRoutineReviewChecks } from "~client/composables/useRoutineReviewChecks";
-import type { DraftExercise } from "~client/components/routine-wizard/RoutineWizard.vue";
+import type { DraftExercise } from "~client/components/routine/RoutineWizard.vue";
 
 function makeExercise(id: string, muscles: CatalogExercise["muscles"]): CatalogExercise {
   return {

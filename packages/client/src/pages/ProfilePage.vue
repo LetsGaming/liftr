@@ -5,12 +5,17 @@
 // Split into composables (each owns its own loading/error state) since this page used to mix
 // six+ unrelated concerns directly in its script setup — see composables/use{ProfileForm,
 // GymSetup,HealthConnectImport,DataExport}.ts.
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
+import BasePage from "../components/patterns/BasePage.vue";
 import { computed, nextTick, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import BodyweightTrend from "../components/ui/BodyweightTrend.vue";
-import CollapsibleCard from "../components/ui/CollapsibleCard.vue";
-import StatTile from "../components/ui/StatTile.vue";
+import BodyweightTrend from "../components/overview/BodyweightTrend.vue";
+import CollapsibleCard from "../components/patterns/CollapsibleCard.vue";
+import StatTile from "../components/patterns/StatTile.vue";
+import Button from "../components/base/Button.vue";
+import Chip from "../components/base/Chip.vue";
+import Input from "../components/base/Input.vue";
+import FormField from "../components/patterns/FormField.vue";
+import ListRow from "../components/patterns/ListRow.vue";
 import { useAppUpdate } from "../composables/useAppUpdate";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useDataExport } from "../composables/useDataExport";
@@ -317,13 +322,7 @@ async function saveWeight() {
 </script>
 
 <template>
-  <IonPage>
-    <IonHeader>
-      <IonToolbar>
-        <IonTitle>Profil &amp; Einstellungen</IonTitle>
-      </IonToolbar>
-    </IonHeader>
-    <IonContent class="ion-padding">
+  <BasePage title="Profil & Einstellungen">
     <div class="profile-content">
     <p style="color: var(--dim)">Dein Server, dein Konto, deine Daten.</p>
 
@@ -333,7 +332,7 @@ async function saveWeight() {
       <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
       <p class="hint">Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht.</p>
       <div class="bw-row">
-        <input
+        <Input
           v-model="weightInput"
           type="text"
           inputmode="decimal"
@@ -341,7 +340,7 @@ async function saveWeight() {
           aria-label="Körpergewicht in Kilogramm"
         />
         <span class="unit">kg</span>
-        <button class="btn-primary" :disabled="!canSave || saving" @click="saveWeight">Speichern</button>
+        <Button :disabled="!canSave || saving" @click="saveWeight">Speichern</Button>
       </div>
       <p v-if="bodyweight.latest" class="current">
         Aktuell: <b class="tnum">{{ Math.round(bodyweight.latest.weightKg * 100) / 100 }} kg</b> ({{ bodyweight.latest.date }})
@@ -355,36 +354,32 @@ async function saveWeight() {
     <section class="card surface-hybrid">
       <CollapsibleCard title="Trainingsprofil">
         <p class="hint">Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast.</p>
-        <div class="profile-field">
-          <span class="profile-label">Geschlecht</span>
+        <FormField label="Geschlecht" class="profile-field">
           <div class="chip-row">
             <button class="chip" :class="{ active: sex === 'male' }" @click="sex = 'male'">Männlich</button>
             <button class="chip" :class="{ active: sex === 'female' }" @click="sex = 'female'">Weiblich</button>
           </div>
-        </div>
-        <div class="profile-field">
-          <span class="profile-label">Geburtsjahr</span>
-          <input v-model="birthYearInput" class="profile-input" type="text" inputmode="numeric" placeholder="z.B. 1995" />
-        </div>
-        <div class="profile-field">
-          <span class="profile-label">Trainingserfahrung</span>
+        </FormField>
+        <FormField label="Geburtsjahr" class="profile-field">
+          <Input v-model="birthYearInput" class="profile-input" type="text" inputmode="numeric" placeholder="z.B. 1995" />
+        </FormField>
+        <FormField label="Trainingserfahrung" class="profile-field">
           <div class="chip-row">
             <button class="chip" :class="{ active: experienceLevel === 'beginner' }" @click="experienceLevel = 'beginner'">Anfänger</button>
             <button class="chip" :class="{ active: experienceLevel === 'intermediate' }" @click="experienceLevel = 'intermediate'">Fortgeschritten</button>
             <button class="chip" :class="{ active: experienceLevel === 'advanced' }" @click="experienceLevel = 'advanced'">Erfahren</button>
           </div>
-        </div>
-        <div class="profile-field">
-          <span class="profile-label">Workouts pro Woche</span>
+        </FormField>
+        <FormField label="Workouts pro Woche" class="profile-field">
           <div class="stepper-row">
             <button type="button" aria-label="Weniger" @click="workoutsPerWeek = Math.max(1, workoutsPerWeek - 1)">−</button>
             <span class="tnum">{{ workoutsPerWeek }}</span>
             <button type="button" aria-label="Mehr" @click="workoutsPerWeek = Math.min(14, workoutsPerWeek + 1)">+</button>
           </div>
-        </div>
-        <button class="btn-primary profile-save" :disabled="profileSaving" @click="saveProfileCard">
+        </FormField>
+        <Button class="profile-save" :disabled="profileSaving" @click="saveProfileCard">
           {{ profileSaving ? "Wird gespeichert…" : "Speichern" }}
-        </button>
+        </Button>
       </CollapsibleCard>
     </section>
 
@@ -443,9 +438,9 @@ async function saveWeight() {
           </div>
         </template>
 
-        <button class="btn-primary profile-save" :disabled="equipmentSaving || gymSaving" @click="saveEquipmentAndGymCard">
+        <Button class="profile-save" :disabled="equipmentSaving || gymSaving" @click="saveEquipmentAndGymCard">
           {{ equipmentSaving || gymSaving ? "Wird gespeichert…" : "Speichern" }}
-        </button>
+        </Button>
       </CollapsibleCard>
     </section>
 
@@ -460,9 +455,9 @@ async function saveWeight() {
       </div>
       <div class="bw-row">
         <span style="flex: 1">{{ xp.showXp ? "XP erscheinen im Workout und auf der Übersicht." : "XP bleiben verborgen." }}</span>
-        <button class="btn-primary" @click="xp.toggleShowXp()">
+        <Button @click="xp.toggleShowXp()">
           {{ xp.showXp ? "Ausblenden" : "Anzeigen" }}
-        </button>
+        </Button>
       </div>
     </section>
 
@@ -481,16 +476,18 @@ async function saveWeight() {
     <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Mitglieder</h2>
       <ul v-if="members.length" class="member-list">
-        <li v-for="member in members" :key="member.id" class="member-row">
+        <ListRow v-for="member in members" :key="member.id" as="li" class="member-row">
           <span>{{ member.name }} ({{ member.username }})</span>
-          <button v-if="member.role !== 'owner'" class="btn-secondary" @click="removeMemberAndRefresh(member.id)">
-            Entfernen
-          </button>
-        </li>
+          <template v-if="member.role !== 'owner'" #trailing>
+            <Button variant="secondary" @click="removeMemberAndRefresh(member.id)">
+              Entfernen
+            </Button>
+          </template>
+        </ListRow>
       </ul>
-      <button class="btn-primary" :disabled="inviteBusy" @click="generateInvite">
+      <Button :disabled="inviteBusy" @click="generateInvite">
         {{ inviteBusy ? "…" : "Einladungscode erstellen" }}
-      </button>
+      </Button>
       <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
     </section>
 
@@ -498,55 +495,51 @@ async function saveWeight() {
       <CollapsibleCard title="Anmeldedaten">
         <div class="profile-field">
           <span class="profile-label">Anzeigename</span>
-          <input v-model="displayNameInput" class="profile-input" type="text" autocomplete="name" />
+          <Input v-model="displayNameInput" class="profile-input" type="text" autocomplete="name" />
           <p v-if="displayNameError" class="error">{{ displayNameError }}</p>
           <p v-else-if="displayNameSuccess" class="hint success">Gespeichert.</p>
         </div>
-        <button
-          class="btn-primary profile-save"
+        <Button
+          class="profile-save"
           :disabled="displayNameSaving || !displayNameInput.trim()"
           @click="saveDisplayName"
         >
           {{ displayNameSaving ? "Wird gespeichert…" : "Anzeigename speichern" }}
-        </button>
+        </Button>
 
         <h3 class="eyebrow sub-eyebrow">Benutzername</h3>
-        <div class="profile-field">
-          <span class="profile-label">Neuer Benutzername</span>
-          <input v-model="usernameInput" class="profile-input" type="text" autocomplete="username" autocapitalize="off" />
-        </div>
-        <div class="profile-field">
-          <span class="profile-label">Aktuelles Passwort</span>
-          <input v-model="usernameCurrentPassword" class="profile-input" type="password" autocomplete="current-password" />
-        </div>
+        <FormField label="Neuer Benutzername" class="profile-field">
+          <Input v-model="usernameInput" class="profile-input" type="text" autocomplete="username" autocapitalize="off" />
+        </FormField>
+        <FormField label="Aktuelles Passwort" class="profile-field">
+          <Input v-model="usernameCurrentPassword" class="profile-input" type="password" autocomplete="current-password" />
+        </FormField>
         <p v-if="usernameError" class="error">{{ usernameError }}</p>
         <p v-else-if="usernameSuccess" class="hint success">Benutzername geändert. Andere Geräte wurden abgemeldet.</p>
-        <button
-          class="btn-primary profile-save"
+        <Button
+          class="profile-save"
           :disabled="usernameSaving || !usernameInput.trim() || !usernameCurrentPassword"
           @click="saveUsername"
         >
           {{ usernameSaving ? "Wird geändert…" : "Benutzername ändern" }}
-        </button>
+        </Button>
 
         <h3 class="eyebrow sub-eyebrow">Passwort</h3>
-        <div class="profile-field">
-          <span class="profile-label">Aktuelles Passwort</span>
-          <input v-model="currentPasswordInput" class="profile-input" type="password" autocomplete="current-password" />
-        </div>
-        <div class="profile-field">
-          <span class="profile-label">Neues Passwort</span>
-          <input v-model="newPasswordInput" class="profile-input" type="password" autocomplete="new-password" />
-        </div>
+        <FormField label="Aktuelles Passwort" class="profile-field">
+          <Input v-model="currentPasswordInput" class="profile-input" type="password" autocomplete="current-password" />
+        </FormField>
+        <FormField label="Neues Passwort" class="profile-field">
+          <Input v-model="newPasswordInput" class="profile-input" type="password" autocomplete="new-password" />
+        </FormField>
         <p v-if="passwordError" class="error">{{ passwordError }}</p>
         <p v-else-if="passwordSuccess" class="hint success">Passwort geändert. Andere Geräte wurden abgemeldet.</p>
-        <button
-          class="btn-primary profile-save"
+        <Button
+          class="profile-save"
           :disabled="passwordSaving || !currentPasswordInput || !newPasswordInput"
           @click="savePassword"
         >
           {{ passwordSaving ? "Wird geändert…" : "Passwort ändern" }}
-        </button>
+        </Button>
       </CollapsibleCard>
     </section>
 
@@ -554,30 +547,33 @@ async function saveWeight() {
       <CollapsibleCard title="Aktive Sitzungen">
         <p v-if="sessionsLoading" class="hint">Wird geladen…</p>
         <ul v-else class="member-list">
-          <li v-for="session in sessions" :key="session.id" class="member-row">
+          <ListRow v-for="session in sessions" :key="session.id" as="li" class="member-row">
             <span>
               {{ session.device }}
-              <span v-if="session.current" class="session-badge">Dieses Gerät</span>
+              <Chip v-if="session.current" size="sm" class="session-badge">Dieses Gerät</Chip>
             </span>
-            <button
-              v-if="!session.current"
-              class="btn-secondary"
-              :disabled="revokingSessionId === session.id"
-              @click="revokeOneSession(session.id)"
-            >
-              Abmelden
-            </button>
-          </li>
+            <template v-if="!session.current" #trailing>
+              <Button
+                variant="secondary"
+                :disabled="revokingSessionId === session.id"
+                @click="revokeOneSession(session.id)"
+              >
+                Abmelden
+              </Button>
+            </template>
+          </ListRow>
         </ul>
-        <button
+        <Button
           v-if="sessions.length > 1"
-          class="btn-secondary btn-block danger"
+          variant="secondary"
+          block
+          class="danger"
           :class="{ confirming: isRevokeOthersArmed() }"
           :disabled="revokingOthers"
           @click="triggerRevokeOthers()"
         >
           {{ revokingOthers ? "Wird abgemeldet…" : isRevokeOthersArmed() ? "Wirklich alle abmelden?" : "Alle anderen Geräte abmelden" }}
-        </button>
+        </Button>
       </CollapsibleCard>
     </section>
 
@@ -587,10 +583,10 @@ async function saveWeight() {
           <h3 class="eyebrow sub-eyebrow">Server</h3>
           <template v-if="!editingServer">
             <p class="hint">{{ serverUrl }}</p>
-            <button class="btn-secondary" @click="startEditingServer">Ändern</button>
+            <Button variant="secondary" @click="startEditingServer">Ändern</Button>
           </template>
           <template v-else>
-            <input
+            <Input
               v-model="serverInput"
               type="text"
               placeholder="liftr.example.com"
@@ -601,10 +597,10 @@ async function saveWeight() {
             />
             <p v-if="serverError" class="error">{{ serverError }}</p>
             <div class="server-actions">
-              <button class="btn-secondary" @click="editingServer = false">Abbrechen</button>
-              <button class="btn-primary" :disabled="serverChecking || !serverInput.trim()" @click="saveServer">
+              <Button variant="secondary" @click="editingServer = false">Abbrechen</Button>
+              <Button :disabled="serverChecking || !serverInput.trim()" @click="saveServer">
                 {{ serverChecking ? "Prüfe…" : "Speichern" }}
-              </button>
+              </Button>
             </div>
           </template>
           <p v-if="serverVersion" class="hint" :class="{ error: versionMismatch }">
@@ -622,10 +618,10 @@ async function saveWeight() {
           <p v-else-if="appUpdateError" class="error">{{ appUpdateError }}</p>
           <p v-else-if="appUpdateLastChecked" class="hint">Du bist auf dem neuesten Stand.</p>
           <div class="server-actions">
-            <button class="btn-secondary" :disabled="appUpdateChecking" @click="checkForAppUpdateManually">
+            <Button variant="secondary" :disabled="appUpdateChecking" @click="checkForAppUpdateManually">
               {{ appUpdateChecking ? "Prüfe…" : "Nach Updates suchen" }}
-            </button>
-            <button v-if="appUpdateAvailable" class="btn-primary" @click="openAppUpdateDownload">Herunterladen</button>
+            </Button>
+            <Button v-if="appUpdateAvailable" @click="openAppUpdateDownload">Herunterladen</Button>
           </div>
         </template>
 
@@ -634,9 +630,9 @@ async function saveWeight() {
           Sync-Protokoll{{ me?.role === "owner" ? " und Serverfehler" : "" }} — hilfreich, falls mal etwas nicht
           funktioniert. Normalerweise brauchst du das nicht.
         </p>
-        <RouterLink class="btn-secondary btn-block" to="/diagnostics">Protokoll öffnen</RouterLink>
+        <Button as="router-link" to="/diagnostics" variant="secondary" block>Protokoll öffnen</Button>
 
-        <button class="btn-secondary btn-block logout-btn" @click="handleLogout">Abmelden</button>
+        <Button variant="secondary" block class="logout-btn" @click="handleLogout">Abmelden</Button>
       </CollapsibleCard>
     </section>
 
@@ -646,14 +642,16 @@ async function saveWeight() {
         Löscht dein Konto und alle deine Daten (Workouts, Läufe, Routinen) unwiderruflich. Zweimal
         tippen zum Bestätigen.
       </p>
-      <button
-        class="btn-secondary btn-block danger"
+      <Button
+        variant="secondary"
+        block
+        class="danger"
         :class="{ confirming: isDeleteAccountArmed() }"
         :disabled="deletingAccount"
         @click="triggerDeleteAccount()"
       >
         {{ deletingAccount ? "Wird gelöscht…" : isDeleteAccountArmed() ? "Wirklich löschen?" : "Konto löschen" }}
-      </button>
+      </Button>
     </section>
 
     <h2 class="group-header">Daten</h2>
@@ -665,18 +663,18 @@ async function saveWeight() {
         liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button
         stößt eine Synchronisierung jederzeit sofort an.
       </p>
-      <button class="btn-primary" :disabled="healthConnectBusy" @click="connectHealthConnect">
+      <Button :disabled="healthConnectBusy" @click="connectHealthConnect">
         {{ healthConnectBusy ? "Synchronisiere…" : healthConnectConnected ? "Jetzt synchronisieren" : "Health Connect verbinden" }}
-      </button>
+      </Button>
       <p v-if="healthConnectStatus" class="current">{{ healthConnectStatus }}</p>
     </section>
 
     <section class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Daten-Export</h2>
       <p class="hint">Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr.</p>
-      <button class="btn-primary" :disabled="exporting" @click="exportData">
+      <Button :disabled="exporting" @click="exportData">
         {{ exporting ? "Wird erstellt…" : "Backup herunterladen" }}
-      </button>
+      </Button>
       <p v-if="exportError" class="current" style="color: var(--danger)">{{ exportError }}</p>
     </section>
 
@@ -684,8 +682,7 @@ async function saveWeight() {
 
     <RouterLink to="/attributions" class="attributions-link">Quellen &amp; Lizenzen →</RouterLink>
     </div>
-    </IonContent>
-  </IonPage>
+  </BasePage>
 </template>
 
 <style scoped>
@@ -777,15 +774,7 @@ async function saveWeight() {
   color: var(--faint);
   margin-bottom: var(--sp3);
 }
-/* Same text-input recipe as .bw-row input below, for the "change server" field. */
 input[aria-label="Server-Adresse"] {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: var(--r-md);
-  background: var(--surface-3);
-  border: 1px solid var(--line-2);
-  color: var(--text);
-  font-size: 14px;
   margin-bottom: var(--sp2);
 }
 .server-actions {
@@ -811,23 +800,9 @@ input[aria-label="Server-Adresse"] {
   gap: var(--sp2);
   align-items: center;
 }
-.bw-row input {
+.bw-row :deep(.input-wrap) {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  border-radius: var(--r-md);
-  background: var(--surface-3);
-  border: 1px solid var(--line-2);
-  color: var(--text);
-  font-size: 14px;
-  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
-}
-/* Nebula-tinted focus state (see .profile-input's identical rule below for the shared
-   rationale) — was relying only on the global :focus-visible outline, which reads as a
-   generic browser affordance rather than part of this app's own accent system. */
-.bw-row input:focus-visible {
-  border-color: var(--nebula-m);
-  box-shadow: 0 0 0 3px var(--nebula-glow);
 }
 .member-list {
   list-style: none;
@@ -838,9 +813,6 @@ input[aria-label="Server-Adresse"] {
   gap: var(--sp2);
 }
 .member-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: var(--sp2);
   font-size: 14px;
 }
@@ -855,11 +827,9 @@ input[aria-label="Server-Adresse"] {
 .session-badge {
   margin-left: var(--sp2);
   padding: 2px 8px;
-  border-radius: var(--r-full, 999px);
   background: var(--surface-3);
+  border: none;
   color: var(--faint);
-  font-size: 11px;
-  font-weight: 700;
 }
 .unit {
   color: var(--faint);
@@ -875,21 +845,6 @@ input[aria-label="Server-Adresse"] {
   font-size: 12.5px;
   color: var(--dim);
   font-weight: 700;
-}
-.profile-input {
-  padding: 10px 12px;
-  border-radius: var(--r-md);
-  background: var(--surface-3);
-  border: 1px solid var(--line-2);
-  color: var(--text);
-  font-size: 14px;
-  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
-}
-/* Same nebula-tinted focus ring as every other text input on this page — the app's accent
-   gradient, not the browser default, is what should announce "you're editing this field". */
-.profile-input:focus-visible {
-  border-color: var(--nebula-m);
-  box-shadow: 0 0 0 3px var(--nebula-glow);
 }
 .profile-save {
   width: 100%;

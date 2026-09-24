@@ -27,16 +27,22 @@ Pick `<your-session-id>` yourself — something short and specific to this task/
 `rank-decay-bug`, `routine-wizard-copy`). This starts an isolated backend + dashboard pair, each on
 its own automatically-picked free port, backed by its own disposable SQLite database.
 
-**Known gap:** since the multi-account-login merge, the seeded database has no owner password set,
-so the dashboard shows the first-run setup screen rather than going straight to content — set a
-password there once per session (any value that clears the common-password check) to reach the
-seeded data. This is a dev-tooling regression, not expected behavior; auto-provisioning an owner
-session in `dev-up.mjs`/`seed-mock-data.ts` is a follow-up, not done here.
-
 It then ingests the exercise catalog and the running-standards table into that database and seeds
 it with realistic mock data — through the real sync pipeline, not hand-faked, so ranks, PRs,
 streaks, and XP all come out correctly derived. See `scripts/seed-mock-data.ts` for exactly what's
-seeded. It prints the dashboard URL, backend URL, and log paths to use.
+seeded. The seed also sets the owner's password (`scripts/lib/devOwner.mjs`'s
+`DEV_OWNER_PASSWORD`), and by default `dev-up.mjs` logs itself in as that owner too — it prints a
+dashboard URL that's already authenticated, so it goes straight to seeded content with no
+setup/login screen at all. Pass `--loggedout` to get a plain URL that lands on the login screen
+instead (e.g. to manually exercise the login flow itself). It prints the dashboard URL, backend
+URL, login credentials (useful even when auto-logged-in, e.g. to test logging in as the owner on
+a second device/tab), and log paths to use.
+
+**When you add a feature, extend the seed in the same change.** `scripts/seed-mock-data.ts` is a
+living inventory of what every screen needs to render real, non-empty data for manual/agent
+verification — a new screen or feature with no seeded data is untested by every future dev-up.mjs
+session, not just this one. Matches this doc's own CHANGELOG-entry discipline below: cheap to do
+now, easy to forget later.
 
 Exercise catalog *images* are the one thing **not** scoped to your session — they're static,
 network-fetched, and identical across every session, so they live in the ordinary shared

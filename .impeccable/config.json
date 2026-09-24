@@ -119,6 +119,15 @@
         ],
         "createdAt": "2026-09-21T11:47:36.004Z",
         "reason": "false positive: literal '<img>' text inside a JSDoc comment, not an actual template <img> element"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "tests/client/components/patterns/ListRow.test.ts"
+        ],
+        "createdAt": "2026-09-24T00:27:42.198Z",
+        "reason": "test-only slot-placement mock markup, not real UI, never rendered as a page"
       }
     ]
   }

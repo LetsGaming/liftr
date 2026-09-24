@@ -5,7 +5,7 @@
 //
 // Not reachable from any nav item — same "reachable, not surfaced" shape as DiagnosticsPage.vue
 // — so it needs BasePage's back-button to have any way out.
-import BasePage from "../components/ui/BasePage.vue";
+import BasePage from "../components/patterns/BasePage.vue";
 </script>
 
 <template>

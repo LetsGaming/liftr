@@ -41,7 +41,10 @@ import { ingestStandards } from "../packages/ingest/src/ingestStandards.js";
 import { ingestRunStandards } from "../packages/ingest/src/ingestRunStandards.js";
 import { ensureCatalogImages } from "./lib/ensureCatalogImages.js";
 import { writeSeedCache } from "./lib/seedCache.mjs";
+import { DEV_OWNER_PASSWORD } from "./lib/devOwner.mjs";
 
+import { setUserPassword } from "../packages/server/src/repositories/authRepository.js";
+import { hashPassword } from "../packages/server/src/lib/passwords.js";
 import { writeJsonSetting } from "../packages/server/src/repositories/settingsRepository.js";
 import { upsertBodyweightLog } from "../packages/server/src/repositories/bodyweightRepository.js";
 import { insertCustomExercise } from "../packages/server/src/repositories/exerciseRepository.js";
@@ -766,6 +769,9 @@ async function main() {
 
   console.log("[seed] cardio history (walk/hike/other)...");
   await seedCardioHistory(db);
+
+  console.log("[seed] owner password...");
+  await setUserPassword(db, USER_ID, await hashPassword(DEV_OWNER_PASSWORD));
 
   console.log("[seed] done.");
 
