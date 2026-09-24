@@ -18,6 +18,8 @@ import { formatDateLong, formatDurationMinutes } from "../lib/format";
 import { canvasToBlob, drawWorkoutCard, shareOrDownloadBlob } from "../lib/shareCard";
 import AppIcon from "../components/ui/AppIcon.vue";
 import BasePage from "../components/ui/BasePage.vue";
+import Button from "../components/base/Button.vue";
+import Chip from "../components/base/Chip.vue";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore, type WorkoutDetail } from "../stores/historyStore";
 import { useOverallRankStore } from "../stores/overallRankStore";
@@ -163,23 +165,25 @@ async function share() {
           <ExerciseRow visual="icon" :size="18" :slug="we.exercise.slug" :equipment="we.exercise.equipment" :name="exerciseName(we.exercise.slug, we.exercise.name)">
             <template #meta>
               <span class="tnum set-chips">
-                <span v-for="s in we.sets" :key="s.id" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
+                <Chip v-for="s in we.sets" :key="s.id" size="sm" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
                   <span v-if="s.isPr" aria-hidden="true"> <AppIcon name="trophy" /></span>
-                </span>
+                </Chip>
               </span>
             </template>
           </ExerciseRow>
         </li>
       </ul>
 
-      <button class="btn-primary btn-block" :disabled="sharing" @click="share">
+      <Button block :disabled="sharing" @click="share">
         <template v-if="sharing">Erstelle Bild…</template>
         <template v-else><AppIcon name="share" /> Als Bild teilen</template>
-      </button>
-      <button
-        class="btn-secondary btn-block delete-btn"
+      </Button>
+      <Button
+        variant="secondary"
+        block
+        class="delete-btn"
         :class="{ confirming: deleteConfirm.isArmed() }"
         :disabled="deleting"
         @click="deleteConfirm.trigger()"
@@ -187,7 +191,7 @@ async function share() {
         <template v-if="deleting">Wird gelöscht…</template>
         <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen? (XP/Rang werden zurückgenommen)</template>
         <template v-else><AppIcon name="trash" /> Workout löschen</template>
-      </button>
+      </Button>
       <canvas ref="shareCanvas" class="share-canvas" aria-hidden="true" />
     </template>
   </BasePage>
@@ -237,11 +241,7 @@ async function share() {
   gap: 4px;
 }
 .set-chip {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--dim);
   background: var(--surface-3);
-  border-radius: 999px;
   padding: 2px 8px;
 }
 .set-chip.warmup {
@@ -249,7 +249,7 @@ async function share() {
 }
 .set-chip.pr {
   color: var(--pr);
-  border: 1px solid var(--pr);
+  border-color: var(--pr);
 }
 .btn-primary {
   margin-top: var(--sp5);

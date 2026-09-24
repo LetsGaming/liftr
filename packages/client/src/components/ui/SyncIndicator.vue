@@ -23,6 +23,7 @@
  *             still set from a prior failed attempt — nothing is actually wrong anymore then.
  */
 import { computed } from "vue";
+import Chip from "../base/Chip.vue";
 import { useSyncStore } from "../../stores/syncStore";
 
 const sync = useSyncStore();
@@ -44,8 +45,8 @@ const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
     :title="state === 'error' ? `Synchronisierung fehlgeschlagen: ${sync.lastError}` : undefined"
   >
     <span v-if="state === 'syncing'" class="sync-dot sync-dot-syncing shimmer" />
-    <span v-else-if="state === 'error'" class="sync-badge sync-badge-error">{{ sync.pendingCount }}</span>
-    <span v-else-if="state === 'queued'" class="sync-badge">{{ sync.pendingCount }}</span>
+    <Chip v-else-if="state === 'error'" size="sm" variant="danger" class="sync-badge sync-badge-error">{{ sync.pendingCount }}</Chip>
+    <Chip v-else-if="state === 'queued'" size="sm" class="sync-badge">{{ sync.pendingCount }}</Chip>
     <span v-else class="sync-dot sync-dot-idle" />
   </div>
 </template>
@@ -88,10 +89,6 @@ const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
   font-size: 10px;
   font-weight: 800;
   line-height: 14px;
@@ -99,8 +96,6 @@ const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
 }
 .sync-badge-error {
   background: var(--danger-lo);
-  border-color: var(--danger);
-  color: var(--danger);
   pointer-events: auto;
 }
 </style>

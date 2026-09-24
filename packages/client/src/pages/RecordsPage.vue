@@ -15,6 +15,9 @@ import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import type { RunCategory } from "@liftr/shared";
 import { RUN_CATEGORIES, rankedCardioActivities } from "@liftr/shared";
+import Button from "../components/base/Button.vue";
+import EmptyNote from "../components/base/EmptyNote.vue";
+import ListRow from "../components/patterns/ListRow.vue";
 import { useExerciseName } from "../composables/useExerciseName";
 import { formatClockLong, formatPace } from "../lib/format";
 import { usePrStore } from "../stores/prStore";
@@ -113,17 +116,18 @@ function formatDate(iso: string): string {
 
       <p v-else-if="prStore.error" class="page-note load-error panel" style="margin-top: var(--sp4)">
         Rekorde konnten nicht geladen werden.
-        <button type="button" class="btn-secondary" @click="prStore.load()">Erneut versuchen</button>
+        <Button variant="secondary" @click="prStore.load()">Erneut versuchen</Button>
       </p>
 
-      <p v-else-if="sorted.length === 0" class="page-note empty-note panel" style="margin-top: var(--sp4)">
+      <EmptyNote v-else-if="sorted.length === 0" align="start" class="page-note empty-note panel" style="margin-top: var(--sp4)">
         Noch keine Rekorde — dein erster harter Satz auf einer beliebigen Übung startet einen.
-      </p>
+      </EmptyNote>
 
       <ul v-else class="pr-list">
-        <li
+        <ListRow
           v-for="pr in sorted"
           :key="pr.id"
+          as="li"
           class="panel pr-row"
           :class="{ 'panel-reward panel-reward--nebula': isRecentlyAchieved(pr.achievedAt) }"
         >
@@ -131,11 +135,13 @@ function formatDate(iso: string): string {
             <b>{{ exerciseName(pr.exerciseSlug, pr.exerciseName) }}</b>
             <span class="pr-kind">{{ KIND_LABEL[pr.kind] }}</span>
           </div>
-          <div class="pr-row-meta">
-            <span class="tnum pr-value">{{ formatValue(pr.kind, pr.value) }}</span>
-            <span class="pr-date">{{ formatDate(pr.achievedAt) }}</span>
-          </div>
-        </li>
+          <template #trailing>
+            <div class="pr-row-meta">
+              <span class="tnum pr-value">{{ formatValue(pr.kind, pr.value) }}</span>
+              <span class="pr-date">{{ formatDate(pr.achievedAt) }}</span>
+            </div>
+          </template>
+        </ListRow>
       </ul>
 
       <h2 class="eyebrow run-pr-heading">Cardio-Rekorde</h2>
@@ -146,13 +152,13 @@ function formatDate(iso: string): string {
 
       <p v-else-if="runRankStore.prsError" class="page-note load-error run-pr-load-error panel" style="margin-top: var(--sp4)">
         Lauf-Rekorde konnten nicht geladen werden.
-        <button type="button" class="btn-secondary" @click="runRankStore.loadPrs()">Erneut versuchen</button>
+        <Button variant="secondary" @click="runRankStore.loadPrs()">Erneut versuchen</Button>
       </p>
 
       <ul v-else class="run-pr-list">
         <li v-for="category in RUN_CATEGORIES" :key="category">
-          <button
-            type="button"
+          <ListRow
+            as="button"
             class="panel run-pr-row"
             :class="{ 'run-pr-empty': !bestRunTimeByCategory[category] }"
             :disabled="!bestRunTimeByCategory[category]"
@@ -161,18 +167,20 @@ function formatDate(iso: string): string {
             <div class="pr-row-main">
               <b>{{ RUN_CATEGORY_LABEL[category] }}</b>
             </div>
-            <div v-if="bestRunTimeByCategory[category]" class="pr-row-meta">
-              <span class="tnum pr-value">{{ formatClockLong(bestRunTimeByCategory[category]!.value) }}</span>
-              <span class="pr-date">{{ formatDate(bestRunTimeByCategory[category]!.achievedAt) }}</span>
-            </div>
-            <div v-else class="pr-row-meta">
-              <span class="pr-date">Noch kein Rekord</span>
-            </div>
-          </button>
+            <template #trailing>
+              <div v-if="bestRunTimeByCategory[category]" class="pr-row-meta">
+                <span class="tnum pr-value">{{ formatClockLong(bestRunTimeByCategory[category]!.value) }}</span>
+                <span class="pr-date">{{ formatDate(bestRunTimeByCategory[category]!.achievedAt) }}</span>
+              </div>
+              <div v-else class="pr-row-meta">
+                <span class="pr-date">Noch kein Rekord</span>
+              </div>
+            </template>
+          </ListRow>
         </li>
         <li v-for="activityId in singleSpeedActivityIds" :key="activityId">
-          <button
-            type="button"
+          <ListRow
+            as="button"
             class="panel run-pr-row"
             :class="{ 'run-pr-empty': !bestSpeedByActivity[activityId] }"
             :disabled="!bestSpeedByActivity[activityId]"
@@ -181,14 +189,16 @@ function formatDate(iso: string): string {
             <div class="pr-row-main">
               <b>{{ ACTIVITY_LABEL[activityId] ?? activityId }}</b>
             </div>
-            <div v-if="bestSpeedByActivity[activityId]" class="pr-row-meta">
-              <span class="tnum pr-value">{{ formatPace(1000 / bestSpeedByActivity[activityId]!.value) }}</span>
-              <span class="pr-date">{{ formatDate(bestSpeedByActivity[activityId]!.achievedAt) }}</span>
-            </div>
-            <div v-else class="pr-row-meta">
-              <span class="pr-date">Noch kein Rekord</span>
-            </div>
-          </button>
+            <template #trailing>
+              <div v-if="bestSpeedByActivity[activityId]" class="pr-row-meta">
+                <span class="tnum pr-value">{{ formatPace(1000 / bestSpeedByActivity[activityId]!.value) }}</span>
+                <span class="pr-date">{{ formatDate(bestSpeedByActivity[activityId]!.achievedAt) }}</span>
+              </div>
+              <div v-else class="pr-row-meta">
+                <span class="pr-date">Noch kein Rekord</span>
+              </div>
+            </template>
+          </ListRow>
         </li>
       </ul>
     </IonContent>
@@ -226,10 +236,6 @@ function formatDate(iso: string): string {
 }
 .pr-row {
   padding: var(--sp4);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp3);
 }
 .pr-row-main {
   display: flex;
@@ -279,15 +285,7 @@ function formatDate(iso: string): string {
    panel row, so a native button needs its own explicit width/text-align/background reset since
    .panel itself is unopinionated about either. */
 .run-pr-row {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp3);
   padding: var(--sp4);
-  text-align: left;
-  color: var(--text);
-  border: none;
 }
 .run-pr-row:disabled {
   cursor: default;

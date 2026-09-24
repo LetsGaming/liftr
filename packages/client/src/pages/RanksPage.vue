@@ -13,6 +13,7 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { ref } from "vue";
 import AppIcon from "../components/ui/AppIcon.vue";
+import Button from "../components/base/Button.vue";
 import RankLifterSection from "../components/rank/RankLifterSection.vue";
 import RankRunnerSection from "../components/rank/RankRunnerSection.vue";
 import TabSwitcher, { type TabSwitcherTab } from "../components/ui/TabSwitcher.vue";
@@ -38,9 +39,10 @@ const RANK_TABS: TabSwitcherTab[] = [
           nav-label="Workout- oder Lauf-Ränge"
           @update:model-value="section = $event as 'workout' | 'Läufe'"
         />
-        <router-link to="/records" class="btn-secondary">
-          <AppIcon name="trophy" /> Rekorde ansehen
-        </router-link>
+        <Button as="router-link" to="/records" variant="secondary">
+          <template #leading><AppIcon name="trophy" /></template>
+          Rekorde ansehen
+        </Button>
       <RankLifterSection v-if="section === 'workout'" />
       <RankRunnerSection v-else />
     </IonContent>
