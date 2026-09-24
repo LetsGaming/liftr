@@ -10,6 +10,9 @@ import { SET_KIND_BADGE, SET_KIND_LABEL, type SetKind } from "@liftr/shared";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import NumberStepper from "../ui/NumberStepper.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
+import IconButton from "../patterns/IconButton.vue";
 import { useDragReorder } from "../../composables/useDragReorder";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { formatClock } from "../../lib/format";
@@ -46,6 +49,13 @@ function handleDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) 
 function kindOf(kind: SetKind | undefined): SetKind {
   return kind ?? "normal";
 }
+
+const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent"> = {
+  normal: "neutral",
+  warmup: "fire",
+  failure: "danger",
+  dropset: "accent",
+};
 </script>
 
 <template>
@@ -77,22 +87,23 @@ function kindOf(kind: SetKind | undefined): SetKind {
               <span class="equip">{{ catalog.byId(exerciseId)?.equipment }}</span>
             </template>
           </ExerciseRow>
-          <button class="remove-btn" aria-label="Entfernen" @click="emit('removeExercise', exerciseId)"><AppIcon name="trash" /></button>
+          <IconButton icon="trash" label="Entfernen" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
         </div>
 
         <div class="set-rows">
           <div v-for="(set, si) in cfg.sets" :key="si" class="set-row">
             <div class="set-label-row">
               <span class="set-label">Satz {{ si + 1 }}</span>
-              <button
-                type="button"
+              <Chip
+                as="button"
+                size="sm"
                 class="kind-badge"
-                :class="`k-${kindOf(set.kind)}`"
+                :variant="KIND_CHIP_VARIANT[kindOf(set.kind)]"
                 :title="`Satzart: ${SET_KIND_LABEL[kindOf(set.kind)]} — tippen zum Ändern`"
                 @click="emit('cycleSetKind', exerciseId, si)"
               >
                 {{ SET_KIND_BADGE[kindOf(set.kind)] }}
-              </button>
+              </Chip>
             </div>
             <div class="steppers">
               <NumberStepper
@@ -172,7 +183,7 @@ function kindOf(kind: SetKind | undefined): SetKind {
 
     <button class="add-exercise-btn" @click="emit('addExercise')">+ Übung hinzufügen</button>
 
-    <button class="btn-primary btn-lg" :disabled="entries.length === 0" @click="emit('continue')">Weiter →</button>
+    <Button size="lg" :disabled="entries.length === 0" @click="emit('continue')">Weiter →</Button>
   </div>
 </template>
 
@@ -226,16 +237,6 @@ function kindOf(kind: SetKind | undefined): SetKind {
   color: var(--dim);
   text-transform: capitalize;
 }
-.remove-btn {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--r-sm);
-  background: var(--surface-3);
-  border: 1px solid var(--line);
-  color: var(--danger);
-  font-size: 13px;
-}
 .set-rows {
   display: flex;
   flex-direction: column;
@@ -274,38 +275,6 @@ function kindOf(kind: SetKind | undefined): SetKind {
 .set-label {
   font-size: 12.5px;
   color: var(--dim);
-}
-.kind-badge {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  font-weight: 800;
-  flex: none;
-  background: var(--surface-3);
-  color: var(--text);
-  border: 1px solid var(--line);
-}
-.kind-badge.k-warmup {
-  background: var(--warning);
-  color: var(--k-warmup-text);
-  border-color: transparent;
-}
-.kind-badge.k-normal {
-  background: var(--surface-3);
-  color: var(--dim);
-}
-.kind-badge.k-failure {
-  background: var(--danger);
-  color: var(--k-failure-text);
-  border-color: transparent;
-}
-.kind-badge.k-dropset {
-  background: var(--expert-3);
-  color: var(--k-dropset-text);
-  border-color: transparent;
 }
 .set-row .steppers {
   display: flex;

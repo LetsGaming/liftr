@@ -13,6 +13,8 @@ import { computed, ref } from "vue";
 import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
 import ExerciseList from "../exercise/ExerciseList.vue";
 import MuscleFigure from "../ui/MuscleFigure.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
 
 const props = withDefaults(defineProps<{ selectedIds: Set<string>; suggesting?: boolean; mode: "manual" | "muscles" }>(), { suggesting: false });
 const emit = defineEmits<{ toggle: [exerciseId: string]; continue: []; suggest: [muscleSlugs: string[]] }>();
@@ -47,25 +49,26 @@ function requestSuggestions() {
       <p class="hint">Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast.</p>
       <MuscleFigure class="muscle-preview" :primary="pickedMusclesArray" :size="120" />
       <div class="muscle-chips">
-        <button
+        <Chip
           v-for="slug in MUSCLE_SLUGS"
           :key="slug"
+          as="button"
           class="muscle-chip"
-          :class="{ active: pickedMuscles.has(slug) }"
+          :active="pickedMuscles.has(slug)"
           @click="toggleMuscle(slug)"
         >
           {{ MUSCLE_LABEL_DE[slug] ?? slug }}
-        </button>
+        </Chip>
       </div>
-      <button class="btn-primary btn-lg btn-block" :disabled="pickedMuscles.size === 0 || suggesting" @click="requestSuggestions">
+      <Button size="lg" block :disabled="pickedMuscles.size === 0 || suggesting" @click="requestSuggestions">
         {{ suggesting ? "Wird zusammengestellt…" : `Übungen vorschlagen (${pickedMuscles.size} Muskelgruppen)` }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="mode === 'manual'" class="continue-bar">
-      <button class="btn-primary btn-lg btn-block" :disabled="count === 0" @click="emit('continue')">
+      <Button size="lg" block :disabled="count === 0" @click="emit('continue')">
         {{ count === 0 ? "Übungen auswählen" : `${count} ausgewählt · Weiter →` }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -99,20 +102,5 @@ function requestSuggestions() {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp2);
-}
-.muscle-chip {
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--dim);
-  font-size: 13px;
-  font-weight: 600;
-}
-.muscle-chip.active {
-  background: var(--blue-lo);
-  border-color: var(--blue);
-  color: var(--on-blue-lo);
-  font-weight: 800;
 }
 </style>
