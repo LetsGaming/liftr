@@ -4,6 +4,7 @@ import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 const {
   importNewHealthConnectWorkoutsMock,
+  isHealthConnectAvailableMock,
   resetHealthConnectScanWindowMock,
   waitForInFlightHealthConnectImportMock,
   refreshCardioDerivedStoresMock,
@@ -12,6 +13,7 @@ const {
   getMeMock,
 } = vi.hoisted(() => ({
   importNewHealthConnectWorkoutsMock: vi.fn(),
+  isHealthConnectAvailableMock: vi.fn(),
   resetHealthConnectScanWindowMock: vi.fn(),
   waitForInFlightHealthConnectImportMock: vi.fn().mockResolvedValue(undefined),
   refreshCardioDerivedStoresMock: vi.fn(),
@@ -22,6 +24,7 @@ const {
 
 vi.mock("~client/health/healthConnect", () => ({
   importNewHealthConnectWorkouts: importNewHealthConnectWorkoutsMock,
+  isHealthConnectAvailable: isHealthConnectAvailableMock,
   resetHealthConnectScanWindow: resetHealthConnectScanWindowMock,
   waitForInFlightHealthConnectImport: waitForInFlightHealthConnectImportMock,
 }));
@@ -52,6 +55,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getMeMock.mockResolvedValue({ id: "u1", role: "member" });
   readSyncLogMock.mockReturnValue([]);
+  isHealthConnectAvailableMock.mockResolvedValue(true);
 });
 
 describe("DiagnosticsPage — rescan", () => {
@@ -130,5 +134,16 @@ describe("DiagnosticsPage — clear log", () => {
 
     await clearBtn!.trigger("click");
     expect(clearSyncLogMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("DiagnosticsPage — Health Connect gating", () => {
+  it("hides the whole Synchronisierung section on a platform without Health Connect", async () => {
+    isHealthConnectAvailableMock.mockResolvedValue(false);
+    const wrapper = mountWithProviders(DiagnosticsPage);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Synchronisierung");
+    expect(wrapper.findAll("button").find((b) => b.text().includes("30 Tage"))).toBeFalsy();
   });
 });

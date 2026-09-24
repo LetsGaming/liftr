@@ -33,6 +33,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 - Replay readout values no longer shift sideways when their digit count changes.
 - The exercise/workout/run detail pages now show their name in the header on a phone; it used to be invisible below 900px width.
 - The level ring and streak chip no longer overlap the back button and title on the exercise/workout/run detail, Diagnose, and Lizenzen pages.
+- The Health Connect sync section on the Diagnose page no longer shows on devices/platforms where Health Connect isn't available (it's Android-only), matching the Health Connect card on the Profil page.
 - Tapping the ⓘ exercise-info button mid-workout now opens the exercise details in a sheet instead of navigating away, so the active workout screen (rest timer, scroll position, open pickers) no longer resets.
 - A "check last N/90 days" Health Connect rescan now also refreshes XP/Streak/Ränge when it imports something, matching every other Health Connect sync entry point.
 - A Health Connect rescan started while another sync is already running no longer has its widened scan window silently overwritten by that other sync.

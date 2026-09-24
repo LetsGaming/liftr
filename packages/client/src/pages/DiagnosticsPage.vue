@@ -6,9 +6,9 @@
  * "reachable, not surfaced" pattern AttributionsPage.vue already follows for /attributions.
  *
  * Two sections:
- * 1. Synchronisierung — every user, not owner-gated. The client-side Health Connect sync log
- *    (syncLog.ts) — a skipped workout never reaches the server, so this is the only place its
- *    outcome is recorded at all.
+ * 1. Synchronisierung — every user, not owner-gated, but Health-Connect-only (native Android) like
+ *    ProfilePage.vue's own Health Connect card — the client-side sync log (syncLog.ts) lives in
+ *    this device's localStorage, so it's always empty on web/iOS anyway, never a stale display.
  * 2. Serverfehler — the previous owner-only list from ProfilePage.vue, moved here unchanged.
  */
 import { onMounted, ref } from "vue";
@@ -18,6 +18,7 @@ import EmptyNote from "../components/base/EmptyNote.vue";
 import { getMe, getRecentErrors, type ErrorLogEntry, type Me } from "../services/authService";
 import {
   importNewHealthConnectWorkouts,
+  isHealthConnectAvailable,
   resetHealthConnectScanWindow,
   waitForInFlightHealthConnectImport,
   type HealthConnectSkipReason,
@@ -26,6 +27,8 @@ import { refreshCardioDerivedStores } from "../composables/useCardioDerivedStore
 import { clearSyncLog, readSyncLog, type SyncLogEntry } from "../lib/syncLog";
 import { useToast } from "../composables/useToast";
 import { useConfirmTap } from "../composables/useConfirmTap";
+
+const healthConnectAvailable = ref(false);
 
 const me = ref<Me | null>(null);
 const syncLog = ref<SyncLogEntry[]>([]);
@@ -51,6 +54,7 @@ const { trigger: triggerClearLog, isArmed: isClearLogArmed } = useConfirmTap(() 
 onMounted(async () => {
   refreshSyncLog();
   me.value = await getMe();
+  healthConnectAvailable.value = await isHealthConnectAvailable();
 });
 
 function toggleEntry(idx: number) {
@@ -140,7 +144,7 @@ function formatAt(iso: string): string {
 <template>
   <BasePage title="Diagnose" back-button>
     <div class="diagnostics-content">
-      <section class="card card--quiet surface-hybrid">
+      <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
         <h2 class="eyebrow">Synchronisierung</h2>
         <p class="hint">
           Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst,
