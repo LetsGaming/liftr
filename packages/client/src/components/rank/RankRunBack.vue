@@ -16,6 +16,7 @@ import { computed } from "vue";
 import { ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
+import EmptyNote from "../base/EmptyNote.vue";
 
 const props = defineProps<{
   tier: string | null;
@@ -48,7 +49,7 @@ const decayCaption = computed(() => {
       <div class="rrb-pr-value tnum">{{ prLabel }}</div>
       <div class="rrb-pr-date">{{ prDate }}</div>
     </template>
-    <p v-else class="reb-empty">Noch kein Rekord für diese Distanz.</p>
+    <EmptyNote v-else class="reb-empty">Noch kein Rekord für diese Distanz.</EmptyNote>
 
     <template v-if="tier != null && division != null">
       <div class="reb-tier">

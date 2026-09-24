@@ -21,6 +21,7 @@ import RankFlipCard from "./RankFlipCard.vue";
 import RankProgress from "./RankProgress.vue";
 import RankUpCalendar from "./RankUpCalendar.vue";
 import TierLadder from "./TierLadder.vue";
+import Button from "../base/Button.vue";
 
 const router = useRouter();
 const ranksStore = useRanksStore();
@@ -120,7 +121,7 @@ const filteredRanks = computed(() =>
 
     <p v-else-if="ranksStore.error" class="page-note load-error" style="margin-top: var(--sp4)">
       Ränge konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.
-      <button type="button" class="btn-secondary" @click="ranksStore.load()">Erneut versuchen</button>
+      <Button variant="secondary" @click="ranksStore.load()">Erneut versuchen</Button>
     </p>
 
     <template v-else>

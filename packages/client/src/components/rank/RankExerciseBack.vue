@@ -29,6 +29,8 @@ import { ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import MuscleFigure from "../ui/MuscleFigure.vue";
 import TierBadge from "./TierBadge.vue";
+import EmptyNote from "../base/EmptyNote.vue";
+import Button from "../base/Button.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -78,10 +80,10 @@ const decayCaption = computed(() => {
       </div>
       <p v-if="decayCaption" class="reb-decay">{{ decayCaption }}</p>
     </template>
-    <p v-else class="reb-empty">Noch kein Rang für diese Übung.</p>
+    <EmptyNote v-else class="reb-empty">Noch kein Rang für diese Übung.</EmptyNote>
 
     <div class="reb-actions">
-      <button type="button" class="btn-secondary" @click.stop="$emit('stats')">Rang-Statistiken</button>
+      <Button variant="secondary" @click.stop="$emit('stats')">Rang-Statistiken</Button>
     </div>
   </div>
 </template>
