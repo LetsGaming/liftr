@@ -13,6 +13,7 @@
  */
 import { computed, provide, ref } from "vue";
 import { useSettingsStore } from "../../stores/settingsStore";
+import Button from "../base/Button.vue";
 import AboutStep from "../onboarding/AboutStep.vue";
 import DoneStep from "../onboarding/DoneStep.vue";
 import EquipmentStep from "../onboarding/EquipmentStep.vue";
@@ -158,10 +159,10 @@ async function skip() {
     </div>
 
     <div class="wizard-actions">
-      <button v-if="!isFirst" class="btn-secondary" :disabled="saving" @click="goBack">← Zurück</button>
-      <button class="btn-primary btn-lg" :disabled="saving || !canContinue" @click="goNext">
+      <Button v-if="!isFirst" variant="secondary" :disabled="saving" @click="goBack">← Zurück</Button>
+      <Button size="lg" :disabled="saving || !canContinue" @click="goNext">
         {{ saving ? "Wird gespeichert…" : isLast ? "Los geht's" : "Weiter →" }}
-      </button>
+      </Button>
     </div>
   </SheetModal>
 </template>

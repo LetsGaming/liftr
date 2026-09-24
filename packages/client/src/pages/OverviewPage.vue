@@ -21,6 +21,10 @@ import ErholungszoneCard from "../components/ui/ErholungszoneCard.vue";
 import MuscleFigure from "../components/ui/MuscleFigure.vue";
 import InfoToggle from "../components/ui/InfoToggle.vue";
 import StatTile from "../components/ui/StatTile.vue";
+import Button from "../components/base/Button.vue";
+import EmptyNote from "../components/base/EmptyNote.vue";
+import Select from "../components/base/Select.vue";
+import ListRow from "../components/patterns/ListRow.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
@@ -71,6 +75,13 @@ function activityFilterLabel(value: string): string {
   if (value === "workout") return "Workout";
   return ACTIVITY_LABEL[value] ?? value;
 }
+const selectedFilterValue = computed<string>({
+  get: () => (activityFilter.value === "alle" ? "" : activityFilter.value),
+  set: (v) => {
+    activityFilter.value = v || "alle";
+    activityShownCount.value = 8;
+  },
+});
 const filteredActivity = computed(() => {
   if (activityFilter.value === "alle") return history.items;
   return history.items.filter((i) =>
@@ -262,7 +273,7 @@ function retryFailed() {
       <div class="dashboard">
         <div v-if="hasLoadError" class="load-error-banner">
           <span>Einige Daten konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.</span>
-          <button type="button" class="btn-secondary" @click="retryFailed">Erneut versuchen</button>
+          <Button variant="secondary" @click="retryFailed">Erneut versuchen</Button>
         </div>
 
         <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" :can-start="!!suggestedRoutine" @start="startFromReadiness" />
@@ -277,7 +288,7 @@ function retryFailed() {
               </div>
               <WorkoutClock />
             </div>
-            <router-link to="/workout" class="btn-primary btn-block">Zum Workout →</router-link>
+            <Button as="router-link" to="/workout" block>Zum Workout →</Button>
           </template>
           <template v-else-if="suggestedRoutine">
             <div class="eyebrow lp-eyebrow">Bereit für heute?</div>
@@ -288,15 +299,15 @@ function retryFailed() {
               </div>
               <MuscleFigure class="lp-muscles" :size="36" v-bind="suggestedRoutineMuscles" />
             </div>
-            <button class="btn-primary btn-block" @click="router.push(`/routines/${suggestedRoutine.id}`)">
+            <Button block @click="router.push(`/routines/${suggestedRoutine.id}`)">
               <AppIcon name="play" /> Starten
-            </button>
+            </Button>
             <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">Andere Routine wählen →</router-link>
           </template>
           <template v-else>
             <div class="eyebrow lp-eyebrow">Noch keine Routine</div>
             <p class="lp-hint">Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst.</p>
-            <router-link to="/workout" class="btn-secondary btn-block">Erste Routine anlegen →</router-link>
+            <Button as="router-link" to="/workout" variant="secondary" block>Erste Routine anlegen →</Button>
           </template>
         </section>
         <section v-if="isFirstRun" class="first-run-ladder panel">
@@ -345,25 +356,25 @@ function retryFailed() {
                   <b class="tnum">{{ Math.round(weeklyVolume[selectedWeekIndex] ?? 0).toLocaleString("de-DE") }} kg</b>
                 </div>
               </template>
-              <p v-else class="tile-empty">Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab.</p>
+              <EmptyNote v-else align="start" class="tile-empty">Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab.</EmptyNote>
             </div>
 
             <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Nächster Rang</div>
-              <p v-if="topRanks.length > 0" class="tile-empty">
+              <EmptyNote v-if="topRanks.length > 0" align="start" class="tile-empty">
                 <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> bis zum nächsten Rang in
                 <b>{{ exerciseName(topRanks[0]!.slug) }}</b>
-              </p>
-              <p v-else class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</p>
+              </EmptyNote>
+              <EmptyNote v-else align="start" class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</EmptyNote>
             </div>
 
             <div class="tile surface-hybrid">
               <div class="eyebrow tile-head">Körpergewicht</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
-              <p v-else class="tile-empty">
+              <EmptyNote v-else align="start" class="tile-empty">
                 Trag dein Körpergewicht in Profil ein — nach zwei Einträgen siehst du hier den
                 Verlauf.
-              </p>
+              </EmptyNote>
             </div>
           </section>
         </template>
@@ -374,17 +385,17 @@ function retryFailed() {
             <router-link to="/ranks" class="tile discover-tile surface-hybrid">
               <div class="discover-icon"><AppIcon name="trophy" /></div>
               <b>Rang-Analyse</b>
-              <p class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</p>
+              <EmptyNote align="start" class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</EmptyNote>
             </router-link>
           </div>
         </section>
         <section v-if="!isFirstRun" class="activity">
           <div class="eyebrow tile-head">Letzte Aktivität</div>
 
-          <p v-if="history.error" class="tile-empty">Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert.</p>
-          <p v-else-if="history.loaded && history.items.length === 0" class="tile-empty">
+          <EmptyNote v-if="history.error" align="start" class="tile-empty">Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert.</EmptyNote>
+          <EmptyNote v-else-if="history.loaded && history.items.length === 0" align="start" class="tile-empty">
             Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast.
-          </p>
+          </EmptyNote>
 
           <template v-else>
             <!-- Same "up to 2 pills, past that a <select>" rule RankLifterSection.vue's
@@ -401,18 +412,17 @@ function retryFailed() {
               >
                 Beides
               </button>
-              <select
+              <Select
                 v-if="availableActivityFilters.length > 2"
+                v-model="selectedFilterValue"
                 class="rank-tier-select"
                 aria-label="Aktivität filtern"
-                :value="activityFilter === 'alle' ? '' : activityFilter"
-                @change="activityFilter = ($event.target as HTMLSelectElement).value || 'alle'; activityShownCount = 8"
               >
                 <option value="">Aktivität</option>
                 <option v-for="value in availableActivityFilters" :key="value" :value="value">
                   {{ activityFilterLabel(value) }}
                 </option>
-              </select>
+              </Select>
               <button
                 v-for="value in availableActivityFilters.length <= 2 ? availableActivityFilters : []"
                 :key="value"
@@ -427,20 +437,25 @@ function retryFailed() {
 
             <ul class="feed">
               <li v-for="item in visibleActivity" :key="item.id" class="feed-row">
-                <button
+                <ListRow
+                  as="button"
                   class="feed-btn surface-hybrid"
                   @click="item.kind === 'workout' ? openWorkout(item.id, item.title) : openRun(item.id)"
                 >
-                  <span class="icon" :class="item.kind"><AppIcon :name="feedIconName(item)" /></span>
+                  <template #leading>
+                    <span class="icon" :class="item.kind"><AppIcon :name="feedIconName(item)" /></span>
+                  </template>
                   <div class="meta">
                     <b>{{ item.title ?? (item.kind === "run" ? ACTIVITY_LABEL[(item.meta.activityType as string | undefined) ?? "run"] : "Workout") }}</b>
                     <span>{{ formatDate(item.at) }}</span>
                   </div>
-                  <div class="value tnum">
-                    {{ item.kind === "workout" ? volumeLabel(item) : runLabel(item) }}
-                    <span v-if="xpLabel(item)" class="xp-sub">{{ xpLabel(item) }}</span>
-                  </div>
-                </button>
+                  <template #trailing>
+                    <div class="value tnum">
+                      {{ item.kind === "workout" ? volumeLabel(item) : runLabel(item) }}
+                      <span v-if="xpLabel(item)" class="xp-sub">{{ xpLabel(item) }}</span>
+                    </div>
+                  </template>
+                </ListRow>
               </li>
             </ul>
 
@@ -454,9 +469,9 @@ function retryFailed() {
             </button>
           </template>
 
-          <button v-if="history.nextCursor" class="btn-secondary btn-block" :disabled="history.loadingMore" @click="history.loadMore()">
+          <Button v-if="history.nextCursor" variant="secondary" block :disabled="history.loadingMore" @click="history.loadMore()">
             {{ history.loadingMore ? "Lädt…" : "Mehr laden" }}
-          </button>
+          </Button>
         </section>
       </div>
     </IonContent>
@@ -610,10 +625,6 @@ function retryFailed() {
   --eyebrow-color: var(--dim);
   margin-bottom: var(--sp3);
 }
-.tile-empty {
-  color: var(--dim);
-  font-size: 12.5px;
-}
 .volume-bars {
   display: flex;
   align-items: flex-end;
@@ -721,14 +732,8 @@ function retryFailed() {
 }
 /* Same .surface-hybrid treatment as .tile above. */
 .feed-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--sp3);
   padding: var(--sp3);
   border-radius: var(--r-lg);
-  color: var(--text);
-  text-align: left;
 }
 .feed-btn:disabled {
   cursor: default;

@@ -9,6 +9,8 @@
  */
 import { computed } from "vue";
 import { MUSCLE_LABEL_DE } from "../../lib/muscles";
+import Button from "../base/Button.vue";
+import Chip from "../base/Chip.vue";
 import MuscleFigure from "./MuscleFigure.vue";
 
 const props = defineProps<{ heat: Record<string, number>; recoveredSlugs: string[]; loaded: boolean; canStart: boolean }>();
@@ -34,9 +36,9 @@ const verdict = computed(() => {
       <span><i class="cool" />Mehr erholt</span>
     </div>
     <div class="ez-status">
-      <span class="ez-pill">DEIN STATUS</span>
+      <Chip size="sm" class="ez-pill">DEIN STATUS</Chip>
       <p>{{ verdict }}</p>
-      <button v-if="canStart" class="btn-primary btn-block" @click="emit('start')">Jetzt trainieren →</button>
+      <Button v-if="canStart" block @click="emit('start')">Jetzt trainieren →</Button>
     </div>
   </section>
   <div v-else class="erholungszone ez-skeleton surface-hybrid" aria-hidden="true">
@@ -95,11 +97,10 @@ const verdict = computed(() => {
   align-self: flex-start;
   background: var(--icon-fill-fire);
   color: var(--k-warmup-text);
-  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
   padding: 5px 12px;
-  border-radius: 999px;
+  border: none;
 }
 .ez-status p {
   color: var(--dim);

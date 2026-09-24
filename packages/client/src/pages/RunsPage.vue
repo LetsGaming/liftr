@@ -6,6 +6,7 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import Button from "../components/base/Button.vue";
 import RouteList from "../components/route/RouteList.vue";
 import RouteWizard from "../components/route-wizard/RouteWizard.vue";
 import TabSwitcher from "../components/ui/TabSwitcher.vue";
@@ -133,10 +134,10 @@ const WORKOUT_RUNS_TABS = [
         <p style="color: var(--dim)">Strecke starten oder Lauf manuell erfassen</p>
       </div>
       <div class="actions">
-        <button class="btn-secondary" @click="showManualForm = !showManualForm">Manuell</button>
-        <button class="btn-primary" :disabled="importing" @click="triggerImport">
+        <Button variant="secondary" @click="showManualForm = !showManualForm">Manuell</Button>
+        <Button :disabled="importing" @click="triggerImport">
           {{ importing ? "Importiere…" : "GPX/FIT importieren" }}
-        </button>
+        </Button>
         <input ref="fileInput" type="file" accept=".gpx,.fit" style="display: none" @change="onFileChosen" />
       </div>
     </div>
@@ -166,7 +167,7 @@ const WORKOUT_RUNS_TABS = [
         placeholder="Minuten"
         aria-label="Dauer in Minuten"
       />
-      <button class="btn-primary" :disabled="submitting" @click="saveManual">Speichern</button>
+      <Button :disabled="submitting" @click="saveManual">Speichern</Button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 

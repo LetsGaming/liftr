@@ -11,6 +11,7 @@ import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/vue
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/ui/AppIcon.vue";
+import Button from "../components/base/Button.vue";
 import DrillInScreen from "../components/ui/DrillInScreen.vue";
 import RunMap from "../components/run/RunMap.vue";
 import LiveRunScreen from "../components/run/LiveRunScreen.vue";
@@ -80,7 +81,7 @@ function onLiveRunFinished() {
         <template #not-found>
           <div class="eyebrow">Strecke nicht gefunden</div>
           <p>Diese Strecke existiert nicht (mehr). Vielleicht wurde sie gelöscht.</p>
-          <router-link to="/runs" class="btn-secondary btn-block">Zu den Strecken →</router-link>
+          <Button as="router-link" to="/runs" variant="secondary" block>Zu den Strecken →</Button>
         </template>
 
         <template v-if="plannedRoute">
@@ -100,16 +101,17 @@ function onLiveRunFinished() {
             <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
             <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
             <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
-            <button class="btn-primary" :disabled="loggingManual" @click="saveManual">Speichern</button>
+            <Button :disabled="loggingManual" @click="saveManual">Speichern</Button>
             <p v-if="manualError" class="error">{{ manualError }}</p>
           </div>
         </template>
 
         <template #start-bar>
-          <button class="btn-primary btn-lg btn-block" @click="showLiveRun = true">
-            <AppIcon name="play" /> Live tracken
-          </button>
-          <button class="btn-secondary btn-block" @click="openManualForm">Manuell eintragen</button>
+          <Button size="lg" block @click="showLiveRun = true">
+            <template #leading><AppIcon name="play" /></template>
+            Live tracken
+          </Button>
+          <Button variant="secondary" block @click="openManualForm">Manuell eintragen</Button>
         </template>
       </DrillInScreen>
 
