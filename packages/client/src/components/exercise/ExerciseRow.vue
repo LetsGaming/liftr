@@ -11,6 +11,7 @@
 import ExerciseIcon from "./ExerciseIcon.vue";
 import ExerciseThumb from "./ExerciseThumb.vue";
 import TruncatingLabel from "../ui/TruncatingLabel.vue";
+import ListRow from "../patterns/ListRow.vue";
 
 withDefaults(
   defineProps<{ slug: string; equipment: string; name: string; visual?: "thumb" | "icon"; size?: number }>(),
@@ -19,25 +20,22 @@ withDefaults(
 </script>
 
 <template>
-  <div class="exercise-row">
-    <ExerciseThumb v-if="visual === 'thumb'" :slug="slug" :equipment="equipment" :size="size" />
-    <ExerciseIcon v-else :equipment="equipment" :size="size" />
+  <ListRow class="exercise-row">
+    <template #leading>
+      <ExerciseThumb v-if="visual === 'thumb'" :slug="slug" :equipment="equipment" :size="size" />
+      <ExerciseIcon v-else :equipment="equipment" :size="size" />
+    </template>
     <div class="ex-row-meta">
       <TruncatingLabel as="b" class="ex-name">{{ name }}</TruncatingLabel>
       <slot name="meta" />
     </div>
-    <slot name="trailing" />
-  </div>
+    <template #trailing>
+      <slot name="trailing" />
+    </template>
+  </ListRow>
 </template>
 
 <style scoped>
-.exercise-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp3);
-  width: 100%;
-  min-width: 0;
-}
 .ex-row-meta {
   flex: 1;
   min-width: 0;
