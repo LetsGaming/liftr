@@ -25,6 +25,7 @@ import {
 } from "../health/healthConnect";
 import { refreshCardioDerivedStores } from "../composables/useCardioDerivedStores";
 import { clearSyncLog, readSyncLog, type SyncLogEntry } from "../lib/syncLog";
+import { formatDistanceKm } from "../lib/format";
 import { useToast } from "../composables/useToast";
 import { useConfirmTap } from "../composables/useConfirmTap";
 
@@ -122,7 +123,7 @@ function activityLabel(rawWorkoutType: string): string {
 }
 
 function workoutSummary(w: SyncLogEntry["result"]["workouts"][number]): string {
-  const km = w.distanceM != null ? `${(w.distanceM / 1000).toFixed(1)} km` : null;
+  const km = w.distanceM != null ? formatDistanceKm(w.distanceM) : null;
   const label = [activityLabel(w.rawWorkoutType), km].filter(Boolean).join(", ");
   if (w.outcome.kind === "imported") return `${label} — importiert`;
   if (w.outcome.kind === "skipped") return `${label} — übersprungen: ${SKIP_REASON_LABEL[w.outcome.reason]}`;

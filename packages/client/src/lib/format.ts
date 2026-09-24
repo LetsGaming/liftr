@@ -41,3 +41,19 @@ export function formatSpeedKmh(kmh: number | null): string {
   if (kmh == null) return "–";
   return `${kmh.toFixed(1)} km/h`;
 }
+
+/** German short numeric date, e.g. "16.09.2026". Was reimplemented separately in
+ *  RecordsPage.vue's formatDate and RankRunnerSection.vue's formatPrDate. */
+export function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** Distance in meters to km, e.g. "5.20 km", or an em dash when unknown. Was reimplemented
+ *  separately in RunDetailPage.vue, OverviewPage.vue's runLabel, LiveRunScreen.vue's distanceKm,
+ *  and DiagnosticsPage.vue's workoutSummary — the last of those at a different precision (1
+ *  decimal instead of 2), so the same run's distance rendered differently depending on the
+ *  screen. */
+export function formatDistanceKm(meters: number | null, decimals = 2): string {
+  if (meters == null) return "–";
+  return `${(meters / 1000).toFixed(decimals)} km`;
+}

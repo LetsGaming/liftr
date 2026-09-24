@@ -25,9 +25,15 @@ const props = withDefaults(
      *  it's still at its unset starting value (feedback: reps must always be actively entered,
      *  never silently defaulted). */
     emphasize?: boolean;
+    /** Displays `formatValue(modelValue)` instead of the bare number — for a value whose natural
+     *  display isn't its raw number (e.g. a duration in seconds shown as "1:30"). Direct numeric
+     *  entry (`lg` size) still edits/emits the raw underlying number; only the display changes. */
+    formatValue?: (value: number) => string;
   }>(),
   { size: "sm" },
 );
+
+const display = (value: number) => props.formatValue?.(value) ?? String(value);
 const emit = defineEmits<{ adjust: [delta: 1 | -1]; set: [value: number] }>();
 
 /**
@@ -122,10 +128,10 @@ function commitEdit() {
       type="button"
       class="num tnum num-edit"
       :class="{ emphasize }"
-      :aria-label="`${label ?? 'Wert'} bearbeiten, aktuell ${modelValue}${unit ? ' ' + unit : ''}`"
+      :aria-label="`${label ?? 'Wert'} bearbeiten, aktuell ${display(modelValue)}${unit ? ' ' + unit : ''}`"
       @click="startEdit"
     >
-      {{ modelValue }}<small v-if="unit"> {{ unit }}</small>
+      {{ display(modelValue) }}<small v-if="unit"> {{ unit }}</small>
     </button>
     <div class="ctrls">
       <button
@@ -139,7 +145,7 @@ function commitEdit() {
       >
         −
       </button>
-      <span v-if="size === 'sm'" class="tnum">{{ modelValue }}<small v-if="unit">{{ unit }}</small></span>
+      <span v-if="size === 'sm'" class="tnum">{{ display(modelValue) }}<small v-if="unit">{{ unit }}</small></span>
       <button
         type="button"
         :aria-label="`Mehr${label ? ' ' + label : ''}`"

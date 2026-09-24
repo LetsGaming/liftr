@@ -15,7 +15,7 @@ import IconButton from "../patterns/IconButton.vue";
 import { useLiveRun } from "../../composables/useLiveRun";
 import { useRunsStore } from "../../stores/runsStore";
 import { useToast } from "../../composables/useToast";
-import { formatClockLong, formatPace } from "../../lib/format";
+import { formatClockLong, formatDistanceKm, formatPace } from "../../lib/format";
 import type { PlannedRoute } from "../../services/plannedRouteService";
 import type { RunSummary } from "../../services/runService";
 
@@ -87,7 +87,7 @@ async function finishRun() {
   }
 }
 
-const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
+const distanceKm = computed(() => formatDistanceKm(live.distanceM.value));
 </script>
 
 <template>
@@ -117,7 +117,7 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
     <div class="hud">
       <div class="hud-stat">
         <span class="eyebrow">Distanz</span>
-        <b class="tnum">{{ distanceKm }} km</b>
+        <b class="tnum">{{ distanceKm }}</b>
       </div>
       <div class="hud-stat">
         <span class="eyebrow">Zeit</span>

@@ -5,6 +5,7 @@
  */
 import { computeBodyweightTrend } from "@liftr/shared";
 import { computed } from "vue";
+import { useSparklinePoints } from "../../composables/useSparklinePoints";
 
 interface Entry {
   date: string;
@@ -23,21 +24,10 @@ const W = 200;
 const H = 48;
 const PAD = 3;
 
-const points = computed(() => {
-  const s = series.value;
-  if (s.length < 2) return "";
-  const min = Math.min(...s.map((d) => d.weightKg));
-  const max = Math.max(...s.map((d) => d.weightKg));
-  const span = max - min || 1;
-  const stepX = (W - PAD * 2) / (s.length - 1);
-  return s
-    .map((d, i) => {
-      const x = PAD + i * stepX;
-      const y = H - PAD - ((d.weightKg - min) / span) * (H - PAD * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-});
+const { points } = useSparklinePoints(
+  computed(() => series.value.map((d) => d.weightKg)),
+  { width: W, height: H, pad: PAD },
+);
 </script>
 
 <template>

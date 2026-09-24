@@ -19,7 +19,7 @@ import Button from "../components/base/Button.vue";
 import EmptyNote from "../components/base/EmptyNote.vue";
 import ListRow from "../components/patterns/ListRow.vue";
 import { useExerciseName } from "../composables/useExerciseName";
-import { formatClockLong, formatPace } from "../lib/format";
+import { formatClockLong, formatDateShort, formatPace } from "../lib/format";
 import { usePrStore } from "../stores/prStore";
 import { useRunRankStore, type RunPrListItem } from "../stores/runRankStore";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
@@ -93,11 +93,6 @@ function formatValue(kind: string, value: number): string {
   // (ExerciseInfoPanel.vue's `Math.round(bestE1rm)`, ProgressChart.vue's `Math.round(...)`).
   return `${Math.round(value)} kg`;
 }
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
 </script>
 
 <template>
@@ -132,7 +127,7 @@ function formatDate(iso: string): string {
           <template #trailing>
             <div class="pr-row-meta">
               <span class="tnum pr-value">{{ formatValue(pr.kind, pr.value) }}</span>
-              <span class="pr-date">{{ formatDate(pr.achievedAt) }}</span>
+              <span class="pr-date">{{ formatDateShort(pr.achievedAt) }}</span>
             </div>
           </template>
         </ListRow>
@@ -164,7 +159,7 @@ function formatDate(iso: string): string {
             <template #trailing>
               <div v-if="bestRunTimeByCategory[category]" class="pr-row-meta">
                 <span class="tnum pr-value">{{ formatClockLong(bestRunTimeByCategory[category]!.value) }}</span>
-                <span class="pr-date">{{ formatDate(bestRunTimeByCategory[category]!.achievedAt) }}</span>
+                <span class="pr-date">{{ formatDateShort(bestRunTimeByCategory[category]!.achievedAt) }}</span>
               </div>
               <div v-else class="pr-row-meta">
                 <span class="pr-date">Noch kein Rekord</span>
@@ -186,7 +181,7 @@ function formatDate(iso: string): string {
             <template #trailing>
               <div v-if="bestSpeedByActivity[activityId]" class="pr-row-meta">
                 <span class="tnum pr-value">{{ formatPace(1000 / bestSpeedByActivity[activityId]!.value) }}</span>
-                <span class="pr-date">{{ formatDate(bestSpeedByActivity[activityId]!.achievedAt) }}</span>
+                <span class="pr-date">{{ formatDateShort(bestSpeedByActivity[activityId]!.achievedAt) }}</span>
               </div>
               <div v-else class="pr-row-meta">
                 <span class="pr-date">Noch kein Rekord</span>

@@ -15,7 +15,7 @@ import CardGrid from "../patterns/CardGrid.vue";
 import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunPrListItem, type RunRankRow } from "../../stores/runRankStore";
-import { formatClockLong, formatPace } from "../../lib/format";
+import { formatClockLong, formatDateShort, formatPace } from "../../lib/format";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
 import Button from "../base/Button.vue";
 
@@ -64,10 +64,6 @@ const bestSpeedByActivity = computed(() => {
   }
   return out;
 });
-
-function formatPrDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
 
 // RUN_CATEGORIES is a fixed 5-entry list (mile/5k/10k/half_marathon/marathon), same fixed-row
 // convention RecordsPage.vue's running section already uses — every category always renders,
@@ -142,7 +138,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
         :flipped="flipped === category"
         :back-activated="activatedBacks.has(category)"
         :pr-label="bestRunTimeByCategory[category] ? formatClockLong(bestRunTimeByCategory[category]!.value) : null"
-        :pr-date="bestRunTimeByCategory[category] ? formatPrDate(bestRunTimeByCategory[category]!.achievedAt) : null"
+        :pr-date="bestRunTimeByCategory[category] ? formatDateShort(bestRunTimeByCategory[category]!.achievedAt) : null"
         @flip="toggleFlip(category)"
       />
 
@@ -159,7 +155,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
         :flipped="flipped === activity.id"
         :back-activated="activatedBacks.has(activity.id)"
         :pr-label="bestSpeedByActivity[activity.id] ? formatPace(1000 / bestSpeedByActivity[activity.id]!.value) : null"
-        :pr-date="bestSpeedByActivity[activity.id] ? formatPrDate(bestSpeedByActivity[activity.id]!.achievedAt) : null"
+        :pr-date="bestSpeedByActivity[activity.id] ? formatDateShort(bestSpeedByActivity[activity.id]!.achievedAt) : null"
         @flip="toggleFlip(activity.id)"
       />
     </CardGrid>

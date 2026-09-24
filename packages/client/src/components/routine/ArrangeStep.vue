@@ -50,6 +50,13 @@ function kindOf(kind: SetKind | undefined): SetKind {
   return kind ?? "normal";
 }
 
+function weightToggleLabel(exerciseId: string, cfg: DraftExercise): string {
+  const isBodyweight = catalog.byId(exerciseId)?.isBodyweight;
+  const isUntracked = cfg.sets[0]?.weightKg === null;
+  if (isBodyweight) return isUntracked ? "+ Zusatzgewicht" : "Zusatzgewicht entfernen";
+  return isUntracked ? "+ Gewicht" : "Ohne Gewicht loggen";
+}
+
 const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent"> = {
   normal: "neutral",
   warmup: "fire",
@@ -121,27 +128,21 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
                 :model-value="set.reps"
                 @adjust="(d) => emit('adjustSetReps', exerciseId, si, d)"
               />
-              <button
+              <IconButton
+                icon="close"
+                label="Satz entfernen"
+                variant="ghost"
+                size="sm"
                 class="set-remove"
                 :disabled="cfg.sets.length <= 1"
-                aria-label="Satz entfernen"
                 @click="emit('removeSet', exerciseId, si)"
-              >
-                <AppIcon name="close" />
-              </button>
+              />
             </div>
           </div>
           <div class="set-actions">
             <button class="add-set-btn" @click="emit('addSet', exerciseId)">+ Satz</button>
-            <button
-              v-if="cfg.sets[0]?.weightKg === null"
-              class="weight-toggle-btn"
-              @click="emit('toggleWeightTracking', exerciseId)"
-            >
-              {{ catalog.byId(exerciseId)?.isBodyweight ? "+ Zusatzgewicht" : "+ Gewicht" }}
-            </button>
-            <button v-else class="weight-toggle-btn" @click="emit('toggleWeightTracking', exerciseId)">
-              {{ catalog.byId(exerciseId)?.isBodyweight ? "Zusatzgewicht entfernen" : "Ohne Gewicht loggen" }}
+            <button class="weight-toggle-btn" @click="emit('toggleWeightTracking', exerciseId)">
+              {{ weightToggleLabel(exerciseId, cfg) }}
             </button>
           </div>
         </div>
@@ -149,19 +150,23 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
         <div class="rest-rows">
           <div class="rest-row">
             <span class="rest-label">Pause zwischen Sätzen</span>
-            <div class="rest-ctrls">
-              <button type="button" aria-label="Weniger Pause zwischen Sätzen" @click="emit('adjustRestBetweenSets', exerciseId, -1)">−</button>
-              <span class="tnum">{{ formatClock(cfg.restBetweenSetsSeconds) }}</span>
-              <button type="button" aria-label="Mehr Pause zwischen Sätzen" @click="emit('adjustRestBetweenSets', exerciseId, 1)">+</button>
-            </div>
+            <NumberStepper
+              size="sm"
+              label="Pause zwischen Sätzen"
+              :model-value="cfg.restBetweenSetsSeconds"
+              :format-value="formatClock"
+              @adjust="(d) => emit('adjustRestBetweenSets', exerciseId, d)"
+            />
           </div>
           <div class="rest-row">
             <span class="rest-label">Pause nach der Übung</span>
-            <div class="rest-ctrls">
-              <button type="button" aria-label="Weniger Pause nach der Übung" @click="emit('adjustRestAfterExercise', exerciseId, -1)">−</button>
-              <span class="tnum">{{ formatClock(cfg.restAfterExerciseSeconds) }}</span>
-              <button type="button" aria-label="Mehr Pause nach der Übung" @click="emit('adjustRestAfterExercise', exerciseId, 1)">+</button>
-            </div>
+            <NumberStepper
+              size="sm"
+              label="Pause nach der Übung"
+              :model-value="cfg.restAfterExerciseSeconds"
+              :format-value="formatClock"
+              @adjust="(d) => emit('adjustRestAfterExercise', exerciseId, d)"
+            />
           </div>
         </div>
 
@@ -281,16 +286,6 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
   align-items: center;
   gap: var(--sp2);
 }
-.set-remove {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: none;
-  border: none;
-  color: var(--faint);
-  font-size: 12px;
-}
 .set-remove:disabled {
   opacity: 0.3;
 }
@@ -320,31 +315,6 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
 .rest-label {
   font-size: 12.5px;
   color: var(--dim);
-}
-.rest-ctrls {
-  display: flex;
-  align-items: center;
-  gap: var(--sp2);
-  background: var(--surface-3);
-  border-radius: var(--r-md);
-  padding: 4px;
-  flex: none;
-}
-.rest-ctrls button {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 700;
-}
-.rest-ctrls span {
-  min-width: 34px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 13px;
 }
 .link-block {
   display: flex;
