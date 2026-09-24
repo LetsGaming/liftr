@@ -6,6 +6,8 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-09-24
+
 ### Added
 
 - Walking and hiking now show a rank card even before your first rank, matching the running categories.
