@@ -9,7 +9,7 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import RunMap from "./RunMap.vue";
-import AppIcon from "../ui/AppIcon.vue";
+import IconButton from "../patterns/IconButton.vue";
 import type { RunPoint } from "../../stores/runsStore";
 import { formatClock, formatPace, formatSpeedKmh } from "../../lib/format";
 
@@ -143,7 +143,13 @@ function fmt(ms: number): string {
 
     <div class="replay-chrome panel">
       <div class="controls">
-        <button class="play-btn" @click="toggle"><AppIcon :name="playing ? 'pause' : 'play'" /></button>
+        <IconButton
+          class="play-btn"
+          variant="ghost"
+          :icon="playing ? 'pause' : 'play'"
+          :label="playing ? 'Pause' : 'Abspielen'"
+          @click="toggle"
+        />
         <input
           class="scrubber"
           type="range"

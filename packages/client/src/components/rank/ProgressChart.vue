@@ -8,6 +8,7 @@
  */
 import { computed } from "vue";
 import { estimateE1rm } from "@liftr/shared";
+import EmptyNote from "../base/EmptyNote.vue";
 
 interface HistorySet {
   weightKg: number | null;
@@ -79,7 +80,7 @@ const trendLabel = computed(() => {
     <svg v-if="series.length >= 2" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none" class="spark" role="img" :aria-label="trendLabel!">
       <polyline :points="points" fill="none" :stroke="trendUp ? 'var(--success)' : 'var(--dim)'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
-    <p v-else class="empty">Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve.</p>
+    <EmptyNote v-else class="empty" align="start">Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve.</EmptyNote>
     <div v-if="latest != null" class="latest tnum">
       {{ isBodyweight ? `${Math.round(latest)} Wdh.` : `${Math.round(latest)} kg e1RM` }}
     </div>
@@ -101,9 +102,5 @@ const trendLabel = computed(() => {
   font-size: 12.5px;
   color: var(--dim);
   font-weight: 700;
-}
-.empty {
-  font-size: 12px;
-  color: var(--faint);
 }
 </style>

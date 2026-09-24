@@ -12,6 +12,7 @@ import type { RunRankRow } from "../../stores/runRankStore";
 import RankFlipCard from "./RankFlipCard.vue";
 import RankProgress from "./RankProgress.vue";
 import RankRunBack from "./RankRunBack.vue";
+import EmptyNote from "../base/EmptyNote.vue";
 
 withDefaults(
   defineProps<{
@@ -59,7 +60,7 @@ defineEmits<{ flip: [] }>();
         :peak-tier="row.peakTier"
         :peak-division="row.peakDivision"
       />
-      <p v-else class="run-rank-empty-note">{{ emptyNote }}</p>
+      <EmptyNote v-else class="run-rank-empty-note">{{ emptyNote }}</EmptyNote>
     </template>
     <template #back>
       <RankRunBack
@@ -76,9 +77,3 @@ defineEmits<{ flip: [] }>();
   </RankFlipCard>
 </template>
 
-<style scoped>
-.run-rank-empty-note {
-  font-size: 12.5px;
-  color: var(--dim);
-}
-</style>

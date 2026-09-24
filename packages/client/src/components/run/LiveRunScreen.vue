@@ -9,6 +9,9 @@ import { computed, onMounted, ref } from "vue";
 import SheetModal from "../ui/SheetModal.vue";
 import AppIcon from "../ui/AppIcon.vue";
 import LiveRunMap from "./LiveRunMap.vue";
+import Chip from "../base/Chip.vue";
+import Button from "../base/Button.vue";
+import IconButton from "../patterns/IconButton.vue";
 import { useLiveRun } from "../../composables/useLiveRun";
 import { useRunsStore } from "../../stores/runsStore";
 import { useToast } from "../../composables/useToast";
@@ -93,16 +96,16 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
       <header class="live-head">
         <div class="live-head-title">
           <b>{{ route ? route.name : "Freier Lauf" }}</b>
-          <span v-if="live.status.value === 'paused'" class="status-chip">Pausiert</span>
+          <Chip v-if="live.status.value === 'paused'" class="status-chip" size="sm">Pausiert</Chip>
         </div>
-        <button class="btn-close close-btn" @click="requestClose"><AppIcon name="close" /></button>
+        <IconButton icon="close" label="Schließen" variant="close" class="close-btn" @click="requestClose" />
       </header>
     </template>
 
     <div v-if="showDiscardConfirm" class="discard-confirm panel">
       <p>Lauf wirklich verwerfen? Der bisherige Fortschritt geht verloren.</p>
       <div class="discard-confirm-actions">
-        <button class="btn-secondary" @click="showDiscardConfirm = false">Nein</button>
+        <Button variant="secondary" @click="showDiscardConfirm = false">Nein</Button>
         <button class="btn-cancel-confirm" @click="confirmDiscard">Ja, verwerfen</button>
       </div>
     </div>
@@ -127,28 +130,18 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
     </div>
 
     <footer class="live-foot">
-      <button
-        v-if="live.status.value === 'tracking'"
-        class="btn-secondary btn-block"
-        @click="live.pause()"
-      >
-        <AppIcon name="pause" /> Pause
-      </button>
-      <button
-        v-else-if="live.status.value === 'paused'"
-        class="btn-secondary btn-block"
-        @click="live.resume()"
-      >
-        <AppIcon name="play" /> Weiter
-      </button>
-      <button
-        class="btn-primary btn-block"
-        :disabled="submitting || live.status.value === 'idle'"
-        @click="finishRun"
-      >
+      <Button v-if="live.status.value === 'tracking'" variant="secondary" block @click="live.pause()">
+        <template #leading><AppIcon name="pause" /></template>
+        Pause
+      </Button>
+      <Button v-else-if="live.status.value === 'paused'" variant="secondary" block @click="live.resume()">
+        <template #leading><AppIcon name="play" /></template>
+        Weiter
+      </Button>
+      <Button variant="primary" block :disabled="submitting || live.status.value === 'idle'" @click="finishRun">
         <template v-if="submitting">Speichert…</template>
         <template v-else>Lauf beenden</template>
-      </button>
+      </Button>
     </footer>
   </SheetModal>
 </template>
@@ -168,13 +161,6 @@ const distanceKm = computed(() => (live.distanceM.value / 1000).toFixed(2));
   display: flex;
   align-items: center;
   gap: var(--sp2);
-}
-.status-chip {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: var(--r-sm);
-  background: var(--surface-2);
-  color: var(--dim);
 }
 /* Same visible-confirm-card treatment as WorkoutPage.vue's .cancel-confirm — .panel (tokens.css)
    supplies background/border/radius. */
