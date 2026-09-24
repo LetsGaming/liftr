@@ -22,6 +22,30 @@ const tsRules = {
 
 const NODE_PACKAGES = ["packages/server/**", "packages/db/**", "packages/ingest/**"];
 
+// The feature tier of docs/adr/0012-component-tiers.md: components/<domain>/ folders, as opposed
+// to components/base/ and components/patterns/. Listed explicitly (rather than matched by
+// exclusion) so a newly added feature folder is covered automatically only once it's added here.
+const FEATURE_TIER_DIRS = [
+  "exercise",
+  "map",
+  "onboarding",
+  "overview",
+  "profile",
+  "rank",
+  "route",
+  "routine",
+  "run",
+  "shell",
+  "workout",
+];
+// no-restricted-imports matches the literal import specifier string, not a resolved path — so
+// these are written as the relative paths that actually appear in source (components/base/ and
+// components/patterns/ are both one level under components/, hence "../<dir>/*" for a sideways
+// tier reach and "../../<dir>/*" for stores/lib/pages, which sit one level above components/).
+const SIDEWAYS_FEATURE_IMPORTS = FEATURE_TIER_DIRS.map((d) => `../${d}/*`);
+const NO_STORE_OR_SERVICE = ["../../stores/*", "../../lib/api*"];
+const NO_PAGES_IMPORT = "../../pages/*";
+
 /** Flat config (ESLint 9). One config for the whole pnpm workspace: node packages
  *  (server/db/ingest) get Node globals, the client package gets browser globals — `crypto` and
  *  `Buffer` in particular mean something different in each, so this split matters, not just
@@ -105,6 +129,65 @@ export default [
     // this rule is meant to catch.
     files: ["packages/client/src/components/base/**/*.vue"],
     rules: { "vue/multi-word-component-names": "off" },
+  },
+  // Component-tier import direction (docs/adr/0012-component-tiers.md). The tier a component
+  // belongs to is decidable from its imports alone — these rules make that mechanical instead of
+  // a per-PR judgment call. Each entry's message names the ADR rule it enforces.
+  {
+    files: ["packages/client/src/components/base/**/*.vue"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../patterns/*", ...SIDEWAYS_FEATURE_IMPORTS, NO_PAGES_IMPORT],
+              message: "ADR 0012: base/ composes zero other Liftr components.",
+            },
+            {
+              group: NO_STORE_OR_SERVICE,
+              message: "ADR 0012: base/ imports no store or service.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["packages/client/src/components/patterns/**/*.vue"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [...SIDEWAYS_FEATURE_IMPORTS, NO_PAGES_IMPORT],
+              message: "ADR 0012: patterns/ composes base/ only, never a feature or a page.",
+            },
+            {
+              group: NO_STORE_OR_SERVICE,
+              message: "ADR 0012: patterns/ carries zero domain vocabulary and imports no store or service.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: FEATURE_TIER_DIRS.map((d) => `packages/client/src/components/${d}/**/*.vue`),
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [NO_PAGES_IMPORT],
+              message: "ADR 0012: feature components never reach up into pages/.",
+            },
+          ],
+        },
+      ],
+    },
   },
   prettier,
 ];
