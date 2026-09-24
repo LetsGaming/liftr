@@ -653,33 +653,6 @@ function retryFailed() {
   color: var(--text);
   font-size: 14px;
 }
-.top-ranks {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp2);
-}
-.top-rank {
-  display: flex;
-  align-items: center;
-  gap: var(--sp3);
-}
-.badge.small {
-  width: 30px;
-  height: 34px;
-}
-.tr-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.tr-meta b {
-  font-size: 13px;
-}
-.tr-meta span {
-  font-size: 11px;
-  color: var(--dim);
-}
-
 .discover-tile {
   color: inherit;
   text-decoration: none;

@@ -7,6 +7,7 @@
 import { onMounted, ref } from "vue";
 import { ApiError, api, setToken } from "../../lib/api";
 import AppIcon from "../base/AppIcon.vue";
+import Button from "../base/Button.vue";
 
 type Status = "checking" | "ok" | "setup" | "join" | "login" | "offline";
 
@@ -151,23 +152,23 @@ function submit() {
           autocomplete="current-password"
           @keyup.enter="submit"
         />
-        <button
-          type="button"
-          class="btn-secondary"
+        <Button
+          variant="secondary"
           :aria-label="passwordVisible ? 'Passwort verbergen' : 'Passwort anzeigen'"
           @click="passwordVisible = !passwordVisible"
         >
           <AppIcon :name="passwordVisible ? 'eye-off' : 'eye'" />
-        </button>
+        </Button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
-      <button
-        class="btn-primary btn-lg btn-block"
+      <Button
+        size="lg"
+        block
         :disabled="submitting || !password.trim() || (status !== 'setup' && !username.trim()) || (status === 'join' && !inviteCode.trim())"
         @click="submit"
       >
         {{ submitting ? "…" : status === "setup" ? "Einrichten" : status === "join" ? "Beitreten" : "Anmelden" }}
-      </button>
+      </Button>
       <p v-if="status === 'login'" class="hint">
         Passwort vergessen? Der Server-Betreiber kann es zurücksetzen.
       </p>

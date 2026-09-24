@@ -11,6 +11,7 @@
 import { ref } from "vue";
 import { isNative } from "../../lib/platform";
 import { useServerConnection } from "../../composables/useServerConnection";
+import Button from "../base/Button.vue";
 
 const native = isNative();
 const { serverUrl, checking, error, verifyAndSave } = useServerConnection();
@@ -37,9 +38,9 @@ function connect() {
         @keyup.enter="connect"
       />
       <p v-if="error" class="error">{{ error }}</p>
-      <button class="btn-primary btn-lg btn-block" :disabled="checking || !input.trim()" @click="connect">
+      <Button size="lg" block :disabled="checking || !input.trim()" @click="connect">
         {{ checking ? "Verbinde…" : "Verbinden" }}
-      </button>
+      </Button>
     </div>
   </div>
   <slot v-else />
