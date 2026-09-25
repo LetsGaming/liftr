@@ -702,3 +702,62 @@ rank:
     trendLabelFormat: "{direction}, from {first} to {last} {unit}"
     unitReps: "reps"
     unitE1rm: kg e1RM
+onboarding:
+  welcomeStep:
+    title: Welcome to Liftr
+    body: "A few quick questions so workout suggestions, rank calculations, and the plate display fit you from the start. Takes under a minute — and can be changed anytime in your profile."
+  equipmentStep:
+    title: Available equipment
+    hint: "Exercise suggestions are limited to what you actually have available — including things like a bench or pull-up bar, not just the training equipment itself."
+    alwaysActiveHint: Always active
+  doneStep:
+    title: "Done!"
+    subtitle: "Let's go — here's what that unlocks for you:"
+    unlockWeight: Weight suggestions matched to your experience
+    unlockExercises: "Exercise suggestions that fit your equipment ({n} selected) — with alternatives instead of just nothing"
+    unlockPlates: "Exact plate display during workouts, using your own weights"
+    unlockRank: Rank calculation based on body weight and sex
+  aboutStep:
+    title: About you
+    hint: "Everything's optional — used for rank calculation (weight / body weight)."
+    weightLabel: Current body weight
+  experienceStep:
+    hint: "Determines the starting weights Liftr uses until you've done an exercise for the first time."
+    beginnerHint: Never trained, or only started recently
+    intermediateHint: "Been training for a while, without a fixed plan"
+    advancedHint: Already following a structured training plan
+  frequencyStep:
+    hint: "How often do you realistically plan to train? Feeds into your workout suggestions."
+    perWeekLabel: "Workout / week | Workouts / week"
+  platesStep:
+    title: Plates & bar
+    hint: "Optional, but makes the plate display during workouts exact: only what you actually own gets suggested for loading. Without input, a standard set is assumed."
+    barLabel:
+      barbell: Barbell
+      ezBar: "EZ bar"
+      trapBar: Trap bar
+      dumbbell: Dumbbell handle
+workoutUi:
+  finishSequence:
+    nextStepAriaLabel: Next step
+    rankUpsEyebrow: Rank-ups
+    newRecordLabel: New record
+    streakEyebrow: Streak
+    streakNote: "Your streak survives {n} more rest days."
+    progressEyebrow: Progress
+    setsXpLabel: "(Sets)"
+    streakXpLabel: "{n}-day streak | {n}-day streak"
+    varietyXpLabel: "({muscles} for the first time since your last workout)"
+    levelUp: "LEVEL {level}!"
+    skipHint: "Tap to continue →"
+  setKindPicker:
+    title: Choose set type
+  restTimer:
+    notificationTitle: Rest over
+    notificationBody: Time for the next set.
+    continueSuperset: Continue in superset
+    noRestNote: no rest
+    pauseLabel: Rest
+    running: "running…"
+    waitingToStart: starts after the set
+    skip: Skip

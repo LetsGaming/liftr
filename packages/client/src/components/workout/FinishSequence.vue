@@ -9,6 +9,7 @@
  * thrown away.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { TIERS, type Tier } from "@liftr/shared";
 import Button from "../base/Button.vue";
 import AppIcon from "../base/AppIcon.vue";
@@ -63,6 +64,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ done: [] }>();
 
+const { t } = useI18n();
 const celebrate = useCelebrate();
 const leveledUp = computed(() => props.levelAfter > props.levelBefore);
 
@@ -193,13 +195,13 @@ onBeforeUnmount(() => {
     :class="topTierClass"
     role="button"
     tabindex="0"
-    aria-label="Nächster Schritt"
+    :aria-label="t('workoutUi.finishSequence.nextStepAriaLabel')"
     @click="celebrate.skip()"
     @keydown.enter="celebrate.skip()"
     @keydown.space.prevent="celebrate.skip()"
   >
     <div v-if="celebrate.activeIndex.value === 0" class="beat pop-in">
-      <div class="eyebrow beat-eyebrow">Rangaufstiege</div>
+      <div class="eyebrow beat-eyebrow">{{ t("workoutUi.finishSequence.rankUpsEyebrow") }}</div>
       <div class="rankup-list">
         <div
           v-for="(r, i) in rankUps"
@@ -213,7 +215,7 @@ onBeforeUnmount(() => {
           </span>
           <div class="rankup-meta">
             <b>{{ r.exerciseName }}</b>
-            <span>{{ r.isPr ? "Neuer Rekord" : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
+            <span>{{ r.isPr ? t("workoutUi.finishSequence.newRecordLabel") : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
             <span v-if="r.plausibilityNote" class="plausibility-note">{{ r.plausibilityNote }}</span>
             <div class="rankbar">
               <i class="bar-fill" :style="{ transform: `scaleX(${(rankUpBarDisplay[i] ?? r.prevLp) / 100})` }" />
@@ -230,42 +232,42 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <template #leading><AppIcon name="trophy" /></template>
-        Rekorde ansehen
+        {{ t("ranksPage.viewRecords") }}
       </Button>
     </div>
 
     <div v-else-if="celebrate.activeIndex.value === 1" class="beat pop-in">
       <div class="streak-num tnum">{{ streak }} <AppIcon name="flame" /></div>
-      <div class="eyebrow beat-eyebrow">Trainingsserie</div>
+      <div class="eyebrow beat-eyebrow">{{ t("workoutUi.finishSequence.streakEyebrow") }}</div>
       <div class="streak-strip">
         <div v-for="(d, i) in streakDays" :key="i" class="streak-day">
           <span class="dot" :class="{ active: d.active }"><AppIcon v-if="d.active" name="flame" /></span>
           <span class="dl">{{ d.label }}</span>
         </div>
       </div>
-      <p v-if="tokensRemaining > 0" class="streak-note">Deine Serie übersteht noch {{ tokensRemaining }} Ruhetage.</p>
+      <p v-if="tokensRemaining > 0" class="streak-note">{{ t("workoutUi.finishSequence.streakNote", { n: tokensRemaining }) }}</p>
     </div>
 
     <div v-else-if="celebrate.activeIndex.value === 2" class="beat pop-in">
-      <div class="eyebrow beat-eyebrow">Fortschritt</div>
+      <div class="eyebrow beat-eyebrow">{{ t("workoutUi.finishSequence.progressEyebrow") }}</div>
       <div class="xp-breakdown">
-        <div class="xp-line tnum">+{{ Math.round(setXpDisplay) }} XP <span class="xp-label">(Sätze)</span></div>
+        <div class="xp-line tnum">+{{ Math.round(setXpDisplay) }} XP <span class="xp-label">{{ t("workoutUi.finishSequence.setsXpLabel") }}</span></div>
         <div class="xp-line xp-line-bonus tnum">
-          +{{ Math.round(consistencyXpDisplay) }} XP <span class="xp-label">({{ streak }} {{ streak === 1 ? "Tag" : "Tage" }} Serie)</span>
+          +{{ Math.round(consistencyXpDisplay) }} XP <span class="xp-label">({{ t("workoutUi.finishSequence.streakXpLabel", streak) }})</span>
         </div>
         <div v-if="varietyBonusXp > 0" class="xp-line xp-line-bonus tnum">
           +{{ Math.round(varietyXpDisplay) }} XP
-          <span class="xp-label">({{ varietyMuscleLabel }} zum ersten Mal seit letztem Training)</span>
+          <span class="xp-label">{{ t("workoutUi.finishSequence.varietyXpLabel", { muscles: varietyMuscleLabel }) }}</span>
         </div>
       </div>
-      <div v-if="leveledUp" class="level-up stamp-in">LEVEL {{ levelAfter }}!</div>
-      <div v-else class="level-line tnum">Lv. {{ levelAfter }}</div>
+      <div v-if="leveledUp" class="level-up stamp-in">{{ t("workoutUi.finishSequence.levelUp", { level: levelAfter }) }}</div>
+      <div v-else class="level-line tnum">{{ t("profile.xp.levelValue", { level: levelAfter }) }}</div>
       <div class="rankbar level-bar">
         <i class="bar-fill" :style="{ transform: `scaleX(${barPercent / 100})` }" />
       </div>
     </div>
 
-    <p class="skip-hint">Weiter tippen →</p>
+    <p class="skip-hint">{{ t("workoutUi.finishSequence.skipHint") }}</p>
   </div>
 </template>
 

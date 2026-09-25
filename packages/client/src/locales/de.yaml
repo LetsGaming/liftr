@@ -703,3 +703,62 @@ rank:
     trendLabelFormat: "{direction}, von {first} auf {last} {unit}"
     unitReps: "Wdh."
     unitE1rm: kg e1RM
+onboarding:
+  welcomeStep:
+    title: Willkommen bei Liftr
+    body: "Ein paar kurze Fragen, damit Trainingsvorschläge, Rang-Berechnung und die Scheiben-Anzeige von Anfang an zu dir passen. Dauert unter einer Minute — und lässt sich jederzeit im Profil ändern."
+  equipmentStep:
+    title: Vorhandenes Equipment
+    hint: "Übungsvorschläge werden darauf beschränkt, was dir tatsächlich zur Verfügung steht — inklusive Dinge wie Bank oder Klimmzugstange, nicht nur das Trainingsgerät selbst."
+    alwaysActiveHint: Immer aktiv
+  doneStep:
+    title: "Fertig!"
+    subtitle: "Los geht's — hier ist, was das für dich freischaltet:"
+    unlockWeight: Gewichtsvorschläge passend zu deiner Erfahrung
+    unlockExercises: "Übungsvorschläge, die zu deinem Equipment ({n} ausgewählt) passen — mit Alternativen statt einfach nichts"
+    unlockPlates: "Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten"
+    unlockRank: Rang-Berechnung basierend auf Körpergewicht und Geschlecht
+  aboutStep:
+    title: Über dich
+    hint: "Alles optional — wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet."
+    weightLabel: Aktuelles Körpergewicht
+  experienceStep:
+    hint: "Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast."
+    beginnerHint: Noch nie oder erst seit kurzem trainiert
+    intermediateHint: "Trainiere seit einer Weile, ohne festen Plan"
+    advancedHint: Folge bereits einem strukturierten Trainingsplan
+  frequencyStep:
+    hint: "Wie oft planst du realistisch zu trainieren? Fließt in die Trainingsvorschläge ein."
+    perWeekLabel: "Workout / Woche | Workouts / Woche"
+  platesStep:
+    title: "Scheiben & Stange"
+    hint: "Optional, aber macht die Scheiben-Anzeige beim Training exakt: nur was du wirklich hast, wird zum Beladen vorgeschlagen. Ohne Angabe wird von einem Standard-Satz ausgegangen."
+    barLabel:
+      barbell: Langhantel
+      ezBar: SZ-Stange
+      trapBar: Trap-Bar
+      dumbbell: Kurzhantel-Griff
+workoutUi:
+  finishSequence:
+    nextStepAriaLabel: Nächster Schritt
+    rankUpsEyebrow: Rangaufstiege
+    newRecordLabel: Neuer Rekord
+    streakEyebrow: Trainingsserie
+    streakNote: "Deine Serie übersteht noch {n} Ruhetage."
+    progressEyebrow: Fortschritt
+    setsXpLabel: "(Sätze)"
+    streakXpLabel: "{n} Tag Serie | {n} Tage Serie"
+    varietyXpLabel: "({muscles} zum ersten Mal seit letztem Training)"
+    levelUp: "LEVEL {level}!"
+    skipHint: "Weiter tippen →"
+  setKindPicker:
+    title: Satzart auswählen
+  restTimer:
+    notificationTitle: Pause vorbei
+    notificationBody: "Zeit für den nächsten Satz."
+    continueSuperset: Weiter im Superset
+    noRestNote: keine Pause
+    pauseLabel: Pause
+    running: "läuft…"
+    waitingToStart: startet nach dem Satz
+    skip: Überspringen

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import Chip from "../base/Chip.vue";
 import ExerciseIcon from "../exercise/ExerciseIcon.vue";
 import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE, SUPPORT_EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
 import { useOnboardingDraft } from "./OnboardingDraft";
 
+const { t } = useI18n();
 const draft = useOnboardingDraft();
 
 // "plates" isn't a pickable chip here — owning a barbell already implies plate ownership for
@@ -25,13 +27,10 @@ function toggle(slug: string) {
 
 <template>
   <div class="step">
-    <h2>Vorhandenes Equipment</h2>
-    <p class="step-hint">
-      Übungsvorschläge werden darauf beschränkt, was dir tatsächlich zur Verfügung steht — inklusive Dinge wie Bank
-      oder Klimmzugstange, nicht nur das Trainingsgerät selbst.
-    </p>
+    <h2>{{ t("onboarding.equipmentStep.title") }}</h2>
+    <p class="step-hint">{{ t("onboarding.equipmentStep.hint") }}</p>
 
-    <div class="eyebrow group-label">Trainingsgerät</div>
+    <div class="eyebrow group-label">{{ t("profile.equipment.gearLabel") }}</div>
     <div class="chip-grid">
       <Chip
         v-for="slug in EQUIPMENT_SLUGS"
@@ -47,11 +46,11 @@ function toggle(slug: string) {
       >
         <template #leading><ExerciseIcon :equipment="slug" :size="22" /></template>
         <span class="equip-chip-label">{{ EQUIPMENT_LABEL_DE[slug] }}</span>
-        <span v-if="slug === 'bodyweight'" class="lock-hint">Immer aktiv</span>
+        <span v-if="slug === 'bodyweight'" class="lock-hint">{{ t("onboarding.equipmentStep.alwaysActiveHint") }}</span>
       </Chip>
     </div>
 
-    <div class="eyebrow group-label">Weiteres Equipment</div>
+    <div class="eyebrow group-label">{{ t("profile.equipment.supportLabel") }}</div>
     <div class="chip-grid">
       <Chip
         v-for="slug in supportSlugs"
