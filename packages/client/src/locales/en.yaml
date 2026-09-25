@@ -12,6 +12,7 @@ common:
   save: Save
   savingEllipsis: "Saving…"
   workout: Workout
+  exerciseCount: "{n} exercise | {n} exercises"
 workout:
   start: Start today's workout
   save: Save set
@@ -230,6 +231,193 @@ profile:
     download: Download backup
   about:
     attributions: "Sources & Licenses →"
+recordsPage:
+  title: Records
+  subtitle: "Your record history — every new best is captured automatically."
+  loadError: Records couldn't be loaded.
+  retry: Try again
+  empty: "No records yet — your first hard set on any exercise starts one."
+  kind:
+    e1rm: e1RM
+    weight: Weight
+    reps: Reps
+    volume: Volume
+  repsValue: "{n} reps"
+  cardioHeading: Cardio records
+  cardioLoadError: Running records couldn't be loaded.
+  noRecordYet: No record yet
+exercisesPage:
+  addCustom: "+ Add custom exercise"
+  addCustomTitle: Add custom exercise
+routeOverviewPage:
+  fallbackTitle: Route
+  notFound:
+    eyebrow: Route not found
+    hint: "This route no longer exists. It may have been deleted."
+    backToRoutes: "Back to routes →"
+  elevation: "{m} m gain"
+  elevationUnknown: Elevation unknown
+  waypoints: "{n} waypoints"
+  liveTrack: Track live
+  manualEntry: Log manually
+routineOverviewPage:
+  fallbackTitle: Routine
+  notFound:
+    eyebrow: Routine not found
+    hint: "This routine no longer exists. It may have been deleted."
+    backToOverview: "Back to overview →"
+  editRoutineAriaLabel: Edit routine
+  musclesTrained: Muscles trained
+  exercises: Exercises
+  setSummary: "{count} × {weightPart}{reps} reps"
+  setSummaryWeightPart: "{weight} kg · "
+  setLine: "Set {n} — {weightPart}{reps} reps"
+  setLineWeightPart: "{weight} kg × "
+  starting: "Starting…"
+  startNow: Start now
+workoutDetailPage:
+  fallbackTitle: Workout Details
+  loading: "Loading…"
+  loadError: "This workout couldn't be loaded — maybe no connection to the server."
+  exercises: Exercises
+  prTitle: Personal record
+  shareTitle: My Liftr workout
+  delete:
+    deleting: "Deleting…"
+    confirm: "Really delete? (XP/rank will be reversed)"
+    cta: Delete workout
+runDetailPage:
+  fallbackTitle: Run Details
+  loading: "Loading…"
+  loadError: "This run couldn't be loaded — maybe no connection to the server."
+  routeChipPrefix: "Route: "
+  newRecord: New record
+  stats:
+    distance: Distance
+    duration: Duration
+    avgPace: "Avg. pace"
+    avgHr: "Avg. HR"
+    elevation: Elevation
+  noRoute: "Manually logged run — no route available."
+  saveAsRoute: Save as route
+  delete:
+    deleting: "Deleting…"
+    confirm: Really delete?
+    cta: Delete run
+runsPage:
+  subtitle: Start a route or log a run manually
+  manual: Manual
+  importing: "Importing…"
+  importGpxFit: Import GPX/FIT
+  namePlaceholder: "Name (optional)"
+  nameAriaLabel: Name of the run
+  dateAriaLabel: Date of the run
+  distancePlaceholder: km
+  distanceAriaLabel: Distance in kilometers
+  minutesPlaceholder: Minutes
+  minutesAriaLabel: Duration in minutes
+  save: Save
+  closeAriaLabel: Close
+  routeBanner:
+    prefix: "Route: "
+    approxSuffix: " ≈"
+    elevationSuffix: " · {m} m gain"
+    tail: " — just log the duration"
+  toast:
+    runSaved: Run saved.
+    runImported: Run imported.
+ranksPage:
+  navLabel: "Workout or running ranks"
+  viewRecords: View records
+diagnosticsPage:
+  title: Diagnostics
+  sync:
+    heading: Sync
+    hint: "Every Health Connect sync — including skipped workouts that never reach Liftr, so you can see why."
+    rescanChecking: "Checking…"
+    rescan30: Recheck last 30 days
+    rescan90: Recheck last 90 days
+    empty: No sync recorded yet.
+    clearConfirm: Really clear it?
+    clear: Clear log
+    triggerManual: manual
+    triggerAppStart: app start
+    countImported: "{n} imported"
+    countSkipped: "{n} skipped"
+    countFailed: "{n} failed"
+    noActivity: no activity
+    noWorkouts: No workouts in this time range.
+    showRawData: Show raw data
+    hideRawData: Hide raw data
+    copyReport: Copy report
+    rescanResultPrefix: "Checked the last {days} days — "
+    rescanResultNone: "Checked the last {days} days — no new activity found."
+    copySuccess: Report copied.
+    copyFailed: Copy failed.
+  errors:
+    heading: Server errors
+    hint: "The most recent unexpected server errors — useful if something isn't working."
+    hide: Hide
+    show: Show errors
+    loading: "Loading…"
+    empty: No errors recorded.
+  skipReason:
+    routeConsentRequired: Health Connect didn't grant route access
+    routeMissing: no route data received from Health Connect
+    noUsableData: no usable data for this workout
+    invalidPoints: all route points were invalid
+  activity:
+    running: Running
+    runningTreadmill: "Running (treadmill)"
+    walking: Walking
+    hiking: Hiking
+  workoutSummary:
+    imported: "{label} — imported"
+    skipped: "{label} — skipped: {reason}"
+    failed: "{label} — failed: {message}"
+attributionsPage:
+  title: "Sources & Licenses"
+  intro: "Liftr imports reference data once (not on every request) from the following sources. One exception: route calculation for planned routes queries OpenRouteService live per request, not once."
+  wger:
+    name: "wger Exercise Database"
+    desc: "Exercise catalog, muscle group tags"
+    license: "CC-BY-SA"
+    credit: "github.com/wger-project/wger"
+  wgerPhotos:
+    name: "wger Exercise Database"
+    desc: "Exercise photos for 2 exercises with no free free-exercise-db shot (\"Single-Leg RDL\", \"Pike Push-Up\")"
+    license: "CC-BY-SA 4.0"
+    credit: "wger.de/media/exercise-images · Authors: Tierrasverdes (Single-Leg RDL), Nash (Pike Push-Up). wger flags the Pike Push-Up photo as AI-generated (\"is_ai_generated\") — kept deliberately, since no other freely licensed photo of this exercise exists."
+  muscleDiagram:
+    name: "Muscle Diagram (Anatomy Figure)"
+    desc: "Body outline + 15 individually highlighted muscles, mirrored from wger's assets, originally derived from \"Muscular system.svg\"/\"Muscular system-back.svg\" by Termininja"
+    license: "CC-BY-SA 3.0"
+    credit: "commons.wikimedia.org · via github.com/wger-project/wger · recolored in-house for the dark theme"
+  freeExerciseDb:
+    name: "free-exercise-db (yuhonas)"
+    desc: "Start/end position images"
+    license: "Unlicense (public domain)"
+    credit: "github.com/yuhonas/free-exercise-db"
+  openPowerlifting:
+    name: "OpenPowerlifting"
+    desc: "Strength standards (squat/bench press/deadlift)"
+    license: "CC0 (public domain)"
+    credit: "openpowerlifting.org"
+  openStreetMap:
+    name: "OpenStreetMap"
+    desc: "Map data for running routes"
+    license: "ODbL"
+    credit: "© OpenStreetMap contributors"
+  esri:
+    name: "Esri World Imagery"
+    desc: "Satellite view for running routes (Vantor/Vexcel aerial imagery), with street and place-name labels (Esri Reference/World_Transportation)"
+    license: "© Esri"
+    credit: "Tiles © Esri — Vantor, Earthstar Geographics, and the GIS User Community · Labels: Esri, HERE, Garmin, © OpenStreetMap contributors"
+  openRouteService:
+    name: "OpenRouteService"
+    desc: "Route calculation for planned routes"
+    license: "CC-BY 4.0"
+    credit: "openrouteservice.org · © openrouteservice.org by HeiGIT"
 overview:
   loadError:
     message: "Some data couldn't be loaded. What you've logged is stored locally."
@@ -243,7 +431,6 @@ overview:
     noRoutineTitle: No routine yet
     noRoutineHint: "No routine, no rank — a routine defines which exercises you train repeatedly."
     createFirstRoutine: "Create your first routine →"
-  exerciseCount: "{n} exercise | {n} exercises"
   firstRun:
     ladderTitle: Your rank ladder
   stats:

@@ -12,6 +12,7 @@
  * 2. Serverfehler — the previous owner-only list from ProfilePage.vue, moved here unchanged.
  */
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BasePage from "../components/patterns/BasePage.vue";
 import Button from "../components/base/Button.vue";
 import EmptyNote from "../components/base/EmptyNote.vue";
@@ -28,6 +29,8 @@ import { clearSyncLog, readSyncLog, type SyncLogEntry } from "../lib/syncLog";
 import { formatDistanceKm } from "../lib/format";
 import { useToast } from "../composables/useToast";
 import { useConfirmTap } from "../composables/useConfirmTap";
+
+const { t } = useI18n();
 
 const healthConnectAvailable = ref(false);
 
@@ -92,48 +95,50 @@ async function rescan(daysBack: 30 | 90) {
     refreshSyncLog();
     if (result.imported > 0) refreshCardioDerivedStores();
     if (result.imported === 0 && result.skipped === 0 && result.failed === 0) {
-      toast(`Letzte ${daysBack} Tage geprüft — keine neuen Aktivitäten gefunden.`);
+      toast(t("diagnosticsPage.sync.rescanResultNone", { days: daysBack }));
     } else {
-      const parts = [`${result.imported} importiert`];
-      if (result.skipped > 0) parts.push(`${result.skipped} übersprungen`);
-      if (result.failed > 0) parts.push(`${result.failed} fehlgeschlagen`);
-      toast(`Letzte ${daysBack} Tage geprüft — ${parts.join(", ")}.`);
+      const parts = [t("diagnosticsPage.sync.countImported", { n: result.imported })];
+      if (result.skipped > 0) parts.push(t("diagnosticsPage.sync.countSkipped", { n: result.skipped }));
+      if (result.failed > 0) parts.push(t("diagnosticsPage.sync.countFailed", { n: result.failed }));
+      toast(`${t("diagnosticsPage.sync.rescanResultPrefix", { days: daysBack })}${parts.join(", ")}.`);
     }
   } finally {
     rescanBusy.value = null;
   }
 }
 
-const SKIP_REASON_LABEL: Record<HealthConnectSkipReason, string> = {
-  route_consent_required: "Health Connect hat die Strecke nicht freigegeben",
-  route_missing: "keine Streckendaten von Health Connect erhalten",
-  no_usable_data: "keine verwertbaren Daten für dieses Workout",
-  invalid_points: "alle Streckenpunkte waren ungültig",
+const SKIP_REASON_KEY: Record<HealthConnectSkipReason, string> = {
+  route_consent_required: "diagnosticsPage.skipReason.routeConsentRequired",
+  route_missing: "diagnosticsPage.skipReason.routeMissing",
+  no_usable_data: "diagnosticsPage.skipReason.noUsableData",
+  invalid_points: "diagnosticsPage.skipReason.invalidPoints",
 };
 
-const ACTIVITY_LABEL: Record<string, string> = {
-  RUNNING: "Laufen",
-  RUNNING_TREADMILL: "Laufen (Laufband)",
-  WALKING: "Gehen",
-  HIKING: "Wandern",
+const ACTIVITY_KEY: Record<string, string> = {
+  RUNNING: "diagnosticsPage.activity.running",
+  RUNNING_TREADMILL: "diagnosticsPage.activity.runningTreadmill",
+  WALKING: "diagnosticsPage.activity.walking",
+  HIKING: "diagnosticsPage.activity.hiking",
 };
 
 function activityLabel(rawWorkoutType: string): string {
-  return ACTIVITY_LABEL[rawWorkoutType.toUpperCase()] ?? rawWorkoutType;
+  const key = ACTIVITY_KEY[rawWorkoutType.toUpperCase()];
+  return key ? t(key) : rawWorkoutType;
 }
 
 function workoutSummary(w: SyncLogEntry["result"]["workouts"][number]): string {
   const km = w.distanceM != null ? formatDistanceKm(w.distanceM) : null;
   const label = [activityLabel(w.rawWorkoutType), km].filter(Boolean).join(", ");
-  if (w.outcome.kind === "imported") return `${label} — importiert`;
-  if (w.outcome.kind === "skipped") return `${label} — übersprungen: ${SKIP_REASON_LABEL[w.outcome.reason]}`;
-  return `${label} — fehlgeschlagen: ${w.outcome.message}`;
+  if (w.outcome.kind === "imported") return t("diagnosticsPage.workoutSummary.imported", { label });
+  if (w.outcome.kind === "skipped")
+    return t("diagnosticsPage.workoutSummary.skipped", { label, reason: t(SKIP_REASON_KEY[w.outcome.reason]) });
+  return t("diagnosticsPage.workoutSummary.failed", { label, message: w.outcome.message });
 }
 
 function copyReport(entry: SyncLogEntry) {
   void navigator.clipboard?.writeText(JSON.stringify(entry, null, 2)).then(
-    () => toast("Bericht kopiert."),
-    () => toast("Kopieren fehlgeschlagen."),
+    () => toast(t("diagnosticsPage.sync.copySuccess")),
+    () => toast(t("diagnosticsPage.sync.copyFailed")),
   );
 }
 
@@ -143,26 +148,25 @@ function formatAt(iso: string): string {
 </script>
 
 <template>
-  <BasePage title="Diagnose" back-button>
+  <BasePage :title="t('diagnosticsPage.title')" back-button>
     <div class="diagnostics-content">
       <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
-        <h2 class="eyebrow">Synchronisierung</h2>
+        <h2 class="eyebrow">{{ t("diagnosticsPage.sync.heading") }}</h2>
         <p class="hint">
-          Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst,
-          warum.
+          {{ t("diagnosticsPage.sync.hint") }}
         </p>
 
         <div class="rescan-row">
           <Button variant="secondary" :disabled="rescanBusy !== null" @click="rescan(30)">
-            {{ rescanBusy === 30 ? "Prüfe…" : "Letzte 30 Tage erneut prüfen" }}
+            {{ rescanBusy === 30 ? t("diagnosticsPage.sync.rescanChecking") : t("diagnosticsPage.sync.rescan30") }}
           </Button>
           <Button variant="secondary" :disabled="rescanBusy !== null" @click="rescan(90)">
-            {{ rescanBusy === 90 ? "Prüfe…" : "Letzte 90 Tage erneut prüfen" }}
+            {{ rescanBusy === 90 ? t("diagnosticsPage.sync.rescanChecking") : t("diagnosticsPage.sync.rescan90") }}
           </Button>
         </div>
 
         <EmptyNote v-if="syncLog.length === 0" align="start" class="current" style="color: var(--faint)">
-          Noch keine Synchronisierung aufgezeichnet.
+          {{ t("diagnosticsPage.sync.empty") }}
         </EmptyNote>
 
         <Button
@@ -172,7 +176,7 @@ function formatAt(iso: string): string {
           :class="{ confirming: isClearLogArmed() }"
           @click="triggerClearLog()"
         >
-          {{ isClearLogArmed() ? "Wirklich leeren?" : "Protokoll leeren" }}
+          {{ isClearLogArmed() ? t("diagnosticsPage.sync.clearConfirm") : t("diagnosticsPage.sync.clear") }}
         </Button>
 
         <ul v-if="syncLog.length > 0" class="sync-log-list">
@@ -180,20 +184,20 @@ function formatAt(iso: string): string {
             <button type="button" class="sync-log-head" :aria-expanded="expandedEntry === idx" @click="toggleEntry(idx)">
               <span class="sync-log-meta">
                 <span class="tnum">{{ formatAt(entry.at) }}</span>
-                <span class="sync-log-trigger">{{ entry.trigger === "manual" ? "manuell" : "App-Start" }}</span>
+                <span class="sync-log-trigger">{{ entry.trigger === "manual" ? t("diagnosticsPage.sync.triggerManual") : t("diagnosticsPage.sync.triggerAppStart") }}</span>
               </span>
               <span class="sync-log-counts">
-                <span v-if="entry.result.imported > 0">{{ entry.result.imported }} importiert</span>
-                <span v-if="entry.result.skipped > 0">{{ entry.result.skipped }} übersprungen</span>
-                <span v-if="entry.result.failed > 0" class="error">{{ entry.result.failed }} fehlgeschlagen</span>
+                <span v-if="entry.result.imported > 0">{{ t("diagnosticsPage.sync.countImported", { n: entry.result.imported }) }}</span>
+                <span v-if="entry.result.skipped > 0">{{ t("diagnosticsPage.sync.countSkipped", { n: entry.result.skipped }) }}</span>
+                <span v-if="entry.result.failed > 0" class="error">{{ t("diagnosticsPage.sync.countFailed", { n: entry.result.failed }) }}</span>
                 <span v-if="entry.result.imported === 0 && entry.result.skipped === 0 && entry.result.failed === 0">
-                  keine Aktivitäten
+                  {{ t("diagnosticsPage.sync.noActivity") }}
                 </span>
               </span>
             </button>
 
             <div v-if="expandedEntry === idx" class="sync-log-body">
-              <p v-if="entry.result.workouts.length === 0" class="hint">Keine Workouts in diesem Zeitraum.</p>
+              <p v-if="entry.result.workouts.length === 0" class="hint">{{ t("diagnosticsPage.sync.noWorkouts") }}</p>
               <div v-for="w in entry.result.workouts" :key="w.workoutId" class="sync-workout-row">
                 <p
                   class="sync-workout-summary"
@@ -202,26 +206,26 @@ function formatAt(iso: string): string {
                   {{ workoutSummary(w) }}
                 </p>
                 <button type="button" class="raw-toggle" @click="toggleRawData(w.workoutId)">
-                  {{ rawDataOpen.has(w.workoutId) ? "Rohdaten ausblenden" : "Rohdaten anzeigen" }}
+                  {{ rawDataOpen.has(w.workoutId) ? t("diagnosticsPage.sync.hideRawData") : t("diagnosticsPage.sync.showRawData") }}
                 </button>
                 <pre v-if="rawDataOpen.has(w.workoutId)" class="raw-data">{{ JSON.stringify(w, null, 2) }}</pre>
               </div>
-              <Button variant="secondary" class="copy-btn" @click="copyReport(entry)">Bericht kopieren</Button>
+              <Button variant="secondary" class="copy-btn" @click="copyReport(entry)">{{ t("diagnosticsPage.sync.copyReport") }}</Button>
             </div>
           </li>
         </ul>
       </section>
 
       <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
-        <h2 class="eyebrow">Serverfehler</h2>
-        <p class="hint">Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert.</p>
+        <h2 class="eyebrow">{{ t("diagnosticsPage.errors.heading") }}</h2>
+        <p class="hint">{{ t("diagnosticsPage.errors.hint") }}</p>
         <Button variant="secondary" block @click="toggleErrorLogs">
-          {{ errorLogsOpen ? "Ausblenden" : "Fehler anzeigen" }}
+          {{ errorLogsOpen ? t("diagnosticsPage.errors.hide") : t("diagnosticsPage.errors.show") }}
         </Button>
         <div v-if="errorLogsOpen" class="error-log-list">
-          <p v-if="errorLogsLoading" class="current">Wird geladen…</p>
+          <p v-if="errorLogsLoading" class="current">{{ t("diagnosticsPage.errors.loading") }}</p>
           <EmptyNote v-else-if="errorLogs.length === 0" align="start" class="current" style="color: var(--faint)">
-            Keine Fehler aufgezeichnet.
+            {{ t("diagnosticsPage.errors.empty") }}
           </EmptyNote>
           <div v-for="entry in errorLogs" :key="entry.id" class="error-log-row">
             <div class="error-log-meta">

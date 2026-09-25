@@ -59,6 +59,10 @@ async function mountAtRoute(pathAndQuery: string) {
   });
   await router.push(pathAndQuery);
   await router.isReady();
+  // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+  // otherwise default this test to English — force German (see mountWithProviders.ts's own
+  // comment on this exact issue).
+  i18n.global.locale.value = "de";
   const wrapper = mount(RouteOverviewPage, { global: { plugins: [createPinia(), i18n, router], stubs: STUBS } });
   return { wrapper, router: router as Router };
 }

@@ -5,68 +5,59 @@
 //
 // Not reachable from any nav item — same "reachable, not surfaced" shape as DiagnosticsPage.vue
 // — so it needs BasePage's back-button to have any way out.
+import { useI18n } from "vue-i18n";
 import BasePage from "../components/patterns/BasePage.vue";
+
+const { t } = useI18n();
 </script>
 
 <template>
-  <BasePage title="Quellen &amp; Lizenzen" back-button>
+  <BasePage :title="t('attributionsPage.title')" back-button>
     <div class="attributions-content">
       <p style="color: var(--dim)">
-        Liftr importiert Referenzdaten einmalig (nicht bei jeder Anfrage) aus den folgenden Quellen.
-        Eine Ausnahme: die Routenberechnung für geplante Strecken fragt OpenRouteService bei Bedarf
-        live pro Anfrage ab, nicht einmalig.
+        {{ t("attributionsPage.intro") }}
       </p>
 
       <ul class="sources">
         <li class="surface-hybrid">
-          <b>wger Exercise Database</b> — Übungskatalog, Muskelgruppen-Tags
-          <span class="license">CC-BY-SA</span>
-          <p>github.com/wger-project/wger</p>
+          <b>{{ t("attributionsPage.wger.name") }}</b> — {{ t("attributionsPage.wger.desc") }}
+          <span class="license">{{ t("attributionsPage.wger.license") }}</span>
+          <p>{{ t("attributionsPage.wger.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>wger Exercise Database</b> — Übungsfotos für 2 Übungen ohne freie
-          free-exercise-db-Aufnahme ("Einbeiniges RDL", "Pike-Liegestütze")
-          <span class="license">CC-BY-SA 4.0</span>
-          <p>
-            wger.de/media/exercise-images · Autoren: Tierrasverdes (Einbeiniges RDL), Nash
-            (Pike-Liegestütze). Das Pike-Liegestütze-Foto ist laut wger als KI-generiert
-            gekennzeichnet ("is_ai_generated") — bewusst übernommen, da keine andere frei
-            lizenzierte Aufnahme dieser Übung existiert.
-          </p>
+          <b>{{ t("attributionsPage.wgerPhotos.name") }}</b> — {{ t("attributionsPage.wgerPhotos.desc") }}
+          <span class="license">{{ t("attributionsPage.wgerPhotos.license") }}</span>
+          <p>{{ t("attributionsPage.wgerPhotos.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>Muskel-Diagramm (Anatomie-Figur)</b> — Körperumriss + 15 einzeln hervorgehobene Muskeln, mirror von wger's Assets, ursprünglich abgeleitet von "Muscular system.svg"/"Muscular system-back.svg" von Termininja
-          <span class="license">CC-BY-SA 3.0</span>
-          <p>commons.wikimedia.org · via github.com/wger-project/wger · eigene Einfärbung für das Dark-Theme</p>
+          <b>{{ t("attributionsPage.muscleDiagram.name") }}</b> — {{ t("attributionsPage.muscleDiagram.desc") }}
+          <span class="license">{{ t("attributionsPage.muscleDiagram.license") }}</span>
+          <p>{{ t("attributionsPage.muscleDiagram.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>free-exercise-db (yuhonas)</b> — Start-/End-Positionsbilder
-          <span class="license">Unlicense (gemeinfrei)</span>
-          <p>github.com/yuhonas/free-exercise-db</p>
+          <b>{{ t("attributionsPage.freeExerciseDb.name") }}</b> — {{ t("attributionsPage.freeExerciseDb.desc") }}
+          <span class="license">{{ t("attributionsPage.freeExerciseDb.license") }}</span>
+          <p>{{ t("attributionsPage.freeExerciseDb.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>OpenPowerlifting</b> — Kraftstandards (Kniebeuge/Bankdrücken/Kreuzheben)
-          <span class="license">CC0 (gemeinfrei)</span>
-          <p>openpowerlifting.org</p>
+          <b>{{ t("attributionsPage.openPowerlifting.name") }}</b> — {{ t("attributionsPage.openPowerlifting.desc") }}
+          <span class="license">{{ t("attributionsPage.openPowerlifting.license") }}</span>
+          <p>{{ t("attributionsPage.openPowerlifting.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>OpenStreetMap</b> — Kartendaten für Laufrouten
-          <span class="license">ODbL</span>
-          <p>© OpenStreetMap-Mitwirkende</p>
+          <b>{{ t("attributionsPage.openStreetMap.name") }}</b> — {{ t("attributionsPage.openStreetMap.desc") }}
+          <span class="license">{{ t("attributionsPage.openStreetMap.license") }}</span>
+          <p>{{ t("attributionsPage.openStreetMap.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>Esri World Imagery</b> — Satellitenansicht für Laufrouten (Vantor/Vexcel-Luftbilder),
-          mit Straßen- und Ortsnamen-Beschriftung (Esri Reference/World_Transportation)
-          <span class="license">© Esri</span>
-          <p>
-            Tiles © Esri — Vantor, Earthstar Geographics, and the GIS User Community · Beschriftungen:
-            Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende
-          </p>
+          <b>{{ t("attributionsPage.esri.name") }}</b> — {{ t("attributionsPage.esri.desc") }}
+          <span class="license">{{ t("attributionsPage.esri.license") }}</span>
+          <p>{{ t("attributionsPage.esri.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>OpenRouteService</b> — Routenberechnung für geplante Strecken
-          <span class="license">CC-BY 4.0</span>
-          <p>openrouteservice.org · © openrouteservice.org by HeiGIT</p>
+          <b>{{ t("attributionsPage.openRouteService.name") }}</b> — {{ t("attributionsPage.openRouteService.desc") }}
+          <span class="license">{{ t("attributionsPage.openRouteService.license") }}</span>
+          <p>{{ t("attributionsPage.openRouteService.credit") }}</p>
         </li>
       </ul>
     </div>

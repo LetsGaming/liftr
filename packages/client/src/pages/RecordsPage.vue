@@ -12,6 +12,7 @@
 // classes rather than forcing the existing list markup to do both jobs.
 import BasePage from "../components/patterns/BasePage.vue";
 import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { RunCategory } from "@liftr/shared";
 import { RUN_CATEGORIES, rankedCardioActivities } from "@liftr/shared";
@@ -24,6 +25,7 @@ import { usePrStore } from "../stores/prStore";
 import { useRunRankStore, type RunPrListItem } from "../stores/runRankStore";
 import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
 
+const { t } = useI18n();
 const prStore = usePrStore();
 const runRankStore = useRunRankStore();
 const { exerciseName } = useExerciseName();
@@ -37,12 +39,12 @@ onMounted(() => {
   void runRankStore.loadPrs();
 });
 
-const KIND_LABEL: Record<string, string> = {
-  e1rm: "e1RM",
-  weight: "Gewicht",
-  reps: "Wiederholungen",
-  volume: "Volumen",
-};
+const KIND_LABEL = computed<Record<string, string>>(() => ({
+  e1rm: t("recordsPage.kind.e1rm"),
+  weight: t("recordsPage.kind.weight"),
+  reps: t("recordsPage.kind.reps"),
+  volume: t("recordsPage.kind.volume"),
+}));
 
 const sorted = computed(() => prStore.prs.slice().sort((a, b) => b.achievedAt.localeCompare(a.achievedAt)));
 
@@ -84,7 +86,7 @@ function isRecentlyAchieved(iso: string): boolean {
 }
 
 function formatValue(kind: string, value: number): string {
-  if (kind === "reps") return `${Math.round(value)} Wdh.`;
+  if (kind === "reps") return t("recordsPage.repsValue", { n: Math.round(value) });
   if (kind === "volume") return `${Math.round(value).toLocaleString("de-DE")} kg`;
   // "weight" and "e1rm" — e1rm in particular is computed (epley formula: weightKg * (1 +
   // reps/30)) and routinely lands on a non-terminating decimal (e.g. 100kg x 8 reps ->
@@ -96,20 +98,20 @@ function formatValue(kind: string, value: number): string {
 </script>
 
 <template>
-  <BasePage title="Rekorde" back-button>
-      <p style="color: var(--dim)">Deine Rekord-Historie — jeder neue Bestwert automatisch erfasst.</p>
+  <BasePage :title="t('recordsPage.title')" back-button>
+      <p style="color: var(--dim)">{{ t("recordsPage.subtitle") }}</p>
 
       <template v-if="!prStore.loaded && !prStore.error">
         <div v-for="i in 4" :key="i" class="shimmer pr-skel-row" aria-hidden="true" />
       </template>
 
       <p v-else-if="prStore.error" class="page-note load-error panel" style="margin-top: var(--sp4)">
-        Rekorde konnten nicht geladen werden.
-        <Button variant="secondary" @click="prStore.load()">Erneut versuchen</Button>
+        {{ t("recordsPage.loadError") }}
+        <Button variant="secondary" @click="prStore.load()">{{ t("recordsPage.retry") }}</Button>
       </p>
 
       <EmptyNote v-else-if="sorted.length === 0" align="start" class="page-note empty-note panel" style="margin-top: var(--sp4)">
-        Noch keine Rekorde — dein erster harter Satz auf einer beliebigen Übung startet einen.
+        {{ t("recordsPage.empty") }}
       </EmptyNote>
 
       <ul v-else class="pr-list">
@@ -133,15 +135,15 @@ function formatValue(kind: string, value: number): string {
         </ListRow>
       </ul>
 
-      <h2 class="eyebrow run-pr-heading">Cardio-Rekorde</h2>
+      <h2 class="eyebrow run-pr-heading">{{ t("recordsPage.cardioHeading") }}</h2>
 
       <template v-if="!runRankStore.prsLoaded && !runRankStore.prsError">
         <div v-for="i in 5" :key="i" class="shimmer run-pr-skel-row" aria-hidden="true" />
       </template>
 
       <p v-else-if="runRankStore.prsError" class="page-note load-error run-pr-load-error panel" style="margin-top: var(--sp4)">
-        Lauf-Rekorde konnten nicht geladen werden.
-        <Button variant="secondary" @click="runRankStore.loadPrs()">Erneut versuchen</Button>
+        {{ t("recordsPage.cardioLoadError") }}
+        <Button variant="secondary" @click="runRankStore.loadPrs()">{{ t("recordsPage.retry") }}</Button>
       </p>
 
       <ul v-else class="run-pr-list">
@@ -162,7 +164,7 @@ function formatValue(kind: string, value: number): string {
                 <span class="pr-date">{{ formatDateShort(bestRunTimeByCategory[category]!.achievedAt) }}</span>
               </div>
               <div v-else class="pr-row-meta">
-                <span class="pr-date">Noch kein Rekord</span>
+                <span class="pr-date">{{ t("recordsPage.noRecordYet") }}</span>
               </div>
             </template>
           </ListRow>
@@ -184,7 +186,7 @@ function formatValue(kind: string, value: number): string {
                 <span class="pr-date">{{ formatDateShort(bestSpeedByActivity[activityId]!.achievedAt) }}</span>
               </div>
               <div v-else class="pr-row-meta">
-                <span class="pr-date">Noch kein Rekord</span>
+                <span class="pr-date">{{ t("recordsPage.noRecordYet") }}</span>
               </div>
             </template>
           </ListRow>

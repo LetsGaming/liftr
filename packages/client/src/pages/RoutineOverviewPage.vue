@@ -7,6 +7,7 @@
  * pattern verbatim from RoutineList.vue/OverviewPage.vue rather than inventing a new one.
  */
 import { computed, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
@@ -22,6 +23,7 @@ import { aggregateMuscles } from "../lib/muscles";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useRoutineStore } from "../stores/routineStore";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const catalog = useCatalogStore();
@@ -58,14 +60,14 @@ function exerciseDisplayName(exerciseId: string, fallbackSlug: string, fallbackN
 function setSummary(targetSets: { reps: number; weightKg: number | null }[]): string {
   const first = targetSets[0];
   if (!first) return "";
-  const weightPart = first.weightKg != null ? `${first.weightKg} kg · ` : "";
-  return `${targetSets.length} × ${weightPart}${first.reps} Wdh.`;
+  const weightPart = first.weightKg != null ? t("routineOverviewPage.setSummaryWeightPart", { weight: first.weightKg }) : "";
+  return t("routineOverviewPage.setSummary", { count: targetSets.length, weightPart, reps: first.reps });
 }
 
 /** Expanded-row detail: one line per planned set, e.g. "Satz 2 — 80 kg × 8 Wdh." */
 function setLine(targetSet: { reps: number; weightKg: number | null }, index: number): string {
-  const weightPart = targetSet.weightKg != null ? `${targetSet.weightKg} kg × ` : "";
-  return `Satz ${index + 1} — ${weightPart}${targetSet.reps} Wdh.`;
+  const weightPart = targetSet.weightKg != null ? t("routineOverviewPage.setLineWeightPart", { weight: targetSet.weightKg }) : "";
+  return t("routineOverviewPage.setLine", { n: index + 1, weightPart, reps: targetSet.reps });
 }
 
 onMounted(() => {
@@ -89,35 +91,35 @@ async function jetztStarten() {
 </script>
 
 <template>
-  <BasePage :title="routine ? routine.name : 'Routine'" back-button>
+  <BasePage :title="routine ? routine.name : t('routineOverviewPage.fallbackTitle')" back-button>
       <DrillInScreen
         hide-back-button
-        :title="routine ? routine.name : 'Routine'"
+        :title="routine ? routine.name : t('routineOverviewPage.fallbackTitle')"
         :loading="!routineStore.loaded"
         :not-found="routineStore.loaded && !routine"
         :skeleton-count="3"
       >
         <template #not-found>
-          <div class="eyebrow">Routine nicht gefunden</div>
-          <p>Diese Routine existiert nicht (mehr). Vielleicht wurde sie gelöscht.</p>
-          <Button as="router-link" to="/workout" variant="secondary" block>Zur Übersicht →</Button>
+          <div class="eyebrow">{{ t("routineOverviewPage.notFound.eyebrow") }}</div>
+          <p>{{ t("routineOverviewPage.notFound.hint") }}</p>
+          <Button as="router-link" to="/workout" variant="secondary" block>{{ t("routineOverviewPage.notFound.backToOverview") }}</Button>
         </template>
 
         <template v-if="routine" #header-extra>
           <span class="ro-count">
-            {{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}
+            {{ t("common.exerciseCount", routine.routineExercises.length) }}
           </span>
-          <IconButton variant="ghost" size="sm" label="Routine bearbeiten" class="ro-edit-btn" @click="editRoutine(routine)">
+          <IconButton variant="ghost" size="sm" :label="t('routineOverviewPage.editRoutineAriaLabel')" class="ro-edit-btn" @click="editRoutine(routine)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
             </svg>
           </IconButton>
         </template>
 
-        <div class="eyebrow">Trainierte Muskeln</div>
+        <div class="eyebrow">{{ t("routineOverviewPage.musclesTrained") }}</div>
         <MuscleFigure class="ro-muscles" :primary="routineMuscles.primary" :secondary="routineMuscles.secondary" />
 
-        <div class="eyebrow ro-ex-eyebrow">Übungen</div>
+        <div class="eyebrow ro-ex-eyebrow">{{ t("routineOverviewPage.exercises") }}</div>
         <ul class="ro-ex-list">
           <li v-for="re in orderedExercises" :key="re.id" class="ro-ex-item surface-hybrid">
             <ListRow
@@ -151,8 +153,8 @@ async function jetztStarten() {
 
         <template #start-bar>
           <Button size="lg" block :disabled="starting" @click="jetztStarten">
-            <template v-if="starting">Wird gestartet…</template>
-            <template v-else><AppIcon name="play" /> Jetzt starten</template>
+            <template v-if="starting">{{ t("routineOverviewPage.starting") }}</template>
+            <template v-else><AppIcon name="play" /> {{ t("routineOverviewPage.startNow") }}</template>
           </Button>
         </template>
       </DrillInScreen>

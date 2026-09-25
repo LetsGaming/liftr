@@ -292,7 +292,7 @@ function retryFailed() {
             <div class="lp-row">
               <div class="lp-info">
                 <b>{{ suggestedRoutine.name }}</b>
-                <span>{{ t("overview.exerciseCount", suggestedRoutine.routineExercises.length) }}</span>
+                <span>{{ t("common.exerciseCount", suggestedRoutine.routineExercises.length) }}</span>
               </div>
               <MuscleFigure class="lp-muscles" :size="36" v-bind="suggestedRoutineMuscles" />
             </div>

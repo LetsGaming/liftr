@@ -12,6 +12,7 @@ common:
   save: Speichern
   savingEllipsis: "Wird gespeichert…"
   workout: Workout
+  exerciseCount: "{n} Übung | {n} Übungen"
 workout:
   start: Heutiges Workout starten
   save: Satz speichern
@@ -231,6 +232,193 @@ profile:
     download: Backup herunterladen
   about:
     attributions: "Quellen & Lizenzen →"
+recordsPage:
+  title: Rekorde
+  subtitle: "Deine Rekord-Historie — jeder neue Bestwert automatisch erfasst."
+  loadError: Rekorde konnten nicht geladen werden.
+  retry: Erneut versuchen
+  empty: "Noch keine Rekorde — dein erster harter Satz auf einer beliebigen Übung startet einen."
+  kind:
+    e1rm: e1RM
+    weight: Gewicht
+    reps: Wiederholungen
+    volume: Volumen
+  repsValue: "{n} Wdh."
+  cardioHeading: Cardio-Rekorde
+  cardioLoadError: Lauf-Rekorde konnten nicht geladen werden.
+  noRecordYet: Noch kein Rekord
+exercisesPage:
+  addCustom: "+ Eigene Übung hinzufügen"
+  addCustomTitle: Eigene Übung hinzufügen
+routeOverviewPage:
+  fallbackTitle: Strecke
+  notFound:
+    eyebrow: Strecke nicht gefunden
+    hint: "Diese Strecke existiert nicht (mehr). Vielleicht wurde sie gelöscht."
+    backToRoutes: "Zu den Strecken →"
+  elevation: "{m} hm"
+  elevationUnknown: Höhe unbekannt
+  waypoints: "{n} Wegpunkte"
+  liveTrack: Live tracken
+  manualEntry: Manuell eintragen
+routineOverviewPage:
+  fallbackTitle: Routine
+  notFound:
+    eyebrow: Routine nicht gefunden
+    hint: "Diese Routine existiert nicht (mehr). Vielleicht wurde sie gelöscht."
+    backToOverview: "Zur Übersicht →"
+  editRoutineAriaLabel: Routine bearbeiten
+  musclesTrained: Trainierte Muskeln
+  exercises: Übungen
+  setSummary: "{count} × {weightPart}{reps} Wdh."
+  setSummaryWeightPart: "{weight} kg · "
+  setLine: "Satz {n} — {weightPart}{reps} Wdh."
+  setLineWeightPart: "{weight} kg × "
+  starting: "Wird gestartet…"
+  startNow: Jetzt starten
+workoutDetailPage:
+  fallbackTitle: Workout-Details
+  loading: "Lädt…"
+  loadError: "Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server."
+  exercises: Übungen
+  prTitle: Persönlicher Rekord
+  shareTitle: Mein Liftr-Workout
+  delete:
+    deleting: "Wird gelöscht…"
+    confirm: "Wirklich löschen? (XP/Rang werden zurückgenommen)"
+    cta: Workout löschen
+runDetailPage:
+  fallbackTitle: Lauf-Details
+  loading: "Lädt…"
+  loadError: "Dieser Lauf ließ sich nicht laden — möglicherweise keine Verbindung zum Server."
+  routeChipPrefix: "Strecke: "
+  newRecord: Neuer Rekord
+  stats:
+    distance: Distanz
+    duration: Dauer
+    avgPace: "Pace ø"
+    avgHr: "Puls ø"
+    elevation: Höhenmeter
+  noRoute: "Manuell erfasster Lauf — keine Route verfügbar."
+  saveAsRoute: Als Strecke speichern
+  delete:
+    deleting: "Wird gelöscht…"
+    confirm: Wirklich löschen?
+    cta: Lauf löschen
+runsPage:
+  subtitle: Strecke starten oder Lauf manuell erfassen
+  manual: Manuell
+  importing: "Importiere…"
+  importGpxFit: GPX/FIT importieren
+  namePlaceholder: "Name (optional)"
+  nameAriaLabel: Name des Laufs
+  dateAriaLabel: Datum des Laufs
+  distancePlaceholder: km
+  distanceAriaLabel: Distanz in Kilometern
+  minutesPlaceholder: Minuten
+  minutesAriaLabel: Dauer in Minuten
+  save: Speichern
+  closeAriaLabel: Schließen
+  routeBanner:
+    prefix: "Strecke: "
+    approxSuffix: " ≈"
+    elevationSuffix: " · {m} hm"
+    tail: " — nur noch Dauer eintragen"
+  toast:
+    runSaved: Lauf gespeichert.
+    runImported: Lauf importiert.
+ranksPage:
+  navLabel: "Workout- oder Lauf-Ränge"
+  viewRecords: Rekorde ansehen
+diagnosticsPage:
+  title: Diagnose
+  sync:
+    heading: Synchronisierung
+    hint: "Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst, warum."
+    rescanChecking: "Prüfe…"
+    rescan30: Letzte 30 Tage erneut prüfen
+    rescan90: Letzte 90 Tage erneut prüfen
+    empty: Noch keine Synchronisierung aufgezeichnet.
+    clearConfirm: Wirklich leeren?
+    clear: Protokoll leeren
+    triggerManual: manuell
+    triggerAppStart: App-Start
+    countImported: "{n} importiert"
+    countSkipped: "{n} übersprungen"
+    countFailed: "{n} fehlgeschlagen"
+    noActivity: keine Aktivitäten
+    noWorkouts: Keine Workouts in diesem Zeitraum.
+    showRawData: Rohdaten anzeigen
+    hideRawData: Rohdaten ausblenden
+    copyReport: Bericht kopieren
+    rescanResultPrefix: "Letzte {days} Tage geprüft — "
+    rescanResultNone: "Letzte {days} Tage geprüft — keine neuen Aktivitäten gefunden."
+    copySuccess: Bericht kopiert.
+    copyFailed: Kopieren fehlgeschlagen.
+  errors:
+    heading: Serverfehler
+    hint: "Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert."
+    hide: Ausblenden
+    show: Fehler anzeigen
+    loading: "Wird geladen…"
+    empty: Keine Fehler aufgezeichnet.
+  skipReason:
+    routeConsentRequired: Health Connect hat die Strecke nicht freigegeben
+    routeMissing: keine Streckendaten von Health Connect erhalten
+    noUsableData: keine verwertbaren Daten für dieses Workout
+    invalidPoints: alle Streckenpunkte waren ungültig
+  activity:
+    running: Laufen
+    runningTreadmill: "Laufen (Laufband)"
+    walking: Gehen
+    hiking: Wandern
+  workoutSummary:
+    imported: "{label} — importiert"
+    skipped: "{label} — übersprungen: {reason}"
+    failed: "{label} — fehlgeschlagen: {message}"
+attributionsPage:
+  title: "Quellen & Lizenzen"
+  intro: "Liftr importiert Referenzdaten einmalig (nicht bei jeder Anfrage) aus den folgenden Quellen. Eine Ausnahme: die Routenberechnung für geplante Strecken fragt OpenRouteService bei Bedarf live pro Anfrage ab, nicht einmalig."
+  wger:
+    name: "wger Exercise Database"
+    desc: "Übungskatalog, Muskelgruppen-Tags"
+    license: "CC-BY-SA"
+    credit: "github.com/wger-project/wger"
+  wgerPhotos:
+    name: "wger Exercise Database"
+    desc: "Übungsfotos für 2 Übungen ohne freie free-exercise-db-Aufnahme (\"Einbeiniges RDL\", \"Pike-Liegestütze\")"
+    license: "CC-BY-SA 4.0"
+    credit: "wger.de/media/exercise-images · Autoren: Tierrasverdes (Einbeiniges RDL), Nash (Pike-Liegestütze). Das Pike-Liegestütze-Foto ist laut wger als KI-generiert gekennzeichnet (\"is_ai_generated\") — bewusst übernommen, da keine andere frei lizenzierte Aufnahme dieser Übung existiert."
+  muscleDiagram:
+    name: "Muskel-Diagramm (Anatomie-Figur)"
+    desc: "Körperumriss + 15 einzeln hervorgehobene Muskeln, mirror von wger's Assets, ursprünglich abgeleitet von \"Muscular system.svg\"/\"Muscular system-back.svg\" von Termininja"
+    license: "CC-BY-SA 3.0"
+    credit: "commons.wikimedia.org · via github.com/wger-project/wger · eigene Einfärbung für das Dark-Theme"
+  freeExerciseDb:
+    name: "free-exercise-db (yuhonas)"
+    desc: "Start-/End-Positionsbilder"
+    license: "Unlicense (gemeinfrei)"
+    credit: "github.com/yuhonas/free-exercise-db"
+  openPowerlifting:
+    name: "OpenPowerlifting"
+    desc: "Kraftstandards (Kniebeuge/Bankdrücken/Kreuzheben)"
+    license: "CC0 (gemeinfrei)"
+    credit: "openpowerlifting.org"
+  openStreetMap:
+    name: "OpenStreetMap"
+    desc: "Kartendaten für Laufrouten"
+    license: "ODbL"
+    credit: "© OpenStreetMap-Mitwirkende"
+  esri:
+    name: "Esri World Imagery"
+    desc: "Satellitenansicht für Laufrouten (Vantor/Vexcel-Luftbilder), mit Straßen- und Ortsnamen-Beschriftung (Esri Reference/World_Transportation)"
+    license: "© Esri"
+    credit: "Tiles © Esri — Vantor, Earthstar Geographics, and the GIS User Community · Beschriftungen: Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende"
+  openRouteService:
+    name: "OpenRouteService"
+    desc: "Routenberechnung für geplante Strecken"
+    license: "CC-BY 4.0"
+    credit: "openrouteservice.org · © openrouteservice.org by HeiGIT"
 overview:
   loadError:
     message: "Einige Daten konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert."
@@ -244,7 +432,6 @@ overview:
     noRoutineTitle: Noch keine Routine
     noRoutineHint: "Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst."
     createFirstRoutine: "Erste Routine anlegen →"
-  exerciseCount: "{n} Übung | {n} Übungen"
   firstRun:
     ladderTitle: Deine Rangleiter
   stats:

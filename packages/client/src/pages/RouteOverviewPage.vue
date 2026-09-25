@@ -8,6 +8,7 @@
  * of one unconditional start).
  */
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AppIcon from "../components/base/AppIcon.vue";
 import Button from "../components/base/Button.vue";
@@ -18,6 +19,7 @@ import LiveRunScreen from "../components/run/LiveRunScreen.vue";
 import { useManualRunEntry } from "../composables/useManualRunEntry";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const plannedRouteStore = usePlannedRouteStore();
@@ -65,27 +67,27 @@ function onLiveRunFinished() {
 </script>
 
 <template>
-  <BasePage :title="plannedRoute ? plannedRoute.name : 'Strecke'" back-button :scroll-y="false">
+  <BasePage :title="plannedRoute ? plannedRoute.name : t('routeOverviewPage.fallbackTitle')" back-button :scroll-y="false">
       <DrillInScreen
         fill-height
         hide-back-button
-        :title="plannedRoute ? plannedRoute.name : 'Strecke'"
+        :title="plannedRoute ? plannedRoute.name : t('routeOverviewPage.fallbackTitle')"
         :loading="!plannedRouteStore.loaded"
         :not-found="plannedRouteStore.loaded && !plannedRoute"
       >
         <template #not-found>
-          <div class="eyebrow">Strecke nicht gefunden</div>
-          <p>Diese Strecke existiert nicht (mehr). Vielleicht wurde sie gelöscht.</p>
-          <Button as="router-link" to="/runs" variant="secondary" block>Zu den Strecken →</Button>
+          <div class="eyebrow">{{ t("routeOverviewPage.notFound.eyebrow") }}</div>
+          <p>{{ t("routeOverviewPage.notFound.hint") }}</p>
+          <Button as="router-link" to="/runs" variant="secondary" block>{{ t("routeOverviewPage.notFound.backToRoutes") }}</Button>
         </template>
 
         <template v-if="plannedRoute">
           <div class="ro-route-stats">
             <span>
-              {{ (plannedRoute.distanceM / 1000).toFixed(2) }} km{{ plannedRoute.geometrySource === "straight" ? " ≈" : "" }}
+              {{ (plannedRoute.distanceM / 1000).toFixed(2) }} km{{ plannedRoute.geometrySource === "straight" ? t("runsPage.routeBanner.approxSuffix") : "" }}
             </span>
-            <span>{{ plannedRoute.elevationGainM != null ? Math.round(plannedRoute.elevationGainM) + " hm" : "Höhe unbekannt" }}</span>
-            <span>{{ plannedRoute.waypoints.length }} Wegpunkte</span>
+            <span>{{ plannedRoute.elevationGainM != null ? t("routeOverviewPage.elevation", { m: Math.round(plannedRoute.elevationGainM) }) : t("routeOverviewPage.elevationUnknown") }}</span>
+            <span>{{ t("routeOverviewPage.waypoints", { n: plannedRoute.waypoints.length }) }}</span>
           </div>
 
           <div class="ro-route-map">
@@ -93,10 +95,10 @@ function onLiveRunFinished() {
           </div>
 
           <div v-if="showManualForm" class="manual-form panel pop-in">
-            <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
-            <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
-            <input v-model="manualMinutes" type="text" inputmode="decimal" placeholder="Minuten" aria-label="Dauer in Minuten" />
-            <Button :disabled="loggingManual" @click="saveManual">Speichern</Button>
+            <input v-model="manualDate" type="date" :aria-label="t('runsPage.dateAriaLabel')" />
+            <input v-model="manualDistanceKm" type="text" inputmode="decimal" :placeholder="t('runsPage.distancePlaceholder')" :aria-label="t('runsPage.distanceAriaLabel')" />
+            <input v-model="manualMinutes" type="text" inputmode="decimal" :placeholder="t('runsPage.minutesPlaceholder')" :aria-label="t('runsPage.minutesAriaLabel')" />
+            <Button :disabled="loggingManual" @click="saveManual">{{ t("runsPage.save") }}</Button>
             <p v-if="manualError" class="error">{{ manualError }}</p>
           </div>
         </template>
@@ -104,9 +106,9 @@ function onLiveRunFinished() {
         <template #start-bar>
           <Button size="lg" block @click="showLiveRun = true">
             <template #leading><AppIcon name="play" /></template>
-            Live tracken
+            {{ t("routeOverviewPage.liveTrack") }}
           </Button>
-          <Button variant="secondary" block @click="openManualForm">Manuell eintragen</Button>
+          <Button variant="secondary" block @click="openManualForm">{{ t("routeOverviewPage.manualEntry") }}</Button>
         </template>
       </DrillInScreen>
 
