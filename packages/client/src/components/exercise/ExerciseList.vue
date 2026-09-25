@@ -11,10 +11,11 @@
  */
 import { canPerform, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 import { useExerciseName } from "../../composables/useExerciseName";
-import { EQUIPMENT_LABEL_DE, equipmentRequirementLabelDe, type Equipment } from "../../lib/equipmentIcons";
-import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
+import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
+import { muscleLabel, MUSCLE_SLUGS } from "../../lib/muscles";
 import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import ExerciseRow from "./ExerciseRow.vue";
@@ -34,6 +35,7 @@ const props = withDefaults(defineProps<{ mode?: "browse" | "select"; selectedIds
 });
 const emit = defineEmits<{ open: [exercise: CatalogExercise]; toggle: [exercise: CatalogExercise] }>();
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 const settingsStore = useSettingsStore();
 const { exerciseName } = useExerciseName();
@@ -99,22 +101,28 @@ function onCardClick(ex: CatalogExercise) {
  *  not break. */
 function equipmentLabel(eq: string | null): string {
   if (!eq) return "—";
-  return EQUIPMENT_LABEL_DE[eq as Equipment] ?? eq;
+  return equipmentRequirementLabelDe(eq as Parameters<typeof equipmentRequirementLabelDe>[0]);
 }
 </script>
 
 <template>
   <div class="exercise-list">
-    <Input v-model="search" class="search-input" type="text" placeholder="Übung suchen…" aria-label="Übung suchen" />
+    <Input
+      v-model="search"
+      class="search-input"
+      type="text"
+      :placeholder="t('exerciseUi.list.searchPlaceholder')"
+      :aria-label="t('exerciseUi.list.searchAriaLabel')"
+    />
 
     <div class="filters">
-      <Select v-model="equipmentFilter" class="filter-select" aria-label="Nach Gerät filtern">
-        <option value="">Alle Geräte</option>
+      <Select v-model="equipmentFilter" class="filter-select" :aria-label="t('exerciseUi.list.equipmentFilterAriaLabel')">
+        <option value="">{{ t("exerciseUi.list.allEquipmentOption") }}</option>
         <option v-for="eq in equipmentOptions" :key="eq" :value="eq">{{ equipmentLabel(eq) }}</option>
       </Select>
-      <Select v-model="muscleFilter" class="filter-select" aria-label="Nach Muskelgruppe filtern">
-        <option value="">Alle Muskeln</option>
-        <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ MUSCLE_LABEL_DE[m] ?? m }}</option>
+      <Select v-model="muscleFilter" class="filter-select" :aria-label="t('exerciseUi.list.muscleFilterAriaLabel')">
+        <option value="">{{ t("exerciseUi.list.allMusclesOption") }}</option>
+        <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ muscleLabel(m) }}</option>
       </Select>
     </div>
 
@@ -126,16 +134,16 @@ function equipmentLabel(eq: string | null): string {
       @click="onlyDoableEquipment = !onlyDoableEquipment"
     >
       <template v-if="onlyDoableEquipment" #leading><AppIcon name="check" /></template>
-      Nur machbare Übungen
+      {{ t("exerciseUi.list.onlyDoableToggle") }}
     </Chip>
 
     <div v-if="catalog.loaded && filtered.length === 0" class="empty">
       <EmptyNote v-if="onlyDoableEquipment && hasEquipmentFilter" align="start">
-        Keine Übung passt zu diesen Filtern — "Nur machbare Übungen" blendet dabei möglicherweise passende Übungen aus.
+        {{ t("exerciseUi.list.emptyWithFilterHint") }}
       </EmptyNote>
-      <EmptyNote v-else align="start">Keine Übung passt zu diesen Filtern.</EmptyNote>
+      <EmptyNote v-else align="start">{{ t("exerciseUi.list.emptyPlain") }}</EmptyNote>
       <Button v-if="onlyDoableEquipment && hasEquipmentFilter" variant="secondary" @click="onlyDoableEquipment = false">
-        Filter "Nur machbare Übungen" ausschalten
+        {{ t("exerciseUi.list.disableOnlyDoable") }}
       </Button>
     </div>
 
@@ -150,10 +158,10 @@ function equipmentLabel(eq: string | null): string {
             <template #meta>
               <span class="equip">{{ equipmentLabel(ex.equipment) }}</span>
               <span v-if="!onlyDoableEquipment && hasEquipmentFilter && missingRequiredFor(ex).length > 0" class="missing-note">
-                fehlt: {{ missingRequiredFor(ex).map(equipmentRequirementLabelDe).join(", ") }}
+                {{ t("exerciseUi.list.missingNote", { list: missingRequiredFor(ex).map(equipmentRequirementLabelDe).join(", ") }) }}
               </span>
               <span v-if="hasEquipmentFilter && missingRecommendedFor(ex).length > 0" class="recommended-note">
-                empfohlen: {{ missingRecommendedFor(ex).map(equipmentRequirementLabelDe).join(", ") }}
+                {{ t("exerciseUi.list.recommendedNote", { list: missingRecommendedFor(ex).map(equipmentRequirementLabelDe).join(", ") }) }}
               </span>
             </template>
           </ExerciseRow>

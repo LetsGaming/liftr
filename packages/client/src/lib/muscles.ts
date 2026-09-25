@@ -5,6 +5,8 @@
  * build-order cycle). MuscleFigure.vue and ExercisesPage.vue both import this one copy so they
  * can't drift independently.
  */
+import { t } from "../i18n";
+
 export interface MuscleMeta {
   id: number;
   front: boolean;
@@ -30,6 +32,26 @@ export const MUSCLE_META: Record<string, MuscleMeta> = {
 
 export const MUSCLE_SLUGS = Object.keys(MUSCLE_META);
 
+/** Keys into `muscles.*` (i18n.ts's t()), resolved at the point of use by muscleLabel() below so
+ *  a locale switch is reflected wherever it's read next. */
+const MUSCLE_LABEL_KEY: Record<string, string> = {
+  biceps: "muscles.biceps",
+  "front-delts": "muscles.front-delts",
+  serratus: "muscles.serratus",
+  chest: "muscles.chest",
+  triceps: "muscles.triceps",
+  abs: "muscles.abs",
+  calves: "muscles.calves",
+  glutes: "muscles.glutes",
+  traps: "muscles.traps",
+  quads: "muscles.quads",
+  hamstrings: "muscles.hamstrings",
+  lats: "muscles.lats",
+  brachialis: "muscles.brachialis",
+  obliques: "muscles.obliques",
+  soleus: "muscles.soleus",
+};
+
 /**
  * Unions primary/secondary muscle involvement across a set of exercises — primary wins if an
  * exercise disagrees with another (e.g. it's primary for one movement, secondary for another
@@ -50,24 +72,10 @@ export function aggregateMuscles(muscleLists: { slug: string; role: "primary" | 
   return { primary: [...primary], secondary: [...secondary] };
 }
 
-/** German display names — this app is German-only (see vue-i18n's single `de` locale), so a
- *  plain map here matches how every other short display-label lookup in this codebase is done
- *  (tierLabel/divisionLabel in RanksPage.vue, FinishSequence.vue, WorkoutPage.vue) rather than
- *  routing through the full i18n machinery for a handful of fixed nouns. */
-export const MUSCLE_LABEL_DE: Record<string, string> = {
-  biceps: "Bizeps",
-  "front-delts": "vordere Schultern",
-  serratus: "Serratus",
-  chest: "Brust",
-  triceps: "Trizeps",
-  abs: "Bauch",
-  calves: "Waden",
-  glutes: "Gesäß",
-  traps: "Trapezmuskel",
-  quads: "Quadrizeps",
-  hamstrings: "Hamstrings",
-  lats: "Latissimus",
-  brachialis: "Brachialis",
-  obliques: "schräge Bauchmuskeln",
-  soleus: "Soleus",
-};
+/** A muscle slug's display name in the current locale. Falls back to the slug itself for
+ *  anything outside MUSCLE_META's vocabulary (e.g. a value from the exercise catalog that
+ *  hasn't been added here yet). */
+export function muscleLabel(slug: string): string {
+  const key = MUSCLE_LABEL_KEY[slug];
+  return key ? t(key) : slug;
+}

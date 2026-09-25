@@ -13,6 +13,7 @@
  */
 import type { SetKind } from "@liftr/shared";
 import { computed, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import WizardHeader from "../patterns/WizardHeader.vue";
 import SheetModal from "../patterns/SheetModal.vue";
 import { useConfirmTap } from "../../composables/useConfirmTap";
@@ -30,6 +31,7 @@ import ReviewStep from "./ReviewStep.vue";
 const props = defineProps<{ routine?: Routine | null }>();
 const emit = defineEmits<{ created: [] }>();
 
+const { t } = useI18n();
 const routineStore = useRoutineStore();
 const catalog = useCatalogStore();
 const { toast } = useToast();
@@ -82,7 +84,7 @@ async function applySuggestions(muscleSlugs: string[]) {
     const suggestions = await routineStore.suggest(muscleSlugs);
     for (const s of suggestions) {
       selected.set(s.exerciseId, {
-        sets: s.targetSets.map((t) => ({ ...t })),
+        sets: s.targetSets.map((set) => ({ ...set })),
         linkNext: false,
         restBetweenSetsSeconds: DEFAULT_REST_SECONDS,
         restAfterExerciseSeconds: DEFAULT_REST_SECONDS,
@@ -177,7 +179,7 @@ async function upgradeToRecommendedDefaults(exerciseId: string) {
     const [recommended] = await recommendExercises([exerciseId]);
     const cfg = selected.get(exerciseId);
     if (cfg && recommended && isUntouchedDefault(cfg.sets)) {
-      cfg.sets = recommended.targetSets.map((t) => ({ ...t }));
+      cfg.sets = recommended.targetSets.map((set) => ({ ...set }));
     }
   } catch {
     // offline or request failed — the naive default stands
@@ -339,10 +341,10 @@ const showFastPath = computed(() => isFastPathEligible.value && !fastPathOverrid
  *  label/count are wizard-specific. */
 const wizardSteps = computed(() => {
   const steps = [
-    { key: "pick", label: "1 Wählen" },
-    { key: "arrange", label: showFastPath.value ? "2 Fertig" : "2 Anordnen" },
+    { key: "pick", label: t("routine.routineWizard.steps.pick") },
+    { key: "arrange", label: showFastPath.value ? t("routine.routineWizard.steps.done", { n: 2 }) : t("routine.routineWizard.steps.arrange") },
   ];
-  if (!showFastPath.value) steps.push({ key: "review", label: "3 Fertig" });
+  if (!showFastPath.value) steps.push({ key: "review", label: t("routine.routineWizard.steps.done", { n: 3 }) });
   return steps;
 });
 const activeStepKey = computed(() => (step.value === "arrange" || step.value === "review" ? step.value : "pick"));
@@ -374,7 +376,7 @@ async function save() {
       // Save can genuinely fail (e.g. a suggested exercise substitution produced an
       // out-of-contract value the server rejects) — without this the rejection was an unhandled
       // promise rejection and the sheet just sat there looking unresponsive with zero feedback.
-      toast("Speichern fehlgeschlagen — bitte erneut versuchen.");
+      toast(t("routine.routineWizard.saveFailed"));
       return;
     }
     // Closes via sheetRef.dismiss(), not emit("created") directly. Every close here goes through
@@ -425,7 +427,7 @@ function useFullArrange() {
     <template #header>
       <WizardHeader
         v-model:title="name"
-        :title-placeholder="'Name der Routine'"
+        :title-placeholder="t('routine.routineWizard.namePlaceholder')"
         :is-confirming-close="closeConfirm.isArmed()"
         :steps="wizardSteps"
         :active-step-key="activeStepKey"

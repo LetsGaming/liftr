@@ -11,6 +11,7 @@
  */
 import type { WorkoutCardModel } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useExerciseName } from "../composables/useExerciseName";
@@ -29,10 +30,11 @@ import ExerciseRow from "../components/exercise/ExerciseRow.vue";
 import MuscleFigure from "../components/exercise/MuscleFigure.vue";
 import StatTile from "../components/patterns/StatTile.vue";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const workoutId = computed(() => route.params.id as string);
-const title = computed(() => (route.query.title as string | undefined) ?? "Workout-Details");
+const title = computed(() => (route.query.title as string | undefined) ?? t("workoutDetailPage.fallbackTitle"));
 
 const history = useHistoryStore();
 const catalog = useCatalogStore();
@@ -134,7 +136,7 @@ async function share() {
     };
     await drawWorkoutCard(shareCanvas.value, model);
     const blob = await canvasToBlob(shareCanvas.value);
-    if (blob) await shareOrDownloadBlob(blob, `liftr-workout-${d.id.slice(0, 8)}.png`, "Mein Liftr-Workout");
+    if (blob) await shareOrDownloadBlob(blob, `liftr-workout-${d.id.slice(0, 8)}.png`, t("workoutDetailPage.shareTitle"));
   } finally {
     sharing.value = false;
   }
@@ -143,29 +145,29 @@ async function share() {
 
 <template>
   <BasePage :title="title" back-button variant="drawer">
-    <p v-if="loading" class="hint">Lädt…</p>
-    <p v-else-if="!detail" class="hint">Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server.</p>
+    <p v-if="loading" class="hint">{{ t("workoutDetailPage.loading") }}</p>
+    <p v-else-if="!detail" class="hint">{{ t("workoutDetailPage.loadError") }}</p>
 
     <template v-else>
       <div class="date-line tnum">{{ dateLabel }}</div>
 
       <div class="stat-row">
-        <StatTile :value="durationLabel" label="Dauer" />
-        <StatTile :value="`${Math.round(totalVolumeKg).toLocaleString('de-DE')} kg`" label="Volumen" />
-        <StatTile :value="totalSets" label="Sätze" />
-        <StatTile :value="orderedExercises.length" label="Übungen" />
+        <StatTile :value="durationLabel" :label="t('workout.finished.duration')" />
+        <StatTile :value="`${Math.round(totalVolumeKg).toLocaleString('de-DE')} kg`" :label="t('workout.finished.volume')" />
+        <StatTile :value="totalSets" :label="t('workout.finished.setsLabel')" />
+        <StatTile :value="orderedExercises.length" :label="t('workoutDetailPage.exercises')" />
       </div>
 
-      <div class="eyebrow section-eyebrow">Trainierte Muskeln</div>
+      <div class="eyebrow section-eyebrow">{{ t("workout.finished.musclesTrained") }}</div>
       <MuscleFigure :primary="muscles.primary" :secondary="muscles.secondary" />
 
-      <div class="eyebrow section-eyebrow">Übungen</div>
+      <div class="eyebrow section-eyebrow">{{ t("workoutDetailPage.exercises") }}</div>
       <ul class="ex-list">
         <li v-for="we in orderedExercises" :key="we.id">
           <ExerciseRow visual="icon" :size="18" :slug="we.exercise.slug" :equipment="we.exercise.equipment" :name="exerciseName(we.exercise.slug, we.exercise.name)">
             <template #meta>
               <span class="tnum set-chips">
-                <Chip v-for="s in we.sets" :key="s.id" size="sm" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? 'Persönlicher Rekord' : undefined">
+                <Chip v-for="s in we.sets" :key="s.id" size="sm" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? t('workoutDetailPage.prTitle') : undefined">
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
                   <span v-if="s.isPr" aria-hidden="true"> <AppIcon name="trophy" /></span>
@@ -177,8 +179,8 @@ async function share() {
       </ul>
 
       <Button block :disabled="sharing" @click="share">
-        <template v-if="sharing">Erstelle Bild…</template>
-        <template v-else><AppIcon name="share" /> Als Bild teilen</template>
+        <template v-if="sharing">{{ t("workout.finished.creatingImage") }}</template>
+        <template v-else><AppIcon name="share" /> {{ t("workout.finished.shareImage") }}</template>
       </Button>
       <Button
         variant="secondary"
@@ -188,9 +190,9 @@ async function share() {
         :disabled="deleting"
         @click="deleteConfirm.trigger()"
       >
-        <template v-if="deleting">Wird gelöscht…</template>
-        <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen? (XP/Rang werden zurückgenommen)</template>
-        <template v-else><AppIcon name="trash" /> Workout löschen</template>
+        <template v-if="deleting">{{ t("workoutDetailPage.delete.deleting") }}</template>
+        <template v-else-if="deleteConfirm.isArmed()">{{ t("workoutDetailPage.delete.confirm") }}</template>
+        <template v-else><AppIcon name="trash" /> {{ t("workoutDetailPage.delete.cta") }}</template>
       </Button>
       <canvas ref="shareCanvas" class="share-canvas" aria-hidden="true" />
     </template>

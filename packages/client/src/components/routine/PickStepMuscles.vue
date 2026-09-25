@@ -7,7 +7,8 @@
  *  its whole template/state on it — see PickStepManual.vue's doc comment for the full rationale.
  *  This one has no continue button; picking suggestions moves the wizard on by itself. */
 import { ref, computed } from "vue";
-import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
+import { useI18n } from "vue-i18n";
+import { muscleLabel, MUSCLE_SLUGS } from "../../lib/muscles";
 import MuscleFigure from "../exercise/MuscleFigure.vue";
 import Chip from "../base/Chip.vue";
 import Button from "../base/Button.vue";
@@ -15,6 +16,7 @@ import Button from "../base/Button.vue";
 const props = withDefaults(defineProps<{ suggesting?: boolean }>(), { suggesting: false });
 const emit = defineEmits<{ suggest: [muscleSlugs: string[]] }>();
 
+const { t } = useI18n();
 const pickedMuscles = ref<Set<string>>(new Set());
 const pickedMusclesArray = computed(() => [...pickedMuscles.value]);
 
@@ -31,7 +33,7 @@ function requestSuggestions() {
 
 <template>
   <div class="muscle-suggest">
-    <p class="hint">Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast.</p>
+    <p class="hint">{{ t("routine.pickStepMuscles.hint") }}</p>
     <MuscleFigure class="muscle-preview" :primary="pickedMusclesArray" :size="120" />
     <div class="muscle-chips">
       <Chip
@@ -42,11 +44,11 @@ function requestSuggestions() {
         :active="pickedMuscles.has(slug)"
         @click="toggleMuscle(slug)"
       >
-        {{ MUSCLE_LABEL_DE[slug] ?? slug }}
+        {{ muscleLabel(slug) }}
       </Chip>
     </div>
     <Button size="lg" block :disabled="pickedMuscles.size === 0 || suggesting" @click="requestSuggestions">
-      {{ suggesting ? "Wird zusammengestellt…" : `Übungen vorschlagen (${pickedMuscles.size} Muskelgruppen)` }}
+      {{ suggesting ? t("routine.pickStepMuscles.assembling") : t("routine.pickStepMuscles.suggest", { n: pickedMuscles.size }) }}
     </Button>
   </div>
 </template>

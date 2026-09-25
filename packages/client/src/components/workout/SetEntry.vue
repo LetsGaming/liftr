@@ -3,12 +3,14 @@
  *  NumberStepper.vue (size="lg"), which this component's original markup/CSS became. */
 import { calculatePlates, calculatePlatesFromInventory, DEFAULT_BAR_WEIGHT_KG } from "@liftr/shared";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import AppIcon from "../base/AppIcon.vue";
 import NumberStepper from "../patterns/NumberStepper.vue";
 
+const { t } = useI18n();
 const store = useActiveWorkoutStore();
 const settingsStore = useSettingsStore();
 const catalog = useCatalogStore();
@@ -42,29 +44,29 @@ const plates = computed(() => {
     <NumberStepper
       v-if="store.currentSet.weightKg !== null"
       size="lg"
-      label="Gewicht"
+      :label="t('workoutUi.setEntry.weightLabel')"
       unit="kg"
       :model-value="store.currentSet.weightKg"
       @adjust="(d) => store.adjustCurrentSet('weightKg', d)"
       @set="(v) => store.setCurrentSetValue('weightKg', v)"
     >
       <button class="plates-toggle" @click="showPlates = !showPlates">
-        <template v-if="showPlates">Scheiben ausblenden</template>
-        <template v-else><AppIcon name="dumbbell" /> Scheiben anzeigen</template>
+        <template v-if="showPlates">{{ t("workoutUi.setEntry.hidePlates") }}</template>
+        <template v-else><AppIcon name="dumbbell" /> {{ t("workoutUi.setEntry.showPlates") }}</template>
       </button>
       <div v-if="showPlates && plates" class="plates-out tnum">
         <template v-if="plates.perSide.length > 0">
-          {{ plates.barWeightKg }} kg Stange + je Seite {{ plates.perSide.join(" + ") }} kg
+          {{ t("workoutUi.setEntry.platesBreakdown", { bar: plates.barWeightKg, perSide: plates.perSide.join(" + ") }) }}
         </template>
-        <template v-else> nur die {{ plates.barWeightKg }} kg Stange </template>
+        <template v-else> {{ t("workoutUi.setEntry.barOnly", { bar: plates.barWeightKg }) }} </template>
       </div>
       <div v-if="showPlates && plates && !plates.exact" class="plates-warning">
-        <AppIcon name="warning" /> Mit deinen Scheiben nicht exakt erreichbar — {{ plates.achievedWeightKg }} kg stattdessen
+        <AppIcon name="warning" /> {{ t("workoutUi.setEntry.platesInexact", { achieved: plates.achievedWeightKg }) }}
       </div>
     </NumberStepper>
     <NumberStepper
       size="lg"
-      label="Wiederholungen"
+      :label="t('workoutUi.setEntry.repsLabel')"
       :model-value="store.currentSet.reps"
       :emphasize="store.currentSet.reps <= 0"
       @adjust="(d) => store.adjustCurrentSet('reps', d)"

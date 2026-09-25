@@ -14,7 +14,7 @@
  */
 import { computed, useId } from "vue";
 import { buildTierEmblem, EMBLEM_VIEWBOX, type EmblemShape } from "../../lib/tierEmblem";
-import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { tierLabel, type RankTier } from "../../lib/tierIcons";
 
 const props = withDefaults(defineProps<{ tier: string; small?: boolean }>(), { small: false });
 
@@ -72,7 +72,7 @@ function shapeAttrs(shape: EmblemShape): Record<string, string | number> {
 
 <template>
   <svg class="tier-emblem" :class="`t-${tier}`" :viewBox="EMBLEM_VIEWBOX" role="img" style="overflow: visible">
-    <title>{{ TIER_LABEL_DE[tier as RankTier] }}</title>
+    <title>{{ tierLabel(tier as RankTier) }}</title>
     <defs>
       <linearGradient
         v-for="g in linearGradients"

@@ -17,6 +17,7 @@
 // registers `window` event listeners in startAutoFlush().
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "~client/i18n";
 
 const {
   outbox,
@@ -112,6 +113,7 @@ function tick(): Promise<void> {
 }
 
 beforeEach(() => {
+  i18n.global.locale.value = "de";
   setActivePinia(createPinia());
   outbox.clear();
   enqueueOutboxItemMock.mockClear();

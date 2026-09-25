@@ -6,6 +6,16 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Added
+
+- English language support, alongside German. Switch languages any time in Profil → Darstellung, right next to the theme toggle — the whole app, including exercise names and how-to instructions, updates immediately.
+
+### Fixed
+
+- Weights, distances, and other numbers now use a comma as the decimal separator in the German UI, matching how the rest of the German app already writes numbers.
+- Active-session device labels ("Chrome · Windows" etc.) on the Profil page, the "no route or distance" Health Connect import error, and set-kind labels (warm-up/normal/failure/drop set) now translate properly in English instead of always showing German.
+- Password-strength errors during setup/signup are now detected reliably rather than by matching the server's English error text, which could occasionally show the wrong message.
+
 ## [1.8.0] - 2026-09-24
 
 ### Added

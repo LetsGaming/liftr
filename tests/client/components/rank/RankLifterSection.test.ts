@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import RankProgress from "~client/components/rank/RankProgress.vue";
 import RankLifterSection from "~client/components/rank/RankLifterSection.vue";
 import { i18n } from "~client/i18n";
-import { TIER_LABEL_DE } from "~client/lib/tierIcons";
+import { tierLabel } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 // Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
@@ -218,7 +218,7 @@ describe("RankLifterSection", () => {
 
       expect(wrapper.findAll(".card-grid .card")).toHaveLength(2);
       const tabs = wrapper.findAll(".rank-tier-filter .tab-pill");
-      const eliteTab = tabs.find((t) => t.text() === TIER_LABEL_DE.elite)!;
+      const eliteTab = tabs.find((t) => t.text() === tierLabel("elite"))!;
       await eliteTab.trigger("click");
       expect(wrapper.findAll(".card-grid .card")).toHaveLength(1);
 

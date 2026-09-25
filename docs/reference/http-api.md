@@ -58,7 +58,8 @@ One-time: sets the owner's password. Public. `409 { "error": "already_set_up" }`
 ran.
 
 Request body: `{ password: string }` (min 8 chars, rejected if it's a common/guessable password —
-see [SECURITY.md](../SECURITY.md#auth-model))
+see [SECURITY.md](../SECURITY.md#auth-model)) · `400 { "error": "password_too_common" }` for that
+rejection specifically, distinct from the generic `invalid_request` other validation failures use.
 
 Response `200`: `{ token: string }` — a usable session token, same as login.
 
@@ -79,7 +80,8 @@ Request body: `{ code: string; username: string; password: string }` (`code`: 8 
 3-24 lowercase letters/digits/hyphens; `password`: same rules as setup)
 
 Response `200`: `{ token: string }` · `400 { "error": "invalid_invite_code" }` for an unknown/
-expired/already-used code · `409 { "error": "username_taken" }`
+expired/already-used code · `400 { "error": "password_too_common" }` for a weak/common password ·
+`409 { "error": "username_taken" }`
 
 ### `GET /api/auth/me`
 The current session's identity. Requires a valid session.
@@ -112,7 +114,8 @@ Request body: `{ currentPassword: string; newPassword: string }` (`newPassword`:
 setup/register — min 8 chars, not a common password)
 
 Response `200`: `{ ok: true }` · `401 { "error": "invalid_credentials" }` for a wrong current
-password · `400` for a weak/common new password · `429` if rate-limited
+password · `400 { "error": "password_too_common" }` for a weak/common new password · `429` if
+rate-limited
 
 ### `PATCH /api/auth/me/username`
 Changes the current user's username. Requires the current password, same as the password route
@@ -136,12 +139,15 @@ Response `200`: `{ id: string; username: string; name: string; role: "owner" | "
 
 ### `GET /api/auth/sessions`
 Lists every active session for the current user — the "Aktive Sitzungen" list in the Profil page.
-`device` is a coarse browser/OS label derived from the session's stored `User-Agent` (display
-only, never used to gate auth — see [SECURITY.md](../SECURITY.md#auth-model)); `current` marks the
-session making this very request.
+`device` is a coarse `{os, browser}` pair derived from the session's stored `User-Agent` (display
+only, never used to gate auth — see [SECURITY.md](../SECURITY.md#auth-model)); either field, or the
+whole object, is `null` when the User-Agent was missing or unrecognized. The client composes and
+translates the display string itself, rather than receiving a finished sentence from the server.
+`current` marks the session making this very request.
 
 Response `200`: `Array<{ id: string; createdAt: Date; lastUsedAt: Date; expiresAt: Date;
-absoluteExpiresAt: Date; device: string; current: boolean }>`
+absoluteExpiresAt: Date; device: { os: string | null; browser: string | null } | null;
+current: boolean }>`
 
 ### `DELETE /api/auth/sessions/:id`
 Revokes one of the current user's own sessions by id. Scoped to `req.userId` — another user's
@@ -891,8 +897,10 @@ Request body:
 
 Response `200` (not 201 — this is an idempotent upsert): `runResponse`.
 
-Notable statuses: `400 { "error": "parse_failed", "detail": string }` — neither a usable route nor
-a distance/duration fallback was present.
+Notable statuses: `400 { "error": "parse_failed", "detail": "no_route_or_distance" }` — neither a
+usable route nor a distance/duration fallback was present. `detail` is a machine-readable code here
+(not prose): the client maps it to a translated message via `lib/errorMessages.ts`'s
+`serverErrorMessage()`.
 
 ### `DELETE /api/runs/:id`
 Cascades to `run_points` via FK. GPS-tracked runs *do* feed rank now (see

@@ -28,10 +28,11 @@ import {
   wrapText,
   type WorkoutCardModel,
 } from "@liftr/shared";
+import { i18n, t } from "../i18n";
 import { apiBase } from "./api";
 import { MUSCLE_META } from "./muscles";
 import { buildTierEmblem, wingReachUnits, type EmblemGradientDef, type EmblemShape } from "./tierEmblem";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "./tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "./tierIcons";
 
 /** Hardcoded copy of tokens.css's live palette — see this file's header comment for why these
  *  are copies, not CSS-var reads. Keep in sync manually if tokens.css's palette changes. */
@@ -429,19 +430,19 @@ function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: numb
   ctx.textAlign = "center";
   ctx.fillStyle = COLORS.text;
   ctx.font = font(800, 19, true);
-  ctx.fillText(`${TIER_LABEL_DE[tier]} ${DIVISION_LABEL[model.tier.division] ?? ""}`.trim(), badgeCx, labelY);
+  ctx.fillText(`${tierLabel(tier)} ${DIVISION_LABEL[model.tier.division] ?? ""}`.trim(), badgeCx, labelY);
   labelY += 22;
   ctx.fillStyle = COLORS.dim;
   ctx.font = font(600, 15, false);
-  ctx.fillText(`Level ${model.tier.level}`, badgeCx, labelY);
+  ctx.fillText(t("shareCard.level", { level: model.tier.level }), badgeCx, labelY);
 
   if (model.topRankUp) {
     labelY += 22;
     ctx.fillStyle = COLORS.fireHi;
     ctx.font = font(700, 14, false); // compact corner stack, not a headline
     const headline = model.topRankUp.isPr
-      ? `${model.topRankUp.exerciseName}: neuer Rekord`
-      : `${model.topRankUp.exerciseName}: ${TIER_LABEL_DE[model.topRankUp.tier as RankTier]} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
+      ? `${model.topRankUp.exerciseName}: ${t("shareCard.newRecord")}`
+      : `${model.topRankUp.exerciseName}: ${tierLabel(model.topRankUp.tier as RankTier)} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
     // The corner column is narrow (roughly `size` wide) — a long exercise name would run past it,
     // unlike the old centered treatment which had the full card width to work with.
     let displayHeadline = headline;
@@ -567,7 +568,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   const headerH = 98 + nameLines.length * 64 + 44 + 30;
 
   // ---- Exercise grid: natural (uncapped) row count at this content, for the size decision. ----
-  const lines = renderExerciseLines(model.exercises);
+  const lines = renderExerciseLines(model.exercises, i18n.global.locale.value as "de" | "en");
   const naturalRows = exerciseGridRowCount(lines.length);
   const naturalExerciseH = naturalRows > 0 ? naturalRows * EXERCISE_ROW_H + (naturalRows - 1) * EXERCISE_ROW_GAP : 0;
 
@@ -671,10 +672,10 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   const statCount = 4;
   const statCardW = (width - pad * 2 - STAT_GAP * (statCount - 1)) / statCount;
   const stats: [string, string][] = [
-    [model.durationLabel, "Dauer"],
-    [`${Math.round(model.volumeKg).toLocaleString("de-DE")} kg`, "Volumen"],
-    [String(model.setCount), "Sätze"],
-    [String(model.prCount), "PRs"],
+    [model.durationLabel, t("workout.finished.duration")],
+    [`${Math.round(model.volumeKg).toLocaleString("de-DE")} kg`, t("workout.finished.volume")],
+    [String(model.setCount), t("workout.finished.setsLabel")],
+    [String(model.prCount), t("shareCard.prsLabel")],
   ];
   stats.forEach(([value, label], i) => {
     const x = pad + i * (statCardW + STAT_GAP);
@@ -689,7 +690,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
       ctx.fillStyle = COLORS.dim;
       ctx.font = font(800, 20, false);
       ctx.textAlign = "center";
-      ctx.fillText("TRAINIERTE MUSKELN", width / 2, cursorY);
+      ctx.fillText(t("shareCard.trainedMuscles"), width / 2, cursorY);
       ctx.textAlign = "left";
       cursorY = await drawMuscleFigures(ctx, width / 2, cursorY + 24, MUSCLE_FIG_H, model.muscles.primary, model.muscles.secondary);
       cursorY += 40; // no fillGap here — the exercise grid sits snug against the muscle section
@@ -732,7 +733,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
     const footerY = cursorY + drawnRows * (EXERCISE_ROW_H + EXERCISE_ROW_GAP) + 6;
     ctx.fillStyle = COLORS.dim;
     ctx.font = font(600, 22, false);
-    ctx.fillText(`+${overflowCount} weitere Übungen`, pad, footerY);
+    ctx.fillText(t("shareCard.moreExercises", { count: overflowCount }), pad, footerY);
   }
 }
 

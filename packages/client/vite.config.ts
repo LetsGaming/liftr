@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import vueI18n from "@intlify/unplugin-vue-i18n/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -20,6 +21,9 @@ export default defineConfig(({ command }) => ({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     vue(),
+    // Lets i18n.ts import de.yaml/en.yaml directly as JS modules (compiled to vue-i18n's
+    // message format at build time).
+    vueI18n({ include: [fileURLToPath(new URL("./src/locales/*.yaml", import.meta.url))] }),
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
@@ -91,6 +95,10 @@ export default defineConfig(({ command }) => ({
       manifest: {
         name: "Liftr",
         short_name: "Liftr",
+        // Static build output — can't follow the runtime locale a user picks in-app (see
+        // docs/adr/0013-localization.md). German is the app's default/fallback locale, so the
+        // install prompt and app metadata default to it too.
+        lang: "de",
         description: "Persönlicher Kraft- und Lauf-Tracker",
         theme_color: "#0a0c14",
         background_color: "#0a0c14",

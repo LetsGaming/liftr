@@ -7,8 +7,12 @@ people via time-limited invite codes, and everyone logs in with their own userna
 session-scoped bearer token — no `LIFTR_TOKEN` anymore. See `docs/adr/0006-multi-user-hardening.md`
 for the schema/scoping groundwork (`docs/adr/0002-single-bearer-token-auth.md` documents the
 original single-token design it superseded) and `docs/reference/http-api.md#auth` for how auth
-actually works today. The app's UI strings are German; keep any copy you touch consistent with
-that.
+actually works today. The app is localized (German — the source of truth — and English, via
+vue-i18n): UI copy lives in `packages/client/src/locales/{de,en}.yaml`, never hardcoded inline in
+a component. See `docs/concepts/i18n-and-localization.md` for how this is wired and
+`docs/guides/adding-a-language.md` for the maintainer-facing workflow. When you touch UI copy, add
+or update the key in both files (byte-identical German to what shipped, natural — not
+machine-literal — English) and run `pnpm i18n:check`.
 
 Start with [`docs/README.md`](docs/README.md) for the full documentation map — architecture, the
 HTTP API, concepts (rank engine, XP/streaks, sync), and guides. Docs link to source instead of

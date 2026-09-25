@@ -11,8 +11,9 @@
  * underlying data actually updates.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { MAX_ORDINAL, ordinal, type Division, type Tier } from "@liftr/shared";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
 import Chip from "../base/Chip.vue";
 
@@ -70,12 +71,14 @@ const props = withDefaults(
   },
 );
 
+const { t } = useI18n();
+
 const decayCaption = computed(() => {
   if (!props.peakTier || props.peakDivision == null) return null;
   const currentOrdinal = ordinal(props.tier as Tier, props.division as Division);
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
-  return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision]}`;
+  return t("rank.decayCaption", { tier: tierLabel(props.peakTier as RankTier), division: DIVISION_LABEL[props.peakDivision] });
 });
 
 /** Visible caption rather than a `title` attribute — a tooltip is invisible on touch (the app's
@@ -84,8 +87,8 @@ const decayCaption = computed(() => {
  *  decay/recovery/plausibility lines below, rather than a second interactive element (which
  *  would nest inside the grid's own tappable ListCard). */
 const trustLabel = computed(() => {
-  if (props.trust === "derived") return "Abgeleiteter Standard";
-  if (props.trust === "synthetic") return "Geschätzter Standard";
+  if (props.trust === "derived") return t("rank.progress.trustDerived");
+  if (props.trust === "synthetic") return t("rank.progress.trustSynthetic");
   return null;
 });
 
@@ -98,8 +101,8 @@ const nextChips = computed<string[]>(() => {
   // Both targets null means the top of the currently-modeled standards has been reached —
   // "???" invites "what's next?" instead of flatly stating there's nothing left, which reads as
   // a dead end. A real next target still renders normally below.
-  if (props.nextTargetReps == null) return ["???"];
-  const reps = `${props.nextTargetReps} Wdh.`;
+  if (props.nextTargetReps == null) return [t("rank.progress.topOfStandards")];
+  const reps = t("rank.progress.repsSuffix", { n: props.nextTargetReps });
   return props.nextTargetWeightKg != null ? [`${props.nextTargetWeightKg} kg`, reps] : [reps];
 });
 
@@ -115,11 +118,13 @@ interface HeroField {
   filled: boolean;
 }
 const heroFields = computed<HeroField[]>(() => {
-  if (props.nextTargetLabel != null) return [{ label: "Ziel", value: props.nextTargetLabel, filled: false }];
-  if (props.nextTargetReps == null) return [{ label: "Ziel", value: "???", filled: false }];
+  const targetLabel = t("rank.progress.heroTargetLabel");
+  if (props.nextTargetLabel != null) return [{ label: targetLabel, value: props.nextTargetLabel, filled: false }];
+  if (props.nextTargetReps == null) return [{ label: targetLabel, value: t("rank.progress.topOfStandards"), filled: false }];
   const fields: HeroField[] = [];
-  if (props.nextTargetWeightKg != null) fields.push({ label: "Kg", value: String(props.nextTargetWeightKg), filled: false });
-  fields.push({ label: "Wdh.", value: String(props.nextTargetReps), filled: true });
+  if (props.nextTargetWeightKg != null)
+    fields.push({ label: t("rank.progress.heroWeightFieldLabel"), value: String(props.nextTargetWeightKg), filled: false });
+  fields.push({ label: t("rank.progress.heroRepsFieldLabel"), value: String(props.nextTargetReps), filled: true });
   return fields;
 });
 
@@ -139,7 +144,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
          + LP above a large centered medal, target fields and the bar below it). -->
     <template v-if="variant === 'hero'">
       <div class="rp-hero-tier">
-        {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
+        {{ tierLabel(tier as RankTier) }} {{ DIVISION_LABEL[division] }}
         <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
       </div>
       <div class="rp-hero-lp tnum">{{ lpDisplay }} LP</div>
@@ -165,7 +170,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
       <div class="rp-body">
         <div class="rp-head">
           <span class="rp-tier">
-            {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
+            {{ tierLabel(tier as RankTier) }} {{ DIVISION_LABEL[division] }}
             <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
           </span>
           <span class="rp-lp tnum">{{ lpDisplay }} LP</span>
@@ -174,7 +179,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
           <i class="bar-fill" :style="{ transform: `scaleX(${lpBarPercent / 100})` }" />
         </div>
         <div class="rp-next">
-          <span class="rp-next-label">Nächstes Ziel</span>
+          <span class="rp-next-label">{{ t("rank.progress.nextTargetLabel") }}</span>
           <Chip
             v-for="(chip, i) in nextChips"
             :key="chip"

@@ -107,6 +107,15 @@ knowing before touching this area:
   (no warning), so they render in jsdom without the real Stencil/web-components runtime. If a
   component reads a property/method Ionic itself would set on one, stub that specific element via
   `global.stubs` instead of trying to load real `@ionic/vue`.
+
+  It also resets `i18n.global.locale.value = "de"` before every mount — jsdom's
+  `navigator.language` always reports `"en-US"`, so `i18n.ts`'s `getStoredLocale()` would
+  otherwise default the shared i18n singleton to English for the rest of the test process, and a
+  test that switches locale (a language-picker test, say) would leak English into every test that
+  runs after it. A test file that constructs its own `mount()` with `plugins: [i18n]` instead of
+  using this helper (real named routes are the usual reason) needs the same reset in its own
+  `beforeEach` — `i18n.global.locale.value = "de";` — or its German-text assertions can fail
+  depending on test run order.
 - `tests/client/helpers/withSetup.ts` — `withSetup(() => useMyComposable(...))` returns
   `{ result, unmount }`. Needed for any composable using lifecycle hooks or injection
   (`onMounted`/`onUnmounted`/`watch`/`useI18n`/`inject`) — calling those bare outside a component's

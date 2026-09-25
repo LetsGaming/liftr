@@ -11,14 +11,16 @@
  */
 import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import CardGrid from "../patterns/CardGrid.vue";
 import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunPrListItem, type RunRankRow } from "../../stores/runRankStore";
 import { formatClockLong, formatDateShort, formatPace } from "../../lib/format";
-import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
+import { activityLabel, runCategoryLabel } from "../../copy/runCopy";
 import Button from "../base/Button.vue";
 
+const { t } = useI18n();
 const runRankStore = useRunRankStore();
 onMounted(() => {
   void runRankStore.loadRanks();
@@ -122,19 +124,19 @@ function formatNextSpeedTarget(speedMps: number | null): string {
     </template>
 
     <p v-else-if="runRankStore.ranksError" class="page-note load-error run-rank-load-error" style="margin-top: var(--sp4)">
-      Lauf-Ränge konnten nicht geladen werden.
-      <Button variant="secondary" @click="runRankStore.loadRanks()">Erneut versuchen</Button>
+      {{ t("rank.runnerSection.loadError") }}
+      <Button variant="secondary" @click="runRankStore.loadRanks()">{{ t("rank.runnerSection.retry") }}</Button>
     </p>
 
     <CardGrid v-else>
       <RankCategoryCard
         v-for="category in RUN_CATEGORIES"
         :key="category"
-        :name="RUN_CATEGORY_LABEL[category]"
+        :name="runCategoryLabel(category)"
         :row="runRankByCategory[category] ?? null"
         :next-target-label="runRankByCategory[category] && formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
         trust-fallback="real"
-        empty-note="Noch kein Rang — lauf diese Distanz, um zu starten."
+        :empty-note="t('rank.runnerSection.categoryEmptyNote')"
         :flipped="flipped === category"
         :back-activated="activatedBacks.has(category)"
         :pr-label="bestRunTimeByCategory[category] ? formatClockLong(bestRunTimeByCategory[category]!.value) : null"
@@ -145,13 +147,13 @@ function formatNextSpeedTarget(speedMps: number | null): string {
       <RankCategoryCard
         v-for="activity in singleSpeedActivities"
         :key="activity.id"
-        :name="ACTIVITY_LABEL[activity.id] ?? activity.id"
+        :name="activityLabel(activity.id)"
         :row="singleSpeedRankByActivity[activity.id] ?? null"
         :next-target-label="
           singleSpeedRankByActivity[activity.id] && formatNextSpeedTarget(singleSpeedRankByActivity[activity.id]!.nextTargetSpeedMps)
         "
         trust-fallback="synthetic"
-        empty-note="Noch kein Rang — sammle genug Distanz, um zu starten."
+        :empty-note="t('rank.runnerSection.singleSpeedEmptyNote')"
         :flipped="flipped === activity.id"
         :back-activated="activatedBacks.has(activity.id)"
         :pr-label="bestSpeedByActivity[activity.id] ? formatPace(1000 / bestSpeedByActivity[activity.id]!.value) : null"
@@ -161,7 +163,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
     </CardGrid>
 
     <p v-if="singleSpeedActivities.length > 0" class="page-note overall-exclusion-note">
-      Gehen und Wandern zählen nicht in den Overall Runner Rank — sie haben ihre eigene Wertung.
+      {{ t("rank.runnerSection.exclusionNote") }}
     </p>
   </div>
 </template>

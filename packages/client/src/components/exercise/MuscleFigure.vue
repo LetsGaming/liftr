@@ -13,6 +13,7 @@
  * runtime SVG manipulation is needed — simpler and cheaper than fetching+inlining+restyling.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { apiBase } from "../../lib/api";
 import { MUSCLE_META } from "../../lib/muscles";
 
@@ -32,6 +33,8 @@ const props = withDefaults(
   }>(),
   { primary: () => [], secondary: () => [], size: 96 },
 );
+
+const { t } = useI18n();
 
 interface Overlay {
   id: number;
@@ -80,7 +83,7 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
 <template>
   <div class="muscle-figure" :style="{ '--fig-w': size + 'px' }">
     <div class="fig">
-      <img class="body" :src="`${apiBase()}/images/muscles/front-body.svg`" alt="Vorderansicht" />
+      <img class="body" :src="`${apiBase()}/images/muscles/front-body.svg`" :alt="t('exerciseUi.muscleFigure.altFront')" />
       <img
         v-for="o in frontOverlays"
         :key="`f-${o.variant}-${o.id}`"
@@ -91,7 +94,7 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
       />
     </div>
     <div class="fig">
-      <img class="body" :src="`${apiBase()}/images/muscles/back-body.svg`" alt="Rückansicht" />
+      <img class="body" :src="`${apiBase()}/images/muscles/back-body.svg`" :alt="t('exerciseUi.muscleFigure.altBack')" />
       <img
         v-for="o in backOverlays"
         :key="`b-${o.variant}-${o.id}`"

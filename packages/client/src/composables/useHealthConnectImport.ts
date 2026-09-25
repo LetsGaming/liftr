@@ -15,6 +15,8 @@ import {
   requestHealthConnectPermissions,
 } from "../health/healthConnect";
 import { ApiError } from "../lib/api";
+import { serverErrorMessage } from "../lib/errorMessages";
+import { t } from "../i18n";
 
 export function useHealthConnectImport() {
   const healthConnectStatus = ref("");
@@ -46,8 +48,8 @@ export function useHealthConnectImport() {
       if (!result.granted) {
         healthConnectStatus.value =
           result.missing.length > 0
-            ? `Bitte folgende Health-Connect-Freigaben aktivieren: ${result.missing.join(", ")}.`
-            : "Health Connect ist nicht verfügbar.";
+            ? t("healthConnect.status.missingPermissions", { missing: result.missing.join(", ") })
+            : t("healthConnect.status.unavailable");
         return;
       }
       const { imported, skipped, failed } = await importNewHealthConnectWorkouts("manual");
@@ -55,20 +57,28 @@ export function useHealthConnectImport() {
       // an all-skipped/all-failed run has nothing for these stores to reflect.
       if (imported > 0) refreshCardioDerivedStores();
       if (imported === 0 && failed === 0 && skipped === 0) {
-        healthConnectStatus.value = "Verbunden — keine neuen Aktivitäten gefunden.";
+        healthConnectStatus.value = t("healthConnect.status.noNewActivities");
       } else if (failed === 0 && skipped === 0) {
-        healthConnectStatus.value = `Verbunden — ${imported} Aktivität${imported === 1 ? "" : "en"} synchronisiert.`;
+        healthConnectStatus.value = t("healthConnect.status.synced", imported);
       } else {
-        const parts = [`${imported} synchronisiert`];
-        if (skipped > 0) parts.push(`${skipped} übersprungen`);
-        if (failed > 0) parts.push(`${failed} fehlgeschlagen`);
-        healthConnectStatus.value = `Verbunden — ${parts.join(", ")}. Details im Protokoll.`;
+        const parts = [t("healthConnect.status.partSynced", imported)];
+        if (skipped > 0) parts.push(t("healthConnect.status.partSkipped", skipped));
+        if (failed > 0) parts.push(t("healthConnect.status.partFailed", failed));
+        healthConnectStatus.value = t("healthConnect.status.detailsWrap", { parts: parts.join(", ") });
       }
     } catch (err) {
       // ApiError carries the server's actual validation reason (see api.ts) — surfacing it here
       // (rather than the generic "POST ... failed: 400" from err.message) is what turned this
       // failure mode from "no further logs" into something the user (and support) can act on.
-      healthConnectStatus.value = err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : "Verbindung fehlgeschlagen.";
+      // `detail` doubles as a machine-readable code for some failures (e.g.
+      // "no_route_or_distance") — serverErrorMessage() translates those and falls back to the
+      // raw text for everything else.
+      healthConnectStatus.value =
+        err instanceof ApiError
+          ? serverErrorMessage(err.detail, err.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("healthConnect.status.connectionFailed");
     } finally {
       healthConnectBusy.value = false;
     }

@@ -1,21 +1,23 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { ExperienceLevel } from "../../stores/settingsStore";
 import ListRow from "../patterns/ListRow.vue";
 import { useOnboardingDraft } from "./OnboardingDraft";
 
+const { t } = useI18n();
 const draft = useOnboardingDraft();
 
 const options: { value: ExperienceLevel; label: string; hint: string }[] = [
-  { value: "beginner", label: "Anfänger", hint: "Noch nie oder erst seit kurzem trainiert" },
-  { value: "intermediate", label: "Fortgeschritten", hint: "Trainiere seit einer Weile, ohne festen Plan" },
-  { value: "advanced", label: "Erfahren", hint: "Folge bereits einem strukturierten Trainingsplan" },
+  { value: "beginner", label: t("profile.trainingProfile.experience.beginner"), hint: t("onboarding.experienceStep.beginnerHint") },
+  { value: "intermediate", label: t("profile.trainingProfile.experience.intermediate"), hint: t("onboarding.experienceStep.intermediateHint") },
+  { value: "advanced", label: t("profile.trainingProfile.experience.advanced"), hint: t("onboarding.experienceStep.advancedHint") },
 ];
 </script>
 
 <template>
   <div class="step">
-    <h2>Trainingserfahrung</h2>
-    <p class="step-hint">Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast.</p>
+    <h2>{{ t("profile.trainingProfile.experience.label") }}</h2>
+    <p class="step-hint">{{ t("onboarding.experienceStep.hint") }}</p>
 
     <div class="option-list">
       <ListRow

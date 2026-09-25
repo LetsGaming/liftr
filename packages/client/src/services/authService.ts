@@ -75,7 +75,10 @@ export interface Session {
   lastUsedAt: string;
   expiresAt: string;
   absoluteExpiresAt: string;
-  device: string;
+  /** `null` when the session's stored User-Agent is missing or unrecognized — see
+   *  server/lib/deviceLabel.ts. The client composes and translates the display string itself
+   *  (see ProfilePage.vue's deviceLabel()) rather than receiving a finished sentence. */
+  device: { os: string | null; browser: string | null } | null;
   current: boolean;
 }
 

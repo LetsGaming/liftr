@@ -8,12 +8,14 @@
  *  `continue`, PickStepMuscles.vue emits `suggest`), so they were two components glued together by
  *  a prop rather than one. RoutineWizard.vue picks between this and PickStepMuscles.vue directly. */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import ExerciseList from "../exercise/ExerciseList.vue";
 import Button from "../base/Button.vue";
 
 const props = defineProps<{ selectedIds: Set<string> }>();
 const emit = defineEmits<{ toggle: [exerciseId: string]; continue: [] }>();
 
+const { t } = useI18n();
 const count = computed(() => props.selectedIds.size);
 </script>
 
@@ -23,7 +25,7 @@ const count = computed(() => props.selectedIds.size);
 
     <div class="continue-bar">
       <Button size="lg" block :disabled="count === 0" @click="emit('continue')">
-        {{ count === 0 ? "Übungen auswählen" : `${count} ausgewählt · Weiter →` }}
+        {{ count === 0 ? t("routine.pickStepManual.selectPrompt") : t("routine.pickStepManual.selectedCount", { n: count }) }}
       </Button>
     </div>
   </div>

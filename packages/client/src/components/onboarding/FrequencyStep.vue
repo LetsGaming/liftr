@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { useOnboardingDraft } from "./OnboardingDraft";
 
+const { t } = useI18n();
 const draft = useOnboardingDraft();
 
 function adjust(delta: number) {
@@ -10,16 +12,16 @@ function adjust(delta: number) {
 
 <template>
   <div class="step">
-    <h2>Workouts pro Woche</h2>
-    <p class="step-hint">Wie oft planst du realistisch zu trainieren? Fließt in die Trainingsvorschläge ein.</p>
+    <h2>{{ t("profile.trainingProfile.workoutsPerWeek.label") }}</h2>
+    <p class="step-hint">{{ t("onboarding.frequencyStep.hint") }}</p>
 
     <div class="stepper-card">
       <div class="stepper-row">
-        <button type="button" aria-label="Weniger" @click="adjust(-1)">−</button>
+        <button type="button" :aria-label="t('profile.trainingProfile.workoutsPerWeek.decrease')" @click="adjust(-1)">−</button>
         <span class="tnum">{{ draft.workoutsPerWeek }}</span>
-        <button type="button" aria-label="Mehr" @click="adjust(1)">+</button>
+        <button type="button" :aria-label="t('profile.trainingProfile.workoutsPerWeek.increase')" @click="adjust(1)">+</button>
       </div>
-      <span class="stepper-label">{{ draft.workoutsPerWeek === 1 ? "Workout" : "Workouts" }} / Woche</span>
+      <span class="stepper-label">{{ t("onboarding.frequencyStep.perWeekLabel", draft.workoutsPerWeek) }}</span>
     </div>
   </div>
 </template>

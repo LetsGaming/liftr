@@ -180,9 +180,9 @@ export async function importHealthConnectRun(db: LiftrDb, userId: string, input:
   // `points.length > 0` gate in persistRun already handles that) — XP + streak credit only, from
   // the watch's own reported distance/duration.
   if (input.distanceM == null || input.durationS == null || input.startedAt == null) {
-    throw new RunParseError(
-      "Health Connect hat für dieses Workout weder eine Strecke noch eine Distanz geliefert.",
-    );
+    // Machine-readable code, not prose — routes/runs.ts forwards this verbatim as `detail`, and
+    // the client maps it to a translated message via lib/errorMessages.ts's serverErrorMessage().
+    throw new RunParseError("no_route_or_distance");
   }
   return persistRun(
     db,

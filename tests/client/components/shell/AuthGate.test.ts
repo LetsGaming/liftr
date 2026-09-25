@@ -228,9 +228,9 @@ describe("AuthGate", () => {
     expect(wrapper.text()).not.toContain("Benutzername oder Passwort falsch.");
   });
 
-  it("shows a password-too-weak message on a 400 whose detail names the common-password rejection", async () => {
+  it("shows a password-too-weak message on a 400 with the password_too_common error code", async () => {
     mockGet.mockResolvedValue({ needsSetup: true });
-    mockPost.mockRejectedValue(new ApiError("invalid_request", 400, "password: too common, choose a different password"));
+    mockPost.mockRejectedValue(new ApiError("password_too_common", 400, undefined, "password_too_common"));
 
     const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();
@@ -245,7 +245,7 @@ describe("AuthGate", () => {
 
   it("keeps the generic setup error for a 400 that isn't the common-password rejection", async () => {
     mockGet.mockResolvedValue({ needsSetup: true });
-    mockPost.mockRejectedValue(new ApiError("invalid_request", 400, "password: at least 8 characters"));
+    mockPost.mockRejectedValue(new ApiError("invalid_request", 400, "password: at least 8 characters", "invalid_request"));
 
     const wrapper = mountWithProviders(AuthGate, { slots: { default: "<div class='protected'>secret</div>" } });
     await flushPromises();

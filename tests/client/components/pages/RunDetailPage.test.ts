@@ -101,6 +101,10 @@ async function mountAtRun(runId = "run-1") {
   await router.push("/"); // an overview entry on the stack, so back() below lands somewhere real
   await router.push(`/runs/${runId}`);
   await router.isReady();
+  // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+  // default this test to English — force German to match production/mountWithProviders (see its
+  // own comment on this exact issue).
+  i18n.global.locale.value = "de";
   const wrapper = mount(RunDetailPage, {
     global: { plugins: [createPinia(), i18n, router], stubs: { RunReplay: RunReplayStub, RouteWizard: RouteWizardStub } },
   });

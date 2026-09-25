@@ -8,11 +8,13 @@
  * the watch/file actually provides rather than fabricating values.
  */
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import RunMap from "./RunMap.vue";
 import IconButton from "../patterns/IconButton.vue";
 import type { RunPoint } from "../../stores/runsStore";
 import { formatClock, formatPace, formatSpeedKmh } from "../../lib/format";
 
+const { t } = useI18n();
 const props = defineProps<{ points: RunPoint[] }>();
 
 const PAUSE_GAP_MS = 10_000;
@@ -147,7 +149,7 @@ function fmt(ms: number): string {
           class="play-btn"
           variant="ghost"
           :icon="playing ? 'pause' : 'play'"
-          :label="playing ? 'Pause' : 'Abspielen'"
+          :label="playing ? t('run.liveRunScreen.pauseAction') : t('run.runReplay.play')"
           @click="toggle"
         />
         <input
@@ -186,7 +188,7 @@ function fmt(ms: number): string {
           <span class="tnum">{{ currentFrame?.cadence ?? "–" }}</span>
         </div>
       </div>
-      <p v-if="reduceMotion" class="reduce-note">Automatisches Abspielen deaktiviert (reduzierte Bewegung) — manuell scrubben funktioniert weiterhin.</p>
+      <p v-if="reduceMotion" class="reduce-note">{{ t("run.runReplay.reduceMotionNote") }}</p>
     </div>
   </div>
 </template>

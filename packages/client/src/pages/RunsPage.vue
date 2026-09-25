@@ -3,7 +3,8 @@
 // the page's primary content, same as saved routines are Workout's. Individual-run browsing
 // (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here — that's
 // where Workout's own finished-session history lives too, so neither tab duplicates it locally.
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Button from "../components/base/Button.vue";
 import RouteList from "../components/route/RouteList.vue";
@@ -17,6 +18,8 @@ import { getRunDetail } from "../services/runService";
 import type { PlannedRoute } from "../services/plannedRouteService";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 import { useRunsStore } from "../stores/runsStore";
+
+const { t } = useI18n();
 
 const runsStore = useRunsStore();
 const plannedRouteStore = usePlannedRouteStore();
@@ -60,7 +63,7 @@ const { manualName, manualDate, manualDistanceKm, manualMinutes, manualError, su
     manualDistanceKm.value = "";
     manualMinutes.value = "";
     dismissRouteBanner();
-    toast("Lauf gespeichert.");
+    toast(t("runsPage.toast.runSaved"));
   });
 
 watch(activeRoute, (route) => {
@@ -88,7 +91,7 @@ async function onFileChosen(e: Event) {
   importError.value = null;
   try {
     await runsStore.importFile(file);
-    toast("Lauf importiert.");
+    toast(t("runsPage.toast.runImported"));
   } catch (err) {
     importError.value = (err as Error).message;
   } finally {
@@ -113,26 +116,26 @@ function saveManual() {
 
 // Same two tabs as WorkoutPage.vue's own TabSwitcher — kept as a literal here rather than a
 // shared constant since it's just two short { id, label, to } objects, not logic.
-const WORKOUT_RUNS_TABS = [
-  { id: "workout", label: "Workout", to: "/workout" },
-  { id: "runs", label: "Läufe", to: "/runs" },
-];
+const WORKOUT_RUNS_TABS = computed(() => [
+  { id: "workout", label: t("common.workout"), to: "/workout" },
+  { id: "runs", label: t("workout.tabs.runs"), to: "/runs" },
+]);
 </script>
 
 <template>
-  <BasePage title="Läufe">
+  <BasePage :title="t('nav.runs')">
     <template #subheader>
-      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" nav-label="Workout oder Läufe" />
+      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="runs" :nav-label="t('workout.tabs.navLabel')" />
     </template>
 
     <div class="pagehead">
       <div>
-        <p style="color: var(--dim)">Strecke starten oder Lauf manuell erfassen</p>
+        <p style="color: var(--dim)">{{ t("runsPage.subtitle") }}</p>
       </div>
       <div class="actions">
-        <Button variant="secondary" @click="showManualForm = !showManualForm">Manuell</Button>
+        <Button variant="secondary" @click="showManualForm = !showManualForm">{{ t("runsPage.manual") }}</Button>
         <Button :disabled="importing" @click="triggerImport">
-          {{ importing ? "Importiere…" : "GPX/FIT importieren" }}
+          {{ importing ? t("runsPage.importing") : t("runsPage.importGpxFit") }}
         </Button>
         <input ref="fileInput" type="file" accept=".gpx,.fit" style="display: none" @change="onFileChosen" />
       </div>
@@ -142,28 +145,28 @@ const WORKOUT_RUNS_TABS = [
 
     <div v-if="activeRoute" class="route-banner panel">
       <span>
-        Strecke: {{ activeRoute.name }} · {{ (activeRoute.distanceM / 1000).toFixed(2).replace(".", ",") }} km{{
-          activeRoute.geometrySource === "straight" ? " ≈" : ""
+        {{ t("runsPage.routeBanner.prefix") }}{{ activeRoute.name }} · {{ (activeRoute.distanceM / 1000).toFixed(2).replace(".", ",") }} km{{
+          activeRoute.geometrySource === "straight" ? t("runsPage.routeBanner.approxSuffix") : ""
         }}{{
-          activeRoute.elevationGainM != null ? " · " + Math.round(activeRoute.elevationGainM) + " hm" : ""
-        }} — nur noch Dauer eintragen
+          activeRoute.elevationGainM != null ? t("runsPage.routeBanner.elevationSuffix", { m: Math.round(activeRoute.elevationGainM) }) : ""
+        }}{{ t("runsPage.routeBanner.tail") }}
       </span>
-      <button aria-label="Schließen" @click="dismissRouteBanner">×</button>
+      <button :aria-label="t('runsPage.closeAriaLabel')" @click="dismissRouteBanner">×</button>
     </div>
 
     <div v-if="showManualForm" class="manual-form panel pop-in">
-      <input v-model="manualName" type="text" placeholder="Name (optional)" aria-label="Name des Laufs" />
-      <input v-model="manualDate" type="date" aria-label="Datum des Laufs" />
-      <input v-model="manualDistanceKm" type="text" inputmode="decimal" placeholder="km" aria-label="Distanz in Kilometern" />
+      <input v-model="manualName" type="text" :placeholder="t('runsPage.namePlaceholder')" :aria-label="t('runsPage.nameAriaLabel')" />
+      <input v-model="manualDate" type="date" :aria-label="t('runsPage.dateAriaLabel')" />
+      <input v-model="manualDistanceKm" type="text" inputmode="decimal" :placeholder="t('runsPage.distancePlaceholder')" :aria-label="t('runsPage.distanceAriaLabel')" />
       <input
         ref="minutesInputRef"
         v-model="manualMinutes"
         type="text"
         inputmode="decimal"
-        placeholder="Minuten"
-        aria-label="Dauer in Minuten"
+        :placeholder="t('runsPage.minutesPlaceholder')"
+        :aria-label="t('runsPage.minutesAriaLabel')"
       />
-      <Button :disabled="submitting" @click="saveManual">Speichern</Button>
+      <Button :disabled="submitting" @click="saveManual">{{ t("runsPage.save") }}</Button>
       <p v-if="manualError" class="error">{{ manualError }}</p>
     </div>
 

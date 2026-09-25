@@ -30,6 +30,12 @@ export function mountWithProviders<T>(
 ): ReturnType<typeof mount<T>> {
   const pinia = createPinia();
   const router = createTestRouter();
+  // jsdom's navigator.language always reports "en-US" regardless of the host machine's actual
+  // locale, so i18n.ts's getStoredLocale() would default every test run to English — breaking
+  // this helper's own documented "actual `de` translation strings" guarantee, and any earlier
+  // test in the same file that switched the shared i18n singleton to "en" (see ProfilePage.test.ts)
+  // would otherwise leak into tests that run after it.
+  i18n.global.locale.value = "de";
   return mount(component, {
     ...options,
     global: {

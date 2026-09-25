@@ -1,5 +1,12 @@
+// @vitest-environment jsdom
+//
+// activeWorkoutStore.ts now calls i18n.ts's t() (progressLabel), which reads localStorage at
+// module load (needs a DOM) — jsdom's navigator.language always reports "en-US", so i18n.ts's
+// getStoredLocale() would otherwise default the shared i18n singleton to "en" for the rest of
+// the test process.
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "~client/i18n";
 
 // persist() (idb.ts) hits real IndexedDB, which doesn't exist under Vitest's default node
 // environment — stub it the same way every mutation in this store already treats it: a
@@ -65,6 +72,7 @@ function seedOneSetExercise(store: ReturnType<typeof useActiveWorkoutStore>) {
 }
 
 beforeEach(() => {
+  i18n.global.locale.value = "de";
   setActivePinia(createPinia());
   enqueueMock.mockClear();
   enqueueAndAwaitFlushMock.mockClear();

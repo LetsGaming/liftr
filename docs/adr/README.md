@@ -48,3 +48,4 @@ What does this cost or foreclose? What does it buy?
 | [0010](0010-real-per-person-auth-and-sessions.md) | Real per-person accounts, password auth, and session management |
 | [0011](0011-cardio-activity-registry-and-single-speed-ladders.md) | Cardio activity registry, with walking/hiking on a single-speed rank |
 | [0012](0012-component-tiers.md) | Tier the client component tree: base -> patterns -> feature -> pages |
+| [0013](0013-localization.md) | Localization: German source of truth, English second locale, YAML hand-maintained packs |

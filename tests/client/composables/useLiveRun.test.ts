@@ -1,4 +1,12 @@
+// @vitest-environment jsdom
+//
+// useLiveRun.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM) —
+// jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+// otherwise default the shared i18n singleton to "en" for the rest of the test process —
+// mountWithProviders.ts resets this for component tests, but this file drives the composable
+// directly, bypassing that helper.
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { i18n } from "~client/i18n";
 
 const { checkPermissionsMock, requestPermissionsMock, watchPositionMock } = vi.hoisted(() => ({
   checkPermissionsMock: vi.fn(),
@@ -35,6 +43,7 @@ interface Position {
 }
 
 beforeEach(() => {
+  i18n.global.locale.value = "de";
   checkPermissionsMock.mockResolvedValue({ location: "granted", coarseLocation: "granted" });
   watchPositionMock.mockRejectedValue(new Error("Geolocation unavailable"));
 });

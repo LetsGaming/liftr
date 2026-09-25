@@ -28,7 +28,7 @@ const resolvedDbPath = resolveDbPath(REPO_ROOT);
 warnIfDefaultDbPath(resolvedDbPath);
 const DB_PATH = resolvedDbPath.path;
 const IMAGES_DIR = process.env.LIFTR_IMAGES_DIR ?? path.join(REPO_ROOT, "data/images");
-const I18N_OUT_PATH = path.join(REPO_ROOT, "packages/client/src/locales/exercises.de.json");
+const I18N_LOCALES_DIR = path.join(REPO_ROOT, "packages/client/src/locales");
 
 async function main() {
   const db = createDb(DB_PATH);
@@ -43,7 +43,7 @@ async function main() {
   console.log("bootstrap: no exercises found — running full ingest (catalog, standards, run standards, images, muscle assets)...");
   const entries = await loadCatalog(CATALOG_PATH);
   await ingestCatalog(db, CATALOG_PATH);
-  await generateExerciseI18n(entries, I18N_OUT_PATH);
+  await generateExerciseI18n(entries, I18N_LOCALES_DIR);
   await ingestStandards(db, entries);
   await ingestRunStandards(db);
   await ingestImages(entries, IMAGES_DIR);

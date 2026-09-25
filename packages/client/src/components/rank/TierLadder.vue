@@ -16,8 +16,9 @@
  * ladder.
  */
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { ordinal, TIER_DIVISION_COUNT, TIERS, type Division, type Tier } from "@liftr/shared";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
 import Chip from "../base/Chip.vue";
 
@@ -30,6 +31,8 @@ const props = defineProps<{
   peakTier?: string | null;
   peakDivision?: number | null;
 }>();
+
+const { t } = useI18n();
 
 const currentIndex = () => (props.currentTier ? TIERS.indexOf(props.currentTier as Tier) : -1);
 
@@ -47,7 +50,7 @@ const peakCaption = computed(() => {
   const currentOrdinal = ordinal(props.currentTier as Tier, props.currentDivision as Division);
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
-  return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision] ?? props.peakDivision}`;
+  return `Schon mal erreicht: ${tierLabel(props.peakTier as RankTier)} ${DIVISION_LABEL[props.peakDivision] ?? props.peakDivision}`;
 });
 
 const expandedTier = ref<Tier | null>(null);
@@ -76,14 +79,14 @@ function toggleExpand(tier: Tier) {
         <TierBadge :tier="tier" small />
         <span class="rung-label">
           <span class="rung-label-row">
-            {{ TIER_LABEL_DE[tier as RankTier] }}
+            {{ tierLabel(tier as RankTier) }}
             <b v-if="rungState(tier) === 'current' && currentDivision != null" class="tnum">
               {{ DIVISION_LABEL[currentDivision] ?? currentDivision }}
             </b>
           </span>
           <span v-if="rungState(tier) === 'current' && peakCaption" class="rung-peak">{{ peakCaption }}</span>
         </span>
-        <span v-if="rungState(tier) === 'ahead'" class="rung-count">{{ TIER_DIVISION_COUNT[tier] }} Stufen</span>
+        <span v-if="rungState(tier) === 'ahead'" class="rung-count">{{ t("rank.tierLadder.stepsLabel", { n: TIER_DIVISION_COUNT[tier] }) }}</span>
         <svg class="chevron" :class="{ open: expandedTier === tier }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M6 9l6 6 6-6" />
         </svg>

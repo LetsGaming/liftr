@@ -13,8 +13,9 @@
  * renderer, same division of responsibility RankProgress.vue's own `nextTargetLabel` prop follows.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { ordinal, type Division, type Tier } from "@liftr/shared";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
 import EmptyNote from "../base/EmptyNote.vue";
 
@@ -28,6 +29,8 @@ const props = defineProps<{
   prDate?: string | null;
 }>();
 
+const { t } = useI18n();
+
 const lpDisplay = computed(() => (props.lp == null ? null : Math.max(0, Math.round(props.lp))));
 
 /** Same "name the peak, don't hide why the rank moved" wording as RankProgress.vue's own decay
@@ -38,24 +41,27 @@ const decayCaption = computed(() => {
   const currentOrdinal = ordinal(props.tier as Tier, props.division as Division);
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
-  return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision] ?? props.peakDivision}`;
+  return t("rank.decayCaption", {
+    tier: tierLabel(props.peakTier as RankTier),
+    division: DIVISION_LABEL[props.peakDivision] ?? props.peakDivision,
+  });
 });
 </script>
 
 <template>
   <div class="rank-card-back rank-run-back">
-    <div class="reb-eyebrow">Bestleistung</div>
+    <div class="reb-eyebrow">{{ t("rank.runBack.prEyebrow") }}</div>
     <template v-if="prLabel != null && prDate != null">
       <div class="rrb-pr-value tnum">{{ prLabel }}</div>
       <div class="rrb-pr-date">{{ prDate }}</div>
     </template>
-    <EmptyNote v-else class="reb-empty">Noch kein Rekord für diese Distanz.</EmptyNote>
+    <EmptyNote v-else class="reb-empty">{{ t("rank.runBack.emptyPr") }}</EmptyNote>
 
     <template v-if="tier != null && division != null">
       <div class="reb-tier">
         <TierBadge class="reb-badge" :tier="tier" />
         <div class="reb-tier-body">
-          <span class="reb-tier-label">{{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}</span>
+          <span class="reb-tier-label">{{ tierLabel(tier as RankTier) }} {{ DIVISION_LABEL[division] }}</span>
           <span v-if="lpDisplay != null" class="reb-lp tnum">{{ lpDisplay }} LP</span>
         </div>
       </div>

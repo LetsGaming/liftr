@@ -21,6 +21,7 @@
  * unavailable). The one exception is seeding a brand-new route from an already-recorded run.
  */
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { generateLoopWaypoints, pathDistanceM } from "@liftr/shared";
 import SheetModal from "../patterns/SheetModal.vue";
 import RouteMapEditor from "../route/RouteMapEditor.vue";
@@ -50,6 +51,7 @@ const props = defineProps<{
   seedName?: string;
 }>();
 const emit = defineEmits<{ saved: []; close: [] }>();
+const { t } = useI18n();
 
 const plannedRouteStore = usePlannedRouteStore();
 const { toast } = useToast();
@@ -141,7 +143,7 @@ function setCloseLoop(checked: boolean) {
     // arc). If the user already placed more waypoints than that budget allows, canSave silently
     // goes false with nothing but a red counter to explain it — tell them why.
     if (userWaypointCount.value > maxUserWaypoints.value) {
-      toast(`Mit Schleife sind maximal ${maxUserWaypoints.value} Wegpunkte möglich — entferne zuerst Punkte.`);
+      toast(t("route.routeWizard.maxWaypointsWithLoop", { max: maxUserWaypoints.value }));
     }
   } else if (waypoints.value.some((w) => w.gen)) {
     waypoints.value = waypoints.value.filter((w) => !w.gen);
@@ -229,7 +231,7 @@ async function runPreview() {
 
 function onAdd(waypoint: Waypoint) {
   if (userWaypointCount.value >= maxUserWaypoints.value) {
-    toast(`Maximal ${maxUserWaypoints.value} Wegpunkte — entferne zuerst einen Punkt.`);
+    toast(t("route.routeWizard.maxWaypoints", { max: maxUserWaypoints.value }));
     return;
   }
   markLocalGeometry();
@@ -286,10 +288,10 @@ function requestClose() {
 function saveErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.detail) console.warn("Strecke abgelehnt:", err.status, err.detail);
-    if (err.status === 400) return "Strecke abgelehnt — zu viele oder ungültige Wegpunkte.";
-    if (err.status === 429) return "Zu viele Anfragen — bitte kurz warten.";
+    if (err.status === 400) return t("route.routeWizard.saveRejected");
+    if (err.status === 429) return t("route.routeWizard.tooManyRequests");
   }
-  return "Speichern fehlgeschlagen — bitte erneut versuchen.";
+  return t("route.routeWizard.saveFailed");
 }
 
 async function save() {
@@ -323,7 +325,7 @@ async function save() {
     <template #header>
       <WizardHeader
         v-model:title="name"
-        :title-placeholder="'Name der Strecke'"
+        :title-placeholder="t('route.routeWizard.titlePlaceholder')"
         :is-confirming-close="closeConfirm.isArmed()"
         @close="requestClose"
       />
@@ -343,10 +345,13 @@ async function save() {
       <div class="wizard-foot-row">
         <div class="stats">
           <span>{{ (distanceM / 1000).toFixed(2) }} km{{ geometrySource === "straight" ? " ≈" : "" }}</span>
-          <span>{{ elevationGainM != null ? Math.round(elevationGainM) + " hm" : "Höhe unbekannt" }}</span>
+          <span>{{ elevationGainM != null ? Math.round(elevationGainM) + " hm" : t("routeOverviewPage.elevationUnknown") }}</span>
           <span :class="{ 'stat-warn': userWaypointCount >= maxUserWaypoints - 5 }">
-            {{ userWaypointCount >= maxUserWaypoints - 5 ? `${userWaypointCount}/${maxUserWaypoints}` : userWaypointCount }}
-            Wegpunkte
+            {{
+              t("route.routeWizard.waypointsLabel", {
+                count: userWaypointCount >= maxUserWaypoints - 5 ? `${userWaypointCount}/${maxUserWaypoints}` : userWaypointCount,
+              })
+            }}
           </span>
         </div>
         <label class="loop-toggle">
@@ -355,10 +360,10 @@ async function save() {
             type="checkbox"
             @change="setCloseLoop(($event.target as HTMLInputElement).checked)"
           />
-          Schleife schließen
+          {{ t("route.routeWizard.closeLoopLabel") }}
         </label>
       </div>
-      <Button block :disabled="!canSave || saving" @click="save">Speichern</Button>
+      <Button block :disabled="!canSave || saving" @click="save">{{ t("common.save") }}</Button>
     </footer>
   </SheetModal>
 </template>

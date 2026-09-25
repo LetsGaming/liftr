@@ -1,0 +1,380 @@
+{
+  "exercise": {
+    "back-squat": {
+      "name": "Back Squat",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "bench-press": {
+      "name": "Bench Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "deadlift": {
+      "name": "Deadlift",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "overhead-press": {
+      "name": "Overhead Press",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "barbell-row": {
+      "name": "Barbell Row",
+      "howto": "Squeeze your shoulder blades together, elbows close to your body — your upper back does the pulling."
+    },
+    "pushup": {
+      "name": "Push-up",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "pullup": {
+      "name": "Pull-up",
+      "howto": "Actively pull your shoulder blades down, lower under control — your lats takes over."
+    },
+    "chinup": {
+      "name": "Chin-up",
+      "howto": "Actively pull your shoulder blades down, lower under control — your lats takes over."
+    },
+    "dip": {
+      "name": "Dip",
+      "howto": "Brace your core, drive the weight straight up — your chest carries the movement."
+    },
+    "front-squat": {
+      "name": "Front Squat",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "goblet-squat": {
+      "name": "Goblet Squat",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "leg-press": {
+      "name": "Leg Press",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "bulgarian-split-squat": {
+      "name": "Bulgarian Split Squat",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "walking-lunge": {
+      "name": "Walking Lunge",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "hack-squat": {
+      "name": "Hack Squat",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "zercher-squat": {
+      "name": "Zercher Squat",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "goblet-lunge": {
+      "name": "Goblet Lunge",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "romanian-deadlift": {
+      "name": "Romanian Deadlift",
+      "howto": "Move from the hips, keep your back neutral, brace the back of your thighs on the way up."
+    },
+    "sumo-deadlift": {
+      "name": "Sumo Deadlift",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "trap-bar-deadlift": {
+      "name": "Trap Bar Deadlift",
+      "howto": "Move from the hips, keep your back neutral, brace the front of your thighs on the way up."
+    },
+    "good-morning": {
+      "name": "Good Morning",
+      "howto": "Move from the hips, keep your back neutral, brace the back of your thighs on the way up."
+    },
+    "single-leg-rdl": {
+      "name": "Single-Leg RDL",
+      "howto": "Move from the hips, keep your back neutral, brace the back of your thighs on the way up."
+    },
+    "hip-thrust": {
+      "name": "Hip Thrust",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "back-extension": {
+      "name": "Back Extension",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "kettlebell-swing": {
+      "name": "Kettlebell Swing",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "farmers-carry": {
+      "name": "Farmer's Carry",
+      "howto": "Keep your core braced, stand tall, take even steps — your upper back keeps you stable."
+    },
+    "shrug": {
+      "name": "Shrug",
+      "howto": "Move slowly and under control, keep your upper back braced the whole time — no swinging."
+    },
+    "leg-curl": {
+      "name": "Leg Curl",
+      "howto": "Move slowly and under control, keep the back of your thighs braced the whole time — no swinging."
+    },
+    "incline-bench-press": {
+      "name": "Incline Bench Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "decline-bench-press": {
+      "name": "Decline Bench Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "dumbbell-bench-press": {
+      "name": "Dumbbell Bench Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "dumbbell-incline-press": {
+      "name": "Dumbbell Incline Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "close-grip-bench-press": {
+      "name": "Close-Grip Bench Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your triceps does the work."
+    },
+    "machine-chest-press": {
+      "name": "Machine Chest Press",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "cable-fly": {
+      "name": "Cable Fly",
+      "howto": "Move slowly and under control, keep your chest braced the whole time — no swinging."
+    },
+    "pec-deck": {
+      "name": "Pec Deck",
+      "howto": "Move slowly and under control, keep your chest braced the whole time — no swinging."
+    },
+    "dumbbell-pullover": {
+      "name": "Dumbbell Pullover",
+      "howto": "Move slowly and under control, keep your chest braced the whole time — no swinging."
+    },
+    "tricep-pushdown": {
+      "name": "Tricep Pushdown",
+      "howto": "Move slowly and under control, keep your triceps braced the whole time — no swinging."
+    },
+    "overhead-tricep-extension": {
+      "name": "Overhead Tricep Extension",
+      "howto": "Move slowly and under control, keep your triceps braced the whole time — no swinging."
+    },
+    "skull-crusher": {
+      "name": "Skull Crusher",
+      "howto": "Move slowly and under control, keep your triceps braced the whole time — no swinging."
+    },
+    "cable-crunch": {
+      "name": "Cable Crunch",
+      "howto": "Move slowly and under control, keep your abs braced the whole time — no swinging."
+    },
+    "diamond-pushup": {
+      "name": "Diamond Push-up",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your triceps does the work."
+    },
+    "close-grip-pushup": {
+      "name": "Close-Grip Push-up",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your triceps does the work."
+    },
+    "decline-pushup": {
+      "name": "Decline Push-up",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "incline-pushup": {
+      "name": "Incline Push-up",
+      "howto": "Elbows at roughly 45° to your body, lower under control, press with no bounce — your chest does the work."
+    },
+    "pike-pushup": {
+      "name": "Pike Push-up",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "ab-wheel-rollout": {
+      "name": "Ab Wheel Rollout",
+      "howto": "Move slowly and under control, keep your abs braced the whole time — no swinging."
+    },
+    "dumbbell-shoulder-press": {
+      "name": "Dumbbell Shoulder Press",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "arnold-press": {
+      "name": "Arnold Press",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "machine-shoulder-press": {
+      "name": "Machine Shoulder Press",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "push-press": {
+      "name": "Push Press",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "landmine-press": {
+      "name": "Landmine Press",
+      "howto": "Brace your core, drive the weight straight up — your front delts carries the movement."
+    },
+    "lateral-raise": {
+      "name": "Lateral Raise",
+      "howto": "Move slowly and under control, keep your front delts braced the whole time — no swinging."
+    },
+    "barbell-front-raise": {
+      "name": "Barbell Front Raise",
+      "howto": "Move slowly and under control, keep your front delts braced the whole time — no swinging."
+    },
+    "rear-delt-fly": {
+      "name": "Rear Delt Fly",
+      "howto": "Move slowly and under control, keep your front delts braced the whole time — no swinging."
+    },
+    "upright-row": {
+      "name": "Upright Row",
+      "howto": "Move slowly and under control, keep your upper back braced the whole time — no swinging."
+    },
+    "barbell-curl": {
+      "name": "Barbell Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "dumbbell-curl": {
+      "name": "Dumbbell Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "hammer-curl": {
+      "name": "Hammer Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "ez-bar-curl": {
+      "name": "EZ-Bar Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "concentration-curl": {
+      "name": "Concentration Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "preacher-curl": {
+      "name": "Preacher Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "cable-curl": {
+      "name": "Cable Curl",
+      "howto": "Move slowly and under control, keep your biceps braced the whole time — no swinging."
+    },
+    "wrist-curl": {
+      "name": "Wrist Curl",
+      "howto": "Move slowly and under control, keep the target muscle braced the whole time — no swinging."
+    },
+    "reverse-wrist-curl": {
+      "name": "Reverse Wrist Curl",
+      "howto": "Move slowly and under control, keep the target muscle braced the whole time — no swinging."
+    },
+    "dumbbell-row": {
+      "name": "Dumbbell Row",
+      "howto": "Squeeze your shoulder blades together, elbows close to your body — your upper back does the pulling."
+    },
+    "seated-cable-row": {
+      "name": "Seated Cable Row",
+      "howto": "Squeeze your shoulder blades together, elbows close to your body — your upper back does the pulling."
+    },
+    "t-bar-row": {
+      "name": "T-Bar Row",
+      "howto": "Squeeze your shoulder blades together, elbows close to your body — your upper back does the pulling."
+    },
+    "chest-supported-row": {
+      "name": "Chest-Supported Row",
+      "howto": "Squeeze your shoulder blades together, elbows close to your body — your upper back does the pulling."
+    },
+    "inverted-row": {
+      "name": "Inverted Row",
+      "howto": "Squeeze your shoulder blades together, elbows close to your body — your upper back does the pulling."
+    },
+    "face-pull": {
+      "name": "Face Pull",
+      "howto": "Move slowly and under control, keep your upper back braced the whole time — no swinging."
+    },
+    "reverse-fly": {
+      "name": "Reverse Fly",
+      "howto": "Move slowly and under control, keep your front delts braced the whole time — no swinging."
+    },
+    "lat-pulldown": {
+      "name": "Lat Pulldown",
+      "howto": "Actively pull your shoulder blades down, lower under control — your lats takes over."
+    },
+    "wide-grip-pullup": {
+      "name": "Wide-Grip Pull-up",
+      "howto": "Actively pull your shoulder blades down, lower under control — your lats takes over."
+    },
+    "neutral-grip-pullup": {
+      "name": "Neutral-Grip Pull-up",
+      "howto": "Actively pull your shoulder blades down, lower under control — your lats takes over."
+    },
+    "hanging-leg-raise": {
+      "name": "Hanging Leg Raise",
+      "howto": "Move slowly and under control, keep your abs braced the whole time — no swinging."
+    },
+    "ring-dip": {
+      "name": "Ring Dip",
+      "howto": "Brace your core, drive the weight straight up — your chest carries the movement."
+    },
+    "leg-extension": {
+      "name": "Leg Extension",
+      "howto": "Move slowly and under control, keep the front of your thighs braced the whole time — no swinging."
+    },
+    "calf-raise-standing": {
+      "name": "Standing Calf Raise",
+      "howto": "Move slowly and under control, keep your calves braced the whole time — no swinging."
+    },
+    "calf-raise-seated": {
+      "name": "Seated Calf Raise",
+      "howto": "Move slowly and under control, keep your calves braced the whole time — no swinging."
+    },
+    "hip-abduction-machine": {
+      "name": "Hip Abduction Machine",
+      "howto": "Move slowly and under control, keep your glutes braced the whole time — no swinging."
+    },
+    "hip-adduction-machine": {
+      "name": "Hip Adduction Machine",
+      "howto": "Move slowly and under control, keep the front of your thighs braced the whole time — no swinging."
+    },
+    "step-up": {
+      "name": "Step-Up",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    },
+    "glute-bridge": {
+      "name": "Glute Bridge",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "crunch": {
+      "name": "Crunch",
+      "howto": "Move slowly and under control, keep your abs braced the whole time — no swinging."
+    },
+    "situp": {
+      "name": "Sit-up",
+      "howto": "Move slowly and under control, keep your abs braced the whole time — no swinging."
+    },
+    "russian-twist": {
+      "name": "Russian Twist",
+      "howto": "Move slowly and under control, keep your side abs braced the whole time — no swinging."
+    },
+    "plank": {
+      "name": "Plank",
+      "howto": "Move slowly and under control, keep your abs braced the whole time — no swinging."
+    },
+    "side-plank": {
+      "name": "Side Plank",
+      "howto": "Move slowly and under control, keep your side abs braced the whole time — no swinging."
+    },
+    "cable-pull-through": {
+      "name": "Cable Pull-Through",
+      "howto": "Move from the hips, keep your back neutral, brace your glutes on the way up."
+    },
+    "dumbbell-fly": {
+      "name": "Dumbbell Fly",
+      "howto": "Move slowly and under control, keep your chest braced the whole time — no swinging."
+    },
+    "cable-lateral-raise": {
+      "name": "Cable Lateral Raise",
+      "howto": "Move slowly and under control, keep your front delts braced the whole time — no swinging."
+    },
+    "tricep-kickback": {
+      "name": "Tricep Kickback",
+      "howto": "Move slowly and under control, keep your triceps braced the whole time — no swinging."
+    },
+    "reverse-lunge": {
+      "name": "Reverse Lunge",
+      "howto": "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs."
+    }
+  }
+}

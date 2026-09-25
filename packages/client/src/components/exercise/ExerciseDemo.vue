@@ -11,10 +11,12 @@
  * Degrades to a placeholder when a slug has no mirrored images yet.
  */
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { apiBase } from "../../lib/api";
 import { useCatalogStore } from "../../stores/catalogStore";
 
 const props = defineProps<{ slug: string }>();
+const { t } = useI18n();
 const catalog = useCatalogStore();
 
 // A missing photo means *both* start.jpg and end.jpg are missing (they're mirrored as a pair,
@@ -29,20 +31,30 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
 
 <template>
   <div v-if="!reduceMotion && bothLoaded()" class="demo-stage">
-    <img class="frame-a" :src="`${apiBase()}/images/${props.slug}/start.jpg`" alt="Übungsablauf" @error="startFailed = true" />
+    <img class="frame-a" :src="`${apiBase()}/images/${props.slug}/start.jpg`" :alt="t('exerciseUi.demo.altSequence')" @error="startFailed = true" />
     <img class="frame-b" :src="`${apiBase()}/images/${props.slug}/end.jpg`" alt="" @error="endFailed = true" />
   </div>
 
   <div v-else class="exercise-demo">
     <div class="frame">
-      <img v-if="!knownMissing && !startFailed" :src="`${apiBase()}/images/${props.slug}/start.jpg`" alt="Startposition" @error="startFailed = true" />
-      <div v-else class="placeholder">Kein Bild</div>
-      <span class="label">Start</span>
+      <img
+        v-if="!knownMissing && !startFailed"
+        :src="`${apiBase()}/images/${props.slug}/start.jpg`"
+        :alt="t('exerciseUi.demo.altStart')"
+        @error="startFailed = true"
+      />
+      <div v-else class="placeholder">{{ t("exerciseUi.demo.noImage") }}</div>
+      <span class="label">{{ t("exerciseUi.demo.labelStart") }}</span>
     </div>
     <div class="frame">
-      <img v-if="!knownMissing && !endFailed" :src="`${apiBase()}/images/${props.slug}/end.jpg`" alt="Endposition" @error="endFailed = true" />
-      <div v-else class="placeholder">Kein Bild</div>
-      <span class="label">Ende</span>
+      <img
+        v-if="!knownMissing && !endFailed"
+        :src="`${apiBase()}/images/${props.slug}/end.jpg`"
+        :alt="t('exerciseUi.demo.altEnd')"
+        @error="endFailed = true"
+      />
+      <div v-else class="placeholder">{{ t("exerciseUi.demo.noImage") }}</div>
+      <span class="label">{{ t("exerciseUi.demo.labelEnd") }}</span>
     </div>
   </div>
 </template>

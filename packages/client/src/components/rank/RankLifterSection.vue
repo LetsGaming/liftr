@@ -6,9 +6,10 @@
  */
 import { ordinal, TIERS, type Tier } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { LP_EXPLAINER } from "../../copy/rankCopy";
-import { TIER_LABEL_DE } from "../../lib/tierIcons";
+import { lpExplainer } from "../../copy/rankCopy";
+import { tierLabel } from "../../lib/tierIcons";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
@@ -23,6 +24,7 @@ import RankUpCalendar from "./RankUpCalendar.vue";
 import TierLadder from "./TierLadder.vue";
 import Button from "../base/Button.vue";
 
+const { t } = useI18n();
 const router = useRouter();
 const ranksStore = useRanksStore();
 const overallRank = useOverallRankStore();
@@ -87,7 +89,7 @@ const sortedRanks = computed(() =>
 const tierFilter = ref<"alle" | Tier>("alle");
 const presentTiers = computed(() => {
   const present = new Set(sortedRanks.value.map((r) => r.tier as Tier));
-  return TIERS.filter((t) => present.has(t)).reverse(); // highest tier first, matching the LP-desc reading order
+  return TIERS.filter((tier) => present.has(tier)).reverse(); // highest tier first, matching the LP-desc reading order
 });
 const filteredRanks = computed(() =>
   tierFilter.value === "alle" ? sortedRanks.value : sortedRanks.value.filter((r) => r.tier === tierFilter.value),
@@ -104,10 +106,9 @@ const filteredRanks = computed(() =>
       :peak-division="overallRank.peak?.division ?? null"
     />
 
-    <InfoToggle label="Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt">
-      <b class="tnum">LP</b> {{ LP_EXPLAINER }}. Ein
-      <b>≈</b> markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests —
-      dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt.
+    <InfoToggle :label="t('rank.lifterSection.infoLabel')">
+      <b class="tnum">LP</b> {{ lpExplainer() }}{{ t("rank.lifterSection.infoBodyLead") }}
+      <b>≈</b>{{ t("rank.lifterSection.infoBodyTail") }}
     </InfoToggle>
     <template v-if="!ranksStore.loaded && !ranksStore.error">
       <div class="rank-analytics" aria-hidden="true">
@@ -120,13 +121,13 @@ const filteredRanks = computed(() =>
     </template>
 
     <p v-else-if="ranksStore.error" class="page-note load-error" style="margin-top: var(--sp4)">
-      Ränge konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.
-      <Button variant="secondary" @click="ranksStore.load()">Erneut versuchen</Button>
+      {{ t("rank.lifterSection.loadError") }}
+      <Button variant="secondary" @click="ranksStore.load()">{{ t("rank.lifterSection.retry") }}</Button>
     </p>
 
     <template v-else>
       <p v-if="ranksStore.ranks.length === 0" class="page-note" style="margin-top: var(--sp4)">
-        Dein erster Rang entsteht, sobald du eine Übung geloggt hast.
+        {{ t("rank.lifterSection.empty") }}
       </p>
 
       <div v-else class="rank-analytics">
@@ -136,7 +137,7 @@ const filteredRanks = computed(() =>
 
       <div v-if="presentTiers.length > 1" class="rank-tier-filter">
         <button type="button" class="tab-pill tab-pill-sm" :class="{ active: tierFilter === 'alle' }" @click="tierFilter = 'alle'">
-          Alle
+          {{ t("rank.lifterSection.filterAll") }}
         </button>
         <!-- A flat pill row stopped scaling once someone has trained enough exercises to span
              more than 2 tiers (9-tier system, TierLadder.vue) — a select collapses the long tail
@@ -144,22 +145,22 @@ const filteredRanks = computed(() =>
         <select
           v-if="presentTiers.length > 2"
           class="rank-tier-select"
-          aria-label="Nach Rang filtern"
+          :aria-label="t('rank.lifterSection.filterAriaLabel')"
           :value="tierFilter === 'alle' ? '' : tierFilter"
           @change="tierFilter = (($event.target as HTMLSelectElement).value || 'alle') as 'alle' | Tier"
         >
-          <option value="">Ränge</option>
-          <option v-for="t in presentTiers" :key="t" :value="t">{{ TIER_LABEL_DE[t] }}</option>
+          <option value="">{{ t("rank.lifterSection.filterPlaceholder") }}</option>
+          <option v-for="tier in presentTiers" :key="tier" :value="tier">{{ tierLabel(tier) }}</option>
         </select>
         <button
-          v-for="t in presentTiers.length <= 2 ? presentTiers : []"
-          :key="t"
+          v-for="tier in presentTiers.length <= 2 ? presentTiers : []"
+          :key="tier"
           type="button"
           class="tab-pill tab-pill-sm"
-          :class="{ active: tierFilter === t }"
-          @click="tierFilter = t"
+          :class="{ active: tierFilter === tier }"
+          @click="tierFilter = tier"
         >
-          {{ TIER_LABEL_DE[t] }}
+          {{ tierLabel(tier) }}
         </button>
       </div>
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent } from "vue";
-import { SET_KIND_LABEL } from "@liftr/shared";
+import { setKindLabel } from "~client/lib/setKindLabels";
 import SetKindPicker from "~client/components/workout/SetKindPicker.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
@@ -47,15 +47,15 @@ afterEach(() => {
 });
 
 describe("SetKindPicker", () => {
-  it("renders one row per set kind, labeled from the shared SET_KIND_LABEL, plus a remove row", () => {
+  it("renders one row per set kind, labeled via setKindLabel(), plus a remove row", () => {
     const wrapper = mountPicker();
 
     const rows = wrapper.findAll(".kind-row");
     expect(rows).toHaveLength(5); // warmup, normal, failure, dropset + remove
 
     (["warmup", "normal", "failure", "dropset"] as const).forEach((kind, i) => {
-      expect(rows[i]!.text()).toContain(SET_KIND_LABEL[kind]);
-      expect(rows[i]!.find(".kind-letter").text()).toBe(SET_KIND_LABEL[kind][0]);
+      expect(rows[i]!.text()).toContain(setKindLabel(kind));
+      expect(rows[i]!.find(".kind-letter").text()).toBe(setKindLabel(kind)[0]);
       expect(rows[i]!.find(".kind-letter").classes()).toContain(`k-${kind}`);
     });
 

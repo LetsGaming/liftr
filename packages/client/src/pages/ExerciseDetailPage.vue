@@ -7,19 +7,21 @@
  * instead.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import ExerciseDetailContent from "../components/exercise/ExerciseDetailContent.vue";
 import BasePage from "../components/patterns/BasePage.vue";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useCatalogStore } from "../stores/catalogStore";
 
+const { t } = useI18n();
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 
 const catalog = useCatalogStore();
 const { exerciseName } = useExerciseName();
 const exercise = computed(() => catalog.bySlug(slug.value));
-const pageTitle = computed(() => (exercise.value ? exerciseName(exercise.value.slug, exercise.value.name) : "Übung"));
+const pageTitle = computed(() => (exercise.value ? exerciseName(exercise.value.slug, exercise.value.name) : t("workout.exerciseFallbackTitle")));
 </script>
 
 <template>

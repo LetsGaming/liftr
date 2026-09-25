@@ -63,7 +63,7 @@ describe("POST /api/auth/setup", () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it("rejects a common password even when it meets the length minimum", async () => {
+  it("rejects a common password even when it meets the length minimum, with a dedicated error code", async () => {
     const app = await buildApp(db);
     const res = await app.inject({
       method: "POST",
@@ -71,6 +71,7 @@ describe("POST /api/auth/setup", () => {
       payload: { password: "aaaaaaaa" },
     });
     expect(res.statusCode).toBe(400);
+    expect(res.json()).toEqual({ error: "password_too_common" });
   });
 
   // DoS guard: scrypt's hashing cost scales with input length, so an unbounded password lets a
