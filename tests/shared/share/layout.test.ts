@@ -54,6 +54,31 @@ describe("renderExerciseLines", () => {
     }));
     expect(renderExerciseLines(exercises)[0]!.detail).toBe("1 Sätze");
   });
+
+  it("defaults to German when no locale is passed", () => {
+    const exercises: ExerciseCardEntry[] = [
+      { name: "Kniebeuge", sets: [{ weightKg: 42.5, reps: 8, isWarmup: false }] },
+    ];
+    expect(renderExerciseLines(exercises)[0]!.detail).toBe("8×42,5kg");
+  });
+
+  it("uses English reps/sets wording and a decimal point when locale is 'en'", () => {
+    const exercises: ExerciseCardEntry[] = [
+      { name: "Push-ups", sets: [{ weightKg: null, reps: 12, isWarmup: false }] },
+      { name: "Squat", sets: [{ weightKg: 42.5, reps: 8, isWarmup: false }] },
+    ];
+    const lines = renderExerciseLines(exercises, "en");
+    expect(lines[0]!.detail).toBe("12 reps");
+    expect(lines[1]!.detail).toBe("8×42.5kg");
+  });
+
+  it("uses English 'sets' wording once compressed", () => {
+    const exercises: ExerciseCardEntry[] = Array.from({ length: 11 }, (_, i) => ({
+      name: `Pushups ${i}`,
+      sets: [{ weightKg: null, reps: 12, isWarmup: false }],
+    }));
+    expect(renderExerciseLines(exercises, "en")[0]!.detail).toBe("1 sets");
+  });
 });
 
 describe("wrapText", () => {

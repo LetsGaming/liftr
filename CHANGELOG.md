@@ -10,6 +10,10 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 - Exercise names and how-to cues are now generated in English as well as German, ahead of the app's English translation.
 
+### Fixed
+
+- Active-session device labels ("Chrome · Windows" etc.) on the Profil page, the "no route or distance" Health Connect import error, and set-kind labels (warm-up/normal/failure/drop set) now translate properly on English locale instead of always showing German.
+
 ## [1.8.0] - 2026-09-24
 
 ### Added

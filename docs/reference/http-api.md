@@ -136,12 +136,15 @@ Response `200`: `{ id: string; username: string; name: string; role: "owner" | "
 
 ### `GET /api/auth/sessions`
 Lists every active session for the current user — the "Aktive Sitzungen" list in the Profil page.
-`device` is a coarse browser/OS label derived from the session's stored `User-Agent` (display
-only, never used to gate auth — see [SECURITY.md](../SECURITY.md#auth-model)); `current` marks the
-session making this very request.
+`device` is a coarse `{os, browser}` pair derived from the session's stored `User-Agent` (display
+only, never used to gate auth — see [SECURITY.md](../SECURITY.md#auth-model)); either field, or the
+whole object, is `null` when the User-Agent was missing or unrecognized. The client composes and
+translates the display string itself, rather than receiving a finished sentence from the server.
+`current` marks the session making this very request.
 
 Response `200`: `Array<{ id: string; createdAt: Date; lastUsedAt: Date; expiresAt: Date;
-absoluteExpiresAt: Date; device: string; current: boolean }>`
+absoluteExpiresAt: Date; device: { os: string | null; browser: string | null } | null;
+current: boolean }>`
 
 ### `DELETE /api/auth/sessions/:id`
 Revokes one of the current user's own sessions by id. Scoped to `req.userId` — another user's
@@ -891,8 +894,10 @@ Request body:
 
 Response `200` (not 201 — this is an idempotent upsert): `runResponse`.
 
-Notable statuses: `400 { "error": "parse_failed", "detail": string }` — neither a usable route nor
-a distance/duration fallback was present.
+Notable statuses: `400 { "error": "parse_failed", "detail": "no_route_or_distance" }` — neither a
+usable route nor a distance/duration fallback was present. `detail` is a machine-readable code here
+(not prose): the client maps it to a translated message via `lib/errorMessages.ts`'s
+`serverErrorMessage()`.
 
 ### `DELETE /api/runs/:id`
 Cascades to `run_points` via FK. GPS-tracked runs *do* feed rank now (see

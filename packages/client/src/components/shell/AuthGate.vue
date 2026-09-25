@@ -31,19 +31,16 @@ function getInviteCodeFromUrl(): string | null {
  * The three submit handlers below all showed one fixed message per form regardless of the actual
  * server response, which became actively misleading once this branch added two new rejection
  * paths: a 429 from `authRateLimit` (routes/auth.ts) reads as a wrong password/code with no way to
- * learn "wait and retry", and a 400 from the common-password refine (passwordSchema in
- * routes/auth.ts, backed by lib/commonPasswords.ts) reads as a generic setup/invite failure with
- * no way to learn the password itself was rejected.
- *
- * The common-password case is only distinguishable by string-matching the Zod refine's message
- * text inside `detail` (fastify-type-provider-zod's validator surfaces the refine's `.message`
- * verbatim in the FST_ERR_VALIDATION error) — there is no dedicated error code for it. Every other
- * 400 (bad invite code, taken username, plain validation failures) falls through to `fallback`.
+ * learn "wait and retry", and a `password_too_common` from the common-password refine
+ * (passwordSchema in routes/auth.ts, backed by lib/commonPasswords.ts — recognized and given its
+ * own error code by app.ts's error handler) reads as a generic setup/invite failure with no way
+ * to learn the password itself was rejected. Every other 400 (bad invite code, taken username,
+ * plain validation failures) falls through to `fallback`.
  */
 function describeAuthError(err: unknown, fallback: string): string {
   if (err instanceof ApiError) {
     if (err.status === 429) return t("profile.errors.tooManyAttempts");
-    if (err.status === 400 && err.detail?.includes("too common")) {
+    if (err.status === 400 && err.code === "password_too_common") {
       return t("profile.errors.passwordTooWeak");
     }
   }

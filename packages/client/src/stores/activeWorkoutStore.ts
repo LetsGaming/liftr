@@ -4,19 +4,21 @@
  * nothing — on next load, restore() picks the workout back up exactly where it left off.
  */
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, SET_KIND_LABEL, warmupRamp, type SetKind } from "@liftr/shared";
+import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, warmupRamp, type SetKind } from "@liftr/shared";
 import { defineStore } from "pinia";
 import { t } from "../i18n";
 import { clearActiveWorkout, loadActiveWorkout, saveActiveWorkout } from "../lib/idb";
 import { isNative } from "../lib/platform";
+import { setKindLabel } from "../lib/setKindLabels";
 import { computeAdvanceAfterLog } from "../lib/supersetAdvance";
 import { useSyncStore, type RankVerdict } from "./syncStore";
 
-// Re-exported for existing call sites (SetKindPicker.vue, WorkoutPage.vue) — the definitions
-// themselves live in @liftr/shared/workout/setKind.ts so the server's routine zod schema and
+// Re-exported for existing call sites (SetKindPicker.vue, WorkoutPage.vue) — the `SetKind` type
+// itself lives in @liftr/shared/workout/setKind.ts so the server's routine zod schema and
 // routine-template SetTarget share the same vocabulary, letting a routine pre-plan a set's
-// kind rather than only reclassify it live.
-export { SET_KIND_LABEL, type SetKind };
+// kind rather than only reclassify it live; `setKindLabel` is client-owned (lib/setKindLabels.ts)
+// since display copy needs i18n.
+export { setKindLabel, type SetKind };
 
 export const WEIGHT_STEP_KG = 1.25;
 export const REPS_STEP = 1;
@@ -193,7 +195,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       if (saved?.workoutId) {
         // Sets persisted before `kind` existed (an in-progress workout saved pre-upgrade) load
         // back with kind === undefined, which crashed WorkoutPage.vue's kind badge/label lookup
-        // (SET_KIND_LABEL[undefined]) the moment restore() resumed one. Backfill from the field
+        // (setKindLabel(undefined)) the moment restore() resumed one. Backfill from the field
         // that always existed, isWarmup, same derivation used everywhere else in this file.
         for (const ex of saved.exercises) {
           for (const s of ex.sets) {

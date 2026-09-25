@@ -6,7 +6,8 @@
  * superset link toggle between consecutive cards, and remove. "+ Übung hinzufügen" at the
  * bottom returns to the picker without losing the current selection.
  */
-import { SET_KIND_BADGE, SET_KIND_LABEL, type SetKind } from "@liftr/shared";
+import { SET_KIND_BADGE, type SetKind } from "@liftr/shared";
+import { setKindLabel } from "../../lib/setKindLabels";
 import { useI18n } from "vue-i18n";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import AppIcon from "../base/AppIcon.vue";
@@ -108,7 +109,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
                 size="sm"
                 class="kind-badge"
                 :variant="KIND_CHIP_VARIANT[kindOf(set.kind)]"
-                :title="t('routine.arrangeStep.setKindTitle', { kind: SET_KIND_LABEL[kindOf(set.kind)] })"
+                :title="t('routine.arrangeStep.setKindTitle', { kind: setKindLabel(kindOf(set.kind)) })"
                 @click="emit('cycleSetKind', exerciseId, si)"
               >
                 {{ SET_KIND_BADGE[kindOf(set.kind)] }}

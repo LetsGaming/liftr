@@ -15,6 +15,7 @@ import {
   requestHealthConnectPermissions,
 } from "../health/healthConnect";
 import { ApiError } from "../lib/api";
+import { serverErrorMessage } from "../lib/errorMessages";
 import { t } from "../i18n";
 
 export function useHealthConnectImport() {
@@ -69,7 +70,15 @@ export function useHealthConnectImport() {
       // ApiError carries the server's actual validation reason (see api.ts) — surfacing it here
       // (rather than the generic "POST ... failed: 400" from err.message) is what turned this
       // failure mode from "no further logs" into something the user (and support) can act on.
-      healthConnectStatus.value = err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : t("healthConnect.status.connectionFailed");
+      // `detail` doubles as a machine-readable code for some failures (e.g.
+      // "no_route_or_distance") — serverErrorMessage() translates those and falls back to the
+      // raw text for everything else.
+      healthConnectStatus.value =
+        err instanceof ApiError
+          ? serverErrorMessage(err.detail, err.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("healthConnect.status.connectionFailed");
     } finally {
       healthConnectBusy.value = false;
     }

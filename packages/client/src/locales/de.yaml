@@ -207,6 +207,9 @@ profile:
     revokingAll: "Wird abgemeldet…"
     confirmRevokeAll: "Wirklich alle abmelden?"
     revokeAll: Alle anderen Geräte abmelden
+    unknownDevice: Unbekanntes Gerät
+    unknown: Unbekannt
+    deviceLabel: "{browser} · {os}"
   accountApp:
     title: "Konto & App"
     server:
@@ -906,6 +909,7 @@ healthConnect:
     heartRate: Herzfrequenz
     distance: Distanz
   unknownError: "Unbekannter Fehler."
+  noRouteOrDistance: "Health Connect hat für dieses Workout weder eine Strecke noch eine Distanz geliefert."
   status:
     missingPermissions: "Bitte folgende Health-Connect-Freigaben aktivieren: {missing}."
     unavailable: "Health Connect ist nicht verfügbar."
@@ -929,6 +933,13 @@ runValidation:
   dateRequired: "Bitte ein gültiges Datum angeben."
 syncStore:
   stuckWarning: "{n} Eintrag/Einträge werden seit über 72 Stunden nicht synchronisiert und dauerhaft nicht mehr automatisch erneut versucht."
+serverErrors:
+  generic: "Ein Fehler ist aufgetreten."
+setKind:
+  warmup: Aufwärmen
+  normal: Normal
+  failure: Fehlsatz
+  dropset: Drop-Satz
 muscles:
   biceps: Bizeps
   front-delts: "vordere Schultern"

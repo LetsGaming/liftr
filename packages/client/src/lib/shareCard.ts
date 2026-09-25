@@ -28,7 +28,7 @@ import {
   wrapText,
   type WorkoutCardModel,
 } from "@liftr/shared";
-import { t } from "../i18n";
+import { i18n, t } from "../i18n";
 import { apiBase } from "./api";
 import { MUSCLE_META } from "./muscles";
 import { buildTierEmblem, wingReachUnits, type EmblemGradientDef, type EmblemShape } from "./tierEmblem";
@@ -568,7 +568,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   const headerH = 98 + nameLines.length * 64 + 44 + 30;
 
   // ---- Exercise grid: natural (uncapped) row count at this content, for the size decision. ----
-  const lines = renderExerciseLines(model.exercises);
+  const lines = renderExerciseLines(model.exercises, i18n.global.locale.value as "de" | "en");
   const naturalRows = exerciseGridRowCount(lines.length);
   const naturalExerciseH = naturalRows > 0 ? naturalRows * EXERCISE_ROW_H + (naturalRows - 1) * EXERCISE_ROW_GAP : 0;
 

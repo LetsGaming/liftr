@@ -14,3 +14,8 @@ const COMMON_PASSWORDS = new Set([
 export function isCommonPassword(password: string): boolean {
   return COMMON_PASSWORDS.has(password.toLowerCase());
 }
+
+/** The passwordSchema refine's exact message (routes/auth.ts) — shared so app.ts's error handler
+ *  can recognize this specific validation failure and return a dedicated `password_too_common`
+ *  error code instead of the generic `invalid_request`, without duplicating the literal string. */
+export const COMMON_PASSWORD_MESSAGE = "too common, choose a different password";

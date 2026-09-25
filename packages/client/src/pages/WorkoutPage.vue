@@ -45,7 +45,7 @@ import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
 import { tierLabel, type RankTier } from "../lib/tierIcons";
 import { TIERS, type Tier } from "@liftr/shared";
-import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
+import { useActiveWorkoutStore, setKindLabel, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
 import { useRanksStore } from "../stores/ranksStore";
@@ -245,16 +245,16 @@ function saveNoteCapture(value: string | null) {
 
 /** Defensive fallback to "normal": `kind` on an `ActiveSet` can be undefined depending on how the
  *  set was created (activeWorkoutStore.restore() backfills it from `isWarmup` when restoring a
- *  persisted workout), so this keeps a `SET_KIND_LABEL[kind]` lookup from crashing on any path
+ *  persisted workout), so this keeps a `setKindLabel(kind)` lookup from crashing on any path
  *  that hands back a set without one. */
 function kindLabel(kind: SetKind | undefined): string {
-  return SET_KIND_LABEL[kind ?? "normal"];
+  return setKindLabel(kind ?? "normal");
 }
 /** Normal sets show their position in the exercise; every other kind shows a fixed letter
  *  instead — matches the reference app's "A"/"F"/"D" badges (SetKindPicker.vue uses the same
- *  SET_KIND_LABEL for its own row icons). */
+ *  setKindLabel() for its own row icons). */
 function kindLetter(kind: SetKind | undefined, index: number): string {
-  return !kind || kind === "normal" ? String(index + 1) : SET_KIND_LABEL[kind][0]!;
+  return !kind || kind === "normal" ? String(index + 1) : setKindLabel(kind)[0]!;
 }
 
 /** "Superset 2/3" — position within the group, for the focus header. */

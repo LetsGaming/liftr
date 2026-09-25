@@ -5,6 +5,13 @@
  * package; this module only decides *where things go* and *how text wraps/compresses*.
  */
 
+/** This module lives in @liftr/shared (not packages/client) so a server-side renderer could reuse
+ *  the same layout math later without duplicating it — see the file header above — but it has no
+ *  actual server caller today, and shared code has no access to vue-i18n either way. Locale-
+ *  dependent copy therefore takes this parameter instead of calling a translate function.
+ *  Defaults to "de" so a caller that doesn't pass one keeps the original behavior unchanged. */
+export type ShareLocale = "de" | "en";
+
 export type CardSize = "square" | "story" | "wide";
 
 export interface CardDimensions {
@@ -93,7 +100,9 @@ export interface RenderedExerciseLine {
   detail: string;
 }
 
-export function renderExerciseLines(exercises: ExerciseCardEntry[]): RenderedExerciseLine[] {
+export function renderExerciseLines(exercises: ExerciseCardEntry[], locale: ShareLocale = "de"): RenderedExerciseLine[] {
+  const repsWord = locale === "de" ? "Wdh." : "reps";
+  const setsWord = locale === "de" ? "Sätze" : "sets";
   const compress = exercises.length > COMPRESS_EXERCISE_THRESHOLD;
   return exercises.map((ex) => {
     const working = ex.sets.filter((s) => !s.isWarmup);
@@ -103,10 +112,10 @@ export function renderExerciseLines(exercises: ExerciseCardEntry[]): RenderedExe
           const w = s.isWarmup ? "W " : "";
           // reps×weight, not weight×reps — reps first is how every other set display in the app
           // already reads it, e.g. WorkoutPage.vue's set rows show "7,5 kg · 8 Wdh.".
-          // Bodyweight sets (weightKg null) get an explicit "Wdh." suffix: the bare number
+          // Bodyweight sets (weightKg null) get an explicit reps-word suffix: the bare number
           // ("4  4  7") is legible only with the surrounding app's context, which a shared image
           // doesn't have — an outside viewer has no way to read it as reps otherwise.
-          return s.weightKg != null ? `${w}${s.reps}×${formatKg(s.weightKg)}kg` : `${w}${s.reps} Wdh.`;
+          return s.weightKg != null ? `${w}${s.reps}×${formatKg(s.weightKg, locale)}kg` : `${w}${s.reps} ${repsWord}`;
         })
         .join("  ");
       return { name: ex.name, detail };
@@ -114,14 +123,15 @@ export function renderExerciseLines(exercises: ExerciseCardEntry[]): RenderedExe
     const weights = working.map((s) => s.weightKg).filter((w): w is number => w != null);
     const detail =
       weights.length > 0
-        ? `${working.length} × ${formatKg(Math.min(...weights))}-${formatKg(Math.max(...weights))} kg`
-        : `${working.length} Sätze`;
+        ? `${working.length} × ${formatKg(Math.min(...weights), locale)}-${formatKg(Math.max(...weights), locale)} kg`
+        : `${working.length} ${setsWord}`;
     return { name: ex.name, detail };
   });
 }
 
-function formatKg(kg: number): string {
-  return Number.isInteger(kg) ? String(kg) : kg.toFixed(2).replace(/\.?0+$/, "").replace(".", ",");
+function formatKg(kg: number, locale: ShareLocale = "de"): string {
+  const formatted = Number.isInteger(kg) ? String(kg) : kg.toFixed(2).replace(/\.?0+$/, "");
+  return locale === "de" ? formatted.replace(".", ",") : formatted;
 }
 
 /** How many 2-column exercise-grid rows a given number of rendered lines needs — the exercise

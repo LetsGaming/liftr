@@ -17,6 +17,7 @@
  */
 import { Health } from "capacitor-health";
 import { ApiError, api } from "../lib/api";
+import { serverErrorMessage } from "../lib/errorMessages";
 import { isAndroid } from "../lib/platform";
 import { recordSyncReport, type SyncTrigger } from "../lib/syncLog";
 import { t } from "../i18n";
@@ -312,8 +313,16 @@ async function runImport(trigger: SyncTrigger): Promise<HealthConnectImportResul
       reports.push({ ...base, outcome: { kind: "imported", runId: run.id } });
     } catch (err) {
       failed++;
+      // POST /api/runs/healthconnect's `detail` is either a machine-readable code (e.g.
+      // "no_route_or_distance" — see runImportService.ts) or plain prose for other parse
+      // failures; serverErrorMessage() only translates the codes it recognizes and otherwise
+      // falls back to `detail` itself, so this is safe for both.
       const message =
-        err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : t("healthConnect.unknownError");
+        err instanceof ApiError
+          ? serverErrorMessage(err.detail, err.detail ?? err.message)
+          : err instanceof Error
+            ? err.message
+            : t("healthConnect.unknownError");
       reports.push({ ...base, outcome: { kind: "failed", message } });
     }
   }

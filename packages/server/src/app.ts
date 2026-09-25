@@ -14,6 +14,7 @@ import { db } from "./db.js";
 import { env } from "./env.js";
 import { dbErrorReporter, fileErrorReporter } from "./lib/errorReporters.js";
 import { reportError, type ErrorReporter } from "./lib/errorReporting.js";
+import { COMMON_PASSWORD_MESSAGE } from "./lib/commonPasswords.js";
 import { ConflictError, NotFoundError } from "./lib/errors.js";
 import { recomputeAllCardioRanks } from "./services/runRankService.js";
 import { registerAuthRoutes } from "./routes/auth.js";
@@ -86,6 +87,18 @@ export function summarizeValidationError(error: FastifyError | ZodError): string
   return [...counts].map(([key, count]) => (count > 1 ? `${key} (x${count})` : key)).join(", ");
 }
 
+/** Same raw-issues source `summarizeValidationError` uses, checked before that function's
+ *  path-shape collapsing so the exact refine message can still be matched 1:1. */
+function hasCommonPasswordIssue(error: FastifyError | ZodError): boolean {
+  const messages =
+    "validation" in error && Array.isArray(error.validation)
+      ? error.validation.map((v) => String(v.message))
+      : error instanceof ZodError
+        ? error.issues.map((i) => i.message)
+        : [];
+  return messages.includes(COMMON_PASSWORD_MESSAGE);
+}
+
 export function configureApp(
   app: FastifyInstance,
   opts?: { onUnexpectedError?: (error: FastifyError, request: FastifyRequest) => void },
@@ -101,6 +114,13 @@ export function configureApp(
   // server-side but returned to the client as a bare 500 with no internal detail.
   typedApp.setErrorHandler((error: FastifyError, request, reply) => {
     if (error instanceof ZodError || error.code === "FST_ERR_VALIDATION") {
+      // The passwordSchema refine (routes/auth.ts) fails validation the same way any other Zod
+      // issue does — recognized here by its exact message so the client can show a dedicated
+      // "password too weak" message via a real error code instead of string-matching the
+      // generic `invalid_request` detail text.
+      if (hasCommonPasswordIssue(error)) {
+        return reply.code(400).send({ error: "password_too_common" });
+      }
       // Always logged (not gated behind env.verboseLogging like the onResponse hook below) — a
       // 400 body reaches the client with this same `detail`, but without this, the *server*
       // side of a validation failure was otherwise unlogged entirely by default, making a

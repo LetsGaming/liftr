@@ -6,7 +6,8 @@
  * activeWorkoutStore.ts's setSetKind()/removeSet() for why.
  */
 import { useI18n } from "vue-i18n";
-import { SET_KIND_LABEL, type SetKind } from "../../stores/activeWorkoutStore";
+import { type SetKind } from "../../stores/activeWorkoutStore";
+import { setKindLabel } from "../../lib/setKindLabels";
 import ListRow from "../patterns/ListRow.vue";
 import AppIcon from "../base/AppIcon.vue";
 import SheetModal from "../patterns/SheetModal.vue";
@@ -16,11 +17,11 @@ defineProps<{ workoutExerciseId: string; setIndex: number }>();
 const emit = defineEmits<{ close: []; pick: [kind: SetKind]; remove: [] }>();
 
 // Letter = the shared label's first character (same convention WorkoutPage.vue's set-row
-// badge uses) — one definition (SET_KIND_LABEL) instead of a second hand-typed letter/label
+// badge uses) — one definition (setKindLabel) instead of a second hand-typed letter/label
 // pair here that could drift from the badge's own mapping.
 const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   ["warmup", "normal", "failure", "dropset"] as const
-).map((kind) => ({ kind, letter: SET_KIND_LABEL[kind][0]!, label: SET_KIND_LABEL[kind] }));
+).map((kind) => ({ kind, letter: setKindLabel(kind)[0]!, label: setKindLabel(kind) }));
 </script>
 
 <template>

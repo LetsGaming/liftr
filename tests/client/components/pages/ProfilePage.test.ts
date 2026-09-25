@@ -471,8 +471,8 @@ describe("ProfilePage", () => {
 
   it("lists active sessions with exactly one 'Dieses Gerät' badge and lets a non-current one be revoked", async () => {
     vi.mocked(authService.listSessions).mockResolvedValue([
-      { id: "s1", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Chrome · Windows", current: true },
-      { id: "s2", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Safari · iPhone", current: false },
+      { id: "s1", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: { os: "Windows", browser: "Chrome" }, current: true },
+      { id: "s2", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: { os: "iPhone", browser: "Safari" }, current: false },
     ]);
 
     const wrapper = mountWithProviders(ProfilePage);
@@ -491,8 +491,8 @@ describe("ProfilePage", () => {
 
   it("revokes every other session after a two-tap confirm", async () => {
     vi.mocked(authService.listSessions).mockResolvedValue([
-      { id: "s1", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Chrome · Windows", current: true },
-      { id: "s2", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: "Safari · iPhone", current: false },
+      { id: "s1", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: { os: "Windows", browser: "Chrome" }, current: true },
+      { id: "s2", createdAt: "2026-01-01", lastUsedAt: "2026-01-02", expiresAt: "2026-02-01", absoluteExpiresAt: "2026-04-01", device: { os: "iPhone", browser: "Safari" }, current: false },
     ]);
     vi.mocked(authService.revokeOtherSessions).mockResolvedValue(undefined);
 

@@ -54,6 +54,11 @@ export class ApiError extends Error {
     // carried here so callers (e.g. AuthGate.vue) can distinguish *why* a 400 happened instead of
     // showing one generic message for every 400 cause.
     public detail?: string,
+    // The body's own `error` field — a stable machine-readable code (e.g. "password_too_common",
+    // "parse_failed"). See lib/errorMessages.ts's serverErrorMessage() for mapping this to a
+    // translated message instead of showing `detail` (which is sometimes prose, sometimes itself
+    // a code) raw.
+    public code?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -98,15 +103,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     let detail: string | undefined;
+    let code: string | undefined;
     try {
       const body: unknown = await res.clone().json();
-      if (body && typeof body === "object" && typeof (body as { detail?: unknown }).detail === "string") {
-        detail = (body as { detail: string }).detail;
+      if (body && typeof body === "object") {
+        if (typeof (body as { detail?: unknown }).detail === "string") {
+          detail = (body as { detail: string }).detail;
+        }
+        if (typeof (body as { error?: unknown }).error === "string") {
+          code = (body as { error: string }).error;
+        }
       }
     } catch {
-      // Non-JSON or empty error body (e.g. a 429 with no body) — no detail available.
+      // Non-JSON or empty error body (e.g. a 429 with no body) — no detail/code available.
     }
-    throw new ApiError(`${init?.method ?? "GET"} ${path} failed: ${res.status}`, res.status, detail);
+    throw new ApiError(`${init?.method ?? "GET"} ${path} failed: ${res.status}`, res.status, detail, code);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;

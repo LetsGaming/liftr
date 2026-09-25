@@ -203,6 +203,9 @@ profile:
     revokingAll: "Signing out…"
     confirmRevokeAll: "Really sign out everywhere?"
     revokeAll: Sign out all other devices
+    unknownDevice: Unknown device
+    unknown: Unknown
+    deviceLabel: "{browser} · {os}"
   accountApp:
     title: "Account & App"
     server:
@@ -902,6 +905,7 @@ healthConnect:
     heartRate: Heart rate
     distance: Distance
   unknownError: "Unknown error."
+  noRouteOrDistance: "Health Connect didn't provide a route or a distance for this workout."
   status:
     missingPermissions: "Please enable the following Health Connect permissions: {missing}."
     unavailable: "Health Connect isn't available."
@@ -925,6 +929,13 @@ runValidation:
   dateRequired: "Please enter a valid date."
 syncStore:
   stuckWarning: "{n} entries haven't synced in over 72 hours and will no longer be retried automatically."
+serverErrors:
+  generic: "An error occurred."
+setKind:
+  warmup: Warm-up
+  normal: Normal
+  failure: Failure
+  dropset: Drop set
 muscles:
   biceps: Biceps
   front-delts: "front delts"

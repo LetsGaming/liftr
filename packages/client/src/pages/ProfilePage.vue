@@ -179,7 +179,7 @@ function describeCredentialError(err: unknown, fallback: string): string {
   if (err instanceof ApiError) {
     if (err.status === 429) return t("profile.errors.tooManyAttempts");
     if (err.status === 409) return t("profile.errors.usernameTaken");
-    if (err.status === 400 && err.detail?.includes("too common")) {
+    if (err.status === 400 && err.code === "password_too_common") {
       return t("profile.errors.passwordTooWeak");
     }
   }
@@ -256,6 +256,18 @@ async function savePassword() {
 const sessions = ref<Session[]>([]);
 const sessionsLoading = ref(false);
 const revokingSessionId = ref<string | null>(null);
+
+/** Composes the session-list device string from the server's structured `{os, browser}` (see
+ *  server/lib/deviceLabel.ts) — `null` means no User-Agent was recorded; a present-but-unknown
+ *  `os`/`browser` field falls back to `profile.sessions.unknown` per field, same granularity the
+ *  server used to bake into its own German sentence. */
+function deviceLabel(device: Session["device"]): string {
+  if (!device) return t("profile.sessions.unknownDevice");
+  return t("profile.sessions.deviceLabel", {
+    browser: device.browser ?? t("profile.sessions.unknown"),
+    os: device.os ?? t("profile.sessions.unknown"),
+  });
+}
 
 async function loadSessions() {
   sessionsLoading.value = true;
@@ -583,7 +595,7 @@ async function saveWeight() {
         <ul v-else class="member-list">
           <ListRow v-for="session in sessions" :key="session.id" as="li" class="member-row">
             <span>
-              {{ session.device }}
+              {{ deviceLabel(session.device) }}
               <Chip v-if="session.current" size="sm" class="session-badge">{{ t("profile.sessions.thisDevice") }}</Chip>
             </span>
             <template v-if="!session.current" #trailing>
