@@ -4,6 +4,7 @@
 // returns one flat object keyed by permission name. This regression-tests the real runtime shape,
 // not the (wrong) declared type.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "~client/i18n";
 
 const requestHealthPermissionsMock = vi.fn();
 const checkHealthPermissionsMock = vi.fn();
@@ -64,6 +65,11 @@ function workout(
 }
 
 beforeEach(() => {
+  // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+  // otherwise default the shared i18n singleton to "en" for the rest of the test process —
+  // mountWithProviders.ts resets this for component tests, but this file drives healthConnect.ts
+  // directly, bypassing that helper.
+  i18n.global.locale.value = "de";
   requestHealthPermissionsMock.mockReset();
   checkHealthPermissionsMock.mockReset();
   isHealthAvailableMock.mockReset();

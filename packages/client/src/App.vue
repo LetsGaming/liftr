@@ -171,7 +171,7 @@ const pageTitle = computed(() => {
   if (route.path === "/runs") return t("nav.runs");
   // Drill-ins with no navItems entry set their title via route.meta.title (router.ts) instead —
   // otherwise they'd silently fall through to "Liftr".
-  if (route.meta.title) return route.meta.title;
+  if (route.meta.title) return t(route.meta.title);
   if (route.name === "routine-overview") {
     const routine = routineStore.byId(route.params.id as string);
     return routine ? routine.name : "Routine";

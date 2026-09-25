@@ -6,6 +6,7 @@
  */
 import { computed, ref, watch } from "vue";
 import { useToast } from "./useToast";
+import { t } from "../i18n";
 import type { useSettingsStore, ExperienceLevel } from "../stores/settingsStore";
 
 export function useProfileForm(settingsStore: ReturnType<typeof useSettingsStore>) {
@@ -43,7 +44,7 @@ export function useProfileForm(settingsStore: ReturnType<typeof useSettingsStore
         ...(experienceLevel.value ? { experienceLevel: experienceLevel.value } : {}),
         workoutsPerWeek: workoutsPerWeek.value,
       });
-      toast("Trainingsprofil gespeichert.");
+      toast(t("profile.trainingProfile.saved"));
     } finally {
       profileSaving.value = false;
     }

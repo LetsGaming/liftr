@@ -7,6 +7,7 @@
 import { computed, ref, watch, type ComputedRef } from "vue";
 import { computeSetXp, type Tier } from "@liftr/shared";
 import { buildRoutineUpdate, findRoutineBeats, type RoutineBeat } from "./useRoutineBeat";
+import { t } from "../i18n";
 import type { useActiveWorkoutStore, ActiveExercise } from "../stores/activeWorkoutStore";
 import type { useCatalogStore } from "../stores/catalogStore";
 import type { useHistoryStore } from "../stores/historyStore";
@@ -31,13 +32,17 @@ export interface FinishedSummary {
  *  getDay()-indexed (0 = Sunday). */
 const DAY_ABBR = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
-/** Honest, threshold-free German copy for each plausibility-gate reason a finish-workout verdict
- *  can carry. Never states the exact numbers that tripped it. */
-const PLAUSIBILITY_NOTE_DE: Record<string, string> = {
-  pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
-  improbable_jump: "Dieser Sprung war ungewöhnlich groß — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
-  exceeds_ceiling: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
+/** Honest, threshold-free copy for each plausibility-gate reason a finish-workout verdict can
+ *  carry. Never states the exact numbers that tripped it. */
+const PLAUSIBILITY_NOTE_KEY: Record<string, string> = {
+  pace: "workoutFinish.plausibility.pace",
+  improbable_jump: "workoutFinish.plausibility.improbableJump",
+  exceeds_ceiling: "workoutFinish.plausibility.exceedsCeiling",
 };
+function plausibilityNote(reason: string | null | undefined): string | null {
+  const key = reason ? PLAUSIBILITY_NOTE_KEY[reason] : undefined;
+  return key ? t(key) : null;
+}
 
 /** A one-time post-workout caption for an exercise's rank card, surfaced only when there's
  *  something worth saying (a same-band recovery-style LP gain, or a
@@ -193,7 +198,7 @@ export function useWorkoutFinish(
       0,
     );
     const setCount = store.exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => s.logged && !s.isWarmup).length, 0);
-    const routineName = store.routineName || "Workout";
+    const routineName = store.routineName || t("common.workout");
     const muscles = { primary: [...sessionMuscles.value.primary], secondary: [...sessionMuscles.value.secondary] };
     const exercisesSnapshot = store.exercises.map((ex) => ({
       name: ex.name,
@@ -234,7 +239,7 @@ export function useWorkoutFinish(
           isPr: r.newPr != null,
           lp: r.lp,
           prevLp: r.prevLp,
-          plausibilityNote: r.plausibilityReason ? (PLAUSIBILITY_NOTE_DE[r.plausibilityReason] ?? null) : null,
+          plausibilityNote: plausibilityNote(r.plausibilityReason),
         };
       });
     // Every touched exercise's rank is refreshed here too (not just the ones that ranked up), so
@@ -253,10 +258,10 @@ export function useWorkoutFinish(
     sessionCaptions.value = ranks
       .map((r) => {
         const recoveryGainLabel =
-          !r.rankedUp && r.lp > r.prevLp ? `+${Math.round(r.lp - r.prevLp)} LP (Rückkehr-Bonus)` : null;
-        const plausibilityNote = r.plausibilityReason ? (PLAUSIBILITY_NOTE_DE[r.plausibilityReason] ?? null) : null;
+          !r.rankedUp && r.lp > r.prevLp ? t("workoutFinish.recoveryBonus", { lp: Math.round(r.lp - r.prevLp) }) : null;
+        const note = plausibilityNote(r.plausibilityReason);
         const ex = catalogStore.byId(r.exerciseId);
-        return { exerciseId: r.exerciseId, exerciseName: ex ? exerciseName(ex.slug) : "", recoveryGainLabel, plausibilityNote };
+        return { exerciseId: r.exerciseId, exerciseName: ex ? exerciseName(ex.slug) : "", recoveryGainLabel, plausibilityNote: note };
       })
       .filter((c) => c.recoveryGainLabel != null || c.plausibilityNote != null);
 

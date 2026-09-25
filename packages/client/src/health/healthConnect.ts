@@ -19,6 +19,7 @@ import { Health } from "capacitor-health";
 import { ApiError, api } from "../lib/api";
 import { isAndroid } from "../lib/platform";
 import { recordSyncReport, type SyncTrigger } from "../lib/syncLog";
+import { t } from "../i18n";
 
 const LAST_CHECK_KEY = "liftr.healthconnect.lastCheck";
 
@@ -38,18 +39,21 @@ export const HEALTH_CONNECT_PERMISSIONS = [
   "READ_DISTANCE",
 ] as const;
 
-export const HEALTH_CONNECT_PERMISSION_LABELS: Record<
+/** Keys into `healthConnect.permissionLabels.*` (i18n.ts's t()), not the translated labels
+ *  themselves — resolved at the point of use in toPermissionResult() below so a locale switch is
+ *  reflected wherever this is read next. */
+export const HEALTH_CONNECT_PERMISSION_LABEL_KEYS: Record<
   (typeof HEALTH_CONNECT_PERMISSIONS)[number],
   string
 > = {
-  READ_WORKOUTS: "Aktivitäten",
-  READ_ROUTE: "Strecken",
-  READ_HEART_RATE: "Herzfrequenz",
+  READ_WORKOUTS: "healthConnect.permissionLabels.workouts",
+  READ_ROUTE: "healthConnect.permissionLabels.route",
+  READ_HEART_RATE: "healthConnect.permissionLabels.heartRate",
   // Only used for the route-less fallback (a workout Health Connect withheld the route for) —
   // an already-connected user shows this as "missing" until they re-grant, same as any other
   // permission added after their first connect; the existing `missing` list already surfaces and
   // explains that (see useHealthConnectImport.ts).
-  READ_DISTANCE: "Distanz",
+  READ_DISTANCE: "healthConnect.permissionLabels.distance",
 };
 
 export type HealthConnectPermissionResult = {
@@ -62,8 +66,8 @@ export type HealthConnectPermissionResult = {
  *  real native return type diverging from the plugin's own declared array type). */
 function toPermissionResult(res: { permissions: unknown }): HealthConnectPermissionResult {
   const granted = res.permissions as Record<string, boolean>;
-  const missing = HEALTH_CONNECT_PERMISSIONS.filter((permission) => granted[permission] !== true).map(
-    (permission) => HEALTH_CONNECT_PERMISSION_LABELS[permission],
+  const missing = HEALTH_CONNECT_PERMISSIONS.filter((permission) => granted[permission] !== true).map((permission) =>
+    t(HEALTH_CONNECT_PERMISSION_LABEL_KEYS[permission]),
   );
   return { granted: missing.length === 0, missing };
 }
@@ -309,7 +313,7 @@ async function runImport(trigger: SyncTrigger): Promise<HealthConnectImportResul
     } catch (err) {
       failed++;
       const message =
-        err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : "Unbekannter Fehler.";
+        err instanceof ApiError && err.detail ? err.detail : err instanceof Error ? err.message : t("healthConnect.unknownError");
       reports.push({ ...base, outcome: { kind: "failed", message } });
     }
   }

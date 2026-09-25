@@ -107,6 +107,7 @@ profile:
   checkingEllipsis: "Prüfe…"
   update:
     upToDate: "Du bist auf dem neuesten Stand."
+    checkFailed: "Update-Prüfung fehlgeschlagen. Später erneut versuchen."
   errors:
     tooManyAttempts: "Zu viele Versuche. Bitte warte 15 Minuten."
     usernameTaken: "Benutzername bereits vergeben."
@@ -138,6 +139,7 @@ profile:
       label: Workouts pro Woche
       decrease: Weniger
       increase: Mehr
+    saved: "Trainingsprofil gespeichert."
   equipment:
     title: Equipment
     hint: "Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause)."
@@ -849,3 +851,41 @@ patterns:
     backAriaLabel: Zurück
   sheetModal:
     closeAriaLabel: Schließen
+serverConnection:
+  invalidAddress: "Bitte gib eine gültige Server-Adresse ein."
+  identity:
+    badResponse: "Server antwortet nicht wie erwartet."
+    notLiftr: "Antwort erhalten, aber das scheint keine Liftr-Instanz zu sein."
+    unreachable: "Server nicht erreichbar. Adresse und Verbindung prüfen."
+liveRun:
+  locationDenied: "Standortzugriff wurde nicht erlaubt — ohne GPS kann kein Lauf getrackt werden."
+  gpsSignalLost: "GPS-Signal verloren — Tracking läuft weiter, sobald es zurückkommt."
+  startFailedDevice: "Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen."
+  startFailedInsecure: "GPS braucht eine sichere (HTTPS-)Verbindung — im Browser nur über HTTPS verfügbar."
+healthConnect:
+  permissionLabels:
+    workouts: Aktivitäten
+    route: Strecken
+    heartRate: Herzfrequenz
+    distance: Distanz
+  unknownError: "Unbekannter Fehler."
+  status:
+    missingPermissions: "Bitte folgende Health-Connect-Freigaben aktivieren: {missing}."
+    unavailable: "Health Connect ist nicht verfügbar."
+    noNewActivities: "Verbunden — keine neuen Aktivitäten gefunden."
+    synced: "Verbunden — {n} Aktivität synchronisiert. | Verbunden — {n} Aktivitäten synchronisiert."
+    partSynced: "{n} synchronisiert"
+    partSkipped: "{n} übersprungen"
+    partFailed: "{n} fehlgeschlagen"
+    detailsWrap: "Verbunden — {parts}. Details im Protokoll."
+    connectionFailed: "Verbindung fehlgeschlagen."
+workoutFinish:
+  plausibility:
+    pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
+    improbableJump: "Dieser Sprung war ungewöhnlich groß — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
+    exceedsCeiling: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
+  recoveryBonus: "+{lp} LP (Rückkehr-Bonus)"
+runValidation:
+  distanceRequired: "Bitte eine Distanz in km angeben."
+  durationRequired: "Bitte eine Dauer in Minuten angeben."
+  dateRequired: "Bitte ein gültiges Datum angeben."

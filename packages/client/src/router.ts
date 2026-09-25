@@ -2,9 +2,11 @@ import { createRouter, createWebHistory } from "vue-router";
 
 declare module "vue-router" {
   interface RouteMeta {
-    /** Drives App.vue's sr-only <h1> and the routes below with no navItems entry of their own
-     *  (App.vue's own pageTitle special-cases handle every other title source: navItems' nav
-     *  labels, /runs, and the dynamic per-routine title). */
+    /** An i18n key (not the translated text — the route table is evaluated once at module load,
+     *  before a user might switch locale) drives App.vue's sr-only <h1> and the routes below with
+     *  no navItems entry of their own (App.vue's own pageTitle special-cases handle every other
+     *  title source: navItems' nav labels, /runs, and the dynamic per-routine title). App.vue
+     *  calls t() on this at the point of use. */
     title?: string;
     /** True for every route whose page renders BasePage with `back-button` — App.vue's
      *  `hideTopHud` reads this to suppress the mobile top-hud (level ring/streak chip) there,
@@ -52,7 +54,7 @@ export const router = createRouter({
       path: "/records",
       name: "records",
       component: () => import("./pages/RecordsPage.vue"),
-      meta: { title: "Rekorde", backButton: true },
+      meta: { title: "recordsPage.title", backButton: true },
       // Kick the PR fetch off as soon as navigation starts (not onMounted, which only runs once
       // the component actually mounts — see the beforeResolve prefetch comment below for why
       // that's too late) so data is already in flight while the chunk resolves and the outgoing
@@ -66,7 +68,7 @@ export const router = createRouter({
       path: "/exercises/:slug",
       name: "exercise-detail",
       component: () => import("./pages/ExerciseDetailPage.vue"),
-      meta: { title: "Übung", backButton: true },
+      meta: { title: "workout.exerciseFallbackTitle", backButton: true },
       // Same eager-prefetch pattern as /records above — get the fetch in flight while the chunk
       // resolves. Guarded on !loaded (matching ExerciseDetailPage.vue's own onMounted guard and
       // /records' prStore prefetch) since catalogStore.load() always re-fetches the whole
@@ -83,7 +85,7 @@ export const router = createRouter({
       path: "/workouts/:id",
       name: "workout-detail",
       component: () => import("./pages/WorkoutDetailPage.vue"),
-      meta: { title: "Workout-Details", backButton: true },
+      meta: { title: "workoutDetailPage.fallbackTitle", backButton: true },
       // Same eager-prefetch pattern as /records and /exercises/:slug above — historyStore.loadWorkout()
       // is safe to call again here even though the page's own onMounted calls it too: it's cached
       // per id (see historyStore.ts), so a concurrent call while this one is still in flight is the
@@ -96,7 +98,7 @@ export const router = createRouter({
       path: "/runs/:id",
       name: "run-detail",
       component: () => import("./pages/RunDetailPage.vue"),
-      meta: { title: "Lauf-Details", backButton: true },
+      meta: { title: "runDetailPage.fallbackTitle", backButton: true },
       beforeEnter: (to) => {
         void import("./stores/runsStore").then(({ useRunsStore }) => useRunsStore().loadDetail(to.params.id as string));
       },
@@ -106,13 +108,13 @@ export const router = createRouter({
       path: "/attributions",
       name: "attributions",
       component: () => import("./pages/AttributionsPage.vue"),
-      meta: { title: "Quellen & Lizenzen", backButton: true },
+      meta: { title: "attributionsPage.title", backButton: true },
     },
     {
       path: "/diagnostics",
       name: "diagnostics",
       component: () => import("./pages/DiagnosticsPage.vue"),
-      meta: { title: "Diagnose", backButton: true },
+      meta: { title: "diagnosticsPage.title", backButton: true },
     },
   ],
 });

@@ -106,6 +106,7 @@ profile:
   checkingEllipsis: "Checking…"
   update:
     upToDate: "You're all caught up."
+    checkFailed: "Update check failed. Try again later."
   errors:
     tooManyAttempts: "Too many attempts. Please wait 15 minutes."
     usernameTaken: "Username is already taken."
@@ -137,6 +138,7 @@ profile:
       label: Workouts per week
       decrease: Fewer
       increase: More
+    saved: "Training profile saved."
   equipment:
     title: Equipment
     hint: "So you're only suggested exercises you can actually do with your equipment (e.g. when training at home)."
@@ -848,3 +850,41 @@ patterns:
     backAriaLabel: Back
   sheetModal:
     closeAriaLabel: Close
+serverConnection:
+  invalidAddress: "Please enter a valid server address."
+  identity:
+    badResponse: "Server didn't respond as expected."
+    notLiftr: "Got a response, but this doesn't look like a Liftr instance."
+    unreachable: "Server unreachable. Check the address and your connection."
+liveRun:
+  locationDenied: "Location access wasn't granted — a run can't be tracked without GPS."
+  gpsSignalLost: "GPS signal lost — tracking will resume once it's back."
+  startFailedDevice: "Couldn't start location tracking — check GPS on this device."
+  startFailedInsecure: "GPS needs a secure (HTTPS) connection — only available over HTTPS in the browser."
+healthConnect:
+  permissionLabels:
+    workouts: Workouts
+    route: Routes
+    heartRate: Heart rate
+    distance: Distance
+  unknownError: "Unknown error."
+  status:
+    missingPermissions: "Please enable the following Health Connect permissions: {missing}."
+    unavailable: "Health Connect isn't available."
+    noNewActivities: "Connected — no new activities found."
+    synced: "Connected — {n} activity synced. | Connected — {n} activities synced."
+    partSynced: "{n} synced"
+    partSkipped: "{n} skipped"
+    partFailed: "{n} failed"
+    detailsWrap: "Connected — {parts}. See the log for details."
+    connectionFailed: "Connection failed."
+workoutFinish:
+  plausibility:
+    pace: "This session was unusually fast — your rank and XP gain is more conservative as a result."
+    improbableJump: "That jump was unusually large — your rank and XP gain is more conservative as a result."
+    exceedsCeiling: "This value is unusually high — your rank and XP gain is more conservative as a result."
+  recoveryBonus: "+{lp} LP (comeback bonus)"
+runValidation:
+  distanceRequired: "Please enter a distance in km."
+  durationRequired: "Please enter a duration in minutes."
+  dateRequired: "Please enter a valid date."
