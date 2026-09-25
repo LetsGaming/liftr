@@ -470,3 +470,83 @@ overview:
     current: Diese Woche
     last: Letzte Woche
     ago: "Vor {n} Wochen"
+exerciseUi:
+  addCustomForm:
+    nameLabel: Name
+    namePlaceholder: "z. B. Kabelzug Facepull"
+    slugPreview: "wird gespeichert als: {slug}"
+    movementPatternLabel: Bewegungsmuster
+    movementPatterns:
+      squat: Kniebeuge
+      hinge: Hüftbeuge
+      pushHorizontal: "Drücken, horizontal"
+      pushVertical: "Drücken, vertikal"
+      pullHorizontal: "Ziehen, horizontal"
+      pullVertical: "Ziehen, vertikal"
+      carry: Tragen
+      isolationArms: "Isolation (Arme)"
+      isolationCore: "Isolation (Rumpf)"
+      isolationShoulders: "Isolation (Schultern)"
+      isolationLegs: "Isolation (Beine)"
+      isolationChest: "Isolation (Brust)"
+      isolationBack: "Isolation (Rücken)"
+    bodyweightLabel: Eigengewichtsübung
+    equipmentLabel: Gerät
+    noEquipmentOption: Kein primäres Gerät
+    primaryMuscleLabel: Hauptmuskel
+    secondaryMusclesLabel: "Weitere Muskeln (optional)"
+    errorSaveFailed: "Speichern fehlgeschlagen — prüfe, ob der Name bereits vergeben ist."
+    cancel: Abbrechen
+    save: Übung speichern
+  detail:
+    tabs:
+      ueber: Über
+      rang: Rang
+      statistiken: Statistiken
+      verlauf: Verlauf
+    notFoundText: Diese Übung wurde nicht gefunden.
+    notFoundBack: "Zu den Übungen →"
+    equipmentEyebrow: Benötigtes Equipment
+    missingBadge:
+      required: fehlt
+      recommended: empfohlen
+      optional: optional
+    musclesEyebrow: Trainierte Muskeln
+    legendPrimary: Primär
+    legendSecondary: Sekundär
+    noRankYet: "Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast."
+    loading: "Lädt…"
+    statBest: Bestleistung
+    statVolume: Volumen
+    statSets: Sätze
+    repsValue: "{n} Wdh."
+  list:
+    searchPlaceholder: "Übung suchen…"
+    searchAriaLabel: Übung suchen
+    equipmentFilterAriaLabel: Nach Gerät filtern
+    allEquipmentOption: Alle Geräte
+    muscleFilterAriaLabel: Nach Muskelgruppe filtern
+    allMusclesOption: Alle Muskeln
+    onlyDoableToggle: Nur machbare Übungen
+    emptyWithFilterHint: "Keine Übung passt zu diesen Filtern — \"Nur machbare Übungen\" blendet dabei möglicherweise passende Übungen aus."
+    emptyPlain: Keine Übung passt zu diesen Filtern.
+    disableOnlyDoable: "Filter \"Nur machbare Übungen\" ausschalten"
+    missingNote: "fehlt: {list}"
+    recommendedNote: "empfohlen: {list}"
+  historyList:
+    empty: Diese Übung hast du noch nie geloggt.
+    repsAbbr: "Wdh."
+    warmupMarker: Aufwärmen
+  rail:
+    sets: Sätze
+    repsAbbr: "Wdh."
+  demo:
+    altSequence: Übungsablauf
+    altStart: Startposition
+    altEnd: Endposition
+    noImage: Kein Bild
+    labelStart: Start
+    labelEnd: Ende
+  muscleFigure:
+    altFront: Vorderansicht
+    altBack: Rückansicht

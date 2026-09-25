@@ -6,6 +6,7 @@
  * the lazy fetch and passes the resulting sets array down.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { formatDateLong } from "../../lib/format";
 import EmptyNote from "../base/EmptyNote.vue";
 
@@ -17,6 +18,7 @@ interface HistorySet {
 }
 
 const props = defineProps<{ sets: HistorySet[] }>();
+const { t } = useI18n();
 
 interface DayGroup {
   day: string;
@@ -46,16 +48,16 @@ const groups = computed<DayGroup[]>(() => {
 
 <template>
   <div class="history-list">
-    <EmptyNote v-if="groups.length === 0" class="empty" align="start">Diese Übung hast du noch nie geloggt.</EmptyNote>
+    <EmptyNote v-if="groups.length === 0" class="empty" align="start">{{ t("exerciseUi.historyList.empty") }}</EmptyNote>
     <div v-for="g in groups" :key="g.day" class="day-group">
       <div class="day-label">{{ g.dateLabel }}</div>
       <ul class="set-rows">
         <li v-for="(s, i) in g.sets" :key="i" class="set-row surface-hybrid" :class="{ warmup: s.isWarmup }">
           <span class="set-value tnum">
             <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg × {{ s.reps }}</template>
-            <template v-else>{{ s.reps }} Wdh.</template>
+            <template v-else>{{ s.reps }} {{ t("exerciseUi.historyList.repsAbbr") }}</template>
           </span>
-          <span v-if="s.isWarmup" class="warmup-marker">Aufwärmen</span>
+          <span v-if="s.isWarmup" class="warmup-marker">{{ t("exerciseUi.historyList.warmupMarker") }}</span>
         </li>
       </ul>
     </div>

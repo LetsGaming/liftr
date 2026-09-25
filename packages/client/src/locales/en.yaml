@@ -469,3 +469,83 @@ overview:
     current: This week
     last: Last week
     ago: "{n} weeks ago"
+exerciseUi:
+  addCustomForm:
+    nameLabel: Name
+    namePlaceholder: "e.g. Cable Face Pull"
+    slugPreview: "will be saved as: {slug}"
+    movementPatternLabel: Movement pattern
+    movementPatterns:
+      squat: Squat
+      hinge: Hinge
+      pushHorizontal: "Push, horizontal"
+      pushVertical: "Push, vertical"
+      pullHorizontal: "Pull, horizontal"
+      pullVertical: "Pull, vertical"
+      carry: Carry
+      isolationArms: "Isolation (arms)"
+      isolationCore: "Isolation (core)"
+      isolationShoulders: "Isolation (shoulders)"
+      isolationLegs: "Isolation (legs)"
+      isolationChest: "Isolation (chest)"
+      isolationBack: "Isolation (back)"
+    bodyweightLabel: Bodyweight exercise
+    equipmentLabel: Equipment
+    noEquipmentOption: No primary equipment
+    primaryMuscleLabel: Primary muscle
+    secondaryMusclesLabel: "Other muscles (optional)"
+    errorSaveFailed: "Save failed — check whether that name is already taken."
+    cancel: Cancel
+    save: Save exercise
+  detail:
+    tabs:
+      ueber: About
+      rang: Rank
+      statistiken: Stats
+      verlauf: History
+    notFoundText: This exercise couldn't be found.
+    notFoundBack: "Back to exercises →"
+    equipmentEyebrow: Equipment needed
+    missingBadge:
+      required: missing
+      recommended: recommended
+      optional: optional
+    musclesEyebrow: Muscles trained
+    legendPrimary: Primary
+    legendSecondary: Secondary
+    noRankYet: "No rank yet — it's created from your best set once you've trained this exercise."
+    loading: "Loading…"
+    statBest: Best
+    statVolume: Volume
+    statSets: Sets
+    repsValue: "{n} reps"
+  list:
+    searchPlaceholder: "Search exercises…"
+    searchAriaLabel: Search exercises
+    equipmentFilterAriaLabel: Filter by equipment
+    allEquipmentOption: All equipment
+    muscleFilterAriaLabel: Filter by muscle group
+    allMusclesOption: All muscles
+    onlyDoableToggle: Only doable exercises
+    emptyWithFilterHint: "No exercise matches these filters — \"Only doable exercises\" may be hiding matching exercises."
+    emptyPlain: No exercise matches these filters.
+    disableOnlyDoable: "Turn off \"Only doable exercises\" filter"
+    missingNote: "missing: {list}"
+    recommendedNote: "recommended: {list}"
+  historyList:
+    empty: You haven't logged this exercise yet.
+    repsAbbr: "reps"
+    warmupMarker: Warm-up
+  rail:
+    sets: sets
+    repsAbbr: "reps"
+  demo:
+    altSequence: Exercise sequence
+    altStart: Starting position
+    altEnd: Ending position
+    noImage: No image
+    labelStart: Start
+    labelEnd: End
+  muscleFigure:
+    altFront: Front view
+    altBack: Back view

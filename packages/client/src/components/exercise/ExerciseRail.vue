@@ -5,11 +5,13 @@
  *  responsive treatment. `variant="horizontal"` is the mobile-parity fix: a compact scroll-snap
  *  strip so the rail doesn't push the current exercise below the fold on narrow viewports.
  *  Desktop keeps the default vertical variant unchanged. */
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 import ListRow from "../patterns/ListRow.vue";
 import { useActiveWorkoutStore, type ActiveExercise } from "../../stores/activeWorkoutStore";
 
 withDefaults(defineProps<{ variant?: "vertical" | "horizontal" }>(), { variant: "vertical" });
+const { t } = useI18n();
 /** Emitted alongside store.jumpToExercise(i) so a caller rendering this rail inside a dismissible
  *  sheet (WorkoutPage.vue's exercise-overview sheet) can close itself once a jump happens,
  *  without this component needing to know anything about sheets. */
@@ -47,8 +49,8 @@ function workingReps(ex: ActiveExercise): number | null {
       <span class="meta">
         <b><span v-if="ex.supersetGroup != null" class="superset-dot" aria-hidden="true" />{{ ex.name }}</b>
         <span>
-          {{ ex.sets.filter((s) => s.logged).length }} / {{ ex.sets.length }} Sätze
-          <template v-if="workingReps(ex) !== null"> · {{ workingReps(ex) }} Wdh.</template>
+          {{ ex.sets.filter((s) => s.logged).length }} / {{ ex.sets.length }} {{ t("exerciseUi.rail.sets") }}
+          <template v-if="workingReps(ex) !== null"> · {{ workingReps(ex) }} {{ t("exerciseUi.rail.repsAbbr") }}</template>
         </span>
       </span>
     </ListRow>
