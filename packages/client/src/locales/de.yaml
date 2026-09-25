@@ -773,6 +773,10 @@ onboarding:
       trapBar: Trap-Bar
       dumbbell: Kurzhantel-Griff
 workoutUi:
+  workoutClock:
+    label: Trainingszeit
+    resume: Fortsetzen
+    pause: Pausieren
   setEntry:
     weightLabel: Gewicht
     repsLabel: Wiederholungen
@@ -809,6 +813,11 @@ workoutUi:
     waitingToStart: startet nach dem Satz
     skip: Überspringen
 shell:
+  serverGate:
+    prompt: Mit welchem Server soll sich die App verbinden?
+    placeholder: liftr.example.com
+    connecting: "Verbinde…"
+    connect: Verbinden
   syncIndicator:
     failedTitle: "Synchronisierung fehlgeschlagen: {error}"
   onboardingGuide:
@@ -882,6 +891,13 @@ run:
     finishRun: Lauf beenden
     saveFailed: "Speichern fehlgeschlagen — der Lauf bleibt auf diesem Gerät, bis du es erneut versuchst."
 patterns:
+  numberStepper:
+    decrease: Weniger
+    decreaseLabel: "Weniger {label}"
+    increase: Mehr
+    increaseLabel: "Mehr {label}"
+    editValue: "Wert bearbeiten, aktuell {value}"
+    editValueLabel: "{label} bearbeiten, aktuell {value}"
   drillInScreen:
     back: Zurück
   wizardHeader:

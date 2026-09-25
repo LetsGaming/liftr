@@ -769,6 +769,10 @@ onboarding:
       trapBar: Trap bar
       dumbbell: Dumbbell handle
 workoutUi:
+  workoutClock:
+    label: Workout time
+    resume: Resume
+    pause: Pause
   setEntry:
     weightLabel: Weight
     repsLabel: Reps
@@ -805,6 +809,11 @@ workoutUi:
     waitingToStart: starts after the set
     skip: Skip
 shell:
+  serverGate:
+    prompt: Which server should the app connect to?
+    placeholder: liftr.example.com
+    connecting: "Connecting…"
+    connect: Connect
   syncIndicator:
     failedTitle: "Sync failed: {error}"
   onboardingGuide:
@@ -878,6 +887,13 @@ run:
     finishRun: Finish run
     saveFailed: "Save failed — the run stays on this device until you try again."
 patterns:
+  numberStepper:
+    decrease: Decrease
+    decreaseLabel: "Decrease {label}"
+    increase: Increase
+    increaseLabel: "Increase {label}"
+    editValue: "Edit value, currently {value}"
+    editValueLabel: "Edit {label}, currently {value}"
   drillInScreen:
     back: Back
   wizardHeader:
