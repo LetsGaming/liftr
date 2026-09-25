@@ -13,3 +13,5 @@ coverage/
 .impeccable/hook.cache.json
 .impeccable/critique/
 .playwright-mcp/*
+.claude/*
+!.claude/.gitkeep
