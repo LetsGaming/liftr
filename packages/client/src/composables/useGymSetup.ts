@@ -6,6 +6,7 @@
  * unrelated settings concerns together.
  */
 import { computed, ref, watch } from "vue";
+import { t } from "../i18n";
 import { useToast } from "./useToast";
 // DEFAULT_BAR_WEIGHTS_KG/MIN_BAR_WEIGHT_KG/MAX_BAR_WEIGHT_KG were previously duplicated here with
 // a different (looser, dumbbell-max-ignoring) clamp than onboarding's copy — reusing onboarding's
@@ -17,11 +18,13 @@ import type { useSettingsStore } from "../stores/settingsStore";
 
 export type { BarType };
 export const BAR_TYPES: BarType[] = ["barbell", "ez-bar", "trap-bar", "dumbbell"];
-export const BAR_LABEL_DE: Record<BarType, string> = {
-  barbell: "Langhantel",
-  "ez-bar": "SZ-Stange",
-  "trap-bar": "Trap-Bar",
-  dumbbell: "Kurzhantel-Griff",
+// Same names as onboarding's PlatesStep.vue (which has its own copy of this table, scoped to its
+// own wizard step) — reuses that i18n key rather than duplicating the label set a second time.
+const BAR_LABEL_KEY: Record<BarType, string> = {
+  barbell: "onboarding.platesStep.barLabel.barbell",
+  "ez-bar": "onboarding.platesStep.barLabel.ezBar",
+  "trap-bar": "onboarding.platesStep.barLabel.trapBar",
+  dumbbell: "onboarding.platesStep.barLabel.dumbbell",
 };
 export const PLATE_SIZES_KG = [25, 20, 15, 10, 5, 2.5, 1.25, 1];
 
@@ -31,6 +34,7 @@ export const supportEquipmentSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !==
 
 export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) {
   const { toast } = useToast();
+  const barLabel = (type: BarType) => t(BAR_LABEL_KEY[type]);
 
   // Defaults to bodyweight-owned even before the store loads (same default as onboarding's
   // OnboardingDraft.ts) — a profile with no saved equipment yet (server returns null, e.g. a
@@ -65,15 +69,15 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
     equipmentSaving.value = true;
     try {
       await settingsStore.saveEquipment([...equipment.value]);
-      toast("Equipment gespeichert.");
+      toast(t("profile.equipment.equipmentSaved"));
     } catch {
-      toast("Speichern fehlgeschlagen.");
+      toast(t("profile.equipment.saveFailed"));
     } finally {
       equipmentSaving.value = false;
     }
   }
 
-  const ownedBarTypes = computed(() => BAR_TYPES.filter((t) => equipment.value.has(t)));
+  const ownedBarTypes = computed(() => BAR_TYPES.filter((barType) => equipment.value.has(barType)));
 
   const barWeightsKg = ref<Map<BarType, number>>(new Map());
   const plateCounts = ref<Map<number, number>>(new Map());
@@ -109,12 +113,12 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
       const plates = [...plateCounts.value.entries()].filter(([, count]) => count > 0).map(([weightKg, count]) => ({ weightKg, count }));
       const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
       await settingsStore.saveGymSetup({ barWeights, plates });
-      toast("Scheiben & Stange gespeichert.");
+      toast(t("profile.equipment.gymSaved"));
     } catch {
       // Previously unhandled — a rejection here (e.g. the server's per-type max, still enforced
       // server-side even after the client clamp fix above) left the card looking saved with no
       // indication anything failed.
-      toast("Speichern fehlgeschlagen.");
+      toast(t("profile.equipment.saveFailed"));
     } finally {
       gymSaving.value = false;
     }
@@ -130,9 +134,9 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
       const plates = [...plateCounts.value.entries()].filter(([, count]) => count > 0).map(([weightKg, count]) => ({ weightKg, count }));
       const barWeights = Object.fromEntries([...barWeightsKg.value.entries()].filter(([type]) => ownedBarTypes.value.includes(type)));
       await Promise.all([settingsStore.saveEquipment([...equipment.value]), settingsStore.saveGymSetup({ barWeights, plates })]);
-      toast("Equipment gespeichert.");
+      toast(t("profile.equipment.equipmentSaved"));
     } catch {
-      toast("Speichern fehlgeschlagen.");
+      toast(t("profile.equipment.saveFailed"));
     } finally {
       equipmentSaving.value = false;
       gymSaving.value = false;
@@ -144,6 +148,7 @@ export function useGymSetup(settingsStore: ReturnType<typeof useSettingsStore>) 
     equipmentSaving,
     toggleEquipment,
     saveEquipmentCard,
+    barLabel,
     ownedBarTypes,
     barWeightsKg,
     plateCounts,

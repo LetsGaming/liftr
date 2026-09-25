@@ -158,6 +158,9 @@ profile:
     plateSizesLabel: Plates per size
     decreasePlates: "Fewer {size}kg"
     increasePlates: "More {size}kg"
+    equipmentSaved: "Equipment saved."
+    gymSaved: "Plates & bar saved."
+    saveFailed: "Save failed."
   xp:
     title: "XP & Level"
     hint: "A bonus on top of the rank system — nothing depends on it, and it can be hidden anytime."

@@ -162,6 +162,9 @@ profile:
     plateSizesLabel: Scheiben pro Größe
     decreasePlates: "Weniger {size}kg"
     increasePlates: "Mehr {size}kg"
+    equipmentSaved: "Equipment gespeichert."
+    gymSaved: "Scheiben & Stange gespeichert."
+    saveFailed: "Speichern fehlgeschlagen."
   xp:
     title: "XP & Level"
     hint: "Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden."

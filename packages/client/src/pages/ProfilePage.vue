@@ -20,7 +20,7 @@ import ListRow from "../components/patterns/ListRow.vue";
 import { useAppUpdate } from "../composables/useAppUpdate";
 import { useConfirmTap } from "../composables/useConfirmTap";
 import { useDataExport } from "../composables/useDataExport";
-import { useGymSetup, BAR_LABEL_DE, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
+import { useGymSetup, PLATE_SIZES_KG, supportEquipmentSlugs } from "../composables/useGymSetup";
 import { useHealthConnectImport } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
 import { checkVersionMismatch, useServerConnection, useServerVersionInfo } from "../composables/useServerConnection";
@@ -71,6 +71,7 @@ const {
   equipment,
   equipmentSaving,
   toggleEquipment,
+  barLabel,
   ownedBarTypes,
   gymSaving,
   plateCount,
@@ -438,11 +439,11 @@ async function saveWeight() {
           <span class="profile-label support-label">{{ t("profile.equipment.barWeightLabel") }}</span>
           <div class="plate-rows">
             <div v-for="type in ownedBarTypes" :key="type" class="plate-row">
-              <span>{{ BAR_LABEL_DE[type] }}</span>
+              <span>{{ barLabel(type) }}</span>
               <div class="stepper-row">
-                <button type="button" :aria-label="t('profile.equipment.decreaseBar', { name: BAR_LABEL_DE[type] })" @click="adjustBarWeight(type, -1)">−</button>
+                <button type="button" :aria-label="t('profile.equipment.decreaseBar', { name: barLabel(type) })" @click="adjustBarWeight(type, -1)">−</button>
                 <span class="tnum">{{ barWeight(type) }} kg</span>
-                <button type="button" :aria-label="t('profile.equipment.increaseBar', { name: BAR_LABEL_DE[type] })" @click="adjustBarWeight(type, 1)">+</button>
+                <button type="button" :aria-label="t('profile.equipment.increaseBar', { name: barLabel(type) })" @click="adjustBarWeight(type, 1)">+</button>
               </div>
             </div>
           </div>
