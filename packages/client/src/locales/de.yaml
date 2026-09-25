@@ -8,10 +8,278 @@ nav:
   exercises: Übungen
   runs: Läufe
   profile: Profil
+common:
+  save: Speichern
+  savingEllipsis: "Wird gespeichert…"
+  workout: Workout
 workout:
   start: Heutiges Workout starten
   save: Satz speichern
+  tabs:
+    runs: Läufe
+    navLabel: "Workout oder Läufe"
+  toast:
+    copied: In Zwischenablage kopiert
+    copyFailed: Kopieren fehlgeschlagen
+  supersetLabel: "Superset {pos}/{total}"
+  noteCapture:
+    workoutTitle: Workout-Notiz
+    setTitle: Notiz zum Satz
+  finished:
+    eyebrow: Geschafft
+    reached: erreicht
+    level: "Lv. {level}"
+    rankUpsSuffix: " · {count} Rangaufstiege"
+    musclesTrained: Trainierte Muskeln
+    whatChanged: Was sich verändert hat
+    duration: Dauer
+    volume: Volumen
+    setsLabel: Sätze
+    creatingImage: "Erstelle Bild…"
+    shareImage: Als Bild teilen
+    copying: "Kopiere…"
+    copyToClipboard: In Zwischenablage kopieren
+    done: Fertig
+  beatRoutinePrefix: "Du warst stärker als geplant: "
+  setCount: "{n} Satz | {n} Sätze"
+  beatRoutineSuffix: " über dem Routine-Ziel."
+  insteadOf: statt
+  beatRoutineUpdated: Routine aktualisiert.
+  notNow: Nicht jetzt
+  updateRoutine: Routine aktualisieren
+  stale:
+    banner: "Dieses Workout läuft seit über {hours} Stunden. Läuft es noch, oder hast du vergessen, es zu beenden?"
+    stillRunning: Läuft noch
+    finishNow: Jetzt beenden
+  cancelAriaLabel: Workout abbrechen
+  cancelConfirm:
+    message: "Workout wirklich abbrechen? Der gesamte Fortschritt geht verloren."
+    no: Nein
+    yes: "Ja, abbrechen"
+  mesoWeek: "Woche {current}/{total} · {percent}%"
+  moreOptionsAriaLabel: Weitere Optionen
+  addExercise:
+    title: Übung hinzufügen
+    searchPlaceholder: "Übung suchen…"
+  close: Schließen
+  nextExercise:
+    label: Nächste Übung
+    lastOne: Letzte Übung dieser Routine
+  showAllExercisesAriaLabel: Alle Übungen anzeigen
+  skipExercise: Übung überspringen
+  showRankAriaLabel: Rang anzeigen
+  exerciseInfoAriaLabel: Übungsinfo
+  lastTime: "Letztes Mal an dieser Stelle:"
+  repsAbbr: "Wdh."
+  notePrefix: "Notiz: {note}"
+  noteLabel: Notiz
+  repsHint: "Erst Wiederholungen, dann speichern."
+  exerciseDone: Übung erledigt
+  setKindAriaLabel: "Satzart wählen (aktuell {kind})"
+  setOpen: offen
+  moreSheetTitle: Mehr
+  menu:
+    addExercise: "+ Übung hinzufügen"
+    workoutNotePrefix: "Workout-Notiz: {note}"
+    addWorkoutNote: "+ Workout-Notiz"
+    addWarmupSets: "+ Aufwärmsätze einfügen"
+  allDone: Alle Übungen erledigt.
+  finishWorkout: Workout beenden
+  exercisesSheetTitle: Übungen
+  exerciseFallbackTitle: Übung
 profile:
+  title: "Profil & Einstellungen"
+  subtitle: "Dein Server, dein Konto, deine Daten."
+  groups:
+    training: Trainingsprofil
+    progress: Fortschritt
+    appearance: Darstellung
+    account: Konto
+    data: Daten
+    about: Über
   appearance:
     # Label above the language chip row in Profil → Darstellung, next to the theme chips.
     language: Sprache
+    dark: Dunkel
+    light: Hell
+  logoutLabel: Abmelden
+  checkingEllipsis: "Prüfe…"
+  update:
+    upToDate: "Du bist auf dem neuesten Stand."
+  errors:
+    tooManyAttempts: "Zu viele Versuche. Bitte warte 15 Minuten."
+    usernameTaken: "Benutzername bereits vergeben."
+    passwordTooWeak: "Passwort zu unsicher. Bitte wähle ein anderes Passwort."
+    displayNameChangeFailed: "Anzeigename konnte nicht geändert werden."
+    wrongPassword: "Aktuelles Passwort falsch."
+  bodyweight:
+    title: Körpergewicht
+    hint: "Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht."
+    placeholder: "z.B. 72,5"
+    ariaLabel: "Körpergewicht in Kilogramm"
+    current: "Aktuell:"
+    noEntry: "Trag dein Gewicht oben ein — bis dahin nutzt die Rang-Berechnung vorläufig 75 kg."
+  trainingProfile:
+    hint: "Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast."
+    sex:
+      label: Geschlecht
+      male: Männlich
+      female: Weiblich
+    birthYear:
+      label: Geburtsjahr
+      placeholder: "z.B. 1995"
+    experience:
+      label: Trainingserfahrung
+      beginner: Anfänger
+      intermediate: Fortgeschritten
+      advanced: Erfahren
+    workoutsPerWeek:
+      label: Workouts pro Woche
+      decrease: Weniger
+      increase: Mehr
+  equipment:
+    title: Equipment
+    hint: "Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause)."
+    gearLabel: Trainingsgerät
+    bodyweightAlwaysActive: "Körpergewicht ist immer aktiv"
+    supportLabel: Weiteres Equipment
+    barWeightLabel: Stangengewicht
+    decreaseBar: "Weniger {name}"
+    increaseBar: "Mehr {name}"
+    plateSizesLabel: Scheiben pro Größe
+    decreasePlates: "Weniger {size}kg"
+    increasePlates: "Mehr {size}kg"
+  xp:
+    title: "XP & Level"
+    hint: "Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden."
+    levelLabel: Level
+    levelValue: "Lv. {level}"
+    totalLabel: Gesamt-XP
+    visible: "XP erscheinen im Workout und auf der Übersicht."
+    hidden: "XP bleiben verborgen."
+    hideAction: Ausblenden
+    showAction: Anzeigen
+  members:
+    title: Mitglieder
+    remove: Entfernen
+    invite: Einladungscode erstellen
+    inviteCodeLabel: "Code:"
+    inviteValidity: "(24h gültig)"
+  credentials:
+    title: Anmeldedaten
+    currentPasswordLabel: Aktuelles Passwort
+    changingEllipsis: "Wird geändert…"
+    displayName:
+      label: Anzeigename
+      saved: Gespeichert.
+      save: Anzeigename speichern
+    username:
+      title: Benutzername
+      newLabel: Neuer Benutzername
+      success: "Benutzername geändert. Andere Geräte wurden abgemeldet."
+      change: Benutzername ändern
+    password:
+      title: Passwort
+      newLabel: Neues Passwort
+      success: "Passwort geändert. Andere Geräte wurden abgemeldet."
+      change: Passwort ändern
+  sessions:
+    title: Aktive Sitzungen
+    loading: "Wird geladen…"
+    thisDevice: Dieses Gerät
+    revoke: Abmelden
+    revokingAll: "Wird abgemeldet…"
+    confirmRevokeAll: "Wirklich alle abmelden?"
+    revokeAll: Alle anderen Geräte abmelden
+  accountApp:
+    title: "Konto & App"
+    server:
+      title: Server
+      change: Ändern
+      addressAriaLabel: "Server-Adresse"
+      cancel: Abbrechen
+      versionPrefix: "Server-Version: v"
+      appVersionSuffix: " · App-Version: v{version}"
+      versionMismatch: "Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen."
+    version:
+      title: Version
+    update:
+      available: "Update verfügbar: v{version}"
+      check: Nach Updates suchen
+      download: Herunterladen
+  diagnostics:
+    title: Diagnose
+    syncLog: Sync-Protokoll
+    andServerErrors: " und Serverfehler"
+    hintRest: " — hilfreich, falls mal etwas nicht funktioniert. Normalerweise brauchst du das nicht."
+    open: Protokoll öffnen
+  deleteAccount:
+    title: Konto löschen
+    hint: "Löscht dein Konto und alle deine Daten (Workouts, Läufe, Routinen) unwiderruflich. Zweimal tippen zum Bestätigen."
+    deleting: "Wird gelöscht…"
+    confirm: "Wirklich löschen?"
+    cta: Konto löschen
+  healthConnect:
+    hint: "Läufe, die du mit deiner Uhr aufgezeichnet hast, importieren — inklusive Route, sobald Health Connect sie liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button stößt eine Synchronisierung jederzeit sofort an."
+    syncing: "Synchronisiere…"
+    syncNow: Jetzt synchronisieren
+    connect: Health Connect verbinden
+  export:
+    title: Daten-Export
+    hint: "Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr."
+    creating: "Wird erstellt…"
+    download: Backup herunterladen
+  about:
+    attributions: "Quellen & Lizenzen →"
+overview:
+  loadError:
+    message: "Einige Daten konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert."
+    retry: Erneut versuchen
+  launchpad:
+    continueTitle: Weiter machen
+    goToWorkout: "Zum Workout →"
+    readyTitle: Bereit für heute?
+    start: Starten
+    switchRoutine: "Andere Routine wählen →"
+    noRoutineTitle: Noch keine Routine
+    noRoutineHint: "Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst."
+    createFirstRoutine: "Erste Routine anlegen →"
+  exerciseCount: "{n} Übung | {n} Übungen"
+  firstRun:
+    ladderTitle: Deine Rangleiter
+  stats:
+    streakLabel: Tage Serie
+    levelLabel: Level
+    levelValue: "Lv. {level}"
+    workoutsThisWeek: Workouts diese Woche
+    overallRank: "Gesamt­rang"
+  rankInfo:
+    toggleLabel: Was bedeutet mein Rang?
+    gesamtrang: Gesamtrang
+    body: " fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert zusammen. Jede Stufe hat mehrere Divisionen (z. B. „III“ bis „I“), die bis zur nächsten Beförderung runterzählen; "
+  tiles:
+    volumeTitle: "Volumen (8 Wochen)"
+    volumeEmpty: "Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab."
+    nextRankTitle: Nächster Rang
+    nextRankMiddle: bis zum nächsten Rang in
+    nextRankEmpty: "Dein erster Rang entsteht, sobald du eine Übung geloggt hast."
+    bodyweightTitle: Körpergewicht
+    bodyweightEmpty: "Trag dein Körpergewicht in Profil ein — nach zwei Einträgen siehst du hier den Verlauf."
+  discover:
+    title: Entdecken
+    rankAnalysis: Rang-Analyse
+    rankAnalysisHint: "Rangverteilung & Rangaufstiege über alle Übungen im Überblick"
+  activity:
+    title: Letzte Aktivität
+    noConnection: "Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert."
+    empty: "Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast."
+    filterBoth: Beides
+    filterAriaLabel: "Aktivität filtern"
+    filterPlaceholder: Aktivität
+    showMore: Mehr anzeigen
+    loadingMore: "Lädt…"
+    loadMore: Mehr laden
+  week:
+    current: Diese Woche
+    last: Letzte Woche
+    ago: "Vor {n} Wochen"

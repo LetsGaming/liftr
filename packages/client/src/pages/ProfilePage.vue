@@ -133,9 +133,23 @@ const {
 async function checkForAppUpdateManually() {
   await checkForAppUpdate();
   if (!appUpdateAvailable.value && !appUpdateError.value) {
-    useToast().toast("Du bist auf dem neuesten Stand.");
+    useToast().toast(t("profile.update.upToDate"));
   }
 }
+
+const serverVersionLine = computed(
+  () =>
+    `${t("profile.accountApp.server.versionPrefix")}${serverVersion.value}${
+      appVersion.value ? t("profile.accountApp.server.appVersionSuffix", { version: appVersion.value }) : ""
+    }`,
+);
+
+const diagnosticsHint = computed(
+  () =>
+    `${t("profile.diagnostics.syncLog")}${me.value?.role === "owner" ? t("profile.diagnostics.andServerErrors") : ""}${t(
+      "profile.diagnostics.hintRest",
+    )}`,
+);
 
 const me = ref<Me | null>(null);
 const members = ref<Member[]>([]);
@@ -162,10 +176,10 @@ async function removeMemberAndRefresh(id: string) {
  *  gets its own message per call site instead of AuthGate's generic one. */
 function describeCredentialError(err: unknown, fallback: string): string {
   if (err instanceof ApiError) {
-    if (err.status === 429) return "Zu viele Versuche. Bitte warte 15 Minuten.";
-    if (err.status === 409) return "Benutzername bereits vergeben.";
+    if (err.status === 429) return t("profile.errors.tooManyAttempts");
+    if (err.status === 409) return t("profile.errors.usernameTaken");
     if (err.status === 400 && err.detail?.includes("too common")) {
-      return "Passwort zu unsicher. Bitte wähle ein anderes Passwort.";
+      return t("profile.errors.passwordTooWeak");
     }
   }
   return fallback;
@@ -186,7 +200,7 @@ async function saveDisplayName() {
     me.value = await changeDisplayName(name);
     displayNameSuccess.value = true;
   } catch (err) {
-    displayNameError.value = describeCredentialError(err, "Anzeigename konnte nicht geändert werden.");
+    displayNameError.value = describeCredentialError(err, t("profile.errors.displayNameChangeFailed"));
   } finally {
     displayNameSaving.value = false;
   }
@@ -209,7 +223,7 @@ async function saveUsername() {
     usernameCurrentPassword.value = "";
     usernameSuccess.value = true;
   } catch (err) {
-    usernameError.value = describeCredentialError(err, "Aktuelles Passwort falsch.");
+    usernameError.value = describeCredentialError(err, t("profile.errors.wrongPassword"));
   } finally {
     usernameSaving.value = false;
   }
@@ -232,7 +246,7 @@ async function savePassword() {
     newPasswordInput.value = "";
     passwordSuccess.value = true;
   } catch (err) {
-    passwordError.value = describeCredentialError(err, "Aktuelles Passwort falsch.");
+    passwordError.value = describeCredentialError(err, t("profile.errors.wrongPassword"));
   } finally {
     passwordSaving.value = false;
   }
@@ -329,71 +343,71 @@ async function saveWeight() {
 </script>
 
 <template>
-  <BasePage title="Profil & Einstellungen">
+  <BasePage :title="t('profile.title')">
     <div class="profile-content">
-    <p style="color: var(--dim)">Dein Server, dein Konto, deine Daten.</p>
+    <p style="color: var(--dim)">{{ t("profile.subtitle") }}</p>
 
-    <h2 class="group-header">Trainingsprofil</h2>
+    <h2 class="group-header">{{ t("profile.groups.training") }}</h2>
 
     <section class="card surface-hybrid">
-      <h2 class="eyebrow bw-eyebrow">Körpergewicht</h2>
-      <p class="hint">Dein Rang misst Gewicht immer im Verhältnis zu deinem Körpergewicht.</p>
+      <h2 class="eyebrow bw-eyebrow">{{ t("profile.bodyweight.title") }}</h2>
+      <p class="hint">{{ t("profile.bodyweight.hint") }}</p>
       <div class="bw-row">
         <Input
           v-model="weightInput"
           type="text"
           inputmode="decimal"
-          placeholder="z.B. 72,5"
-          aria-label="Körpergewicht in Kilogramm"
+          :placeholder="t('profile.bodyweight.placeholder')"
+          :aria-label="t('profile.bodyweight.ariaLabel')"
         />
         <span class="unit">kg</span>
-        <Button :disabled="!canSave || saving" @click="saveWeight">Speichern</Button>
+        <Button :disabled="!canSave || saving" @click="saveWeight">{{ t("common.save") }}</Button>
       </div>
       <p v-if="bodyweight.latest" class="current">
-        Aktuell: <b class="tnum">{{ Math.round(bodyweight.latest.weightKg * 100) / 100 }} kg</b> ({{ bodyweight.latest.date }})
+        {{ t("profile.bodyweight.current") }} <b class="tnum">{{ Math.round(bodyweight.latest.weightKg * 100) / 100 }} kg</b> ({{ bodyweight.latest.date }})
       </p>
       <p v-else class="current" style="color: var(--faint)">
-        Trag dein Gewicht oben ein — bis dahin nutzt die Rang-Berechnung vorläufig 75 kg.
+        {{ t("profile.bodyweight.noEntry") }}
       </p>
       <BodyweightTrend v-if="bodyweight.entries.length > 1" :entries="bodyweight.entries" />
     </section>
 
     <section class="card surface-hybrid">
-      <CollapsibleCard title="Trainingsprofil">
-        <p class="hint">Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast.</p>
-        <FormField label="Geschlecht" class="profile-field">
+      <CollapsibleCard :title="t('profile.groups.training')">
+        <p class="hint">{{ t("profile.trainingProfile.hint") }}</p>
+        <FormField :label="t('profile.trainingProfile.sex.label')" class="profile-field">
           <div class="chip-row">
-            <button class="chip" :class="{ active: sex === 'male' }" @click="sex = 'male'">Männlich</button>
-            <button class="chip" :class="{ active: sex === 'female' }" @click="sex = 'female'">Weiblich</button>
+            <button class="chip" :class="{ active: sex === 'male' }" @click="sex = 'male'">{{ t("profile.trainingProfile.sex.male") }}</button>
+            <button class="chip" :class="{ active: sex === 'female' }" @click="sex = 'female'">{{ t("profile.trainingProfile.sex.female") }}</button>
           </div>
         </FormField>
-        <FormField label="Geburtsjahr" class="profile-field">
-          <Input v-model="birthYearInput" class="profile-input" type="text" inputmode="numeric" placeholder="z.B. 1995" />
+        <FormField :label="t('profile.trainingProfile.birthYear.label')" class="profile-field">
+          <Input v-model="birthYearInput" class="profile-input" type="text" inputmode="numeric" :placeholder="t('profile.trainingProfile.birthYear.placeholder')" />
         </FormField>
-        <FormField label="Trainingserfahrung" class="profile-field">
+        <FormField :label="t('profile.trainingProfile.experience.label')" class="profile-field">
           <div class="chip-row">
-            <button class="chip" :class="{ active: experienceLevel === 'beginner' }" @click="experienceLevel = 'beginner'">Anfänger</button>
-            <button class="chip" :class="{ active: experienceLevel === 'intermediate' }" @click="experienceLevel = 'intermediate'">Fortgeschritten</button>
-            <button class="chip" :class="{ active: experienceLevel === 'advanced' }" @click="experienceLevel = 'advanced'">Erfahren</button>
+            <button class="chip" :class="{ active: experienceLevel === 'beginner' }" @click="experienceLevel = 'beginner'">{{ t("profile.trainingProfile.experience.beginner") }}</button>
+            <button class="chip" :class="{ active: experienceLevel === 'intermediate' }" @click="experienceLevel = 'intermediate'">{{ t("profile.trainingProfile.experience.intermediate") }}</button>
+            <button class="chip" :class="{ active: experienceLevel === 'advanced' }" @click="experienceLevel = 'advanced'">{{ t("profile.trainingProfile.experience.advanced") }}</button>
           </div>
         </FormField>
-        <FormField label="Workouts pro Woche" class="profile-field">
+        <FormField :label="t('profile.trainingProfile.workoutsPerWeek.label')" class="profile-field">
           <div class="stepper-row">
-            <button type="button" aria-label="Weniger" @click="workoutsPerWeek = Math.max(1, workoutsPerWeek - 1)">−</button>
+            <button type="button" :aria-label="t('profile.trainingProfile.workoutsPerWeek.decrease')" @click="workoutsPerWeek = Math.max(1, workoutsPerWeek - 1)">−</button>
             <span class="tnum">{{ workoutsPerWeek }}</span>
-            <button type="button" aria-label="Mehr" @click="workoutsPerWeek = Math.min(14, workoutsPerWeek + 1)">+</button>
+            <button type="button" :aria-label="t('profile.trainingProfile.workoutsPerWeek.increase')" @click="workoutsPerWeek = Math.min(14, workoutsPerWeek + 1)">+</button>
           </div>
         </FormField>
         <Button class="profile-save" :disabled="profileSaving" @click="saveProfileCard">
-          {{ profileSaving ? "Wird gespeichert…" : "Speichern" }}
+          {{ profileSaving ? t("common.savingEllipsis") : t("common.save") }}
         </Button>
       </CollapsibleCard>
     </section>
 
     <section class="card surface-hybrid">
-      <CollapsibleCard title="Equipment">
-        <p class="hint">Damit dir nur Übungen vorgeschlagen werden, die du mit deinem Equipment auch machen kannst (z.B. beim Training zuhause).</p>
-        <span class="profile-label">Trainingsgerät</span>
+      <CollapsibleCard :title="t('profile.equipment.title')">
+        <p class="hint">{{ t("profile.equipment.hint") }}</p>
+        <span class="profile-label">{{ t("profile.equipment.gearLabel") }}</span>
         <div class="chip-row wrap">
           <button
             v-for="slug in EQUIPMENT_SLUGS"
@@ -401,13 +415,13 @@ async function saveWeight() {
             class="chip"
             :class="{ active: equipment.has(slug), locked: slug === 'bodyweight' }"
             :aria-disabled="slug === 'bodyweight' ? 'true' : undefined"
-            :title="slug === 'bodyweight' ? 'Körpergewicht ist immer aktiv' : undefined"
+            :title="slug === 'bodyweight' ? t('profile.equipment.bodyweightAlwaysActive') : undefined"
             @click="toggleEquipment(slug)"
           >
             {{ EQUIPMENT_LABEL_DE[slug] }}<span v-if="slug === 'bodyweight'" class="lock-mark" aria-hidden="true"> 🔒</span>
           </button>
         </div>
-        <span class="profile-label support-label">Weiteres Equipment</span>
+        <span class="profile-label support-label">{{ t("profile.equipment.supportLabel") }}</span>
         <div class="chip-row wrap">
           <button
             v-for="slug in supportEquipmentSlugs"
@@ -421,60 +435,60 @@ async function saveWeight() {
         </div>
 
         <template v-if="ownedBarTypes.length > 0">
-          <span class="profile-label support-label">Stangengewicht</span>
+          <span class="profile-label support-label">{{ t("profile.equipment.barWeightLabel") }}</span>
           <div class="plate-rows">
             <div v-for="type in ownedBarTypes" :key="type" class="plate-row">
               <span>{{ BAR_LABEL_DE[type] }}</span>
               <div class="stepper-row">
-                <button type="button" :aria-label="`Weniger ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, -1)">−</button>
+                <button type="button" :aria-label="t('profile.equipment.decreaseBar', { name: BAR_LABEL_DE[type] })" @click="adjustBarWeight(type, -1)">−</button>
                 <span class="tnum">{{ barWeight(type) }} kg</span>
-                <button type="button" :aria-label="`Mehr ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, 1)">+</button>
+                <button type="button" :aria-label="t('profile.equipment.increaseBar', { name: BAR_LABEL_DE[type] })" @click="adjustBarWeight(type, 1)">+</button>
               </div>
             </div>
           </div>
-          <span class="profile-label support-label">Scheiben pro Größe</span>
+          <span class="profile-label support-label">{{ t("profile.equipment.plateSizesLabel") }}</span>
           <div class="plate-rows">
             <div v-for="size in PLATE_SIZES_KG" :key="size" class="plate-row">
               <span class="tnum">{{ size }} kg</span>
               <div class="stepper-row">
-                <button type="button" :aria-label="`Weniger ${size}kg`" @click="adjustPlateCount(size, -1)">−</button>
+                <button type="button" :aria-label="t('profile.equipment.decreasePlates', { size })" @click="adjustPlateCount(size, -1)">−</button>
                 <span class="tnum">{{ plateCount(size) }}</span>
-                <button type="button" :aria-label="`Mehr ${size}kg`" @click="adjustPlateCount(size, 1)">+</button>
+                <button type="button" :aria-label="t('profile.equipment.increasePlates', { size })" @click="adjustPlateCount(size, 1)">+</button>
               </div>
             </div>
           </div>
         </template>
 
         <Button class="profile-save" :disabled="equipmentSaving || gymSaving" @click="saveEquipmentAndGymCard">
-          {{ equipmentSaving || gymSaving ? "Wird gespeichert…" : "Speichern" }}
+          {{ equipmentSaving || gymSaving ? t("common.savingEllipsis") : t("common.save") }}
         </Button>
       </CollapsibleCard>
     </section>
 
-    <h2 class="group-header">Fortschritt</h2>
+    <h2 class="group-header">{{ t("profile.groups.progress") }}</h2>
 
     <section class="card surface-hybrid">
-      <h2 class="eyebrow">XP &amp; Level</h2>
-      <p class="hint">Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden.</p>
+      <h2 class="eyebrow">{{ t("profile.xp.title") }}</h2>
+      <p class="hint">{{ t("profile.xp.hint") }}</p>
       <div v-if="xp.loaded" class="stat-row">
-        <StatTile :value="`Lv. ${xp.level}`" label="Level" />
-        <StatTile :value="xp.totalXp.toLocaleString('de-DE')" label="Gesamt-XP" />
+        <StatTile :value="t('profile.xp.levelValue', { level: xp.level })" :label="t('profile.xp.levelLabel')" />
+        <StatTile :value="xp.totalXp.toLocaleString('de-DE')" :label="t('profile.xp.totalLabel')" />
       </div>
       <div class="bw-row">
-        <span style="flex: 1">{{ xp.showXp ? "XP erscheinen im Workout und auf der Übersicht." : "XP bleiben verborgen." }}</span>
+        <span style="flex: 1">{{ xp.showXp ? t("profile.xp.visible") : t("profile.xp.hidden") }}</span>
         <Button @click="xp.toggleShowXp()">
-          {{ xp.showXp ? "Ausblenden" : "Anzeigen" }}
+          {{ xp.showXp ? t("profile.xp.hideAction") : t("profile.xp.showAction") }}
         </Button>
       </div>
     </section>
 
-    <h2 class="group-header">Darstellung</h2>
+    <h2 class="group-header">{{ t("profile.groups.appearance") }}</h2>
 
     <section class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Darstellung</h2>
+      <h2 class="eyebrow">{{ t("profile.groups.appearance") }}</h2>
       <div class="chip-row">
-        <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">Dunkel</button>
-        <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">Hell</button>
+        <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">{{ t("profile.appearance.dark") }}</button>
+        <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">{{ t("profile.appearance.light") }}</button>
       </div>
       <p class="hint">{{ t("profile.appearance.language") }}</p>
       <div class="chip-row">
@@ -490,86 +504,86 @@ async function saveWeight() {
       </div>
     </section>
 
-    <h2 class="group-header">Konto</h2>
+    <h2 class="group-header">{{ t("profile.groups.account") }}</h2>
 
     <section v-if="me?.role === 'owner'" class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Mitglieder</h2>
+      <h2 class="eyebrow">{{ t("profile.members.title") }}</h2>
       <ul v-if="members.length" class="member-list">
         <ListRow v-for="member in members" :key="member.id" as="li" class="member-row">
           <span>{{ member.name }} ({{ member.username }})</span>
           <template v-if="member.role !== 'owner'" #trailing>
             <Button variant="secondary" @click="removeMemberAndRefresh(member.id)">
-              Entfernen
+              {{ t("profile.members.remove") }}
             </Button>
           </template>
         </ListRow>
       </ul>
       <Button :disabled="inviteBusy" @click="generateInvite">
-        {{ inviteBusy ? "…" : "Einladungscode erstellen" }}
+        {{ inviteBusy ? "…" : t("profile.members.invite") }}
       </Button>
-      <p v-if="inviteCode" class="invite-code">Code: <strong>{{ inviteCode }}</strong> (24h gültig)</p>
+      <p v-if="inviteCode" class="invite-code">{{ t("profile.members.inviteCodeLabel") }} <strong>{{ inviteCode }}</strong> {{ t("profile.members.inviteValidity") }}</p>
     </section>
 
     <section class="card card--quiet surface-hybrid">
-      <CollapsibleCard title="Anmeldedaten">
+      <CollapsibleCard :title="t('profile.credentials.title')">
         <div class="profile-field">
-          <span class="profile-label">Anzeigename</span>
+          <span class="profile-label">{{ t("profile.credentials.displayName.label") }}</span>
           <Input v-model="displayNameInput" class="profile-input" type="text" autocomplete="name" />
           <p v-if="displayNameError" class="error">{{ displayNameError }}</p>
-          <p v-else-if="displayNameSuccess" class="hint success">Gespeichert.</p>
+          <p v-else-if="displayNameSuccess" class="hint success">{{ t("profile.credentials.displayName.saved") }}</p>
         </div>
         <Button
           class="profile-save"
           :disabled="displayNameSaving || !displayNameInput.trim()"
           @click="saveDisplayName"
         >
-          {{ displayNameSaving ? "Wird gespeichert…" : "Anzeigename speichern" }}
+          {{ displayNameSaving ? t("common.savingEllipsis") : t("profile.credentials.displayName.save") }}
         </Button>
 
-        <h3 class="eyebrow sub-eyebrow">Benutzername</h3>
-        <FormField label="Neuer Benutzername" class="profile-field">
+        <h3 class="eyebrow sub-eyebrow">{{ t("profile.credentials.username.title") }}</h3>
+        <FormField :label="t('profile.credentials.username.newLabel')" class="profile-field">
           <Input v-model="usernameInput" class="profile-input" type="text" autocomplete="username" autocapitalize="off" />
         </FormField>
-        <FormField label="Aktuelles Passwort" class="profile-field">
+        <FormField :label="t('profile.credentials.currentPasswordLabel')" class="profile-field">
           <Input v-model="usernameCurrentPassword" class="profile-input" type="password" autocomplete="current-password" />
         </FormField>
         <p v-if="usernameError" class="error">{{ usernameError }}</p>
-        <p v-else-if="usernameSuccess" class="hint success">Benutzername geändert. Andere Geräte wurden abgemeldet.</p>
+        <p v-else-if="usernameSuccess" class="hint success">{{ t("profile.credentials.username.success") }}</p>
         <Button
           class="profile-save"
           :disabled="usernameSaving || !usernameInput.trim() || !usernameCurrentPassword"
           @click="saveUsername"
         >
-          {{ usernameSaving ? "Wird geändert…" : "Benutzername ändern" }}
+          {{ usernameSaving ? t("profile.credentials.changingEllipsis") : t("profile.credentials.username.change") }}
         </Button>
 
-        <h3 class="eyebrow sub-eyebrow">Passwort</h3>
-        <FormField label="Aktuelles Passwort" class="profile-field">
+        <h3 class="eyebrow sub-eyebrow">{{ t("profile.credentials.password.title") }}</h3>
+        <FormField :label="t('profile.credentials.currentPasswordLabel')" class="profile-field">
           <Input v-model="currentPasswordInput" class="profile-input" type="password" autocomplete="current-password" />
         </FormField>
-        <FormField label="Neues Passwort" class="profile-field">
+        <FormField :label="t('profile.credentials.password.newLabel')" class="profile-field">
           <Input v-model="newPasswordInput" class="profile-input" type="password" autocomplete="new-password" />
         </FormField>
         <p v-if="passwordError" class="error">{{ passwordError }}</p>
-        <p v-else-if="passwordSuccess" class="hint success">Passwort geändert. Andere Geräte wurden abgemeldet.</p>
+        <p v-else-if="passwordSuccess" class="hint success">{{ t("profile.credentials.password.success") }}</p>
         <Button
           class="profile-save"
           :disabled="passwordSaving || !currentPasswordInput || !newPasswordInput"
           @click="savePassword"
         >
-          {{ passwordSaving ? "Wird geändert…" : "Passwort ändern" }}
+          {{ passwordSaving ? t("profile.credentials.changingEllipsis") : t("profile.credentials.password.change") }}
         </Button>
       </CollapsibleCard>
     </section>
 
     <section class="card card--quiet surface-hybrid">
-      <CollapsibleCard title="Aktive Sitzungen">
-        <p v-if="sessionsLoading" class="hint">Wird geladen…</p>
+      <CollapsibleCard :title="t('profile.sessions.title')">
+        <p v-if="sessionsLoading" class="hint">{{ t("profile.sessions.loading") }}</p>
         <ul v-else class="member-list">
           <ListRow v-for="session in sessions" :key="session.id" as="li" class="member-row">
             <span>
               {{ session.device }}
-              <Chip v-if="session.current" size="sm" class="session-badge">Dieses Gerät</Chip>
+              <Chip v-if="session.current" size="sm" class="session-badge">{{ t("profile.sessions.thisDevice") }}</Chip>
             </span>
             <template v-if="!session.current" #trailing>
               <Button
@@ -577,7 +591,7 @@ async function saveWeight() {
                 :disabled="revokingSessionId === session.id"
                 @click="revokeOneSession(session.id)"
               >
-                Abmelden
+                {{ t("profile.sessions.revoke") }}
               </Button>
             </template>
           </ListRow>
@@ -591,75 +605,74 @@ async function saveWeight() {
           :disabled="revokingOthers"
           @click="triggerRevokeOthers()"
         >
-          {{ revokingOthers ? "Wird abgemeldet…" : isRevokeOthersArmed() ? "Wirklich alle abmelden?" : "Alle anderen Geräte abmelden" }}
+          {{ revokingOthers ? t("profile.sessions.revokingAll") : isRevokeOthersArmed() ? t("profile.sessions.confirmRevokeAll") : t("profile.sessions.revokeAll") }}
         </Button>
       </CollapsibleCard>
     </section>
 
     <section id="account-app-card" class="card card--quiet surface-hybrid">
-      <CollapsibleCard v-model:open="accountAppCardOpen" title="Konto &amp; App">
+      <CollapsibleCard v-model:open="accountAppCardOpen" :title="t('profile.accountApp.title')">
         <template v-if="isNativePlatform">
-          <h3 class="eyebrow sub-eyebrow">Server</h3>
+          <h3 class="eyebrow sub-eyebrow">{{ t("profile.accountApp.server.title") }}</h3>
           <template v-if="!editingServer">
             <p class="hint">{{ serverUrl }}</p>
-            <Button variant="secondary" @click="startEditingServer">Ändern</Button>
+            <Button variant="secondary" @click="startEditingServer">{{ t("profile.accountApp.server.change") }}</Button>
           </template>
           <template v-else>
             <Input
               v-model="serverInput"
+              class="server-address-input"
               type="text"
               placeholder="liftr.example.com"
-              aria-label="Server-Adresse"
+              :aria-label="t('profile.accountApp.server.addressAriaLabel')"
               autocapitalize="off"
               autocorrect="off"
               spellcheck="false"
             />
             <p v-if="serverError" class="error">{{ serverError }}</p>
             <div class="server-actions">
-              <Button variant="secondary" @click="editingServer = false">Abbrechen</Button>
+              <Button variant="secondary" @click="editingServer = false">{{ t("profile.accountApp.server.cancel") }}</Button>
               <Button :disabled="serverChecking || !serverInput.trim()" @click="saveServer">
-                {{ serverChecking ? "Prüfe…" : "Speichern" }}
+                {{ serverChecking ? t("profile.checkingEllipsis") : t("common.save") }}
               </Button>
             </div>
           </template>
           <p v-if="serverVersion" class="hint" :class="{ error: versionMismatch }">
-            Server-Version: v{{ serverVersion }}{{ appVersion ? ` · App-Version: v${appVersion}` : "" }}
+            {{ serverVersionLine }}
           </p>
           <p v-if="versionMismatch" class="error">
-            Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen.
+            {{ t("profile.accountApp.server.versionMismatch") }}
           </p>
         </template>
 
-        <h3 class="eyebrow sub-eyebrow">Version</h3>
+        <h3 class="eyebrow sub-eyebrow">{{ t("profile.accountApp.version.title") }}</h3>
         <p class="hint">{{ appVersion ? `v${appVersion}` : "…" }}</p>
         <template v-if="isAndroidPlatform">
-          <p v-if="appUpdateAvailable" class="update-line">Update verfügbar: v{{ appLatestVersion }}</p>
+          <p v-if="appUpdateAvailable" class="update-line">{{ t("profile.accountApp.update.available", { version: appLatestVersion }) }}</p>
           <p v-else-if="appUpdateError" class="error">{{ appUpdateError }}</p>
-          <p v-else-if="appUpdateLastChecked" class="hint">Du bist auf dem neuesten Stand.</p>
+          <p v-else-if="appUpdateLastChecked" class="hint">{{ t("profile.update.upToDate") }}</p>
           <div class="server-actions">
             <Button variant="secondary" :disabled="appUpdateChecking" @click="checkForAppUpdateManually">
-              {{ appUpdateChecking ? "Prüfe…" : "Nach Updates suchen" }}
+              {{ appUpdateChecking ? t("profile.checkingEllipsis") : t("profile.accountApp.update.check") }}
             </Button>
-            <Button v-if="appUpdateAvailable" @click="openAppUpdateDownload">Herunterladen</Button>
+            <Button v-if="appUpdateAvailable" @click="openAppUpdateDownload">{{ t("profile.accountApp.update.download") }}</Button>
           </div>
         </template>
 
-        <h3 class="eyebrow sub-eyebrow">Diagnose</h3>
+        <h3 class="eyebrow sub-eyebrow">{{ t("profile.diagnostics.title") }}</h3>
         <p class="hint">
-          Sync-Protokoll{{ me?.role === "owner" ? " und Serverfehler" : "" }} — hilfreich, falls mal etwas nicht
-          funktioniert. Normalerweise brauchst du das nicht.
+          {{ diagnosticsHint }}
         </p>
-        <Button as="router-link" to="/diagnostics" variant="secondary" block>Protokoll öffnen</Button>
+        <Button as="router-link" to="/diagnostics" variant="secondary" block>{{ t("profile.diagnostics.open") }}</Button>
 
-        <Button variant="secondary" block class="logout-btn" @click="handleLogout">Abmelden</Button>
+        <Button variant="secondary" block class="logout-btn" @click="handleLogout">{{ t("profile.logoutLabel") }}</Button>
       </CollapsibleCard>
     </section>
 
     <section v-if="me && me.role !== 'owner'" class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Konto löschen</h2>
+      <h2 class="eyebrow">{{ t("profile.deleteAccount.title") }}</h2>
       <p class="hint">
-        Löscht dein Konto und alle deine Daten (Workouts, Läufe, Routinen) unwiderruflich. Zweimal
-        tippen zum Bestätigen.
+        {{ t("profile.deleteAccount.hint") }}
       </p>
       <Button
         variant="secondary"
@@ -669,37 +682,35 @@ async function saveWeight() {
         :disabled="deletingAccount"
         @click="triggerDeleteAccount()"
       >
-        {{ deletingAccount ? "Wird gelöscht…" : isDeleteAccountArmed() ? "Wirklich löschen?" : "Konto löschen" }}
+        {{ deletingAccount ? t("profile.deleteAccount.deleting") : isDeleteAccountArmed() ? t("profile.deleteAccount.confirm") : t("profile.deleteAccount.cta") }}
       </Button>
     </section>
 
-    <h2 class="group-header">Daten</h2>
+    <h2 class="group-header">{{ t("profile.groups.data") }}</h2>
 
     <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
       <h2 class="eyebrow">Health Connect</h2>
       <p class="hint">
-        Läufe, die du mit deiner Uhr aufgezeichnet hast, importieren — inklusive Route, sobald Health Connect sie
-        liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button
-        stößt eine Synchronisierung jederzeit sofort an.
+        {{ t("profile.healthConnect.hint") }}
       </p>
       <Button :disabled="healthConnectBusy" @click="connectHealthConnect">
-        {{ healthConnectBusy ? "Synchronisiere…" : healthConnectConnected ? "Jetzt synchronisieren" : "Health Connect verbinden" }}
+        {{ healthConnectBusy ? t("profile.healthConnect.syncing") : healthConnectConnected ? t("profile.healthConnect.syncNow") : t("profile.healthConnect.connect") }}
       </Button>
       <p v-if="healthConnectStatus" class="current">{{ healthConnectStatus }}</p>
     </section>
 
     <section class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Daten-Export</h2>
-      <p class="hint">Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr.</p>
+      <h2 class="eyebrow">{{ t("profile.export.title") }}</h2>
+      <p class="hint">{{ t("profile.export.hint") }}</p>
       <Button :disabled="exporting" @click="exportData">
-        {{ exporting ? "Wird erstellt…" : "Backup herunterladen" }}
+        {{ exporting ? t("profile.export.creating") : t("profile.export.download") }}
       </Button>
       <p v-if="exportError" class="current" style="color: var(--danger)">{{ exportError }}</p>
     </section>
 
-    <h2 class="group-header">Über</h2>
+    <h2 class="group-header">{{ t("profile.groups.about") }}</h2>
 
-    <RouterLink to="/attributions" class="attributions-link">Quellen &amp; Lizenzen →</RouterLink>
+    <RouterLink to="/attributions" class="attributions-link">{{ t("profile.about.attributions") }}</RouterLink>
     </div>
   </BasePage>
 </template>
@@ -793,7 +804,7 @@ async function saveWeight() {
   color: var(--faint);
   margin-bottom: var(--sp3);
 }
-input[aria-label="Server-Adresse"] {
+input.server-address-input {
   margin-bottom: var(--sp2);
 }
 .server-actions {

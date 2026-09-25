@@ -85,6 +85,10 @@ async function mountAtWorkout(id: string, query = "") {
 }
 
 beforeEach(() => {
+  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply) — jsdom's
+  // navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would otherwise
+  // default the shared i18n singleton to "en" for the rest of the test process.
+  i18n.global.locale.value = "de";
   getWorkoutMock.mockReset();
   deleteWorkoutMock.mockReset();
   deleteWorkoutMock.mockResolvedValue(undefined);

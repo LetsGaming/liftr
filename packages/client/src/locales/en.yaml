@@ -8,9 +8,277 @@ nav:
   exercises: Exercises
   runs: Runs
   profile: Profile
+common:
+  save: Save
+  savingEllipsis: "Saving…"
+  workout: Workout
 workout:
   start: Start today's workout
   save: Save set
+  tabs:
+    runs: Runs
+    navLabel: "Workout or Runs"
+  toast:
+    copied: Copied to clipboard
+    copyFailed: Copy failed
+  supersetLabel: "Superset {pos}/{total}"
+  noteCapture:
+    workoutTitle: Workout note
+    setTitle: Set note
+  finished:
+    eyebrow: Done
+    reached: reached
+    level: "Lv. {level}"
+    rankUpsSuffix: " · {count} rank-ups"
+    musclesTrained: Muscles trained
+    whatChanged: What changed
+    duration: Duration
+    volume: Volume
+    setsLabel: Sets
+    creatingImage: "Creating image…"
+    shareImage: Share as image
+    copying: "Copying…"
+    copyToClipboard: Copy to clipboard
+    done: Done
+  beatRoutinePrefix: "You were stronger than planned: "
+  setCount: "{n} set | {n} sets"
+  beatRoutineSuffix: " over the routine target."
+  insteadOf: instead of
+  beatRoutineUpdated: Routine updated.
+  notNow: Not now
+  updateRoutine: Update routine
+  stale:
+    banner: "This workout has been running for over {hours} hours. Is it still going, or did you forget to end it?"
+    stillRunning: Still going
+    finishNow: End now
+  cancelAriaLabel: Cancel workout
+  cancelConfirm:
+    message: "Really cancel the workout? All progress will be lost."
+    no: No
+    yes: "Yes, cancel"
+  mesoWeek: "Week {current}/{total} · {percent}%"
+  moreOptionsAriaLabel: More options
+  addExercise:
+    title: Add exercise
+    searchPlaceholder: "Search exercise…"
+  close: Close
+  nextExercise:
+    label: Next exercise
+    lastOne: Last exercise of this routine
+  showAllExercisesAriaLabel: Show all exercises
+  skipExercise: Skip exercise
+  showRankAriaLabel: Show rank
+  exerciseInfoAriaLabel: Exercise info
+  lastTime: "Last time here:"
+  repsAbbr: "reps"
+  notePrefix: "Note: {note}"
+  noteLabel: Note
+  repsHint: "Enter reps first, then save."
+  exerciseDone: Exercise done
+  setKindAriaLabel: "Choose set type (currently {kind})"
+  setOpen: open
+  moreSheetTitle: More
+  menu:
+    addExercise: "+ Add exercise"
+    workoutNotePrefix: "Workout note: {note}"
+    addWorkoutNote: "+ Workout note"
+    addWarmupSets: "+ Insert warm-up sets"
+  allDone: All exercises done.
+  finishWorkout: End workout
+  exercisesSheetTitle: Exercises
+  exerciseFallbackTitle: Exercise
 profile:
+  title: "Profile & Settings"
+  subtitle: "Your server, your account, your data."
+  groups:
+    training: Training Profile
+    progress: Progress
+    appearance: Appearance
+    account: Account
+    data: Data
+    about: About
   appearance:
     language: Language
+    dark: Dark
+    light: Light
+  logoutLabel: Log out
+  checkingEllipsis: "Checking…"
+  update:
+    upToDate: "You're all caught up."
+  errors:
+    tooManyAttempts: "Too many attempts. Please wait 15 minutes."
+    usernameTaken: "Username is already taken."
+    passwordTooWeak: "Password too weak. Please choose a different password."
+    displayNameChangeFailed: "Couldn't change display name."
+    wrongPassword: "Current password is incorrect."
+  bodyweight:
+    title: Body weight
+    hint: "Your rank always measures weight relative to your body weight."
+    placeholder: "e.g. 72.5"
+    ariaLabel: "Body weight in kilograms"
+    current: "Current:"
+    noEntry: "Log your weight above — until then, rank calculations use 75 kg as a placeholder."
+  trainingProfile:
+    hint: "Determines the starting weights the routine wizard suggests until you've logged an exercise for the first time."
+    sex:
+      label: Sex
+      male: Male
+      female: Female
+    birthYear:
+      label: Birth year
+      placeholder: "e.g. 1995"
+    experience:
+      label: Training experience
+      beginner: Beginner
+      intermediate: Intermediate
+      advanced: Advanced
+    workoutsPerWeek:
+      label: Workouts per week
+      decrease: Fewer
+      increase: More
+  equipment:
+    title: Equipment
+    hint: "So you're only suggested exercises you can actually do with your equipment (e.g. when training at home)."
+    gearLabel: Training equipment
+    bodyweightAlwaysActive: "Body weight is always active"
+    supportLabel: Other equipment
+    barWeightLabel: Bar weight
+    decreaseBar: "Fewer {name}"
+    increaseBar: "More {name}"
+    plateSizesLabel: Plates per size
+    decreasePlates: "Fewer {size}kg"
+    increasePlates: "More {size}kg"
+  xp:
+    title: "XP & Level"
+    hint: "A bonus on top of the rank system — nothing depends on it, and it can be hidden anytime."
+    levelLabel: Level
+    levelValue: "Lv. {level}"
+    totalLabel: Total XP
+    visible: "XP shows up in your workout and on the overview."
+    hidden: "XP stays hidden."
+    hideAction: Hide
+    showAction: Show
+  members:
+    title: Members
+    remove: Remove
+    invite: Create invite code
+    inviteCodeLabel: "Code:"
+    inviteValidity: "(valid for 24h)"
+  credentials:
+    title: Login details
+    currentPasswordLabel: Current password
+    changingEllipsis: "Changing…"
+    displayName:
+      label: Display name
+      saved: Saved.
+      save: Save display name
+    username:
+      title: Username
+      newLabel: New username
+      success: "Username changed. Other devices have been signed out."
+      change: Change username
+    password:
+      title: Password
+      newLabel: New password
+      success: "Password changed. Other devices have been signed out."
+      change: Change password
+  sessions:
+    title: Active sessions
+    loading: "Loading…"
+    thisDevice: This device
+    revoke: Sign out
+    revokingAll: "Signing out…"
+    confirmRevokeAll: "Really sign out everywhere?"
+    revokeAll: Sign out all other devices
+  accountApp:
+    title: "Account & App"
+    server:
+      title: Server
+      change: Change
+      addressAriaLabel: "Server address"
+      cancel: Cancel
+      versionPrefix: "Server version: v"
+      appVersionSuffix: " · App version: v{version}"
+      versionMismatch: "Server and app versions don't match — this can cause errors."
+    version:
+      title: Version
+    update:
+      available: "Update available: v{version}"
+      check: Check for updates
+      download: Download
+  diagnostics:
+    title: Diagnostics
+    syncLog: Sync log
+    andServerErrors: " and server errors"
+    hintRest: " — useful if something ever stops working. You usually won't need this."
+    open: Open log
+  deleteAccount:
+    title: Delete account
+    hint: "Permanently deletes your account and all your data (workouts, runs, routines). Tap twice to confirm."
+    deleting: "Deleting…"
+    confirm: "Really delete?"
+    cta: Delete account
+  healthConnect:
+    hint: "Import runs you recorded with your watch — including the route, as soon as Health Connect provides one. Connect once, and Liftr then syncs new runs automatically on every app start; the button can also trigger a sync anytime."
+    syncing: "Syncing…"
+    syncNow: Sync now
+    connect: Connect Health Connect
+  export:
+    title: Data export
+    hint: "All workouts, sets, runs and body weight as CSV in one ZIP file — readable without Liftr."
+    creating: "Creating…"
+    download: Download backup
+  about:
+    attributions: "Sources & Licenses →"
+overview:
+  loadError:
+    message: "Some data couldn't be loaded. What you've logged is stored locally."
+    retry: Try again
+  launchpad:
+    continueTitle: Continue
+    goToWorkout: "Go to workout →"
+    readyTitle: Ready for today?
+    start: Start
+    switchRoutine: "Choose a different routine →"
+    noRoutineTitle: No routine yet
+    noRoutineHint: "No routine, no rank — a routine defines which exercises you train repeatedly."
+    createFirstRoutine: "Create your first routine →"
+  exerciseCount: "{n} exercise | {n} exercises"
+  firstRun:
+    ladderTitle: Your rank ladder
+  stats:
+    streakLabel: Day streak
+    levelLabel: Level
+    levelValue: "Lv. {level}"
+    workoutsThisWeek: Workouts this week
+    overallRank: "Overall rank"
+  rankInfo:
+    toggleLabel: What does my rank mean?
+    gesamtrang: Overall rank
+    body: " rolls up your ranks across every exercise you train into a single value. Each tier has several divisions (e.g. “III” down to “I”) counting down to the next promotion; "
+  tiles:
+    volumeTitle: "Volume (8 weeks)"
+    volumeEmpty: "Your volume trend appears here starting from your second workout."
+    nextRankTitle: Next rank
+    nextRankMiddle: to your next rank in
+    nextRankEmpty: "Your first rank appears as soon as you've logged an exercise."
+    bodyweightTitle: Body weight
+    bodyweightEmpty: "Log your body weight in Profile — after two entries you'll see the trend here."
+  discover:
+    title: Discover
+    rankAnalysis: Rank analysis
+    rankAnalysisHint: "Rank distribution & rank-ups across all exercises at a glance"
+  activity:
+    title: Recent activity
+    noConnection: "No connection to the server. What you've logged is stored locally."
+    empty: "Everything you do shows up here starting with your first finished workout."
+    filterBoth: Both
+    filterAriaLabel: "Filter activity"
+    filterPlaceholder: Activity
+    showMore: Show more
+    loadingMore: "Loading…"
+    loadMore: Load more
+  week:
+    current: This week
+    last: Last week
+    ago: "{n} weeks ago"

@@ -125,6 +125,10 @@ function mountRoutineList(routines: Routine[], exercises: CatalogExercise[] = [m
 }
 
 beforeEach(() => {
+  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply) — jsdom's
+  // navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would otherwise
+  // default the shared i18n singleton to "en" for the rest of the test process.
+  i18n.global.locale.value = "de";
   stubMatchMedia(false); // mobile-width default: drag-to-reorder handle enabled
   getRoutinesMock.mockReset().mockResolvedValue([]);
   createRoutineMock.mockReset();
