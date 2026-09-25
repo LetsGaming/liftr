@@ -550,3 +550,63 @@ exerciseUi:
   muscleFigure:
     altFront: Vorderansicht
     altBack: Rückansicht
+rank:
+  decayCaption: "Schon mal erreicht: {tier} {division}"
+  lifterSection:
+    infoLabel: "Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt"
+    infoBodyLead: ". Ein"
+    infoBodyTail: " markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests — dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt."
+    loadError: "Ränge konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert."
+    retry: Erneut versuchen
+    empty: Dein erster Rang entsteht, sobald du eine Übung geloggt hast.
+    filterAll: Alle
+    filterAriaLabel: Nach Rang filtern
+    filterPlaceholder: Ränge
+  exerciseBack:
+    musclesEyebrow: Trainierte Muskeln
+    legendPrimary: Primär
+    legendSecondary: Sekundär
+    empty: Noch kein Rang für diese Übung.
+    statsButton: Rang-Statistiken
+  runnerSection:
+    loadError: Lauf-Ränge konnten nicht geladen werden.
+    retry: Erneut versuchen
+    categoryEmptyNote: "Noch kein Rang — lauf diese Distanz, um zu starten."
+    singleSpeedEmptyNote: "Noch kein Rang — sammle genug Distanz, um zu starten."
+    exclusionNote: "Gehen und Wandern zählen nicht in den Overall Runner Rank — sie haben ihre eigene Wertung."
+  progress:
+    nextTargetLabel: Nächstes Ziel
+    topOfStandards: "???"
+    repsSuffix: "{n} Wdh."
+    heroTargetLabel: Ziel
+    heroWeightFieldLabel: Kg
+    heroRepsFieldLabel: "Wdh."
+    trustDerived: Abgeleiteter Standard
+    trustSynthetic: Geschätzter Standard
+  runBack:
+    prEyebrow: Bestleistung
+    emptyPr: Noch kein Rekord für diese Distanz.
+  upCalendar:
+    eyebrow: Rangaufstiege diese Woche
+    empty: "Dein nächster Rangaufstieg wartet — leg los!"
+    days:
+      mo: Mo
+      di: Di
+      mi: Mi
+      do: Do
+      fr: Fr
+      sa: Sa
+      so: So
+  distributionDonut:
+    eyebrow: Rangverteilung
+    exercisesLabel: Übungen
+  progressChart:
+    empty: Ab dem zweiten Trainingstag zeichnet sich hier eine Kurve.
+    latestReps: "{n} Wdh."
+    latestE1rm: "{n} kg e1RM"
+    trendUp: Aufwärtstrend
+    trendDown: Abwärtstrend
+    trendFlat: Gleichbleibender Verlauf
+    trendLabelFormat: "{direction}, von {first} auf {last} {unit}"
+    unitReps: "Wdh."
+    unitE1rm: kg e1RM

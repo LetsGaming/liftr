@@ -25,6 +25,7 @@
  * stats panel isn't undoable by tapping the card again the way a flip is.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { ordinal, type Division, type Tier } from "@liftr/shared";
 import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
 import MuscleFigure from "../exercise/MuscleFigure.vue";
@@ -46,6 +47,8 @@ const props = withDefaults(
 );
 defineEmits<{ stats: [] }>();
 
+const { t } = useI18n();
+
 const lpDisplay = computed(() => (props.lp == null ? null : Math.max(0, Math.round(props.lp))));
 
 /** Same "name the peak, don't hide why the rank moved" wording as RankProgress.vue's own
@@ -57,17 +60,20 @@ const decayCaption = computed(() => {
   const currentOrdinal = ordinal(props.tier as Tier, props.division as Division);
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
-  return `Schon mal erreicht: ${TIER_LABEL_DE[props.peakTier as RankTier]} ${DIVISION_LABEL[props.peakDivision] ?? props.peakDivision}`;
+  return t("rank.decayCaption", {
+    tier: TIER_LABEL_DE[props.peakTier as RankTier],
+    division: DIVISION_LABEL[props.peakDivision] ?? props.peakDivision,
+  });
 });
 </script>
 
 <template>
   <div class="rank-card-back rank-exercise-back">
-    <div class="reb-eyebrow">Trainierte Muskeln</div>
+    <div class="reb-eyebrow">{{ t("rank.exerciseBack.musclesEyebrow") }}</div>
     <MuscleFigure :primary="primaryMuscles" :secondary="secondaryMuscles" :size="64" />
     <div class="reb-legend">
-      <span><i class="pri" />Primär</span>
-      <span><i class="sec" />Sekundär</span>
+      <span><i class="pri" />{{ t("rank.exerciseBack.legendPrimary") }}</span>
+      <span><i class="sec" />{{ t("rank.exerciseBack.legendSecondary") }}</span>
     </div>
 
     <template v-if="tier != null && division != null">
@@ -80,10 +86,10 @@ const decayCaption = computed(() => {
       </div>
       <p v-if="decayCaption" class="reb-decay">{{ decayCaption }}</p>
     </template>
-    <EmptyNote v-else class="reb-empty">Noch kein Rang für diese Übung.</EmptyNote>
+    <EmptyNote v-else class="reb-empty">{{ t("rank.exerciseBack.empty") }}</EmptyNote>
 
     <div class="reb-actions">
-      <Button variant="secondary" @click.stop="$emit('stats')">Rang-Statistiken</Button>
+      <Button variant="secondary" @click.stop="$emit('stats')">{{ t("rank.exerciseBack.statsButton") }}</Button>
     </div>
   </div>
 </template>

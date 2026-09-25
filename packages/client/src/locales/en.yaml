@@ -549,3 +549,63 @@ exerciseUi:
   muscleFigure:
     altFront: Front view
     altBack: Back view
+rank:
+  decayCaption: "Previous best: {tier} {division}"
+  lifterSection:
+    infoLabel: "Per exercise · real standards where available, otherwise derived — nothing locked"
+    infoBodyLead: ". A"
+    infoBodyTail: " marks a derived or estimated standard instead of a genuine max test — your rank is still valid, just less precisely grounded."
+    loadError: "Couldn't load ranks. What you've logged is saved locally."
+    retry: Try again
+    empty: Your first rank appears once you've logged an exercise.
+    filterAll: All
+    filterAriaLabel: Filter by rank
+    filterPlaceholder: Ranks
+  exerciseBack:
+    musclesEyebrow: Muscles trained
+    legendPrimary: Primary
+    legendSecondary: Secondary
+    empty: No rank yet for this exercise.
+    statsButton: Rank stats
+  runnerSection:
+    loadError: Couldn't load running ranks.
+    retry: Try again
+    categoryEmptyNote: "No rank yet — run this distance to get started."
+    singleSpeedEmptyNote: "No rank yet — log enough distance to get started."
+    exclusionNote: "Walking and hiking don't count toward the Overall Runner Rank — they have their own scoring."
+  progress:
+    nextTargetLabel: Next target
+    topOfStandards: "???"
+    repsSuffix: "{n} reps"
+    heroTargetLabel: Target
+    heroWeightFieldLabel: Kg
+    heroRepsFieldLabel: "Reps"
+    trustDerived: Derived standard
+    trustSynthetic: Estimated standard
+  runBack:
+    prEyebrow: Personal best
+    emptyPr: No record yet for this distance.
+  upCalendar:
+    eyebrow: Rank-ups this week
+    empty: "Your next rank-up is waiting — get to it!"
+    days:
+      mo: Mon
+      di: Tue
+      mi: Wed
+      do: Thu
+      fr: Fri
+      sa: Sat
+      so: Sun
+  distributionDonut:
+    eyebrow: Rank distribution
+    exercisesLabel: Exercises
+  progressChart:
+    empty: A curve appears here from the second day of training onward.
+    latestReps: "{n} reps"
+    latestE1rm: "{n} kg e1RM"
+    trendUp: Trending up
+    trendDown: Trending down
+    trendFlat: Holding steady
+    trendLabelFormat: "{direction}, from {first} to {last} {unit}"
+    unitReps: "reps"
+    unitE1rm: kg e1RM
