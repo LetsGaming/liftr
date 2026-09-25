@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-slim AS deps
+FROM node:25-slim AS deps
 RUN corepack enable
 # better-sqlite3's `install` script compiles a native addon via node-gyp, which needs Python + a
 # C++ toolchain — node:22-slim has neither by default, so `pnpm install` below would otherwise
@@ -28,7 +28,7 @@ RUN pnpm --filter @liftr/shared build \
  && pnpm --filter @liftr/ingest build \
  && pnpm --filter @liftr/client build
 
-FROM node:22-slim AS runtime
+FROM node:25-slim AS runtime
 RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
