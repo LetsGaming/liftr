@@ -9,7 +9,8 @@ disable-model-invocation: true
 `@liftr/db` uses `drizzle-kit generate` to produce migrations from `packages/db/src/schema.ts`,
 and a custom `migrate.ts` runner to apply them against the local SQLite (`better-sqlite3`) database.
 Migration files are generated artifacts — never hand-edit them (see the `PreToolUse` guard in
-`.claude/settings.json`, which blocks edits under `packages/db/src/**/*migrat*`).
+`.claude/settings.json`, which blocks edits under `packages/db/drizzle/`, the generated-migrations
+output directory).
 
 ## Steps
 
@@ -38,10 +39,12 @@ Migration files are generated artifacts — never hand-edit them (see the `PreTo
 
 ## Notes
 
-- This is a single-user, self-hosted app — there is no migration-rollback tooling in
-  the repo today. Treat schema changes as forward-only; if a mistake is generated,
-  fix `schema.ts` and generate a corrective follow-up migration rather than editing
-  or deleting the bad one once it has been applied to a real database.
+- There is no migration-rollback tooling in the repo today. Treat schema changes as
+  forward-only; if a mistake is generated, fix `schema.ts` and generate a corrective
+  follow-up migration rather than editing or deleting the bad one once it has been
+  applied to a real database. Liftr now has real per-person accounts (see CLAUDE.md
+  and `docs/reference/http-api.md#auth`), so a schema mistake can affect every user's
+  data, not just one.
 - Never run this against a production/homelab database without a backup of the SQLite
   file first — ask the user to confirm the target database before applying if it's
   anything other than local dev data.

@@ -17,8 +17,9 @@ or any component/page/composable that changes rendered UI or touch interaction.
 
 ## Steps
 
-1. Make sure the dev server is running: `pnpm --filter @liftr/client dev` (or the full
-   `pnpm dev` if the server/API is also needed for the feature under test).
+1. Make sure an isolated dev session is running: `node scripts/dev-up.mjs --id <session-id>`
+   (see this repo's CLAUDE.md and `docs/guides/local-development.md`) — never a bare `pnpm dev`
+   or `pnpm --filter @liftr/client dev`. Use the dashboard URL it prints.
 2. Use the Chrome DevTools MCP tools (`resize_page` / `emulate`) or Playwright's
    `browser_resize` to set the viewport to a phone size — default to **390x844**
    (iPhone 12/13/14 class) unless the change is specifically about a different device.
