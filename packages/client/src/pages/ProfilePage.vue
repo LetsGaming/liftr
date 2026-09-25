@@ -7,6 +7,7 @@
 // GymSetup,HealthConnectImport,DataExport}.ts.
 import BasePage from "../components/patterns/BasePage.vue";
 import { computed, nextTick, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import BodyweightTrend from "../components/overview/BodyweightTrend.vue";
 import CollapsibleCard from "../components/patterns/CollapsibleCard.vue";
@@ -45,15 +46,21 @@ import {
   type Session,
 } from "../services/authService";
 import { useBodyweightStore } from "../stores/bodyweightStore";
+import { LOCALES, useLocaleStore, type Locale } from "../stores/localeStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useThemeStore } from "../stores/themeStore";
 import { useXpStore } from "../stores/xpStore";
 
 const route = useRoute();
+const { t } = useI18n();
 const accountAppCardOpen = ref(false);
 
 const bodyweight = useBodyweightStore();
 const theme = useThemeStore();
+const locale = useLocaleStore();
+// Language names are shown as their own endonym ("Deutsch"/"English") regardless of the active
+// UI locale — the universal convention for a language picker, not something to translate.
+const localeLabel: Record<Locale, string> = { de: "Deutsch", en: "English" };
 const xp = useXpStore();
 const settingsStore = useSettingsStore();
 const weightInput = ref("");
@@ -468,6 +475,18 @@ async function saveWeight() {
       <div class="chip-row">
         <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">Dunkel</button>
         <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">Hell</button>
+      </div>
+      <p class="hint">{{ t("profile.appearance.language") }}</p>
+      <div class="chip-row">
+        <button
+          v-for="code in LOCALES"
+          :key="code"
+          class="chip"
+          :class="{ active: locale.locale === code }"
+          @click="locale.setLocale(code)"
+        >
+          {{ localeLabel[code] }}
+        </button>
       </div>
     </section>
 

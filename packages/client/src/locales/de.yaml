@@ -11,3 +11,7 @@ nav:
 workout:
   start: Heutiges Workout starten
   save: Satz speichern
+profile:
+  appearance:
+    # Label above the language chip row in Profil → Darstellung, next to the theme chips.
+    language: Sprache

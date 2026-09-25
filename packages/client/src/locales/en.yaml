@@ -11,3 +11,6 @@ nav:
 workout:
   start: Start today's workout
   save: Save set
+profile:
+  appearance:
+    language: Language

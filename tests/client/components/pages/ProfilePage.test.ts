@@ -166,6 +166,22 @@ describe("ProfilePage", () => {
     expect(themeState.toggle).toHaveBeenCalledOnce();
   });
 
+  it("switches the UI language by tapping a language chip, and persists the choice", async () => {
+    const wrapper = mountWithProviders(ProfilePage);
+    const englishChip = wrapper.findAll(".card--quiet .chip").find((c) => c.text() === "English")!;
+
+    await englishChip.trigger("click");
+
+    expect(localStorage.getItem("liftr.locale")).toBe("en");
+    expect(document.documentElement.lang).toBe("en");
+
+    // i18n.global is a real, module-level singleton shared with every other test in this file
+    // (mountWithProviders installs the actual instance) — leaving it on "en" would break every
+    // German string assertion that runs after this test.
+    const { i18n } = await import("~client/i18n");
+    i18n.global.locale.value = "de";
+  });
+
   it("downloads the export zip on tap and surfaces an error message if it fails", async () => {
     const { fetchExportZip } = await import("~client/services/exportService");
     vi.mocked(fetchExportZip).mockRejectedValueOnce(new Error("Export fehlgeschlagen: 500"));
