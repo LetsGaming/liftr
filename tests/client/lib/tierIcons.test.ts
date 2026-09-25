@@ -1,5 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "~client/lib/tierIcons";
+// @vitest-environment jsdom
+//
+// tierIcons.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM) —
+// jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+// otherwise default the shared i18n singleton to "en" for the rest of the test process.
+import { beforeEach, describe, expect, it } from "vitest";
+import { i18n } from "~client/i18n";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "~client/lib/tierIcons";
+
+beforeEach(() => {
+  i18n.global.locale.value = "de";
+});
 
 const ALL_TIERS: RankTier[] = [
   "initiate",
@@ -13,16 +23,16 @@ const ALL_TIERS: RankTier[] = [
   "apex",
 ];
 
-describe("TIER_LABEL_DE", () => {
+describe("tierLabel", () => {
   it("has a non-empty German label for every rank tier", () => {
     for (const tier of ALL_TIERS) {
-      expect(TIER_LABEL_DE[tier], `missing TIER_LABEL_DE entry for "${tier}"`).toBeTypeOf("string");
-      expect(TIER_LABEL_DE[tier]!.length).toBeGreaterThan(0);
+      expect(tierLabel(tier), `missing label for "${tier}"`).toBeTypeOf("string");
+      expect(tierLabel(tier).length).toBeGreaterThan(0);
     }
   });
 
   it("gives every tier a distinct label", () => {
-    const labels = ALL_TIERS.map((tier) => TIER_LABEL_DE[tier]);
+    const labels = ALL_TIERS.map((tier) => tierLabel(tier));
     expect(new Set(labels).size).toBe(ALL_TIERS.length);
   });
 });

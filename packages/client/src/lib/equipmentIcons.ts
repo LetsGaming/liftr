@@ -16,6 +16,7 @@
  * in the same visual language rather than left as a gap or reusing a misleading icon.
  */
 import { EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_SLUGS, type Equipment, type EquipmentRequirement, type SupportEquipment } from "@liftr/shared";
+import { t } from "../i18n";
 
 export { EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_SLUGS };
 export type { Equipment, EquipmentRequirement, SupportEquipment };
@@ -75,39 +76,47 @@ export function equipmentIconSvg(equipment: string): string {
   return EQUIPMENT_ICON_PATH[equipment as Equipment] ?? SUPPORT_EQUIPMENT_ICON_PATH[equipment as SupportEquipment] ?? EQUIPMENT_ICON_PATH.machine;
 }
 
-/** German display names — same fixed-noun-map convention as MUSCLE_LABEL_DE (lib/muscles.ts)
- *  rather than the full i18n machinery, since this app is German-only. */
-export const EQUIPMENT_LABEL_DE: Record<Equipment, string> = {
-  bodyweight: "Körpergewicht",
-  dumbbell: "Kurzhanteln",
-  barbell: "Langhantel",
-  "ez-bar": "SZ-Stange",
-  "trap-bar": "Trap-Bar",
-  machine: "Maschine",
-  cable: "Kabelzug",
-  kettlebell: "Kettlebell",
-  rings: "Ringe",
-  "ab-wheel": "Ab-Wheel",
+/** Keys into `equipment.*` (i18n.ts's t()), resolved at the point of use so a locale switch is
+ *  reflected wherever they're read next. */
+const EQUIPMENT_LABEL_KEY: Record<Equipment, string> = {
+  bodyweight: "equipment.bodyweight",
+  dumbbell: "equipment.dumbbell",
+  barbell: "equipment.barbell",
+  "ez-bar": "equipment.ez-bar",
+  "trap-bar": "equipment.trap-bar",
+  machine: "equipment.machine",
+  cable: "equipment.cable",
+  kettlebell: "equipment.kettlebell",
+  rings: "equipment.rings",
+  "ab-wheel": "equipment.ab-wheel",
 };
 
-/** Support-equipment labels — same convention as EQUIPMENT_LABEL_DE above. */
-export const SUPPORT_EQUIPMENT_LABEL_DE: Record<SupportEquipment, string> = {
-  plates: "Gewichtsscheiben",
-  bench: "Flachbank",
-  "incline-bench": "Schrägbank",
-  rack: "Squat-Rack",
-  "pullup-bar": "Klimmzugstange",
-  "dip-bars": "Dip-Barren",
-  mat: "Matte",
-  box: "Plyo-Box",
+/** Keys into `equipment.support.*` — same convention as EQUIPMENT_LABEL_KEY above. */
+const SUPPORT_EQUIPMENT_LABEL_KEY: Record<SupportEquipment, string> = {
+  plates: "equipment.support.plates",
+  bench: "equipment.support.bench",
+  "incline-bench": "equipment.support.incline-bench",
+  rack: "equipment.support.rack",
+  "pullup-bar": "equipment.support.pullup-bar",
+  "dip-bars": "equipment.support.dip-bars",
+  mat: "equipment.support.mat",
+  box: "equipment.support.box",
 };
+
+export function equipmentLabel(equipment: Equipment): string {
+  return t(EQUIPMENT_LABEL_KEY[equipment]);
+}
+
+export function supportEquipmentLabel(equipment: SupportEquipment): string {
+  return t(SUPPORT_EQUIPMENT_LABEL_KEY[equipment]);
+}
 
 /** Every requirement's label, primary and support vocabularies combined — the one lookup
  *  ExerciseInfoPanel/onboarding's equipment list actually needs. */
 export function equipmentRequirementLabelDe(requirement: EquipmentRequirement): string {
-  return (
-    (EQUIPMENT_LABEL_DE as Record<string, string>)[requirement] ??
-    (SUPPORT_EQUIPMENT_LABEL_DE as Record<string, string>)[requirement] ??
-    requirement
-  );
+  const primaryKey = (EQUIPMENT_LABEL_KEY as Record<string, string>)[requirement];
+  if (primaryKey) return t(primaryKey);
+  const supportKey = (SUPPORT_EQUIPMENT_LABEL_KEY as Record<string, string>)[requirement];
+  if (supportKey) return t(supportKey);
+  return requirement;
 }

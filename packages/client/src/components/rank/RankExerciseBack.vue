@@ -27,7 +27,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ordinal, type Division, type Tier } from "@liftr/shared";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../../lib/tierIcons";
 import MuscleFigure from "../exercise/MuscleFigure.vue";
 import TierBadge from "./TierBadge.vue";
 import EmptyNote from "../base/EmptyNote.vue";
@@ -61,7 +61,7 @@ const decayCaption = computed(() => {
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
   return t("rank.decayCaption", {
-    tier: TIER_LABEL_DE[props.peakTier as RankTier],
+    tier: tierLabel(props.peakTier as RankTier),
     division: DIVISION_LABEL[props.peakDivision] ?? props.peakDivision,
   });
 });
@@ -80,7 +80,7 @@ const decayCaption = computed(() => {
       <div class="reb-tier">
         <TierBadge class="reb-badge" :tier="tier" />
         <div class="reb-tier-body">
-          <span class="reb-tier-label">{{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}</span>
+          <span class="reb-tier-label">{{ tierLabel(tier as RankTier) }} {{ DIVISION_LABEL[division] }}</span>
           <span v-if="lpDisplay != null" class="reb-lp tnum">{{ lpDisplay }} LP</span>
         </div>
       </div>

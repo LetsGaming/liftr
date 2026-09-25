@@ -1,5 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { aggregateMuscles, MUSCLE_LABEL_DE, MUSCLE_META, MUSCLE_SLUGS } from "~client/lib/muscles";
+// @vitest-environment jsdom
+//
+// muscles.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM) —
+// jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+// otherwise default the shared i18n singleton to "en" for the rest of the test process.
+import { beforeEach, describe, expect, it } from "vitest";
+import { i18n } from "~client/i18n";
+import { aggregateMuscles, muscleLabel, MUSCLE_META, MUSCLE_SLUGS } from "~client/lib/muscles";
+
+beforeEach(() => {
+  i18n.global.locale.value = "de";
+});
 
 describe("MUSCLE_META / MUSCLE_SLUGS", () => {
   it("derives MUSCLE_SLUGS from exactly the keys of MUSCLE_META", () => {
@@ -8,9 +18,13 @@ describe("MUSCLE_META / MUSCLE_SLUGS", () => {
 
   it("gives every muscle slug a German display label", () => {
     for (const slug of MUSCLE_SLUGS) {
-      expect(MUSCLE_LABEL_DE[slug], `missing MUSCLE_LABEL_DE entry for "${slug}"`).toBeTypeOf("string");
-      expect(MUSCLE_LABEL_DE[slug]!.length).toBeGreaterThan(0);
+      expect(muscleLabel(slug), `missing label for "${slug}"`).toBeTypeOf("string");
+      expect(muscleLabel(slug).length).toBeGreaterThan(0);
     }
+  });
+
+  it("falls back to the slug itself for an unrecognized muscle", () => {
+    expect(muscleLabel("unobtainium")).toBe("unobtainium");
   });
 
   it("assigns every muscle a wger id and a front/back side", () => {

@@ -29,11 +29,11 @@ import Select from "../components/base/Select.vue";
 import ListRow from "../components/patterns/ListRow.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { formatDistanceKm } from "../lib/format";
-import { LP_EXPLAINER } from "../copy/rankCopy";
-import { ACTIVITY_LABEL } from "../copy/runCopy";
+import { lpExplainer } from "../copy/rankCopy";
+import { activityLabel } from "../copy/runCopy";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
 import { useBodyweightStore } from "../stores/bodyweightStore";
@@ -77,7 +77,7 @@ const availableActivityFilters = computed(() => {
 });
 function activityFilterLabel(value: string): string {
   if (value === "workout") return t("common.workout");
-  return ACTIVITY_LABEL[value] ?? value;
+  return activityLabel(value);
 }
 const selectedFilterValue = computed<string>({
   get: () => (activityFilter.value === "alle" ? "" : activityFilter.value),
@@ -114,7 +114,7 @@ const overallRankLabel = computed(() => {
   // below (2x2 grid + wrapping value text) handles the width instead.
   if (!overallRank.loaded || !overallRank.current) return "—";
   const { tier, division } = overallRank.current;
-  const label = TIER_LABEL_DE[tier as RankTier];
+  const label = tierLabel(tier as RankTier);
   const div = DIVISION_LABEL[division];
   return div ? `${label} ${div}` : label;
 });
@@ -324,7 +324,7 @@ function retryFailed() {
 
           <div class="rank-terms">
             <InfoToggle :label="t('overview.rankInfo.toggleLabel')">
-              <b>{{ t("overview.rankInfo.gesamtrang") }}</b>{{ t("overview.rankInfo.body") }}<b class="tnum">LP</b> {{ LP_EXPLAINER }}.
+              <b>{{ t("overview.rankInfo.gesamtrang") }}</b>{{ t("overview.rankInfo.body") }}<b class="tnum">LP</b> {{ lpExplainer() }}.
             </InfoToggle>
           </div>
 
@@ -440,7 +440,7 @@ function retryFailed() {
                     <span class="icon" :class="item.kind"><AppIcon :name="feedIconName(item)" /></span>
                   </template>
                   <div class="meta">
-                    <b>{{ item.title ?? (item.kind === "run" ? ACTIVITY_LABEL[(item.meta.activityType as string | undefined) ?? "run"] : t("common.workout")) }}</b>
+                    <b>{{ item.title ?? (item.kind === "run" ? activityLabel((item.meta.activityType as string | undefined) ?? "run") : t("common.workout")) }}</b>
                     <span>{{ formatDate(item.at) }}</span>
                   </div>
                   <template #trailing>
@@ -568,7 +568,7 @@ function retryFailed() {
 }
 /* 2x2 on mobile so each tile gets ~2x the width a 4-across row would give it — a 4-across row at
    ~90px per tile clips the longest tier label ("ANFÄNGER"/"LEHRLING"/"SPORTLER" via
-   overallRankLabel, TIER_LABEL_DE's longest entries). Widens back to 4-across only once there's room (>=560px,
+   overallRankLabel, tierLabel()'s longest entries). Widens back to 4-across only once there's room (>=560px,
    comfortably past every phone width this app targets); the value also wraps onto a second line
    at a smaller, responsive size instead of forcing one line that either fits or clips. */
 .status-strip {

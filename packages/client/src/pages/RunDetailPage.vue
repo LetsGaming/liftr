@@ -16,9 +16,9 @@ import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 import { useRunRankStore } from "../stores/runRankStore";
 import { getPlannedRouteDetail, type Waypoint } from "../services/plannedRouteService";
 import { formatDateLong, formatDistanceKm, formatDurationMinutes, formatPace } from "../lib/format";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../lib/tierIcons";
 import { useConfirmTap } from "../composables/useConfirmTap";
-import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
+import { activityLabel, runCategoryLabel } from "../copy/runCopy";
 import AppIcon from "../components/base/AppIcon.vue";
 import BasePage from "../components/patterns/BasePage.vue";
 import Button from "../components/base/Button.vue";
@@ -151,8 +151,8 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
            as the "Strecke:" chip) — kept only as a stable selector distinguishing this chip from
            its siblings (route/pr) for tests. -->
       <Chip v-if="detailRank" size="sm" class="route-chip rank-chip pop-in">
-        {{ ACTIVITY_LABEL[detail.activityType ?? "run"] }}<template v-if="detailBucket !== 'all'"> · {{ RUN_CATEGORY_LABEL[detailBucket!] }}</template>
-        · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }} {{ DIVISION_LABEL[detailRank.division] }}
+        {{ activityLabel(detail.activityType ?? "run") }}<template v-if="detailBucket !== 'all'"> · {{ runCategoryLabel(detailBucket!) }}</template>
+        · {{ tierLabel(detailRank.tier as RankTier) }} {{ DIVISION_LABEL[detailRank.division] }}
       </Chip>
       <Chip v-if="detailIsPr" size="sm" class="route-chip pr-chip pop-in">{{ t("runDetailPage.newRecord") }}</Chip>
       <div class="stat-row">

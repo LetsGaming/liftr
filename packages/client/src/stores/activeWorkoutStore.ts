@@ -6,6 +6,7 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, SET_KIND_LABEL, warmupRamp, type SetKind } from "@liftr/shared";
 import { defineStore } from "pinia";
+import { t } from "../i18n";
 import { clearActiveWorkout, loadActiveWorkout, saveActiveWorkout } from "../lib/idb";
 import { isNative } from "../lib/platform";
 import { computeAdvanceAfterLog } from "../lib/supersetAdvance";
@@ -162,7 +163,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       return Math.floor((end - state.startedAt - state.totalPausedMs) / 1000);
     },
 
-    progressLabel: (state) => `Übung ${state.currentExerciseIndex + 1} von ${state.exercises.length}`,
+    progressLabel: (state) => t("workout.progressLabel", { current: state.currentExerciseIndex + 1, total: state.exercises.length }),
 
     /** A workout left running for hours (phone locked, app backgrounded and forgotten, a crash
      *  that never got back to the app) has no natural end. This doesn't auto-end anything —

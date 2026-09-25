@@ -14,8 +14,8 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 import { useExerciseName } from "../../composables/useExerciseName";
-import { EQUIPMENT_LABEL_DE, equipmentRequirementLabelDe, type Equipment } from "../../lib/equipmentIcons";
-import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
+import { equipmentRequirementLabelDe } from "../../lib/equipmentIcons";
+import { muscleLabel, MUSCLE_SLUGS } from "../../lib/muscles";
 import { useCatalogStore, type CatalogExercise } from "../../stores/catalogStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import ExerciseRow from "./ExerciseRow.vue";
@@ -101,7 +101,7 @@ function onCardClick(ex: CatalogExercise) {
  *  not break. */
 function equipmentLabel(eq: string | null): string {
   if (!eq) return "—";
-  return EQUIPMENT_LABEL_DE[eq as Equipment] ?? eq;
+  return equipmentRequirementLabelDe(eq as Parameters<typeof equipmentRequirementLabelDe>[0]);
 }
 </script>
 
@@ -122,7 +122,7 @@ function equipmentLabel(eq: string | null): string {
       </Select>
       <Select v-model="muscleFilter" class="filter-select" :aria-label="t('exerciseUi.list.muscleFilterAriaLabel')">
         <option value="">{{ t("exerciseUi.list.allMusclesOption") }}</option>
-        <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ MUSCLE_LABEL_DE[m] ?? m }}</option>
+        <option v-for="m in MUSCLE_SLUGS" :key="m" :value="m">{{ muscleLabel(m) }}</option>
       </Select>
     </div>
 

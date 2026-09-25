@@ -13,8 +13,8 @@
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { EXERCISE_SLUG_PATTERN } from "@liftr/shared";
-import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
-import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
+import { equipmentLabel, EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
+import { muscleLabel, MUSCLE_SLUGS } from "../../lib/muscles";
 import { createExercise } from "../../services/exerciseService";
 import { useCatalogStore } from "../../stores/catalogStore";
 import Chip from "../base/Chip.vue";
@@ -142,7 +142,7 @@ async function save() {
       <span class="field-label">{{ t("exerciseUi.addCustomForm.equipmentLabel") }}</span>
       <Select v-model="equipment">
         <option value="">{{ t("exerciseUi.addCustomForm.noEquipmentOption") }}</option>
-        <option v-for="eq in EQUIPMENT_SLUGS" :key="eq" :value="eq">{{ EQUIPMENT_LABEL_DE[eq] }}</option>
+        <option v-for="eq in EQUIPMENT_SLUGS" :key="eq" :value="eq">{{ equipmentLabel(eq) }}</option>
       </Select>
     </label>
 
@@ -157,7 +157,7 @@ async function save() {
           :active="primaryMuscle === m"
           @click="primaryMuscle = m"
         >
-          {{ MUSCLE_LABEL_DE[m] ?? m }}
+          {{ muscleLabel(m) }}
         </Chip>
       </div>
     </div>
@@ -173,7 +173,7 @@ async function save() {
           :active="secondaryMuscles.has(m)"
           @click="toggleSecondary(m)"
         >
-          {{ MUSCLE_LABEL_DE[m] ?? m }}
+          {{ muscleLabel(m) }}
         </Chip>
       </div>
     </div>

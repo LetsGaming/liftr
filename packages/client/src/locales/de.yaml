@@ -1,6 +1,15 @@
 # German — the source of truth. Every key used anywhere in the app must exist here first;
 # `pnpm i18n:check` (scripts/i18n-check.mjs) fails if en.yaml is missing or has extra keys
 # relative to this file. See docs/guides/adding-a-language.md for how to add a locale.
+app:
+  # App.vue's launch-time toasts (APK update available, client/server version mismatch) — both
+  # tappable, routing to Profil > Konto & App. Distinct wording from profile.accountApp.update/
+  # server's own strings, which describe the same facts inline on that page rather than as a toast.
+  updateAvailableToast: "Update verfügbar: v{version} — antippen für Details"
+  versionMismatchToast: "Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen"
+  mainNavAriaLabel: Hauptnavigation
+  levelProgressAriaLabel: "Level {level}, {xpIntoLevel} von {xpForNextLevel} XP bis Level {nextLevel}"
+  xpUntilNextLevel: "{xpIntoLevel}/{xpForNextLevel} bis Lv. {nextLevel}"
 nav:
   overview: Übersicht
   training: Training
@@ -58,6 +67,7 @@ workout:
     no: Nein
     yes: "Ja, abbrechen"
   mesoWeek: "Woche {current}/{total} · {percent}%"
+  progressLabel: "Übung {current} von {total}"
   moreOptionsAriaLabel: Weitere Optionen
   addExercise:
     title: Übung hinzufügen
@@ -515,6 +525,11 @@ attributionsPage:
     license: "CC-BY 4.0"
     credit: "openrouteservice.org · © openrouteservice.org by HeiGIT"
 overview:
+  bodyweightTrend:
+    up: steigend
+    down: fallend
+    stable: stabil
+    daysSpan: "{n} Tage"
   loadError:
     message: "Einige Daten konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert."
     retry: Erneut versuchen
@@ -656,6 +671,8 @@ exerciseUi:
     altBack: Rückansicht
 rank:
   decayCaption: "Schon mal erreicht: {tier} {division}"
+  tierLadder:
+    stepsLabel: "{n} Stufen"
   lifterSection:
     infoLabel: "Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt"
     infoBodyLead: ". Ein"
@@ -750,6 +767,18 @@ onboarding:
       trapBar: Trap-Bar
       dumbbell: Kurzhantel-Griff
 workoutUi:
+  setEntry:
+    weightLabel: Gewicht
+    repsLabel: Wiederholungen
+    hidePlates: Scheiben ausblenden
+    showPlates: Scheiben anzeigen
+    platesBreakdown: "{bar} kg Stange + je Seite {perSide} kg"
+    barOnly: "nur die {bar} kg Stange"
+    platesInexact: "Mit deinen Scheiben nicht exakt erreichbar — {achieved} kg stattdessen"
+  rpeCapture:
+    hint: "Wie anstrengend war der Satz? (1 = sehr leicht, 10 = maximal)"
+  noteCapture:
+    placeholder: "Notiz…"
   finishSequence:
     nextStepAriaLabel: Nächster Schritt
     rankUpsEyebrow: Rangaufstiege
@@ -774,6 +803,8 @@ workoutUi:
     waitingToStart: startet nach dem Satz
     skip: Überspringen
 shell:
+  syncIndicator:
+    failedTitle: "Synchronisierung fehlgeschlagen: {error}"
   onboardingGuide:
     stepLabel:
       welcome: Start
@@ -827,6 +858,9 @@ route:
     addNew: "+ Neue Strecke"
     reorderFailed: Sortierung konnte nicht gespeichert werden.
 run:
+  runReplay:
+    play: Abspielen
+    reduceMotionNote: "Automatisches Abspielen deaktiviert (reduzierte Bewegung) — manuell scrubben funktioniert weiterhin."
   liveRunScreen:
     freeRun: Freier Lauf
     paused: Pausiert
@@ -879,6 +913,7 @@ healthConnect:
     partFailed: "{n} fehlgeschlagen"
     detailsWrap: "Verbunden — {parts}. Details im Protokoll."
     connectionFailed: "Verbindung fehlgeschlagen."
+    resumeSyncToast: "Health Connect: {parts}."
 workoutFinish:
   plausibility:
     pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
@@ -889,3 +924,71 @@ runValidation:
   distanceRequired: "Bitte eine Distanz in km angeben."
   durationRequired: "Bitte eine Dauer in Minuten angeben."
   dateRequired: "Bitte ein gültiges Datum angeben."
+syncStore:
+  stuckWarning: "{n} Eintrag/Einträge werden seit über 72 Stunden nicht synchronisiert und dauerhaft nicht mehr automatisch erneut versucht."
+muscles:
+  biceps: Bizeps
+  front-delts: "vordere Schultern"
+  serratus: Serratus
+  chest: Brust
+  triceps: Trizeps
+  abs: Bauch
+  calves: Waden
+  glutes: "Gesäß"
+  traps: Trapezmuskel
+  quads: Quadrizeps
+  hamstrings: Hamstrings
+  lats: Latissimus
+  brachialis: Brachialis
+  obliques: "schräge Bauchmuskeln"
+  soleus: Soleus
+equipment:
+  bodyweight: "Körpergewicht"
+  dumbbell: Kurzhanteln
+  barbell: Langhantel
+  ez-bar: "SZ-Stange"
+  trap-bar: "Trap-Bar"
+  machine: Maschine
+  cable: Kabelzug
+  kettlebell: Kettlebell
+  rings: Ringe
+  ab-wheel: "Ab-Wheel"
+  support:
+    plates: "Gewichtsscheiben"
+    bench: Flachbank
+    incline-bench: "Schrägbank"
+    rack: "Squat-Rack"
+    pullup-bar: "Klimmzugstange"
+    dip-bars: "Dip-Barren"
+    mat: Matte
+    box: "Plyo-Box"
+tiers:
+  initiate: "ANFÄNGER"
+  apprentice: LEHRLING
+  trainee: AZUBI
+  athlete: SPORTLER
+  lifter: HEBER
+  advanced: "GEÜBT"
+  elite: ELITE
+  expert: EXPERTE
+  apex: APEX
+shareCard:
+  prsLabel: PRs
+  trainedMuscles: "TRAINIERTE MUSKELN"
+  level: "Level {level}"
+  newRecord: "neuer Rekord"
+  moreExercises: "+{count} weitere Übungen"
+rankCopy:
+  lpExplainer: "misst deinen Fortschritt innerhalb der aktuellen Division (0–100)"
+runCopy:
+  category:
+    mile: Meile
+    "5k": "5 km"
+    "10k": "10 km"
+    half_marathon: Halbmarathon
+    marathon: Marathon
+  activity:
+    run: Laufen
+    walk: Gehen
+    hike: Wandern
+    other: Sonstiges

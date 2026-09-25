@@ -1,6 +1,12 @@
 # English. Must have exactly the same keys as de.yaml — run `pnpm i18n:check` after editing.
 # A key missing here falls back to German at runtime rather than showing a raw key, but the
 # check script treats "missing" as an error so packs don't silently drift.
+app:
+  updateAvailableToast: "Update available: v{version} — tap for details"
+  versionMismatchToast: "Server and app versions don't match — this can cause errors"
+  mainNavAriaLabel: Main navigation
+  levelProgressAriaLabel: "Level {level}, {xpIntoLevel} of {xpForNextLevel} XP to level {nextLevel}"
+  xpUntilNextLevel: "{xpIntoLevel}/{xpForNextLevel} to Lv. {nextLevel}"
 nav:
   overview: Overview
   training: Training
@@ -58,6 +64,7 @@ workout:
     no: No
     yes: "Yes, cancel"
   mesoWeek: "Week {current}/{total} · {percent}%"
+  progressLabel: "Exercise {current} of {total}"
   moreOptionsAriaLabel: More options
   addExercise:
     title: Add exercise
@@ -514,6 +521,11 @@ attributionsPage:
     license: "CC-BY 4.0"
     credit: "openrouteservice.org · © openrouteservice.org by HeiGIT"
 overview:
+  bodyweightTrend:
+    up: rising
+    down: falling
+    stable: stable
+    daysSpan: "{n} days"
   loadError:
     message: "Some data couldn't be loaded. What you've logged is stored locally."
     retry: Try again
@@ -655,6 +667,8 @@ exerciseUi:
     altBack: Back view
 rank:
   decayCaption: "Previous best: {tier} {division}"
+  tierLadder:
+    stepsLabel: "{n} steps"
   lifterSection:
     infoLabel: "Per exercise · real standards where available, otherwise derived — nothing locked"
     infoBodyLead: ". A"
@@ -749,6 +763,18 @@ onboarding:
       trapBar: Trap bar
       dumbbell: Dumbbell handle
 workoutUi:
+  setEntry:
+    weightLabel: Weight
+    repsLabel: Reps
+    hidePlates: Hide plates
+    showPlates: Show plates
+    platesBreakdown: "{bar} kg bar + per side {perSide} kg"
+    barOnly: "just the {bar} kg bar"
+    platesInexact: "Not exactly reachable with your plates — {achieved} kg instead"
+  rpeCapture:
+    hint: "How hard was that set? (1 = very easy, 10 = maximal)"
+  noteCapture:
+    placeholder: "Note…"
   finishSequence:
     nextStepAriaLabel: Next step
     rankUpsEyebrow: Rank-ups
@@ -773,6 +799,8 @@ workoutUi:
     waitingToStart: starts after the set
     skip: Skip
 shell:
+  syncIndicator:
+    failedTitle: "Sync failed: {error}"
   onboardingGuide:
     stepLabel:
       welcome: Start
@@ -826,6 +854,9 @@ route:
     addNew: "+ New route"
     reorderFailed: Couldn't save the new order.
 run:
+  runReplay:
+    play: Play
+    reduceMotionNote: "Autoplay disabled (reduced motion) — manual scrubbing still works."
   liveRunScreen:
     freeRun: Free run
     paused: Paused
@@ -878,6 +909,7 @@ healthConnect:
     partFailed: "{n} failed"
     detailsWrap: "Connected — {parts}. See the log for details."
     connectionFailed: "Connection failed."
+    resumeSyncToast: "Health Connect: {parts}."
 workoutFinish:
   plausibility:
     pace: "This session was unusually fast — your rank and XP gain is more conservative as a result."
@@ -888,3 +920,71 @@ runValidation:
   distanceRequired: "Please enter a distance in km."
   durationRequired: "Please enter a duration in minutes."
   dateRequired: "Please enter a valid date."
+syncStore:
+  stuckWarning: "{n} entries haven't synced in over 72 hours and will no longer be retried automatically."
+muscles:
+  biceps: Biceps
+  front-delts: "front delts"
+  serratus: Serratus
+  chest: Chest
+  triceps: Triceps
+  abs: Abs
+  calves: Calves
+  glutes: Glutes
+  traps: Traps
+  quads: Quads
+  hamstrings: Hamstrings
+  lats: Lats
+  brachialis: Brachialis
+  obliques: Obliques
+  soleus: Soleus
+equipment:
+  bodyweight: Bodyweight
+  dumbbell: Dumbbells
+  barbell: Barbell
+  ez-bar: "EZ bar"
+  trap-bar: "Trap bar"
+  machine: Machine
+  cable: Cable
+  kettlebell: Kettlebell
+  rings: Rings
+  ab-wheel: "Ab wheel"
+  support:
+    plates: Plates
+    bench: "Flat bench"
+    incline-bench: "Incline bench"
+    rack: "Squat rack"
+    pullup-bar: "Pull-up bar"
+    dip-bars: "Dip bars"
+    mat: Mat
+    box: "Plyo box"
+tiers:
+  initiate: NOVICE
+  apprentice: APPRENTICE
+  trainee: TRAINEE
+  athlete: ATHLETE
+  lifter: LIFTER
+  advanced: ADVANCED
+  elite: ELITE
+  expert: EXPERT
+  apex: APEX
+shareCard:
+  prsLabel: PRs
+  trainedMuscles: "MUSCLES TRAINED"
+  level: "Level {level}"
+  newRecord: "new record"
+  moreExercises: "+{count} more exercises"
+rankCopy:
+  lpExplainer: "measures your progress within the current division (0–100)"
+runCopy:
+  category:
+    mile: Mile
+    "5k": "5K"
+    "10k": "10K"
+    half_marathon: "Half marathon"
+    marathon: Marathon
+  activity:
+    run: Running
+    walk: Walking
+    hike: Hiking
+    other: Other

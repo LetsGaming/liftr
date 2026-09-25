@@ -17,8 +17,11 @@
  * animation/teardown finishes.
  */
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "../base/Button.vue";
 import SheetModal from "../patterns/SheetModal.vue";
+
+const { t } = useI18n();
 
 const props = defineProps<{ title: string; modelValue: string | null }>();
 const emit = defineEmits<{ save: [value: string | null]; close: [] }>();
@@ -35,8 +38,8 @@ function onSave() {
 
 <template>
   <SheetModal ref="sheetRef" :title="props.title" height="50%" @close="emit('close')">
-    <textarea v-model="draft" class="note-textarea" rows="6" maxlength="500" placeholder="Notiz…" />
-    <Button variant="primary" block class="note-save" @click="onSave">Speichern</Button>
+    <textarea v-model="draft" class="note-textarea" rows="6" maxlength="500" :placeholder="t('workoutUi.noteCapture.placeholder')" />
+    <Button variant="primary" block class="note-save" @click="onSave">{{ t("common.save") }}</Button>
   </SheetModal>
 </template>
 

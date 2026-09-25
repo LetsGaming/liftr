@@ -13,7 +13,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { MAX_ORDINAL, ordinal, type Division, type Tier } from "@liftr/shared";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../../lib/tierIcons";
 import TierBadge from "./TierBadge.vue";
 import Chip from "../base/Chip.vue";
 
@@ -78,7 +78,7 @@ const decayCaption = computed(() => {
   const currentOrdinal = ordinal(props.tier as Tier, props.division as Division);
   const peakOrdinal = ordinal(props.peakTier as Tier, props.peakDivision as Division);
   if (currentOrdinal >= peakOrdinal) return null;
-  return t("rank.decayCaption", { tier: TIER_LABEL_DE[props.peakTier as RankTier], division: DIVISION_LABEL[props.peakDivision] });
+  return t("rank.decayCaption", { tier: tierLabel(props.peakTier as RankTier), division: DIVISION_LABEL[props.peakDivision] });
 });
 
 /** Visible caption rather than a `title` attribute — a tooltip is invisible on touch (the app's
@@ -144,7 +144,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
          + LP above a large centered medal, target fields and the bar below it). -->
     <template v-if="variant === 'hero'">
       <div class="rp-hero-tier">
-        {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
+        {{ tierLabel(tier as RankTier) }} {{ DIVISION_LABEL[division] }}
         <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
       </div>
       <div class="rp-hero-lp tnum">{{ lpDisplay }} LP</div>
@@ -170,7 +170,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
       <div class="rp-body">
         <div class="rp-head">
           <span class="rp-tier">
-            {{ TIER_LABEL_DE[tier as RankTier] }} {{ DIVISION_LABEL[division] }}
+            {{ tierLabel(tier as RankTier) }} {{ DIVISION_LABEL[division] }}
             <span v-if="trust !== 'real'" class="trust-marker" aria-hidden="true">≈</span>
           </span>
           <span class="rp-lp tnum">{{ lpDisplay }} LP</span>

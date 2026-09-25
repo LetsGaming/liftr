@@ -2,7 +2,7 @@
 import { useI18n } from "vue-i18n";
 import Chip from "../base/Chip.vue";
 import ExerciseIcon from "../exercise/ExerciseIcon.vue";
-import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE, SUPPORT_EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
+import { equipmentLabel, EQUIPMENT_SLUGS, supportEquipmentLabel, SUPPORT_EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
 import { useOnboardingDraft } from "./OnboardingDraft";
 
 const { t } = useI18n();
@@ -45,7 +45,7 @@ function toggle(slug: string) {
         @click="toggle(slug)"
       >
         <template #leading><ExerciseIcon :equipment="slug" :size="22" /></template>
-        <span class="equip-chip-label">{{ EQUIPMENT_LABEL_DE[slug] }}</span>
+        <span class="equip-chip-label">{{ equipmentLabel(slug) }}</span>
         <span v-if="slug === 'bodyweight'" class="lock-hint">{{ t("onboarding.equipmentStep.alwaysActiveHint") }}</span>
       </Chip>
     </div>
@@ -62,7 +62,7 @@ function toggle(slug: string) {
         @click="toggle(slug)"
       >
         <template #leading><ExerciseIcon :equipment="slug" :size="22" /></template>
-        {{ SUPPORT_EQUIPMENT_LABEL_DE[slug] }}
+        {{ supportEquipmentLabel(slug) }}
       </Chip>
     </div>
   </div>

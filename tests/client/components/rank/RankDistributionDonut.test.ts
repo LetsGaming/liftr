@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from "pinia";
 import { describe, expect, it } from "vitest";
 import RankDistributionDonut from "~client/components/rank/RankDistributionDonut.vue";
-import { TIER_LABEL_DE } from "~client/lib/tierIcons";
+import { tierLabel } from "~client/lib/tierIcons";
 import { useRanksStore, type RankRow } from "~client/stores/ranksStore";
 import { i18n } from "~client/i18n";
 import { createTestRouter, mountWithProviders } from "../../helpers/mountWithProviders";
@@ -73,9 +73,9 @@ describe("RankDistributionDonut", () => {
     const legendRows = wrapper.findAll(".rd-legend-row");
     expect(legendRows).toHaveLength(3);
     expect(legendRows.map((r) => r.find(".rd-legend-label").text())).toEqual([
-      TIER_LABEL_DE.initiate,
-      TIER_LABEL_DE.advanced,
-      TIER_LABEL_DE.apex,
+      tierLabel("initiate"),
+      tierLabel("advanced"),
+      tierLabel("apex"),
     ]);
     expect(legendRows.map((r) => r.find(".rd-legend-count").text())).toEqual(["2", "1", "1"]);
 

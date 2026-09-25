@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import RankProgress from "~client/components/rank/RankProgress.vue";
-import { TIER_LABEL_DE, DIVISION_LABEL } from "~client/lib/tierIcons";
+import { tierLabel, DIVISION_LABEL } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 describe("RankProgress", () => {
@@ -12,7 +12,7 @@ describe("RankProgress", () => {
     expect(wrapper.classes()).toContain("t-athlete");
     expect(wrapper.classes()).toContain("variant-card");
     expect(wrapper.find(".tier-emblem").classes()).toContain("t-athlete");
-    expect(wrapper.find(".rp-tier").text()).toContain(TIER_LABEL_DE.athlete);
+    expect(wrapper.find(".rp-tier").text()).toContain(tierLabel("athlete"));
     expect(wrapper.find(".rp-tier").text()).toContain(DIVISION_LABEL[2]);
     expect(wrapper.find(".rp-lp").text()).toBe("57 LP");
   });
@@ -136,7 +136,7 @@ describe("RankProgress", () => {
     });
 
     expect(wrapper.find(".rp-decay").exists()).toBe(true);
-    expect(wrapper.find(".rp-decay").text()).toBe(`Schon mal erreicht: ${TIER_LABEL_DE.initiate} ${DIVISION_LABEL[1]}`);
+    expect(wrapper.find(".rp-decay").text()).toBe(`Schon mal erreicht: ${tierLabel("initiate")} ${DIVISION_LABEL[1]}`);
   });
 
   it("shows no decay caption when currently at or above the peak", () => {

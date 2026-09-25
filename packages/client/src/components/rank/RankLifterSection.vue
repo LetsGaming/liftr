@@ -8,8 +8,8 @@ import { ordinal, TIERS, type Tier } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { LP_EXPLAINER } from "../../copy/rankCopy";
-import { TIER_LABEL_DE } from "../../lib/tierIcons";
+import { lpExplainer } from "../../copy/rankCopy";
+import { tierLabel } from "../../lib/tierIcons";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useOverallRankStore } from "../../stores/overallRankStore";
@@ -89,7 +89,7 @@ const sortedRanks = computed(() =>
 const tierFilter = ref<"alle" | Tier>("alle");
 const presentTiers = computed(() => {
   const present = new Set(sortedRanks.value.map((r) => r.tier as Tier));
-  return TIERS.filter((t) => present.has(t)).reverse(); // highest tier first, matching the LP-desc reading order
+  return TIERS.filter((tier) => present.has(tier)).reverse(); // highest tier first, matching the LP-desc reading order
 });
 const filteredRanks = computed(() =>
   tierFilter.value === "alle" ? sortedRanks.value : sortedRanks.value.filter((r) => r.tier === tierFilter.value),
@@ -107,7 +107,7 @@ const filteredRanks = computed(() =>
     />
 
     <InfoToggle :label="t('rank.lifterSection.infoLabel')">
-      <b class="tnum">LP</b> {{ LP_EXPLAINER }}{{ t("rank.lifterSection.infoBodyLead") }}
+      <b class="tnum">LP</b> {{ lpExplainer() }}{{ t("rank.lifterSection.infoBodyLead") }}
       <b>≈</b>{{ t("rank.lifterSection.infoBodyTail") }}
     </InfoToggle>
     <template v-if="!ranksStore.loaded && !ranksStore.error">
@@ -150,7 +150,7 @@ const filteredRanks = computed(() =>
           @change="tierFilter = (($event.target as HTMLSelectElement).value || 'alle') as 'alle' | Tier"
         >
           <option value="">{{ t("rank.lifterSection.filterPlaceholder") }}</option>
-          <option v-for="tier in presentTiers" :key="tier" :value="tier">{{ TIER_LABEL_DE[tier] }}</option>
+          <option v-for="tier in presentTiers" :key="tier" :value="tier">{{ tierLabel(tier) }}</option>
         </select>
         <button
           v-for="tier in presentTiers.length <= 2 ? presentTiers : []"
@@ -160,7 +160,7 @@ const filteredRanks = computed(() =>
           :class="{ active: tierFilter === tier }"
           @click="tierFilter = tier"
         >
-          {{ TIER_LABEL_DE[tier] }}
+          {{ tierLabel(tier) }}
         </button>
       </div>
 

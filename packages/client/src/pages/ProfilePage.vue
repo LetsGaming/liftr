@@ -25,7 +25,7 @@ import { useHealthConnectImport } from "../composables/useHealthConnectImport";
 import { useProfileForm } from "../composables/useProfileForm";
 import { checkVersionMismatch, useServerConnection, useServerVersionInfo } from "../composables/useServerConnection";
 import { useToast } from "../composables/useToast";
-import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS, SUPPORT_EQUIPMENT_LABEL_DE } from "../lib/equipmentIcons";
+import { equipmentLabel, EQUIPMENT_SLUGS, supportEquipmentLabel } from "../lib/equipmentIcons";
 import { ApiError } from "../lib/api";
 import { isAndroid, isNative } from "../lib/platform";
 import {
@@ -418,7 +418,7 @@ async function saveWeight() {
             :title="slug === 'bodyweight' ? t('profile.equipment.bodyweightAlwaysActive') : undefined"
             @click="toggleEquipment(slug)"
           >
-            {{ EQUIPMENT_LABEL_DE[slug] }}<span v-if="slug === 'bodyweight'" class="lock-mark" aria-hidden="true"> 🔒</span>
+            {{ equipmentLabel(slug) }}<span v-if="slug === 'bodyweight'" class="lock-mark" aria-hidden="true"> 🔒</span>
           </button>
         </div>
         <span class="profile-label support-label">{{ t("profile.equipment.supportLabel") }}</span>
@@ -430,7 +430,7 @@ async function saveWeight() {
             :class="{ active: equipment.has(slug) }"
             @click="toggleEquipment(slug)"
           >
-            {{ SUPPORT_EQUIPMENT_LABEL_DE[slug] }}
+            {{ supportEquipmentLabel(slug) }}
           </button>
         </div>
 

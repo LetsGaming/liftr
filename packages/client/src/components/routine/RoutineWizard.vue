@@ -84,7 +84,7 @@ async function applySuggestions(muscleSlugs: string[]) {
     const suggestions = await routineStore.suggest(muscleSlugs);
     for (const s of suggestions) {
       selected.set(s.exerciseId, {
-        sets: s.targetSets.map((t) => ({ ...t })),
+        sets: s.targetSets.map((set) => ({ ...set })),
         linkNext: false,
         restBetweenSetsSeconds: DEFAULT_REST_SECONDS,
         restAfterExerciseSeconds: DEFAULT_REST_SECONDS,
@@ -179,7 +179,7 @@ async function upgradeToRecommendedDefaults(exerciseId: string) {
     const [recommended] = await recommendExercises([exerciseId]);
     const cfg = selected.get(exerciseId);
     if (cfg && recommended && isUntouchedDefault(cfg.sets)) {
-      cfg.sets = recommended.targetSets.map((t) => ({ ...t }));
+      cfg.sets = recommended.targetSets.map((set) => ({ ...set }));
     }
   } catch {
     // offline or request failed — the naive default stands

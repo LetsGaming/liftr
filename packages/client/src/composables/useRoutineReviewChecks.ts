@@ -5,7 +5,7 @@
  *  inform, never gate: no compliance-theater. */
 import { computed, type Ref } from "vue";
 import { useCatalogStore } from "../stores/catalogStore";
-import { aggregateMuscles, MUSCLE_LABEL_DE } from "../lib/muscles";
+import { aggregateMuscles, muscleLabel } from "../lib/muscles";
 import type { DraftExercise } from "../components/routine/RoutineWizard.vue";
 
 export type CoverageState = "covered" | "partial" | "missing";
@@ -39,7 +39,7 @@ export function useRoutineReviewChecks(
     const { primary, secondary } = aggregateMuscles(muscleLists);
     return requestedMuscleSlugs.value.map((slug) => ({
       slug,
-      label: MUSCLE_LABEL_DE[slug] ?? slug,
+      label: muscleLabel(slug),
       state: primary.includes(slug) ? "covered" : secondary.includes(slug) ? "partial" : "missing",
     }));
   });

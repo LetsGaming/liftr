@@ -9,7 +9,7 @@
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { MUSCLE_LABEL_DE } from "../../lib/muscles";
+import { muscleLabel } from "../../lib/muscles";
 import Button from "../base/Button.vue";
 import Chip from "../base/Chip.vue";
 import MuscleFigure from "../exercise/MuscleFigure.vue";
@@ -18,7 +18,7 @@ const props = defineProps<{ heat: Record<string, number>; recoveredSlugs: string
 const emit = defineEmits<{ start: [] }>();
 const { t } = useI18n();
 
-const topRecovered = computed(() => props.recoveredSlugs.slice(0, 3).map((s) => MUSCLE_LABEL_DE[s] ?? s));
+const topRecovered = computed(() => props.recoveredSlugs.slice(0, 3).map((s) => muscleLabel(s)));
 
 const verdict = computed(() => {
   if (topRecovered.value.length === 0) return t("overview.erholungszoneCard.verdictNone");

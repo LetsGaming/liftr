@@ -23,7 +23,7 @@ import { useExerciseName } from "../composables/useExerciseName";
 import { formatClockLong, formatDateShort, formatPace } from "../lib/format";
 import { usePrStore } from "../stores/prStore";
 import { useRunRankStore, type RunPrListItem } from "../stores/runRankStore";
-import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
+import { activityLabel, runCategoryLabel } from "../copy/runCopy";
 
 const { t } = useI18n();
 const prStore = usePrStore();
@@ -156,7 +156,7 @@ function formatValue(kind: string, value: number): string {
             @click="router.push(`/runs/${bestRunTimeByCategory[category]!.runId}`)"
           >
             <div class="pr-row-main">
-              <b>{{ RUN_CATEGORY_LABEL[category] }}</b>
+              <b>{{ runCategoryLabel(category) }}</b>
             </div>
             <template #trailing>
               <div v-if="bestRunTimeByCategory[category]" class="pr-row-meta">
@@ -178,7 +178,7 @@ function formatValue(kind: string, value: number): string {
             @click="router.push(`/runs/${bestSpeedByActivity[activityId]!.runId}`)"
           >
             <div class="pr-row-main">
-              <b>{{ ACTIVITY_LABEL[activityId] ?? activityId }}</b>
+              <b>{{ activityLabel(activityId) }}</b>
             </div>
             <template #trailing>
               <div v-if="bestSpeedByActivity[activityId]" class="pr-row-meta">

@@ -17,8 +17,8 @@ import TierBadge from "../rank/TierBadge.vue";
 import { useCelebrate } from "../../composables/useCelebrate";
 import { useCountUp } from "../../composables/useCountUp";
 import { haptics } from "../../lib/haptics";
-import { MUSCLE_LABEL_DE } from "../../lib/muscles";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { muscleLabel } from "../../lib/muscles";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../../lib/tierIcons";
 
 export interface RankUpSummary {
   exerciseName: string;
@@ -103,11 +103,11 @@ const { value: varietyXpDisplay } = useCountUp(varietyXpRollTarget, 700);
 const barPercentTarget = ref(0);
 const { value: barPercent } = useCountUp(barPercentTarget, 700);
 
-/** Names the newly-trained muscle(s) rather than just a count — reuses the same MUSCLE_LABEL_DE
+/** Names the newly-trained muscle(s) rather than just a count — reuses the same muscleLabel()
  *  lookup RanksPage.vue/ErholungszoneCard.vue use for muscle display names, rather than
  *  inventing a second one. Plain German list join ("X", "X und Y", "X, Y und Z"). */
 const varietyMuscleLabel = computed(() => {
-  const names = props.newMuscleSlugs.map((slug) => MUSCLE_LABEL_DE[slug] ?? slug);
+  const names = props.newMuscleSlugs.map((slug) => muscleLabel(slug));
   if (names.length === 0) return "";
   if (names.length === 1) return names[0]!;
   return `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}`;
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
           </span>
           <div class="rankup-meta">
             <b>{{ r.exerciseName }}</b>
-            <span>{{ r.isPr ? t("workoutUi.finishSequence.newRecordLabel") : `${TIER_LABEL_DE[r.tier as RankTier]} ${DIVISION_LABEL[r.division]}` }}</span>
+            <span>{{ r.isPr ? t("workoutUi.finishSequence.newRecordLabel") : `${tierLabel(r.tier as RankTier)} ${DIVISION_LABEL[r.division]}` }}</span>
             <span v-if="r.plausibilityNote" class="plausibility-note">{{ r.plausibilityNote }}</span>
             <div class="rankbar">
               <i class="bar-fill" :style="{ transform: `scaleX(${(rankUpBarDisplay[i] ?? r.prevLp) / 100})` }" />

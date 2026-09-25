@@ -17,7 +17,7 @@ import RankCategoryCard from "./RankCategoryCard.vue";
 import TierLadder from "./TierLadder.vue";
 import { useRunRankStore, type RunPrListItem, type RunRankRow } from "../../stores/runRankStore";
 import { formatClockLong, formatDateShort, formatPace } from "../../lib/format";
-import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../../copy/runCopy";
+import { activityLabel, runCategoryLabel } from "../../copy/runCopy";
 import Button from "../base/Button.vue";
 
 const { t } = useI18n();
@@ -132,7 +132,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
       <RankCategoryCard
         v-for="category in RUN_CATEGORIES"
         :key="category"
-        :name="RUN_CATEGORY_LABEL[category]"
+        :name="runCategoryLabel(category)"
         :row="runRankByCategory[category] ?? null"
         :next-target-label="runRankByCategory[category] && formatNextSpeedTarget(runRankByCategory[category]!.nextTargetSpeedMps)"
         trust-fallback="real"
@@ -147,7 +147,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
       <RankCategoryCard
         v-for="activity in singleSpeedActivities"
         :key="activity.id"
-        :name="ACTIVITY_LABEL[activity.id] ?? activity.id"
+        :name="activityLabel(activity.id)"
         :row="singleSpeedRankByActivity[activity.id] ?? null"
         :next-target-label="
           singleSpeedRankByActivity[activity.id] && formatNextSpeedTarget(singleSpeedRankByActivity[activity.id]!.nextTargetSpeedMps)

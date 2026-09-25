@@ -14,7 +14,7 @@
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { tierLabel, type RankTier } from "../../lib/tierIcons";
 import { useRanksStore } from "../../stores/ranksStore";
 import ListRow from "../patterns/ListRow.vue";
 
@@ -92,7 +92,7 @@ const total = computed(() => ranksStore.ranks.length);
       <ul class="rd-legend">
         <ListRow v-for="s in segments" :key="s.tier" as="li" :interactive="false" dense class="rd-legend-row">
           <template #leading><span class="rd-swatch" :style="{ background: s.color }" /></template>
-          <span class="rd-legend-label">{{ TIER_LABEL_DE[s.tier] }}</span>
+          <span class="rd-legend-label">{{ tierLabel(s.tier) }}</span>
           <template #trailing><span class="rd-legend-count tnum">{{ s.count }}</span></template>
         </ListRow>
       </ul>

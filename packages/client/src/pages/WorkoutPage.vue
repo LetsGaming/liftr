@@ -43,7 +43,7 @@ import { useXpChip } from "../composables/useXpChip";
 import { haptics } from "../lib/haptics";
 import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
-import { TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { tierLabel, type RankTier } from "../lib/tierIcons";
 import { TIERS, type Tier } from "@liftr/shared";
 import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
@@ -408,7 +408,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
         <div class="reward-recap panel-reward" :class="topRankUp ? `t-${topRankUp.tier}` : ''">
           <TierBadge v-if="topRankUp" class="recap-badge" :tier="topRankUp.tier" />
           <div class="recap-body">
-            <b v-if="topRankUp">{{ TIER_LABEL_DE[topRankUp.tier as RankTier] }} {{ t("workout.finished.reached") }}</b>
+            <b v-if="topRankUp">{{ tierLabel(topRankUp.tier as RankTier) }} {{ t("workout.finished.reached") }}</b>
             <b v-else>{{ t("workout.finished.level", { level: xpStore.level }) }}</b>
             <span>+{{ sessionXpTotal }} XP{{ sessionRankUps.length > 1 ? t("workout.finished.rankUpsSuffix", { count: sessionRankUps.length }) : "" }}</span>
           </div>

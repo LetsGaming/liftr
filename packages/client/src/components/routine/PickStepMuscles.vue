@@ -8,7 +8,7 @@
  *  This one has no continue button; picking suggestions moves the wizard on by itself. */
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
+import { muscleLabel, MUSCLE_SLUGS } from "../../lib/muscles";
 import MuscleFigure from "../exercise/MuscleFigure.vue";
 import Chip from "../base/Chip.vue";
 import Button from "../base/Button.vue";
@@ -44,7 +44,7 @@ function requestSuggestions() {
         :active="pickedMuscles.has(slug)"
         @click="toggleMuscle(slug)"
       >
-        {{ MUSCLE_LABEL_DE[slug] ?? slug }}
+        {{ muscleLabel(slug) }}
       </Chip>
     </div>
     <Button size="lg" block :disabled="pickedMuscles.size === 0 || suggesting" @click="requestSuggestions">
