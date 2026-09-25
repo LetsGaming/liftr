@@ -6,6 +6,10 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Added
+
+- Exercise names and how-to cues are now generated in English as well as German, ahead of the app's English translation.
+
 ## [1.8.0] - 2026-09-24
 
 ### Added
