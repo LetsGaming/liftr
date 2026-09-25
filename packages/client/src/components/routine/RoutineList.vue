@@ -26,8 +26,10 @@ import { useDragReorder } from "../../composables/useDragReorder";
 import { useToast } from "../../composables/useToast";
 import { aggregateMuscles } from "../../lib/muscles";
 import { computed, onBeforeUnmount, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 const routineStore = useRoutineStore();
 const store = useActiveWorkoutStore();
@@ -79,7 +81,7 @@ const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => 
   /* reorder()'s own reload never runs if its PATCH requests reject, which would leave the UI
      silently out of sync. Surface the failure and force a resync so the list can't stay stale. */
   routineStore.reorder(ids).catch(() => {
-    toast("Sortierung konnte nicht gespeichert werden.");
+    toast(t("routine.routineList.reorderFailed"));
     void routineStore.load();
   });
 });
@@ -123,7 +125,7 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           <template v-if="canDragReorder" #drag-handle>
             <button
               class="drag-handle-btn"
-              aria-label="Verschieben"
+              :aria-label="t('routine.routineList.moveAriaLabel')"
               @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
               @click.stop
             >
@@ -132,25 +134,30 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           </template>
           <template v-if="routine.mesocycle" #badge>
             <Chip variant="accent" size="sm" class="meso-badge">
-              Woche {{ routine.mesocycle.currentWeek }}/{{ routine.mesocycle.totalWeeks }} ·
-              {{ routine.mesocycle.weekPercents[routine.mesocycle.currentWeek - 1] }}%
+              {{
+                t("routine.routineList.mesocycleBadge", {
+                  week: routine.mesocycle.currentWeek,
+                  total: routine.mesocycle.totalWeeks,
+                  percent: routine.mesocycle.weekPercents[routine.mesocycle.currentWeek - 1],
+                })
+              }}
             </Chip>
           </template>
           <template #menu>
-            <IconButton icon="more" label="Mehr" @click="toggleMenu(routine.id)" />
+            <IconButton icon="more" :label="t('routine.routineList.moreAriaLabel')" @click="toggleMenu(routine.id)" />
             <div v-if="openMenuId === routine.id" class="card-menu">
-              <button @click="editRoutine(routine); openMenuId = null"><AppIcon name="edit" /> Bearbeiten</button>
-              <button @click="duplicateRoutine(routine)">Duplizieren</button>
+              <button @click="editRoutine(routine); openMenuId = null"><AppIcon name="edit" /> {{ t("routine.routineList.edit") }}</button>
+              <button @click="duplicateRoutine(routine)">{{ t("routine.routineList.duplicate") }}</button>
               <button v-if="routine.mesocycle" @click="routineStore.endMesocycle(routine.id); openMenuId = null">
-                Mesozyklus beenden
+                {{ t("routine.routineList.endMesocycle") }}
               </button>
-              <button v-else @click="toggleMesoForm(routine.id); openMenuId = null">+ Mesozyklus</button>
+              <button v-else @click="toggleMesoForm(routine.id); openMenuId = null">{{ t("routine.routineList.addMesocycle") }}</button>
               <button
                 class="danger"
                 :class="{ confirming: deleteConfirm.isArmed(routine.id) }"
                 @click="deleteConfirm.trigger(routine.id)"
               >
-                {{ deleteConfirm.isArmed(routine.id) ? "Wirklich löschen?" : "Löschen" }}
+                {{ deleteConfirm.isArmed(routine.id) ? t("routine.routineList.deleteConfirm") : t("routine.routineList.delete") }}
               </button>
             </div>
           </template>
@@ -158,40 +165,38 @@ const canDragReorder = computed(() => !isDesktopGrid.value);
           <div class="rc-preview">
             <ul class="rc-ex-list">
               <li v-for="re in routine.routineExercises.slice(0, 4)" :key="re.id">{{ routineExerciseName(re.exerciseId) }}</li>
-              <li v-if="routine.routineExercises.length > 4" class="rc-ex-more">+{{ routine.routineExercises.length - 4 }} weitere</li>
+              <li v-if="routine.routineExercises.length > 4" class="rc-ex-more">{{ t("routine.routineList.moreExercises", { n: routine.routineExercises.length - 4 }) }}</li>
             </ul>
             <MuscleFigure class="rc-muscles" :size="52" v-bind="routineMuscles(routine)" />
           </div>
 
-          <template #meta>{{ routine.routineExercises.length }} {{ routine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</template>
+          <template #meta>{{ t("common.exerciseCount", routine.routineExercises.length) }}</template>
 
           <template #actions>
-            <Button variant="secondary" :disabled="starting" @click="startFromCard(routine)">Starten</Button>
+            <Button variant="secondary" :disabled="starting" @click="startFromCard(routine)">{{ t("routine.routineList.start") }}</Button>
           </template>
 
           <template v-if="mesoFormRoutineId === routine.id" #footer>
             <div class="meso-form" @click.stop>
               <NumberStepper size="sm" :model-value="mesoWeeksInput.get(routine.id) ?? 4" @adjust="(d) => adjustMesoWeeks(routine.id, d)" />
-              <span>Wochen</span>
-              <Button variant="secondary" @click="startMesocycle(routine.id)">Starten</Button>
+              <span>{{ t("routine.routineList.mesoWeeksLabel") }}</span>
+              <Button variant="secondary" @click="startMesocycle(routine.id)">{{ t("routine.routineList.start") }}</Button>
             </div>
           </template>
         </ListCard>
       </CardGrid>
-      <EmptyStateCard v-else eyebrow="Noch keine Routine">
-        Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist der
-        Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür braucht
-        es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten.
+      <EmptyStateCard v-else :eyebrow="t('routine.routineList.emptyState.eyebrow')">
+        {{ t("routine.routineList.emptyState.body") }}
         <template #action>
-          <Button block @click="showBuilder = true">+ Neue Routine</Button>
+          <Button block @click="showBuilder = true">{{ t("routine.routineList.addRoutine") }}</Button>
         </template>
       </EmptyStateCard>
 
-      <Button v-if="routineStore.routines.length > 0" variant="secondary" @click="showBuilder = true">+ Neue Routine</Button>
+      <Button v-if="routineStore.routines.length > 0" variant="secondary" @click="showBuilder = true">{{ t("routine.routineList.addRoutine") }}</Button>
       <RoutineWizard v-if="showBuilder" :routine="editingRoutine" @created="onRoutineCreated" />
 
       <Button size="lg" block :disabled="starting || quickStartExercises.length === 0" @click="quickStart">
-        {{ starting ? "Wird gestartet…" : "Ohne Routine loslegen · die ersten 4 Übungen" }}
+        {{ starting ? t("routine.routineList.quickStart.starting") : t("routine.routineList.quickStart.cta") }}
       </Button>
     </CardListScreen>
 </template>

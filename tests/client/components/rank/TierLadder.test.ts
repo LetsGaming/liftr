@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TIER_DIVISION_COUNT, TIERS } from "@liftr/shared";
 import TierLadder from "~client/components/rank/TierLadder.vue";
-import { DIVISION_LABEL, TIER_LABEL_DE } from "~client/lib/tierIcons";
+import { DIVISION_LABEL, tierLabel } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 describe("TierLadder", () => {
@@ -11,8 +11,8 @@ describe("TierLadder", () => {
     const rungs = wrapper.findAll(".rung");
     expect(rungs).toHaveLength(TIERS.length);
     const labels = rungs.map((r) => r.find(".rung-label-row").text());
-    expect(labels[0]).toContain(TIER_LABEL_DE.apex);
-    expect(labels[labels.length - 1]).toContain(TIER_LABEL_DE.initiate);
+    expect(labels[0]).toContain(tierLabel("apex"));
+    expect(labels[labels.length - 1]).toContain(tierLabel("initiate"));
   });
 
   it("with no currentTier, only Initiate is lit ('current'); everything else is 'ahead'", () => {
@@ -110,7 +110,7 @@ describe("TierLadder", () => {
     });
 
     const currentRung = wrapper.findAll(".rung").find((r) => r.classes().includes("current"))!;
-    expect(currentRung.find(".rung-peak").text()).toBe(`Schon mal erreicht: ${TIER_LABEL_DE.initiate} ${DIVISION_LABEL[1]}`);
+    expect(currentRung.find(".rung-peak").text()).toBe(`Schon mal erreicht: ${tierLabel("initiate")} ${DIVISION_LABEL[1]}`);
   });
 
   it("shows no peak caption when currently at peak, or when no peak data is supplied", () => {

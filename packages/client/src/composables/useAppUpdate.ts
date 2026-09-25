@@ -1,6 +1,7 @@
 import { App } from "@capacitor/app";
 import { computed, ref } from "vue";
 import { isAndroid } from "../lib/platform";
+import { t } from "../i18n";
 
 /** This app's own GitHub repo — release.yml publishes a signed APK to a GitHub Release on every
  *  `v*.*.*` tag (see scripts/bump-version.mjs), so this is where the client checks for one. Not
@@ -104,7 +105,7 @@ export function useAppUpdate() {
       // unreachable shouldn't ever surface as an error to a user who didn't ask to be told
       // anything. The manual "Nach Updates suchen" button (ProfilePage.vue) reads this same
       // `error` ref and shows it, since that check *was* explicitly requested.
-      error.value = "Update-Prüfung fehlgeschlagen. Später erneut versuchen.";
+      error.value = t("profile.update.checkFailed");
     } finally {
       checking.value = false;
     }

@@ -5,6 +5,7 @@
  *  carry a lopsided share of the routine's sets. None of them block Save — they inform, they
  *  don't gate. Name stays editable via the wizard's persistent header field. */
 import { toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useRoutineReviewChecks, type CoverageState } from "../../composables/useRoutineReviewChecks";
@@ -29,6 +30,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ back: []; save: [] }>();
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 const { exerciseName } = useExerciseName();
 
@@ -42,10 +44,10 @@ function setSummary(cfg: DraftExercise): string {
 function substituteReason(exerciseId: string): string {
   const missing = props.suggestionMeta[exerciseId]?.missingEquipment;
   if (!missing || missing.length === 0) {
-    return "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast.";
+    return t("routine.reviewStep.substituteGeneric");
   }
   const names = missing.map((m) => equipmentRequirementLabelDe(m as Parameters<typeof equipmentRequirementLabelDe>[0]));
-  return `Ersetzt: bevorzugte Variante braucht ${names.join(", ")}, das du nicht hast.`;
+  return t("routine.reviewStep.substituteMissing", { equipment: names.join(", ") });
 }
 
 const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
@@ -53,7 +55,11 @@ const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
   toRef(props, "requestedMuscleSlugs"),
   props.suggestionMeta,
 );
-const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", partial: "indirekt", missing: "fehlt" };
+const COVERAGE_LABEL: Record<CoverageState, string> = {
+  covered: t("routine.reviewStep.coverageState.covered"),
+  partial: t("routine.reviewStep.coverageState.partial"),
+  missing: t("routine.reviewStep.coverageState.missing"),
+};
 const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire"> = {
   covered: "success",
   partial: "neutral",
@@ -64,12 +70,12 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
 <template>
   <div class="review-step">
     <div class="summary surface-hybrid">
-      <b>{{ name || "Unbenannte Routine" }}</b>
-      <span>{{ entries.length }} {{ entries.length === 1 ? "Übung" : "Übungen" }} · {{ totalSets }} Sätze</span>
+      <b>{{ name || t("routine.reviewStep.unnamed") }}</b>
+      <span>{{ t("common.exerciseCount", entries.length) }} · {{ t("routine.reviewStep.totalSets", { n: totalSets }) }}</span>
     </div>
 
     <div v-if="coverage" class="coverage">
-      <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">Muskelabdeckung</span>
+      <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">{{ t("routine.reviewStep.coverageLabel") }}</span>
       <div class="coverage-chips">
         <Chip
           v-for="c in coverage"
@@ -98,15 +104,15 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
         </ExerciseRow>
         <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
-          Deutlich mehr Sätze als der Rest der Routine — passt das so?
+          {{ t("routine.reviewStep.lopsidedNote") }}
         </p>
       </li>
     </ul>
 
     <div class="actions">
-      <Button variant="secondary" class="review-back" @click="emit('back')">← Zurück</Button>
+      <Button variant="secondary" class="review-back" @click="emit('back')">{{ t("routine.reviewStep.back") }}</Button>
       <Button class="review-save" :disabled="!canSave || saving" @click="emit('save')">
-        {{ saving ? "Wird gespeichert…" : isEditing ? "Änderungen speichern" : "Routine speichern" }}
+        {{ saving ? t("common.savingEllipsis") : isEditing ? t("routine.reviewStep.saveChanges") : t("routine.reviewStep.save") }}
       </Button>
     </div>
   </div>

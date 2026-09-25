@@ -35,16 +35,15 @@ describe("generateExerciseI18n", () => {
     tmpDir = undefined;
   });
 
-  it("writes a nested exercise.<slug>.{name,howto} JSON file vue-i18n expects", async () => {
+  it("writes a nested exercise.<slug>.{name,howto} JSON file vue-i18n expects, per locale", async () => {
     tmpDir = mkdtempSync(join(tmpdir(), "liftr-ingest-i18n-"));
-    const outPath = join(tmpDir, "exercises.de.json");
 
     await generateExerciseI18n(
-      [entry({ slug: "back-squat", nameDe: "Kniebeuge", movementPattern: "squat", primaryMuscles: ["quads"] })],
-      outPath,
+      [entry({ slug: "back-squat", nameDe: "Kniebeuge", nameEn: "Back Squat", movementPattern: "squat", primaryMuscles: ["quads"] })],
+      tmpDir,
     );
 
-    const written = JSON.parse(readFileSync(outPath, "utf-8"));
+    const written = JSON.parse(readFileSync(join(tmpDir, "exercises.de.json"), "utf-8"));
     expect(written).toEqual({
       exercise: {
         "back-squat": {
@@ -53,29 +52,42 @@ describe("generateExerciseI18n", () => {
         },
       },
     });
+
+    const writtenEn = JSON.parse(readFileSync(join(tmpDir, "exercises.en.json"), "utf-8"));
+    expect(writtenEn).toEqual({
+      exercise: {
+        "back-squat": {
+          name: "Back Squat",
+          howto: "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs.",
+        },
+      },
+    });
   });
 
   it("creates any missing parent directories for the output path", async () => {
     tmpDir = mkdtempSync(join(tmpdir(), "liftr-ingest-i18n-"));
-    const outPath = join(tmpDir, "nested", "does", "not", "exist", "exercises.de.json");
-    expect(existsSync(outPath)).toBe(false);
+    const localesDir = join(tmpDir, "nested", "does", "not", "exist");
+    expect(existsSync(join(localesDir, "exercises.de.json"))).toBe(false);
 
-    await generateExerciseI18n([entry()], outPath);
+    await generateExerciseI18n([entry()], localesDir);
 
-    expect(existsSync(outPath)).toBe(true);
+    expect(existsSync(join(localesDir, "exercises.de.json"))).toBe(true);
+    expect(existsSync(join(localesDir, "exercises.en.json"))).toBe(true);
   });
 
   it("writes one entry per catalog entry, keyed by slug", async () => {
     tmpDir = mkdtempSync(join(tmpdir(), "liftr-ingest-i18n-"));
-    const outPath = join(tmpDir, "exercises.de.json");
 
     await generateExerciseI18n(
-      [entry({ slug: "back-squat", nameDe: "Kniebeuge" }), entry({ slug: "bench-press", nameDe: "Bankdrücken" })],
-      outPath,
+      [entry({ slug: "back-squat", nameDe: "Kniebeuge", nameEn: "Back Squat" }), entry({ slug: "bench-press", nameDe: "Bankdrücken", nameEn: "Bench Press" })],
+      tmpDir,
     );
 
-    const written = JSON.parse(readFileSync(outPath, "utf-8"));
+    const written = JSON.parse(readFileSync(join(tmpDir, "exercises.de.json"), "utf-8"));
     expect(Object.keys(written.exercise)).toEqual(["back-squat", "bench-press"]);
     expect(written.exercise["bench-press"].name).toBe("Bankdrücken");
+
+    const writtenEn = JSON.parse(readFileSync(join(tmpDir, "exercises.en.json"), "utf-8"));
+    expect(writtenEn.exercise["bench-press"].name).toBe("Bench Press");
   });
 });

@@ -4,20 +4,21 @@
  *  inside a later step would read as "one mode is the real one, the other is a fallback," which
  *  isn't true. Both paths converge into the same Pick/Arrange/Review steps after. Edit mode
  *  never reaches this screen — it jumps straight to Arrange since exercises already exist. */
+import { useI18n } from "vue-i18n";
+
 defineEmits<{ choose: [mode: "manual" | "muscles"] }>();
+const { t } = useI18n();
 </script>
 
 <template>
   <div class="path-chooser">
     <button class="path-card surface-hybrid" @click="$emit('choose', 'manual')">
-      <span class="path-title">Selbst zusammenstellen</span>
-      <span class="path-desc">Übungen aus der Liste wählen und Sätze, Wiederholungen und Gewicht selbst festlegen.</span>
+      <span class="path-title">{{ t("routine.pathChooser.manualTitle") }}</span>
+      <span class="path-desc">{{ t("routine.pathChooser.manualDesc") }}</span>
     </button>
     <button class="path-card surface-hybrid" @click="$emit('choose', 'muscles')">
-      <span class="path-title">Nach Muskelgruppe vorschlagen lassen</span>
-      <span class="path-desc">
-        Muskelgruppen wählen — Liftr stellt passende Übungen zusammen, mit Sätzen, Wiederholungen und Gewicht, die zu deinem bisherigen Training passen.
-      </span>
+      <span class="path-title">{{ t("routine.pathChooser.musclesTitle") }}</span>
+      <span class="path-desc">{{ t("routine.pathChooser.musclesDesc") }}</span>
     </button>
   </div>
 </template>

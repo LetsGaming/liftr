@@ -14,6 +14,7 @@
 import { computed, onUnmounted, ref, shallowRef } from "vue";
 import { Geolocation, type Position } from "@capacitor/geolocation";
 import { pathDistanceM } from "@liftr/shared";
+import { t } from "../i18n";
 import type { PhoneGpsRunPoint } from "../services/runService";
 
 export type LiveRunStatus = "idle" | "tracking" | "paused" | "finished";
@@ -85,13 +86,13 @@ export function useLiveRun() {
       if (perms.location !== "granted" && perms.coarseLocation !== "granted") {
         const requested = await Geolocation.requestPermissions();
         if (requested.location !== "granted" && requested.coarseLocation !== "granted") {
-          error.value = "Standortzugriff wurde nicht erlaubt — ohne GPS kann kein Lauf getrackt werden.";
+          error.value = t("liveRun.locationDenied");
           return;
         }
       }
       watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (pos: Position | null, err?: Error) => {
         if (err) {
-          error.value = "GPS-Signal verloren — Tracking läuft weiter, sobald es zurückkommt.";
+          error.value = t("liveRun.gpsSignalLost");
           return;
         }
         if (pos) onFix(pos);
@@ -104,8 +105,8 @@ export function useLiveRun() {
       startTicking();
     } catch {
       error.value = globalThis.isSecureContext
-        ? "Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen."
-        : "GPS braucht eine sichere (HTTPS-)Verbindung — im Browser nur über HTTPS verfügbar.";
+        ? t("liveRun.startFailedDevice")
+        : t("liveRun.startFailedInsecure");
     }
   }
 

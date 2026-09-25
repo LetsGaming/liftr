@@ -24,18 +24,20 @@
  * file's, not a generic one.
  */
 import { IonButtons, IonHeader, IonTitle, IonToolbar } from "@ionic/vue";
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 
 withDefaults(defineProps<{ title: string; backButton?: boolean }>(), { backButton: false });
 
 const emit = defineEmits<{ "back-button-click": [] }>();
+const { t } = useI18n();
 </script>
 
 <template>
   <IonHeader class="base-header base-page-header">
     <IonToolbar>
       <IonButtons v-if="backButton" slot="start">
-        <button class="base-page-back-btn" aria-label="Zurück" @click="emit('back-button-click')">
+        <button class="base-page-back-btn" :aria-label="t('patterns.pageHeader.backAriaLabel')" @click="emit('back-button-click')">
           <AppIcon name="chevron-left" :size="18" />
         </button>
       </IonButtons>

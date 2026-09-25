@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { LiftrDb } from "@liftr/db";
 import { hashPassword, verifyPassword } from "../lib/passwords.js";
 import { generateSessionToken, hashSessionToken } from "../lib/sessionTokens.js";
-import { isCommonPassword } from "../lib/commonPasswords.js";
+import { COMMON_PASSWORD_MESSAGE, isCommonPassword } from "../lib/commonPasswords.js";
 import { deviceLabel } from "../lib/deviceLabel.js";
 import { userRateLimit } from "../lib/rateLimit.js";
 import {
@@ -33,7 +33,7 @@ const passwordSchema = z
   // lets a client force expensive hashing on every login attempt. 128 chars is generous for any
   // real password.
   .max(128, "at most 128 characters")
-  .refine((pw) => !isCommonPassword(pw), { message: "too common, choose a different password" });
+  .refine((pw) => !isCommonPassword(pw), { message: COMMON_PASSWORD_MESSAGE });
 
 const setupInput = z.object({ password: passwordSchema });
 const loginInput = z.object({ username: usernameSchema, password: z.string() });
@@ -103,7 +103,7 @@ const sessionSummaryResponse = z.object({
   lastUsedAt: z.date(),
   expiresAt: z.date(),
   absoluteExpiresAt: z.date(),
-  device: z.string(),
+  device: z.object({ os: z.string().nullable(), browser: z.string().nullable() }).nullable(),
   current: z.boolean(),
 });
 

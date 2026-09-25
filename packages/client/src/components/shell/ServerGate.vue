@@ -9,10 +9,12 @@
  * covers "the saved server can't be reached right now" once past this gate.
  */
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { isNative } from "../../lib/platform";
 import { useServerConnection } from "../../composables/useServerConnection";
 import Button from "../base/Button.vue";
 
+const { t } = useI18n();
 const native = isNative();
 const { serverUrl, checking, error, verifyAndSave } = useServerConnection();
 const input = ref("");
@@ -26,12 +28,12 @@ function connect() {
   <div v-if="native && !serverUrl" class="gate">
     <div class="card surface-hybrid">
       <h1>Liftr</h1>
-      <p>Mit welchem Server soll sich die App verbinden?</p>
+      <p>{{ t("shell.serverGate.prompt") }}</p>
       <input
         v-model="input"
         type="text"
-        placeholder="liftr.example.com"
-        aria-label="Server-Adresse"
+        :placeholder="t('shell.serverGate.placeholder')"
+        :aria-label="t('profile.accountApp.server.addressAriaLabel')"
         autocapitalize="off"
         autocorrect="off"
         spellcheck="false"
@@ -39,7 +41,7 @@ function connect() {
       />
       <p v-if="error" class="error">{{ error }}</p>
       <Button size="lg" block :disabled="checking || !input.trim()" @click="connect">
-        {{ checking ? "Verbinde…" : "Verbinden" }}
+        {{ checking ? t("shell.serverGate.connecting") : t("shell.serverGate.connect") }}
       </Button>
     </div>
   </div>

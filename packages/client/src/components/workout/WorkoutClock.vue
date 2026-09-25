@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import IconButton from "../patterns/IconButton.vue";
 import { useActiveWorkoutStore } from "../../stores/activeWorkoutStore";
 
+const { t } = useI18n();
 const store = useActiveWorkoutStore();
 const display = ref("00:00");
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -38,14 +40,14 @@ onBeforeUnmount(() => {
 <template>
   <div class="workout-clock">
     <div class="clock-time">
-      <small>Trainingszeit</small>
+      <small>{{ t("workoutUi.workoutClock.label") }}</small>
       <span class="tnum">{{ display }}</span>
     </div>
     <div class="clock-actions">
       <IconButton
         class="icon-btn surface-hybrid"
         :icon="store.isPaused ? 'play' : 'pause'"
-        :label="store.isPaused ? 'Fortsetzen' : 'Pausieren'"
+        :label="store.isPaused ? t('workoutUi.workoutClock.resume') : t('workoutUi.workoutClock.pause')"
         @click="store.togglePause()"
       />
       <slot name="actions" />

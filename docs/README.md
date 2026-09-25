@@ -16,13 +16,13 @@ running, or extending Liftr.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — dev workflow, conventions, CI.
 - **[SECURITY.md](SECURITY.md)** — auth model, CORS, upload handling, reporting an issue.
 - **[concepts/](concepts/)** — foundational explainers for the non-obvious systems: the rank
-  engine, XP/streaks, offline sync, the exercise catalog, and a glossary of the domain terms used
-  throughout.
+  engine, XP/streaks, offline sync, the exercise catalog, localization, and a glossary of the
+  domain terms used throughout.
 - **[reference/](reference/)** — lookup material: the HTTP API, environment variables, pnpm
   scripts, and [loop-findings.md](reference/loop-findings.md)'s notes on running-loop closure
   behavior.
-- **[guides/](guides/)** — task-oriented walkthroughs: local dev setup, adding an exercise,
-  writing tests, getting the app on a phone.
+- **[guides/](guides/)** — task-oriented walkthroughs: local dev setup, adding an exercise, adding
+  or maintaining a language, writing tests, getting the app on a phone.
 - **[operations/](operations/)** — running it for real: Android release signing, deployment,
   backups, troubleshooting.
 - **[adr/](adr/)** — architecture decision records: short, dated write-ups of significant

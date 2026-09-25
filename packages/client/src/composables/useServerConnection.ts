@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { getServerUrl, getServerVersion, setServerUrl, setServerVersion } from "../lib/api";
 import { isNative } from "../lib/platform";
+import { t } from "../i18n";
 import { resolveCurrentVersion } from "./useAppUpdate";
 
 /** How long a candidate server gets to answer before this gives up and reports "unreachable" —
@@ -35,14 +36,14 @@ export async function checkServerIdentity(
   const timeout = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
   try {
     const res = await fetch(`${url}/api/health`, { signal: controller.signal });
-    if (!res.ok) return { ok: false, error: "Server antwortet nicht wie erwartet." };
+    if (!res.ok) return { ok: false, error: t("serverConnection.identity.badResponse") };
     const body: unknown = await res.json().catch(() => null);
     const record = body && typeof body === "object" ? (body as { service?: unknown; version?: unknown }) : undefined;
-    if (record?.service !== "liftr") return { ok: false, error: "Antwort erhalten, aber das scheint keine Liftr-Instanz zu sein." };
+    if (record?.service !== "liftr") return { ok: false, error: t("serverConnection.identity.notLiftr") };
     return { ok: true, version: typeof record.version === "string" ? record.version : undefined };
   } catch (err) {
     console.warn("server identity check failed", err);
-    return { ok: false, error: "Server nicht erreichbar. Adresse und Verbindung prüfen." };
+    return { ok: false, error: t("serverConnection.identity.unreachable") };
   } finally {
     clearTimeout(timeout);
   }
@@ -109,7 +110,7 @@ export function useServerConnection() {
     try {
       const normalized = normalizeServerUrl(input);
       if (!normalized) {
-        error.value = "Bitte gib eine gültige Server-Adresse ein.";
+        error.value = t("serverConnection.invalidAddress");
         return false;
       }
       const result = await checkServerIdentity(normalized);

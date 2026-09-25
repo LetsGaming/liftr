@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 import CardGrid from "../patterns/CardGrid.vue";
 import CardListScreen from "../patterns/CardListScreen.vue";
@@ -18,6 +19,7 @@ import type { PlannedRoute } from "../../services/plannedRouteService";
 
 const emit = defineEmits<{ edit: [route: PlannedRoute]; start: [route: PlannedRoute]; create: [] }>();
 
+const { t } = useI18n();
 const plannedRouteStore = usePlannedRouteStore();
 const deleteConfirm = useConfirmTap((id) => id && plannedRouteStore.remove(id));
 const { toast } = useToast();
@@ -29,7 +31,7 @@ const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => 
   const [moved] = ids.splice(from, 1);
   ids.splice(to, 0, moved!);
   plannedRouteStore.reorder(ids).catch(() => {
-    toast("Sortierung konnte nicht gespeichert werden.");
+    toast(t("route.routeList.reorderFailed"));
     void plannedRouteStore.load();
   });
 });
@@ -84,7 +86,7 @@ function editFromMenu(route: PlannedRoute) {
         <template v-if="canDragReorder" #drag-handle>
           <button
             class="drag-handle-btn"
-            aria-label="Verschieben"
+            :aria-label="t('route.routeList.dragHandleAriaLabel')"
             @pointerdown="handleDragDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
             @click.stop
           >
@@ -94,19 +96,19 @@ function editFromMenu(route: PlannedRoute) {
         <template #menu>
           <IconButton
             icon="more"
-            label="Mehr"
+            :label="t('route.routeList.moreAriaLabel')"
             :aria-expanded="openMenuId === route.id"
             @click="toggleMenu(route.id)"
           />
           <div v-if="openMenuId === route.id" class="card-menu">
-            <button @click="editFromMenu(route)"><AppIcon name="edit" /> Bearbeiten</button>
+            <button @click="editFromMenu(route)"><AppIcon name="edit" /> {{ t("route.routeList.edit") }}</button>
             <button
               class="danger"
               :class="{ confirming: deleteConfirm.isArmed(route.id) }"
               @click="deleteConfirm.trigger(route.id)"
             >
-              <template v-if="deleteConfirm.isArmed(route.id)">Wirklich löschen?</template>
-              <template v-else><AppIcon name="trash" /> Löschen</template>
+              <template v-if="deleteConfirm.isArmed(route.id)">{{ t("route.routeList.confirmDelete") }}</template>
+              <template v-else><AppIcon name="trash" /> {{ t("route.routeList.delete") }}</template>
             </button>
           </div>
         </template>
@@ -115,22 +117,22 @@ function editFromMenu(route: PlannedRoute) {
 
         <template #meta>
           {{ (route.distanceM / 1000).toFixed(2) }} km{{ route.geometrySource === "straight" ? " ≈" : "" }} ·
-          {{ route.elevationGainM != null ? Math.round(route.elevationGainM) + " hm" : "Höhe unbekannt" }}
+          {{ route.elevationGainM != null ? Math.round(route.elevationGainM) + " hm" : t("routeOverviewPage.elevationUnknown") }}
         </template>
 
         <template #actions>
-          <Button variant="secondary" @click="emit('start', route)">Starten</Button>
+          <Button variant="secondary" @click="emit('start', route)">{{ t("route.routeList.start") }}</Button>
         </template>
       </ListCard>
     </CardGrid>
-    <p v-if="plannedRouteStore.routes.length > 0" class="map-credit">Karten © OpenStreetMap contributors</p>
-    <EmptyStateCard v-else eyebrow="Noch keine Strecke">
-      Platziere Wegpunkte auf der Karte und speichere sie als wiederverwendbare Strecke.
+    <p v-if="plannedRouteStore.routes.length > 0" class="map-credit">{{ t("route.routeList.mapCredit") }}</p>
+    <EmptyStateCard v-else :eyebrow="t('route.routeList.emptyEyebrow')">
+      {{ t("route.routeList.emptyHint") }}
       <template #action>
-        <Button @click="emit('create')">+ Neue Strecke</Button>
+        <Button @click="emit('create')">{{ t("route.routeList.addNew") }}</Button>
       </template>
     </EmptyStateCard>
-    <Button v-if="plannedRouteStore.routes.length > 0" variant="secondary" class="route-list-add" @click="emit('create')">+ Neue Strecke</Button>
+    <Button v-if="plannedRouteStore.routes.length > 0" variant="secondary" class="route-list-add" @click="emit('create')">{{ t("route.routeList.addNew") }}</Button>
   </CardListScreen>
 </template>
 

@@ -21,7 +21,10 @@
  * dismiss animation/teardown finishes.
  */
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import SheetModal from "../patterns/SheetModal.vue";
+
+const { t } = useI18n();
 
 defineProps<{ currentRpe: number | null }>();
 const emit = defineEmits<{ pick: [rpe: number]; close: [] }>();
@@ -37,7 +40,7 @@ function pick(n: number) {
 
 <template>
   <SheetModal ref="sheetRef" title="RPE" height="35%" @close="emit('close')">
-    <p class="rpe-hint">Wie anstrengend war der Satz? (1 = sehr leicht, 10 = maximal)</p>
+    <p class="rpe-hint">{{ t("workoutUi.rpeCapture.hint") }}</p>
     <div class="rpe-row">
       <button
         v-for="n in OPTIONS"

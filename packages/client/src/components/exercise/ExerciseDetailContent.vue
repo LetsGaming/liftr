@@ -14,6 +14,7 @@
  */
 import { estimateE1rm, missingByTier, type EquipmentRequirement, type TieredRequirement } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import ExerciseDemo from "./ExerciseDemo.vue";
 import ExerciseHistoryList from "./ExerciseHistoryList.vue";
 import ExerciseIcon from "./ExerciseIcon.vue";
@@ -32,6 +33,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 
 const props = defineProps<{ slug: string }>();
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 onMounted(() => {
   // router.ts's beforeEnter already kicks catalog.load() off before this component mounts for the
@@ -50,12 +52,12 @@ const ranksStore = useRanksStore();
 const { historyCache, toggleExpand } = useExerciseHistoryCache();
 
 type TabKey = "ueber" | "rang" | "statistiken" | "verlauf";
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "ueber", label: "Über" },
-  { key: "rang", label: "Rang" },
-  { key: "statistiken", label: "Statistiken" },
-  { key: "verlauf", label: "Verlauf" },
-];
+const TABS = computed<{ key: TabKey; label: string }[]>(() => [
+  { key: "ueber", label: t("exerciseUi.detail.tabs.ueber") },
+  { key: "rang", label: t("exerciseUi.detail.tabs.rang") },
+  { key: "statistiken", label: t("exerciseUi.detail.tabs.statistiken") },
+  { key: "verlauf", label: t("exerciseUi.detail.tabs.verlauf") },
+]);
 const activeTab = ref<TabKey>("ueber");
 
 function selectTab(tab: TabKey) {
@@ -79,7 +81,7 @@ const bestStatLabel = computed(() => {
   if (!exercise.value || nonWarmupHistorySets.value.length === 0) return "–";
   if (exercise.value.isBodyweight) {
     const best = Math.max(...nonWarmupHistorySets.value.map((s) => s.reps));
-    return `${best} Wdh.`;
+    return t("exerciseUi.detail.repsValue", { n: best });
   }
   let bestE1rm = 0;
   for (const s of nonWarmupHistorySets.value) {
@@ -111,30 +113,30 @@ const ownedEquipment = computed(() => settingsStore.ownedEquipment);
 const missing = computed(() => missingByTier(requirements.value, ownedEquipment.value));
 function missingBadge(req: TieredRequirement): string | null {
   if (!missing.value[req.tier].includes(req.item)) return null;
-  if (req.tier === "required") return "fehlt";
-  if (req.tier === "recommended") return "empfohlen";
-  return "optional";
+  if (req.tier === "required") return t("exerciseUi.detail.missingBadge.required");
+  if (req.tier === "recommended") return t("exerciseUi.detail.missingBadge.recommended");
+  return t("exerciseUi.detail.missingBadge.optional");
 }
 </script>
 
 <template>
   <div v-if="notFound" class="not-found">
-    <p>Diese Übung wurde nicht gefunden.</p>
-    <Button as="router-link" to="/exercises" variant="secondary" block>Zu den Übungen →</Button>
+    <p>{{ t("exerciseUi.detail.notFoundText") }}</p>
+    <Button as="router-link" to="/exercises" variant="secondary" block>{{ t("exerciseUi.detail.notFoundBack") }}</Button>
   </div>
 
   <template v-else-if="exercise">
     <div class="tab-strip sticky-tabs" role="tablist">
       <button
-        v-for="t in TABS"
-        :key="t.key"
+        v-for="tab in TABS"
+        :key="tab.key"
         role="tab"
         class="tab-pill"
-        :class="{ active: activeTab === t.key }"
-        :aria-selected="activeTab === t.key"
-        @click="selectTab(t.key)"
+        :class="{ active: activeTab === tab.key }"
+        :aria-selected="activeTab === tab.key"
+        @click="selectTab(tab.key)"
       >
-        {{ t.label }}
+        {{ tab.label }}
       </button>
     </div>
 
@@ -143,13 +145,13 @@ function missingBadge(req: TieredRequirement): string | null {
 
       <p v-if="exerciseHowTo(exercise.slug)" class="howto">{{ exerciseHowTo(exercise.slug) }}</p>
 
-      <div v-if="requirements.length > 0" class="eyebrow equipment-eyebrow">Benötigtes Equipment</div>
+      <div v-if="requirements.length > 0" class="eyebrow equipment-eyebrow">{{ t("exerciseUi.detail.equipmentEyebrow") }}</div>
       <div v-if="requirements.length > 0" class="equipment-list">
         <Chip
           v-for="req in requirements"
           :key="req.item"
           class="equipment-chip"
-          :class="{ missing: missingBadge(req) === 'fehlt', soft: missingBadge(req) != null && missingBadge(req) !== 'fehlt' }"
+          :class="{ missing: missing[req.tier].includes(req.item) && req.tier === 'required', soft: missing[req.tier].includes(req.item) && req.tier !== 'required' }"
         >
           <template #leading><ExerciseIcon :equipment="req.item" :size="16" /></template>
           {{ equipmentRequirementLabelDe(req.item) }}
@@ -157,11 +159,11 @@ function missingBadge(req: TieredRequirement): string | null {
         </Chip>
       </div>
 
-      <div class="eyebrow muscles-eyebrow">Trainierte Muskeln</div>
+      <div class="eyebrow muscles-eyebrow">{{ t("exerciseUi.detail.musclesEyebrow") }}</div>
       <MuscleFigure :primary="primary" :secondary="secondary" />
       <div class="legend">
-        <span><i class="pri" />Primär</span>
-        <span><i class="sec" />Sekundär</span>
+        <span><i class="pri" />{{ t("exerciseUi.detail.legendPrimary") }}</span>
+        <span><i class="sec" />{{ t("exerciseUi.detail.legendSecondary") }}</span>
       </div>
     </div>
 
@@ -180,17 +182,17 @@ function missingBadge(req: TieredRequirement): string | null {
         />
       </div>
       <p v-else-if="ranksStore.loaded" class="hint">
-        Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast.
+        {{ t("exerciseUi.detail.noRankYet") }}
       </p>
-      <p v-else class="hint">Lädt…</p>
+      <p v-else class="hint">{{ t("exerciseUi.detail.loading") }}</p>
     </div>
 
     <div v-else-if="activeTab === 'statistiken'">
       <ProgressChart class="wide-chart" :sets="historySets" :is-bodyweight="exercise.isBodyweight" />
       <div class="stat-row">
-        <StatTile :value="bestStatLabel" label="Bestleistung" />
-        <StatTile :value="`${Math.round(lifetimeVolumeKg).toLocaleString('de-DE')} kg`" label="Volumen" />
-        <StatTile :value="totalSetsLogged" label="Sätze" />
+        <StatTile :value="bestStatLabel" :label="t('exerciseUi.detail.statBest')" />
+        <StatTile :value="`${Math.round(lifetimeVolumeKg).toLocaleString('de-DE')} kg`" :label="t('exerciseUi.detail.statVolume')" />
+        <StatTile :value="totalSetsLogged" :label="t('exerciseUi.detail.statSets')" />
       </div>
     </div>
 

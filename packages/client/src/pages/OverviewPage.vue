@@ -15,6 +15,7 @@
 import { IonRefresher, IonRefresherContent } from "@ionic/vue";
 import BasePage from "../components/patterns/BasePage.vue";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AppIcon from "../components/base/AppIcon.vue";
 import BodyweightTrend from "../components/overview/BodyweightTrend.vue";
@@ -28,11 +29,11 @@ import Select from "../components/base/Select.vue";
 import ListRow from "../components/patterns/ListRow.vue";
 import TierLadder from "../components/rank/TierLadder.vue";
 import WorkoutClock from "../components/workout/WorkoutClock.vue";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../lib/tierIcons";
 import { aggregateMuscles } from "../lib/muscles";
 import { formatDistanceKm } from "../lib/format";
-import { LP_EXPLAINER } from "../copy/rankCopy";
-import { ACTIVITY_LABEL } from "../copy/runCopy";
+import { lpExplainer } from "../copy/rankCopy";
+import { activityLabel } from "../copy/runCopy";
 import { useExerciseName } from "../composables/useExerciseName";
 import { useActiveWorkoutStore } from "../stores/activeWorkoutStore";
 import { useBodyweightStore } from "../stores/bodyweightStore";
@@ -45,6 +46,7 @@ import { useRoutineStore } from "../stores/routineStore";
 import { useStreakStore } from "../stores/streakStore";
 import { useXpStore } from "../stores/xpStore";
 
+const { t } = useI18n();
 const history = useHistoryStore();
 const xp = useXpStore();
 const streak = useStreakStore();
@@ -74,8 +76,8 @@ const availableActivityFilters = computed(() => {
   return order.filter((v) => present.has(v));
 });
 function activityFilterLabel(value: string): string {
-  if (value === "workout") return "Workout";
-  return ACTIVITY_LABEL[value] ?? value;
+  if (value === "workout") return t("common.workout");
+  return activityLabel(value);
 }
 const selectedFilterValue = computed<string>({
   get: () => (activityFilter.value === "alle" ? "" : activityFilter.value),
@@ -112,7 +114,7 @@ const overallRankLabel = computed(() => {
   // below (2x2 grid + wrapping value text) handles the width instead.
   if (!overallRank.loaded || !overallRank.current) return "—";
   const { tier, division } = overallRank.current;
-  const label = TIER_LABEL_DE[tier as RankTier];
+  const label = tierLabel(tier as RankTier);
   const div = DIVISION_LABEL[division];
   return div ? `${label} ${div}` : label;
 });
@@ -211,7 +213,7 @@ const maxWeeklyVolume = computed(() => Math.max(1, ...weeklyVolume.value));
 const selectedWeekIndex = ref(7);
 function weekLabel(i: number) {
   const weeksAgo = 7 - i;
-  return weeksAgo === 0 ? "Diese Woche" : weeksAgo === 1 ? "Letzte Woche" : `Vor ${weeksAgo} Wochen`;
+  return weeksAgo === 0 ? t("overview.week.current") : weeksAgo === 1 ? t("overview.week.last") : t("overview.week.ago", { n: weeksAgo });
 }
 
 /** Without this, first launch renders six simultaneous empty states — four dashes, two "noch
@@ -260,77 +262,75 @@ function retryFailed() {
 </script>
 
 <template>
-  <BasePage title="Übersicht">
+  <BasePage :title="t('nav.overview')">
       <IonRefresher slot="fixed" @ion-refresh="onRefresh">
         <IonRefresherContent />
       </IonRefresher>
 
       <div class="dashboard">
         <div v-if="hasLoadError" class="load-error-banner">
-          <span>Einige Daten konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert.</span>
-          <Button variant="secondary" @click="retryFailed">Erneut versuchen</Button>
+          <span>{{ t("overview.loadError.message") }}</span>
+          <Button variant="secondary" @click="retryFailed">{{ t("overview.loadError.retry") }}</Button>
         </div>
 
         <ErholungszoneCard class="tile--priority" :heat="readiness.heat" :recovered-slugs="readiness.recoveredSlugs" :loaded="readiness.loaded" :can-start="!!suggestedRoutine" @start="startFromReadiness" />
 
         <section class="launchpad tile--priority surface-hybrid">
           <template v-if="activeWorkout.isActive">
-            <div class="eyebrow lp-eyebrow">Weiter machen</div>
+            <div class="eyebrow lp-eyebrow">{{ t("overview.launchpad.continueTitle") }}</div>
             <div class="lp-row">
               <div class="lp-info">
-                <b>{{ activeWorkout.routineName || "Workout" }}</b>
+                <b>{{ activeWorkout.routineName || t("common.workout") }}</b>
                 <span>{{ activeWorkout.progressLabel }}</span>
               </div>
               <WorkoutClock />
             </div>
-            <Button as="router-link" to="/workout" block>Zum Workout →</Button>
+            <Button as="router-link" to="/workout" block>{{ t("overview.launchpad.goToWorkout") }}</Button>
           </template>
           <template v-else-if="suggestedRoutine">
-            <div class="eyebrow lp-eyebrow">Bereit für heute?</div>
+            <div class="eyebrow lp-eyebrow">{{ t("overview.launchpad.readyTitle") }}</div>
             <div class="lp-row">
               <div class="lp-info">
                 <b>{{ suggestedRoutine.name }}</b>
-                <span>{{ suggestedRoutine.routineExercises.length }} {{ suggestedRoutine.routineExercises.length === 1 ? "Übung" : "Übungen" }}</span>
+                <span>{{ t("common.exerciseCount", suggestedRoutine.routineExercises.length) }}</span>
               </div>
               <MuscleFigure class="lp-muscles" :size="36" v-bind="suggestedRoutineMuscles" />
             </div>
             <Button block @click="router.push(`/routines/${suggestedRoutine.id}`)">
-              <AppIcon name="play" /> Starten
+              <AppIcon name="play" /> {{ t("overview.launchpad.start") }}
             </Button>
-            <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">Andere Routine wählen →</router-link>
+            <router-link v-if="routineStore.routines.length > 1" to="/workout" class="lp-swap">{{ t("overview.launchpad.switchRoutine") }}</router-link>
           </template>
           <template v-else>
-            <div class="eyebrow lp-eyebrow">Noch keine Routine</div>
-            <p class="lp-hint">Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst.</p>
-            <Button as="router-link" to="/workout" variant="secondary" block>Erste Routine anlegen →</Button>
+            <div class="eyebrow lp-eyebrow">{{ t("overview.launchpad.noRoutineTitle") }}</div>
+            <p class="lp-hint">{{ t("overview.launchpad.noRoutineHint") }}</p>
+            <Button as="router-link" to="/workout" variant="secondary" block>{{ t("overview.launchpad.createFirstRoutine") }}</Button>
           </template>
         </section>
         <section v-if="isFirstRun" class="first-run-ladder panel">
-          <div class="eyebrow tile-head">Deine Rangleiter</div>
+          <div class="eyebrow tile-head">{{ t("overview.firstRun.ladderTitle") }}</div>
           <TierLadder :current-tier="null" :current-division="null" />
         </section>
 
         <template v-else>
           <section class="status-strip">
             <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'">
-              <template #label><AppIcon name="flame" /> Tage Serie</template>
+              <template #label><AppIcon name="flame" /> {{ t("overview.stats.streakLabel") }}</template>
             </StatTile>
-            <StatTile accent="blue" :value="xp.loaded ? `Lv. ${xp.level}` : '—'" label="Level" />
-            <StatTile :value="thisWeek.count" label="Workouts diese Woche" />
-            <StatTile reward :value="overallRankLabel" label="Gesamt&shy;rang" />
+            <StatTile accent="blue" :value="xp.loaded ? t('overview.stats.levelValue', { level: xp.level }) : '—'" :label="t('overview.stats.levelLabel')" />
+            <StatTile :value="thisWeek.count" :label="t('overview.stats.workoutsThisWeek')" />
+            <StatTile reward :value="overallRankLabel" :label="t('overview.stats.overallRank')" />
           </section>
 
           <div class="rank-terms">
-            <InfoToggle label="Was bedeutet mein Rang?">
-              <b>Gesamtrang</b> fasst deine Ränge über alle trainierten Übungen zu einem einzigen Wert
-              zusammen. Jede Stufe hat mehrere Divisionen (z.&nbsp;B. „III“ bis „I“), die bis zur
-              nächsten Beförderung runterzählen; <b class="tnum">LP</b> {{ LP_EXPLAINER }}.
+            <InfoToggle :label="t('overview.rankInfo.toggleLabel')">
+              <b>{{ t("overview.rankInfo.gesamtrang") }}</b>{{ t("overview.rankInfo.body") }}<b class="tnum">LP</b> {{ lpExplainer() }}.
             </InfoToggle>
           </div>
 
           <section class="progress-tiles">
             <div class="tile surface-hybrid">
-              <div class="eyebrow tile-head">Volumen (8 Wochen)</div>
+              <div class="eyebrow tile-head">{{ t("overview.tiles.volumeTitle") }}</div>
               <template v-if="weeklyVolume.some((v) => v > 0)">
                 <div class="volume-bars">
                   <button
@@ -351,45 +351,44 @@ function retryFailed() {
                   <b class="tnum">{{ Math.round(weeklyVolume[selectedWeekIndex] ?? 0).toLocaleString("de-DE") }} kg</b>
                 </div>
               </template>
-              <EmptyNote v-else align="start" class="tile-empty">Ab dem zweiten Trainingstag zeichnet sich hier deine Volumenkurve ab.</EmptyNote>
+              <EmptyNote v-else align="start" class="tile-empty">{{ t("overview.tiles.volumeEmpty") }}</EmptyNote>
             </div>
 
             <div class="tile surface-hybrid">
-              <div class="eyebrow tile-head">Nächster Rang</div>
+              <div class="eyebrow tile-head">{{ t("overview.tiles.nextRankTitle") }}</div>
               <EmptyNote v-if="topRanks.length > 0" align="start" class="tile-empty">
-                <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> bis zum nächsten Rang in
+                <b class="tnum">{{ Math.round(100 - topRanks[0]!.lp) }} LP</b> {{ t("overview.tiles.nextRankMiddle") }}
                 <b>{{ exerciseName(topRanks[0]!.slug) }}</b>
               </EmptyNote>
-              <EmptyNote v-else align="start" class="tile-empty">Dein erster Rang entsteht, sobald du eine Übung geloggt hast.</EmptyNote>
+              <EmptyNote v-else align="start" class="tile-empty">{{ t("overview.tiles.nextRankEmpty") }}</EmptyNote>
             </div>
 
             <div class="tile surface-hybrid">
-              <div class="eyebrow tile-head">Körpergewicht</div>
+              <div class="eyebrow tile-head">{{ t("overview.tiles.bodyweightTitle") }}</div>
               <BodyweightTrend v-if="bodyweight.entries.length >= 2" :entries="bodyweight.entries" />
               <EmptyNote v-else align="start" class="tile-empty">
-                Trag dein Körpergewicht in Profil ein — nach zwei Einträgen siehst du hier den
-                Verlauf.
+                {{ t("overview.tiles.bodyweightEmpty") }}
               </EmptyNote>
             </div>
           </section>
         </template>
 
         <section class="discover">
-          <div class="eyebrow tile-head">Entdecken</div>
+          <div class="eyebrow tile-head">{{ t("overview.discover.title") }}</div>
           <div class="progress-tiles">
             <router-link to="/ranks" class="tile discover-tile surface-hybrid">
               <div class="discover-icon"><AppIcon name="trophy" /></div>
-              <b>Rang-Analyse</b>
-              <EmptyNote align="start" class="tile-empty">Rangverteilung &amp; Rangaufstiege über alle Übungen im Überblick</EmptyNote>
+              <b>{{ t("overview.discover.rankAnalysis") }}</b>
+              <EmptyNote align="start" class="tile-empty">{{ t("overview.discover.rankAnalysisHint") }}</EmptyNote>
             </router-link>
           </div>
         </section>
         <section v-if="!isFirstRun" class="activity">
-          <div class="eyebrow tile-head">Letzte Aktivität</div>
+          <div class="eyebrow tile-head">{{ t("overview.activity.title") }}</div>
 
-          <EmptyNote v-if="history.error" align="start" class="tile-empty">Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert.</EmptyNote>
+          <EmptyNote v-if="history.error" align="start" class="tile-empty">{{ t("overview.activity.noConnection") }}</EmptyNote>
           <EmptyNote v-else-if="history.loaded && history.items.length === 0" align="start" class="tile-empty">
-            Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast.
+            {{ t("overview.activity.empty") }}
           </EmptyNote>
 
           <template v-else>
@@ -405,15 +404,15 @@ function retryFailed() {
                 :class="{ active: activityFilter === 'alle' }"
                 @click="activityFilter = 'alle'; activityShownCount = 8"
               >
-                Beides
+                {{ t("overview.activity.filterBoth") }}
               </button>
               <Select
                 v-if="availableActivityFilters.length > 2"
                 v-model="selectedFilterValue"
                 class="rank-tier-select"
-                aria-label="Aktivität filtern"
+                :aria-label="t('overview.activity.filterAriaLabel')"
               >
-                <option value="">Aktivität</option>
+                <option value="">{{ t("overview.activity.filterPlaceholder") }}</option>
                 <option v-for="value in availableActivityFilters" :key="value" :value="value">
                   {{ activityFilterLabel(value) }}
                 </option>
@@ -441,7 +440,7 @@ function retryFailed() {
                     <span class="icon" :class="item.kind"><AppIcon :name="feedIconName(item)" /></span>
                   </template>
                   <div class="meta">
-                    <b>{{ item.title ?? (item.kind === "run" ? ACTIVITY_LABEL[(item.meta.activityType as string | undefined) ?? "run"] : "Workout") }}</b>
+                    <b>{{ item.title ?? (item.kind === "run" ? activityLabel((item.meta.activityType as string | undefined) ?? "run") : t("common.workout")) }}</b>
                     <span>{{ formatDate(item.at) }}</span>
                   </div>
                   <template #trailing>
@@ -460,12 +459,12 @@ function retryFailed() {
               class="show-more-link"
               @click="activityShownCount += 8"
             >
-              Mehr anzeigen
+              {{ t("overview.activity.showMore") }}
             </button>
           </template>
 
           <Button v-if="history.nextCursor" variant="secondary" block :disabled="history.loadingMore" @click="history.loadMore()">
-            {{ history.loadingMore ? "Lädt…" : "Mehr laden" }}
+            {{ history.loadingMore ? t("overview.activity.loadingMore") : t("overview.activity.loadMore") }}
           </Button>
         </section>
       </div>
@@ -569,7 +568,7 @@ function retryFailed() {
 }
 /* 2x2 on mobile so each tile gets ~2x the width a 4-across row would give it — a 4-across row at
    ~90px per tile clips the longest tier label ("ANFÄNGER"/"LEHRLING"/"SPORTLER" via
-   overallRankLabel, TIER_LABEL_DE's longest entries). Widens back to 4-across only once there's room (>=560px,
+   overallRankLabel, tierLabel()'s longest entries). Widens back to 4-across only once there's room (>=560px,
    comfortably past every phone width this app targets); the value also wraps onto a second line
    at a smaller, responsive size instead of forcing one line that either fits or clips. */
 .status-strip {

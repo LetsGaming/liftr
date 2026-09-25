@@ -13,7 +13,10 @@
  * Named `NumberStepper` (not `Stepper`) per the project's multi-word-component-name convention
  * — avoids colliding with the current/future HTML `<stepper>`-shaped custom elements.
  */
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
@@ -35,6 +38,23 @@ const props = withDefaults(
 
 const display = (value: number) => props.formatValue?.(value) ?? String(value);
 const emit = defineEmits<{ adjust: [delta: 1 | -1]; set: [value: number] }>();
+
+// The label prop is caller-supplied and already translated (e.g. SetEntry.vue passes
+// t("workoutUi.setEntry.weightLabel")) — these compose it into a full aria-label via i18n
+// interpolation rather than a hardcoded German string concatenation, so the result isn't a
+// German/English mix regardless of what locale the label itself came from.
+const decreaseAriaLabel = computed(() =>
+  props.label ? t("patterns.numberStepper.decreaseLabel", { label: props.label }) : t("patterns.numberStepper.decrease"),
+);
+const increaseAriaLabel = computed(() =>
+  props.label ? t("patterns.numberStepper.increaseLabel", { label: props.label }) : t("patterns.numberStepper.increase"),
+);
+function editAriaLabel(value: number): string {
+  const shownValue = display(value) + (props.unit ? ` ${props.unit}` : "");
+  return props.label
+    ? t("patterns.numberStepper.editValueLabel", { label: props.label, value: shownValue })
+    : t("patterns.numberStepper.editValue", { value: shownValue });
+}
 
 /**
  * Long-press repeat — plain ±1-per-tap alone would take ~64 taps to go from a 20kg default to
@@ -128,7 +148,7 @@ function commitEdit() {
       type="button"
       class="num tnum num-edit"
       :class="{ emphasize }"
-      :aria-label="`${label ?? 'Wert'} bearbeiten, aktuell ${display(modelValue)}${unit ? ' ' + unit : ''}`"
+      :aria-label="editAriaLabel(modelValue)"
       @click="startEdit"
     >
       {{ display(modelValue) }}<small v-if="unit"> {{ unit }}</small>
@@ -136,7 +156,7 @@ function commitEdit() {
     <div class="ctrls">
       <button
         type="button"
-        :aria-label="`Weniger${label ? ' ' + label : ''}`"
+        :aria-label="decreaseAriaLabel"
         @pointerdown="startHold(-1)"
         @pointerup="clearHold"
         @pointerleave="clearHold"
@@ -148,7 +168,7 @@ function commitEdit() {
       <span v-if="size === 'sm'" class="tnum">{{ display(modelValue) }}<small v-if="unit">{{ unit }}</small></span>
       <button
         type="button"
-        :aria-label="`Mehr${label ? ' ' + label : ''}`"
+        :aria-label="increaseAriaLabel"
         @pointerdown="startHold(1)"
         @pointerup="clearHold"
         @pointerleave="clearHold"

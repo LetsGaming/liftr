@@ -8,6 +8,7 @@
  * filterable/searchable implementation, not two).
  */
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AddCustomExerciseForm from "../components/exercise/AddCustomExerciseForm.vue";
 import ExerciseList from "../components/exercise/ExerciseList.vue";
@@ -15,6 +16,7 @@ import BasePage from "../components/patterns/BasePage.vue";
 import SheetModal from "../components/patterns/SheetModal.vue";
 import { useCatalogStore } from "../stores/catalogStore";
 
+const { t } = useI18n();
 const router = useRouter();
 const catalog = useCatalogStore();
 onMounted(() => catalog.load());
@@ -32,13 +34,13 @@ function onExerciseCreated() {
 </script>
 
 <template>
-  <BasePage title="Übungen">
+  <BasePage :title="t('nav.exercises')">
     <div class="ex-page">
       <ExerciseList mode="browse" @open="router.push(`/exercises/${$event.slug}`)" />
-      <button class="add-custom-btn surface-hybrid" @click="showAddForm = true">+ Eigene Übung hinzufügen</button>
+      <button class="add-custom-btn surface-hybrid" @click="showAddForm = true">{{ t("exercisesPage.addCustom") }}</button>
     </div>
 
-    <SheetModal v-if="showAddForm" ref="addFormSheetRef" title="Eigene Übung hinzufügen" @close="showAddForm = false">
+    <SheetModal v-if="showAddForm" ref="addFormSheetRef" :title="t('exercisesPage.addCustomTitle')" @close="showAddForm = false">
       <AddCustomExerciseForm @created="onExerciseCreated" @cancel="addFormSheetRef?.dismiss()" />
     </SheetModal>
   </BasePage>

@@ -6,6 +6,7 @@
  * submits straight to runsStore.submitLiveRun instead of the manual form.
  */
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import SheetModal from "../patterns/SheetModal.vue";
 import AppIcon from "../base/AppIcon.vue";
 import LiveRunMap from "./LiveRunMap.vue";
@@ -24,6 +25,7 @@ const props = defineProps<{
   initialCenter?: { lat: number; lon: number };
 }>();
 const emit = defineEmits<{ finished: [run: RunSummary]; close: [] }>();
+const { t } = useI18n();
 
 const runsStore = useRunsStore();
 const { toast } = useToast();
@@ -78,10 +80,10 @@ async function finishRun() {
       name: props.route?.name ?? null,
       points: result.points,
     });
-    toast("Lauf gespeichert.");
+    toast(t("runsPage.toast.runSaved"));
     emit("finished", run);
   } catch {
-    toast("Speichern fehlgeschlagen — der Lauf bleibt auf diesem Gerät, bis du es erneut versuchst.");
+    toast(t("run.liveRunScreen.saveFailed"));
   } finally {
     submitting.value = false;
   }
@@ -95,18 +97,18 @@ const distanceKm = computed(() => formatDistanceKm(live.distanceM.value));
     <template #header>
       <header class="live-head">
         <div class="live-head-title">
-          <b>{{ route ? route.name : "Freier Lauf" }}</b>
-          <Chip v-if="live.status.value === 'paused'" class="status-chip" size="sm">Pausiert</Chip>
+          <b>{{ route ? route.name : t("run.liveRunScreen.freeRun") }}</b>
+          <Chip v-if="live.status.value === 'paused'" class="status-chip" size="sm">{{ t("run.liveRunScreen.paused") }}</Chip>
         </div>
-        <IconButton icon="close" label="Schließen" variant="close" class="close-btn" @click="requestClose" />
+        <IconButton icon="close" :label="t('patterns.sheetModal.closeAriaLabel')" variant="close" class="close-btn" @click="requestClose" />
       </header>
     </template>
 
     <div v-if="showDiscardConfirm" class="discard-confirm panel">
-      <p>Lauf wirklich verwerfen? Der bisherige Fortschritt geht verloren.</p>
+      <p>{{ t("run.liveRunScreen.discardConfirm") }}</p>
       <div class="discard-confirm-actions">
-        <Button variant="secondary" @click="showDiscardConfirm = false">Nein</Button>
-        <button class="btn-cancel-confirm" @click="confirmDiscard">Ja, verwerfen</button>
+        <Button variant="secondary" @click="showDiscardConfirm = false">{{ t("run.liveRunScreen.discardNo") }}</Button>
+        <button class="btn-cancel-confirm" @click="confirmDiscard">{{ t("run.liveRunScreen.discardYes") }}</button>
       </div>
     </div>
 
@@ -116,15 +118,15 @@ const distanceKm = computed(() => formatDistanceKm(live.distanceM.value));
 
     <div class="hud">
       <div class="hud-stat">
-        <span class="eyebrow">Distanz</span>
+        <span class="eyebrow">{{ t("run.liveRunScreen.distanceLabel") }}</span>
         <b class="tnum">{{ distanceKm }}</b>
       </div>
       <div class="hud-stat">
-        <span class="eyebrow">Zeit</span>
+        <span class="eyebrow">{{ t("run.liveRunScreen.timeLabel") }}</span>
         <b class="tnum">{{ formatClockLong(live.elapsedS.value) }}</b>
       </div>
       <div class="hud-stat">
-        <span class="eyebrow">Tempo</span>
+        <span class="eyebrow">{{ t("run.liveRunScreen.paceLabel") }}</span>
         <b class="tnum">{{ formatPace(live.paceSPerKm.value) }}</b>
       </div>
     </div>
@@ -132,15 +134,15 @@ const distanceKm = computed(() => formatDistanceKm(live.distanceM.value));
     <footer class="live-foot">
       <Button v-if="live.status.value === 'tracking'" variant="secondary" block @click="live.pause()">
         <template #leading><AppIcon name="pause" /></template>
-        Pause
+        {{ t("run.liveRunScreen.pauseAction") }}
       </Button>
       <Button v-else-if="live.status.value === 'paused'" variant="secondary" block @click="live.resume()">
         <template #leading><AppIcon name="play" /></template>
-        Weiter
+        {{ t("run.liveRunScreen.resumeAction") }}
       </Button>
       <Button variant="primary" block :disabled="submitting || live.status.value === 'idle'" @click="finishRun">
-        <template v-if="submitting">Speichert…</template>
-        <template v-else>Lauf beenden</template>
+        <template v-if="submitting">{{ t("run.liveRunScreen.submitting") }}</template>
+        <template v-else>{{ t("run.liveRunScreen.finishRun") }}</template>
       </Button>
     </footer>
   </SheetModal>

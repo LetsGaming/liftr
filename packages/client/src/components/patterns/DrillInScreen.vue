@@ -6,6 +6,7 @@
  * row, and a sticky start bar pinned to the bottom of the viewport. Extracted here instead of
  * being copied verbatim between the two pages a second time.
  */
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AppIcon from "../base/AppIcon.vue";
 
@@ -32,6 +33,7 @@ defineProps<{
   hideBackButton?: boolean;
 }>();
 
+const { t } = useI18n();
 const router = useRouter();
 
 /** This drill-in screen has no nav-bar entry of its own, so it needs an explicit way back rather
@@ -48,9 +50,9 @@ function goBack() {
          below for why that height matters more here than on a normal scrolling drill-in. Loading
          and not-found have no title yet to combine it with, so it stays standalone in both
          modes for those two states. -->
-    <button v-if="!hideBackButton && (!fillHeight || loading || notFound)" class="ro-back-btn" aria-label="Zurück" @click="goBack">
+    <button v-if="!hideBackButton && (!fillHeight || loading || notFound)" class="ro-back-btn" :aria-label="t('patterns.drillInScreen.back')" @click="goBack">
       <AppIcon name="chevron-left" :size="18" />
-      <span>Zurück</span>
+      <span>{{ t("patterns.drillInScreen.back") }}</span>
     </button>
 
     <template v-if="loading">
@@ -63,7 +65,7 @@ function goBack() {
 
     <template v-else>
       <div class="ro-header" :class="{ 'ro-header-combined': fillHeight }">
-        <button v-if="fillHeight && !hideBackButton" class="ro-back-btn-inline" aria-label="Zurück" @click="goBack">
+        <button v-if="fillHeight && !hideBackButton" class="ro-back-btn-inline" :aria-label="t('patterns.drillInScreen.back')" @click="goBack">
           <AppIcon name="chevron-left" :size="18" />
         </button>
         <h2>{{ title }}</h2>

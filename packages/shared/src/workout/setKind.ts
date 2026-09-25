@@ -9,16 +9,6 @@ export type SetKind = "normal" | "warmup" | "failure" | "dropset";
 
 export const SET_KINDS: SetKind[] = ["normal", "warmup", "failure", "dropset"];
 
-/** Single source of truth for the kind's display name (the routine wizard's set-kind badge,
- *  WorkoutPage's set-row badge, and SetKindPicker.vue's option rows all import this, rather than
- *  each hand-writing the same four labels). */
-export const SET_KIND_LABEL: Record<SetKind, string> = {
-  warmup: "Aufwärmen",
-  normal: "Normal",
-  failure: "Fehlsatz",
-  dropset: "Drop-Satz",
-};
-
 /** Short badge letter (A/N/F/D) — the routine wizard's compact per-set chip and
  *  SetKindPicker.vue's option rows both use this instead of the full label. */
 export const SET_KIND_BADGE: Record<SetKind, string> = {

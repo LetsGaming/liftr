@@ -7,6 +7,7 @@
  */
 import BasePage from "../components/patterns/BasePage.vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import ExerciseDetailContent from "../components/exercise/ExerciseDetailContent.vue";
 import ExerciseIcon from "../components/exercise/ExerciseIcon.vue";
 import ExerciseRail from "../components/exercise/ExerciseRail.vue";
@@ -42,9 +43,9 @@ import { useXpChip } from "../composables/useXpChip";
 import { haptics } from "../lib/haptics";
 import { canCopyToClipboard } from "../lib/shareCard";
 import { aggregateMuscles } from "../lib/muscles";
-import { TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { tierLabel, type RankTier } from "../lib/tierIcons";
 import { TIERS, type Tier } from "@liftr/shared";
-import { useActiveWorkoutStore, SET_KIND_LABEL, type SetKind } from "../stores/activeWorkoutStore";
+import { useActiveWorkoutStore, setKindLabel, type SetKind } from "../stores/activeWorkoutStore";
 import { useCatalogStore } from "../stores/catalogStore";
 import { useHistoryStore } from "../stores/historyStore";
 import { useRanksStore } from "../stores/ranksStore";
@@ -53,6 +54,7 @@ import { useRoutineStore } from "../stores/routineStore";
 import { useStreakStore } from "../stores/streakStore";
 import { useXpStore } from "../stores/xpStore";
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 const store = useActiveWorkoutStore();
 const routineStore = useRoutineStore();
@@ -163,7 +165,7 @@ const { toast } = useToast();
 const canCopyShareImage = canCopyToClipboard();
 async function onCopyFinished() {
   const ok = await copyFinished();
-  toast(ok ? "In Zwischenablage kopiert" : "Kopieren fehlgeschlagen");
+  toast(ok ? t("workout.toast.copied") : t("workout.toast.copyFailed"));
 }
 
 /** The occasional-use session actions ("Übung hinzufügen", "Workout-Notiz", "Aufwärmsätze
@@ -204,7 +206,7 @@ const { xpChip, trigger: triggerXpChip } = useXpChip();
 const infoExerciseSlug = ref<string | null>(null);
 const infoExerciseTitle = computed(() => {
   const exercise = infoExerciseSlug.value ? catalog.bySlug(infoExerciseSlug.value) : undefined;
-  return exercise ? exerciseName(exercise.slug, exercise.name) : "Übung";
+  return exercise ? exerciseName(exercise.slug, exercise.name) : t("workout.exerciseFallbackTitle");
 });
 function openInfo(exerciseId: string) {
   const exercise = catalog.byId(exerciseId);
@@ -226,7 +228,9 @@ const showRpeCapture = ref(false);
  *  A single ref instead of two separate open-flags since only one of these sheets is ever open
  *  at a time and they share one component. */
 const noteCaptureTarget = ref<"set" | "workout" | null>(null);
-const noteCaptureTitle = computed(() => (noteCaptureTarget.value === "workout" ? "Workout-Notiz" : "Notiz zum Satz"));
+const noteCaptureTitle = computed(() =>
+  noteCaptureTarget.value === "workout" ? t("workout.noteCapture.workoutTitle") : t("workout.noteCapture.setTitle"),
+);
 const noteCaptureValue = computed(() =>
   noteCaptureTarget.value === "workout" ? store.workoutNotes : (store.currentSet?.notes ?? null),
 );
@@ -241,16 +245,16 @@ function saveNoteCapture(value: string | null) {
 
 /** Defensive fallback to "normal": `kind` on an `ActiveSet` can be undefined depending on how the
  *  set was created (activeWorkoutStore.restore() backfills it from `isWarmup` when restoring a
- *  persisted workout), so this keeps a `SET_KIND_LABEL[kind]` lookup from crashing on any path
+ *  persisted workout), so this keeps a `setKindLabel(kind)` lookup from crashing on any path
  *  that hands back a set without one. */
 function kindLabel(kind: SetKind | undefined): string {
-  return SET_KIND_LABEL[kind ?? "normal"];
+  return setKindLabel(kind ?? "normal");
 }
 /** Normal sets show their position in the exercise; every other kind shows a fixed letter
  *  instead — matches the reference app's "A"/"F"/"D" badges (SetKindPicker.vue uses the same
- *  SET_KIND_LABEL for its own row icons). */
+ *  setKindLabel() for its own row icons). */
 function kindLetter(kind: SetKind | undefined, index: number): string {
-  return !kind || kind === "normal" ? String(index + 1) : SET_KIND_LABEL[kind][0]!;
+  return !kind || kind === "normal" ? String(index + 1) : setKindLabel(kind)[0]!;
 }
 
 /** "Superset 2/3" — position within the group, for the focus header. */
@@ -259,7 +263,7 @@ const supersetLabel = computed(() => {
   if (!ex || ex.supersetGroup == null) return null;
   const group = store.exercises.filter((e) => e.supersetGroup === ex.supersetGroup);
   const pos = group.findIndex((e) => e.workoutExerciseId === ex.workoutExerciseId);
-  return `Superset ${pos + 1}/${group.length}`;
+  return t("workout.supersetLabel", { pos: pos + 1, total: group.length });
 });
 
 /** Nudges the user when a workout has been running indefinitely (never cancelled or ended).
@@ -366,17 +370,18 @@ async function logSet() {
 }
 
 // Same two tabs as RunsPage.vue's own TabSwitcher — kept as a literal here rather than a shared
-// constant since it's just two short { id, label, to } objects, not logic.
-const WORKOUT_RUNS_TABS = [
-  { id: "workout", label: "Workout", to: "/workout" },
-  { id: "runs", label: "Läufe", to: "/runs" },
-];
+// constant since it's just two short { id, label, to } objects, not logic. computed() rather than
+// a plain const so the labels re-translate when the locale changes.
+const WORKOUT_RUNS_TABS = computed(() => [
+  { id: "workout", label: t("common.workout"), to: "/workout" },
+  { id: "runs", label: t("workout.tabs.runs"), to: "/runs" },
+]);
 </script>
 
 <template>
-  <BasePage title="Workout">
+  <BasePage :title="t('common.workout')">
     <template v-if="!store.isActive && !finishedSummary" #subheader>
-      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="workout" nav-label="Workout oder Läufe" />
+      <TabSwitcher :tabs="WORKOUT_RUNS_TABS" model-value="workout" :nav-label="t('workout.tabs.navLabel')" />
     </template>
     <div class="workout-page">
     <div v-if="finishedSummary" class="finished-summary">
@@ -397,23 +402,23 @@ const WORKOUT_RUNS_TABS = [
         @done="finishSequenceDone = true"
       />
       <template v-else>
-        <div class="eyebrow">Geschafft</div>
+        <div class="eyebrow">{{ t("workout.finished.eyebrow") }}</div>
         <h2>{{ finishedSummary.routineName }}</h2>
 
         <div class="reward-recap panel-reward" :class="topRankUp ? `t-${topRankUp.tier}` : ''">
           <TierBadge v-if="topRankUp" class="recap-badge" :tier="topRankUp.tier" />
           <div class="recap-body">
-            <b v-if="topRankUp">{{ TIER_LABEL_DE[topRankUp.tier as RankTier] }} erreicht</b>
-            <b v-else>Lv. {{ xpStore.level }}</b>
-            <span>+{{ sessionXpTotal }} XP{{ sessionRankUps.length > 1 ? ` · ${sessionRankUps.length} Rangaufstiege` : "" }}</span>
+            <b v-if="topRankUp">{{ tierLabel(topRankUp.tier as RankTier) }} {{ t("workout.finished.reached") }}</b>
+            <b v-else>{{ t("workout.finished.level", { level: xpStore.level }) }}</b>
+            <span>+{{ sessionXpTotal }} XP{{ sessionRankUps.length > 1 ? t("workout.finished.rankUpsSuffix", { count: sessionRankUps.length }) : "" }}</span>
           </div>
         </div>
 
-        <div class="eyebrow">Trainierte Muskeln</div>
+        <div class="eyebrow">{{ t("workout.finished.musclesTrained") }}</div>
         <MuscleFigure :primary="finishedSummary.muscles.primary" :secondary="finishedSummary.muscles.secondary" />
 
         <template v-if="captionRows.length > 0">
-          <div class="eyebrow">Was sich verändert hat</div>
+          <div class="eyebrow">{{ t("workout.finished.whatChanged") }}</div>
           <div class="caption-list">
             <div v-for="c in captionRows" :key="c.exerciseId" class="caption-item">
               <b>{{ c.exerciseName }}</b>
@@ -434,39 +439,38 @@ const WORKOUT_RUNS_TABS = [
 
         <div v-if="routineBeats.length > 0" class="beat-panel panel">
           <p v-if="!routineUpdated">
-            Du warst stärker als geplant: {{ routineBeats.length === 1 ? "1 Satz" : `${routineBeats.length} Sätze` }} über dem
-            Routine-Ziel.
+            {{ t("workout.beatRoutinePrefix") }}{{ t("workout.setCount", routineBeats.length) }}{{ t("workout.beatRoutineSuffix") }}
           </p>
           <ul v-if="!routineUpdated" class="beat-list">
             <li v-for="(b, i) in routineBeats" :key="i">
-              {{ b.name }}: {{ b.loggedWeightKg != null ? `${b.loggedWeightKg} kg × ` : "" }}{{ b.loggedReps }} statt
+              {{ b.name }}: {{ b.loggedWeightKg != null ? `${b.loggedWeightKg} kg × ` : "" }}{{ b.loggedReps }} {{ t("workout.insteadOf") }}
               {{ b.targetWeightKg != null ? `${b.targetWeightKg} kg × ` : "" }}{{ b.targetReps }}
             </li>
           </ul>
-          <p v-if="routineUpdated" class="beat-done"><AppIcon name="check" /> Routine aktualisiert.</p>
+          <p v-if="routineUpdated" class="beat-done"><AppIcon name="check" /> {{ t("workout.beatRoutineUpdated") }}</p>
           <div v-else class="beat-actions">
-            <Button variant="secondary" @click="routineBeats = []">Nicht jetzt</Button>
+            <Button variant="secondary" @click="routineBeats = []">{{ t("workout.notNow") }}</Button>
             <Button :disabled="updatingRoutine" @click="updateRoutineWithBeats">
-              {{ updatingRoutine ? "Wird gespeichert…" : "Routine aktualisieren" }}
+              {{ updatingRoutine ? t("common.savingEllipsis") : t("workout.updateRoutine") }}
             </Button>
           </div>
         </div>
 
         <div class="stat-row">
-          <StatTile :value="finishedSummary.durationLabel" label="Dauer" />
-          <StatTile :value="`${Math.round(finishedSummary.volumeKg).toLocaleString('de-DE')} kg`" label="Volumen" />
-          <StatTile :value="finishedSummary.setCount" label="Sätze" />
+          <StatTile :value="finishedSummary.durationLabel" :label="t('workout.finished.duration')" />
+          <StatTile :value="`${Math.round(finishedSummary.volumeKg).toLocaleString('de-DE')} kg`" :label="t('workout.finished.volume')" />
+          <StatTile :value="finishedSummary.setCount" :label="t('workout.finished.setsLabel')" />
         </div>
 
         <Button size="lg" block :disabled="sharingFinished" @click="shareFinished">
-          <template v-if="sharingFinished">Erstelle Bild…</template>
-          <template v-else><AppIcon name="share" /> Als Bild teilen</template>
+          <template v-if="sharingFinished">{{ t("workout.finished.creatingImage") }}</template>
+          <template v-else><AppIcon name="share" /> {{ t("workout.finished.shareImage") }}</template>
         </Button>
         <Button v-if="canCopyShareImage" variant="secondary" block :disabled="copyingFinished" @click="onCopyFinished">
-          <template v-if="copyingFinished">Kopiere…</template>
-          <template v-else><AppIcon name="clipboard" /> In Zwischenablage kopieren</template>
+          <template v-if="copyingFinished">{{ t("workout.finished.copying") }}</template>
+          <template v-else><AppIcon name="clipboard" /> {{ t("workout.finished.copyToClipboard") }}</template>
         </Button>
-        <Button variant="secondary" block @click="finishedSummary = null">Fertig</Button>
+        <Button variant="secondary" block @click="finishedSummary = null">{{ t("workout.finished.done") }}</Button>
         <canvas ref="finishedCanvas" class="share-canvas" aria-hidden="true" />
       </template>
     </div>
@@ -476,12 +480,11 @@ const WORKOUT_RUNS_TABS = [
     <div v-else class="active-workout">
       <div v-if="showStalePrompt" class="stale-banner panel">
         <p>
-          Dieses Workout läuft seit über {{ Math.floor(store.elapsedSeconds / 3600) }} Stunden. Läuft es noch, oder hast du
-          vergessen, es zu beenden?
+          {{ t("workout.stale.banner", { hours: Math.floor(store.elapsedSeconds / 3600) }) }}
         </p>
         <div class="stale-actions">
-          <Button variant="secondary" @click="showStalePrompt = false">Läuft noch</Button>
-          <Button @click="showStalePrompt = false; finishWorkout()">Jetzt beenden</Button>
+          <Button variant="secondary" @click="showStalePrompt = false">{{ t("workout.stale.stillRunning") }}</Button>
+          <Button @click="showStalePrompt = false; finishWorkout()">{{ t("workout.stale.finishNow") }}</Button>
         </div>
       </div>
 
@@ -490,34 +493,39 @@ const WORKOUT_RUNS_TABS = [
         <WorkoutClock>
           <template #actions>
             <span class="cancel-divider" aria-hidden="true" />
-            <button class="cancel-btn" aria-label="Workout abbrechen" @click="showCancelConfirm = true">✕</button>
+            <button class="cancel-btn" :aria-label="t('workout.cancelAriaLabel')" @click="showCancelConfirm = true">✕</button>
           </template>
         </WorkoutClock>
         <div v-if="showCancelConfirm" class="cancel-confirm panel">
-          <p>Workout wirklich abbrechen? Der gesamte Fortschritt geht verloren.</p>
+          <p>{{ t("workout.cancelConfirm.message") }}</p>
           <div class="cancel-confirm-actions">
-            <Button variant="secondary" @click="showCancelConfirm = false">Nein</Button>
-            <button class="btn-cancel-confirm" @click="confirmCancelWorkout">Ja, abbrechen</button>
+            <Button variant="secondary" @click="showCancelConfirm = false">{{ t("workout.cancelConfirm.no") }}</Button>
+            <button class="btn-cancel-confirm" @click="confirmCancelWorkout">{{ t("workout.cancelConfirm.yes") }}</button>
           </div>
         </div>
         <div class="progress-row">
           <div class="progress">
             <span>{{ store.progressLabel }}</span>
             <span v-if="activeMesocycle" class="meso-active-badge">
-              Woche {{ activeMesocycle.currentWeek }}/{{ activeMesocycle.totalWeeks }} ·
-              {{ activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1] }}%
+              {{
+                t("workout.mesoWeek", {
+                  current: activeMesocycle.currentWeek,
+                  total: activeMesocycle.totalWeeks,
+                  percent: activeMesocycle.weekPercents[activeMesocycle.currentWeek - 1],
+                })
+              }}
             </span>
           </div>
-          <button class="overflow-btn" aria-label="Weitere Optionen" @click="showWorkoutMenu = true">⋯</button>
+          <button class="overflow-btn" :aria-label="t('workout.moreOptionsAriaLabel')" @click="showWorkoutMenu = true">⋯</button>
         </div>
         <ExerciseRail class="rail-list-desktop" />
 
         <div v-if="showAddExercise" class="add-ex-panel panel">
           <div class="add-ex-panel-head">
-            <b>Übung hinzufügen</b>
-            <IconButton variant="close" label="Schließen" @click="showAddExercise = false">✕</IconButton>
+            <b>{{ t("workout.addExercise.title") }}</b>
+            <IconButton variant="close" :label="t('workout.close')" @click="showAddExercise = false">✕</IconButton>
           </div>
-          <Input v-model="addExerciseSearch" class="add-ex-search" type="text" placeholder="Übung suchen…" />
+          <Input v-model="addExerciseSearch" class="add-ex-search" type="text" :placeholder="t('workout.addExercise.searchPlaceholder')" />
           <ul class="add-ex-list">
             <li v-for="ex in addExerciseCandidates" :key="ex.id">
               <ListRow as="button" @click="addExerciseToSession(ex)">
@@ -533,12 +541,12 @@ const WORKOUT_RUNS_TABS = [
 
       <div v-if="nextExercisePreview || store.exercises.length > 1" class="next-ex-row rail-strip-mobile surface-hybrid">
         <div v-if="nextExercisePreview" class="next-ex-lines">
-          <span class="next-ex-label">Nächste Übung</span>
+          <span class="next-ex-label">{{ t("workout.nextExercise.label") }}</span>
           <span class="next-ex-name">{{ nextExercisePreview.name }}</span>
           <span v-if="nextExercisePreview.summary" class="next-ex-summary">{{ nextExercisePreview.summary }}</span>
         </div>
-        <span v-else class="next-ex-lines next-ex-empty">Letzte Übung dieser Routine</span>
-        <button class="next-ex-overview-btn surface-hybrid" aria-label="Alle Übungen anzeigen" @click="showExerciseOverview = true">
+        <span v-else class="next-ex-lines next-ex-empty">{{ t("workout.nextExercise.lastOne") }}</span>
+        <button class="next-ex-overview-btn surface-hybrid" :aria-label="t('workout.showAllExercisesAriaLabel')" @click="showExerciseOverview = true">
           <AppIcon name="drag-handle" />
         </button>
       </div>
@@ -551,19 +559,19 @@ const WORKOUT_RUNS_TABS = [
           </div>
           <div class="focus-head-actions">
             <button v-if="store.exercises.length > 1" class="skip-btn surface-hybrid" @click="store.skipCurrentExercise(); ensureLogButtonVisible()">
-              Übung überspringen <AppIcon name="skip-forward" />
+              {{ t("workout.skipExercise") }} <AppIcon name="skip-forward" />
             </button>
             <div class="focus-head-info-group">
               <button
                 class="info-btn rank-toggle-btn surface-hybrid"
                 :class="{ active: showRank }"
                 :aria-pressed="showRank"
-                aria-label="Rang anzeigen"
+                :aria-label="t('workout.showRankAriaLabel')"
                 @click="showRank = !showRank"
               >
                 <AppIcon name="trophy" />
               </button>
-              <button class="info-btn surface-hybrid" aria-label="Übungsinfo" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
+              <button class="info-btn surface-hybrid" :aria-label="t('workout.exerciseInfoAriaLabel')" @click="openInfo(store.currentExercise.exerciseId)"><AppIcon name="info" /></button>
             </div>
           </div>
         </div>
@@ -578,10 +586,10 @@ const WORKOUT_RUNS_TABS = [
           :trust="currentRank.trust"
         />
         <p class="last-ref" :class="{ 'last-ref-hidden': store.currentSet?.prevWeightKg == null && !store.currentSet?.prevReps }">
-          Letztes Mal an dieser Stelle:
+          {{ t("workout.lastTime") }}
           <b>
             <template v-if="store.currentSet?.prevWeightKg != null">{{ Math.round(store.currentSet.prevWeightKg * 100) / 100 }} kg × </template>
-            {{ store.currentSet?.prevReps }} Wdh.
+            {{ store.currentSet?.prevReps }} {{ t("workout.repsAbbr") }}
           </b>
         </p>
 
@@ -591,7 +599,7 @@ const WORKOUT_RUNS_TABS = [
             {{ store.currentSet.rpe != null ? `RPE ${store.currentSet.rpe}` : "RPE" }}
           </button>
           <button class="meta-pill note-pill surface-hybrid" @click="noteCaptureTarget = 'set'">
-            {{ store.currentSet.notes ? `Notiz: ${store.currentSet.notes}` : "Notiz" }}
+            {{ store.currentSet.notes ? t("workout.notePrefix", { note: store.currentSet.notes }) : t("workout.noteLabel") }}
           </button>
         </div>
         <RestTimer :trigger="restTrigger" :seconds="restSeconds" :rest-kind="restKind" />
@@ -599,13 +607,13 @@ const WORKOUT_RUNS_TABS = [
         <div ref="logSetWrapRef" class="log-set-wrap">
           <template v-if="store.currentSet">
             <Button size="lg" block class="log-set-btn" :disabled="store.currentSet.reps <= 0" @click="logSet">
-              Satz speichern
+              {{ t("workout.save") }}
             </Button>
             <p class="reps-hint" :class="{ 'reps-hint-hidden': store.currentSet.reps > 0 }">
-              Erst Wiederholungen, dann speichern.
+              {{ t("workout.repsHint") }}
             </p>
           </template>
-          <p v-else class="exercise-done">Übung erledigt <AppIcon name="check" /></p>
+          <p v-else class="exercise-done">{{ t("workout.exerciseDone") }} <AppIcon name="check" /></p>
           <span v-if="xpChip" :key="xpChip.key" class="xp-chip tnum pop-in">+{{ xpChip.amount }} XP</span>
         </div>
 
@@ -615,7 +623,7 @@ const WORKOUT_RUNS_TABS = [
               v-if="!s.logged"
               class="sn"
               :class="`k-${s.kind ?? 'normal'}`"
-              :aria-label="`Satzart wählen (aktuell ${kindLabel(s.kind)})`"
+              :aria-label="t('workout.setKindAriaLabel', { kind: kindLabel(s.kind) })"
               @click="kindPickerFor = { workoutExerciseId: store.currentExercise!.workoutExerciseId, setIndex: s.index }"
             >
               {{ kindLetter(s.kind, s.index) }}
@@ -623,12 +631,12 @@ const WORKOUT_RUNS_TABS = [
             <span v-else class="sn"><AppIcon name="check" /></span>
             <span>
               <template v-if="s.logged">
-                <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg · </template>{{ s.reps }} Wdh.
+                <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg · </template>{{ s.reps }} {{ t("workout.repsAbbr") }}
               </template>
               <template v-else-if="s.kind !== 'normal'">
-                <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg · </template>{{ s.reps }} Wdh. ({{ kindLabel(s.kind) }})
+                <template v-if="s.weightKg != null">{{ Math.round(s.weightKg * 100) / 100 }} kg · </template>{{ s.reps }} {{ t("workout.repsAbbr") }} ({{ kindLabel(s.kind) }})
               </template>
-              <template v-else>offen</template>
+              <template v-else>{{ t("workout.setOpen") }}</template>
             </span>
           </li>
         </ul>
@@ -666,31 +674,31 @@ const WORKOUT_RUNS_TABS = [
         @save="saveNoteCapture"
       />
 
-      <SheetModal v-if="showWorkoutMenu" title="Mehr" @close="showWorkoutMenu = false">
+      <SheetModal v-if="showWorkoutMenu" :title="t('workout.moreSheetTitle')" @close="showWorkoutMenu = false">
         <div class="workout-menu">
           <button class="menu-item" @click="showWorkoutMenu = false; showAddExercise = true">
-            + Übung hinzufügen
+            {{ t("workout.menu.addExercise") }}
           </button>
           <button class="menu-item" @click="showWorkoutMenu = false; noteCaptureTarget = 'workout'">
-            {{ store.workoutNotes ? `Workout-Notiz: ${store.workoutNotes}` : "+ Workout-Notiz" }}
+            {{ store.workoutNotes ? t("workout.menu.workoutNotePrefix", { note: store.workoutNotes }) : t("workout.menu.addWorkoutNote") }}
           </button>
           <button
             v-if="store.canInsertWarmup"
             class="menu-item"
             @click="showWorkoutMenu = false; store.insertWarmupSets()"
           >
-            + Aufwärmsätze einfügen
+            {{ t("workout.menu.addWarmupSets") }}
           </button>
         </div>
       </SheetModal>
 
       <div v-if="!(store.currentExercise && !store.allSetsLogged)" class="workout-complete">
-        <p>Alle Übungen erledigt.</p>
-        <Button size="lg" @click="finishWorkout">Workout beenden</Button>
+        <p>{{ t("workout.allDone") }}</p>
+        <Button size="lg" @click="finishWorkout">{{ t("workout.finishWorkout") }}</Button>
       </div>
     </div>
 
-    <SheetModal v-if="showExerciseOverview" title="Übungen" @close="showExerciseOverview = false">
+    <SheetModal v-if="showExerciseOverview" :title="t('workout.exercisesSheetTitle')" @close="showExerciseOverview = false">
       <ExerciseRail @jump="showExerciseOverview = false; ensureLogButtonVisible()" />
     </SheetModal>
 

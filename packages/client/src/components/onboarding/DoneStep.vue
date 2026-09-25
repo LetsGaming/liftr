@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 import { needsPlatesStep, useOnboardingDraft } from "./OnboardingDraft";
 
+const { t } = useI18n();
 const draft = useOnboardingDraft();
 
 const equipmentCount = computed(() => draft.equipment.size);
@@ -12,13 +14,13 @@ const hasPlates = computed(() => needsPlatesStep(draft) && [...draft.plates.valu
 <template>
   <div class="done">
     <div class="hero-badge"><AppIcon name="check" :size="40" /></div>
-    <h2>Fertig!</h2>
-    <p>Los geht's — hier ist, was das für dich freischaltet:</p>
+    <h2>{{ t("onboarding.doneStep.title") }}</h2>
+    <p>{{ t("onboarding.doneStep.subtitle") }}</p>
     <ul class="unlocks">
-      <li class="surface-hybrid"><AppIcon name="target" /> Gewichtsvorschläge passend zu deiner Erfahrung</li>
-      <li class="surface-hybrid"><AppIcon name="dumbbell" /> Übungsvorschläge, die zu deinem Equipment ({{ equipmentCount }} ausgewählt) passen — mit Alternativen statt einfach nichts</li>
-      <li v-if="hasPlates" class="surface-hybrid"><AppIcon name="scale" /> Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten</li>
-      <li class="surface-hybrid"><AppIcon name="trophy" /> Rang-Berechnung basierend auf Körpergewicht und Geschlecht</li>
+      <li class="surface-hybrid"><AppIcon name="target" /> {{ t("onboarding.doneStep.unlockWeight") }}</li>
+      <li class="surface-hybrid"><AppIcon name="dumbbell" /> {{ t("onboarding.doneStep.unlockExercises", { n: equipmentCount }) }}</li>
+      <li v-if="hasPlates" class="surface-hybrid"><AppIcon name="scale" /> {{ t("onboarding.doneStep.unlockPlates") }}</li>
+      <li class="surface-hybrid"><AppIcon name="trophy" /> {{ t("onboarding.doneStep.unlockRank") }}</li>
     </ul>
   </div>
 </template>

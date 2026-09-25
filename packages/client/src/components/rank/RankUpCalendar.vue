@@ -7,12 +7,23 @@
  * count instead of a streak flame.
  */
 import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRankEventsStore } from "../../stores/rankEventsStore";
 import EmptyNote from "../base/EmptyNote.vue";
 
+const { t } = useI18n();
+
 /** Same JS `Date.getDay()`-indexed labels as useWorkoutFinish.ts's DAY_ABBR, reordered Mo-So
  *  (weekday 1..6 then 0) to match the calendar-strip convention this component renders. */
-const DAY_ABBR: Record<number, string> = { 0: "So", 1: "Mo", 2: "Di", 3: "Mi", 4: "Do", 5: "Fr", 6: "Sa" };
+const DAY_ABBR = computed<Record<number, string>>(() => ({
+  0: t("rank.upCalendar.days.so"),
+  1: t("rank.upCalendar.days.mo"),
+  2: t("rank.upCalendar.days.di"),
+  3: t("rank.upCalendar.days.mi"),
+  4: t("rank.upCalendar.days.do"),
+  5: t("rank.upCalendar.days.fr"),
+  6: t("rank.upCalendar.days.sa"),
+}));
 const MO_SO_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 const store = useRankEventsStore();
@@ -26,7 +37,7 @@ const days = computed(() => {
     const flaggedCount = row?.flaggedCount ?? 0;
     return {
       weekday,
-      label: DAY_ABBR[weekday]!,
+      label: DAY_ABBR.value[weekday]!,
       count,
       /** A day where every logged rank-up was plausibility-flagged must not render identically
        *  to a day with a genuine one. */
@@ -40,7 +51,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 
 <template>
   <div v-if="store.loaded" class="rankup-calendar">
-    <div class="eyebrow ruc-eyebrow">Rangaufstiege diese Woche</div>
+    <div class="eyebrow ruc-eyebrow">{{ t("rank.upCalendar.eyebrow") }}</div>
     <div class="streak-strip">
       <div v-for="d in days" :key="d.weekday" class="streak-day">
         <span class="dot" :class="{ active: d.hasGenuine, flagged: d.count > 0 && !d.hasGenuine }">{{ d.count > 0 ? d.count : "" }}</span>
@@ -48,7 +59,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
         <span class="dl">{{ d.label }}</span>
       </div>
     </div>
-    <EmptyNote v-if="total === 0" class="ruc-empty" align="start">Dein nächster Rangaufstieg wartet — leg los!</EmptyNote>
+    <EmptyNote v-if="total === 0" class="ruc-empty" align="start">{{ t("rank.upCalendar.empty") }}</EmptyNote>
   </div>
 </template>
 

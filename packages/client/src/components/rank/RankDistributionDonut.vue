@@ -13,7 +13,8 @@
  * `.t-<tier>`-classed element per row.
  */
 import { computed } from "vue";
-import { TIER_LABEL_DE, type RankTier } from "../../lib/tierIcons";
+import { useI18n } from "vue-i18n";
+import { tierLabel, type RankTier } from "../../lib/tierIcons";
 import { useRanksStore } from "../../stores/ranksStore";
 import ListRow from "../patterns/ListRow.vue";
 
@@ -30,6 +31,7 @@ const TIER_COLOR_VAR: Record<RankTier, string> = {
   apex: "var(--apex-3)",
 };
 
+const { t } = useI18n();
 const ranksStore = useRanksStore();
 
 const RADIUS = 40;
@@ -66,7 +68,7 @@ const total = computed(() => ranksStore.ranks.length);
 
 <template>
   <div v-if="ranksStore.loaded && total > 0" class="rank-donut">
-    <div class="eyebrow rd-eyebrow">Rangverteilung</div>
+    <div class="eyebrow rd-eyebrow">{{ t("rank.distributionDonut.eyebrow") }}</div>
     <div class="rd-body">
       <svg viewBox="0 0 100 100" class="rd-svg">
         <circle cx="50" cy="50" :r="RADIUS" fill="none" stroke="var(--surface-3)" stroke-width="14" aria-hidden="true" />
@@ -85,12 +87,12 @@ const total = computed(() => ranksStore.ranks.length);
           aria-hidden="true"
         />
         <text x="50" y="47" text-anchor="middle" class="rd-total tnum">{{ total }}</text>
-        <text x="50" y="62" text-anchor="middle" class="rd-total-label">Übungen</text>
+        <text x="50" y="62" text-anchor="middle" class="rd-total-label">{{ t("rank.distributionDonut.exercisesLabel") }}</text>
       </svg>
       <ul class="rd-legend">
         <ListRow v-for="s in segments" :key="s.tier" as="li" :interactive="false" dense class="rd-legend-row">
           <template #leading><span class="rd-swatch" :style="{ background: s.color }" /></template>
-          <span class="rd-legend-label">{{ TIER_LABEL_DE[s.tier] }}</span>
+          <span class="rd-legend-label">{{ tierLabel(s.tier) }}</span>
           <template #trailing><span class="rd-legend-count tnum">{{ s.count }}</span></template>
         </ListRow>
       </ul>

@@ -59,4 +59,28 @@ describe("howToTextFor", () => {
     expect(text).toContain("die Brust");
     expect(text).not.toContain("Oberschenkel");
   });
+
+  it("uses the English template with the primary muscle's English name interpolated", () => {
+    const text = howToTextFor(entry({ movementPattern: "squat", primaryMuscles: ["quads"] }), "en");
+    expect(text).toBe("Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs.");
+  });
+
+  it("has a distinct English template per known movement pattern", () => {
+    const patterns = ["squat", "hinge", "push-horizontal", "push-vertical", "pull-horizontal", "pull-vertical", "carry"] as const;
+    const texts = patterns.map((movementPattern) => howToTextFor(entry({ movementPattern, primaryMuscles: ["chest"] }), "en"));
+    expect(new Set(texts).size).toBe(patterns.length);
+    for (const text of texts) {
+      expect(text).toContain("your chest");
+    }
+  });
+
+  it("falls back to the English isolation template for an unrecognized movement pattern", () => {
+    const text = howToTextFor(entry({ movementPattern: "isolation-arms", primaryMuscles: ["biceps"] }), "en");
+    expect(text).toBe("Move slowly and under control, keep your biceps braced the whole time — no swinging.");
+  });
+
+  it("falls back to a generic English muscle phrase when primaryMuscles is empty", () => {
+    const text = howToTextFor(entry({ movementPattern: "squat", primaryMuscles: [] }), "en");
+    expect(text).toContain("the target muscle");
+  });
 });

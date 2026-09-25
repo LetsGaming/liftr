@@ -8,37 +8,39 @@
  * something to chase.
  */
 import { computed } from "vue";
-import { MUSCLE_LABEL_DE } from "../../lib/muscles";
+import { useI18n } from "vue-i18n";
+import { muscleLabel } from "../../lib/muscles";
 import Button from "../base/Button.vue";
 import Chip from "../base/Chip.vue";
 import MuscleFigure from "../exercise/MuscleFigure.vue";
 
 const props = defineProps<{ heat: Record<string, number>; recoveredSlugs: string[]; loaded: boolean; canStart: boolean }>();
 const emit = defineEmits<{ start: [] }>();
+const { t } = useI18n();
 
-const topRecovered = computed(() => props.recoveredSlugs.slice(0, 3).map((s) => MUSCLE_LABEL_DE[s] ?? s));
+const topRecovered = computed(() => props.recoveredSlugs.slice(0, 3).map((s) => muscleLabel(s)));
 
 const verdict = computed(() => {
-  if (topRecovered.value.length === 0) return "Keine Muskelgruppe ist gerade eindeutig erholt — leg trotzdem los, wo du willst.";
+  if (topRecovered.value.length === 0) return t("overview.erholungszoneCard.verdictNone");
   const names = topRecovered.value.length === 1
     ? topRecovered.value[0]
-    : `${topRecovered.value.slice(0, -1).join(", ")} und ${topRecovered.value[topRecovered.value.length - 1]}`;
-  return `${names} ${topRecovered.value.length === 1 ? "ist" : "sind"} vollständig erholt.`;
+    : `${topRecovered.value.slice(0, -1).join(", ")}${t("overview.erholungszoneCard.namesJoiner")}${topRecovered.value[topRecovered.value.length - 1]}`;
+  return t("overview.erholungszoneCard.verdict", { names }, topRecovered.value.length);
 });
 </script>
 
 <template>
   <section v-if="loaded" class="erholungszone surface-hybrid">
-    <div class="eyebrow ez-eyebrow">Erholungszone</div>
+    <div class="eyebrow ez-eyebrow">{{ t("overview.erholungszoneCard.title") }}</div>
     <MuscleFigure :heat="heat" />
     <div class="ez-legend">
-      <span><i class="warm" />Weniger erholt</span>
-      <span><i class="cool" />Mehr erholt</span>
+      <span><i class="warm" />{{ t("overview.erholungszoneCard.legendWarm") }}</span>
+      <span><i class="cool" />{{ t("overview.erholungszoneCard.legendCool") }}</span>
     </div>
     <div class="ez-status">
-      <Chip size="sm" class="ez-pill">DEIN STATUS</Chip>
+      <Chip size="sm" class="ez-pill">{{ t("overview.erholungszoneCard.statusPill") }}</Chip>
       <p>{{ verdict }}</p>
-      <Button v-if="canStart" block @click="emit('start')">Jetzt trainieren →</Button>
+      <Button v-if="canStart" block @click="emit('start')">{{ t("overview.erholungszoneCard.startCta") }}</Button>
     </div>
   </section>
   <div v-else class="erholungszone ez-skeleton surface-hybrid" aria-hidden="true">

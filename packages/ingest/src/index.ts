@@ -20,7 +20,7 @@ const resolvedDbPath = resolveDbPath(REPO_ROOT);
 warnIfDefaultDbPath(resolvedDbPath);
 const DB_PATH = resolvedDbPath.path;
 const IMAGES_DIR = process.env.LIFTR_IMAGES_DIR ?? path.join(REPO_ROOT, "data/images");
-const I18N_OUT_PATH = path.join(REPO_ROOT, "packages/client/src/locales/exercises.de.json");
+const I18N_LOCALES_DIR = path.join(REPO_ROOT, "packages/client/src/locales");
 
 const args = new Set(process.argv.slice(2));
 const all = args.has("--all") || args.size === 0;
@@ -34,7 +34,7 @@ async function main() {
       console.log("== catalog ==");
       await ingestCatalog(db, CATALOG_PATH);
       const entries = await loadCatalog(CATALOG_PATH);
-      await generateExerciseI18n(entries, I18N_OUT_PATH);
+      await generateExerciseI18n(entries, I18N_LOCALES_DIR);
     }
     if (all || args.has("--standards")) {
       console.log("== standards ==");

@@ -1,19 +1,22 @@
 ---
 name: sync-correctness-reviewer
-description: Reviews changes to Liftr's offline-first sync path — the client outbox (packages/client/src/stores/syncStore.ts, idb.ts) and the server sync route (packages/server/src/routes/sync.ts). Use proactively whenever either side of this boundary changes, since a prior High-severity bug (permanent sync wedge past 200 queued items) already came from this exact area.
+description: Reviews changes to Liftr's offline-first sync path — the client outbox (packages/client/src/stores/syncStore.ts, packages/client/src/lib/idb.ts) and the server sync route (packages/server/src/routes/sync.ts). Use proactively whenever either side of this boundary changes, since a prior High-severity bug (permanent sync wedge past 200 queued items) already came from this exact area.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
 
 You are reviewing changes to Liftr's offline-first sync mechanism. Liftr is a mobile PWA
 (Vue 3 + Ionic/Capacitor) where set-logging must keep working with no network connection;
-writes queue in an IndexedDB outbox on the client (`syncStore.ts`, `idb.ts`) and flush to
-`POST /api/sync` (`server/src/routes/sync.ts`) when connectivity returns.
+writes queue in an IndexedDB outbox on the client (`stores/syncStore.ts`, `lib/idb.ts`) and
+flush to `POST /api/sync` (`server/src/routes/sync.ts`) when connectivity returns.
 
 This exact boundary previously had a High-severity bug (BUG-01): `flush()` posted the
-*entire* outbox as one array, and once it grew past ~200 items the server rejected the whole
-batch every time, permanently wedging sync with no user-visible recovery path. The fix was
-chunking `flush()` into ≤150-item batches. Treat this as the canonical failure mode for this
+*entire* outbox as one array, and once it grew past the server's per-request item cap, the
+server rejected the whole batch every time, permanently wedging sync with no user-visible
+recovery path. The fix was chunking `flush()` into batches — see `SYNC_CHUNK_SIZE` in
+`syncStore.ts` for the current batch size and the server schema in `routes/sync.ts` for the
+current cap it stays under; don't assume either number without checking. Treat this as the
+canonical failure mode for this
 code path — most future bugs here will be a variant of "an edge case in queue size, ordering,
 partial failure, or retry causes the client and server state to diverge, and the user has no
 way to notice or recover."
@@ -36,9 +39,9 @@ When reviewing a diff touching this path, check specifically for:
 5. **Ordering guarantees** — if sync items have dependencies (e.g. a workout must exist before
    a set referencing it), confirm chunking/retry logic can't reorder items in a way that
    breaks those dependencies across batch boundaries.
-6. **Test coverage** — confirm there's a test exercising the queue at/above whatever size
-   limit exists (the audit's fix added coverage for the >200-item case) rather than only
-   small-queue happy-path tests.
+6. **Test coverage** — confirm there's a test exercising the queue at/above the server's
+   current per-request item cap (`routes/sync.ts`) rather than only small-queue happy-path
+   tests.
 
 Report findings as: file:line, the concrete queue-state/network-timing scenario that triggers
 it, and the minimal fix. Prioritize anything that could leave a user's offline-logged workout

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+//
 // useWorkoutFinish.ts only uses ref/computed/watch (no onMounted/onUnmounted/inject), so it runs
 // fine called bare outside a component's setup() — see tests/README.md's guidance on when a
 // component host is actually required. Its `stores` parameter is a plain object of already-
@@ -6,11 +8,22 @@
 // vi.mock() of the store modules needed, and no Pinia required either. `activeWorkoutStore` is
 // wrapped in Vue's `reactive()` so the composable's internal `watch(() => store.workoutId, ...)`
 // can actually observe mutations the same way it would against a real Pinia store.
-import { describe, expect, it, vi } from "vitest";
+//
+// It also now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM) —
+// jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+// otherwise default the shared i18n singleton to "en" for the rest of the test process —
+// mountWithProviders.ts resets this for component tests, but this file drives the composable
+// directly, bypassing that helper.
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, nextTick, reactive } from "vue";
+import { i18n } from "~client/i18n";
 import { useWorkoutFinish } from "~client/composables/useWorkoutFinish";
 import type { ActiveExercise } from "~client/stores/activeWorkoutStore";
 import type { Routine } from "~client/stores/routineStore";
+
+beforeEach(() => {
+  i18n.global.locale.value = "de";
+});
 
 interface RankVerdictFixture {
   exerciseId: string;

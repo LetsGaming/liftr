@@ -11,9 +11,10 @@
  * remains the final authority.
  */
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { EXERCISE_SLUG_PATTERN } from "@liftr/shared";
-import { EQUIPMENT_LABEL_DE, EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
-import { MUSCLE_LABEL_DE, MUSCLE_SLUGS } from "../../lib/muscles";
+import { equipmentLabel, EQUIPMENT_SLUGS } from "../../lib/equipmentIcons";
+import { muscleLabel, MUSCLE_SLUGS } from "../../lib/muscles";
 import { createExercise } from "../../services/exerciseService";
 import { useCatalogStore } from "../../stores/catalogStore";
 import Chip from "../base/Chip.vue";
@@ -23,6 +24,7 @@ import Button from "../base/Button.vue";
 
 const emit = defineEmits<{ created: []; cancel: [] }>();
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 
 const displayName = ref("");
@@ -34,25 +36,25 @@ const secondaryMuscles = ref<Set<string>>(new Set());
 const saving = ref(false);
 const errorMsg = ref("");
 
-const MOVEMENT_PATTERNS: { value: string; label: string }[] = [
-  { value: "squat", label: "Kniebeuge" },
-  { value: "hinge", label: "Hüftbeuge" },
-  { value: "push-horizontal", label: "Drücken, horizontal" },
-  { value: "push-vertical", label: "Drücken, vertikal" },
-  { value: "pull-horizontal", label: "Ziehen, horizontal" },
-  { value: "pull-vertical", label: "Ziehen, vertikal" },
-  { value: "carry", label: "Tragen" },
+const MOVEMENT_PATTERNS = computed<{ value: string; label: string }[]>(() => [
+  { value: "squat", label: t("exerciseUi.addCustomForm.movementPatterns.squat") },
+  { value: "hinge", label: t("exerciseUi.addCustomForm.movementPatterns.hinge") },
+  { value: "push-horizontal", label: t("exerciseUi.addCustomForm.movementPatterns.pushHorizontal") },
+  { value: "push-vertical", label: t("exerciseUi.addCustomForm.movementPatterns.pushVertical") },
+  { value: "pull-horizontal", label: t("exerciseUi.addCustomForm.movementPatterns.pullHorizontal") },
+  { value: "pull-vertical", label: t("exerciseUi.addCustomForm.movementPatterns.pullVertical") },
+  { value: "carry", label: t("exerciseUi.addCustomForm.movementPatterns.carry") },
   /* The catalog's movement-pattern vocabulary for isolation work uses these six
      muscle-group-qualified values (tools/catalog/curated.yaml); a bare "isolation" value matches
      no catalog exercise, which would exclude custom isolation exercises from findSubstitute's
      movement-pattern matching. */
-  { value: "isolation-arms", label: "Isolation (Arme)" },
-  { value: "isolation-core", label: "Isolation (Rumpf)" },
-  { value: "isolation-shoulders", label: "Isolation (Schultern)" },
-  { value: "isolation-legs", label: "Isolation (Beine)" },
-  { value: "isolation-chest", label: "Isolation (Brust)" },
-  { value: "isolation-back", label: "Isolation (Rücken)" },
-];
+  { value: "isolation-arms", label: t("exerciseUi.addCustomForm.movementPatterns.isolationArms") },
+  { value: "isolation-core", label: t("exerciseUi.addCustomForm.movementPatterns.isolationCore") },
+  { value: "isolation-shoulders", label: t("exerciseUi.addCustomForm.movementPatterns.isolationShoulders") },
+  { value: "isolation-legs", label: t("exerciseUi.addCustomForm.movementPatterns.isolationLegs") },
+  { value: "isolation-chest", label: t("exerciseUi.addCustomForm.movementPatterns.isolationChest") },
+  { value: "isolation-back", label: t("exerciseUi.addCustomForm.movementPatterns.isolationBack") },
+]);
 
 /* German umlauts and ß have no transliteration before the non-alphanumeric collapse below, so
    e.g. "Bankdrücken" would become "bankdr-cken". The slug is only a lookup key (the typed name is
@@ -109,7 +111,7 @@ async function save() {
     await catalog.load();
     emit("created");
   } catch {
-    errorMsg.value = "Speichern fehlgeschlagen — prüfe, ob der Name bereits vergeben ist.";
+    errorMsg.value = t("exerciseUi.addCustomForm.errorSaveFailed");
   } finally {
     saving.value = false;
   }
@@ -119,13 +121,13 @@ async function save() {
 <template>
   <div class="add-exercise-form">
     <label class="field">
-      <span class="field-label">Name</span>
-      <Input v-model="displayName" type="text" placeholder="z. B. Kabelzug Facepull" />
-      <span v-if="slug" class="slug-preview">wird gespeichert als: {{ slug }}</span>
+      <span class="field-label">{{ t("exerciseUi.addCustomForm.nameLabel") }}</span>
+      <Input v-model="displayName" type="text" :placeholder="t('exerciseUi.addCustomForm.namePlaceholder')" />
+      <span v-if="slug" class="slug-preview">{{ t("exerciseUi.addCustomForm.slugPreview", { slug }) }}</span>
     </label>
 
     <label class="field">
-      <span class="field-label">Bewegungsmuster</span>
+      <span class="field-label">{{ t("exerciseUi.addCustomForm.movementPatternLabel") }}</span>
       <Select v-model="movementPattern">
         <option v-for="p in MOVEMENT_PATTERNS" :key="p.value" :value="p.value">{{ p.label }}</option>
       </Select>
@@ -133,19 +135,19 @@ async function save() {
 
     <label class="field checkbox-field">
       <input v-model="isBodyweight" type="checkbox" />
-      <span>Eigengewichtsübung</span>
+      <span>{{ t("exerciseUi.addCustomForm.bodyweightLabel") }}</span>
     </label>
 
     <label v-if="!isBodyweight" class="field">
-      <span class="field-label">Gerät</span>
+      <span class="field-label">{{ t("exerciseUi.addCustomForm.equipmentLabel") }}</span>
       <Select v-model="equipment">
-        <option value="">Kein primäres Gerät</option>
-        <option v-for="eq in EQUIPMENT_SLUGS" :key="eq" :value="eq">{{ EQUIPMENT_LABEL_DE[eq] }}</option>
+        <option value="">{{ t("exerciseUi.addCustomForm.noEquipmentOption") }}</option>
+        <option v-for="eq in EQUIPMENT_SLUGS" :key="eq" :value="eq">{{ equipmentLabel(eq) }}</option>
       </Select>
     </label>
 
     <div class="field">
-      <span class="field-label">Hauptmuskel</span>
+      <span class="field-label">{{ t("exerciseUi.addCustomForm.primaryMuscleLabel") }}</span>
       <div class="chip-grid">
         <Chip
           v-for="m in MUSCLE_SLUGS"
@@ -155,13 +157,13 @@ async function save() {
           :active="primaryMuscle === m"
           @click="primaryMuscle = m"
         >
-          {{ MUSCLE_LABEL_DE[m] ?? m }}
+          {{ muscleLabel(m) }}
         </Chip>
       </div>
     </div>
 
     <div class="field">
-      <span class="field-label">Weitere Muskeln (optional)</span>
+      <span class="field-label">{{ t("exerciseUi.addCustomForm.secondaryMusclesLabel") }}</span>
       <div class="chip-grid">
         <Chip
           v-for="m in MUSCLE_SLUGS.filter((s) => s !== primaryMuscle)"
@@ -171,7 +173,7 @@ async function save() {
           :active="secondaryMuscles.has(m)"
           @click="toggleSecondary(m)"
         >
-          {{ MUSCLE_LABEL_DE[m] ?? m }}
+          {{ muscleLabel(m) }}
         </Chip>
       </div>
     </div>
@@ -179,9 +181,9 @@ async function save() {
     <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
 
     <div class="actions">
-      <Button variant="secondary" @click="emit('cancel')">Abbrechen</Button>
+      <Button variant="secondary" @click="emit('cancel')">{{ t("exerciseUi.addCustomForm.cancel") }}</Button>
       <Button variant="primary" :disabled="!canSave" @click="save">
-        {{ saving ? "Wird gespeichert…" : "Übung speichern" }}
+        {{ saving ? t("common.savingEllipsis") : t("exerciseUi.addCustomForm.save") }}
       </Button>
     </div>
   </div>

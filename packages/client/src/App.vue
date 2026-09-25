@@ -50,7 +50,7 @@ onMounted(() => {
     const { check, updateAvailable, latestVersion } = useAppUpdate();
     void check().then(() => {
       if (updateAvailable.value) {
-        useToast().toast(`Update verfügbar: v${latestVersion.value} — antippen für Details`, () =>
+        useToast().toast(t("app.updateAvailableToast", { version: latestVersion.value }), () =>
           router.push({ path: "/profile", query: { focus: "account-app" } }),
         );
       }
@@ -64,7 +64,7 @@ onMounted(() => {
   if (isNative()) {
     void checkVersionMismatch().then((mismatch) => {
       if (mismatch) {
-        useToast().toast("Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen", () =>
+        useToast().toast(t("app.versionMismatchToast"), () =>
           router.push({ path: "/profile", query: { focus: "account-app" } }),
         );
       }
@@ -171,7 +171,7 @@ const pageTitle = computed(() => {
   if (route.path === "/runs") return t("nav.runs");
   // Drill-ins with no navItems entry set their title via route.meta.title (router.ts) instead —
   // otherwise they'd silently fall through to "Liftr".
-  if (route.meta.title) return route.meta.title;
+  if (route.meta.title) return t(route.meta.title);
   if (route.name === "routine-overview") {
     const routine = routineStore.byId(route.params.id as string);
     return routine ? routine.name : "Routine";
@@ -233,7 +233,14 @@ const forceActiveTo = computed(() => {
             class="level-ring"
             :style="{ '--progress': xp.progressPercent }"
             role="img"
-            :aria-label="`Level ${xp.level}, ${xp.xpIntoLevel} von ${xp.xpForNextLevel} XP bis Level ${xp.level + 1}`"
+            :aria-label="
+              t('app.levelProgressAriaLabel', {
+                level: xp.level,
+                xpIntoLevel: xp.xpIntoLevel,
+                xpForNextLevel: xp.xpForNextLevel,
+                nextLevel: xp.level + 1,
+              })
+            "
           >
             <span>{{ xp.level }}</span>
           </div>
@@ -241,7 +248,7 @@ const forceActiveTo = computed(() => {
             <AppIcon name="flame" /> {{ streak.streak }}
           </Chip>
         </div>
-        <nav class="side-nav" aria-label="Hauptnavigation">
+        <nav class="side-nav" :aria-label="t('app.mainNavAriaLabel')">
           <RouterLink
             v-for="item in navItems"
             :key="item.to"
@@ -258,10 +265,13 @@ const forceActiveTo = computed(() => {
             <span class="level-dot" aria-hidden="true"></span>
             <b>Lv. {{ xp.level }}</b>
             <div class="rankbar"><i class="bar-fill" :style="{ transform: `scaleX(${xp.progressPercent / 100})` }" /></div>
-            <span class="xp-amount"><AppIcon name="sparkle" /> {{ xp.xpIntoLevel }}/{{ xp.xpForNextLevel }} bis Lv. {{ xp.level + 1 }}</span>
+            <span class="xp-amount">
+              <AppIcon name="sparkle" />
+              {{ t("app.xpUntilNextLevel", { xpIntoLevel: xp.xpIntoLevel, xpForNextLevel: xp.xpForNextLevel, nextLevel: xp.level + 1 }) }}
+            </span>
           </div>
           <Chip v-if="streak.loaded && streak.streak > 0" class="streak-chip" :class="{ 'streak-pulse': streakJustExtended }">
-            <AppIcon name="flame" /> {{ streak.streak }} Tage Serie
+            <AppIcon name="flame" /> {{ t("workoutUi.finishSequence.streakXpLabel", streak.streak) }}
           </Chip>
         </nav>
         <main class="main-content">
@@ -272,7 +282,7 @@ const forceActiveTo = computed(() => {
           </RouterView>
         </main>
         <div class="bottom-chrome">
-          <nav class="tab-bar" aria-label="Hauptnavigation">
+          <nav class="tab-bar" :aria-label="t('app.mainNavAriaLabel')">
             <RouterLink
               v-for="item in navItems"
               :key="item.to"

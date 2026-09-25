@@ -9,15 +9,16 @@
  */
 import { cardioActivity, nearestRunCategory, type RankBucket } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useRunsStore, type RunDetail as RunDetailModel } from "../stores/runsStore";
 import { usePlannedRouteStore } from "../stores/plannedRouteStore";
 import { useRunRankStore } from "../stores/runRankStore";
 import { getPlannedRouteDetail, type Waypoint } from "../services/plannedRouteService";
 import { formatDateLong, formatDistanceKm, formatDurationMinutes, formatPace } from "../lib/format";
-import { DIVISION_LABEL, TIER_LABEL_DE, type RankTier } from "../lib/tierIcons";
+import { DIVISION_LABEL, tierLabel, type RankTier } from "../lib/tierIcons";
 import { useConfirmTap } from "../composables/useConfirmTap";
-import { ACTIVITY_LABEL, RUN_CATEGORY_LABEL } from "../copy/runCopy";
+import { activityLabel, runCategoryLabel } from "../copy/runCopy";
 import AppIcon from "../components/base/AppIcon.vue";
 import BasePage from "../components/patterns/BasePage.vue";
 import Button from "../components/base/Button.vue";
@@ -26,6 +27,7 @@ import RouteWizard from "../components/route/RouteWizard.vue";
 import RunReplay from "../components/run/RunReplay.vue";
 import StatTile from "../components/patterns/StatTile.vue";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const runId = computed(() => route.params.id as string);
@@ -37,7 +39,7 @@ const loading = ref(true);
 const detail = ref<RunDetailModel | null>(null);
 const deleting = ref(false);
 
-const pageTitle = computed(() => detail.value?.name ?? "Lauf-Details");
+const pageTitle = computed(() => detail.value?.name ?? t("runDetailPage.fallbackTitle"));
 
 /** Mirrors WorkoutDetailPage.vue's own delete pattern: refresh the rank/PR data this page itself
  *  displays (deleting a run can change or remove a rank-up/PR it earned), then navigate back. */
@@ -138,35 +140,35 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
 
 <template>
   <BasePage :title="pageTitle" back-button variant="drawer">
-    <p v-if="loading" class="hint">Lädt…</p>
-    <p v-else-if="!detail" class="hint">Dieser Lauf ließ sich nicht laden — möglicherweise keine Verbindung zum Server.</p>
+    <p v-if="loading" class="hint">{{ t("runDetailPage.loading") }}</p>
+    <p v-else-if="!detail" class="hint">{{ t("runDetailPage.loadError") }}</p>
 
     <template v-else>
       <div class="date-line tnum">{{ formatDateLong(detail.startedAt) }}</div>
 
-      <Chip v-if="sourceRouteName" size="sm" class="route-chip">Strecke: {{ sourceRouteName }}</Chip>
+      <Chip v-if="sourceRouteName" size="sm" class="route-chip">{{ t("runDetailPage.routeChipPrefix") }}{{ sourceRouteName }}</Chip>
       <!-- rank-chip carries no CSS of its own (it shares .route-chip's look on purpose, same row
            as the "Strecke:" chip) — kept only as a stable selector distinguishing this chip from
            its siblings (route/pr) for tests. -->
       <Chip v-if="detailRank" size="sm" class="route-chip rank-chip pop-in">
-        {{ ACTIVITY_LABEL[detail.activityType ?? "run"] }}<template v-if="detailBucket !== 'all'"> · {{ RUN_CATEGORY_LABEL[detailBucket!] }}</template>
-        · {{ TIER_LABEL_DE[detailRank.tier as RankTier] }} {{ DIVISION_LABEL[detailRank.division] }}
+        {{ activityLabel(detail.activityType ?? "run") }}<template v-if="detailBucket !== 'all'"> · {{ runCategoryLabel(detailBucket!) }}</template>
+        · {{ tierLabel(detailRank.tier as RankTier) }} {{ DIVISION_LABEL[detailRank.division] }}
       </Chip>
-      <Chip v-if="detailIsPr" size="sm" class="route-chip pr-chip pop-in">Neuer Rekord</Chip>
+      <Chip v-if="detailIsPr" size="sm" class="route-chip pr-chip pop-in">{{ t("runDetailPage.newRecord") }}</Chip>
       <div class="stat-row">
-        <StatTile :value="formatDistanceKm(detail.distanceM)" label="Distanz" />
-        <StatTile :value="formatDurationMinutes(detail.durationS)" label="Dauer" />
-        <StatTile :value="formatPace(detail.avgPaceSPerKm)" label="Pace ø" />
-        <StatTile :value="detail.avgHr != null ? Math.round(detail.avgHr) + ' bpm' : '–'" label="Puls ø" />
-        <StatTile v-if="detail.elevationGainM != null" :value="Math.round(detail.elevationGainM) + ' hm'" label="Höhenmeter" />
+        <StatTile :value="formatDistanceKm(detail.distanceM)" :label="t('runDetailPage.stats.distance')" />
+        <StatTile :value="formatDurationMinutes(detail.durationS)" :label="t('runDetailPage.stats.duration')" />
+        <StatTile :value="formatPace(detail.avgPaceSPerKm)" :label="t('runDetailPage.stats.avgPace')" />
+        <StatTile :value="detail.avgHr != null ? Math.round(detail.avgHr) + ' bpm' : '–'" :label="t('runDetailPage.stats.avgHr')" />
+        <StatTile v-if="detail.elevationGainM != null" :value="Math.round(detail.elevationGainM) + ' hm'" :label="t('runDetailPage.stats.elevation')" />
       </div>
 
       <RunReplay v-if="detail.points.length > 0" :points="detail.points" />
-      <p v-else class="hint">Manuell erfasster Lauf — keine Route verfügbar.</p>
+      <p v-else class="hint">{{ t("runDetailPage.noRoute") }}</p>
 
       <Button v-if="detail.points.length > 0" variant="secondary" block class="save-route-btn" @click="showRouteWizard = true">
         <template #leading><AppIcon name="running" /></template>
-        Als Strecke speichern
+        {{ t("runDetailPage.saveAsRoute") }}
       </Button>
 
       <Button
@@ -177,9 +179,9 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
         :disabled="deleting"
         @click="deleteConfirm.trigger()"
       >
-        <template v-if="deleting">Wird gelöscht…</template>
-        <template v-else-if="deleteConfirm.isArmed()">Wirklich löschen?</template>
-        <template v-else><AppIcon name="trash" /> Lauf löschen</template>
+        <template v-if="deleting">{{ t("runDetailPage.delete.deleting") }}</template>
+        <template v-else-if="deleteConfirm.isArmed()">{{ t("runDetailPage.delete.confirm") }}</template>
+        <template v-else><AppIcon name="trash" /> {{ t("runDetailPage.delete.cta") }}</template>
       </Button>
     </template>
 

@@ -1,16 +1,26 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+//
+// equipmentIcons.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a
+// DOM) — jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+// otherwise default the shared i18n singleton to "en" for the rest of the test process.
+import { beforeEach, describe, expect, it } from "vitest";
+import { i18n } from "~client/i18n";
 import {
   EQUIPMENT_ICON_PATH,
-  EQUIPMENT_LABEL_DE,
+  equipmentLabel,
   EQUIPMENT_SLUGS,
   equipmentIconSvg,
   equipmentRequirementLabelDe,
   SUPPORT_EQUIPMENT_ICON_PATH,
-  SUPPORT_EQUIPMENT_LABEL_DE,
+  supportEquipmentLabel,
   SUPPORT_EQUIPMENT_SLUGS,
 } from "~client/lib/equipmentIcons";
 
-describe("EQUIPMENT_ICON_PATH / EQUIPMENT_LABEL_DE completeness", () => {
+beforeEach(() => {
+  i18n.global.locale.value = "de";
+});
+
+describe("EQUIPMENT_ICON_PATH / equipmentLabel completeness", () => {
   it("has an icon for every primary equipment slug", () => {
     for (const equipment of EQUIPMENT_SLUGS) {
       expect(EQUIPMENT_ICON_PATH[equipment], `missing icon for "${equipment}"`).toBeTypeOf("string");
@@ -20,15 +30,15 @@ describe("EQUIPMENT_ICON_PATH / EQUIPMENT_LABEL_DE completeness", () => {
 
   it("has a German label for every primary equipment slug", () => {
     for (const equipment of EQUIPMENT_SLUGS) {
-      expect(EQUIPMENT_LABEL_DE[equipment], `missing label for "${equipment}"`).toBeTypeOf("string");
-      expect(EQUIPMENT_LABEL_DE[equipment]!.length).toBeGreaterThan(0);
+      expect(equipmentLabel(equipment), `missing label for "${equipment}"`).toBeTypeOf("string");
+      expect(equipmentLabel(equipment).length).toBeGreaterThan(0);
     }
   });
 
   it("has an icon and label for every support-equipment slug", () => {
     for (const item of SUPPORT_EQUIPMENT_SLUGS) {
       expect(SUPPORT_EQUIPMENT_ICON_PATH[item], `missing icon for "${item}"`).toBeTypeOf("string");
-      expect(SUPPORT_EQUIPMENT_LABEL_DE[item], `missing label for "${item}"`).toBeTypeOf("string");
+      expect(supportEquipmentLabel(item), `missing label for "${item}"`).toBeTypeOf("string");
     }
   });
 });

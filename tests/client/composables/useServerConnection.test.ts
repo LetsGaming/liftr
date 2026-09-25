@@ -1,7 +1,15 @@
+// @vitest-environment jsdom
+//
 // checkVersionMismatch keeps state as module-level singletons (App.vue's launch check and
 // ProfilePage.vue's own display share one result — see useServerConnection.ts's header comment
 // on serverVersion/versionMismatch), so every test resets modules and re-imports fresh, same
 // convention as useAppUpdate.test.ts.
+//
+// jsdom (not the default node environment) because checkServerIdentity's error copy goes through
+// i18n.ts's t(), which reads localeStore.ts's getStoredLocale() at module load; plain Node's own
+// built-in `navigator.language` reflects the host OS locale (German on a German-locale machine),
+// while jsdom's always reports "en-US" — without forcing jsdom here, these assertions on the
+// English default copy would pass or fail depending on which machine ran them.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { getInfoMock, isNativeMock } = vi.hoisted(() => ({ getInfoMock: vi.fn(), isNativeMock: vi.fn() }));
@@ -85,7 +93,7 @@ describe("checkServerIdentity", () => {
     const { checkServerIdentity } = await import("~client/composables/useServerConnection");
     const result = await checkServerIdentity("https://not-liftr.example.com");
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain("keine Liftr-Instanz");
+    if (!result.ok) expect(result.error).toContain("doesn't look like a Liftr instance");
   });
 
   it("fails on a non-ok response", async () => {
@@ -137,7 +145,7 @@ describe("useServerConnection", () => {
     const ok = await verifyAndSave("not-liftr.example.com");
 
     expect(ok).toBe(false);
-    expect(error.value).toContain("keine Liftr-Instanz");
+    expect(error.value).toContain("doesn't look like a Liftr instance");
     expect(localStorage.getItem("liftr.serverUrl")).toBeNull();
   });
 });

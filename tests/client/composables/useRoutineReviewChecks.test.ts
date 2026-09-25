@@ -1,10 +1,15 @@
+// @vitest-environment jsdom
+//
 // useRoutineReviewChecks.ts reads exercise muscle tags off catalogStore (a Pinia store), so
-// every test needs an active pinia — no jsdom needed, nothing here touches the DOM or
-// localStorage (unlike catalogStore's own load() action, which these tests never call; they
-// just seed `catalog.exercises` directly).
+// every test needs an active pinia. jsdom is needed now too: this composable calls
+// lib/muscles.ts's muscleLabel(), which calls i18n.ts's t() — that reads localStorage at module
+// load (needs a DOM); jsdom's navigator.language always reports "en-US", so i18n.ts's
+// getStoredLocale() would otherwise default the shared i18n singleton to "en" for the rest of the
+// test process.
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 import { ref } from "vue";
+import { i18n } from "~client/i18n";
 import { useCatalogStore, type CatalogExercise } from "~client/stores/catalogStore";
 import { useRoutineReviewChecks } from "~client/composables/useRoutineReviewChecks";
 import type { DraftExercise } from "~client/components/routine/RoutineWizard.vue";
@@ -37,6 +42,7 @@ function makeDraft(setCount: number): DraftExercise {
 }
 
 beforeEach(() => {
+  i18n.global.locale.value = "de";
   setActivePinia(createPinia());
 });
 

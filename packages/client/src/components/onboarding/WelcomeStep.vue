@@ -1,18 +1,17 @@
 <script setup lang="ts">
 /** Step 1: a short intent-framing hero rather than launching straight into a form field — the
  *  wizard's nav bar already carries the primary CTA, so this step is pure copy. */
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
+
+const { t } = useI18n();
 </script>
 
 <template>
   <div class="welcome">
     <div class="hero-badge"><AppIcon name="dumbbell" :size="40" /></div>
-    <h2>Willkommen bei Liftr</h2>
-    <p>
-      Ein paar kurze Fragen, damit Trainingsvorschläge, Rang-Berechnung und die Scheiben-Anzeige
-      von Anfang an zu dir passen. Dauert unter einer Minute — und lässt sich jederzeit im Profil
-      ändern.
-    </p>
+    <h2>{{ t("onboarding.welcomeStep.title") }}</h2>
+    <p>{{ t("onboarding.welcomeStep.body") }}</p>
   </div>
 </template>
 

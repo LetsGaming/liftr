@@ -7,6 +7,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { i18n } from "./i18n";
 import { router } from "./router";
+import { applyLocale, getStoredLocale } from "./stores/localeStore";
 import { applyTheme, getStoredTheme } from "./stores/themeStore";
 import { useSyncStore } from "./stores/syncStore";
 
@@ -28,6 +29,7 @@ import "./styles/rank-card.css";
 // first paint, so boot-time theme resolution (OS preference or a stored user choice) is reflected
 // in the browser/OS chrome color from the very first frame, not just on a later explicit toggle.
 applyTheme(getStoredTheme());
+applyLocale(getStoredLocale());
 
 const app = createApp(App);
 const pinia = createPinia();

@@ -11,6 +11,7 @@ import { defineStore } from "pinia";
 import { refreshCardioDerivedStores } from "../composables/useCardioDerivedStores";
 import { useToast } from "../composables/useToast";
 import { importNewHealthConnectWorkouts } from "../health/healthConnect";
+import { t } from "../i18n";
 import { enqueueOutboxItem, listOutboxItems, removeOutboxItem, type OutboxItem } from "../lib/idb";
 import { isNative } from "../lib/platform";
 import { router } from "../router";
@@ -106,7 +107,7 @@ export const useSyncStore = defineStore("sync", {
         const sendable = items.filter((item) => now - item.queuedAt <= STUCK_AFTER_MS);
         this.stuckCount = items.length - sendable.length;
         if (this.stuckCount > 0) {
-          this.lastError = `${this.stuckCount} Eintrag/Einträge werden seit über 72 Stunden nicht synchronisiert und dauerhaft nicht mehr automatisch erneut versucht.`;
+          this.lastError = t("syncStore.stuckWarning", { n: this.stuckCount });
         }
         if (sendable.length === 0) return [];
 
@@ -160,9 +161,9 @@ export const useSyncStore = defineStore("sync", {
             // nothing new for these stores to reflect.
             if (result.imported > 0) refreshCardioDerivedStores();
             if (result.imported === 0 && result.failed === 0) return;
-            const parts = [`${result.imported} synchronisiert`];
-            if (result.failed > 0) parts.push(`${result.failed} fehlgeschlagen`);
-            useToast().toast(`Health Connect: ${parts.join(", ")}.`, () => router.push("/diagnostics"));
+            const parts = [t("healthConnect.status.partSynced", result.imported)];
+            if (result.failed > 0) parts.push(t("healthConnect.status.partFailed", result.failed));
+            useToast().toast(t("healthConnect.status.resumeSyncToast", { parts: parts.join(", ") }), () => router.push("/diagnostics"));
           });
         });
         void Network.addListener("networkStatusChange", (status) => {

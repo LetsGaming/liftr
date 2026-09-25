@@ -23,9 +23,11 @@
  *             still set from a prior failed attempt — nothing is actually wrong anymore then.
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import Chip from "../base/Chip.vue";
 import { useSyncStore } from "../../stores/syncStore";
 
+const { t } = useI18n();
 const sync = useSyncStore();
 
 const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
@@ -42,7 +44,7 @@ const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
     :class="`is-${state}`"
     :data-sync-state="state"
     :aria-hidden="state !== 'error'"
-    :title="state === 'error' ? `Synchronisierung fehlgeschlagen: ${sync.lastError}` : undefined"
+    :title="state === 'error' ? t('shell.syncIndicator.failedTitle', { error: sync.lastError }) : undefined"
   >
     <span v-if="state === 'syncing'" class="sync-dot sync-dot-syncing shimmer" />
     <Chip v-else-if="state === 'error'" size="sm" variant="danger" class="sync-badge sync-badge-error">{{ sync.pendingCount }}</Chip>

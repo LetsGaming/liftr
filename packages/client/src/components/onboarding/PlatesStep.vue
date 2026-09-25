@@ -2,24 +2,29 @@
 /** Fixed common plate sizes rather than a free-form add/remove list — faster to fill in on a
  *  phone, and covers what actually ships in a home-gym plate set; @liftr/shared's
  *  calculatePlatesFromInventory only needs the counts. */
+import { useI18n } from "vue-i18n";
 import { BAR_TYPES, DEFAULT_BAR_WEIGHTS_KG, MAX_BAR_WEIGHT_KG, MIN_BAR_WEIGHT_KG, useOnboardingDraft, type BarType } from "./OnboardingDraft";
 
+const { t } = useI18n();
 const draft = useOnboardingDraft();
 
-const BAR_LABEL_DE: Record<BarType, string> = {
-  barbell: "Langhantel",
-  "ez-bar": "SZ-Stange",
-  "trap-bar": "Trap-Bar",
+const BAR_LABEL_KEY: Record<BarType, string> = {
+  barbell: "onboarding.platesStep.barLabel.barbell",
+  "ez-bar": "onboarding.platesStep.barLabel.ezBar",
+  "trap-bar": "onboarding.platesStep.barLabel.trapBar",
   // "Kurzhantel-Griff" (not just "Kurzhantel") — this asks for the adjustable-dumbbell HANDLE's
   // own empty weight, same wording ProfilePage.vue's later-editable copy of this step uses.
-  dumbbell: "Kurzhantel-Griff",
+  dumbbell: "onboarding.platesStep.barLabel.dumbbell",
 };
-const ownedBarTypes = BAR_TYPES.filter((t) => draft.equipment.has(t));
+function barLabel(type: BarType): string {
+  return t(BAR_LABEL_KEY[type]);
+}
+const ownedBarTypes = BAR_TYPES.filter((barType) => draft.equipment.has(barType));
 // Loadable-plate inventory only applies to the barbell family — a dumbbell handle's own plates
 // are covered by the same PLATE_SIZES_KG count below, but a dumbbell-only user (no barbell-family
 // bar) has nothing to load onto a "bar" beyond the handle itself, so the plate-count section
 // stays scoped to that case.
-const ownedBarbellFamilyTypes = ownedBarTypes.filter((t) => t !== "dumbbell");
+const ownedBarbellFamilyTypes = ownedBarTypes.filter((barType) => barType !== "dumbbell");
 
 function barWeight(type: BarType): number {
   return draft.barWeightsKg.get(type) ?? DEFAULT_BAR_WEIGHTS_KG[type];
@@ -42,35 +47,32 @@ function adjust(weightKg: number, delta: number) {
 
 <template>
   <div class="step">
-    <h2>Scheiben &amp; Stange</h2>
-    <p class="step-hint">
-      Optional, aber macht die Scheiben-Anzeige beim Training exakt: nur was du wirklich hast, wird zum Beladen
-      vorgeschlagen. Ohne Angabe wird von einem Standard-Satz ausgegangen.
-    </p>
+    <h2>{{ t("onboarding.platesStep.title") }}</h2>
+    <p class="step-hint">{{ t("onboarding.platesStep.hint") }}</p>
 
     <section class="field">
-      <label>Stangengewicht</label>
+      <label>{{ t("profile.equipment.barWeightLabel") }}</label>
       <div class="plate-rows">
         <div v-for="type in ownedBarTypes" :key="type" class="plate-row">
-          <span class="plate-size">{{ BAR_LABEL_DE[type] }}</span>
+          <span class="plate-size">{{ barLabel(type) }}</span>
           <div class="plate-stepper">
-            <button type="button" :aria-label="`Weniger ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, -1)">−</button>
+            <button type="button" :aria-label="t('profile.equipment.decreaseBar', { name: barLabel(type) })" @click="adjustBarWeight(type, -1)">−</button>
             <span class="tnum">{{ barWeight(type) }} <small>kg</small></span>
-            <button type="button" :aria-label="`Mehr ${BAR_LABEL_DE[type]}`" @click="adjustBarWeight(type, 1)">+</button>
+            <button type="button" :aria-label="t('profile.equipment.increaseBar', { name: barLabel(type) })" @click="adjustBarWeight(type, 1)">+</button>
           </div>
         </div>
       </div>
     </section>
 
     <section v-if="ownedBarbellFamilyTypes.length > 0" class="field">
-      <label>Scheiben pro Größe</label>
+      <label>{{ t("profile.equipment.plateSizesLabel") }}</label>
       <div class="plate-rows">
         <div v-for="size in PLATE_SIZES_KG" :key="size" class="plate-row">
           <span class="plate-size tnum">{{ size }} kg</span>
           <div class="plate-stepper">
-            <button type="button" :aria-label="`Weniger ${size}kg`" @click="adjust(size, -1)">−</button>
+            <button type="button" :aria-label="t('profile.equipment.decreasePlates', { size })" @click="adjust(size, -1)">−</button>
             <span class="tnum">{{ countFor(size) }}</span>
-            <button type="button" :aria-label="`Mehr ${size}kg`" @click="adjust(size, 1)">+</button>
+            <button type="button" :aria-label="t('profile.equipment.increasePlates', { size })" @click="adjust(size, 1)">+</button>
           </div>
         </div>
       </div>

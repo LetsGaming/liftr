@@ -1,5 +1,13 @@
+// @vitest-environment jsdom
+//
+// useHealthConnectImport.ts now calls i18n.ts's t(), which reads localStorage at module load
+// (needs a DOM) — jsdom's navigator.language always reports "en-US", so i18n.ts's
+// getStoredLocale() would otherwise default the shared i18n singleton to "en" for the rest of
+// the test process — mountWithProviders.ts resets this for component tests, but this file drives
+// the composable directly, bypassing that helper.
 import { flushPromises } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "~client/i18n";
 
 const {
   checkHealthConnectPermissionsMock,
@@ -28,6 +36,7 @@ vi.mock("~client/composables/useCardioDerivedStores", () => ({
 import { useHealthConnectImport } from "~client/composables/useHealthConnectImport";
 
 beforeEach(() => {
+  i18n.global.locale.value = "de";
   vi.clearAllMocks();
   isHealthConnectAvailableMock.mockResolvedValue(true);
   checkHealthConnectPermissionsMock.mockResolvedValue({ granted: false, missing: [] });

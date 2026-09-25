@@ -6,16 +6,21 @@
  */
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { onBeforeUnmount, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { formatClock } from "../../lib/format";
 import { isNative } from "../../lib/platform";
 
+const { t } = useI18n();
+
 async function fireRestOverNotification() {
+  const title = t("workoutUi.restTimer.notificationTitle");
+  const body = t("workoutUi.restTimer.notificationBody");
   if (isNative()) {
     await LocalNotifications.schedule({
-      notifications: [{ id: Date.now() % 2147483647, title: "Pause vorbei", body: "Zeit für den nächsten Satz." }],
+      notifications: [{ id: Date.now() % 2147483647, title, body }],
     });
   } else if (Notification.permission === "granted") {
-    new Notification("Pause vorbei", { body: "Zeit für den nächsten Satz." });
+    new Notification(title, { body });
   }
 }
 
@@ -86,8 +91,8 @@ const progressPercent = () => Math.round((1 - Math.max(left.value, 0) / currentT
 <template>
   <div v-if="restKind === 'superset-continue'" class="rest-timer rest-timer-continue surface-hybrid">
     <div class="meta">
-      <b>Weiter im Superset</b>
-      <span>keine Pause</span>
+      <b>{{ t("workoutUi.restTimer.continueSuperset") }}</b>
+      <span>{{ t("workoutUi.restTimer.noRestNote") }}</span>
     </div>
   </div>
   <div v-else class="rest-timer surface-hybrid">
@@ -95,10 +100,10 @@ const progressPercent = () => Math.round((1 - Math.max(left.value, 0) / currentT
       <i class="tnum">{{ running ? formatClock(Math.max(left, 0)) : formatClock(props.seconds ?? 90) }}</i>
     </div>
     <div class="meta">
-      <b>Pause</b>
-      <span>{{ running ? "läuft…" : "startet nach dem Satz" }}</span>
+      <b>{{ t("workoutUi.restTimer.pauseLabel") }}</b>
+      <span>{{ running ? t("workoutUi.restTimer.running") : t("workoutUi.restTimer.waitingToStart") }}</span>
     </div>
-    <button class="skip-btn surface-hybrid" @click="stop">Überspringen</button>
+    <button class="skip-btn surface-hybrid" @click="stop">{{ t("workoutUi.restTimer.skip") }}</button>
   </div>
 </template>
 

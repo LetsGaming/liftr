@@ -45,7 +45,10 @@ validated against) and the header comment:
 
 - `slug` — unique, kebab-case, stable (used as a foreign key everywhere; don't rename an existing
   one casually).
-- `nameDe` / `nameEn` — display names.
+- `nameDe` / `nameEn` — display names, both required. Both are actually shown to users: `nameDe`
+  in the German locale, `nameEn` in English (see
+  [adding-a-language.md](adding-a-language.md#exercise-content-names-and-how-to-instructions)) —
+  this isn't just future-proofing, get both right.
 - `equipment` — one of this app's closed 10-value equipment vocabulary
   (`@liftr/shared`'s `Equipment` type). You can leave this `null`/unset: `ingestCatalog.ts` will
   auto-resolve it from free-exercise-db/wger via your `freeExerciseDbId`/`wgerId`. Set it by hand
@@ -95,9 +98,9 @@ This is the `@liftr/ingest` CLI's catalog step (see
 [`packages/ingest/src/index.ts`](../../packages/ingest/src/index.ts) for the full flag list —
 `--all`, `--catalog`, `--images`, `--muscles`, `--standards`, `--run-standards`; no flags at all is
 equivalent to `--all`). `--catalog` re-parses `curated.yaml`, upserts muscles + exercises +
-exercise-muscle links, resolves equipment, and regenerates the German exercise-name i18n file
-(`packages/client/src/locales/exercises.de.json`). It's idempotent — safe to re-run after further
-edits.
+exercise-muscle links, resolves equipment, and regenerates the exercise-name/how-to i18n files for
+every locale (`packages/client/src/locales/exercises.{de,en}.json`). It's idempotent — safe to
+re-run after further edits.
 
 If you added a `freeExerciseDbId`/`wgerImageId`, also run:
 

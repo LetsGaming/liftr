@@ -1,30 +1,32 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import Chip from "../base/Chip.vue";
 import Input from "../base/Input.vue";
 import FormField from "../patterns/FormField.vue";
 import { useOnboardingDraft } from "./OnboardingDraft";
 
+const { t } = useI18n();
 const draft = useOnboardingDraft();
 </script>
 
 <template>
   <div class="step">
-    <h2>Über dich</h2>
-    <p class="step-hint">Alles optional — wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet.</p>
+    <h2>{{ t("onboarding.aboutStep.title") }}</h2>
+    <p class="step-hint">{{ t("onboarding.aboutStep.hint") }}</p>
 
-    <FormField label="Geschlecht">
+    <FormField :label="t('profile.trainingProfile.sex.label')">
       <div class="chip-row">
-        <Chip as="button" class="chip" variant="accent" :active="draft.sex === 'male'" @click="draft.sex = 'male'">Männlich</Chip>
-        <Chip as="button" class="chip" variant="accent" :active="draft.sex === 'female'" @click="draft.sex = 'female'">Weiblich</Chip>
+        <Chip as="button" class="chip" variant="accent" :active="draft.sex === 'male'" @click="draft.sex = 'male'">{{ t("profile.trainingProfile.sex.male") }}</Chip>
+        <Chip as="button" class="chip" variant="accent" :active="draft.sex === 'female'" @click="draft.sex = 'female'">{{ t("profile.trainingProfile.sex.female") }}</Chip>
       </div>
     </FormField>
 
-    <FormField label="Geburtsjahr">
-      <Input v-model="draft.birthYearInput" type="text" inputmode="numeric" placeholder="z.B. 1995" surface="hybrid" />
+    <FormField :label="t('profile.trainingProfile.birthYear.label')">
+      <Input v-model="draft.birthYearInput" type="text" inputmode="numeric" :placeholder="t('profile.trainingProfile.birthYear.placeholder')" surface="hybrid" />
     </FormField>
 
-    <FormField label="Aktuelles Körpergewicht">
-      <Input v-model="draft.weightInput" type="text" inputmode="decimal" placeholder="z.B. 72,5" surface="hybrid">
+    <FormField :label="t('onboarding.aboutStep.weightLabel')">
+      <Input v-model="draft.weightInput" type="text" inputmode="decimal" :placeholder="t('profile.bodyweight.placeholder')" surface="hybrid">
         <template #trailing>kg</template>
       </Input>
     </FormField>
