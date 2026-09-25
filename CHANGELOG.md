@@ -8,10 +8,16 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Added
 
+- Ranks that haven't been confirmed on a second day now show a "Vorläufig" note, so a single strong session doesn't look like a fully-earned rank.
 - English language support, alongside German. Switch languages any time in Profil → Darstellung, right next to the theme toggle — the whole app, including exercise names and how-to instructions, updates immediately.
+
+### Changed
+
+- Walking and hiking ranks are now benchmarked against brisk fitness-walking pace instead of ordinary comfortable walking speed; existing walk/hike ranks will drop accordingly.
 
 ### Fixed
 
+- A rank that was never confirmed on a second day used to stay stuck at its first value forever instead of fading over time like every other rank.
 - Weights, distances, and other numbers now use a comma as the decimal separator in the German UI, matching how the rest of the German app already writes numbers.
 - Active-session device labels ("Chrome · Windows" etc.) on the Profil page, the "no route or distance" Health Connect import error, and set-kind labels (warm-up/normal/failure/drop set) now translate properly in English instead of always showing German.
 - Password-strength errors during setup/signup are now detected reliably rather than by matching the server's English error text, which could occasionally show the wrong message.

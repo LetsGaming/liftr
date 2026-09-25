@@ -125,19 +125,20 @@ export const RUN_ANCHOR_STANDARDS: Record<RunCategory, SexedAnchors> = {
 /**
  * Walking's single speed-bucket anchors (m/s), same [5th, 20th, 50th, 80th, 95th] percentile
  * shape as RUN_ANCHOR_STANDARDS. There is no RunningLevel-equivalent percentile dataset for
- * recreational walking, so these are grounded in published normative gait-speed research rather
- * than a race database:
- * - Median (50th pct): Bohannon & Williams Andrews (2011) normative comfortable gait speed for
- *   healthy adults, ~1.3-1.4 m/s; cross-checked against Tudor-Locke's ~100 steps/min
- *   moderate-intensity walking cadence (~1.35 m/s at a typical stride length).
- * - Upper anchors: maximal (non-running) gait-speed norms and recreational power-walk 5K finish
- *   times (44-52 min, i.e. 1.6-1.9 m/s).
- * - Lower anchor: a relaxed/casual walking pace well below moderate-intensity cadence.
+ * recreational walking, so these are grounded in published fitness-walking pace research rather
+ * than a race database. Earlier revisions of this table anchored on Bohannon & Williams Andrews
+ * (2011) *comfortable gait speed for healthy adults* — ambient population norms, not people
+ * walking for exercise — which pushed an ordinary brisk fitness walk (~6.5 km/h) to within one
+ * division of the ladder's ceiling. Every other ladder here (running: race database; strength:
+ * lifters) is benchmarked against a self-selected active population, so walking's anchors are
+ * re-based the same way:
+ * - Median (50th pct): brisk/fitness-walking pace, ~5.9 km/h (1.65 m/s) — moderate-to-vigorous
+ *   intensity per ACSM/CDC pace guidance, not merely "normal" gait.
+ * - Upper anchors: competitive recreational power-walking and race-walking paces (8-8.9 km/h).
+ * - Lower anchor: an easy/recovery walk, still faster than ambient comfortable gait speed so the
+ *   floor doesn't collapse against it.
  * - Sex gap: ~4%, matching the gap the gait-speed literature consistently shows — much smaller
  *   than running's ~11%, since walking speed is far less strength/power-limited.
- *
- * This is the 5K row from an earlier, since-removed five-category walking ladder — the mid-range
- * reference, kept as the one bucket now that walking ranks on a single speed instead of distance.
  *
  * Trust tier: "synthetic" — unlike RUN_ANCHOR_STANDARDS, no independent physiological
  * cross-validation (à la Daniels' VDOT for running) has been done against these numbers; they are
@@ -145,8 +146,8 @@ export const RUN_ANCHOR_STANDARDS: Record<RunCategory, SexedAnchors> = {
  * "Geschätzter Standard" trust affordance).
  */
 export const WALK_ANCHOR_STANDARDS: SexedAnchors = {
-  male: [1.05, 1.25, 1.4, 1.6, 1.9],
-  female: [1.01, 1.2, 1.34, 1.54, 1.82],
+  male: [1.15, 1.4, 1.65, 1.95, 2.25],
+  female: [1.11, 1.35, 1.59, 1.88, 2.17],
 };
 
 /**
@@ -162,8 +163,8 @@ export const WALK_ANCHOR_STANDARDS: SexedAnchors = {
  * so, since this table's derivation is one step further from real data.
  */
 export const HIKE_ANCHOR_STANDARDS: SexedAnchors = {
-  male: [0.84, 1.0, 1.12, 1.28, 1.52],
-  female: [0.81, 0.96, 1.08, 1.23, 1.46],
+  male: [0.92, 1.12, 1.32, 1.56, 1.8],
+  female: [0.89, 1.08, 1.27, 1.5, 1.74],
 };
 
 /** The full cardio activity registry. Order doesn't matter functionally, but running first

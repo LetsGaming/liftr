@@ -92,6 +92,11 @@ const trustLabel = computed(() => {
   return null;
 });
 
+/** No peak means the rank engine has never corroborated this band on a second calendar day —
+ *  the displayed tier is a single session's result, not yet a proven, decay-tracked peak.
+ *  Mutually exclusive with decayCaption, which requires a peak to name. */
+const isProvisional = computed(() => props.peakTier == null);
+
 /** 1-2 chip strings for the "next target" readout: outline chip first (weight, or the sole chip
  *  when there's only one), filled chip second (reps) — a lone filled pill next to nothing reads
  *  worse than a single outline one, so a reps-only/label-only target renders as one outline chip,
@@ -160,6 +165,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
       </div>
       <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
       <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
+      <div v-else-if="isProvisional" class="rp-provisional">{{ t("rank.progress.provisional") }}</div>
       <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
       <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
     </template>
@@ -192,6 +198,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
         </div>
         <div v-if="trustLabel" class="rp-trust">{{ trustLabel }}</div>
         <div v-if="decayCaption" class="rp-decay">{{ decayCaption }}</div>
+        <div v-else-if="isProvisional" class="rp-provisional">{{ t("rank.progress.provisional") }}</div>
         <div v-if="recoveryGainLabel" class="rp-recovery">{{ recoveryGainLabel }}</div>
         <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
       </div>
@@ -280,6 +287,10 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   color: var(--warning-hi);
 }
 .rp-trust {
+  font-size: 11px;
+  color: var(--dim);
+}
+.rp-provisional {
   font-size: 11px;
   color: var(--dim);
 }

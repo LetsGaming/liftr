@@ -710,6 +710,7 @@ rank:
     heroRepsFieldLabel: "Wdh."
     trustDerived: Abgeleiteter Standard
     trustSynthetic: Geschätzter Standard
+    provisional: "Vorläufig — an einem zweiten Tag bestätigen"
   runBack:
     prEyebrow: Bestleistung
     emptyPr: Noch kein Rekord für diese Distanz.

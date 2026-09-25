@@ -105,9 +105,10 @@ export function computeRankCore(params: {
 
   let currentBand: RankBandPosition;
   if (peak == null) {
-    // No established peak yet — nothing to decay from or recover toward; show the plain
-    // freshly-resolved current value.
-    currentBand = { tier: rank.tier, division: rank.division, lp: rank.lp };
+    // No corroborated peak: the freshly-resolved band is all we have, but it must still age —
+    // otherwise a single uncorroborated outlier would display forever, since decay elsewhere
+    // in this function runs off `peak`. Treat the resolved band as its own decay origin.
+    currentBand = computeCurrentBand({ tier: rank.tier, division: rank.division, lp: rank.lp }, daysSinceLastTrained);
   } else {
     const passivelyDecayedBand = computeCurrentBand(peak, daysSinceLastTrained);
 

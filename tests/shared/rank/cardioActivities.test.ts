@@ -4,12 +4,14 @@ import {
   buildRunStandards,
   cardioActivity,
   classifyHealthConnectWorkoutType,
+  HIKE_ANCHOR_STANDARDS,
   isRankEligible,
   rankedCardioActivities,
   resolveRank,
   sortedThresholds,
   TIER_DIVISION_COUNT,
   TIERS,
+  WALK_ANCHOR_STANDARDS,
 } from "@liftr/shared";
 
 describe("cardioActivity", () => {
@@ -122,6 +124,27 @@ describe("buildCardioStandards", () => {
     expect(all.filter((r) => r.activityType === "run").every((r) => r.trust === "derived")).toBe(true);
     expect(all.filter((r) => r.activityType === "walk").every((r) => r.trust === "synthetic")).toBe(true);
     expect(all.filter((r) => r.activityType === "hike").every((r) => r.trust === "synthetic")).toBe(true);
+  });
+
+  it("walk/hike anchors are benchmarked against fitness pace, not ambient comfortable gait speed", () => {
+    // Regression guard for the "brisk fitness walk lands near Experte" bug: the median (index 2)
+    // anchor must sit at brisk/fitness-walking pace (~1.6+ m/s), not comfortable gait speed
+    // (~1.3-1.4 m/s per Bohannon & Williams Andrews 2011) — see cardioActivities.ts's own
+    // doc comment for the full rationale.
+    expect(WALK_ANCHOR_STANDARDS.male[2]).toBeGreaterThanOrEqual(1.6);
+    expect(WALK_ANCHOR_STANDARDS.female[2]).toBeGreaterThanOrEqual(1.5);
+    expect(HIKE_ANCHOR_STANDARDS.male[2]).toBeCloseTo(WALK_ANCHOR_STANDARDS.male[2] * 0.8, 1);
+  });
+
+  it("a 9:04/km walk (1.838 m/s) resolves to 'advanced' division 3, not near the top of the ladder", () => {
+    // The exact reported regression: a 2.1km/19min Health Connect walk import (9:04/km pace)
+    // previously resolved to "expert" division 2, one band below apex.
+    const walkThresholds = sortedThresholds(
+      buildCardioStandards().filter((r) => r.activityType === "walk" && r.sex === "male"),
+    );
+    const result = resolveRank(1.838, walkThresholds);
+    expect(result.tier).toBe("advanced");
+    expect(result.division).toBe(3);
   });
 
   it("a median-pace walk (1.4 m/s) resolves to a mid-ladder tier, consistent with a median 5K runner", () => {

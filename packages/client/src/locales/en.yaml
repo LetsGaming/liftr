@@ -706,6 +706,7 @@ rank:
     heroRepsFieldLabel: "Reps"
     trustDerived: Derived standard
     trustSynthetic: Estimated standard
+    provisional: "Provisional — confirm on a second day"
   runBack:
     prEyebrow: Personal best
     emptyPr: No record yet for this distance.
