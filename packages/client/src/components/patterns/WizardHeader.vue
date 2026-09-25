@@ -14,7 +14,10 @@
  * PageHeader.vue's doc comment for the full rationale, including why the CSS-scoping gotcha that
  * originally caused these two to be merged no longer applies.
  */
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
+
+const { t } = useI18n();
 
 defineProps<{
   titlePlaceholder: string;
@@ -41,10 +44,10 @@ const title = defineModel<string>("title", { default: "" });
       <button
         class="btn-close base-header-close-btn"
         :class="{ confirming: isConfirmingClose }"
-        aria-label="Schließen"
+        :aria-label="t('patterns.wizardHeader.closeAriaLabel')"
         @click="emit('close')"
       >
-        <template v-if="isConfirmingClose">Verwerfen?</template>
+        <template v-if="isConfirmingClose">{{ t("patterns.wizardHeader.confirmDiscard") }}</template>
         <AppIcon v-else name="close" />
       </button>
     </div>

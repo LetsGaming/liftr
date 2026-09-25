@@ -5,6 +5,7 @@
  * (default). All three exchange credentials for a bearer token via `setToken`, then re-check.
  */
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { ApiError, api, setToken } from "../../lib/api";
 import AppIcon from "../base/AppIcon.vue";
 import Button from "../base/Button.vue";
@@ -12,6 +13,7 @@ import Button from "../base/Button.vue";
 type Status = "checking" | "ok" | "setup" | "join" | "login" | "offline";
 
 const emit = defineEmits<{ authenticated: [] }>();
+const { t } = useI18n();
 
 const status = ref<Status>("checking");
 const username = ref("");
@@ -40,9 +42,9 @@ function getInviteCodeFromUrl(): string | null {
  */
 function describeAuthError(err: unknown, fallback: string): string {
   if (err instanceof ApiError) {
-    if (err.status === 429) return "Zu viele Versuche. Bitte warte 15 Minuten.";
+    if (err.status === 429) return t("profile.errors.tooManyAttempts");
     if (err.status === 400 && err.detail?.includes("too common")) {
-      return "Passwort zu unsicher. Bitte wähle ein anderes Passwort.";
+      return t("profile.errors.passwordTooWeak");
     }
   }
   return fallback;
@@ -83,7 +85,7 @@ async function submitSetup() {
     status.value = "ok";
     emit("authenticated");
   } catch (err) {
-    error.value = describeAuthError(err, "Einrichtung fehlgeschlagen.");
+    error.value = describeAuthError(err, t("shell.authGate.setupFailed"));
   } finally {
     submitting.value = false;
   }
@@ -101,7 +103,7 @@ async function submitLogin() {
     status.value = "ok";
     emit("authenticated");
   } catch (err) {
-    error.value = describeAuthError(err, "Benutzername oder Passwort falsch.");
+    error.value = describeAuthError(err, t("shell.authGate.loginFailed"));
   } finally {
     submitting.value = false;
   }
@@ -120,7 +122,7 @@ async function submitJoin() {
     status.value = "ok";
     emit("authenticated");
   } catch (err) {
-    error.value = describeAuthError(err, "Einladungscode ungültig oder Benutzername bereits vergeben.");
+    error.value = describeAuthError(err, t("shell.authGate.joinFailed"));
   } finally {
     submitting.value = false;
   }
@@ -137,24 +139,37 @@ function submit() {
   <div v-if="status === 'setup' || status === 'login' || status === 'join'" class="gate">
     <div class="card surface-hybrid">
       <h1>Liftr</h1>
-      <p v-if="status === 'setup'">Richte dein Besitzer-Konto ein.</p>
-      <p v-else-if="status === 'join'">Tritt mit deinem Einladungscode bei.</p>
-      <p v-else>Melde dich an.</p>
+      <p v-if="status === 'setup'">{{ t("shell.authGate.setupIntro") }}</p>
+      <p v-else-if="status === 'join'">{{ t("shell.authGate.joinIntro") }}</p>
+      <p v-else>{{ t("shell.authGate.loginIntro") }}</p>
 
-      <input v-if="status === 'join'" v-model="inviteCode" type="text" placeholder="Einladungscode" aria-label="Einladungscode" />
-      <input v-if="status !== 'setup'" v-model="username" type="text" placeholder="Benutzername" aria-label="Benutzername" autocomplete="username" />
+      <input
+        v-if="status === 'join'"
+        v-model="inviteCode"
+        type="text"
+        :placeholder="t('shell.authGate.inviteCodePlaceholder')"
+        :aria-label="t('shell.authGate.inviteCodePlaceholder')"
+      />
+      <input
+        v-if="status !== 'setup'"
+        v-model="username"
+        type="text"
+        :placeholder="t('shell.authGate.usernamePlaceholder')"
+        :aria-label="t('shell.authGate.usernamePlaceholder')"
+        autocomplete="username"
+      />
       <div class="password-row">
         <input
           v-model="password"
           :type="passwordVisible ? 'text' : 'password'"
-          placeholder="Passwort"
-          aria-label="Passwort"
+          :placeholder="t('shell.authGate.passwordPlaceholder')"
+          :aria-label="t('shell.authGate.passwordPlaceholder')"
           autocomplete="current-password"
           @keyup.enter="submit"
         />
         <Button
           variant="secondary"
-          :aria-label="passwordVisible ? 'Passwort verbergen' : 'Passwort anzeigen'"
+          :aria-label="passwordVisible ? t('shell.authGate.hidePassword') : t('shell.authGate.showPassword')"
           @click="passwordVisible = !passwordVisible"
         >
           <AppIcon :name="passwordVisible ? 'eye-off' : 'eye'" />
@@ -167,10 +182,18 @@ function submit() {
         :disabled="submitting || !password.trim() || (status !== 'setup' && !username.trim()) || (status === 'join' && !inviteCode.trim())"
         @click="submit"
       >
-        {{ submitting ? "…" : status === "setup" ? "Einrichten" : status === "join" ? "Beitreten" : "Anmelden" }}
+        {{
+          submitting
+            ? t("shell.authGate.submitting")
+            : status === "setup"
+              ? t("shell.authGate.submitSetup")
+              : status === "join"
+                ? t("shell.authGate.submitJoin")
+                : t("shell.authGate.submitLogin")
+        }}
       </Button>
       <p v-if="status === 'login'" class="hint">
-        Passwort vergessen? Der Server-Betreiber kann es zurücksetzen.
+        {{ t("shell.authGate.forgotPasswordHint") }}
       </p>
     </div>
   </div>

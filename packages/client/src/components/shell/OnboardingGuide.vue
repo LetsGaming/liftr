@@ -12,6 +12,7 @@
  * bar with — asking a bodyweight-only user to enumerate plates they don't own would be noise.
  */
 import { computed, provide, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useSettingsStore } from "../../stores/settingsStore";
 import Button from "../base/Button.vue";
 import AboutStep from "../onboarding/AboutStep.vue";
@@ -25,6 +26,7 @@ import WelcomeStep from "../onboarding/WelcomeStep.vue";
 import SheetModal from "../patterns/SheetModal.vue";
 
 const emit = defineEmits<{ close: [] }>();
+const { t } = useI18n();
 const settingsStore = useSettingsStore();
 const sheetRef = ref<InstanceType<typeof SheetModal> | null>(null);
 
@@ -32,14 +34,14 @@ const draft = createOnboardingDraft();
 provide(ONBOARDING_DRAFT_KEY, draft);
 
 type StepKey = "welcome" | "about" | "experience" | "frequency" | "equipment" | "plates" | "done";
-const STEP_LABEL: Record<StepKey, string> = {
-  welcome: "Start",
-  about: "Über dich",
-  experience: "Erfahrung",
-  frequency: "Häufigkeit",
-  equipment: "Equipment",
-  plates: "Scheiben",
-  done: "Fertig",
+const STEP_LABEL_KEY: Record<StepKey, string> = {
+  welcome: "shell.onboardingGuide.stepLabel.welcome",
+  about: "shell.onboardingGuide.stepLabel.about",
+  experience: "shell.onboardingGuide.stepLabel.experience",
+  frequency: "shell.onboardingGuide.stepLabel.frequency",
+  equipment: "shell.onboardingGuide.stepLabel.equipment",
+  plates: "shell.onboardingGuide.stepLabel.plates",
+  done: "shell.onboardingGuide.stepLabel.done",
 };
 
 const steps = computed<StepKey[]>(() => {
@@ -137,8 +139,8 @@ async function skip() {
     <template #header>
       <header class="wizard-head">
         <div class="head-row">
-          <span class="step-label">{{ STEP_LABEL[currentStep] }} · {{ stepIndex + 1 }}/{{ steps.length }}</span>
-          <button class="skip-btn" :disabled="saving" @click="skip">Später</button>
+          <span class="step-label">{{ t(STEP_LABEL_KEY[currentStep]) }} · {{ stepIndex + 1 }}/{{ steps.length }}</span>
+          <button class="skip-btn" :disabled="saving" @click="skip">{{ t("shell.onboardingGuide.skip") }}</button>
         </div>
         <div class="progress-track">
           <div class="progress-fill" :style="{ transform: `scaleX(${progressPct / 100})` }" />
@@ -159,9 +161,9 @@ async function skip() {
     </div>
 
     <div class="wizard-actions">
-      <Button v-if="!isFirst" variant="secondary" :disabled="saving" @click="goBack">← Zurück</Button>
+      <Button v-if="!isFirst" variant="secondary" :disabled="saving" @click="goBack">{{ t("shell.onboardingGuide.back") }}</Button>
       <Button size="lg" :disabled="saving || !canContinue" @click="goNext">
-        {{ saving ? "Wird gespeichert…" : isLast ? "Los geht's" : "Weiter →" }}
+        {{ saving ? t("common.savingEllipsis") : isLast ? t("shell.onboardingGuide.finish") : t("shell.onboardingGuide.continue") }}
       </Button>
     </div>
   </SheetModal>

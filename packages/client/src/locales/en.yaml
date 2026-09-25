@@ -562,6 +562,15 @@ overview:
     current: This week
     last: Last week
     ago: "{n} weeks ago"
+  erholungszoneCard:
+    title: Recovery zone
+    legendWarm: Less recovered
+    legendCool: More recovered
+    statusPill: YOUR STATUS
+    verdictNone: "No muscle group is clearly recovered right now — go ahead and train whatever you like anyway."
+    namesJoiner: " and "
+    verdict: "{names} is fully recovered. | {names} are fully recovered."
+    startCta: "Train now →"
 exerciseUi:
   addCustomForm:
     nameLabel: Name
@@ -761,3 +770,81 @@ workoutUi:
     running: "running…"
     waitingToStart: starts after the set
     skip: Skip
+shell:
+  onboardingGuide:
+    stepLabel:
+      welcome: Start
+      about: About you
+      experience: Experience
+      frequency: Frequency
+      equipment: Equipment
+      plates: Plates
+      done: Done
+    skip: Later
+    back: "← Back"
+    continue: "Continue →"
+    finish: "Let's go"
+  authGate:
+    setupIntro: Set up your owner account.
+    joinIntro: Join with your invite code.
+    loginIntro: Log in.
+    inviteCodePlaceholder: Invite code
+    usernamePlaceholder: Username
+    passwordPlaceholder: Password
+    showPassword: Show password
+    hidePassword: Hide password
+    submitting: "…"
+    submitSetup: Set up
+    submitJoin: Join
+    submitLogin: Log in
+    forgotPasswordHint: "Forgot your password? The server operator can reset it."
+    setupFailed: Setup failed.
+    loginFailed: Wrong username or password.
+    joinFailed: Invalid invite code or username already taken.
+route:
+  routeWizard:
+    titlePlaceholder: Route name
+    maxWaypointsWithLoop: "With a loop, {max} waypoints max — remove some points first."
+    maxWaypoints: "{max} waypoints max — remove a point first."
+    saveRejected: Route rejected — too many or invalid waypoints.
+    tooManyRequests: Too many requests — please wait a moment.
+    saveFailed: Save failed — please try again.
+    waypointsLabel: "{count} waypoints"
+    closeLoopLabel: Close loop
+  routeList:
+    dragHandleAriaLabel: Move
+    moreAriaLabel: More
+    edit: Edit
+    confirmDelete: Really delete?
+    delete: Delete
+    start: Start
+    mapCredit: Map © OpenStreetMap contributors
+    emptyEyebrow: No routes yet
+    emptyHint: "Place waypoints on the map and save them as a reusable route."
+    addNew: "+ New route"
+    reorderFailed: Couldn't save the new order.
+run:
+  liveRunScreen:
+    freeRun: Free run
+    paused: Paused
+    discardConfirm: "Really discard this run? Your progress so far will be lost."
+    discardNo: No
+    discardYes: "Yes, discard"
+    distanceLabel: Distance
+    timeLabel: Time
+    paceLabel: Pace
+    pauseAction: Pause
+    resumeAction: Resume
+    submitting: "Saving…"
+    finishRun: Finish run
+    saveFailed: "Save failed — the run stays on this device until you try again."
+patterns:
+  drillInScreen:
+    back: Back
+  wizardHeader:
+    closeAriaLabel: Close
+    confirmDiscard: Discard?
+  pageHeader:
+    backAriaLabel: Back
+  sheetModal:
+    closeAriaLabel: Close

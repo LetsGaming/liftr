@@ -70,6 +70,7 @@
  */
 import { IonModal } from "@ionic/vue";
 import { ref, useSlots } from "vue";
+import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";
 
 withDefaults(
@@ -118,6 +119,7 @@ withDefaults(
 );
 const emit = defineEmits<{ close: [] }>();
 const slots = useSlots();
+const { t } = useI18n();
 
 const modalRef = ref<InstanceType<typeof IonModal> | null>(null);
 /** The one correct way to close this modal — see the header comment. Exposed so a caller can
@@ -165,7 +167,7 @@ defineExpose({ dismiss });
       <template v-else>
         <div class="sheet-head">
           <b>{{ title }}</b>
-          <button class="btn-close" aria-label="Schließen" @click="dismiss"><AppIcon name="close" /></button>
+          <button class="btn-close" :aria-label="t('patterns.sheetModal.closeAriaLabel')" @click="dismiss"><AppIcon name="close" /></button>
         </div>
         <slot />
       </template>

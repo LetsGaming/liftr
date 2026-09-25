@@ -563,6 +563,15 @@ overview:
     current: Diese Woche
     last: Letzte Woche
     ago: "Vor {n} Wochen"
+  erholungszoneCard:
+    title: Erholungszone
+    legendWarm: Weniger erholt
+    legendCool: Mehr erholt
+    statusPill: DEIN STATUS
+    verdictNone: "Keine Muskelgruppe ist gerade eindeutig erholt — leg trotzdem los, wo du willst."
+    namesJoiner: " und "
+    verdict: "{names} ist vollständig erholt. | {names} sind vollständig erholt."
+    startCta: "Jetzt trainieren →"
 exerciseUi:
   addCustomForm:
     nameLabel: Name
@@ -762,3 +771,81 @@ workoutUi:
     running: "läuft…"
     waitingToStart: startet nach dem Satz
     skip: Überspringen
+shell:
+  onboardingGuide:
+    stepLabel:
+      welcome: Start
+      about: Über dich
+      experience: Erfahrung
+      frequency: Häufigkeit
+      equipment: Equipment
+      plates: Scheiben
+      done: Fertig
+    skip: Später
+    back: "← Zurück"
+    continue: "Weiter →"
+    finish: "Los geht's"
+  authGate:
+    setupIntro: Richte dein Besitzer-Konto ein.
+    joinIntro: Tritt mit deinem Einladungscode bei.
+    loginIntro: Melde dich an.
+    inviteCodePlaceholder: Einladungscode
+    usernamePlaceholder: Benutzername
+    passwordPlaceholder: Passwort
+    showPassword: Passwort anzeigen
+    hidePassword: Passwort verbergen
+    submitting: "…"
+    submitSetup: Einrichten
+    submitJoin: Beitreten
+    submitLogin: Anmelden
+    forgotPasswordHint: "Passwort vergessen? Der Server-Betreiber kann es zurücksetzen."
+    setupFailed: Einrichtung fehlgeschlagen.
+    loginFailed: Benutzername oder Passwort falsch.
+    joinFailed: Einladungscode ungültig oder Benutzername bereits vergeben.
+route:
+  routeWizard:
+    titlePlaceholder: Name der Strecke
+    maxWaypointsWithLoop: "Mit Schleife sind maximal {max} Wegpunkte möglich — entferne zuerst Punkte."
+    maxWaypoints: "Maximal {max} Wegpunkte — entferne zuerst einen Punkt."
+    saveRejected: Strecke abgelehnt — zu viele oder ungültige Wegpunkte.
+    tooManyRequests: Zu viele Anfragen — bitte kurz warten.
+    saveFailed: Speichern fehlgeschlagen — bitte erneut versuchen.
+    waypointsLabel: "{count} Wegpunkte"
+    closeLoopLabel: Schleife schließen
+  routeList:
+    dragHandleAriaLabel: Verschieben
+    moreAriaLabel: Mehr
+    edit: Bearbeiten
+    confirmDelete: Wirklich löschen?
+    delete: Löschen
+    start: Starten
+    mapCredit: Karten © OpenStreetMap contributors
+    emptyEyebrow: Noch keine Strecke
+    emptyHint: "Platziere Wegpunkte auf der Karte und speichere sie als wiederverwendbare Strecke."
+    addNew: "+ Neue Strecke"
+    reorderFailed: Sortierung konnte nicht gespeichert werden.
+run:
+  liveRunScreen:
+    freeRun: Freier Lauf
+    paused: Pausiert
+    discardConfirm: "Lauf wirklich verwerfen? Der bisherige Fortschritt geht verloren."
+    discardNo: Nein
+    discardYes: "Ja, verwerfen"
+    distanceLabel: Distanz
+    timeLabel: Zeit
+    paceLabel: Tempo
+    pauseAction: Pause
+    resumeAction: Weiter
+    submitting: "Speichert…"
+    finishRun: Lauf beenden
+    saveFailed: "Speichern fehlgeschlagen — der Lauf bleibt auf diesem Gerät, bis du es erneut versuchst."
+patterns:
+  drillInScreen:
+    back: Zurück
+  wizardHeader:
+    closeAriaLabel: Schließen
+    confirmDiscard: Verwerfen?
+  pageHeader:
+    backAriaLabel: Zurück
+  sheetModal:
+    closeAriaLabel: Schließen
