@@ -275,6 +275,99 @@ routineOverviewPage:
   setLineWeightPart: "{weight} kg × "
   starting: "Starting…"
   startNow: Start now
+routine:
+  arrangeStep:
+    hint: Drag the handle to reorder.
+    moveAriaLabel: Move
+    removeAriaLabel: Remove
+    setLabel: "Set {n}"
+    setKindTitle: "Set type: {kind} — tap to change"
+    weightLabel: Weight
+    repsLabel: Reps
+    removeSetAriaLabel: Remove set
+    addSet: "+ Set"
+    addWeight: "+ Add weight"
+    removeWeight: Remove weight
+    addWeightPlain: "+ Weight"
+    logWithoutWeight: Log without weight
+    restBetweenSets: Rest between sets
+    restAfterExercise: Rest after exercise
+    supersetTitle: "Superset: no rest timer between this exercise and the next — only after the whole round."
+    supersetActive: Superset active
+    supersetLink: Link as superset with next exercise
+    supersetHint: No rest timer after this exercise — it starts only after the next one.
+    addExercise: "+ Add exercise"
+    continue: "Continue →"
+  routineList:
+    moveAriaLabel: Move
+    reorderFailed: Couldn't save the new order.
+    mesocycleBadge: "Week {week}/{total} · {percent}%"
+    moreAriaLabel: More
+    edit: Edit
+    duplicate: Duplicate
+    endMesocycle: End mesocycle
+    addMesocycle: "+ Mesocycle"
+    deleteConfirm: Really delete?
+    delete: Delete
+    moreExercises: "+{n} more"
+    start: Start
+    emptyState:
+      eyebrow: No routine yet
+      body: "A routine is your fixed training plan — which exercises, in what order, with what targets. It's the starting point for everything here: your rank per exercise only grows once you train it repeatedly, and that takes this fixed structure. Create a routine, then you can start right away next time you train."
+    addRoutine: "+ New routine"
+    mesoWeeksLabel: Weeks
+    quickStart:
+      starting: "Starting…"
+      cta: "Start without a routine · the first 4 exercises"
+  fastPathStep:
+    dragHint: Drag the handle to reorder.
+    moveAriaLabel: Move
+    removeAriaLabel: Remove
+    substituteGeneric: "Substituted: the preferred variant needs equipment you don't have."
+    substituteMissing: "Substituted: the preferred variant needs {equipment}, which you don't have."
+    lopsidedNote: Noticeably more sets than the rest of the routine — is that intentional?
+    addExercise: "+ Add exercise"
+    coverageLabel: Muscle coverage
+    coverageState:
+      covered: covered
+      partial: indirect
+      missing: missing
+    customize: Customize all details (sets, rests, supersets)
+    save: Save routine
+    saveChanges: Save changes
+  reviewStep:
+    unnamed: Unnamed routine
+    totalSets: "{n} sets"
+    coverageLabel: Muscle coverage
+    coverageState:
+      covered: covered
+      partial: indirect
+      missing: missing
+    substituteGeneric: "Substituted: the preferred variant needs equipment you don't have."
+    substituteMissing: "Substituted: the preferred variant needs {equipment}, which you don't have."
+    lopsidedNote: Noticeably more sets than the rest of the routine — is that intentional?
+    back: "← Back"
+    save: Save routine
+    saveChanges: Save changes
+  routineWizard:
+    namePlaceholder: Routine name
+    saveFailed: Saving failed — please try again.
+    steps:
+      pick: "1 Choose"
+      arrange: "2 Arrange"
+      done: "{n} Done"
+  pickStepManual:
+    selectPrompt: Choose exercises
+    selectedCount: "{n} selected · Continue →"
+  pickStepMuscles:
+    hint: "Which muscle groups do you want to train? Liftr puts together fitting exercises — with sets, reps, and weights that match what you've achieved so far."
+    assembling: "Putting it together…"
+    suggest: "Suggest exercises ({n} muscle groups)"
+  pathChooser:
+    manualTitle: Build it myself
+    manualDesc: Choose exercises from the list and set sets, reps, and weight yourself.
+    musclesTitle: Suggest by muscle group
+    musclesDesc: "Choose muscle groups — Liftr puts together fitting exercises, with sets, reps, and weight matching your training so far."
 workoutDetailPage:
   fallbackTitle: Workout Details
   loading: "Loading…"

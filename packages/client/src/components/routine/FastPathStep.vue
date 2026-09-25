@@ -10,6 +10,7 @@
  * itself.
  */
 import { toRef } from "vue";
+import { useI18n } from "vue-i18n";
 import { useExerciseName } from "../../composables/useExerciseName";
 import { useCatalogStore } from "../../stores/catalogStore";
 import { useDragReorder } from "../../composables/useDragReorder";
@@ -39,6 +40,7 @@ const emit = defineEmits<{
   save: [];
 }>();
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 const { exerciseName } = useExerciseName();
 
@@ -52,10 +54,10 @@ function setSummary(cfg: DraftExercise): string {
 function substituteReason(exerciseId: string): string {
   const missing = props.suggestionMeta[exerciseId]?.missingEquipment;
   if (!missing || missing.length === 0) {
-    return "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast.";
+    return t("routine.fastPathStep.substituteGeneric");
   }
   const names = missing.map((m) => equipmentRequirementLabelDe(m as Parameters<typeof equipmentRequirementLabelDe>[0]));
-  return `Ersetzt: bevorzugte Variante braucht ${names.join(", ")}, das du nicht hast.`;
+  return t("routine.fastPathStep.substituteMissing", { equipment: names.join(", ") });
 }
 
 const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => emit("move", from, to));
@@ -70,7 +72,11 @@ const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
   toRef(props, "requestedMuscleSlugs"),
   props.suggestionMeta,
 );
-const COVERAGE_LABEL: Record<CoverageState, string> = { covered: "abgedeckt", partial: "indirekt", missing: "fehlt" };
+const COVERAGE_LABEL: Record<CoverageState, string> = {
+  covered: t("routine.fastPathStep.coverageState.covered"),
+  partial: t("routine.fastPathStep.coverageState.partial"),
+  missing: t("routine.fastPathStep.coverageState.missing"),
+};
 const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire"> = {
   covered: "success",
   partial: "neutral",
@@ -80,7 +86,7 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
 
 <template>
   <div class="fast-step">
-    <p class="hint">Ziehe am Griff, um die Reihenfolge zu ändern.</p>
+    <p class="hint">{{ t("routine.fastPathStep.dragHint") }}</p>
     <ul class="ex-list">
       <li
         v-for="([exerciseId, cfg], i) in entries"
@@ -92,7 +98,7 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
         <div class="ex-line">
           <button
             class="drag-handle"
-            aria-label="Verschieben"
+            :aria-label="t('routine.fastPathStep.moveAriaLabel')"
             @pointerdown="handleDown($event, i, ($event.currentTarget as HTMLElement)?.closest('li') as HTMLElement)"
           >
             <AppIcon name="drag-handle" />
@@ -108,19 +114,19 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
               <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
             </template>
           </ExerciseRow>
-          <IconButton icon="trash" label="Entfernen" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
+          <IconButton icon="trash" :label="t('routine.fastPathStep.removeAriaLabel')" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
         </div>
         <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
-          Deutlich mehr Sätze als der Rest der Routine — passt das so?
+          {{ t("routine.fastPathStep.lopsidedNote") }}
         </p>
       </li>
     </ul>
 
-    <button class="add-exercise-btn" @click="emit('addExercise')">+ Übung hinzufügen</button>
+    <button class="add-exercise-btn" @click="emit('addExercise')">{{ t("routine.fastPathStep.addExercise") }}</button>
 
     <div v-if="coverage" class="coverage">
-      <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">Muskelabdeckung</span>
+      <span class="eyebrow" style="--eyebrow-color: var(--blue-hi)">{{ t("routine.fastPathStep.coverageLabel") }}</span>
       <div class="coverage-chips">
         <Chip
           v-for="c in coverage"
@@ -134,10 +140,10 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
       </div>
     </div>
 
-    <button class="customize-btn" @click="emit('customize')">Alle Details anpassen (Sätze, Pausen, Supersets)</button>
+    <button class="customize-btn" @click="emit('customize')">{{ t("routine.fastPathStep.customize") }}</button>
 
     <Button size="lg" :disabled="!canSave || saving" @click="emit('save')">
-      {{ saving ? "Wird gespeichert…" : isEditing ? "Änderungen speichern" : "Routine speichern" }}
+      {{ saving ? t("common.savingEllipsis") : isEditing ? t("routine.fastPathStep.saveChanges") : t("routine.fastPathStep.save") }}
     </Button>
   </div>
 </template>

@@ -276,6 +276,99 @@ routineOverviewPage:
   setLineWeightPart: "{weight} kg × "
   starting: "Wird gestartet…"
   startNow: Jetzt starten
+routine:
+  arrangeStep:
+    hint: Ziehe am Griff, um die Reihenfolge zu ändern.
+    moveAriaLabel: Verschieben
+    removeAriaLabel: Entfernen
+    setLabel: "Satz {n}"
+    setKindTitle: "Satzart: {kind} — tippen zum Ändern"
+    weightLabel: Gewicht
+    repsLabel: Wiederholungen
+    removeSetAriaLabel: Satz entfernen
+    addSet: "+ Satz"
+    addWeight: "+ Zusatzgewicht"
+    removeWeight: Zusatzgewicht entfernen
+    addWeightPlain: "+ Gewicht"
+    logWithoutWeight: Ohne Gewicht loggen
+    restBetweenSets: Pause zwischen Sätzen
+    restAfterExercise: Pause nach der Übung
+    supersetTitle: "Superset: kein Pausentimer zwischen dieser und der nächsten Übung — nur nach der ganzen Runde."
+    supersetActive: Superset aktiv
+    supersetLink: Als Superset mit nächster Übung
+    supersetHint: Kein Pausentimer nach dieser Übung — er startet erst nach der nächsten.
+    addExercise: "+ Übung hinzufügen"
+    continue: "Weiter →"
+  routineList:
+    moveAriaLabel: Verschieben
+    reorderFailed: Sortierung konnte nicht gespeichert werden.
+    mesocycleBadge: "Woche {week}/{total} · {percent}%"
+    moreAriaLabel: Mehr
+    edit: Bearbeiten
+    duplicate: Duplizieren
+    endMesocycle: Mesozyklus beenden
+    addMesocycle: "+ Mesozyklus"
+    deleteConfirm: Wirklich löschen?
+    delete: Löschen
+    moreExercises: "+{n} weitere"
+    start: Starten
+    emptyState:
+      eyebrow: Noch keine Routine
+      body: "Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist der Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür braucht es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten."
+    addRoutine: "+ Neue Routine"
+    mesoWeeksLabel: Wochen
+    quickStart:
+      starting: "Wird gestartet…"
+      cta: "Ohne Routine loslegen · die ersten 4 Übungen"
+  fastPathStep:
+    dragHint: Ziehe am Griff, um die Reihenfolge zu ändern.
+    moveAriaLabel: Verschieben
+    removeAriaLabel: Entfernen
+    substituteGeneric: "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast."
+    substituteMissing: "Ersetzt: bevorzugte Variante braucht {equipment}, das du nicht hast."
+    lopsidedNote: Deutlich mehr Sätze als der Rest der Routine — passt das so?
+    addExercise: "+ Übung hinzufügen"
+    coverageLabel: Muskelabdeckung
+    coverageState:
+      covered: abgedeckt
+      partial: indirekt
+      missing: fehlt
+    customize: Alle Details anpassen (Sätze, Pausen, Supersets)
+    save: Routine speichern
+    saveChanges: Änderungen speichern
+  reviewStep:
+    unnamed: Unbenannte Routine
+    totalSets: "{n} Sätze"
+    coverageLabel: Muskelabdeckung
+    coverageState:
+      covered: abgedeckt
+      partial: indirekt
+      missing: fehlt
+    substituteGeneric: "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast."
+    substituteMissing: "Ersetzt: bevorzugte Variante braucht {equipment}, das du nicht hast."
+    lopsidedNote: Deutlich mehr Sätze als der Rest der Routine — passt das so?
+    back: "← Zurück"
+    save: Routine speichern
+    saveChanges: Änderungen speichern
+  routineWizard:
+    namePlaceholder: Name der Routine
+    saveFailed: Speichern fehlgeschlagen — bitte erneut versuchen.
+    steps:
+      pick: "1 Wählen"
+      arrange: "2 Anordnen"
+      done: "{n} Fertig"
+  pickStepManual:
+    selectPrompt: Übungen auswählen
+    selectedCount: "{n} ausgewählt · Weiter →"
+  pickStepMuscles:
+    hint: "Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast."
+    assembling: "Wird zusammengestellt…"
+    suggest: "Übungen vorschlagen ({n} Muskelgruppen)"
+  pathChooser:
+    manualTitle: Selbst zusammenstellen
+    manualDesc: Übungen aus der Liste wählen und Sätze, Wiederholungen und Gewicht selbst festlegen.
+    musclesTitle: Nach Muskelgruppe vorschlagen lassen
+    musclesDesc: "Muskelgruppen wählen — Liftr stellt passende Übungen zusammen, mit Sätzen, Wiederholungen und Gewicht, die zu deinem bisherigen Training passen."
 workoutDetailPage:
   fallbackTitle: Workout-Details
   loading: "Lädt…"

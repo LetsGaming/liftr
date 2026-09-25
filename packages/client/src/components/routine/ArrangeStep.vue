@@ -7,6 +7,7 @@
  * bottom returns to the picker without losing the current selection.
  */
 import { SET_KIND_BADGE, SET_KIND_LABEL, type SetKind } from "@liftr/shared";
+import { useI18n } from "vue-i18n";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import AppIcon from "../base/AppIcon.vue";
 import NumberStepper from "../patterns/NumberStepper.vue";
@@ -36,6 +37,7 @@ const emit = defineEmits<{
   continue: [];
 }>();
 
+const { t } = useI18n();
 const catalog = useCatalogStore();
 const { exerciseName } = useExerciseName();
 
@@ -53,8 +55,8 @@ function kindOf(kind: SetKind | undefined): SetKind {
 function weightToggleLabel(exerciseId: string, cfg: DraftExercise): string {
   const isBodyweight = catalog.byId(exerciseId)?.isBodyweight;
   const isUntracked = cfg.sets[0]?.weightKg === null;
-  if (isBodyweight) return isUntracked ? "+ Zusatzgewicht" : "Zusatzgewicht entfernen";
-  return isUntracked ? "+ Gewicht" : "Ohne Gewicht loggen";
+  if (isBodyweight) return isUntracked ? t("routine.arrangeStep.addWeight") : t("routine.arrangeStep.removeWeight");
+  return isUntracked ? t("routine.arrangeStep.addWeightPlain") : t("routine.arrangeStep.logWithoutWeight");
 }
 
 const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent"> = {
@@ -67,7 +69,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
 
 <template>
   <div class="arrange-step">
-    <p class="hint">Ziehe am Griff, um die Reihenfolge zu ändern.</p>
+    <p class="hint">{{ t("routine.arrangeStep.hint") }}</p>
 
     <div class="cards">
       <div
@@ -80,7 +82,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
         <div class="card-head">
           <button
             class="drag-handle-btn wizard-drag-handle"
-            aria-label="Verschieben"
+            :aria-label="t('routine.arrangeStep.moveAriaLabel')"
             @pointerdown="handleDown($event, i, ($event.currentTarget as HTMLElement)?.closest('.card') as HTMLElement)"
           >
             <AppIcon name="drag-handle" />
@@ -94,19 +96,19 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
               <span class="equip">{{ catalog.byId(exerciseId)?.equipment }}</span>
             </template>
           </ExerciseRow>
-          <IconButton icon="trash" label="Entfernen" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
+          <IconButton icon="trash" :label="t('routine.arrangeStep.removeAriaLabel')" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
         </div>
 
         <div class="set-rows">
           <div v-for="(set, si) in cfg.sets" :key="si" class="set-row">
             <div class="set-label-row">
-              <span class="set-label">Satz {{ si + 1 }}</span>
+              <span class="set-label">{{ t("routine.arrangeStep.setLabel", { n: si + 1 }) }}</span>
               <Chip
                 as="button"
                 size="sm"
                 class="kind-badge"
                 :variant="KIND_CHIP_VARIANT[kindOf(set.kind)]"
-                :title="`Satzart: ${SET_KIND_LABEL[kindOf(set.kind)]} — tippen zum Ändern`"
+                :title="t('routine.arrangeStep.setKindTitle', { kind: SET_KIND_LABEL[kindOf(set.kind)] })"
                 @click="emit('cycleSetKind', exerciseId, si)"
               >
                 {{ SET_KIND_BADGE[kindOf(set.kind)] }}
@@ -117,20 +119,20 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
                 v-if="set.weightKg !== null"
                 size="sm"
                 unit="kg"
-                label="Gewicht"
+                :label="t('routine.arrangeStep.weightLabel')"
                 :model-value="set.weightKg"
                 @adjust="(d) => emit('adjustSetWeight', exerciseId, si, d)"
               />
               <NumberStepper
                 size="sm"
                 unit="x"
-                label="Wiederholungen"
+                :label="t('routine.arrangeStep.repsLabel')"
                 :model-value="set.reps"
                 @adjust="(d) => emit('adjustSetReps', exerciseId, si, d)"
               />
               <IconButton
                 icon="close"
-                label="Satz entfernen"
+                :label="t('routine.arrangeStep.removeSetAriaLabel')"
                 variant="ghost"
                 size="sm"
                 class="set-remove"
@@ -140,7 +142,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
             </div>
           </div>
           <div class="set-actions">
-            <button class="add-set-btn" @click="emit('addSet', exerciseId)">+ Satz</button>
+            <button class="add-set-btn" @click="emit('addSet', exerciseId)">{{ t("routine.arrangeStep.addSet") }}</button>
             <button class="weight-toggle-btn" @click="emit('toggleWeightTracking', exerciseId)">
               {{ weightToggleLabel(exerciseId, cfg) }}
             </button>
@@ -149,20 +151,20 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
 
         <div class="rest-rows">
           <div class="rest-row">
-            <span class="rest-label">Pause zwischen Sätzen</span>
+            <span class="rest-label">{{ t("routine.arrangeStep.restBetweenSets") }}</span>
             <NumberStepper
               size="sm"
-              label="Pause zwischen Sätzen"
+              :label="t('routine.arrangeStep.restBetweenSets')"
               :model-value="cfg.restBetweenSetsSeconds"
               :format-value="formatClock"
               @adjust="(d) => emit('adjustRestBetweenSets', exerciseId, d)"
             />
           </div>
           <div class="rest-row">
-            <span class="rest-label">Pause nach der Übung</span>
+            <span class="rest-label">{{ t("routine.arrangeStep.restAfterExercise") }}</span>
             <NumberStepper
               size="sm"
-              label="Pause nach der Übung"
+              :label="t('routine.arrangeStep.restAfterExercise')"
               :model-value="cfg.restAfterExerciseSeconds"
               :format-value="formatClock"
               @adjust="(d) => emit('adjustRestAfterExercise', exerciseId, d)"
@@ -174,21 +176,21 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
           <button
             class="link-btn"
             :class="{ active: cfg.linkNext }"
-            :title="'Superset: kein Pausentimer zwischen dieser und der nächsten Übung — nur nach der ganzen Runde.'"
+            :title="t('routine.arrangeStep.supersetTitle')"
             @click="emit('toggleLink', exerciseId)"
           >
-            <AppIcon name="link" /> {{ cfg.linkNext ? "Superset aktiv" : "Als Superset mit nächster Übung" }}
+            <AppIcon name="link" /> {{ cfg.linkNext ? t("routine.arrangeStep.supersetActive") : t("routine.arrangeStep.supersetLink") }}
           </button>
           <p v-if="cfg.linkNext" class="link-hint">
-            Kein Pausentimer nach dieser Übung — er startet erst nach der nächsten.
+            {{ t("routine.arrangeStep.supersetHint") }}
           </p>
         </div>
       </div>
     </div>
 
-    <button class="add-exercise-btn" @click="emit('addExercise')">+ Übung hinzufügen</button>
+    <button class="add-exercise-btn" @click="emit('addExercise')">{{ t("routine.arrangeStep.addExercise") }}</button>
 
-    <Button size="lg" :disabled="entries.length === 0" @click="emit('continue')">Weiter →</Button>
+    <Button size="lg" :disabled="entries.length === 0" @click="emit('continue')">{{ t("routine.arrangeStep.continue") }}</Button>
   </div>
 </template>
 
