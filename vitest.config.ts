@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import vueI18n from "@intlify/unplugin-vue-i18n/vite";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vitest/config";
 
@@ -7,7 +8,10 @@ import { defineConfig } from "vitest/config";
 // deep imports, so `~server`/`~client`/`~ingest` alias straight into their src/ — @liftr/shared
 // and @liftr/db are real workspace packages instead, imported by their package name as usual.
 export default defineConfig({
-  plugins: [vue()],
+  // tests/client/helpers/mountWithProviders.ts imports ~client/i18n, which imports
+  // packages/client/src/locales/*.yaml — without this plugin that import is unresolvable and
+  // every test using the mount helper fails, not just i18n-specific ones.
+  plugins: [vue(), vueI18n({ include: [fileURLToPath(new URL("./packages/client/src/locales/*.yaml", import.meta.url))] })],
   resolve: {
     conditions: ["development"],
     alias: [

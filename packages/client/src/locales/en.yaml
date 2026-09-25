@@ -1,0 +1,13 @@
+# English. Must have exactly the same keys as de.yaml — run `pnpm i18n:check` after editing.
+# A key missing here falls back to German at runtime rather than showing a raw key, but the
+# check script treats "missing" as an error so packs don't silently drift.
+nav:
+  overview: Overview
+  training: Training
+  ranks: Ranks
+  exercises: Exercises
+  runs: Runs
+  profile: Profile
+workout:
+  start: Start today's workout
+  save: Save set

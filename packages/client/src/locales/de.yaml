@@ -1,0 +1,13 @@
+# German — the source of truth. Every key used anywhere in the app must exist here first;
+# `pnpm i18n:check` (scripts/i18n-check.mjs) fails if en.yaml is missing or has extra keys
+# relative to this file. See docs/guides/adding-a-language.md for how to add a locale.
+nav:
+  overview: Übersicht
+  training: Training
+  ranks: Ränge
+  exercises: Übungen
+  runs: Läufe
+  profile: Profil
+workout:
+  start: Heutiges Workout starten
+  save: Satz speichern
