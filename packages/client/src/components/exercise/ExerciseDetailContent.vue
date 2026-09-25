@@ -175,6 +175,8 @@ function missingBadge(req: TieredRequirement): string | null {
           :next-target-weight-kg="rankRow.nextTargetWeightKg"
           :next-target-reps="rankRow.nextTargetReps"
           :trust="rankRow.trust"
+          :peak-tier="rankRow.peakTier"
+          :peak-division="rankRow.peakDivision"
         />
       </div>
       <p v-else-if="ranksStore.loaded" class="hint">

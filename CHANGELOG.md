@@ -6,6 +6,18 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ## [Unreleased]
 
+### Added
+
+- Ranks that haven't been confirmed on a second day now show a "Vorläufig" note, so a single strong session doesn't look like a fully-earned rank.
+
+### Changed
+
+- Walking and hiking ranks are now benchmarked against brisk fitness-walking pace instead of ordinary comfortable walking speed; existing walk/hike ranks will drop accordingly.
+
+### Fixed
+
+- A rank that was never confirmed on a second day used to stay stuck at its first value forever instead of fading over time like every other rank.
+
 ## [1.8.0] - 2026-09-24
 
 ### Added

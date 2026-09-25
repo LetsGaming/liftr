@@ -705,7 +705,10 @@ async function seedCardioHistory(db: LiftrDb) {
     activityType: "walk",
   });
 
-  // One hike, well clear of its own (higher) floor.
+  // One hike, well clear of its own (higher) floor. Deliberately a single day, unlike the two
+  // corroborating walks above — this is what exercises RankProgress's "Vorläufig" caption
+  // (no peak yet) in the seeded dashboard, while the walk section shows the corroborated,
+  // non-provisional peak state.
   await seedRankedGpsRun(db, {
     name: "Waldwanderung",
     daysAgo: 15,
