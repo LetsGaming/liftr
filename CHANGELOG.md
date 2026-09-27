@@ -9,6 +9,10 @@ cut.
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-09-27
+
+- Internal updates and minor improvements.
+
 ## [1.9.1] - 2026-09-27
 
 - Internal updates and minor improvements.
