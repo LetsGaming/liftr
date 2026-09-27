@@ -32,8 +32,9 @@ function makeExercise(id: string, muscles: CatalogExercise["muscles"]): CatalogE
   };
 }
 
-function makeDraft(setCount: number): DraftExercise {
+function makeDraft(setCount: number, exerciseId = "ex-1"): DraftExercise {
   return {
+    exerciseId,
     sets: Array.from({ length: setCount }, () => ({ reps: 8, weightKg: 40 })),
     linkNext: false,
     restBetweenSetsSeconds: 90,
@@ -98,8 +99,8 @@ describe("coverage", () => {
       makeExercise("ex-2", [{ slug: "chest", role: "primary" }]),
     ];
     const entries = ref<[string, DraftExercise][]>([
-      ["ex-1", makeDraft(3)],
-      ["ex-2", makeDraft(3)],
+      ["ex-1", makeDraft(3, "ex-1")],
+      ["ex-2", makeDraft(3, "ex-2")],
     ]);
     const requested = ref<string[]>(["chest"]);
 

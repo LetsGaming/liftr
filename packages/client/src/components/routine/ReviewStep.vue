@@ -25,7 +25,7 @@ const props = defineProps<{
   /** Muscle slugs the user asked "Übungen vorschlagen" for: empty for a fully manual routine,
    *  which skips the coverage check entirely (nothing to compare the routine against). */
   requestedMuscleSlugs: string[];
-  /** Keyed by exerciseId; absent for manually-picked exercises. */
+  /** Keyed by entryId, not exerciseId; absent for manually-picked exercises. */
   suggestionMeta: Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean; missingEquipment?: string[] }>;
 }>();
 const emit = defineEmits<{ back: []; save: [] }>();
@@ -41,8 +41,8 @@ function setSummary(cfg: DraftExercise): string {
 /** "swapped because you don't own X" (Global Constraint): names the actual equipment instead of
  *  a generic sentence. Falls back to the old generic copy only if the server didn't send a
  *  missing-equipment list (e.g. an older cached suggestion response). */
-function substituteReason(exerciseId: string): string {
-  const missing = props.suggestionMeta[exerciseId]?.missingEquipment;
+function substituteReason(entryId: string): string {
+  const missing = props.suggestionMeta[entryId]?.missingEquipment;
   if (!missing || missing.length === 0) {
     return t("routine.reviewStep.substituteGeneric");
   }
@@ -90,19 +90,19 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
     </div>
 
     <ul class="ex-summary">
-      <li v-for="[exerciseId, cfg] in entries" :key="exerciseId" class="surface-hybrid">
+      <li v-for="[entryId, cfg] in entries" :key="entryId" class="surface-hybrid">
         <ExerciseRow
           visual="icon"
           :size="16"
-          :slug="catalog.byId(exerciseId)?.slug ?? ''"
-          :equipment="catalog.byId(exerciseId)?.equipment ?? 'bodyweight'"
-          :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '', catalog.byId(exerciseId)?.name)"
+          :slug="catalog.byId(cfg.exerciseId)?.slug ?? ''"
+          :equipment="catalog.byId(cfg.exerciseId)?.equipment ?? 'bodyweight'"
+          :name="exerciseName(catalog.byId(cfg.exerciseId)?.slug ?? '', catalog.byId(cfg.exerciseId)?.name)"
         >
           <template #trailing>
             <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
           </template>
         </ExerciseRow>
-        <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
+        <p v-if="isSubstitute(entryId)" class="ex-note">{{ substituteReason(entryId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
           {{ t("routine.reviewStep.lopsidedNote") }}
         </p>

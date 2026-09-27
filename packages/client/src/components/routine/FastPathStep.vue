@@ -34,7 +34,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   move: [from: number, to: number];
-  removeExercise: [exerciseId: string];
+  removeExercise: [entryId: string];
   addExercise: [];
   customize: [];
   save: [];
@@ -50,9 +50,10 @@ function setSummary(cfg: DraftExercise): string {
 
 /** Names the actual missing equipment instead of a generic sentence. Falls back to the generic
  *  copy only if the server didn't send a missing-equipment list (e.g. an older cached
- *  suggestion response). */
-function substituteReason(exerciseId: string): string {
-  const missing = props.suggestionMeta[exerciseId]?.missingEquipment;
+ *  suggestion response). suggestionMeta is keyed by entryId, not exerciseId (see RoutineWizard.vue's
+ *  DraftExercise doc comment). */
+function substituteReason(entryId: string): string {
+  const missing = props.suggestionMeta[entryId]?.missingEquipment;
   if (!missing || missing.length === 0) {
     return t("routine.fastPathStep.substituteGeneric");
   }
@@ -65,6 +66,14 @@ const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => 
 function handleDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) {
   if (!cardEl) return;
   onPointerDown(e, index, props.entries.length, cardEl);
+}
+
+/** Same tap-driven alternative to the drag handle as ArrangeStep.vue: see its own comment. */
+function moveUp(index: number) {
+  if (index > 0) emit("move", index, index - 1);
+}
+function moveDown(index: number) {
+  if (index < props.entries.length - 1) emit("move", index, index + 1);
 }
 
 const { coverage, isLopsided, isSubstitute } = useRoutineReviewChecks(
@@ -89,8 +98,8 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
     <p class="hint">{{ t("routine.fastPathStep.dragHint") }}</p>
     <ul class="ex-list">
       <li
-        v-for="([exerciseId, cfg], i) in entries"
-        :key="exerciseId"
+        v-for="([entryId, cfg], i) in entries"
+        :key="entryId"
         class="surface-hybrid"
         :class="{ dragging: draggingIndex === i }"
         :style="styleFor(i)"
@@ -103,20 +112,40 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
           >
             <AppIcon name="drag-handle" />
           </button>
+          <div class="move-buttons">
+            <IconButton
+              icon="arrow-up"
+              :label="t('routine.fastPathStep.moveUpAriaLabel')"
+              size="sm"
+              variant="ghost"
+              class="move-btn"
+              :disabled="i === 0"
+              @click="moveUp(i)"
+            />
+            <IconButton
+              icon="arrow-down"
+              :label="t('routine.fastPathStep.moveDownAriaLabel')"
+              size="sm"
+              variant="ghost"
+              class="move-btn"
+              :disabled="i === entries.length - 1"
+              @click="moveDown(i)"
+            />
+          </div>
           <ExerciseRow
             visual="icon"
             :size="16"
-            :slug="catalog.byId(exerciseId)?.slug ?? ''"
-            :equipment="catalog.byId(exerciseId)?.equipment ?? 'bodyweight'"
-            :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '', catalog.byId(exerciseId)?.name)"
+            :slug="catalog.byId(cfg.exerciseId)?.slug ?? ''"
+            :equipment="catalog.byId(cfg.exerciseId)?.equipment ?? 'bodyweight'"
+            :name="exerciseName(catalog.byId(cfg.exerciseId)?.slug ?? '', catalog.byId(cfg.exerciseId)?.name)"
           >
             <template #trailing>
               <span class="ex-reps tnum">{{ setSummary(cfg) }}</span>
             </template>
           </ExerciseRow>
-          <IconButton icon="trash" :label="t('routine.fastPathStep.removeAriaLabel')" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
+          <IconButton icon="trash" :label="t('routine.fastPathStep.removeAriaLabel')" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', entryId)" />
         </div>
-        <p v-if="isSubstitute(exerciseId)" class="ex-note">{{ substituteReason(exerciseId) }}</p>
+        <p v-if="isSubstitute(entryId)" class="ex-note">{{ substituteReason(entryId) }}</p>
         <p v-if="isLopsided(cfg.sets.length)" class="ex-note">
           {{ t("routine.fastPathStep.lopsidedNote") }}
         </p>
@@ -194,6 +223,14 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
   font-size: 14px;
   touch-action: none;
   cursor: grab;
+}
+.move-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.move-btn:disabled {
+  opacity: 0.3;
 }
 .ex-reps {
   color: var(--dim);

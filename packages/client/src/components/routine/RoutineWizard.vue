@@ -41,6 +41,7 @@ const { toast } = useToast();
 const DEFAULT_REST_SECONDS = 90;
 
 export interface DraftExercise {
+  exerciseId: string;
   sets: SetTarget[];
   linkNext: boolean;
   /** Feedback: "adjust the pause, per set and per exercise": rest between this exercise's own
@@ -50,6 +51,12 @@ export interface DraftExercise {
 }
 
 const name = ref("");
+/** Keyed by a per-selection entryId (crypto.randomUUID()), NOT exerciseId: a routine can hold the
+ *  same exercise more than once (e.g. a warm-up ramp and the working sets as separate entries, or
+ *  a drop-set block right after the main sets), so exerciseId can't be the map key. Each
+ *  DraftExercise carries its own exerciseId instead. The pick step still toggles by exerciseId
+ *  (see toggleSelect); duplicating an existing entry is ArrangeStep's own "+ Kopie" action
+ *  (see duplicateExercise). */
 const selected = reactive(new Map<string, DraftExercise>());
 /** "choose" only ever appears in create mode, before any exercise is picked: see hydrateFrom.
  *  "pick-manual"/"pick-muscles" replace a single "pick" + a separate pickMode ref: PathChooser's
@@ -83,14 +90,16 @@ async function applySuggestions(muscleSlugs: string[]) {
   try {
     const suggestions = await routineStore.suggest(muscleSlugs);
     for (const s of suggestions) {
-      selected.set(s.exerciseId, {
+      const entryId = crypto.randomUUID();
+      selected.set(entryId, {
+        exerciseId: s.exerciseId,
         sets: s.targetSets.map((set) => ({ ...set })),
         linkNext: false,
         restBetweenSetsSeconds: DEFAULT_REST_SECONDS,
         restAfterExerciseSeconds: DEFAULT_REST_SECONDS,
       });
       if (s.matchedMuscleSlug) {
-        suggestionMeta[s.exerciseId] = { matchedMuscleSlug: s.matchedMuscleSlug, isSubstitute: s.isSubstitute ?? false, missingEquipment: s.missingEquipment };
+        suggestionMeta[entryId] = { matchedMuscleSlug: s.matchedMuscleSlug, isSubstitute: s.isSubstitute ?? false, missingEquipment: s.missingEquipment };
       }
     }
     if (suggestions.length > 0) {
@@ -120,7 +129,8 @@ function hydrateFrom(routine: Routine | null | undefined) {
   for (let i = 0; i < ordered.length; i++) {
     const re = ordered[i]!;
     const next = ordered[i + 1];
-    selected.set(re.exerciseId, {
+    selected.set(crypto.randomUUID(), {
+      exerciseId: re.exerciseId,
       sets: re.targetSets.map((s) => ({ ...s })),
       linkNext: re.supersetGroup != null && next?.supersetGroup === re.supersetGroup,
       restBetweenSetsSeconds: re.restBetweenSetsSeconds ?? DEFAULT_REST_SECONDS,
@@ -132,7 +142,9 @@ function hydrateFrom(routine: Routine | null | undefined) {
 watch(() => props.routine, hydrateFrom, { immediate: true });
 
 const isEditing = computed(() => props.routine != null);
-const selectedIds = computed(() => new Set(selected.keys()));
+/** Exercises with at least one entry selected, for PickStepManual's checkmarks: not the same as
+ *  `selected`'s own keys any more, since those are per-entry ids, not exerciseIds. */
+const selectedIds = computed(() => new Set(Array.from(selected.values(), (cfg) => cfg.exerciseId)));
 /** insertion order = the order exercises save in, and what the superset-linking UI walks. */
 const selectedOrder = computed(() => Array.from(selected.entries()));
 
@@ -142,9 +154,15 @@ function isUntouchedDefault(sets: SetTarget[]): boolean {
   return sets.length === 3 && sets.every((s) => s.reps === 8);
 }
 
+/** Called from the picker, which only ever knows exerciseId: toggling off removes the FIRST
+ *  matching entry (there's normally exactly one; a second/third instance only exists once the
+ *  user has explicitly duplicated it in ArrangeStep, and the picker's own checkbox isn't meant to
+ *  manage those, only whether the exercise is in the routine at all). */
 function toggleSelect(exerciseId: string) {
-  if (selected.has(exerciseId)) {
-    selected.delete(exerciseId);
+  const existingEntryId = Array.from(selected.entries()).find(([, cfg]) => cfg.exerciseId === exerciseId)?.[0];
+  if (existingEntryId) {
+    selected.delete(existingEntryId);
+    delete suggestionMeta[existingEntryId];
     return;
   }
   // Bodyweight exercises default to no weight target (plain push-ups); loaded ones default to
@@ -152,7 +170,9 @@ function toggleSelect(exerciseId: string) {
   // turning weight tracking on for a bodyweight exercise (weighted dips/pull-ups).
   const isBodyweight = catalog.byId(exerciseId)?.isBodyweight ?? false;
   const weightKg = isBodyweight ? null : 0;
-  selected.set(exerciseId, {
+  const entryId = crypto.randomUUID();
+  selected.set(entryId, {
+    exerciseId,
     sets: [
       { reps: 8, weightKg },
       { reps: 8, weightKg },
@@ -162,7 +182,7 @@ function toggleSelect(exerciseId: string) {
     restBetweenSetsSeconds: DEFAULT_REST_SECONDS,
     restAfterExerciseSeconds: DEFAULT_REST_SECONDS,
   });
-  void upgradeToRecommendedDefaults(exerciseId);
+  void upgradeToRecommendedDefaults(entryId, exerciseId);
 }
 
 /**
@@ -174,10 +194,10 @@ function toggleSelect(exerciseId: string) {
  * and silently no-ops offline or if the exercise was deselected before the response came back:
  * a background upgrade that fails is a non-event, not an error.
  */
-async function upgradeToRecommendedDefaults(exerciseId: string) {
+async function upgradeToRecommendedDefaults(entryId: string, exerciseId: string) {
   try {
     const [recommended] = await recommendExercises([exerciseId]);
-    const cfg = selected.get(exerciseId);
+    const cfg = selected.get(entryId);
     if (cfg && recommended && isUntouchedDefault(cfg.sets)) {
       cfg.sets = recommended.targetSets.map((set) => ({ ...set }));
     }
@@ -194,21 +214,21 @@ function moveExercise(from: number, to: number) {
   for (const [id, cfg] of entries) selected.set(id, cfg);
 }
 
-function addSet(exerciseId: string) {
-  const cfg = selected.get(exerciseId);
+function addSet(entryId: string) {
+  const cfg = selected.get(entryId);
   if (!cfg) return;
   const last = cfg.sets[cfg.sets.length - 1];
   cfg.sets.push(last ? { ...last } : { reps: 8, weightKg: null });
 }
 
-function removeSet(exerciseId: string, index: number) {
-  const cfg = selected.get(exerciseId);
+function removeSet(entryId: string, index: number) {
+  const cfg = selected.get(entryId);
   if (!cfg || cfg.sets.length <= 1) return;
   cfg.sets.splice(index, 1);
 }
 
-function adjustSetReps(exerciseId: string, index: number, delta: number) {
-  const cfg = selected.get(exerciseId);
+function adjustSetReps(entryId: string, index: number, delta: number) {
+  const cfg = selected.get(entryId);
   const set = cfg?.sets[index];
   if (!set) return;
   set.reps = Math.max(1, set.reps + delta);
@@ -216,8 +236,8 @@ function adjustSetReps(exerciseId: string, index: number, delta: number) {
 
 const WEIGHT_STEP_KG = 1.25;
 
-function adjustSetWeight(exerciseId: string, index: number, delta: number) {
-  const cfg = selected.get(exerciseId);
+function adjustSetWeight(entryId: string, index: number, delta: number) {
+  const cfg = selected.get(entryId);
   const set = cfg?.sets[index];
   if (!set || set.weightKg === null) return;
   set.weightKg = Math.max(0, Math.round((set.weightKg + delta * WEIGHT_STEP_KG) * 100) / 100);
@@ -227,8 +247,8 @@ function adjustSetWeight(exerciseId: string, index: number, delta: number) {
  *  stay "normal" (kind starts undefined, ArrangeStep's badge shows it as normal), so this is a
  *  strictly opt-in, additive control. */
 const SET_KIND_CYCLE: SetKind[] = ["normal", "warmup", "failure", "dropset"];
-function cycleSetKind(exerciseId: string, index: number) {
-  const cfg = selected.get(exerciseId);
+function cycleSetKind(entryId: string, index: number) {
+  const cfg = selected.get(entryId);
   const set = cfg?.sets[index];
   if (!set) return;
   const current = set.kind ?? "normal";
@@ -243,8 +263,8 @@ function cycleSetKind(exerciseId: string, index: number) {
  * as reps. One toggle per exercise rather than per set: if you're adding a weight vest/belt,
  * you're doing it for the whole exercise, not one set out of three.
  */
-function toggleWeightTracking(exerciseId: string) {
-  const cfg = selected.get(exerciseId);
+function toggleWeightTracking(entryId: string) {
+  const cfg = selected.get(entryId);
   if (!cfg) return;
   const nowTracking = cfg.sets[0]?.weightKg === null;
   for (const s of cfg.sets) s.weightKg = nowTracking ? 0 : null;
@@ -253,26 +273,49 @@ function toggleWeightTracking(exerciseId: string) {
 const REST_STEP_SECONDS = 15;
 const MIN_REST_SECONDS = 0;
 
-function adjustRestBetweenSets(exerciseId: string, delta: number) {
-  const cfg = selected.get(exerciseId);
+function adjustRestBetweenSets(entryId: string, delta: number) {
+  const cfg = selected.get(entryId);
   if (!cfg) return;
   cfg.restBetweenSetsSeconds = Math.max(MIN_REST_SECONDS, cfg.restBetweenSetsSeconds + delta * REST_STEP_SECONDS);
 }
 
-function adjustRestAfterExercise(exerciseId: string, delta: number) {
-  const cfg = selected.get(exerciseId);
+function adjustRestAfterExercise(entryId: string, delta: number) {
+  const cfg = selected.get(entryId);
   if (!cfg) return;
   cfg.restAfterExerciseSeconds = Math.max(MIN_REST_SECONDS, cfg.restAfterExerciseSeconds + delta * REST_STEP_SECONDS);
 }
 
-function toggleLink(exerciseId: string) {
-  const cfg = selected.get(exerciseId);
+function toggleLink(entryId: string) {
+  const cfg = selected.get(entryId);
   if (cfg) cfg.linkNext = !cfg.linkNext;
 }
 
-function removeExercise(exerciseId: string) {
-  selected.delete(exerciseId);
-  delete suggestionMeta[exerciseId];
+function removeExercise(entryId: string) {
+  selected.delete(entryId);
+  delete suggestionMeta[entryId];
+}
+
+/** Inserts an independent copy of an entry (own sets, own rest times) right after it: e.g. bench
+ *  press as a warm-up ramp, then the same exercise again for the working sets. Never carries
+ *  linkNext over (the copy isn't part of whatever superset the original was in). */
+function duplicateExercise(entryId: string) {
+  const cfg = selected.get(entryId);
+  if (!cfg) return;
+  const entries = selectedOrder.value.slice();
+  const index = entries.findIndex(([id]) => id === entryId);
+  if (index === -1) return;
+  const newEntryId = crypto.randomUUID();
+  const clone: DraftExercise = {
+    exerciseId: cfg.exerciseId,
+    sets: cfg.sets.map((s) => ({ ...s })),
+    linkNext: false,
+    restBetweenSetsSeconds: cfg.restBetweenSetsSeconds,
+    restAfterExerciseSeconds: cfg.restAfterExerciseSeconds,
+  };
+  entries.splice(index + 1, 0, [newEntryId, clone]);
+  selected.clear();
+  for (const [id, c] of entries) selected.set(id, c);
+  if (suggestionMeta[entryId]) suggestionMeta[newEntryId] = { ...suggestionMeta[entryId] };
 }
 
 /**
@@ -355,8 +398,8 @@ async function save() {
   if (!canSave.value) return;
   saving.value = true;
   try {
-    const exercises: RoutineExerciseInput[] = selectedOrder.value.map(([exerciseId, cfg], i) => ({
-      exerciseId,
+    const exercises: RoutineExerciseInput[] = selectedOrder.value.map(([, cfg], i) => ({
+      exerciseId: cfg.exerciseId,
       orderIndex: i,
       // reps rounded defensively here too (belt-and-suspenders alongside the fix in
       // recommend.ts): the server's schema requires an integer, and this is the single choke
@@ -476,6 +519,7 @@ function useFullArrange() {
       @toggle-weight-tracking="toggleWeightTracking"
       @toggle-link="toggleLink"
       @remove-exercise="removeExercise"
+      @duplicate-exercise="duplicateExercise"
       @add-exercise="goToPick"
       @continue="goToReview"
     />

@@ -37,6 +37,7 @@ function makeExercise(overrides: Partial<CatalogExercise> = {}): CatalogExercise
 
 function makeDraft(overrides: Partial<DraftExercise> = {}): DraftExercise {
   return {
+    exerciseId: "ex-1",
     sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }],
     linkNext: false,
     restBetweenSetsSeconds: 90,
@@ -197,12 +198,41 @@ describe("ArrangeStep", () => {
     expect(wrapper.emitted("removeExercise")).toEqual([["ex-1"]]);
   });
 
+  it("emits duplicateExercise with the entry id from the card-level duplicate button", async () => {
+    const wrapper = mountArrange([["ex-1", makeDraft()]], [makeExercise()]);
+
+    await wrapper.find(".card-head .duplicate-btn").trigger("click");
+
+    expect(wrapper.emitted("duplicateExercise")).toEqual([["ex-1"]]);
+  });
+
   it("emits addExercise from the add-exercise button", async () => {
     const wrapper = mountArrange([["ex-1", makeDraft()]], [makeExercise()]);
 
     await wrapper.find(".add-exercise-btn").trigger("click");
 
     expect(wrapper.emitted("addExercise")).toHaveLength(1);
+  });
+
+  it("emits move via the up/down buttons, disabling up on the first card and down on the last", async () => {
+    const wrapper = mountArrange(
+      [
+        ["ex-1", makeDraft()],
+        ["ex-2", makeDraft({ exerciseId: "ex-2" })],
+        ["ex-3", makeDraft({ exerciseId: "ex-3" })],
+      ],
+      [makeExercise({ id: "ex-1" }), makeExercise({ id: "ex-2" }), makeExercise({ id: "ex-3" })],
+    );
+    const cards = wrapper.findAll(".card");
+
+    expect(cards[0]!.find(".move-buttons button[aria-label='Nach oben verschieben']").attributes("disabled")).toBeDefined();
+    expect(cards[2]!.find(".move-buttons button[aria-label='Nach unten verschieben']").attributes("disabled")).toBeDefined();
+
+    await cards[1]!.find(".move-buttons button[aria-label='Nach oben verschieben']").trigger("click");
+    expect(wrapper.emitted("move")).toEqual([[1, 0]]);
+
+    await cards[1]!.find(".move-buttons button[aria-label='Nach unten verschieben']").trigger("click");
+    expect(wrapper.emitted("move")).toEqual([[1, 0], [1, 2]]);
   });
 
   it("disables continue with no entries and emits continue when entries exist", async () => {

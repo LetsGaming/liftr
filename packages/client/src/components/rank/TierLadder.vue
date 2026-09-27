@@ -44,6 +44,16 @@ function rungState(tier: Tier): "current" | "reached" | "ahead" {
   return idx < cur ? "reached" : "ahead";
 }
 
+/** currentDivision is only set once a real rank exists; a never-ranked account (currentTier
+ *  null) still lights up the bottom tier as "current" above, so its own starting division
+ *  (the worst one, i.e. TIER_DIVISION_COUNT[tier]) is the effective one to highlight, rather
+ *  than showing the current rung with no division picked out at all. */
+function effectiveDivision(tier: Tier): number | null {
+  if (rungState(tier) !== "current") return null;
+  if (props.currentDivision != null) return props.currentDivision;
+  return props.currentTier == null ? TIER_DIVISION_COUNT[tier] : null;
+}
+
 const peakCaption = computed(() => {
   if (!props.currentTier || props.currentDivision == null) return null;
   if (!props.peakTier || props.peakDivision == null) return null;
@@ -80,8 +90,8 @@ function toggleExpand(tier: Tier) {
         <span class="rung-label">
           <span class="rung-label-row">
             {{ tierLabel(tier as RankTier) }}
-            <b v-if="rungState(tier) === 'current' && currentDivision != null" class="tnum">
-              {{ DIVISION_LABEL[currentDivision] ?? currentDivision }}
+            <b v-if="effectiveDivision(tier) != null" class="tnum">
+              {{ DIVISION_LABEL[effectiveDivision(tier)!] ?? effectiveDivision(tier) }}
             </b>
           </span>
           <span v-if="rungState(tier) === 'current' && peakCaption" class="rung-peak">{{ peakCaption }}</span>
@@ -99,8 +109,8 @@ function toggleExpand(tier: Tier) {
           variant="tier"
           size="sm"
           class="division-chip"
-          :class="{ current: rungState(tier) === 'current' && currentDivision === d }"
-          :active="rungState(tier) === 'current' && currentDivision === d"
+          :class="{ current: effectiveDivision(tier) === d }"
+          :active="effectiveDivision(tier) === d"
         >
           {{ DIVISION_LABEL[d] ?? d }}
         </Chip>

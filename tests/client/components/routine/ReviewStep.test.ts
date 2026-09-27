@@ -30,6 +30,7 @@ function makeExercise(overrides: Partial<CatalogExercise> = {}): CatalogExercise
 
 function makeDraft(overrides: Partial<DraftExercise> = {}): DraftExercise {
   return {
+    exerciseId: "ex-1",
     sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }],
     linkNext: false,
     restBetweenSetsSeconds: 90,
@@ -81,7 +82,7 @@ describe("ReviewStep", () => {
 
   it("falls back to a placeholder name and pluralizes exercise count", () => {
     const wrapper = mountReview(
-      { name: "", entries: [["ex-1", makeDraft()], ["ex-2", makeDraft()]], totalSets: 6 },
+      { name: "", entries: [["ex-1", makeDraft()], ["ex-2", makeDraft({ exerciseId: "ex-2" })]], totalSets: 6 },
       [makeExercise({ id: "ex-1" }), makeExercise({ id: "ex-2", slug: "squat" })],
     );
 
@@ -115,8 +116,8 @@ describe("ReviewStep", () => {
       {
         entries: [
           ["ex-1", makeDraft({ sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }] })],
-          ["ex-2", makeDraft({ sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }] })],
-          ["ex-3", makeDraft({ sets: Array.from({ length: 8 }, () => ({ reps: 8, weightKg: 40 })) })],
+          ["ex-2", makeDraft({ exerciseId: "ex-2", sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }] })],
+          ["ex-3", makeDraft({ exerciseId: "ex-3", sets: Array.from({ length: 8 }, () => ({ reps: 8, weightKg: 40 })) })],
         ],
       },
       [makeExercise({ id: "ex-1" }), makeExercise({ id: "ex-2", slug: "squat" }), makeExercise({ id: "ex-3", slug: "row" })],

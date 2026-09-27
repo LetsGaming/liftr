@@ -10,10 +10,14 @@ Semantic Versioning strictly; see `.github/workflows/release.yml` for how a rele
 
 - Ranks that haven't been confirmed on a second day now show a "Vorläufig" note, so a single strong session doesn't look like a fully-earned rank.
 - English language support, alongside German. Switch languages any time in Profil → Darstellung, right next to the theme toggle. The whole app, including exercise names and how-to instructions, updates immediately.
+- A routine's exercise list can now include the same exercise more than once (e.g. a warm-up ramp and the working sets as separate entries): duplicate an exercise from the "Alle Details anpassen" arrange step.
+- Up/down buttons next to each exercise's drag handle in the routine builder's arrange step, as a precise alternative to dragging on mobile.
 
 ### Changed
 
 - Walking and hiking ranks are now benchmarked against brisk fitness-walking pace instead of ordinary comfortable walking speed; existing walk/hike ranks will drop accordingly.
+- The Ränge page header is more compact on mobile: the "Rekorde ansehen" link now sits next to the Workout/Läufe tabs instead of its own full-width row, so the rank list starts higher up the screen.
+- On the Übersicht activity filter, the reset pill now says "Alle" instead of "Beides" once there are more than two activity types to filter by (workout, run, walk, hike), since "Beides" ("Both") stopped making sense past two.
 
 ### Fixed
 
@@ -21,6 +25,8 @@ Semantic Versioning strictly; see `.github/workflows/release.yml` for how a rele
 - Weights, distances, and other numbers now use a comma as the decimal separator in the German UI, matching how the rest of the German app already writes numbers.
 - Active-session device labels ("Chrome · Windows" etc.) on the Profil page, the "no route or distance" Health Connect import error, and set-kind labels (warm-up/normal/failure/drop set) now translate properly in English instead of always showing German.
 - Password-strength errors during setup/signup are now detected reliably rather than by matching the server's English error text, which could occasionally show the wrong message.
+- On the Ränge tier ladder, a never-ranked account now highlights its actual starting division (the lowest one) on the bottom tier instead of showing no highlighted division at all.
+- The Übersicht activity filter's "Alle"/"Beides" pill and its dropdown filter now line up at the same height instead of one sitting slightly taller than the other.
 
 ## [1.8.0] - 2026-09-24
 

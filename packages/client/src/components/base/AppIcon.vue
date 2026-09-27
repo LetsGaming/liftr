@@ -28,6 +28,7 @@ export type AppIconName =
   | "eye-off"
   | "share"
   | "clipboard"
+  | "copy"
   | "skip-forward"
   | "play"
   | "pause"
@@ -72,6 +73,7 @@ const PATHS: Record<AppIconName, string> = {
     '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.7 10.7 0 0112 5c6.5 0 10 7 10 7a17.8 17.8 0 01-3.2 4.1M6.5 6.7C4 8.3 2 12 2 12s3.5 7 10 7a10 10 0 004.2-.9"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/>',
   share: '<path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 16v3a2 2 0 002 2h10a2 2 0 002-2v-3"/>',
   clipboard: '<rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4h6v2H9z"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/>',
   "skip-forward": '<path d="M6 5l10 7-10 7z"/><path d="M18 5v14"/>',
   play: '<path d="M7 5l12 7-12 7z"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',

@@ -298,7 +298,10 @@ routine:
   arrangeStep:
     hint: Ziehe am Griff, um die Reihenfolge zu ändern.
     moveAriaLabel: Verschieben
+    moveUpAriaLabel: Nach oben verschieben
+    moveDownAriaLabel: Nach unten verschieben
     removeAriaLabel: Entfernen
+    duplicateAriaLabel: Übung duplizieren
     setLabel: "Satz {n}"
     setKindTitle: "Satzart: {kind} (tippen zum Ändern)"
     weightLabel: Gewicht
@@ -341,6 +344,8 @@ routine:
   fastPathStep:
     dragHint: Ziehe am Griff, um die Reihenfolge zu ändern.
     moveAriaLabel: Verschieben
+    moveUpAriaLabel: Nach oben verschieben
+    moveDownAriaLabel: Nach unten verschieben
     removeAriaLabel: Entfernen
     substituteGeneric: "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast."
     substituteMissing: "Ersetzt: bevorzugte Variante braucht {equipment}, das du nicht hast."
@@ -577,6 +582,7 @@ overview:
     noConnection: "Keine Verbindung zum Server. Was du geloggt hast, ist lokal gespeichert."
     empty: "Hier landet ab dem ersten beendeten Workout alles, was du gemacht hast."
     filterBoth: Beides
+    filterAll: Alle
     filterAriaLabel: "Aktivität filtern"
     filterPlaceholder: Aktivität
     showMore: Mehr anzeigen

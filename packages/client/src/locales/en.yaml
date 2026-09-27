@@ -294,7 +294,10 @@ routine:
   arrangeStep:
     hint: Drag the handle to reorder.
     moveAriaLabel: Move
+    moveUpAriaLabel: Move up
+    moveDownAriaLabel: Move down
     removeAriaLabel: Remove
+    duplicateAriaLabel: Duplicate exercise
     setLabel: "Set {n}"
     setKindTitle: "Set type: {kind} (tap to change)"
     weightLabel: Weight
@@ -337,6 +340,8 @@ routine:
   fastPathStep:
     dragHint: Drag the handle to reorder.
     moveAriaLabel: Move
+    moveUpAriaLabel: Move up
+    moveDownAriaLabel: Move down
     removeAriaLabel: Remove
     substituteGeneric: "Substituted: the preferred variant needs equipment you don't have."
     substituteMissing: "Substituted: the preferred variant needs {equipment}, which you don't have."
@@ -573,6 +578,7 @@ overview:
     noConnection: "No connection to the server. What you've logged is stored locally."
     empty: "Everything you do shows up here starting with your first finished workout."
     filterBoth: Both
+    filterAll: All
     filterAriaLabel: "Filter activity"
     filterPlaceholder: Activity
     showMore: Show more

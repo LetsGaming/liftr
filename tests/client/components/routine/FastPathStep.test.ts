@@ -32,6 +32,7 @@ function makeExercise(overrides: Partial<CatalogExercise> = {}): CatalogExercise
 
 function makeDraft(overrides: Partial<DraftExercise> = {}): DraftExercise {
   return {
+    exerciseId: "ex-1",
     sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }],
     linkNext: false,
     restBetweenSetsSeconds: 90,
@@ -86,11 +87,25 @@ describe("FastPathStep", () => {
   // reorder math is covered directly by useDragReorder.test.ts; this just checks the handle renders.
   it("renders a drag handle per row for reordering", () => {
     const wrapper = mountFastPath(
-      { entries: [["ex-1", makeDraft()], ["ex-2", makeDraft()]] },
+      { entries: [["ex-1", makeDraft()], ["ex-2", makeDraft({ exerciseId: "ex-2" })]] },
       [makeExercise({ id: "ex-1" }), makeExercise({ id: "ex-2", slug: "squat" })],
     );
 
     expect(wrapper.findAll(".drag-handle")).toHaveLength(2);
+  });
+
+  it("emits move via the up/down buttons, disabling up on the first row and down on the last", async () => {
+    const wrapper = mountFastPath(
+      { entries: [["ex-1", makeDraft()], ["ex-2", makeDraft({ exerciseId: "ex-2" })]] },
+      [makeExercise({ id: "ex-1" }), makeExercise({ id: "ex-2", slug: "squat" })],
+    );
+    const rows = wrapper.findAll(".ex-list li");
+
+    expect(rows[0]!.find(".move-buttons button[aria-label='Nach oben verschieben']").attributes("disabled")).toBeDefined();
+    expect(rows[1]!.find(".move-buttons button[aria-label='Nach unten verschieben']").attributes("disabled")).toBeDefined();
+
+    await rows[1]!.find(".move-buttons button[aria-label='Nach oben verschieben']").trigger("click");
+    expect(wrapper.emitted("move")).toEqual([[1, 0]]);
   });
 
   it("emits removeExercise with the exercise id", async () => {
@@ -127,10 +142,11 @@ describe("FastPathStep", () => {
       {
         entries: [
           ["ex-1", makeDraft({ sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }] })],
-          ["ex-2", makeDraft({ sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }] })],
+          ["ex-2", makeDraft({ exerciseId: "ex-2", sets: [{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }] })],
           [
             "ex-3",
             makeDraft({
+              exerciseId: "ex-3",
               sets: Array.from({ length: 8 }, () => ({ reps: 8, weightKg: 40 })),
             }),
           ],

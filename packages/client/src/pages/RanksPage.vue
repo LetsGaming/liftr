@@ -13,7 +13,6 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import AppIcon from "../components/base/AppIcon.vue";
-import Button from "../components/base/Button.vue";
 import BasePage from "../components/patterns/BasePage.vue";
 import RankLifterSection from "../components/rank/RankLifterSection.vue";
 import RankRunnerSection from "../components/rank/RankRunnerSection.vue";
@@ -31,18 +30,40 @@ const RANK_TABS = computed<TabSwitcherTab[]>(() => [
 <template>
   <BasePage :title="t('nav.ranks')">
     <template #subheader>
-      <TabSwitcher
-        :tabs="RANK_TABS"
-        :model-value="section"
-        :nav-label="t('ranksPage.navLabel')"
-        @update:model-value="section = $event as 'workout' | 'Läufe'"
-      />
+      <div class="ranks-subheader-row">
+        <TabSwitcher
+          :tabs="RANK_TABS"
+          :model-value="section"
+          :nav-label="t('ranksPage.navLabel')"
+          @update:model-value="section = $event as 'workout' | 'Läufe'"
+        />
+        <router-link to="/records" class="ranks-records-link">
+          <AppIcon name="trophy" :size="14" />
+          {{ t("ranksPage.viewRecords") }}
+        </router-link>
+      </div>
     </template>
-    <Button as="router-link" to="/records" variant="secondary">
-      <template #leading><AppIcon name="trophy" /></template>
-      {{ t("ranksPage.viewRecords") }}
-    </Button>
     <RankLifterSection v-if="section === 'workout'" />
     <RankRunnerSection v-else />
   </BasePage>
 </template>
+
+<style scoped>
+/* Tabs + records CTA share one subheader row instead of the CTA sitting as its own full-width
+   content-flow button above the tier ladder: that used to stack a third header-height row
+   (title, tabs, button) before any real content, wasting a lot of the viewport on mobile. */
+.ranks-subheader-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp2);
+}
+.ranks-records-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dim);
+}
+</style>

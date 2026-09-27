@@ -404,12 +404,12 @@ function retryFailed() {
                 :class="{ active: activityFilter === 'alle' }"
                 @click="activityFilter = 'alle'; activityShownCount = 8"
               >
-                {{ t("overview.activity.filterBoth") }}
+                {{ availableActivityFilters.length > 2 ? t("overview.activity.filterAll") : t("overview.activity.filterBoth") }}
               </button>
               <Select
                 v-if="availableActivityFilters.length > 2"
                 v-model="selectedFilterValue"
-                class="rank-tier-select"
+                size="sm"
                 :aria-label="t('overview.activity.filterAriaLabel')"
               >
                 <option value="">{{ t("overview.activity.filterPlaceholder") }}</option>

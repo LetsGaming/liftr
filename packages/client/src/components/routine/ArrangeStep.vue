@@ -24,16 +24,17 @@ import type { DraftExercise } from "./RoutineWizard.vue";
 const props = defineProps<{ entries: [string, DraftExercise][] }>();
 const emit = defineEmits<{
   move: [from: number, to: number];
-  addSet: [exerciseId: string];
-  removeSet: [exerciseId: string, index: number];
-  adjustSetReps: [exerciseId: string, index: number, delta: number];
-  adjustSetWeight: [exerciseId: string, index: number, delta: number];
-  cycleSetKind: [exerciseId: string, index: number];
-  adjustRestBetweenSets: [exerciseId: string, delta: number];
-  adjustRestAfterExercise: [exerciseId: string, delta: number];
-  toggleWeightTracking: [exerciseId: string];
-  toggleLink: [exerciseId: string];
-  removeExercise: [exerciseId: string];
+  addSet: [entryId: string];
+  removeSet: [entryId: string, index: number];
+  adjustSetReps: [entryId: string, index: number, delta: number];
+  adjustSetWeight: [entryId: string, index: number, delta: number];
+  cycleSetKind: [entryId: string, index: number];
+  adjustRestBetweenSets: [entryId: string, delta: number];
+  adjustRestAfterExercise: [entryId: string, delta: number];
+  toggleWeightTracking: [entryId: string];
+  toggleLink: [entryId: string];
+  removeExercise: [entryId: string];
+  duplicateExercise: [entryId: string];
   addExercise: [];
   continue: [];
 }>();
@@ -47,6 +48,16 @@ const { draggingIndex, onPointerDown, styleFor } = useDragReorder((from, to) => 
 function handleDown(e: PointerEvent, index: number, cardEl: HTMLElement | null) {
   if (!cardEl) return;
   onPointerDown(e, index, props.entries.length, cardEl);
+}
+
+/** Precise tap-driven alternative to the drag handle: on a phone, dragging a ~32px handle
+ *  accurately enough to land on the right slot is fiddly, especially over a long list. Both
+ *  ways stay available side by side rather than replacing one with the other. */
+function moveUp(index: number) {
+  if (index > 0) emit("move", index, index - 1);
+}
+function moveDown(index: number) {
+  if (index < props.entries.length - 1) emit("move", index, index + 1);
 }
 
 function kindOf(kind: SetKind | undefined): SetKind {
@@ -74,8 +85,8 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
 
     <div class="cards">
       <div
-        v-for="([exerciseId, cfg], i) in entries"
-        :key="exerciseId"
+        v-for="([entryId, cfg], i) in entries"
+        :key="entryId"
         class="card surface-hybrid"
         :class="{ dragging: draggingIndex === i }"
         :style="styleFor(i)"
@@ -88,16 +99,44 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
           >
             <AppIcon name="drag-handle" />
           </button>
+          <div class="move-buttons">
+            <IconButton
+              icon="arrow-up"
+              :label="t('routine.arrangeStep.moveUpAriaLabel')"
+              size="sm"
+              variant="ghost"
+              class="move-btn"
+              :disabled="i === 0"
+              @click="moveUp(i)"
+            />
+            <IconButton
+              icon="arrow-down"
+              :label="t('routine.arrangeStep.moveDownAriaLabel')"
+              size="sm"
+              variant="ghost"
+              class="move-btn"
+              :disabled="i === entries.length - 1"
+              @click="moveDown(i)"
+            />
+          </div>
           <ExerciseRow
-            :slug="catalog.byId(exerciseId)?.slug ?? ''"
-            :equipment="catalog.byId(exerciseId)?.equipment ?? 'bodyweight'"
-            :name="exerciseName(catalog.byId(exerciseId)?.slug ?? '', catalog.byId(exerciseId)?.name)"
+            :slug="catalog.byId(cfg.exerciseId)?.slug ?? ''"
+            :equipment="catalog.byId(cfg.exerciseId)?.equipment ?? 'bodyweight'"
+            :name="exerciseName(catalog.byId(cfg.exerciseId)?.slug ?? '', catalog.byId(cfg.exerciseId)?.name)"
           >
             <template #meta>
-              <span class="equip">{{ catalog.byId(exerciseId)?.equipment }}</span>
+              <span class="equip">{{ catalog.byId(cfg.exerciseId)?.equipment }}</span>
             </template>
           </ExerciseRow>
-          <IconButton icon="trash" :label="t('routine.arrangeStep.removeAriaLabel')" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', exerciseId)" />
+          <IconButton
+            icon="copy"
+            :label="t('routine.arrangeStep.duplicateAriaLabel')"
+            size="sm"
+            variant="ghost"
+            class="duplicate-btn"
+            @click="emit('duplicateExercise', entryId)"
+          />
+          <IconButton icon="trash" :label="t('routine.arrangeStep.removeAriaLabel')" size="sm" variant="danger" class="remove-btn" @click="emit('removeExercise', entryId)" />
         </div>
 
         <div class="set-rows">
@@ -110,7 +149,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
                 class="kind-badge"
                 :variant="KIND_CHIP_VARIANT[kindOf(set.kind)]"
                 :title="t('routine.arrangeStep.setKindTitle', { kind: setKindLabel(kindOf(set.kind)) })"
-                @click="emit('cycleSetKind', exerciseId, si)"
+                @click="emit('cycleSetKind', entryId, si)"
               >
                 {{ SET_KIND_BADGE[kindOf(set.kind)] }}
               </Chip>
@@ -122,14 +161,14 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
                 unit="kg"
                 :label="t('routine.arrangeStep.weightLabel')"
                 :model-value="set.weightKg"
-                @adjust="(d) => emit('adjustSetWeight', exerciseId, si, d)"
+                @adjust="(d) => emit('adjustSetWeight', entryId, si, d)"
               />
               <NumberStepper
                 size="sm"
                 unit="x"
                 :label="t('routine.arrangeStep.repsLabel')"
                 :model-value="set.reps"
-                @adjust="(d) => emit('adjustSetReps', exerciseId, si, d)"
+                @adjust="(d) => emit('adjustSetReps', entryId, si, d)"
               />
               <IconButton
                 icon="close"
@@ -138,14 +177,14 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
                 size="sm"
                 class="set-remove"
                 :disabled="cfg.sets.length <= 1"
-                @click="emit('removeSet', exerciseId, si)"
+                @click="emit('removeSet', entryId, si)"
               />
             </div>
           </div>
           <div class="set-actions">
-            <button class="add-set-btn" @click="emit('addSet', exerciseId)">{{ t("routine.arrangeStep.addSet") }}</button>
-            <button class="weight-toggle-btn" @click="emit('toggleWeightTracking', exerciseId)">
-              {{ weightToggleLabel(exerciseId, cfg) }}
+            <button class="add-set-btn" @click="emit('addSet', entryId)">{{ t("routine.arrangeStep.addSet") }}</button>
+            <button class="weight-toggle-btn" @click="emit('toggleWeightTracking', entryId)">
+              {{ weightToggleLabel(cfg.exerciseId, cfg) }}
             </button>
           </div>
         </div>
@@ -158,7 +197,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
               :label="t('routine.arrangeStep.restBetweenSets')"
               :model-value="cfg.restBetweenSetsSeconds"
               :format-value="formatClock"
-              @adjust="(d) => emit('adjustRestBetweenSets', exerciseId, d)"
+              @adjust="(d) => emit('adjustRestBetweenSets', entryId, d)"
             />
           </div>
           <div class="rest-row">
@@ -168,7 +207,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
               :label="t('routine.arrangeStep.restAfterExercise')"
               :model-value="cfg.restAfterExerciseSeconds"
               :format-value="formatClock"
-              @adjust="(d) => emit('adjustRestAfterExercise', exerciseId, d)"
+              @adjust="(d) => emit('adjustRestAfterExercise', entryId, d)"
             />
           </div>
         </div>
@@ -178,7 +217,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
             class="link-btn"
             :class="{ active: cfg.linkNext }"
             :title="t('routine.arrangeStep.supersetTitle')"
-            @click="emit('toggleLink', exerciseId)"
+            @click="emit('toggleLink', entryId)"
           >
             <AppIcon name="link" /> {{ cfg.linkNext ? t("routine.arrangeStep.supersetActive") : t("routine.arrangeStep.supersetLink") }}
           </button>
@@ -233,6 +272,14 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
    touch-target floor is sized for (styles/list-card.css): shrink it here to 32px. */
 .wizard-drag-handle {
   --drag-handle-size: 32px;
+}
+.move-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.move-btn:disabled {
+  opacity: 0.3;
 }
 .card-head :deep(.exercise-row) {
   flex: 1;

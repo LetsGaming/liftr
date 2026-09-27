@@ -97,12 +97,14 @@ const ArrangeStepStub = {
     "toggleWeightTracking",
     "toggleLink",
     "removeExercise",
+    "duplicateExercise",
     "addExercise",
     "continue",
   ],
   template: `<div class="arrangestep-stub" :data-count="entries.length">
     <button class="add-set-btn" @click="$emit('addSet', entries[0][0])">addSet</button>
     <button class="remove-btn" @click="$emit('removeExercise', entries[0][0])">remove</button>
+    <button class="duplicate-btn" @click="$emit('duplicateExercise', entries[0][0])">duplicate</button>
     <button class="add-ex-btn" @click="$emit('addExercise')">add</button>
     <button class="continue-btn" @click="$emit('continue')">continue</button>
   </div>`,
@@ -371,6 +373,46 @@ describe("RoutineWizard: edit mode", () => {
     await wrapper.setProps({ routine: null });
 
     expect(wrapper.find(".pathchooser-stub").exists()).toBe(true);
+  });
+});
+
+describe("RoutineWizard: duplicating an exercise", () => {
+  it("inserts an independent copy of the entry right after the original, keyed separately so both survive", async () => {
+    const wrapper = mountWizard({ routine: makeRoutine() });
+    expect(wrapper.find(".arrangestep-stub").attributes("data-count")).toBe("2");
+
+    // ArrangeStepStub's duplicate button targets entries[0][0], i.e. ex-1's own entry.
+    await wrapper.find(".arrangestep-stub .duplicate-btn").trigger("click");
+
+    expect(wrapper.find(".arrangestep-stub").attributes("data-count")).toBe("3");
+
+    await wrapper.find(".arrangestep-stub .continue-btn").trigger("click");
+    await wrapper.find(".save-btn").trigger("click");
+    await flush();
+
+    // ex-1 appears twice, back to back (the copy inserted right after the original), followed by
+    // ex-2 unchanged: this is exactly what a Map keyed by exerciseId could never represent.
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    const exercises = updateMock.mock.calls[0]![1].exercises;
+    expect(exercises.map((e: { exerciseId: string }) => e.exerciseId)).toEqual(["ex-1", "ex-1", "ex-2"]);
+    expect(exercises[0].orderIndex).toBe(0);
+    expect(exercises[1].orderIndex).toBe(1);
+    expect(exercises[2].orderIndex).toBe(2);
+    // The copy carries the original's own sets/rest, not the untouched default.
+    expect(exercises[1].targetSets).toEqual([{ reps: 8, weightKg: 40 }, { reps: 8, weightKg: 40 }]);
+    expect(exercises[1].restBetweenSetsSeconds).toBe(60);
+  });
+
+  it("removing one duplicate leaves the other instance intact", async () => {
+    const wrapper = mountWizard({ routine: makeRoutine() });
+    await wrapper.find(".arrangestep-stub .duplicate-btn").trigger("click");
+    expect(wrapper.find(".arrangestep-stub").attributes("data-count")).toBe("3");
+
+    // ArrangeStepStub's remove button also targets entries[0][0]: the original ex-1 entry, not
+    // its copy, since duplicateExercise never re-keys existing entries.
+    await wrapper.find(".arrangestep-stub .remove-btn").trigger("click");
+
+    expect(wrapper.find(".arrangestep-stub").attributes("data-count")).toBe("2");
   });
 });
 

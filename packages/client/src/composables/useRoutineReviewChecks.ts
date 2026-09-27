@@ -24,6 +24,7 @@ function median(nums: number[]): number {
 export function useRoutineReviewChecks(
   entries: Ref<[string, DraftExercise][]>,
   requestedMuscleSlugs: Ref<string[]>,
+  /** Keyed by entryId, not exerciseId: see RoutineWizard.vue's DraftExercise doc comment. */
   suggestionMeta: Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean }>,
 ) {
   const catalog = useCatalogStore();
@@ -35,7 +36,7 @@ export function useRoutineReviewChecks(
    *  fully manual routine has nothing to compare against). */
   const coverage = computed<CoverageChip[] | null>(() => {
     if (requestedMuscleSlugs.value.length === 0) return null;
-    const muscleLists = entries.value.map(([exerciseId]) => catalog.byId(exerciseId)?.muscles ?? []);
+    const muscleLists = entries.value.map(([, cfg]) => catalog.byId(cfg.exerciseId)?.muscles ?? []);
     const { primary, secondary } = aggregateMuscles(muscleLists);
     return requestedMuscleSlugs.value.map((slug) => ({
       slug,
@@ -55,8 +56,8 @@ export function useRoutineReviewChecks(
     return med > 0 && setCount >= med * 2 && setCount - med >= 2;
   }
 
-  function isSubstitute(exerciseId: string): boolean {
-    return suggestionMeta[exerciseId]?.isSubstitute === true;
+  function isSubstitute(entryId: string): boolean {
+    return suggestionMeta[entryId]?.isSubstitute === true;
   }
 
   return { coverage, isLopsided, isSubstitute };

@@ -28,6 +28,18 @@ describe("TierLadder", () => {
     }
   });
 
+  it("with no currentTier, Initiate's own starting division (the worst one) is highlighted as current", async () => {
+    const wrapper = mountWithProviders(TierLadder, { props: { currentTier: null } });
+
+    const initiateRung = wrapper.findAll(".rung").find((r) => r.classes().includes("t-initiate"))!;
+    const startingDivision = TIER_DIVISION_COUNT.initiate;
+    expect(initiateRung.find(".rung-label-row b").text()).toBe(DIVISION_LABEL[startingDivision]);
+
+    await initiateRung.find(".rung-row").trigger("click");
+    const currentChip = initiateRung.findAll(".division-chip").find((c) => c.classes().includes("current"))!;
+    expect(currentChip.text()).toBe(DIVISION_LABEL[startingDivision]);
+  });
+
   it("marks tiers below current as 'reached', the current tier as 'current', and above as 'ahead'", () => {
     const wrapper = mountWithProviders(TierLadder, { props: { currentTier: "athlete", currentDivision: 2 } });
 
