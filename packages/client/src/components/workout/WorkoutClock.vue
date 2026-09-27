@@ -10,10 +10,10 @@ const display = ref("00:00");
 let timer: ReturnType<typeof setInterval> | null = null;
 
 /**
- * Deliberately does NOT read `store.elapsedSeconds` — that's a Pinia getter (a Vue `computed`
+ * Deliberately does NOT read `store.elapsedSeconds`: that's a Pinia getter (a Vue `computed`
  * under the hood), memoized against its reactive dependencies (startedAt/pausedAt/
  * totalPausedMs). `Date.now()` inside it isn't a tracked dependency, so the memoized value only
- * actually changes when one of those fields does — i.e. on pause/resume — not once a second.
+ * actually changes when one of those fields does: i.e. on pause/resume: not once a second.
  * The visible symptom: the clock looked frozen and only "caught up" after pausing and
  * resuming. Reading the raw state fields here and computing fresh each tick sidesteps the
  * memoization entirely.

@@ -49,6 +49,6 @@ describe("GET /api/readiness", () => {
   });
 
   // The secondary-role (wasPrimary: false) case is `readinessService`'s own logic, not this
-  // route's — covered by tests/server/services/readinessService.test.ts, which this thin route
+  // route's: covered by tests/server/services/readinessService.test.ts, which this thin route
   // wraps. This route's job is HTTP status + the Zod response shape, already pinned above.
 });

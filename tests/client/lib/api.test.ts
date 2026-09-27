@@ -8,7 +8,7 @@ vi.mock("~client/lib/platform", () => ({ isNative: isNativeMock }));
 import { api, ApiError, apiBase, getServerUrl, getToken, setServerUrl, setToken } from "~client/lib/api";
 
 // localStorage is a true external (browser storage) boundary that doesn't exist under vitest's
-// default node environment — stub a minimal in-memory implementation rather than pulling in a
+// default node environment: stub a minimal in-memory implementation rather than pulling in a
 // full jsdom environment just for this.
 function installFakeLocalStorage() {
   const store = new Map<string, string>();

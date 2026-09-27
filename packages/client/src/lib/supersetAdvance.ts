@@ -1,5 +1,5 @@
 /**
- * Pure sequencing math for what happens right after a set is logged — extracted out of
+ * Pure sequencing math for what happens right after a set is logged: extracted out of
  * activeWorkoutStore.ts's logCurrentSet() so the superset round-robin/wraparound logic can be
  * unit tested without a Pinia store or IndexedDB around it. See logCurrentSet() for the full
  * behavioral writeup (rest rules, round-completion detection); this only computes where to go

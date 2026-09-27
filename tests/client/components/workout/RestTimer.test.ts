@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 //
-// RestTimer counts down on a plain setInterval — vi.useFakeTimers() drives that deterministically.
+// RestTimer counts down on a plain setInterval; vi.useFakeTimers() drives that deterministically.
 // Capacitor.isNativePlatform() genuinely returns false under jsdom (no native runtime present,
-// same as production running in a browser — see @capacitor/core's own getPlatform(), which falls
+// same as production running in a browser (see @capacitor/core's own getPlatform(), which falls
 // back to 'web'), so the LocalNotifications branch is naturally never taken and needs no mocking;
 // only the browser Notification API (which jsdom doesn't implement) is stubbed, as a plain global.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

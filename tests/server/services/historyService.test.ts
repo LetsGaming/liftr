@@ -34,7 +34,7 @@ describe("getHistoryPage", () => {
     await db.insert(sets).values({
       workoutExerciseId: we!.id,
       setIndex: 0,
-      weightKg: 999999, // arbitrary/absurd weight — must not affect XP magnitude at all
+      weightKg: 999999, // arbitrary/absurd weight: must not affect XP magnitude at all
       reps: 10,
       kind: "normal",
       isWarmup: false,
@@ -45,7 +45,7 @@ describe("getHistoryPage", () => {
     const page = await getHistoryPage(db, OWNER_USER_ID, undefined, 20);
 
     const item = page.items.find((i) => i.id === workout!.id);
-    // per-set XP (30) + consistencyBonusXp (85) + varietyBonusXp (150) = 265 — must equal
+    // per-set XP (30) + consistencyBonusXp (85) + varietyBonusXp (150) = 265: must equal
     // exactly what getXpSummary would report for this same finished session (see
     // xpService.test.ts's identically-shaped fixture), or the history feed and the Finish
     // Sequence would silently disagree about the same past session's XP.
@@ -61,7 +61,7 @@ describe("getHistoryPage", () => {
         startedAt: new Date("2026-09-02T10:00:00Z"),
         endedAt: new Date("2026-09-02T11:00:00Z"),
         pausedSeconds: 0,
-        // consistencyBonusXp/varietyBonusXp intentionally omitted — both default to null.
+        // consistencyBonusXp/varietyBonusXp intentionally omitted: both default to null.
       })
       .returning();
     const [we] = await db

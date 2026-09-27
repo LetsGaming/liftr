@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
-// useCountUp drives its animation with requestAnimationFrame/matchMedia — browser APIs jsdom
-// doesn't implement by default — and uses onBeforeUnmount, which needs a real component instance
+// useCountUp drives its animation with requestAnimationFrame/matchMedia: browser APIs jsdom
+// doesn't implement by default: and uses onBeforeUnmount, which needs a real component instance
 // (mounted via withSetup). rAF is stubbed manually with an id->callback map (so
 // cancelAnimationFrame actually drops a pending frame, same as the real API) alongside a
 // controllable performance.now(), so each animation frame's progress is fully deterministic
@@ -128,7 +128,7 @@ describe("useCountUp", () => {
     expect(pendingRafCount()).toBe(1); // stale continuation frame cancelled, one fresh frame scheduled
 
     // the restarted animation's own start time is "now" (500) at the moment it was scheduled, so
-    // it needs a full further 1000ms of (fake) elapsed time — i.e. up to 1500 — to complete
+    // it needs a full further 1000ms of (fake) elapsed time: i.e. up to 1500: to complete
     flushRaf(1500);
     expect(result.value.value).toBe(0);
   });

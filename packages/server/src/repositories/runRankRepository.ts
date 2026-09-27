@@ -2,8 +2,8 @@ import { and, asc, desc, eq, exists, ne } from "drizzle-orm";
 import { runPoints, runPrs, runRankEvents, runRanks, runs, runStandards, type LiftrDb } from "@liftr/db";
 import { nearestRunCategory, type RankBucket, type RankedActivityType } from "@liftr/shared";
 
-/** Shared catalog — not user-scoped, mirrors findStandardsForExercise's shape. `activityType` is
- *  a required parameter (not defaulted) at this layer — a default here is exactly how a walk
+/** Shared catalog: not user-scoped, mirrors findStandardsForExercise's shape. `activityType` is
+ *  a required parameter (not defaulted) at this layer: a default here is exactly how a walk
  *  would silently join a running query. `bucket` is a `RunCategory` for running's distance-ladder
  *  or the literal "all" for a single-speed activity (walk/hike). */
 export function findRunStandardsForBucket(db: LiftrDb, bucket: RankBucket, activityType: RankedActivityType) {
@@ -13,7 +13,7 @@ export function findRunStandardsForBucket(db: LiftrDb, bucket: RankBucket, activ
 }
 
 export interface FindLoggedRunsOptions {
-  /** `source !== "manual"` AND at least one `run_points` row — a manual run has no GPS trace to
+  /** `source !== "manual"` AND at least one `run_points` row: a manual run has no GPS trace to
    *  rank against, and a non-manual run with zero points would mean the ingest pipeline never
    *  finished writing its trace (see runRepository.ts's insertRunPoints). */
   rankEligibleOnly?: boolean;
@@ -21,12 +21,12 @@ export interface FindLoggedRunsOptions {
 
 /**
  * Fetches this user's run history for one activity type in ONE query, then filters to the given
- * bucket in application code — there is no `category` column on `runs` to filter on in SQL (a
+ * bucket in application code: there is no `category` column on `runs` to filter on in SQL (a
  * run's category is derived at read time from its distance, see `@liftr/shared`'s riegel.ts).
- * The `activityType` filter itself IS applied in SQL — that's the boundary that keeps a walk from
+ * The `activityType` filter itself IS applied in SQL: that's the boundary that keeps a walk from
  * ever being visible to a running-bucket query, or vice versa.
  *
- * `bucket: "all"` (single-speed activities — walk/hike) matches every run of that activity type
+ * `bucket: "all"` (single-speed activities: walk/hike) matches every run of that activity type
  * regardless of distance, since there is only one bucket; a `RunCategory` bucket (running) filters
  * to runs whose distance falls nearest that category, same as before.
  */
@@ -66,7 +66,7 @@ export interface RunRankUpsert {
   bestSpeedMps: number | null;
   trust: (typeof runRanks.$inferInsert)["trust"];
   nextTargetSpeedMps: number | null;
-  /** Ratchet-only "best ever" snapshot — see rankRepository.ts's `RankUpsert.peakTier` for the
+  /** Ratchet-only "best ever" snapshot: see rankRepository.ts's `RankUpsert.peakTier` for the
    *  same nullable-on-first-recompute convention. */
   peakTier: (typeof runRanks.$inferInsert)["peakTier"];
   peakDivision: number | null;
@@ -90,7 +90,7 @@ export function upsertRunRank(
 }
 
 /** "Best" is kind-direction-aware: for `kind: "speed"` (m/s) higher is better, but for
- *  `kind: "time"` (seconds) LOWER is better — a plain `desc(value)` would return the slowest
+ *  `kind: "time"` (seconds) LOWER is better: a plain `desc(value)` would return the slowest
  *  historically-recorded time instead of the fastest once more than one "time" row exists for a
  *  bucket. Ordering by the direction that actually means "best" for each kind keeps this a
  *  correct, single-source-of-truth "best PR row" lookup for every current and future caller,
@@ -117,7 +117,7 @@ export function insertRunPr(db: LiftrDb, userId: string, values: Omit<typeof run
   return db.insert(runPrs).values({ ...values, userId });
 }
 
-/** Every run PR row for this user — for GET /api/runs/prs. `activityType` is optional: omitted
+/** Every run PR row for this user: for GET /api/runs/prs. `activityType` is optional: omitted
  *  returns PRs across every ladder (the route decides whether to filter), passed narrows to one
  *  ladder. Mirrors prRepository's listing shape, but no exercise join is needed: `category` is
  *  enough context on its own, and `runId` alone (no exercise/set join chain) is the "jump to this
@@ -129,12 +129,12 @@ export function findAllRunPrs(db: LiftrDb, userId: string, activityType?: Ranked
   return db.query.runPrs.findMany({ where, orderBy: desc(runPrs.achievedAt) });
 }
 
-/** History row for a genuine run rank-up — mirrors rankRepository.ts's `insertRankEvent`. */
+/** History row for a genuine run rank-up: mirrors rankRepository.ts's `insertRankEvent`. */
 export function insertRunRankEvent(db: LiftrDb, userId: string, values: Omit<typeof runRankEvents.$inferInsert, "userId">) {
   return db.insert(runRankEvents).values({ ...values, userId });
 }
 
-/** Every computed rank for this user within one activity type's ladder — for Overall Runner Rank
+/** Every computed rank for this user within one activity type's ladder: for Overall Runner Rank
  *  (only "run" counts toward it, see `activityCountsTowardOverallRunnerRank` in
  *  cardioActivities.ts) or for rendering a single-speed activity's one rank card. Required
  *  parameter for the same reason as everywhere else in this file: a default would let one

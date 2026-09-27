@@ -2,7 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { bodyweightLogs, type LiftrDb } from "@liftr/db";
 
 /** All bodyweight queries (data-persistence.md: "all queries live in a repository/data
- *  module") — routes and rankEngine.ts's `getCurrentBodyweightKg` call these, never Drizzle
+ *  module"): routes and rankEngine.ts's `getCurrentBodyweightKg` call these, never Drizzle
  *  directly. */
 export function findRecentBodyweightLogs(db: LiftrDb, userId: string, limit = 60) {
   return db.query.bodyweightLogs.findMany({ where: eq(bodyweightLogs.userId, userId), orderBy: desc(bodyweightLogs.date), limit });
@@ -14,7 +14,7 @@ export function findLatestBodyweightLog(db: LiftrDb, userId: string) {
 
 /** Upsert-by-date: logging twice on the same day corrects that day's entry rather than
  *  duplicating. Shared by the direct bodyweight route and the onboarding profile save
- *  (settings.ts's "current weight" question) so both go through one write path — a second,
+ *  (settings.ts's "current weight" question) so both go through one write path: a second,
  *  independent insert path could drift (e.g. forgetting the upsert-by-date behavior). */
 export async function upsertBodyweightLog(db: LiftrDb, userId: string, date: string, weightKg: number) {
   const existing = await db.query.bodyweightLogs.findFirst({

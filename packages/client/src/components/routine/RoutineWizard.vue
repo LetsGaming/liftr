@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * Routine builder/editor, rebuilt as a mobile-first wizard (replaces RoutineBuilder.vue's flat
- * form — checkbox list + tiny number inputs + 20x16px reorder buttons squeezed inline into a
+ * form: checkbox list + tiny number inputs + 20x16px reorder buttons squeezed inline into a
  * narrow column). Full-screen modal, three steps: pick exercises → arrange (order, per-set
  * reps, supersets) → review & save. Create mode starts on "pick"; edit mode (a `routine` prop)
  * starts directly on "arrange" since exercises already exist.
  *
  * Owns the whole draft as one reactive Map so every step is a thin, mostly-presentational
- * child — mutating a reactive object passed down as a prop is fine in Vue (the prop reference
+ * child: mutating a reactive object passed down as a prop is fine in Vue (the prop reference
  * itself is never reassigned), same pattern the old RoutineBuilder.vue already used for its
  * `selected` Map.
  */
@@ -36,14 +36,14 @@ const routineStore = useRoutineStore();
 const catalog = useCatalogStore();
 const { toast } = useToast();
 
-/** RestTimer.vue's own built-in fallback when a routine doesn't override it — kept in sync
+/** RestTimer.vue's own built-in fallback when a routine doesn't override it: kept in sync
  *  manually since RestTimer's default lives in its own props declaration, not an export. */
 const DEFAULT_REST_SECONDS = 90;
 
 export interface DraftExercise {
   sets: SetTarget[];
   linkNext: boolean;
-  /** Feedback: "adjust the pause, per set and per exercise" — rest between this exercise's own
+  /** Feedback: "adjust the pause, per set and per exercise": rest between this exercise's own
    *  sets, and a separate rest after its last set before moving to the next exercise. */
   restBetweenSetsSeconds: number;
   restAfterExerciseSeconds: number;
@@ -51,32 +51,32 @@ export interface DraftExercise {
 
 const name = ref("");
 const selected = reactive(new Map<string, DraftExercise>());
-/** "choose" only ever appears in create mode, before any exercise is picked — see hydrateFrom.
+/** "choose" only ever appears in create mode, before any exercise is picked: see hydrateFrom.
  *  "pick-manual"/"pick-muscles" replace a single "pick" + a separate pickMode ref: PathChooser's
  *  step-0 choice (or goToPick's re-entry) picks the step directly now. */
 const step = ref<"choose" | "pick-manual" | "pick-muscles" | "arrange" | "review">("pick-manual");
 const saving = ref(false);
 const suggesting = ref(false);
-/** Set by FastPathStep's "Alle Details anpassen" escape hatch — once a user asks for the full
+/** Set by FastPathStep's "Alle Details anpassen" escape hatch: once a user asks for the full
  *  flow, respect that for the rest of this create/edit session even if the routine still looks
  *  simple, rather than snapping back to the condensed screen mid-edit. */
 const fastPathOverride = ref(false);
 
-/** The rationale behind a muscle-guided pick — which requested muscle earned it a slot, whether
- *  it replaced a preferred exercise the user can't perform with their equipment — kept alongside
+/** The rationale behind a muscle-guided pick: which requested muscle earned it a slot, whether
+ *  it replaced a preferred exercise the user can't perform with their equipment: kept alongside
  *  the draft so ReviewStep can show it instead of the server computing it and this component
  *  throwing it away. Absent for manually-picked exercises; keyed by exerciseId, not nested in
  *  DraftExercise, so the manual path's type stays untouched. */
 const suggestionMeta = reactive<Record<string, { matchedMuscleSlug?: string; isSubstitute?: boolean; missingEquipment?: string[] }>>({});
 /** Every muscle slug the user has asked "Übungen vorschlagen" for this session, across possibly
- *  multiple visits to the muscle-picker (e.g. via "+ Übung hinzufügen") — ReviewStep compares the
+ *  multiple visits to the muscle-picker (e.g. via "+ Übung hinzufügen"): ReviewStep compares the
  *  final routine's actual muscle coverage against this to flag anything requested but not landed. */
 const requestedMuscleSlugs = ref<string[]>([]);
 
 /** PickStep's muscle-group mode hands back the picked slugs; the server's recommendation (real
  *  stats, or a standards-based entry-level fallback for a brand-new lifter) becomes the draft
  *  directly, same shape toggleSelect() would have built by hand, then jumps to "arrange" so the
- *  user reviews/tweaks it before saving — never auto-saved. */
+ *  user reviews/tweaks it before saving: never auto-saved. */
 async function applySuggestions(muscleSlugs: string[]) {
   if (suggesting.value) return;
   suggesting.value = true;
@@ -105,7 +105,7 @@ async function applySuggestions(muscleSlugs: string[]) {
 function hydrateFrom(routine: Routine | null | undefined) {
   selected.clear();
   // Suggestion rationale never survives a save (routineExercises carries no muscle/substitution
-  // fields) and never applies to a routine being edited — re-suggesting inside an edit session
+  // fields) and never applies to a routine being edited: re-suggesting inside an edit session
   // starts this bookkeeping fresh rather than mixing it with a prior create-session's state.
   for (const key of Object.keys(suggestionMeta)) delete suggestionMeta[key];
   requestedMuscleSlugs.value = [];
@@ -136,8 +136,8 @@ const selectedIds = computed(() => new Set(selected.keys()));
 /** insertion order = the order exercises save in, and what the superset-linking UI walks. */
 const selectedOrder = computed(() => Array.from(selected.entries()));
 
-/** A set list is still exactly the naive fallback toggleSelect() started it at — i.e. nothing's
- *  edited it yet — so the background recommendation upgrade below is safe to overwrite it. */
+/** A set list is still exactly the naive fallback toggleSelect() started it at: i.e. nothing's
+ *  edited it yet: so the background recommendation upgrade below is safe to overwrite it. */
 function isUntouchedDefault(sets: SetTarget[]): boolean {
   return sets.length === 3 && sets.every((s) => s.reps === 8);
 }
@@ -171,7 +171,7 @@ function toggleSelect(exerciseId: string) {
  * fire-and-forget upgrade then swaps in the same server-side recommendation the muscle-group
  * suggester uses, tailored to the lifter's stated experience level and history, the moment it
  * resolves. Never overwrites a set the user has actually started editing (isUntouchedDefault),
- * and silently no-ops offline or if the exercise was deselected before the response came back —
+ * and silently no-ops offline or if the exercise was deselected before the response came back:
  * a background upgrade that fails is a non-event, not an error.
  */
 async function upgradeToRecommendedDefaults(exerciseId: string) {
@@ -182,7 +182,7 @@ async function upgradeToRecommendedDefaults(exerciseId: string) {
       cfg.sets = recommended.targetSets.map((set) => ({ ...set }));
     }
   } catch {
-    // offline or request failed — the naive default stands
+    // offline or request failed: the naive default stands
   }
 }
 
@@ -237,9 +237,9 @@ function cycleSetKind(exerciseId: string, index: number) {
 }
 
 /**
- * Bodyweight exercises start with weightKg: null (no weight stepper shown at all — plain
+ * Bodyweight exercises start with weightKg: null (no weight stepper shown at all: plain
  * push-ups). This flips every set of the exercise between "no weight target" and "tracked,
- * starting at 0" in one action — per-set fine-tuning happens after via adjustSetWeight, same
+ * starting at 0" in one action: per-set fine-tuning happens after via adjustSetWeight, same
  * as reps. One toggle per exercise rather than per set: if you're adding a weight vest/belt,
  * you're doing it for the whole exercise, not one set out of three.
  */
@@ -304,7 +304,7 @@ const canSave = computed(() => name.value.trim().length > 0 && selected.size > 0
  * Fast path: simple enough (few exercises, nothing customized, no supersets) that Arrange+Review
  * can collapse into one condensed screen (FastPathStep.vue) instead of the full multi-step flow.
  * Re-evaluated live as the draft changes, so adding a set or
- * linking a superset drops a routine out of the fast path automatically — the escape hatch
+ * linking a superset drops a routine out of the fast path automatically: the escape hatch
  * (fastPathOverride) exists for the opposite direction, staying in the full flow on request even
  * while the draft still looks simple.
  */
@@ -313,10 +313,10 @@ const DEFAULT_SET_COUNT = 3;
 /**
  * Deliberately structural, not content-based: this must NOT reuse isUntouchedDefault's
  * reps===8 check. Both the manual pick's background upgrade (upgradeToRecommendedDefaults) and
- * the muscle-guided suggester fill in a real recommended weight/rep target almost immediately —
+ * the muscle-guided suggester fill in a real recommended weight/rep target almost immediately:
  * a routine with those real numbers is exactly the simple case this path exists for, not a
  * "customized" one. What actually signals hands-on customization, per the shape brief, is adding
- * a set, linking a superset, or changing rest — set *count*, not set *content*.
+ * a set, linking a superset, or changing rest: set *count*, not set *content*.
  */
 function isUntouchedForFastPath(cfg: DraftExercise): boolean {
   return (
@@ -335,7 +335,7 @@ const showFastPath = computed(() => isFastPathEligible.value && !fastPathOverrid
 
 /** WizardHeader's step indicator. "choose", "pick-manual" and "pick-muscles" all share one
  *  "1 Wählen" slot (PathChooser is just the entry into picking, and the two Pick screens are the
- *  same step of the wizard from the user's point of view) — lost when the header markup was
+ *  same step of the wizard from the user's point of view): lost when the header markup was
  *  first extracted into its own component without carrying this over; restored here rather than
  *  in WizardHeader itself, since the "three states, one slot" collapse and the fast-path-dependent
  *  label/count are wizard-specific. */
@@ -360,7 +360,7 @@ async function save() {
       orderIndex: i,
       // reps rounded defensively here too (belt-and-suspenders alongside the fix in
       // recommend.ts): the server's schema requires an integer, and this is the single choke
-      // point every save path — manual, suggested, or edited — funnels through before POST/PATCH.
+      // point every save path: manual, suggested, or edited: funnels through before POST/PATCH.
       targetSets: cfg.sets.map((s) => ({ ...s, reps: Math.max(1, Math.round(s.reps)) })),
       supersetGroup: supersetGroups.value[i] ?? null,
       restBetweenSetsSeconds: cfg.restBetweenSetsSeconds,
@@ -374,7 +374,7 @@ async function save() {
       }
     } catch {
       // Save can genuinely fail (e.g. a suggested exercise substitution produced an
-      // out-of-contract value the server rejects) — without this the rejection was an unhandled
+      // out-of-contract value the server rejects): without this the rejection was an unhandled
       // promise rejection and the sheet just sat there looking unresponsive with zero feedback.
       toast(t("routine.routineWizard.saveFailed"));
       return;
@@ -388,10 +388,10 @@ async function save() {
   }
 }
 
-/** Tap-twice close when there's anything to lose — same pattern as WorkoutPage's cancel-workout
+/** Tap-twice close when there's anything to lose: same pattern as WorkoutPage's cancel-workout
  *  and delete-routine confirms, via the shared useConfirmTap composable. Bypassed entirely when
- *  nothing's been picked yet — closing an empty draft is free, no confirm needed. Both branches
- *  call dismiss(), never emit("created") directly — see save()'s comment above. */
+ *  nothing's been picked yet: closing an empty draft is free, no confirm needed. Both branches
+ *  call dismiss(), never emit("created") directly: see save()'s comment above. */
 const closeConfirm = useConfirmTap(() => sheetRef.value?.dismiss());
 function requestClose() {
   if (selected.size === 0) {
@@ -406,7 +406,7 @@ function choosePath(mode: "manual" | "muscles") {
   step.value = mode === "muscles" ? "pick-muscles" : "pick-manual";
 }
 /** Re-entry into Pick mid-build (ArrangeStep's/FastPathStep's "+ Übung hinzufügen") always means
- *  "add one more exercise by hand" — never a re-run of the muscle-group suggester, so this skips
+ *  "add one more exercise by hand": never a re-run of the muscle-group suggester, so this skips
  *  PathChooser entirely rather than asking the question again. */
 function goToPick() {
   step.value = "pick-manual";

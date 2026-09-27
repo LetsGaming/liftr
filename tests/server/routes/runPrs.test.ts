@@ -51,6 +51,6 @@ describe("GET /api/runs/prs", () => {
     expect(body[0].achievedAt).toBe(new Date("2026-09-01T10:00:00Z").toISOString());
   });
 
-  // Newest-first sorting is `findAllRunPrs`'s own logic, not this route's — covered by
+  // Newest-first sorting is `findAllRunPrs`'s own logic, not this route's: covered by
   // tests/server/repositories/runRankRepository.test.ts, which this thin route wraps.
 });

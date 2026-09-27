@@ -15,7 +15,7 @@ import { i18n } from "~client/i18n";
 import WorkoutPage from "~client/pages/WorkoutPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-// Plain top-of-file consts (not vi.hoisted — `reactive`/`ref` aren't available inside that
+// Plain top-of-file consts (not vi.hoisted: `reactive`/`ref` aren't available inside that
 // factory, see RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so
 // vi.mock's own hoisting above these declarations never dereferences them before they exist.
 interface ActiveSet {
@@ -128,7 +128,7 @@ vi.mock("~client/composables/useAddExerciseToSession", () => ({ useAddExerciseTo
 vi.mock("~client/composables/useWorkoutShareCard", () => ({ useWorkoutShareCard: () => shareCard }));
 
 // Heavy feature components with their own store/service reads, already covered at their own
-// layer — stubbed so this page's test only asserts *whether/how* they're wired in, not their
+// layer: stubbed so this page's test only asserts *whether/how* they're wired in, not their
 // internals.
 const STUBS = {
   FinishSequence: true,
@@ -144,7 +144,7 @@ const STUBS = {
   SyncIndicator: true,
 };
 
-// SheetModal.vue wraps @ionic/vue's real <IonModal> (a lazily-defined Stencil custom element) —
+// SheetModal.vue wraps @ionic/vue's real <IonModal> (a lazily-defined Stencil custom element):
 // tests/README.md's convention is to stub that specific element rather than load it for real
 // under jsdom, same as SheetModal.test.ts/NoteCapture.test.ts/RpeCapture.test.ts's own stubs.
 const IonModalStub = defineComponent({
@@ -301,7 +301,7 @@ describe("WorkoutPage", () => {
     store.currentExercise = makeExercise();
     const wrapper = mountWithProviders(WorkoutPage, { global: { stubs: STUBS } });
     // onMounted's `showStalePrompt.value = store.isStale` runs after the async Promise.all([...])
-    // of store loads above it — mount() itself doesn't await that, so give it a couple of
+    // of store loads above it: mount() itself doesn't await that, so give it a couple of
     // microtask turns to actually land before asserting on its result.
     await flushAsync();
 
@@ -350,7 +350,7 @@ describe("WorkoutPage", () => {
   it("reveals the current exercise's cached rank card only after the rank-reveal toggle is tapped", async () => {
     store.isActive = true;
     store.currentExercise = makeExercise({ exerciseId: "ex1" });
-    // Real tier id (@liftr/shared's TIERS), not the pre-migration "gold" — TierBadge's emblem
+    // Real tier id (@liftr/shared's TIERS), not the pre-migration "gold": TierBadge's emblem
     // geometry indexes TIER_PALETTE by this string and throws on an unknown key, where the old
     // CSS-only badge silently no-op'd on a class like `t-gold` that matched nothing.
     ranksState.ranks = [{ exerciseId: "ex1", tier: "advanced", division: 1, lp: 55, nextTargetWeightKg: 90, nextTargetReps: 8, trust: "real" }];
@@ -388,7 +388,7 @@ describe("WorkoutPage", () => {
     await wrapper.find('[aria-label="Übungsinfo"]').trigger("click");
     await wrapper.vm.$nextTick();
 
-    // Still on the workout screen — the active workout's own DOM (rest timer, scroll position,
+    // Still on the workout screen: the active workout's own DOM (rest timer, scroll position,
     // set rows) never unmounted, unlike a route navigation.
     expect(router.currentRoute.value.path).toBe("/workout");
     const content = wrapper.findComponent(ExerciseDetailContent);

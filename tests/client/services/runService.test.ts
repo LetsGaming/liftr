@@ -129,7 +129,7 @@ describe("importRunFile", () => {
     expect(init.method).toBe("POST");
     expect(init.body).toBeInstanceOf(FormData);
     expect((init.body as FormData).get("file")).toBe(file);
-    // Never a JSON api.post call — this bypasses the shared wrapper entirely.
+    // Never a JSON api.post call: this bypasses the shared wrapper entirely.
     expect(mockPost).not.toHaveBeenCalled();
     expect(result).toEqual({ id: "run3", source: "gpx" });
   });

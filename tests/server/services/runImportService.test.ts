@@ -307,7 +307,7 @@ describe("logManualRun", () => {
 });
 
 describe("rank recompute on finish (GPS-tracked runs only)", () => {
-  // Same shape as VALID_GPX above (3 points, 5s apart, ~13m/interval — well under both the
+  // Same shape as VALID_GPX above (3 points, 5s apart, ~13m/interval: well under both the
   // pause-gap and jitter-speed cutoffs) so distance/duration survive summarizeRun's filtering
   // intact. Tiny in absolute terms, but nearestRunCategory still buckets it into "mile" (the
   // closest of the 5 fixed category distances), which is all a rank recompute needs.
@@ -352,7 +352,7 @@ describe("rank recompute on finish (GPS-tracked runs only)", () => {
   });
 
   it("no rank recompute (and no runRanks row) when standards aren't modeled for the category, even for a GPS-tracked run", async () => {
-    // No runStandards seeded at all here — recomputeRunRank should no-op, not throw.
+    // No runStandards seeded at all here: recomputeRunRank should no-op, not throw.
     const result = await importHealthConnectRun(db, OWNER_USER_ID, {
       platformId: "platform-no-standards",
       name: "No Standards",

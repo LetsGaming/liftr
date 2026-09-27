@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Step 2 — the core rework. One card per selected exercise: thumbnail + name (the "know at a
+ * Step 2: the core rework. One card per selected exercise: thumbnail + name (the "know at a
  * glance what each exercise is" requirement), a drag handle for real reorder, per-set rep rows
  * with large +/- steppers (replaces the old single "3x8" pair + tiny <input type=number>), a
  * superset link toggle between consecutive cards, and remove. "+ Übung hinzufügen" at the
@@ -230,7 +230,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
   gap: var(--sp3);
 }
 /* This wizard step isn't the primary mobile-first screen the shared drag-handle-btn's 44px
-   touch-target floor is sized for (styles/list-card.css) — shrink it here to 32px. */
+   touch-target floor is sized for (styles/list-card.css): shrink it here to 32px. */
 .wizard-drag-handle {
   --drag-handle-size: 32px;
 }
@@ -268,7 +268,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
   border-radius: var(--r-sm);
   padding: 6px 10px;
 }
-/* Mobile-first: label on its own line, then the stepper row below — two steppers + remove
+/* Mobile-first: label on its own line, then the stepper row below: two steppers + remove
    side-by-side with a label sharing the same row got cramped on a phone-width card. */
 .set-row {
   display: flex;

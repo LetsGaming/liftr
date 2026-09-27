@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Step 1: a short intent-framing hero rather than launching straight into a form field — the
+/** Step 1: a short intent-framing hero rather than launching straight into a form field: the
  *  wizard's nav bar already carries the primary CTA, so this step is pure copy. */
 import { useI18n } from "vue-i18n";
 import AppIcon from "../base/AppIcon.vue";

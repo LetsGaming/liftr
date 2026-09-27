@@ -4,7 +4,7 @@ import { defineComponent } from "vue";
 import NoteCapture from "~client/components/workout/NoteCapture.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-/** See RpeCapture.test.ts for why only IonModal (not SheetModal itself) is stubbed — same
+/** See RpeCapture.test.ts for why only IonModal (not SheetModal itself) is stubbed: same
  *  stub as tests/client/components/patterns/SheetModal.test.ts uses on itself. NoteCapture calls
  *  `sheetRef.value?.dismiss()` on save, which needs this stub's `.dismiss()` on `$el`. */
 const IonModalStub = defineComponent({
@@ -45,7 +45,7 @@ afterEach(() => {
 
 describe("NoteCapture", () => {
   // The server caps notes at 500 chars (logSetPayload/finishWorkoutPayload in sync.ts) and rejects
-  // the whole sync chunk if exceeded, wedging the offline outbox — this cap must match exactly so
+  // the whole sync chunk if exceeded, wedging the offline outbox; this cap must match exactly so
   // the browser can't produce a note the server will bounce.
   it("caps the textarea at 500 characters, matching the server's notes limit", () => {
     const wrapper = mountCapture("Notiz", null);

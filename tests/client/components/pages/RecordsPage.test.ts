@@ -3,7 +3,7 @@ import { reactive } from "vue";
 import RecordsPage from "~client/pages/RecordsPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-// Plain top-of-file const (not vi.hoisted — `reactive` isn't available inside that factory, see
+// Plain top-of-file const (not vi.hoisted: `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside an uninvoked closure below, so vi.mock's own
 // hoisting above this declaration never dereferences it before it exists.
 const prState = reactive({ prs: [] as unknown[], loaded: false, error: false, load: vi.fn() });
@@ -43,7 +43,7 @@ function makeRunPr(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe("RecordsPage", () => {
   // Every pre-existing test below predates the running-records section and asserts only on the
-  // strength ledger, so the running section defaults to an already-loaded, empty state here —
+  // strength ledger, so the running section defaults to an already-loaded, empty state here:
   // dedicated tests further down override this per case.
   beforeEach(() => {
     vi.clearAllMocks();
@@ -136,7 +136,7 @@ describe("RecordsPage", () => {
       Object.assign(runRankState, { prs: [], prsLoaded: true, prsError: false });
       const wrapper = mountWithProviders(RecordsPage);
 
-      // 5 running distance categories + 2 single-speed activities (walk, hike) — see
+      // 5 running distance categories + 2 single-speed activities (walk, hike): see
       // cardioActivities.ts's registry.
       const rows = wrapper.findAll(".run-pr-row");
       expect(rows).toHaveLength(7);

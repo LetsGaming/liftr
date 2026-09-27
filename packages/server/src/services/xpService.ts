@@ -38,7 +38,7 @@ export async function getXpSummary(db: LiftrDb, userId: string): Promise<XpSumma
   );
 
   // Ruling 5: a manual run's `plausibilityMultiplier` is always `null` in the DB (the gate never
-  // runs against one, since there are no `run_points` to check distance against) — that must map
+  // runs against one, since there are no `run_points` to check distance against): that must map
   // to `1` (full credit), NOT `0`, which would zero out every manual run's XP entirely.
   const runXp = computeRunXp(
     runRows.map((r) => ({

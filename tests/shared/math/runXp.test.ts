@@ -52,7 +52,7 @@ describe("computeRunXp", () => {
     const soloTenK = computeRunXp([tenK]);
     const combined = computeRunXp([fiveK, tenK]);
 
-    // Neither run should be discounted by the other's presence — each is occurrence 1 in its own
+    // Neither run should be discounted by the other's presence: each is occurrence 1 in its own
     // bucket, so the combined total is exactly the sum of the two solo runs.
     expect(combined).toBeCloseTo(soloFiveK + soloTenK, 5);
   });

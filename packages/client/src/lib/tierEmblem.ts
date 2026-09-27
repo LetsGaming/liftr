@@ -1,7 +1,7 @@
 /**
- * Rank emblem geometry — "Orbit": a 9-segment ring (lit segments = tier ordinal) around Liftr's own
+ * Rank emblem geometry: "Orbit": a 9-segment ring (lit segments = tier ordinal) around Liftr's own
  * logomark, with wings escalating from Stufe 4 through Apex. Framework-agnostic: this module does
- * pure geometry/color math and returns a typed shape list, not markup — TierBadge.vue renders the
+ * pure geometry/color math and returns a typed shape list, not markup: TierBadge.vue renders the
  * list as real SVG elements, and shareCard.ts's canvas port walks the same list to draw onto a
  * CanvasRenderingContext2D. Neither consumer duplicates the wing/facet/light-axis math itself.
  *
@@ -20,7 +20,7 @@
  *   Stufe 7    laurel joins
  *   Stufe 8    third blade, crown
  *   Stufe 9    fourth blade, emission ring, unique
- * Wings render at EVERY badge size, including the 26-30px rank ladder — there is no size-based
+ * Wings render at EVERY badge size, including the 26-30px rank ladder: there is no size-based
  * suppression. Callers that need extra horizontal room for wings (TierLadder.vue's rung-row) must
  * provide it; this module does not clip or shrink wings to fit a host layout.
  */
@@ -29,7 +29,7 @@ import { mixHex, TIER_PALETTE } from "./tierPalette";
 
 export const EMBLEM_VIEWBOX = "0 0 128 128";
 export const EMBLEM_LIGHT_AXIS = { x1: 18, y1: 2, x2: 110, y2: 126 } as const;
-/** Incoming light direction as an angle, derived from the axis above — used to shade facets by
+/** Incoming light direction as an angle, derived from the axis above: used to shade facets by
  *  their outward-normal angle relative to the light. */
 const LIGHT_ANGLE = Math.atan2(
   EMBLEM_LIGHT_AXIS.y2 - EMBLEM_LIGHT_AXIS.y1,
@@ -51,7 +51,7 @@ export type EmblemShape =
 export interface TierEmblem {
   gradients: EmblemGradientDef[];
   shapes: EmblemShape[];
-  /** German tier label — for <title>/aria-label at the call site. */
+  /** German tier label: for <title>/aria-label at the call site. */
   title: string;
 }
 
@@ -72,12 +72,12 @@ function ringSegPath(cx: number, cy: number, r0: number, r1: number, a0: number,
   return `M${round(x0)} ${round(y0)}A${r1} ${r1} 0 ${big} 1 ${round(x1)} ${round(y1)}L${round(x2)} ${round(y2)}A${r0} ${r0} 0 ${big} 0 ${round(x3)} ${round(y3)}Z`;
 }
 
-/** A small stateful builder so every emblem's gradient ids stay unique within one <svg> — SVG
+/** A small stateful builder so every emblem's gradient ids stay unique within one <svg>: SVG
  *  gradient ids are document-global, and two badges rendering side by side (the ladder, a card
  *  grid) would otherwise silently resolve the second badge's gradients to the first's. Each call
  *  to buildTierEmblem() gets its own counter, namespaced by the caller-supplied `idPrefix` (a
- *  Vue useId()-style per-instance id) so two badges rendered on the same page — the ladder, a card
- *  grid — never resolve to each other's gradients. */
+ *  Vue useId()-style per-instance id) so two badges rendered on the same page: the ladder, a card
+ *  grid: never resolve to each other's gradients. */
 class GradientBuilder {
   private n = 0;
   readonly defs: EmblemGradientDef[] = [];
@@ -171,11 +171,11 @@ function pushEscalationFront(grad: GradientBuilder, shapes: EmblemShape[], t: Ti
   }
 }
 
-/** Liftr's own logomark — the bent ascending stroke + terminus ball from
+/** Liftr's own logomark: the bent ascending stroke + terminus ball from
  *  packages/client/public/icons/icon-master.svg (M120,150 L120,362 L216,362 L320,258, round
- *  caps/joins, circle at 386,192 r34) — rescaled into whatever radius R the ring gives it and
+ *  caps/joins, circle at 386,192 r34): rescaled into whatever radius R the ring gives it and
  *  redrawn as a duotone shape on the emblem's own light axis, rather than reusing the flat Nebula-
- *  gradient stroke the standalone app icon uses. No seat plate behind it — it sits directly on the
+ *  gradient stroke the standalone app icon uses. No seat plate behind it: it sits directly on the
  *  ring's floor, which is why the "shadow half" of the stroke is lifted one step above the tier's
  *  pure shadow color (a dead match with a dark ring floor would make that half disappear). */
 function pushMark(grad: GradientBuilder, shapes: EmblemShape[], t: Tier, n: number, cx: number, cy: number, R: number, small: boolean) {
@@ -220,21 +220,21 @@ function pushMark(grad: GradientBuilder, shapes: EmblemShape[], t: Tier, n: numb
 }
 
 export interface BuildEmblemOptions {
-  /** Hides the sub-2px tier-progress tick under the mark — everything else (including wings)
+  /** Hides the sub-2px tier-progress tick under the mark: everything else (including wings)
    *  still renders. Set this for badges under ~36px (the rank ladder, list rows). */
   small?: boolean;
   /** Namespaces every gradient id this call produces. Required whenever more than one emblem may
-   *  render on the same page at once (always, in practice) — pass a per-component-instance id,
+   *  render on the same page at once (always, in practice): pass a per-component-instance id,
    *  e.g. Vue's `useId()`. Defaults to "" for standalone/test use, where collisions don't matter. */
   idPrefix?: string;
 }
 
 /** Max distance from the emblem's own centre (in the 0-128 viewBox's own units) that a tier's
- *  wings reach — 64 (i.e. no overflow past the viewBox edge) for tiers below Stufe 4, where
+ *  wings reach: 64 (i.e. no overflow past the viewBox edge) for tiers below Stufe 4, where
  *  nothing renders outside the ring. Mirrors buildTierEmblem's own escalation span table exactly
  *  (not re-derived independently) so it can't drift out of sync with it. Exists for callers that
  *  need to reserve or shift layout space for the badge's overflow without re-deriving the
- *  escalation formula themselves — shareCard.ts's canvas corner-stamp positioning is the only
+ *  escalation formula themselves: shareCard.ts's canvas corner-stamp positioning is the only
  *  current consumer, since the DOM/SVG path handles overflow for free via `overflow: visible`. */
 export function wingReachUnits(tier: Tier): number {
   const n = ordinalOf(tier);
@@ -252,7 +252,7 @@ export function buildTierEmblem(tier: Tier, opts: BuildEmblemOptions = {}): Tier
   const cx = 64;
   const open = n >= 4;
   const cy = open ? 64 : 63;
-  // Ring/mark size no longer shrinks once wings open (Stufe 4+) — wings already render outside
+  // Ring/mark size no longer shrinks once wings open (Stufe 4+): wings already render outside
   // the 128 viewBox via `overflow: visible` (see wingReachUnits, which reaches well past the
   // viewBox edge for every winged tier), so shrinking the ring to "make room" for them wasn't
   // actually necessary and just made every winged badge read smaller than a non-winged one at

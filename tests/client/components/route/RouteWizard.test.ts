@@ -1,20 +1,20 @@
 // RouteWizard.vue owns a debounced lifecycle (400 ms) across three collaborators: the loop
-// generator (@liftr/shared, left REAL here — the point of this file is the integration), the
+// generator (@liftr/shared, left REAL here: the point of this file is the integration), the
 // planned-route API (mocked: previewPlannedRoute and getPlannedRouteDetail) and the planned-route
 // store (mocked: create/update hit the network and reload the list). previewPlannedRoute is no
 // longer called from manual editing (see docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md)
-// — it only fires once, for the seeded-from-a-recorded-run hydration path — so the 400 ms debounce
+//: it only fires once, for the seeded-from-a-recorded-run hydration path: so the 400 ms debounce
 // below now only drives local arc (re)generation, not a network round trip.
 // RouteMapEditor is stubbed because the real one imports leaflet and needs a live DOM map; only its
 // add/move/remove emit contract matters to this component's logic. SheetModal is stubbed the same
-// way RoutineWizard.test.ts and RunDetail.test.ts stub it — see tests/README.md on stubbing an
+// way RoutineWizard.test.ts and RunDetail.test.ts stub it: see tests/README.md on stubbing an
 // Ionic-backed element rather than loading the real Stencil runtime.
 //
 // Fake timers are load-bearing, not a speed-up: the 400 ms debounce is exactly what findings B1-B3
 // are about, and every test here needs to control whether it has fired.
 //
 // Selectors below (input.base-header-name-input, .loop-toggle input, button.btn-primary) were confirmed
-// against the real template as this task's first step — see the task's own note if they ever
+// against the real template as this task's first step: see the task's own note if they ever
 // drift from the component again. input.base-header-name-input lives in the nested WizardHeader.vue (rendered
 // into SheetModal's #header slot, which the stub below forwards unstubbed), not in RouteWizard.vue
 // itself.
@@ -49,7 +49,7 @@ function mountWizard(props: Record<string, unknown> = {}) {
   });
 }
 
-/** ~700 m apart in Berlin — comfortably over the generator's 50 m minimum chord. */
+/** ~700 m apart in Berlin: comfortably over the generator's 50 m minimum chord. */
 const A = { lat: 52.5, lon: 13.4 };
 const B = { lat: 52.5045, lon: 13.412 };
 const C = { lat: 52.506, lon: 13.4 };
@@ -89,7 +89,7 @@ beforeEach(() => {
 });
 beforeEach(async () => {
   // useToast's `toasts` is module-level reactive state shared across every test file that mounts
-  // it — splice it clean so a toast left over from a previous test doesn't bleed into this file's
+  // it: splice it clean so a toast left over from a previous test doesn't bleed into this file's
   // assertions (same pattern RoutineWizard.test.ts uses).
   const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
   toasts.splice(0, toasts.length);
@@ -185,7 +185,7 @@ describe("RouteWizard save (findings B1)", () => {
   it("generates the arc before saving when the user saves inside the debounce window", async () => {
     // A completely normal quick-create: two taps and Speichern within 400 ms. The old save() read
     // effectiveWaypoints synchronously while the arc's timer was still pending, so the route
-    // persisted as [A, B, copyOfA] — a straight closing line with the box checked. Permanent,
+    // persisted as [A, B, copyOfA]: a straight closing line with the box checked. Permanent,
     // because hydrateFrom deliberately never synthesises a missing arc on reload.
     const wrapper = mountWizard();
     await setName(wrapper, "Schnellrunde");
@@ -232,7 +232,7 @@ describe("RouteWizard arc dismissal (findings B2)", () => {
     const genCount = withArc.filter((w) => w.gen).length;
     expect(genCount).toBeGreaterThan(0);
 
-    // Remove every generated point, pausing long enough between each for the debounce to settle —
+    // Remove every generated point, pausing long enough between each for the debounce to settle:
     // exactly the pattern in the report. The old guard flipped the moment the last one went and a
     // brand-new arc appeared ~400 ms later, silently undoing the deletions.
     for (let i = 0; i < genCount; i++) {
@@ -281,7 +281,7 @@ describe("RouteWizard late taps (findings B3)", () => {
   }
 
   it("never leaves a generated point ahead of a user-placed one", async () => {
-    // tap, tap, pause (arc generates), tap again — the old onAdd appended after the gen block and
+    // tap, tap, pause (arc generates), tap again: the old onAdd appended after the gen block and
     // generateArcIfNeeded no-opped for the rest of the session, producing a visible zigzag that
     // saved without error.
     const wrapper = mountWizard();
@@ -357,7 +357,7 @@ describe("RouteWizard waypoint cap and save errors (findings B4)", () => {
   it("warns and blocks save when toggling the loop on pushes an already-placed count over its budget", async () => {
     const wrapper = mountWizard();
     await setName(wrapper, "ZuVoll");
-    // Loop off (default true) so the loop-off cap (50) applies while placing — the full 50 is
+    // Loop off (default true) so the loop-off cap (50) applies while placing: the full 50 is
     // fine with the loop off, but leaves no room at all for the loop-on synthetic closing point.
     await wrapper.find(".loop-toggle input").setValue(false);
     await tapMany(wrapper, 50);
@@ -400,7 +400,7 @@ describe("RouteWizard waypoint cap and save errors (findings B4)", () => {
 
     const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
     expect(toasts.map((t) => t.text).join(" ")).toContain("abgelehnt");
-    expect(toasts.map((t) => t.text).join(" ")).not.toContain("bitte erneut versuchen");
+    expect(toasts.map((t) => t.text).join(" ")).not.toContain("Bitte erneut versuchen");
   });
 
   it("still offers a retry for a transient failure", async () => {
@@ -417,7 +417,7 @@ describe("RouteWizard waypoint cap and save errors (findings B4)", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     const { toasts } = await import("~client/composables/useToast").then((m) => m.useToast());
-    expect(toasts.map((t) => t.text).join(" ")).toContain("bitte erneut versuchen");
+    expect(toasts.map((t) => t.text).join(" ")).toContain("Bitte erneut versuchen");
   });
 });
 
@@ -429,7 +429,7 @@ describe("RouteWizard makes no network calls while editing (ADR-0009)", () => {
     await settle(wrapper);
 
     expect(previewMock).not.toHaveBeenCalled();
-    // The arc still generates locally — only the network call is gone.
+    // The arc still generates locally: only the network call is gone.
     expect(waypointsOf(wrapper).some((w) => w.gen)).toBe(true);
   });
 
@@ -539,7 +539,7 @@ describe("RouteWizard makes no network calls while editing (ADR-0009)", () => {
     await settle(wrapper);
     const before = map(wrapper).props("routedPoints");
 
-    await tap(wrapper, { lat: 52.6, lon: 13.5 }); // refused — over budget
+    await tap(wrapper, { lat: 52.6, lon: 13.5 }); // refused: over budget
 
     expect(map(wrapper).props("routedPoints")).toBe(before);
   });

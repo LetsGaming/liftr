@@ -5,7 +5,7 @@
  *
  * Equipment is resolved via resolveEquipment.ts before insert, so exercises don't need equipment
  * hand-mapped in code one at a time: curated.yaml's own `equipment:` wins when set, otherwise
- * it's auto-filled from free-exercise-db/wger by freeExerciseDbId / wgerId — see equipment/ for
+ * it's auto-filled from free-exercise-db/wger by freeExerciseDbId / wgerId: see equipment/ for
  * the adapters and the normalization mapping into this app's closed 10-value vocabulary
  * (@liftr/shared's Equipment type).
  */
@@ -37,7 +37,7 @@ export async function ingestMuscles(db: LiftrDb) {
       .onConflictDoUpdate({ target: muscles.slug, set: { svgRegionKey: m.svgRegionKey } });
   }
   // prune muscles no longer in the seed list (e.g. the old hand-drawn-region taxonomy this
-  // replaced) — safe because exercise_muscles cascades on delete and curated.yaml is always
+  // replaced): safe because exercise_muscles cascades on delete and curated.yaml is always
   // re-ingested first, so nothing still references a dropped slug at this point.
   const currentSlugs = MUSCLES.map((m) => m.slug);
   const pruned = await db.delete(muscles).where(notInArray(muscles.slug, currentSlugs)).returning();
@@ -50,10 +50,10 @@ export async function ingestMuscles(db: LiftrDb) {
 /**
  * Sources the best available public equipment data per exercise, instead of hand-auditing it
  * one exercise at a time. wger tags each exercise with its full equipment list (not just one
- * priority-collapsed value) — this is the join, by wgerId (populated once via matchWgerIds.ts).
+ * priority-collapsed value): this is the join, by wgerId (populated once via matchWgerIds.ts).
  * Degrades to an empty map on failure (offline, wger down,
  * rate-limited), same "don't abort the whole ingest over one flaky upstream" rule
- * resolveEquipmentForCatalog already follows — every entry just falls back to deriveRequirements.
+ * resolveEquipmentForCatalog already follows: every entry just falls back to deriveRequirements.
  */
 async function fetchWgerFullEquipmentIndexSafely(): Promise<Map<string, string[]>> {
   try {
@@ -66,13 +66,13 @@ async function fetchWgerFullEquipmentIndexSafely(): Promise<Map<string, string[]
 
 /**
  * Picks the best available source for one entry's tiered requirement list, in order:
- *   1. curated.yaml's `requiresEquipment` override — always wins, always "required" tier (every
+ *   1. curated.yaml's `requiresEquipment` override: always wins, always "required" tier (every
  *      hand-authored override so far exists to fix a hard "can't do this without it" gap).
  *   2. wger's real per-exercise equipment tags, if `wgerId` is joined *and* wger's own tags
- *      actually include this entry's hand-set primary `equipment` — that agreement check is a
+ *      actually include this entry's hand-set primary `equipment`: that agreement check is a
  *      cheap sanity guard against a wrong wgerId match (matchWgerIds.ts's fuzzy name matching
  *      isn't perfect) quietly poisoning requiredEquipment with an unrelated exercise's gear.
- *   3. deriveRequirements()'s slug/pattern rules — the original fallback, unchanged.
+ *   3. deriveRequirements()'s slug/pattern rules: the original fallback, unchanged.
  */
 function buildRequiredEquipment(
   entry: CatalogEntry,
@@ -126,7 +126,7 @@ export async function ingestCatalog(db: LiftrDb, catalogPath: string, equipmentS
 
     const values = {
       slug: entry.slug,
-      // No `name` set for catalog exercises — the client resolves their display name via i18n,
+      // No `name` set for catalog exercises: the client resolves their display name via i18n,
       // keyed on `slug` (packages/client/src/composables/useExerciseName.ts). `name` is populated
       // only for custom (user-created) exercises, which have no i18n entry of their own.
       equipment: resolvedEquipment,
@@ -149,7 +149,7 @@ export async function ingestCatalog(db: LiftrDb, catalogPath: string, equipmentS
       created++;
     }
 
-    // replace muscle tags wholesale for this exercise — simpler and safe to re-run
+    // replace muscle tags wholesale for this exercise: simpler and safe to re-run
     await db.delete(exerciseMuscles).where(eq(exerciseMuscles.exerciseId, exerciseId));
     const tagRows = [
       ...entry.primaryMuscles.map((slug) => ({ slug, role: "primary" as const })),
@@ -158,7 +158,7 @@ export async function ingestCatalog(db: LiftrDb, catalogPath: string, equipmentS
       .map(({ slug, role }) => {
         const muscleId = muscleBySlug.get(slug);
         if (!muscleId) {
-          console.warn(`  ! unknown muscle "${slug}" on exercise "${entry.slug}" — skipped`);
+          console.warn(`  ! unknown muscle "${slug}" on exercise "${entry.slug}": skipped`);
           return null;
         }
         return { exerciseId, muscleId, role };

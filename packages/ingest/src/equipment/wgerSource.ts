@@ -1,12 +1,12 @@
 /**
- * wger (wger.de/api/v2, CC-BY-SA 4.0) — the same project ingestMuscleAssets.ts already mirrors
+ * wger (wger.de/api/v2, CC-BY-SA 4.0): the same project ingestMuscleAssets.ts already mirrors
  * muscle-map SVGs from. Live paginated REST API rather than a static dataset dump, keyed by
- * curated.yaml's `wgerId` (wger's own numeric exercise id) — that field exists in the schema
+ * curated.yaml's `wgerId` (wger's own numeric exercise id): that field exists in the schema
  * already but nothing has joined on it until now (see catalogSchema.ts's doc comment).
  *
  * Two calls' worth of shape: `/equipment/` once for the small id->name lookup (12 rows), then
  * `/exercise/` paginated for the id->equipment-id[] rows (861 rows at the time this was written,
- * a handful of pages at the API's own max page size) — the lean `exercise` endpoint, not the
+ * a handful of pages at the API's own max page size): the lean `exercise` endpoint, not the
  * heavier `exerciseinfo` one, since muscles/translations/images aren't needed here.
  */
 import { normalizeWgerEquipment, type Equipment } from "@liftr/shared";
@@ -38,12 +38,12 @@ async function fetchAllExercisesUncached(): Promise<WgerExerciseRow[]> {
 }
 
 // Memoized per-process: buildIndex() and fetchWgerFullEquipmentIndex() below both walk the same
-// ~861-row paginated /exercise/ list, and ingestCatalog.ts calls both in one ingest run — without
+// ~861-row paginated /exercise/ list, and ingestCatalog.ts calls both in one ingest run: without
 // this, one catalog ingest hits wger's paginated endpoint twice.
 let exerciseRowsPromise: Promise<WgerExerciseRow[]> | null = null;
 function fetchAllExercises(): Promise<WgerExerciseRow[]> {
   if (!exerciseRowsPromise) {
-    // Don't cache a rejection — a transient failure shouldn't permanently poison every later
+    // Don't cache a rejection: a transient failure shouldn't permanently poison every later
     // call in the same process.
     exerciseRowsPromise = fetchAllExercisesUncached().catch((err) => {
       exerciseRowsPromise = null;
@@ -81,7 +81,7 @@ export const wgerEquipmentSource: EquipmentSourceAdapter = {
 /**
  * Un-collapsed sibling of wgerEquipmentSource above: same two calls, but the index value is the
  * *full* per-exercise equipment name list (e.g. ["Barbell", "Bench"]) instead of one
- * priority-reduced value — feeds @liftr/shared's mapWgerEquipmentToRequirements() so a joined
+ * priority-reduced value: feeds @liftr/shared's mapWgerEquipmentToRequirements() so a joined
  * exercise's requiredEquipment tiers can come from wger's real tagging instead of
  * deriveRequirements()'s slug/pattern rules (see ingestCatalog.ts). Kept as a separate function
  * rather than folded into wgerEquipmentSource's buildIndex so the single-value `equipment`

@@ -1,5 +1,5 @@
 // FastPathStep.vue renders real ExerciseRow/AppIcon children plus useCatalogStore /
-// useExerciseName / useRoutineReviewChecks — all real, no network boundary crossed by rendering,
+// useExerciseName / useRoutineReviewChecks, all real. No network boundary is crossed by rendering,
 // so this seeds a real Pinia catalog rather than mocking anything (see PickStepManual.test.ts's header
 // comment for why a Pinia has to be built and passed in directly here instead of relying on
 // mountWithProviders' own fresh one).
@@ -81,7 +81,7 @@ describe("FastPathStep", () => {
 
   // Reordering is now drag-to-reorder (useDragReorder, same as ArrangeStep.vue) rather than
   // up/down buttons. The drag gesture itself is driven by native PointerEvent
-  // (pointerdown/pointermove/pointerup + setPointerCapture), which jsdom doesn't implement —
+  // (pointerdown/pointermove/pointerup + setPointerCapture), which jsdom doesn't implement.
   // ArrangeStep.test.ts's header comment documents the same limitation. The composable's own
   // reorder math is covered directly by useDragReorder.test.ts; this just checks the handle renders.
   it("renders a drag handle per row for reordering", () => {

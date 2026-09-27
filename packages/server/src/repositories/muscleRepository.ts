@@ -5,7 +5,7 @@ export function findAllMuscles(db: LiftrDb) {
   return db.query.muscles.findMany();
 }
 
-/** One row per logged set that touched a muscle, most recent first — the raw material
+/** One row per logged set that touched a muscle, most recent first: the raw material
  *  `readinessService.ts` reduces down to "last trained per muscle." */
 export function findMuscleTrainingLog(db: LiftrDb, userId: string) {
   return db

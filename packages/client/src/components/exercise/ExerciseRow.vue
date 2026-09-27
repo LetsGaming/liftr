@@ -3,7 +3,7 @@
  * Exercise thumbnail/icon + name + metadata, in the horizontal row shape used everywhere an
  * exercise is listed. Was hand-rolled 5 times (ExerciseList's .ex-card, ArrangeStep's
  * .card-head, ReviewStep's .ex-summary li, WorkoutDetail's exercise row) with drifted gaps
- * between near-identical `.ex-meta` blocks. Slot-based rather than a fixed prop list — callers
+ * between near-identical `.ex-meta` blocks. Slot-based rather than a fixed prop list: callers
  * that need extra chrome (a drag handle before it, a remove button after it, a checkmark
  * overlay) wrap this in their own container and use the `meta`/`trailing` slots for anything
  * beyond the name itself.
@@ -44,7 +44,7 @@ withDefaults(
   gap: 2px;
 }
 /* TruncatingLabel (Foundation primitive, packages/client/src/components/base/TruncatingLabel.vue)
-   supplies the flex + min-width:0 + ellipsis truncation contract itself — .ex-row-meta already
+   supplies the flex + min-width:0 + ellipsis truncation contract itself: .ex-row-meta already
    provides the flex/grid ancestor (flex: 1; min-width: 0 above) that primitive requires. This
    class only carries over the font-size/color that previously lived on `.ex-row-meta b`. */
 .ex-name {

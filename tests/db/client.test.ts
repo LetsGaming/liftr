@@ -18,7 +18,7 @@ describe("createDb", () => {
     expect(db.$client.pragma("journal_mode", { simple: true })).toBe("memory");
   });
 
-  it("turns on foreign key enforcement — the schema's cascade/restrict FKs (see schema.ts) are inert without it", () => {
+  it("turns on foreign key enforcement: the schema's cascade/restrict FKs (see schema.ts) are inert without it", () => {
     const db = createDb(":memory:");
 
     expect(db.$client.pragma("foreign_keys", { simple: true })).toBe(1);

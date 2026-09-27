@@ -14,8 +14,8 @@ const errorLogResponse = z.object({
   stack: z.string().nullable(),
 });
 
-/** Owner-only, mirrors routes/members.ts's `requireOwner` gating — same reasoning as the
- *  in-app self-hosted Sentry-alternative doc comment in lib/errorReporting.ts: the last N
+/** Owner-only, mirroring routes/members.ts's `requireOwner` gating (same reasoning as the
+ *  in-app self-hosted Sentry-alternative doc comment in lib/errorReporting.ts): the last N
  *  unexpected-error occurrences, visible from inside the app, no server/log access needed. */
 export function registerDiagnosticsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   app.get(

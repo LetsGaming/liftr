@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Active-run screen for phone-GPS live tracking (useLiveRun.ts) — the live-tracking counterpart
+ * Active-run screen for phone-GPS live tracking (useLiveRun.ts): the live-tracking counterpart
  * to RunsPage.vue's manual-entry form. Opened from RunsPage.vue when the user picks "Live
  * tracken" (either freeform or off a planned route's quick-start hand-off); finishing here
  * submits straight to runsStore.submitLiveRun instead of the manual form.
@@ -31,7 +31,7 @@ const runsStore = useRunsStore();
 const { toast } = useToast();
 const live = useLiveRun();
 
-/** Visible inline confirm card, not a silent tap-twice-on-the-close-icon pattern — same reasoning
+/** Visible inline confirm card, not a silent tap-twice-on-the-close-icon pattern: same reasoning
  *  as WorkoutPage.vue's "Workout abbrechen" confirm: discarding an in-progress run is destructive
  *  and unrecoverable, so it needs an explicit dialog the user can't trigger by accident. */
 const showDiscardConfirm = ref(false);
@@ -46,7 +46,7 @@ onMounted(() => {
 });
 
 function requestClose() {
-  // Tracking hasn't produced anything worth losing yet, or it's already finished — just leave.
+  // Tracking hasn't produced anything worth losing yet, or it's already finished: just leave.
   if (live.status.value === "idle" || live.status.value === "finished" || live.points.value.length === 0) {
     void live.discard();
     emit("close");
@@ -56,7 +56,7 @@ function requestClose() {
 }
 
 // SheetModal's own native dismiss (backdrop tap, swipe, hardware back) can't be intercepted with
-// a confirm-tap the way the header's own close button can — same limitation RouteWizard.vue's
+// a confirm-tap the way the header's own close button can: same limitation RouteWizard.vue's
 // `@close="emit('close')"` already accepts for its own SheetModal. Cleanup still has to run
 // either way, so this at least guarantees the GPS watch is cleared before the component
 // unmounts, even though this path skips the "are you sure" step the header button gets.
@@ -69,7 +69,7 @@ const submitting = ref(false);
 async function finishRun() {
   const result = await live.finish();
   if (result.points.length === 0) {
-    // Nothing was ever recorded (e.g. GPS never got a fix) — nothing to submit, just leave.
+    // Nothing was ever recorded (e.g. GPS never got a fix): nothing to submit, just leave.
     emit("close");
     return;
   }
@@ -155,7 +155,7 @@ const distanceKm = computed(() => formatDistanceKm(live.distanceM.value));
   justify-content: space-between;
   gap: var(--sp3);
   padding: 10px 12px;
-  /* Full-bleed modal header (see SheetModal.vue) — without this the run title/close button sit
+  /* Full-bleed modal header (see SheetModal.vue): without this the run title/close button sit
      under the notch/status bar on Android during an active run. */
   padding-top: calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -164,7 +164,7 @@ const distanceKm = computed(() => formatDistanceKm(live.distanceM.value));
   align-items: center;
   gap: var(--sp2);
 }
-/* Same visible-confirm-card treatment as WorkoutPage.vue's .cancel-confirm — .panel (tokens.css)
+/* Same visible-confirm-card treatment as WorkoutPage.vue's .cancel-confirm: .panel (tokens.css)
    supplies background/border/radius. */
 .discard-confirm {
   margin: 0 12px;

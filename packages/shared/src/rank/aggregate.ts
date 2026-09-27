@@ -1,12 +1,12 @@
 /**
- * Overall Lifter Rank — a single account-level "how good a lifter am I, overall" number,
+ * Overall Lifter Rank: a single account-level "how good a lifter am I, overall" number,
  * aggregated across every exercise with a computed rank. Liftr otherwise has ~15+
  * *independent* per-exercise ladders and nothing answering that question directly.
  *
  * Weighted by trust tier so the long-tail synthetic catalog can't dilute or inflate the
  * headline number: `real` and `derived` standards count fully, `synthetic` at half weight.
  * Exercises with no rank yet are excluded entirely (not counted as zero), matching the
- * per-exercise "no rank yet" empty-state philosophy — a brand-new catalog addition can't drag
+ * per-exercise "no rank yet" empty-state philosophy: a brand-new catalog addition can't drag
  * the aggregate down the moment it's added.
  */
 import { ordinal, positionToBand, type Division, type Tier, type TrustTier } from "./tiers.js";

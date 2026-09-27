@@ -2,14 +2,14 @@ import { onUnmounted, ref } from "vue";
 
 /**
  * Tap-twice-to-confirm for a destructive action (delete a routine, cancel a workout, close a
- * wizard with unsaved changes) — deliberately not a native confirm() dialog (those block
- * automation and read as jarring on mobile). Was hand-rolled independently at three call
+ * wizard with unsaved changes). Deliberately not a native confirm() dialog: those block
+ * automation and read as jarring on mobile. Was hand-rolled independently at three call
  * sites (WorkoutPage's confirmDelete/confirmDeleteId + cancelWorkout/confirmCancelWorkout,
  * RoutineWizard's requestClose/confirmClose), each with its own ref + setTimeout pair and,
- * notably, no cleanup on unmount anywhere — fixed here once via onUnmounted.
+ * notably, no cleanup on unmount anywhere; fixed here once via onUnmounted.
  *
  * `key` distinguishes multiple armable targets sharing one composable instance (e.g. a list of
- * routine cards, each with its own delete button) — pass the routine id as the key. For a
+ * routine cards, each with its own delete button), so pass the routine id as the key. For a
  * single boolean toggle (cancel-workout, close-wizard), omit it and it defaults to `true`.
  */
 export function useConfirmTap(onConfirm: (key?: string) => void, ms = 3000) {

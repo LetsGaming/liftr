@@ -190,7 +190,7 @@ describe("PATCH /api/planned-routes/:id", () => {
 });
 
 describe("DELETE /api/planned-routes/:id", () => {
-  it("soft-archives — the route disappears from the list", async () => {
+  it("soft-archives: the route disappears from the list", async () => {
     const { app, db } = await createTestApp();
     registerPlannedRouteRoutes(app, db);
     const created = await app.inject({ method: "POST", url: "/api/planned-routes", payload: { name: "Original", waypoints: waypoints() } });

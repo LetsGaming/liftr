@@ -67,8 +67,8 @@ describe("validation error responses", () => {
 
 describe("public routes", () => {
   // Mirrors app.ts's onRequest hook (the real allowlist), same pattern as
-  // tests/server/routes/auth.test.ts's buildApp helper — avoids depending on the production db
-  // singleton buildApp() itself pulls in.
+  // tests/server/routes/auth.test.ts's buildApp helper: this avoids depending on the production
+  // db singleton buildApp() itself pulls in.
   function appWithAuthHook() {
     const db = createTestDb();
     const app = configureApp(Fastify({ logger: false }));
@@ -88,7 +88,7 @@ describe("public routes", () => {
     return app;
   }
 
-  it("serves /api/health with no Authorization header — health checks (Docker, CI) need this", async () => {
+  it("serves /api/health with no Authorization header, since health checks (Docker, CI) need this", async () => {
     const app = appWithAuthHook();
     const res = await app.inject({ method: "GET", url: "/api/health" });
     expect(res.statusCode).toBe(200);

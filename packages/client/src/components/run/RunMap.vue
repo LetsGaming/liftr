@@ -11,7 +11,7 @@ import LeafletMapBase from "../map/LeafletMapBase.vue";
 import BasemapToggle from "../map/BasemapToggle.vue";
 import { cssVar } from "../../lib/leafletTheme";
 
-/** Only lat/lon are ever read below — a plain structural shape (not RunPoint) so this also
+/** Only lat/lon are ever read below: a plain structural shape (not RunPoint) so this also
  *  accepts a planned route's Waypoint[] (RouteOverviewPage.vue's preview) without those callers
  *  needing to fabricate RunPoint's other fields (idx/t/ele/hr/cadence) they don't have. */
 const props = defineProps<{ points: { lat: number; lon: number }[]; approximate?: boolean }>();
@@ -21,22 +21,22 @@ let line: L.Polyline | null = null;
 let startMarker: L.CircleMarker | null = null;
 let endMarker: L.CircleMarker | null = null;
 let marker: L.CircleMarker | null = null;
-// Set once the user pans/zooms by hand — after that, a resize (soft keyboard, rotation, a sheet
+// Set once the user pans/zooms by hand. After that, a resize (soft keyboard, rotation, a sheet
 // still settling into its final size) must not yank the view back to the route's bounds. Without
 // this, `fit()` below re-running on every `@resize` would fight a user who just moved the map.
 let userMoved = false;
-// True for the duration of our own fit() call — Leaflet fires real "dragstart"/"zoomstart" events
+// True for the duration of our own fit() call: Leaflet fires real "dragstart"/"zoomstart" events
 // for ANY view change, including one it triggers itself via fitBounds/setView, not just ones a
-// real drag/pinch caused. Without this guard, fit()'s own first call — often computed against a
+// real drag/pinch caused. Without this guard, fit()'s own first call (often computed against a
 // container that hasn't settled into its real on-screen size yet, badly over-zooming the initial
-// view — would immediately flip `userMoved` to true via its own zoomstart event and permanently
+// view) would immediately flip `userMoved` to true via its own zoomstart event and permanently
 // block the corrective re-fit that `handleResize` is there to make once the container's real size
 // is known.
 let programmaticMove = false;
 
 /** Re-fits the view to the route's bounds. `animate: false` keeps this call synchronous, so the
  *  `programmaticMove` flag it sets around the fitBounds call below is guaranteed to still be true
- *  for the dragstart/zoomstart events that call fires — an animated fit raises its own internal
+ *  for the dragstart/zoomstart events that call fires; an animated fit raises its own internal
  *  move events later, after this function has already returned and reset the flag. */
 function fit() {
   if (!map || !line) return;
@@ -82,7 +82,7 @@ function handleReady(m: L.Map) {
 }
 
 /** LeafletMapBase's ResizeObserver-driven `invalidateSize()` fixes the map's pixel size but has
- *  no idea what bounds it should be framing — without this, a map created while its container was
+ *  no idea what bounds it should be framing: without this, a map created while its container was
  *  still settling into its final size (a sheet modal's open transition, a flex layout resolving)
  *  keeps whatever zoom it originally computed for the wrong-sized box. Mirrors
  *  RouteThumbnail.vue's own `@resize` handler, minus its `userMoved` guard, since that one is
@@ -94,7 +94,7 @@ function handleResize() {
 
 watch(() => props.points, render);
 
-/** Called every replay frame — imperative on purpose, see module doc. */
+/** Called every replay frame, imperative on purpose, see module doc. */
 function setMarkerPosition(lat: number, lon: number) {
   marker?.setLatLng([lat, lon]);
 }
@@ -115,7 +115,7 @@ defineExpose({ setMarkerPosition, invalidateSize: () => map?.invalidateSize() })
   width: 100%;
   height: 100%;
   /* No min-height floor: both consumers (RouteOverviewPage.vue's flex:1 wrapper,
-     RunReplay.vue's fixed-height .map-wrap) already establish real height — see
+     RunReplay.vue's fixed-height .map-wrap) already establish real height; see
      RouteMapEditor.vue's matching comment for why a floor here would fight a short viewport
      instead of yielding to it. */
   min-height: 0;

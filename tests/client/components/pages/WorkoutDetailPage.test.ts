@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 //
 // WorkoutDetailPage.vue is a read-only summary of one finished workout, built on the real
-// historyStore/catalogStore/ranksStore/xpStore/overallRankStore (Pinia — real collaborators) with
+// historyStore/catalogStore/ranksStore/xpStore/overallRankStore (Pinia: real collaborators) with
 // only the true network boundary mocked: the service modules each store's actions call.
-// shareCard.ts is mocked outright — its drawWorkoutCard does real <canvas> 2D-context drawing,
+// shareCard.ts is mocked outright: its drawWorkoutCard does real <canvas> 2D-context drawing,
 // which jsdom doesn't implement (see tests/client/lib/shareCard.test.ts's own header comment).
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
@@ -85,7 +85,7 @@ async function mountAtWorkout(id: string, query = "") {
 }
 
 beforeEach(() => {
-  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply) — jsdom's
+  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply): jsdom's
   // navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would otherwise
   // default the shared i18n singleton to "en" for the rest of the test process.
   i18n.global.locale.value = "de";
@@ -149,11 +149,11 @@ describe("WorkoutDetailPage", () => {
     expect(stats[3]!.find("span").text()).toBe("Übungen");
   });
 
-  it("shows '—' as the duration when the workout has no endedAt yet", async () => {
+  it("shows '-' as the duration when the workout has no endedAt yet", async () => {
     getWorkoutMock.mockResolvedValue(workoutFixture({ endedAt: null }));
     const { wrapper } = await mountAtWorkout("w-1");
 
-    expect(wrapper.findAll(".stat-tile")[0]!.find("b").text()).toBe("—");
+    expect(wrapper.findAll(".stat-tile")[0]!.find("b").text()).toBe("-");
   });
 
   it("orders exercises by orderIndex and renders each exercise's name and set chips", async () => {

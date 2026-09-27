@@ -54,7 +54,7 @@ describe("suggestExercisesForMuscles", () => {
     const [result] = await suggestExercisesForMuscles(db, OWNER_USER_ID, {
       muscleSlugs: ["chest"],
       exercisesPerMuscle: 1,
-      ownedEquipment: ["dumbbell"], // owns something, but not a barbell — barbell-bench-press is unusable
+      ownedEquipment: ["dumbbell"], // owns something, but not a barbell: barbell-bench-press is unusable
     });
 
     expect(result?.exerciseId).toBe(pushup.id);
@@ -132,7 +132,7 @@ describe("suggestExercisesForMuscles", () => {
 });
 
 describe("recommendForChosenExercises", () => {
-  it("never sets matchedMuscleSlug or isSubstitute — those only apply to muscle-guided suggestions", async () => {
+  it("never sets matchedMuscleSlug or isSubstitute: those only apply to muscle-guided suggestions", async () => {
     const exercise = await insertTestExercise(db, { slug: "overhead-press", movementPattern: "push" });
 
     const [result] = await recommendForChosenExercises(db, OWNER_USER_ID, [exercise.id]);

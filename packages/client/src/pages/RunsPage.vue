@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Läufe: mirrors WorkoutPage.vue's flat "start" flow — no sub-tabs, saved routes (RouteList) are
-// the page's primary content, same as saved routines are Workout's. Individual-run browsing
-// (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here — that's
+// Läufe: mirrors WorkoutPage.vue's flat "start" flow, with no sub-tabs; saved routes (RouteList)
+// are the page's primary content, same as saved routines are Workout's. Individual-run browsing
+// (history, replay, delete) lives on OverviewPage.vue's "Letzte Aktivität" now, not here. That's
 // where Workout's own finished-session history lives too, so neither tab duplicates it locally.
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -33,7 +33,7 @@ const initialCenter = ref<{ lat: number; lon: number } | undefined>(undefined);
 async function openNewRouteWizard() {
   editingRoute.value = null;
   // Centers a fresh route's map on the user's most recent GPS-tracked run instead of the
-  // fallback — RouteMapEditor.vue's own useLastKnownLocation() chain only reaches this far.
+  // fallback; RouteMapEditor.vue's own useLastKnownLocation() chain only reaches this far.
   const gpsRun = runsStore.runs.find((r) => r.source !== "manual");
   if (gpsRun) {
     const detail = await getRunDetail(gpsRun.id);
@@ -102,7 +102,7 @@ async function onFileChosen(e: Event) {
 
 // Card's "Starten" now matches RoutineList.vue's directness: straight into live GPS tracking
 // instead of the manual-entry hand-off (useStartPlannedRoute stays for the other, still-needed
-// manual paths — RouteOverviewPage.vue's "Manuell eintragen" and this page's own "Manuell"
+// manual paths: RouteOverviewPage.vue's "Manuell eintragen" and this page's own "Manuell"
 // toggle). Reuses RouteOverviewPage.vue's already-correct live-tracking wiring via a query param,
 // same deep-link pattern as ProfilePage.vue's `?focus=account-app`, instead of re-deriving
 // LiveRunScreen's invocation here.
@@ -114,7 +114,7 @@ function saveManual() {
   void submitManual({ plannedRouteId: activeRoute.value?.id ?? null, elevationGainM: activeRoute.value?.elevationGainM ?? null });
 }
 
-// Same two tabs as WorkoutPage.vue's own TabSwitcher — kept as a literal here rather than a
+// Same two tabs as WorkoutPage.vue's own TabSwitcher, kept as a literal here rather than a
 // shared constant since it's just two short { id, label, to } objects, not logic.
 const WORKOUT_RUNS_TABS = computed(() => [
   { id: "workout", label: t("common.workout"), to: "/workout" },

@@ -2,10 +2,10 @@
 /**
  * Native-only server-connection gate, wrapping AuthGate.vue in App.vue (must resolve before
  * AuthGate can call anything, since apiBase() reads the URL this screen collects). No-op
- * passthrough on web/PWA — same-origin already gives the right server, nothing to ask.
+ * passthrough on web/PWA: same-origin already gives the right server, nothing to ask.
  *
  * Trusts a previously-saved URL without re-verifying it on every launch (same model as Home
- * Assistant/Jellyfin's own server pickers) — AuthGate.vue's existing "offline" fallback already
+ * Assistant/Jellyfin's own server pickers): AuthGate.vue's existing "offline" fallback already
  * covers "the saved server can't be reached right now" once past this gate.
  */
 import { ref } from "vue";
@@ -49,7 +49,7 @@ function connect() {
 </template>
 
 <style scoped>
-/* Same look as AuthGate.vue's own gate/card — see that file's comments for why .surface-hybrid
+/* Same look as AuthGate.vue's own gate/card: see that file's comments for why .surface-hybrid
    (not an opaque fill) and no background on .gate itself: this is the very first screen a native
    install shows, so it needs to let tokens.css's body::before cosmic sweep show through too. */
 .gate {

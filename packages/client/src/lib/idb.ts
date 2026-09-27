@@ -3,7 +3,7 @@
  *  - `outbox`: queued mutations, flushed to POST /api/sync on reconnect.
  *  - `activeWorkout`: the in-progress workout, written on every mutation so a crash or a
  *    locked phone mid-set loses nothing.
- * This is the only place raw IndexedDB access happens — everything else goes through the
+ * This is the only place raw IndexedDB access happens: everything else goes through the
  * Pinia stores in ./stores/.
  */
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
@@ -22,7 +22,7 @@ interface LiftrIDB extends DBSchema {
   };
   activeWorkout: {
     key: "current";
-    value: unknown; // ActiveWorkoutState, typed in the store — kept loose here to avoid a cycle
+    value: unknown; // ActiveWorkoutState, typed in the store: kept loose here to avoid a cycle
   };
 }
 
@@ -62,7 +62,7 @@ export async function saveActiveWorkout(state: unknown) {
 }
 
 /**
- * `isValid` is a caller-supplied runtime shape guard, not just a type param — a stale/mid-migration
+ * `isValid` is a caller-supplied runtime shape guard, not just a type param: a stale/mid-migration
  * persisted value (an older app version's shape) must not be trusted straight into typed state.
  * The store type (ActiveWorkoutState) can't be imported here without a cycle, so the check lives
  * with the caller; a value that fails it is treated the same as "not cached" rather than crashing.

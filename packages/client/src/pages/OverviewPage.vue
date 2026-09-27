@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
- * Übersicht — both a launchpad (what do I do today) and a progress board (am I getting
+ * Übersicht: both a launchpad (what do I do today) and a progress board (am I getting
  * stronger), stacked, reusing the same stores every other page already has:
  *
- *   1. Launchpad card — resume an in-progress workout, or open the Routine Overview screen for
+ *   1. Launchpad card: resume an in-progress workout, or open the Routine Overview screen for
  *      the most recently used routine. All three start call sites (here, RoutineList.vue's
  *      routine card, ErholungszoneCard) route through there rather than calling
  *      useStartRoutine() directly, so a lifter always sees what they're about to do first.
- *   2. Status strip — streak / level / this-week's workout count.
- *   3. Progress tiles — weekly volume (from already-loaded history), top ranks, bodyweight
+ *   2. Status strip: streak / level / this-week's workout count.
+ *   3. Progress tiles: weekly volume (from already-loaded history), top ranks, bodyweight
  *      trend.
- *   4. Recent activity — a feed of past workouts and runs; rows open the past-item detail modal.
+ *   4. Recent activity: a feed of past workouts and runs; rows open the past-item detail modal.
  */
 import { IonRefresher, IonRefresherContent } from "@ionic/vue";
 import BasePage from "../components/patterns/BasePage.vue";
@@ -60,7 +60,7 @@ const readiness = useReadinessStore();
 const { exerciseName } = useExerciseName();
 const router = useRouter();
 
-/** "Letzte Aktivität" filter pills — same `.rank-tier-filter` pattern RankLifterSection.vue's
+/** "Letzte Aktivität" filter pills: same `.rank-tier-filter` pattern RankLifterSection.vue's
  *  tier filter follows (a pill row that collapses to a `<select>` past 3 options, present only
  *  when the underlying data actually has more than one option): filter values are derived from
  *  what's actually in `history.items`, not a fixed list, so a user who's never walked never sees
@@ -92,7 +92,7 @@ const filteredActivity = computed(() => {
     i.kind === "workout" ? activityFilter.value === "workout" : ((i.meta.activityType as string | undefined) ?? "run") === activityFilter.value,
   );
 });
-/** Was every loaded item in one flat list (19+ rows with no cap) — a Miller's-Law violation.
+/** Was every loaded item in one flat list (19+ rows with no cap): a Miller's-Law violation.
  *  Shows a manageable first chunk, "Mehr anzeigen" reveals the rest already sitting in memory. */
 const activityShownCount = ref(8);
 const visibleActivity = computed(() => filteredActivity.value.slice(0, activityShownCount.value));
@@ -110,9 +110,9 @@ onMounted(() => {
 
 const overallRankLabel = computed(() => {
   // The division ("SILBER III") is real information (RankProgress.vue shows it everywhere
-  // else), so this shows the full label rather than dropping it to fit the tile — .status-strip
+  // else), so this shows the full label rather than dropping it to fit the tile: .status-strip
   // below (2x2 grid + wrapping value text) handles the width instead.
-  if (!overallRank.loaded || !overallRank.current) return "—";
+  if (!overallRank.loaded || !overallRank.current) return "-";
   const { tier, division } = overallRank.current;
   const label = tierLabel(tier as RankTier);
   const div = DIVISION_LABEL[division];
@@ -153,7 +153,7 @@ function runLabel(item: { kind: string; meta: Record<string, unknown> }) {
 }
 
 /** AppIcon has no dedicated walk/hike glyph yet, so every cardio row (run/walk/hike) shares the
- *  "running" icon — the row's own label/meta already says which one it is, and the activity
+ *  "running" icon: the row's own label/meta already says which one it is, and the activity
  *  filter above narrows the list; only "other" (no honest icon for an unranked mixed bag of
  *  activities) falls back to a generic "layers" glyph. */
 function feedIconName(item: { kind: string; meta: Record<string, unknown> }): "dumbbell" | "running" | "layers" {
@@ -170,19 +170,19 @@ function openRun(itemId: string) {
   void router.push(`/runs/${itemId}`);
 }
 
-/** "Last touched" isn't tracked per routine today (would need a lastUsedAt column) — the
+/** "Last touched" isn't tracked per routine today (would need a lastUsedAt column): the
  *  first saved routine is a reasonable stand-in for "the one you'd tap anyway" without adding
  *  a migration for this dashboard alone. */
 const suggestedRoutine = computed(() => routineStore.routines[0] ?? null);
 
 /** Same aggregation as WorkoutPage.vue's routine-card preview (lib/muscles.ts's shared
- *  helper) — the launchpad card should answer "what does this train" too, not just name+count. */
+ *  helper): the launchpad card should answer "what does this train" too, not just name+count. */
 const suggestedRoutineMuscles = computed(() =>
   aggregateMuscles((suggestedRoutine.value?.routineExercises ?? []).map((re) => catalog.byId(re.exerciseId)?.muscles ?? [])),
 );
 
 /** Workouts finished in the last 7 days, from whatever history is already loaded (no extra
- *  fetch) — good enough for "are you keeping up this week", not a precise calendar-week stat. */
+ *  fetch): good enough for "are you keeping up this week", not a precise calendar-week stat. */
 const thisWeek = computed(() => {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const items = history.items.filter((i) => i.kind === "workout" && new Date(i.at).getTime() >= cutoff);
@@ -190,7 +190,7 @@ const thisWeek = computed(() => {
   return { count: items.length, volumeKg };
 });
 
-/** Per-week volume bars from currently loaded history — a real trend once >20 workouts exist
+/** Per-week volume bars from currently loaded history: a real trend once >20 workouts exist
  *  would need paginated fetch; this reads what's already on screen, which is enough to answer
  *  "is this week better or worse than the last few", not a precise multi-month chart. */
 const weeklyVolume = computed(() => {
@@ -207,7 +207,7 @@ const weeklyVolume = computed(() => {
 });
 const maxWeeklyVolume = computed(() => Math.max(1, ...weeklyVolume.value));
 
-/** The bar chart had no way to tell what a given bar meant beyond "taller = more" — no
+/** The bar chart had no way to tell what a given bar meant beyond "taller = more": no
  *  labels, nothing happened on tap or hover. Tapping (or hovering, on desktop) a bar now
  *  shows its week + kg value in a caption underneath; defaults to the current week. */
 const selectedWeekIndex = ref(7);
@@ -216,8 +216,8 @@ function weekLabel(i: number) {
   return weeksAgo === 0 ? t("overview.week.current") : weeksAgo === 1 ? t("overview.week.last") : t("overview.week.ago", { n: weeksAgo });
 }
 
-/** Without this, first launch renders six simultaneous empty states — four dashes, two "noch
- *  nicht genug Daten" — a wall of dashes as the first thing a gamified product shows. Once
+/** Without this, first launch renders six simultaneous empty states: four dashes, two "noch
+ *  nicht genug Daten": a wall of dashes as the first thing a gamified product shows. Once
  *  there's real history, the loaded dashboard (status strip, progress tiles, activity feed) is
  *  unchanged; before that, one first-run surface replaces all three: the Erholungszone card and
  *  launchpad CTA (already the app's best material) plus the full tier ladder as a single promise
@@ -231,8 +231,8 @@ const topRanks = computed(() =>
     .slice(0, 3),
 );
 
-/** A failed store load would otherwise leave its tile showing "—" forever, indistinguishable
- *  from "still fetching" — on a flaky connection, any subset of the status strip could go
+/** A failed store load would otherwise leave its tile showing "-" forever, indistinguishable
+ *  from "still fetching": on a flaky connection, any subset of the status strip could go
  *  silently blank with zero indication anything was wrong. Each store tracks its own `error`
  *  (see xpStore.ts's load()); this surfaces it as one page-level banner instead of restyling
  *  every individual tile into a three-state (loading/empty/failed) widget. */
@@ -314,10 +314,10 @@ function retryFailed() {
 
         <template v-else>
           <section class="status-strip">
-            <StatTile accent="fire" :value="streak.loaded ? streak.streak : '—'">
+            <StatTile accent="fire" :value="streak.loaded ? streak.streak : '-'">
               <template #label><AppIcon name="flame" /> {{ t("overview.stats.streakLabel") }}</template>
             </StatTile>
-            <StatTile accent="blue" :value="xp.loaded ? t('overview.stats.levelValue', { level: xp.level }) : '—'" :label="t('overview.stats.levelLabel')" />
+            <StatTile accent="blue" :value="xp.loaded ? t('overview.stats.levelValue', { level: xp.level }) : '-'" :label="t('overview.stats.levelLabel')" />
             <StatTile :value="thisWeek.count" :label="t('overview.stats.workoutsThisWeek')" />
             <StatTile reward :value="overallRankLabel" :label="t('overview.stats.overallRank')" />
           </section>
@@ -393,7 +393,7 @@ function retryFailed() {
 
           <template v-else>
             <!-- Same "up to 2 pills, past that a <select>" rule RankLifterSection.vue's
-                 .rank-tier-filter follows (see that file's comment) — a flat pill row per
+                 .rank-tier-filter follows (see that file's comment): a flat pill row per
                  activity type stopped fitting 390px once a user has logged more than a couple
                  of activity types; this is a secondary in-page filter, so it collapses into a
                  dropdown rather than wrapping or truncating illegibly. -->
@@ -480,7 +480,7 @@ function retryFailed() {
   margin: var(--sp4) auto 0;
 }
 /* No entrance animation here deliberately: this fires on every mount, i.e. every navigation to
-   this tab — an ambient tab revisited many times a session, not a rare earned moment, so motion
+   this tab: an ambient tab revisited many times a session, not a rare earned moment, so motion
    here would be decoration rather than communicating a state change. */
 @media (min-width: 900px) {
   .dashboard {
@@ -503,10 +503,10 @@ function retryFailed() {
   margin-bottom: var(--sp2);
 }
 /* --blue-hi (#5ba0ff) measures ~2.66:1 against the light-mode hybrid surface's near-white
-   background — under the 4.5:1 AA floor for this 11px/800-weight eyebrow text (too
+   background: under the 4.5:1 AA floor for this 11px/800-weight eyebrow text (too
    small/light-weight to qualify as "large text" at the lower 3:1 threshold). --nebula-ink is the
    token this codebase uses everywhere else for a light-on-light-mode accent (see
-   .tile--priority's own light-mode override above) — 6.34:1 against white, comfortably AA. */
+   .tile--priority's own light-mode override above): 6.34:1 against white, comfortably AA. */
 [data-theme="light"] .lp-eyebrow {
   --eyebrow-color: var(--nebula-ink);
 }
@@ -537,7 +537,7 @@ function retryFailed() {
   color: var(--dim);
   margin-bottom: var(--sp3);
 }
-/* Same "loud but not destructive" tone as RankProgress.vue's decay caption (--fire-hi) — a
+/* Same "loud but not destructive" tone as RankProgress.vue's decay caption (--fire-hi): a
    failed load is a real problem worth noticing, not a --red-level (delete-btn) emergency. */
 .load-error-banner {
   display: flex;
@@ -566,7 +566,7 @@ function retryFailed() {
 .first-run-ladder {
   padding: var(--sp4);
 }
-/* 2x2 on mobile so each tile gets ~2x the width a 4-across row would give it — a 4-across row at
+/* 2x2 on mobile so each tile gets ~2x the width a 4-across row would give it: a 4-across row at
    ~90px per tile clips the longest tier label ("ANFÄNGER"/"LEHRLING"/"SPORTLER" via
    overallRankLabel, tierLabel()'s longest entries). Widens back to 4-across only once there's room (>=560px,
    comfortably past every phone width this app targets); the value also wraps onto a second line
@@ -598,7 +598,7 @@ function retryFailed() {
   gap: var(--sp3);
 }
 /* `.panel` (tokens.css) supplies the translucent hybrid background, blur, and gradient hairline
-   — the same treatment every other panel on this page (StatTile, RankProgress, TierLadder,
+  : the same treatment every other panel on this page (StatTile, RankProgress, TierLadder,
    launchpad, etc.) uses; padding/layout below is local to this element. */
 .tile {
   padding: var(--sp4);

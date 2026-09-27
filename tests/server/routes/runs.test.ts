@@ -5,7 +5,7 @@ import { registerRunRoutes } from "~server/routes/runs.js";
 import { createTestApp } from "../helpers/testApp.js";
 import { insertTestUser } from "../helpers/testDb.js";
 
-/** Hand-builds a `multipart/form-data` body — the runs.ts import route parses the file inline
+/** Hand-builds a `multipart/form-data` body: the runs.ts import route parses the file inline
  *  via `req.file()` (no `schema.body`, see the route's own comment), so there's no JSON shortcut
  *  for exercising it; `app.inject` needs a real multipart payload + matching boundary header. */
 function buildMultipart(parts: { name: string; value: string; filename?: string; contentType?: string }[]) {
@@ -383,7 +383,7 @@ describe("run routes", () => {
   });
 });
 
-describe("POST /api/runs — planned route handoff", () => {
+describe("POST /api/runs: planned route handoff", () => {
   it("defaults elevationGainM from the route and stores plannedRouteId", async () => {
     const { app, db } = await createTestApp();
     registerRunRoutes(app, db);
@@ -436,7 +436,7 @@ describe("POST /api/runs — planned route handoff", () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it("keeps plannedRouteId null for a run logged without one — GET /api/runs still serializes the field", async () => {
+  it("keeps plannedRouteId null for a run logged without one: GET /api/runs still serializes the field", async () => {
     const { app, db } = await createTestApp();
     registerRunRoutes(app, db);
 

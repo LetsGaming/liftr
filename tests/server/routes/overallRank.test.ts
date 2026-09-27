@@ -42,7 +42,7 @@ async function logSet(exerciseId: string, weightKg: number, reps: number, logged
 
 describe("GET /api/overall-rank", () => {
   // The empty-state (both null) and corroborated-peak cases are `getOverallRank`'s own logic,
-  // not this route's — both are covered by tests/server/services/overallRankService.test.ts,
+  // not this route's: both are covered by tests/server/services/overallRankService.test.ts,
   // which this thin route wraps. This route's job is HTTP status + the Zod response shape,
   // which the test below already pins (a populated current band alongside a still-null peak
   // exercises the shared, nullable `bandSchema` both ways in one request).

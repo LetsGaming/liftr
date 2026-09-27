@@ -5,13 +5,13 @@ import RpeCapture from "~client/components/workout/RpeCapture.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 /** SheetModal (this component's shell) is built on @ionic/vue's real <IonModal>, whose Stencil
- *  custom element never upgrades under jsdom — it renders no slotted content at all without it
+ *  custom element never upgrades under jsdom: it renders no slotted content at all without it
  *  (confirmed: mounting SheetModal unstubbed produces an empty <ion-modal></ion-modal>). Stubbing
  *  just IonModal (not SheetModal itself, which still runs its own real header/body wiring and
  *  dismiss()/close plumbing) is the targeted fix tests/README.md's "stub that specific element"
- *  guidance describes — same stub tests/client/components/patterns/SheetModal.test.ts uses on itself.
+ *  guidance describes: same stub tests/client/components/patterns/SheetModal.test.ts uses on itself.
  *  RpeCapture calls `sheetRef.value?.dismiss()` on pick, which SheetModal.vue resolves down to
- *  `modalRef.value.$el?.dismiss()` — this stub attaches that method in `mounted()`. */
+ *  `modalRef.value.$el?.dismiss()`: this stub attaches that method in `mounted()`. */
 const IonModalStub = defineComponent({
   name: "IonModal",
   props: {
@@ -39,7 +39,7 @@ function mountCapture(currentRpe: number | null) {
 
 beforeEach(() => {
   // requestAnimationFrame drives SheetModal's deferred `close` emit past did-dismiss (see its
-  // 2026-09-05 header comment) — made synchronous so tests don't depend on jsdom's rAF timing.
+  // 2026-09-05 header comment): made synchronous so tests don't depend on jsdom's rAF timing.
   vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
     cb(0);
     return 0;

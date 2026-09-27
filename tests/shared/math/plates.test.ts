@@ -51,7 +51,7 @@ describe("calculatePlatesFromInventory", () => {
 
   it("respects a limited plate count instead of assuming unlimited supply", () => {
     // Only two 20kg plates total (one pair) and four 5kg plates (two pairs) caps the per-side
-    // total at 20+5+5=30kg — 100kg (40kg/side) just isn't reachable with this inventory.
+    // total at 20+5+5=30kg: 100kg (40kg/side) just isn't reachable with this inventory.
     const inventory = [
       { weightKg: 20, count: 2 },
       { weightKg: 5, count: 4 },
@@ -62,7 +62,7 @@ describe("calculatePlatesFromInventory", () => {
     expect(r.exact).toBe(false);
   });
 
-  it("only uses whole pairs — an odd plate out is never loaded lopsided", () => {
+  it("only uses whole pairs: an odd plate out is never loaded lopsided", () => {
     // 3 plates of 10kg = only 1 usable pair (floor(3/2)), the third sits unused.
     const inventory = [{ weightKg: 10, count: 3 }];
     const r = calculatePlatesFromInventory(60, 20, inventory);

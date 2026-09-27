@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Past-run detail — a routed page (was RunDetail.vue's SheetModal sheet), reached via `/runs/:id`
+ * Past-run detail: a routed page (was RunDetail.vue's SheetModal sheet), reached via `/runs/:id`
  * for a real URL, back-button semantics, and a cold deep-link, converging with
  * ExerciseDetailPage.vue and WorkoutDetailPage.vue on the same BasePage shell. Title is the run's
  * own `name` (or a fallback), loaded from the fetched detail itself rather than a caller-passed
- * prop — no extra plumbing needed for a cold/direct deep-link, unlike WorkoutDetailPage.vue's
+ * prop: no extra plumbing needed for a cold/direct deep-link, unlike WorkoutDetailPage.vue's
  * title (which isn't part of the workout detail payload).
  */
 import { cardioActivity, nearestRunCategory, type RankBucket } from "@liftr/shared";
@@ -54,16 +54,16 @@ const deleteConfirm = useConfirmTap(async () => {
   }
 });
 
-// Rank/PR chip — manual runs are excluded explicitly (no run_points means no independent
+// Rank/PR chip: manual runs are excluded explicitly (no run_points means no independent
 // plausibility check, so they never earn rank) rather than relying on runRanks/runPrs simply
 // having no matching rows. `detailBucket` is distance-derived only for running (the
 // distance-ladder activity); a single-speed activity (walk/hike) has exactly one bucket, "all",
-// regardless of distance — see cardioActivities.ts's RankMode.
+// regardless of distance: see cardioActivities.ts's RankMode.
 const detailBucket = computed<RankBucket | null>(() => {
   const d = detail.value;
   if (!d || d.source === "manual") return null;
   // Defensive fallback: older cached RunDetail data (or a test fixture predating this field)
-  // may not carry activityType — treat it as "run", the pre-existing behavior.
+  // may not carry activityType: treat it as "run", the pre-existing behavior.
   const mode = cardioActivity(d.activityType ?? "run").rank.mode;
   if (mode === "none") return null;
   return mode === "distance-ladder" ? nearestRunCategory(d.distanceM) : "all";
@@ -79,7 +79,7 @@ const detailIsPr = computed(() => {
   if (!d || d.source === "manual") return false;
   return runRankStore.prs.some((p) => p.runId === d.id);
 });
-// A run can reference a planned route that's since been soft-archived — archived routes are
+// A run can reference a planned route that's since been soft-archived: archived routes are
 // deliberately excluded from plannedRouteStore's active list (GET /api/planned-routes), so
 // resolving one for the chip below falls back to a direct by-id fetch, cached here rather than
 // in the global store since this is a display-only edge case, not part of the app's "active
@@ -93,14 +93,14 @@ const sourceRouteName = computed(() => {
 
 onMounted(async () => {
   const routesLoaded = plannedRouteStore.loaded ? Promise.resolve() : plannedRouteStore.load();
-  // Non-blocking, same as RunsPage.vue's own mount — the chip/badge below just render nothing
+  // Non-blocking, same as RunsPage.vue's own mount: the chip/badge below just render nothing
   // until these resolve.
   if (!runRankStore.ranksLoaded) void runRankStore.loadRanks();
   if (!runRankStore.prsLoaded) void runRankStore.loadPrs();
   try {
     detail.value = await runsStore.loadDetail(runId.value);
   } catch {
-    // offline or request failed — `detail` stays null, template shows the "couldn't load" hint
+    // offline or request failed: `detail` stays null, template shows the "couldn't load" hint
   } finally {
     loading.value = false;
   }
@@ -118,7 +118,7 @@ onMounted(async () => {
   }
 });
 
-// "Als Strecke speichern" — turns this run's recorded GPS track into a reusable planned route.
+// "Als Strecke speichern": turns this run's recorded GPS track into a reusable planned route.
 // RouteWizard only ever takes user-placed waypoints, so the full point-by-point track (hundreds
 // of GPS fixes) is stride-sampled down to a manageable handful the user can still see/drag/edit
 // before saving, rather than dumping every fix onto the map as its own marker.
@@ -148,7 +148,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
 
       <Chip v-if="sourceRouteName" size="sm" class="route-chip">{{ t("runDetailPage.routeChipPrefix") }}{{ sourceRouteName }}</Chip>
       <!-- rank-chip carries no CSS of its own (it shares .route-chip's look on purpose, same row
-           as the "Strecke:" chip) — kept only as a stable selector distinguishing this chip from
+           as the "Strecke:" chip): kept only as a stable selector distinguishing this chip from
            its siblings (route/pr) for tests. -->
       <Chip v-if="detailRank" size="sm" class="route-chip rank-chip pop-in">
         {{ activityLabel(detail.activityType ?? "run") }}<template v-if="detailBucket !== 'all'"> · {{ runCategoryLabel(detailBucket!) }}</template>
@@ -214,7 +214,7 @@ const routeSeedName = computed(() => detail.value?.name ?? formatDateLong(detail
   margin-left: var(--sp2);
 }
 /* Same --pr color token WorkoutDetailPage.vue's/WorkoutPage.vue's strength-side PR chip already
-   uses — this is that same "you earned this" accent, not a new color introduced for running. */
+   uses: this is that same "you earned this" accent, not a new color introduced for running. */
 .pr-chip {
   color: var(--pr);
   border-color: var(--pr);

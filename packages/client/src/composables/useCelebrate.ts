@@ -1,13 +1,13 @@
 /**
  * Timed "beat" sequencer. Used by FinishSequence's three beats
  * (Rangaufstiege / Serie / Fortschritt). Deliberately a plain
- * async step-runner, not an animation library — each beat is just "show this, wait, allow an
+ * async step-runner, not an animation library: each beat is just "show this, wait, allow an
  * early tap to skip." Respects prefers-reduced-motion by collapsing every wait to effectively
  * zero (the content still renders, in order, just without the held pause).
  */
 
 /**
- * Haptic wiring is the CALLER's responsibility, not this composable's — this file stays
+ * Haptic wiring is the CALLER's responsibility, not this composable's: this file stays
  * UI/feedback-agnostic. The existing pattern (components/workout/FinishSequence.vue: a `watch`
  * on `activeIndex` that fires `haptics.success()` only when `leveledUp` is true) is the reference
  * implementation later workstreams should copy: watch `activeIndex`, branch on which beat it is
@@ -19,7 +19,7 @@ function prefersReducedMotion(): boolean {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Resolves after `ms`, or immediately if `skip` fires first — so a tap always short-circuits
+/** Resolves after `ms`, or immediately if `skip` fires first: so a tap always short-circuits
  *  a beat instead of forcing the user to sit through it. */
 function wait(ms: number, skip: { requested: boolean }): Promise<void> {
   const effectiveMs = prefersReducedMotion() ? 0 : ms;
@@ -39,7 +39,7 @@ function wait(ms: number, skip: { requested: boolean }): Promise<void> {
 }
 
 export interface CelebrateBeat {
-  /** Skips this beat entirely — used to omit e.g. "Rangaufstiege" when a session had none,
+  /** Skips this beat entirely: used to omit e.g. "Rangaufstiege" when a session had none,
    *  rather than showing an empty beat: never manufacture a reward. */
   show?: boolean;
   holdMs?: number;

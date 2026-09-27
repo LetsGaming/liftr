@@ -3,7 +3,7 @@
  * One quiet inline line for a section that already has its own chrome (a card, a heading) and
  * just needs to say "nothing here yet". Distinct from patterns/EmptyStateCard.vue, which is a
  * full card with an eyebrow, icon and CTA for when nothing else on screen explains what's missing
- * or what to do about it — reach for that one instead when there's no surrounding context.
+ * or what to do about it: reach for that one instead when there's no surrounding context.
  */
 withDefaults(defineProps<{ align?: "start" | "center" }>(), { align: "center" });
 </script>

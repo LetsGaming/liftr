@@ -64,7 +64,7 @@ describe("GET /api/prs", () => {
   });
 
   // workoutId-null-on-deleted-set and newest-first sorting are `getPrs`'s own logic, not this
-  // route's — both are covered by tests/server/services/prService.test.ts, which this route
+  // route's: both are covered by tests/server/services/prService.test.ts, which this route
   // bare-delegates to (routes/prs.ts). This file's job is HTTP status + the Zod response shape,
   // which the two tests above already pin.
 });

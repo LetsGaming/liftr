@@ -1,5 +1,5 @@
 /**
- * free-exercise-db (github.com/yuhonas/free-exercise-db, Unlicense/public domain) — the same
+ * free-exercise-db (github.com/yuhonas/free-exercise-db, Unlicense/public domain): the same
  * dataset ingestImages.ts already mirrors photos from, keyed by the same `freeExerciseDbId`
  * curated.yaml already hand-verifies for images. One static JSON file, no auth, no pagination.
  */

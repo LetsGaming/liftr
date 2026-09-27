@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * Diagnostics page — "It should NEVER be needed for a user to go there, but it could make things
+ * Diagnostics page: "It should NEVER be needed for a user to go there, but it could make things
  * easier in the future, especially for power-users." Reached only via a link (ProfilePage.vue's
- * Diagnose sub-section, or a sync toast's onClick) — never required by any normal flow, same
+ * Diagnose sub-section, or a sync toast's onClick), never required by any normal flow, same
  * "reachable, not surfaced" pattern AttributionsPage.vue already follows for /attributions.
  *
  * Two sections:
- * 1. Synchronisierung — every user, not owner-gated, but Health-Connect-only (native Android) like
- *    ProfilePage.vue's own Health Connect card — the client-side sync log (syncLog.ts) lives in
+ * 1. Synchronisierung: every user, not owner-gated, but Health-Connect-only (native Android) like
+ *    ProfilePage.vue's own Health Connect card. The client-side sync log (syncLog.ts) lives in
  *    this device's localStorage, so it's always empty on web/iOS anyway, never a stale display.
- * 2. Serverfehler — the previous owner-only list from ProfilePage.vue, moved here unchanged.
+ * 2. Serverfehler: the previous owner-only list from ProfilePage.vue, moved here unchanged.
  */
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -86,7 +86,7 @@ async function rescan(daysBack: 30 | 90) {
   rescanBusy.value = daysBack;
   try {
     // A resume-triggered import (e.g. the app briefly backgrounding) may already be running and
-    // have captured the *old* scan window before this call started — waiting it out first means
+    // have captured the *old* scan window before this call started, so waiting it out first means
     // resetHealthConnectScanWindow below can never be undone by that other run's own
     // setLastCheck(), which would otherwise consume the widened window before this rescan sees it.
     await waitForInFlightHealthConnectImport();
@@ -254,7 +254,7 @@ function formatAt(iso: string): string {
   gap: var(--sp2);
   margin: var(--sp3) 0;
 }
-/* Same armed-confirm-tap treatment as ProfilePage.vue's "Konto löschen" button — duplicated here
+/* Same armed-confirm-tap treatment as ProfilePage.vue's "Konto löschen" button, duplicated here
    since Vue's scoped styles don't cross component boundaries. */
 .btn-secondary.danger {
   color: var(--danger);

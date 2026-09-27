@@ -44,12 +44,12 @@ export async function deleteUser(db: LiftrDb, userId: string): Promise<void> {
   await db.delete(users).where(eq(users.id, userId));
 }
 
-/** Idle (sliding) session lifetime — see schema.ts's `sessions.expiresAt` doc comment. 30 days:
+/** Idle (sliding) session lifetime: see schema.ts's `sessions.expiresAt` doc comment. 30 days:
  *  long enough that a household member isn't repeatedly logged out, short enough to bound how
  *  long a leaked-but-idle token stays valid. */
 export const SESSION_IDLE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Absolute session lifetime — see schema.ts's `sessions.absoluteExpiresAt` doc comment. Never
+/** Absolute session lifetime: see schema.ts's `sessions.absoluteExpiresAt` doc comment. Never
  *  renewed by `touchSession`, so this is the hard cap on how long a token stays valid even under
  *  continuous active use. 90 days: generous for a household app, but bounds a stolen-and-actively-
  *  used token instead of letting it ride the idle window forever. */
@@ -72,7 +72,7 @@ export async function createSession(
 }
 
 /** Joined to the owning user's role, since every call site needs both the identity and the role
- *  to authorize a request — a single lookup instead of two round-trips per request. */
+ *  to authorize a request: a single lookup instead of two round-trips per request. */
 export async function findSessionByTokenHash(
   db: LiftrDb,
   tokenHash: string,
@@ -88,11 +88,11 @@ export async function findSessionByTokenHash(
     : undefined;
 }
 
-/** Called once per authenticated request (`requireAuth`) — also slides `expiresAt` forward in the
+/** Called once per authenticated request (`requireAuth`): also slides `expiresAt` forward in the
  *  same UPDATE that already writes `lastUsedAt`, so a session in active use never hits its idle
  *  expiry. Clamped to `absoluteExpiresAt` so the sliding window can never push a session past its
  *  hard cap. No separate throttle: this is the same single-row write that already happened every
- *  request before `expiresAt` existed, just with one more column in the SET clause — renewing here
+ *  request before `expiresAt` existed, just with one more column in the SET clause: renewing here
  *  adds no extra query. */
 export async function touchSession(db: LiftrDb, tokenHash: string, absoluteExpiresAt: Date): Promise<void> {
   const now = new Date();
@@ -123,7 +123,7 @@ export function listSessionsForUser(db: LiftrDb, userId: string): Promise<Sessio
 }
 
 /** Scoped to `userId` in the WHERE clause so one user can never revoke another user's session by
- *  guessing/enumerating a session id (IDOR) — returns whether a row was actually deleted. */
+ *  guessing/enumerating a session id (IDOR): returns whether a row was actually deleted. */
 export async function deleteSessionById(db: LiftrDb, userId: string, sessionId: string): Promise<boolean> {
   const rows = await db
     .delete(sessions)
@@ -132,7 +132,7 @@ export async function deleteSessionById(db: LiftrDb, userId: string, sessionId: 
   return rows.length > 0;
 }
 
-/** Used after a password/username change (credential rotation) and by the `reset-password` CLI —
+/** Used after a password/username change (credential rotation) and by the `reset-password` CLI:
  *  every other device is signed out immediately. `keepTokenHash` is omitted by the CLI (no session
  *  of its own to preserve). */
 export async function deleteOtherSessionsForUser(
@@ -159,11 +159,11 @@ export function findValidInviteCode(db: LiftrDb, code: string) {
   });
 }
 
-/** Conditional update — only claims the code if it hasn't already been redeemed by someone else.
+/** Conditional update: only claims the code if it hasn't already been redeemed by someone else.
  *  This closes a TOCTOU race between `findValidInviteCode` (check) and this call (act): two
  *  concurrent registrations against the same code can both pass the check, but only one of the
  *  two `redeemInviteCode` calls will actually affect a row here. Returns whether this call was the
- *  one that claimed it, via `.returning()` (idiomatic for this codebase — see `insertUser` above)
+ *  one that claimed it, via `.returning()` (idiomatic for this codebase: see `insertUser` above)
  *  rather than a driver-specific affected-row count. Callers MUST check the return value and treat
  *  `false` the same as an invalid code. */
 export async function redeemInviteCode(db: LiftrDb, id: string, usedByUserId: string): Promise<boolean> {

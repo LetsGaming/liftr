@@ -1,7 +1,7 @@
 /**
  * Ingest-once CLI: `pnpm ingest --all` / `--catalog` / `--images` / `--muscles` /
  * `--standards` / `--run-standards`. Run manually, never from the running server. Every step is
- * idempotent — safe to re-run after editing tools/catalog/curated.yaml.
+ * idempotent: safe to re-run after editing tools/catalog/curated.yaml.
  */
 import { createDb, resolveDbPath, warnIfDefaultDbPath } from "@liftr/db";
 import path from "node:path";

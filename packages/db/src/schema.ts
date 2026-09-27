@@ -1,5 +1,5 @@
 /**
- * Drizzle schema. Routine (template) vs Workout (session) is a deliberate, load-bearing split —
+ * Drizzle schema. Routine (template) vs Workout (session) is a deliberate, load-bearing split:
  * do not collapse them. `run_points` is kept in full per point (never compressed to a polyline
  * blob) because it is what makes run replay possible. Every derived/cache table (`ranks`, `prs`,
  * streak state) must be reconstructible from the raw tables below via a `recompute` pass.
@@ -18,12 +18,12 @@ const createdAt = () =>
     .default(sql`(unixepoch('subsec') * 1000)`);
 
 // ---------------------------------------------------------------------------
-// Users (multi-user hardening groundwork — see docs/adr/0006-multi-user-hardening.md)
+// Users (multi-user hardening groundwork, see docs/adr/0006-multi-user-hardening.md)
 // ---------------------------------------------------------------------------
 
 /** The single seeded owner, created by the initial migration. Deterministic (not
- *  `crypto.randomUUID()`) so every fresh db — including every in-memory test db, which runs the
- *  same migration — gets a known user id for free, and so the migration's seed INSERT can be
+ *  `crypto.randomUUID()`) so every fresh db, including every in-memory test db (which runs the
+ *  same migration), gets a known user id for free, and so the migration's seed INSERT can be
  *  plain static SQL. `passwordHash` starts `NULL` on this row until first-run setup sets it
  *  (see `routes/auth.ts`'s `/api/auth/setup`), which is what makes a fresh install report
  *  `needsSetup: true`. */
@@ -37,7 +37,7 @@ export const users = sqliteTable(
      *  enforced by the route layer's validation, not a DB-level CHECK. */
     username: text("username").notNull(),
     /** `salt:hash` hex, both scrypt-derived. Null until first-run setup (the owner) or invite
-     *  redemption (a member) sets it — a user row can briefly exist without a usable password
+     *  redemption (a member) sets it: a user row can briefly exist without a usable password
      *  mid-invite-flow. */
     passwordHash: text("password_hash"),
     name: text("name").notNull(),
@@ -54,7 +54,7 @@ export const sessions = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    /** SHA-256 hex digest of the bearer token — the raw token is never stored, only ever held
+    /** SHA-256 hex digest of the bearer token: the raw token is never stored, only ever held
      *  by the client and hashed on arrival to look this row up. */
     tokenHash: text("token_hash").notNull(),
     createdAt: createdAt(),
@@ -63,27 +63,27 @@ export const sessions = sqliteTable(
       .default(sql`(unixepoch('subsec') * 1000)`),
     /** Idle (sliding-window) expiry: set to `now + SESSION_IDLE_TTL_MS` at creation
      *  (authRepository.ts's `createSession`) and renewed to the same offset on every authenticated
-     *  request (`touchSession`, same UPDATE that already writes `lastUsedAt` per request — renewing
-     *  here costs nothing extra, so it isn't throttled) — but never past `absoluteExpiresAt`.
+     *  request (`touchSession`, same UPDATE that already writes `lastUsedAt` per request, so renewing
+     *  here costs nothing extra and isn't throttled), but never past `absoluteExpiresAt`.
      *  `requireAuth` rejects a request once this has passed. Without this an idle-but-leaked token
      *  stayed valid forever; a self-hosted household app still wants *some* bound on that window,
      *  not just an explicit logout. */
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    /** Hard ceiling, set once at creation and never renewed by `touchSession` — bounds how long a
+    /** Hard ceiling, set once at creation and never renewed by `touchSession`; bounds how long a
      *  token stays valid even under continuous active use, so a stolen-but-actively-used token
      *  can't ride the sliding `expiresAt` window forever. The default is a fixed timestamp (~90
      *  days past when this migration was authored, matching `SESSION_ABSOLUTE_TTL_MS`) rather
      *  than a computed `now + ...` expression: SQLite's `ALTER TABLE ADD COLUMN` rejects a
      *  non-constant default outright ("Cannot add a column with non-constant default"), so this
      *  can only be a literal. It only ever applies to the migration's one-time backfill of
-     *  sessions that existed before this column did — a grace window, not a precise expiry — since
+     *  sessions that existed before this column did (a grace window, not a precise expiry), since
      *  every session created afterward gets an exact value from `createSession`, never this
      *  default. */
     absoluteExpiresAt: integer("absolute_expires_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`1797500898825`),
     /** Raw `User-Agent` header at session creation, for the "Aktive Sitzungen" device list in the
-     *  Profil page — display only (e.g. "Chrome · Windows"), never compared during auth. Null for
+     *  Profil page, display only (e.g. "Chrome · Windows"), never compared during auth. Null for
      *  sessions created before this column existed, or a request with no header. */
     userAgent: text("user_agent"),
   },
@@ -109,10 +109,10 @@ export const inviteCodes = sqliteTable(
 );
 
 /** A capped ring buffer (see `pruneErrorLogs` in errorLogRepository.ts, called after every
- *  insert) of unexpected-error occurrences — mirrors what app.ts's error handler already logs via
+ *  insert) of unexpected-error occurrences: mirrors what app.ts's error handler already logs via
  *  pino, so the owner can see "has this broken recently" from the app itself, no server/log access
  *  needed. Not user-attributed (see lib/errorReporting.ts's `ErrorReporter` interface): an
- *  unexpected error can happen before a user is resolved, and attribution isn't the point here —
+ *  unexpected error can happen before a user is resolved, and attribution isn't the point here;
  *  "did this happen and how often" is. */
 export const errorLogs = sqliteTable(
   "error_logs",
@@ -131,7 +131,7 @@ export const errorLogs = sqliteTable(
 );
 
 /** Every per-user table's owner column. Defaults to `OWNER_USER_ID` so a caller that doesn't
- *  (yet) resolve a real user — a direct `db.insert(...)` in a test fixture, a maintenance script —
+ *  (yet) resolve a real user (a direct `db.insert(...)` in a test fixture, a maintenance script)
  *  attributes to the one identity that actually exists today, rather than needing to pass it
  *  explicitly everywhere. Every repository/service/route that serves a real request already
  *  threads a resolved `userId` through explicitly instead of relying on this default; real
@@ -157,27 +157,27 @@ export const muscles = sqliteTable("muscles", {
 export const exercises = sqliteTable("exercises", {
   id: id(),
   slug: text("slug").notNull().unique(),
-  /** Literal display name — set only for custom (user-created) exercises. Null for catalog
+  /** Literal display name, set only for custom (user-created) exercises. Null for catalog
    *  exercises, which resolve their name via i18n lookup keyed on `slug`
    *  (`packages/client/src/composables/useExerciseName.ts`: locales/exercises.de.json's
    *  `exercise.${slug}.name`, falling back to the raw slug if even that's missing). Replaces the
-   *  former `nameKey` column, which was dead data end-to-end — no display code ever read it, for
+   *  former `nameKey` column, which was dead data end-to-end: no display code ever read it, for
    *  either custom or catalog exercises; resolution always went through `slug`. */
   name: text("name"),
   equipment: text("equipment"),
-  /** JSON-encoded EquipmentRequirement[] (@liftr/shared) — the full physical requirement list
+  /** JSON-encoded EquipmentRequirement[] (@liftr/shared): the full physical requirement list
    *  (e.g. bench-press: barbell + plates + bench), distinct from `equipment` above which is
    *  just the one primary/icon-driving item. Both write paths (catalog ingest, custom-exercise
-   *  creation) always compute and store a real array — defaults to `'[]'` rather than being
+   *  creation) always compute and store a real array; it defaults to `'[]'` rather than being
    *  nullable, so callers never need a null case for "no requirements known". */
   requiredEquipment: text("required_equipment").notNull().default("[]"),
-  /** push | pull | squat | hinge | carry | isolation-* — what synthetic derivation joins on. */
+  /** push | pull | squat | hinge | carry | isolation-*, what synthetic derivation joins on. */
   movementPattern: text("movement_pattern").notNull(),
   isBodyweight: integer("is_bodyweight", { mode: "boolean" }).notNull().default(false),
   isCustom: integer("is_custom", { mode: "boolean" }).notNull().default(false),
   /** Multi-user hardening groundwork: null for every catalog exercise (ingested or seeded); set
    *  to the creator's id for a custom (`isCustom`) exercise. NOT currently used to scope
-   *  visibility — custom exercises stay in the shared catalog, visible to every user, for this
+   *  visibility: custom exercises stay in the shared catalog, visible to every user, for this
    *  pass (see docs/adr/0006-multi-user-hardening.md's "accepted limitation": two users picking
    *  the same natural slug for a custom exercise collide on `exercises.slug`'s global
    *  uniqueness). This column exists now so scoping custom-exercise visibility per creator later
@@ -232,21 +232,21 @@ export const routineExercises = sqliteTable(
       .references(() => exercises.id, { onDelete: "restrict" }),
     orderIndex: integer("order_index").notNull().default(0),
     /** JSON-encoded {reps, weightKg}[], one target per set (e.g. a 10/8/6 pyramid, optionally
-     *  with a weight target per set too) — same JSON-text-column convention as
+     *  with a weight target per set too), same JSON-text-column convention as
      *  mesocycles.weekPercents. Set *count* is this array's length; there is deliberately no
      *  separate count column to keep in sync. weightKg is nullable: null means "no weight
-     *  target for this set" (plain bodyweight — push-ups, pull-ups) as opposed to `0`, which
+     *  target for this set" (plain bodyweight, push-ups, pull-ups) as opposed to `0`, which
      *  means "tracked, currently no added weight" (e.g. weighted dips before you've added a
-     *  plate) — that distinction is what drives whether SetEntry.vue shows a weight stepper
+     *  plate); that distinction is what drives whether SetEntry.vue shows a weight stepper
      *  at all during logging. Replaced the earlier reps-only targetRepsPerSet: number[] (no
      *  way to plan a weight target, or "extra kg" for a bodyweight movement, at all). */
-    // Must stay in sync with @liftr/shared's DEFAULT_TARGET_SETS (workout/setKind.ts) — a SQL
+    // Must stay in sync with @liftr/shared's DEFAULT_TARGET_SETS (workout/setKind.ts): a SQL
     // column default can't reference a JS import, so this literal is hand-duplicated from there.
     targetSets: text("target_sets_json").notNull().default('[{"reps":8,"weightKg":null},{"reps":8,"weightKg":null},{"reps":8,"weightKg":null}]'),
     /** nullable now so superset/circuit grouping isn't a later migration. */
     supersetGroup: integer("superset_group"),
     /** Lets rest time be tuned per set and per exercise (e.g. 30s between pushup sets, then 3
-     *  minutes before the next exercise). Both nullable — null means "use RestTimer's built-in 90s default",
+     *  minutes before the next exercise). Both nullable: null means "use RestTimer's built-in 90s default",
      *  same fallback behaviour a routine had before either column existed, so old rows and rows
      *  that never touch the rest-time UI stay exactly as before. */
     restBetweenSetsSeconds: integer("rest_between_sets_seconds"),
@@ -258,7 +258,7 @@ export const routineExercises = sqliteTable(
 /**
  * Periodization / mesocycle: at most one active cycle per routine. `weekPercents`
  * is a JSON-encoded number[] (generated once by @liftr/shared's generateMesocycleWeekPercents,
- * not hand-edited per week) — storing the whole curve rather than recomputing it lets the
+ * not hand-edited per week); storing the whole curve rather than recomputing it lets the
  * built-in ramp/deload shape change in code later without silently reshaping a cycle already
  * in progress.
  */
@@ -283,7 +283,7 @@ export const workouts = sqliteTable(
     startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
     endedAt: integer("ended_at", { mode: "timestamp_ms" }),
     pausedSeconds: integer("paused_seconds").notNull().default(0),
-    /** Plausibility gate multiplier — computed once at finish-workout time from
+    /** Plausibility gate multiplier, computed once at finish-workout time from
      *  session pace / improbable-jump / unrealistic-value checks (see @liftr/shared's
      *  plausibility.ts). Null until the workout finishes (matches endedAt's own nullability);
      *  application code treats a null/missing value as 1 (fully plausible) rather than using a SQL
@@ -291,14 +291,15 @@ export const workouts = sqliteTable(
     plausibilityMultiplier: real("plausibility_multiplier"),
     /** The session's consistency and variety XP bonuses, computed once at finish-workout time
      *  (same nullable/frozen-at-finish convention as plausibilityMultiplier above, since both depend
-     *  on that session's temporal context — the streak-as-of-that-date, the previous session's
-     *  muscle set — which is awkward/expensive to re-derive on every read). Null until the workout
+     *  on that session's temporal context: the streak-as-of-that-date, the previous session's
+     *  muscle set, which is awkward/expensive to re-derive on every read). Null until the workout
      *  finishes; application code treats null as 0 when summing into a user's total XP. No backfill
-     *  for pre-existing rows — pre-v1, no production data to preserve. */
+     *  for pre-existing rows: pre-v1, no production data to preserve. */
     consistencyBonusXp: real("consistency_bonus_xp"),
     varietyBonusXp: real("variety_bonus_xp"),
     notes: text("notes"),
     clientId: text("client_id").notNull(), // offline-sync idempotency key, unique per user (below)
+
   },
   (t) => [uniqueIndex("workouts_user_client_idx").on(t.userId, t.clientId)],
 );
@@ -322,13 +323,13 @@ export const sets = sqliteTable(
   "sets",
   {
     id: id(),
-    /** Denormalized from `workoutExerciseId -> workoutExercises -> workouts.userId` — a
+    /** Denormalized from `workoutExerciseId -> workoutExercises -> workouts.userId`. This is a
      *  deliberate exception to "children inherit ownership via their parent", written by exactly
      *  one function (`insertSet`) in lockstep with the parent, same precedent as this table's own
      *  `isWarmup`/`kind` pair below. `sets` is the join target of ~8 ownership-sensitive queries
      *  across six repository files (rank resolution, XP, history, export, muscle training log,
      *  "last performed" lookups) that would otherwise each need their own two-hop join with no
-     *  compiler-enforced guarantee it's present — a forgotten join here is a silent cross-user
+     *  compiler-enforced guarantee it's present: a forgotten join here is a silent cross-user
      *  data leak. See docs/adr/0006-multi-user-hardening.md. */
     userId: userId(),
     workoutExerciseId: text("workout_exercise_id")
@@ -339,20 +340,20 @@ export const sets = sqliteTable(
     reps: integer("reps").notNull(),
     rpe: real("rpe"),
     /** Kept alongside `kind` (not derived on read) because every rank/XP/history query already
-     *  filters on this exact boolean column — replacing it with `kind = 'warmup'` everywhere
+     *  filters on this exact boolean column; replacing it with `kind = 'warmup'` everywhere
      *  would touch rankEngine.ts, routes/xp.ts, routes/history.ts, routes/export.ts, and every
      *  client store that reads it. Always written in lockstep with `kind` at insert time
      *  (routes/sync.ts derives it from `kind`, single source of truth there), never
-     *  independently — so the two can't drift even though both exist. */
+     *  independently, so the two can't drift even though both exist. */
     isWarmup: integer("is_warmup", { mode: "boolean" }).notNull().default(false),
-    /** Set classification — purely descriptive metadata layered on top of the existing warmup/working split above. Doesn't
+    /** Set classification: purely descriptive metadata layered on top of the existing warmup/working split above. Doesn't
      *  change what counts toward rank/XP (still governed by isWarmup alone, as before this
      *  column existed): a drop-set or a partially-failed set still represents real effort at a
      *  real weight, same as any other working set. */
     kind: text("kind", { enum: ["normal", "warmup", "failure", "dropset"] }).notNull().default("normal"),
     notes: text("notes"),
     loggedAt: integer("logged_at", { mode: "timestamp_ms" }).notNull(),
-    /** offline write-queue idempotency key — POST /api/sync dedupes on this, unique
+    /** offline write-queue idempotency key: POST /api/sync dedupes on this, unique
      *  per user (below). */
     clientId: text("client_id").notNull(),
   },
@@ -391,8 +392,8 @@ export const standards = sqliteTable(
 );
 
 /** Derived cache, always rebuildable from sets + standards via `pnpm recompute`. Primary key is
- *  composite `(userId, exerciseId)` — was bare `exerciseId` before multi-user hardening (one
- *  rank row per exercise, globally); each user now gets their own resolved rank per exercise. */
+ *  composite `(userId, exerciseId)`; it was bare `exerciseId` before multi-user hardening (one
+ *  rank row per exercise, globally). Each user now gets their own resolved rank per exercise. */
 export const ranks = sqliteTable(
   "ranks",
   {
@@ -408,7 +409,7 @@ export const ranks = sqliteTable(
     nextTargetWeightKg: real("next_target_weight_kg"),
     nextTargetReps: integer("next_target_reps"),
     computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
-    /** Ratchet-only "best ever" snapshot — locked in the moment it's
+    /** Ratchet-only "best ever" snapshot, locked in the moment it's
      *  achieved and never recomputed retroactively (e.g. against today's bodyweight). Nullable:
      *  existing rows are backfilled to `peak* = current *` on their first post-migration
      *  recompute (see `recomputeRankForExercise`), not by the migration itself. */
@@ -437,8 +438,8 @@ export const prs = sqliteTable(
   (t) => [index("prs_exercise_idx").on(t.exerciseId)],
 );
 
-/** Append-only history of every rank-up — read-only log of an event
- *  `ranks` (the derived single-row-per-exercise cache above) already detects; not a new reward
+/** Append-only history of every rank-up: a read-only log of an event
+ *  `ranks` (the derived single-row-per-exercise cache above) already detects, not a new reward
  *  mechanic. Shape copied verbatim from `prs` above. */
 export const rankEvents = sqliteTable(
   "rank_events",
@@ -455,7 +456,7 @@ export const rankEvents = sqliteTable(
      *  rank-up was fully plausible, otherwise the same reason plausibility.ts attached to that
      *  workout. Lets the weekday aggregation (rankService.ts's computeRankEventsByWeekday) and
      *  RankUpCalendar.vue mute a flagged-but-still-peak-eligible rank-up's dot instead of
-     *  rendering it identically to a genuine one — `ranks`/`rankedUp` itself was already gated
+     *  rendering it identically to a genuine one. `ranks`/`rankedUp` itself was already gated
      *  by PEAK_ELIGIBILITY_FLOOR (0.3), which is looser than plausibility.ts's own floor (0.05)
      *  and reason-setting threshold (any detected severity at all), so a moderately-flagged
      *  session can genuinely advance peak and still deserve a muted dot, not an omitted one. */
@@ -476,7 +477,7 @@ export const runs = sqliteTable(
     source: text("source", { enum: ["gpx", "fit", "manual", "healthconnect"] }).notNull(),
     /** Cardio modality. "run"/"walk" each get their own parallel rank ladder (own standards rows,
      *  own run_ranks rows, own overall aggregate); "other" (bike, row, swim, ...) earns XP +
-     *  streak credit only — no rank/PR, since there's no honest standards data to rank it
+     *  streak credit only, no rank/PR, since there's no honest standards data to rank it
      *  against. Defaulted to "run" so the ADD COLUMN migration backfills every pre-existing row
      *  correctly: every run logged before this column existed was, by construction, a run. */
     activityType: text("activity_type", { enum: ["run", "walk", "hike", "other"] }).notNull().default("run"),
@@ -488,11 +489,11 @@ export const runs = sqliteTable(
     avgHr: real("avg_hr"),
     elevationGainM: real("elevation_gain_m"),
     /** Set when this run was logged from a saved planned route's quick-start hand-off (see
-     *  useStartPlannedRoute.ts). Archiving/deleting the route never breaks this run's history —
+     *  useStartPlannedRoute.ts). Archiving/deleting the route never breaks this run's history,
      *  a literal mirror of workouts.routineId's onDelete behavior. */
     plannedRouteId: text("planned_route_id").references(() => plannedRoutes.id, { onDelete: "set null" }),
     /** Plausibility gate multiplier for a GPS-tracked run's pace/consistency checks, computed
-     *  once when that gate runs (Task 4/7) — mirrors workouts.plausibilityMultiplier's
+     *  once when that gate runs (Task 4/7), mirroring workouts.plausibilityMultiplier's
      *  frozen-at-write-time/nullable convention. Always null for a manual run (`source: "manual"`),
      *  which has no GPS trace to gate on. */
     plausibilityMultiplier: real("plausibility_multiplier"),
@@ -501,7 +502,7 @@ export const runs = sqliteTable(
   (t) => [uniqueIndex("runs_user_client_idx").on(t.userId, t.clientId)],
 );
 
-/** The replay-enabling table — never discard points after computing the summary. */
+/** The replay-enabling table: never discard points after computing the summary. */
 export const runPoints = sqliteTable(
   "run_points",
   {
@@ -523,7 +524,7 @@ export const runPoints = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
-// Planned routes ("Strecken") — pre-planned, re-runnable routes.
+// Planned routes ("Strecken"): pre-planned, re-runnable routes.
 // ---------------------------------------------------------------------------
 
 export const plannedRoutes = sqliteTable("planned_routes", {
@@ -531,7 +532,7 @@ export const plannedRoutes = sqliteTable("planned_routes", {
   userId: userId(),
   name: text("name").notNull(),
   orderIndex: integer("order_index").notNull().default(0),
-  /** JSON-encoded {lat,lon}[] — the user-placed waypoints, distinct from the (much denser)
+  /** JSON-encoded {lat,lon}[]: the user-placed waypoints, distinct from the (much denser)
    *  road-snapped geometry stored in plannedRoutePoints below. Same JSON-text-column convention
    *  as routineExercises.targetSets. */
   waypoints: text("waypoints_json").notNull(),
@@ -539,14 +540,14 @@ export const plannedRoutes = sqliteTable("planned_routes", {
   elevationGainM: real("elevation_gain_m"),
   /** "ors" when the last (re)compute got a real road-snapped geometry + elevation from
    *  OpenRouteService; "straight" when it fell back to a straight line between waypoints (ORS
-   *  unset/unavailable) — drives the "≈"/"Höhe unbekannt" honesty marker in the UI. */
+   *  unset/unavailable): drives the "≈"/"Höhe unbekannt" honesty marker in the UI. */
   geometrySource: text("geometry_source", { enum: ["ors", "straight"] }).notNull(),
   computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
   archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
   createdAt: createdAt(),
 });
 
-/** The road-snapped (or straight-line-fallback) geometry for a planned route — mirrors
+/** The road-snapped (or straight-line-fallback) geometry for a planned route: mirrors
  *  run_points: never compressed to a polyline blob, kept as a full ordered point array so the
  *  map renders the exact line the server computed. No userId of its own (child-via-parent, like
  *  run_points). */
@@ -568,7 +569,7 @@ export const plannedRoutePoints = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
-// Running rank engine — mirrors standards/ranks/prs/rankEvents above, one set per run
+// Running rank engine: mirrors standards/ranks/prs/rankEvents above, one set per run
 // category instead of per exercise. The category tuple is inlined at each column definition
 // (not imported from @liftr/shared's RUN_CATEGORIES) to match how tier/peakTier above always
 // inline TIERS's literal 9-tuple rather than importing it.
@@ -578,7 +579,7 @@ export const runStandards = sqliteTable(
   "run_standards",
   {
     id: id(),
-    /** Narrower than runs.activityType — "other" has no standards data and can never reach this
+    /** Narrower than runs.activityType: "other" has no standards data and can never reach this
      *  table; the type system enforces it via @liftr/shared's RankedActivityType. */
     activityType: text("activity_type", { enum: ["run", "walk", "hike"] }).notNull().default("run"),
     category: text("category", { enum: ["mile", "5k", "10k", "half_marathon", "marathon", "all"] }).notNull(),
@@ -600,7 +601,7 @@ export const runStandards = sqliteTable(
 );
 
 /** Derived cache, always rebuildable from runs + runStandards. Composite primary key
- *  `(userId, category)` — one resolved rank row per running category per user, same shape as
+ *  `(userId, category)`: one resolved rank row per running category per user, same shape as
  *  `ranks`'s `(userId, exerciseId)` above. */
 export const runRanks = sqliteTable(
   "run_ranks",
@@ -615,7 +616,7 @@ export const runRanks = sqliteTable(
     trust: text("trust", { enum: ["real", "derived", "synthetic"] }),
     nextTargetSpeedMps: real("next_target_speed_mps"),
     computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
-    /** Ratchet-only "best ever" snapshot, same semantics as ranks.peak* above — locked in the
+    /** Ratchet-only "best ever" snapshot, same semantics as ranks.peak* above: locked in the
      *  moment it's achieved and never recomputed retroactively. */
     peakTier: text("peak_tier", { enum: ["initiate", "apprentice", "trainee", "athlete", "lifter", "advanced", "elite", "expert", "apex"] }),
     peakDivision: integer("peak_division"),
@@ -626,7 +627,7 @@ export const runRanks = sqliteTable(
   (t) => [primaryKey({ columns: [t.userId, t.activityType, t.category] })],
 );
 
-/** Append-only history of every running rank-up — shape copied verbatim from `rankEvents`
+/** Append-only history of every running rank-up: shape copied verbatim from `rankEvents`
  *  above, category in place of exerciseId. */
 export const runRankEvents = sqliteTable(
   "run_rank_events",
@@ -639,7 +640,7 @@ export const runRankEvents = sqliteTable(
     division: integer("division").notNull(),
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
     /** Same semantics as rankEvents.plausibilityReason above, but for the run-specific plausibility
-     *  gate (`computeRunPlausibility`, Task 4/7/8) — a different reason vocabulary than the
+     *  gate (`computeRunPlausibility`, Task 4/7/8): a different reason vocabulary than the
      *  workout gate's ("pace"/"improbable_jump"/"exceeds_ceiling"), since a run has no per-set pace
      *  or improbable-jump check; it has its own sustained-speed and distance-mismatch checks
      *  instead. No CHECK constraint at the SQL level either way (sqlite-core's `enum` option is
@@ -659,7 +660,7 @@ export const runPrs = sqliteTable(
     /** Mirrors prs.kind's e1rm/weight/reps/volume split: one row per kind so both a category's
      *  "fastest time" and "highest average speed" (same underlying number, but time is what a
      *  runner actually cares about seeing) can be queried without recomputing from value each
-     *  time. Multiple historical rows are allowed per (userId, category, kind), same as `prs` —
+     *  time. Multiple historical rows are allowed per (userId, category, kind), same as `prs`:
      *  "best" is an application-level concept (findBestRunPrByKind, Task 9), not a DB constraint. */
     kind: text("kind", { enum: ["time", "speed"] }).notNull(),
     value: real("value").notNull(), // seconds for "time", m/s for "speed"
@@ -686,7 +687,7 @@ export const streaks = sqliteTable(
   (t) => [uniqueIndex("streaks_user_date_kind_idx").on(t.userId, t.date, t.kind)],
 );
 
-/** Composite primary key `(userId, key)` — was bare `key` before multi-user hardening (one
+/** Composite primary key `(userId, key)`: was bare `key` before multi-user hardening (one
  *  global JSON k/v store); every settings key in use today (profile, ownedEquipment, gymSetup,
  *  defaultBodyweightKg) is genuinely per-user (sex/workoutsPerWeek drive which standards
  *  population and streak-token pool a user is ranked/protected against). */
@@ -701,7 +702,7 @@ export const settings = sqliteTable(
 );
 
 // ---------------------------------------------------------------------------
-// Relations (drizzle relational query API — used by the server's db.query.* calls)
+// Relations (drizzle relational query API: used by the server's db.query.* calls)
 // ---------------------------------------------------------------------------
 
 export const exercisesRelations = relations(exercises, ({ many }) => ({
@@ -772,7 +773,7 @@ export const prsRelations = relations(prs, ({ one }) => ({
 }));
 
 /** Lets `db.query.sessions.findFirst({ with: { user: ... } })` resolve a session's owning user
- *  (role, in particular) in a single round-trip — see authRepository.ts's `findSessionByTokenHash`. */
+ *  (role, in particular) in a single round-trip: see authRepository.ts's `findSessionByTokenHash`. */
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));

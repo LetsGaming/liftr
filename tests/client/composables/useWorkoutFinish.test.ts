@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 //
 // useWorkoutFinish.ts only uses ref/computed/watch (no onMounted/onUnmounted/inject), so it runs
-// fine called bare outside a component's setup() — see tests/README.md's guidance on when a
+// fine called bare outside a component's setup(); see tests/README.md's guidance on when a
 // component host is actually required. Its `stores` parameter is a plain object of already-
 // resolved Pinia store instances (not something it calls useXStore() on itself), so these tests
-// just hand it plain fakes shaped like the bits of each store it actually reads/calls — no
+// just hand it plain fakes shaped like the bits of each store it actually reads/calls: no
 // vi.mock() of the store modules needed, and no Pinia required either. `activeWorkoutStore` is
 // wrapped in Vue's `reactive()` so the composable's internal `watch(() => store.workoutId, ...)`
 // can actually observe mutations the same way it would against a real Pinia store.
 //
-// It also now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM) —
+// It also now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM).
 // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-// otherwise default the shared i18n singleton to "en" for the rest of the test process —
+// otherwise default the shared i18n singleton to "en" for the rest of the test process.
 // mountWithProviders.ts resets this for component tests, but this file drives the composable
 // directly, bypassing that helper.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -143,7 +143,7 @@ function makeStores(activeWorkoutOverrides: Partial<ActiveWorkoutFixture> = {}) 
 const noMuscles = computed(() => ({ primary: [] as string[], secondary: [] as string[] }));
 const nameFn = (slug: string) => `Name:${slug}`;
 
-describe("useWorkoutFinish — initial state", () => {
+describe("useWorkoutFinish: initial state", () => {
   it("starts empty before any finish", () => {
     const { stores } = makeStores();
     const result = useWorkoutFinish(stores, noMuscles, nameFn);
@@ -163,7 +163,7 @@ describe("useWorkoutFinish — initial state", () => {
   });
 });
 
-describe("useWorkoutFinish — streakDays", () => {
+describe("useWorkoutFinish: streakDays", () => {
   it("marks the last 7 calendar days active based on historyStore's workout items", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 7)); // Mon 2026-09-07
@@ -189,7 +189,7 @@ describe("useWorkoutFinish — streakDays", () => {
   });
 });
 
-describe("useWorkoutFinish — finishWorkout", () => {
+describe("useWorkoutFinish: finishWorkout", () => {
   it("aggregates volume/set-count/duration and snapshots the exercises actually logged", async () => {
     const { stores, activeWorkoutStore } = makeStores({
       exercises: [
@@ -217,7 +217,7 @@ describe("useWorkoutFinish — finishWorkout", () => {
     expect(result.finishedSummary.value).toEqual({
       routineName: "Push Day",
       durationLabel: "2 min", // 125s elapsed -> round(125/60) = 2
-      volumeKg: 100 * 5 + 20 * 10 + 50 * 10, // 1200 — logged warmups count toward volume
+      volumeKg: 100 * 5 + 20 * 10 + 50 * 10, // 1200 (logged warmups count toward volume)
       setCount: 2, // only non-warmup logged sets
       muscles: { primary: ["chest"], secondary: ["triceps"] },
       exercises: [
@@ -250,7 +250,7 @@ describe("useWorkoutFinish — finishWorkout", () => {
         isPr: true,
         lp: 60,
         prevLp: 55,
-        plausibilityNote: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
+        plausibilityNote: "Diese Session war ungewöhnlich schnell. Dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
       },
     ]);
   });
@@ -289,7 +289,7 @@ describe("useWorkoutFinish — finishWorkout", () => {
         exerciseId: "ex-flagged",
         exerciseName: "Name:ex-flagged-slug",
         recoveryGainLabel: null,
-        plausibilityNote: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
+        plausibilityNote: "Dieser Wert liegt ungewöhnlich hoch. Dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus.",
       },
     ]);
   });
@@ -402,7 +402,7 @@ describe("useWorkoutFinish — finishWorkout", () => {
   });
 });
 
-describe("useWorkoutFinish — session accumulators reset on a genuine workoutId change", () => {
+describe("useWorkoutFinish: session accumulators reset on a genuine workoutId change", () => {
   it("does NOT reset when workoutId goes from a real id to null (finish's own $reset)", async () => {
     const { stores, activeWorkoutStore } = makeStores();
     const result = useWorkoutFinish(stores, noMuscles, nameFn);
@@ -435,7 +435,7 @@ describe("useWorkoutFinish — session accumulators reset on a genuine workoutId
   });
 });
 
-describe("useWorkoutFinish — updateRoutineWithBeats", () => {
+describe("useWorkoutFinish: updateRoutineWithBeats", () => {
   it("does nothing when there's no beatRoutine (e.g. before finishWorkout(), or a Quick Start session)", async () => {
     const { stores, routineStore } = makeStores();
     const result = useWorkoutFinish(stores, noMuscles, nameFn);

@@ -1,6 +1,6 @@
 /**
  * Downsampling a stored route's full point array for a lightweight list-response payload (e.g.
- * a route-card map thumbnail) — the client never needs the full road-snapped geometry just to
+ * a route-card map thumbnail): the client never needs the full road-snapped geometry just to
  * draw a small preview, only enough points to trace a recognizable shape. Deliberately even-
  * stride sampling, not Douglas-Peucker: at thumbnail scale (roughly 80x80px) the two are visually
  * indistinguishable, and even-stride is a few lines with no recursion/state to get wrong, unlike

@@ -1,4 +1,4 @@
-/** XP / level, backed by /api/xp. Purely additive display — never gates anything. */
+/** XP / level, backed by /api/xp. Purely additive display: never gates anything. */
 import { defineStore } from "pinia";
 import { withLoadState } from "../lib/loadState";
 import { getXp } from "../services/xpService";
@@ -27,7 +27,7 @@ export const useXpStore = defineStore("xp", {
   actions: {
     async load() {
       // A failed load used to leave `loaded` false forever with no signal distinguishing
-      // "still fetching" from "never going to arrive" — withLoadState's `error` flag (see
+      // "still fetching" from "never going to arrive": withLoadState's `error` flag (see
       // ../lib/loadState.ts) is what lets the caller (OverviewPage's stalled-load banner) tell
       // the two apart.
       await withLoadState(getXp, {

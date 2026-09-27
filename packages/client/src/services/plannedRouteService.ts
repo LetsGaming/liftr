@@ -4,7 +4,7 @@ export interface Waypoint {
   lat: number;
   lon: number;
   /** Set on a waypoint RouteWizard.vue's loop generator placed, as opposed to one the user placed
-   *  by tapping the map — lets RouteMapEditor style it distinctly and lets unchecking "Schleife
+   *  by tapping the map: lets RouteMapEditor style it distinctly and lets unchecking "Schleife
    *  schließen" remove exactly the generated points, even after a save/reload round-trip. */
   gen?: boolean;
 }
@@ -28,7 +28,7 @@ export interface PlannedRoute {
   geometrySource: GeometrySource;
   computedAt: string;
   createdAt: string;
-  /** Downsampled real (routed, not just waypoint-corner) shape — list-endpoint only, for drawing
+  /** Downsampled real (routed, not just waypoint-corner) shape: list-endpoint only, for drawing
    *  an honest map-preview thumbnail without a per-route detail fetch. Not present on the detail
    *  response, which already returns the full, non-downsampled `points` array instead. */
   polyline: Waypoint[];

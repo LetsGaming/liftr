@@ -1,4 +1,4 @@
-// ReviewStep.vue — same real-child/real-store setup as FastPathStep.test.ts (its close sibling:
+// ReviewStep.vue uses the same real-child/real-store setup as FastPathStep.test.ts (its close sibling:
 // both consume useRoutineReviewChecks and render an identical exercise-summary shape), just with
 // its own totalSets/back-button markup instead of reorder controls.
 import { createPinia } from "pinia";

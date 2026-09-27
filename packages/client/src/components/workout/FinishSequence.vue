@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Post-workout reward sequence. Replaces the old single flat summary card — duration/volume/sets
+ * Post-workout reward sequence. Replaces the old single flat summary card: duration/volume/sets
  * were shown, but the session's actual *earned* signals (rank-ups, streak, XP/level) were
  * computed and then silently discarded (see WorkoutPage.vue's old finishWorkout(): prCount
  * hardcoded to 0, rankUps hardcoded to []). Three timed beats, each skippable by a tap, each
- * optional if there's nothing to show — never manufacture a reward. No new currencies: rank/
+ * optional if there's nothing to show: never manufacture a reward. No new currencies: rank/
  * streak/XP all already existed, this only makes them felt at the one moment they were being
  * thrown away.
  */
@@ -27,9 +27,9 @@ export interface RankUpSummary {
   isPr: boolean;
   lp: number;
   prevLp: number;
-  /** Set when this exercise's rank-up came from a plausibility-flagged session — never states
+  /** Set when this exercise's rank-up came from a plausibility-flagged session: never states
    *  exact numbers (same PLAUSIBILITY_NOTE_DE copy useWorkoutFinish.ts's sessionCaptions already
-   *  uses). A flagged rank-up must never render identically to a genuine one — see the template
+   *  uses). A flagged rank-up must never render identically to a genuine one: see the template
    *  below. */
   plausibilityNote: string | null;
 }
@@ -45,11 +45,11 @@ const props = defineProps<{
   tokensRemaining: number;
   sessionXp: number;
   /** The three XP sources must render as independently-visible, independently-animated lines
-   *  rather than one pre-summed total — this is the actual fix for "there is no message behind
+   *  rather than one pre-summed total: this is the actual fix for "there is no message behind
    *  that number," not polish. */
   consistencyBonusXp: number;
   varietyBonusXp: number;
-  /** Muscle slugs newly trained this session vs. the previous finished session — empty when
+  /** Muscle slugs newly trained this session vs. the previous finished session: empty when
    *  varietyBonusXp is 0 (this session's muscles fully overlapped the last one). Additive-only:
    *  the variety line is suppressed entirely in that case, see the template below, rather than
    *  showing a "+0 XP" that would read as a judgment. */
@@ -58,7 +58,7 @@ const props = defineProps<{
   levelAfter: number;
   /** 0-100, the level bar's fill *before* this session's XP was added. */
   progressBefore: number;
-  /** 0-100, the level bar's fill *after* — if levelAfter > levelBefore this is progress into
+  /** 0-100, the level bar's fill *after*: if levelAfter > levelBefore this is progress into
    *  the new level, not a continuation of the old bar (the bar resets at a level-up). */
   progressAfter: number;
 }>();
@@ -68,7 +68,7 @@ const { t } = useI18n();
 const celebrate = useCelebrate();
 const leveledUp = computed(() => props.levelAfter > props.levelBefore);
 
-/** .finish-seq previously had no background, no color, no shadow — the emotional climax of the
+/** .finish-seq previously had no background, no color, no shadow: the emotional climax of the
  *  app rendered as centered text on plain --bg. Highest tier among this session's *genuine*
  *  rank-ups stages the whole sequence's background; a discounted-only session (a discounted
  *  session must never look genuine) falls back to the same neutral surface ramp as a session
@@ -81,7 +81,7 @@ const topTierClass = computed(() => {
 });
 
 /** Beat 1 (Rangaufstiege) celebrates any PR set this session (`r.isPr` below) but had zero
- *  permanent link into RecordsPage.vue — a one-off in-session acknowledgment with nowhere to go
+ *  permanent link into RecordsPage.vue: a one-off in-session acknowledgment with nowhere to go
  *  afterward. Only shown when this session actually set a PR (RanksPage.vue's own "Rekorde
  *  ansehen" link has no such gate since that page isn't session-scoped); no dead link on a
  *  session with none. */
@@ -91,7 +91,7 @@ const hasPr = computed(() => props.rankUps.some((r) => r.isPr));
 // derived straight from props: a computed target that already equals its final value at mount
 // never fires useCountUp's `watch(target, ...)` (nothing changes), so it would render the final
 // number instantly with no animation at all. Instead all four start at 0/before and only get
-// retargeted to their real value once beat 3 actually activates — that retarget is what
+// retargeted to their real value once beat 3 actually activates: that retarget is what
 // triggers the roll-up. The three XP lines must stay independently visible, so each gets its
 // own target/display pair rather than one summed value.
 const setXpRollTarget = ref(0);
@@ -103,7 +103,7 @@ const { value: varietyXpDisplay } = useCountUp(varietyXpRollTarget, 700);
 const barPercentTarget = ref(0);
 const { value: barPercent } = useCountUp(barPercentTarget, 700);
 
-/** Names the newly-trained muscle(s) rather than just a count — reuses the same muscleLabel()
+/** Names the newly-trained muscle(s) rather than just a count: reuses the same muscleLabel()
  *  lookup RanksPage.vue/ErholungszoneCard.vue use for muscle display names, rather than
  *  inventing a second one. Plain German list join ("X", "X und Y", "X, Y und Z"). */
 const varietyMuscleLabel = computed(() => {
@@ -113,9 +113,9 @@ const varietyMuscleLabel = computed(() => {
   return `${names.slice(0, -1).join(", ")} und ${names[names.length - 1]}`;
 });
 
-/** LP bar animation for Beat 1 — the bar must animate literally from prevLp to lp, not jump.
+/** LP bar animation for Beat 1: the bar must animate literally from prevLp to lp, not jump.
  *  useCountUp's Ref<number> API assumes one static target per call, which doesn't fit a v-for
- *  of independently-valued rows — this is a small array variant of the same ease-out-cubic
+ *  of independently-valued rows: this is a small array variant of the same ease-out-cubic
  *  curve instead of reusing useCountUp as-is. */
 function prefersReducedMotionLocal(): boolean {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Was no background/color/shadow at all — the emotional climax of the app rendered as centered
+/* Was no background/color/shadow at all: the emotional climax of the app rendered as centered
    text on plain --bg. Tier-gradient wash, scoped to the session's highest rank-up
    (topTierClass); falls back to the neutral surface ramp when there were none this session
    (e.g. a session with only XP, no rank-ups). */
@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
   gap: var(--sp3);
   /* Each beat only ever mounts once per completed workout (well under 1x/session), unlike the
    *  generic .pop-in class it inherits duration from (motion.css, tuned for routine list
-   *  entrances). This is a rare, earned moment worth investing extra polish in — override to
+   *  entrances). This is a rare, earned moment worth investing extra polish in: override to
    *  the earned-moment token so the post-workout reveal gets the full --dur-cele budget instead
    *  of sharing --dur-base with ordinary UI. --ease-spring was already correct (inherited from
    *  .pop-in). */
@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: var(--sp2);
 }
-/* Background/border come from .panel-reward (tokens.css) — was the same flat --surface-2 recipe
+/* Background/border come from .panel-reward (tokens.css): was the same flat --surface-2 recipe
    every other panel in the app used, on the one row that's actually showing you the reward. */
 .rankup-row {
   display: flex;
@@ -322,7 +322,7 @@ onBeforeUnmount(() => {
    *  session, at most a handful), so it earns --dur-cele over the generic .pop-in's --dur-base. */
   animation-duration: var(--dur-cele);
 }
-/* Was 32x36px — the most important reward in a rank-ladder product rendered as a 32px hexagon on
+/* Was 32x36px: the most important reward in a rank-ladder product rendered as a 32px hexagon on
    a gray row. --glow-blue (tokens.css) is a box-shadow value and would get clipped away by the
    old .badge's own clip-path if applied directly; drop-shadow doesn't have that problem (it
    follows the actual rendered alpha, not a box), so it's kept even though the badge itself isn't
@@ -333,20 +333,20 @@ onBeforeUnmount(() => {
   flex: none;
   filter: drop-shadow(0 0 10px rgba(59, 140, 255, 0.55)) drop-shadow(0 0 3px rgba(59, 140, 255, 0.4));
 }
-/* Nebula ring — this rank-up beat (Beat 1, activeIndex===0) is the one place in the app a
+/* Nebula ring: this rank-up beat (Beat 1, activeIndex===0) is the one place in the app a
    rank-up is actually celebrated; the ring wraps only this
    render site's badge instances, not RankProgress.vue's shared card (Ränge grid, in-session
    focus column, post-sequence plausibility/recovery captions) or TierLadder.vue's resting-state
-   ladder. Structurally absent (not just hidden) outside this v-for — there is no boolean toggle
+   ladder. Structurally absent (not just hidden) outside this v-for: there is no boolean toggle
    guarding it that a plausibility-discounted or same-band-recovery session could also satisfy.
 
    No more clip-path here (previously a tight hex, `polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%,
    25% 100%, 0% 50%)`, sized only to the 56px core). Wings now escalate from Stufe 4 (not just
-   Elite+) and reach roughly 2.3x the core's width at Apex — a clip-path sized to the small core
+   Elite+) and reach roughly 2.3x the core's width at Apex: a clip-path sized to the small core
    box would cut every one of those tiers' wings off, not just the top ones. This still frames the
    core with a small Nebula-gradient hex via padding+background; it just no longer clips whatever
    the badge renders past that frame. Properly resizing the frame to track wingspan per tier is an
-   open follow-up, not solved here — see docs/design/nebula-design-system.md's rank emblem note. */
+   open follow-up, not solved here: see docs/design/nebula-design-system.md's rank emblem note. */
 .badge-ring {
   display: inline-block;
   flex: none;
@@ -354,9 +354,9 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   background: var(--nebula-grad);
 }
-/* Muted counterpart to .badge-ring — a plausibility-discounted session must never be visually
+/* Muted counterpart to .badge-ring: a plausibility-discounted session must never be visually
    indistinguishable from a genuine rank-up. Flat
-   --surface-3 instead of the Nebula brand gradient — deliberately the one place in this beat
+   --surface-3 instead of the Nebula brand gradient: deliberately the one place in this beat
    that does NOT get the gradient treatment. No clip-path, same reasoning as .badge-ring above. */
 .badge-ring-muted {
   display: inline-block;
@@ -366,7 +366,7 @@ onBeforeUnmount(() => {
   background: var(--surface-3);
 }
 /* Discounted row: desaturated + slightly dimmed, so it reads as "happened, but muted" rather
-   than a full celebration — paired with .badge-ring-muted above and the plausibility-note line
+   than a full celebration: paired with .badge-ring-muted above and the plausibility-note line
    below. */
 .rankup-row.discounted {
   filter: grayscale(0.55);
@@ -440,7 +440,7 @@ onBeforeUnmount(() => {
   font-family: var(--font-display);
   color: var(--pr);
 }
-/* Consistency/variety bonus lines sit visually under the per-set line — still their own named,
+/* Consistency/variety bonus lines sit visually under the per-set line: still their own named,
    animated line each, just not shouting as loud as the first number. */
 .xp-line-bonus {
   font-size: 18px;

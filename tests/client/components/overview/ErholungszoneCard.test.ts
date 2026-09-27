@@ -93,7 +93,7 @@ describe("ErholungszoneCard", () => {
       props: { heat, recoveredSlugs: [], loaded: true, canStart: false },
     });
 
-    // MuscleFigure renders one <img> per known muscle overlay when a heat map is set — with
+    // MuscleFigure renders one <img> per known muscle overlay when a heat map is set. With
     // two entries here (chest front, triceps back) it should render at least those two overlays
     // in addition to the two base body outlines.
     const imgs = wrapper.findAll("img");

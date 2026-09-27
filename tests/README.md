@@ -1,7 +1,7 @@
 # Tests
 
 All tests live here, mirroring `packages/<pkg>/src/...` under `tests/<pkg>/...`. Nothing under
-`packages/*/src` should have a colocated `*.test.ts`/`*.spec.ts` file — if you're adding a test
+`packages/*/src` should have a colocated `*.test.ts`/`*.spec.ts` file: if you're adding a test
 for `packages/server/src/services/foo.ts`, it goes in `tests/server/services/foo.test.ts`.
 
 Run everything from the repo root:
@@ -14,27 +14,27 @@ pnpm typecheck:tests      # tsc/vue-tsc over tests/, one pass per package
 
 ## Importing the code under test
 
-- **`@liftr/shared`, `@liftr/db`** — real workspace packages with a public `exports` map. Import
+- **`@liftr/shared`, `@liftr/db`**: real workspace packages with a public `exports` map. Import
   them by package name, same as production code does:
   `import { computeLevel } from "@liftr/shared"`. Everything shared's tests need is re-exported
   from `packages/shared/src/index.ts`; if something isn't, export it there first rather than
   reaching for a relative path.
-- **`~server/*`, `~client/*`, `~ingest/*`** — path aliases (defined in `vitest.config.ts` and each
+- **`~server/*`, `~client/*`, `~ingest/*`**: path aliases (defined in `vitest.config.ts` and each
   package's `tsconfig.test.json`) that map straight to that package's `src/`, e.g.
   `import { getXpSummary } from "~server/services/xpService.js"` or
   `import Foo from "~client/components/exercise/Foo.vue"`. server/ingest use `moduleResolution:
   NodeNext`, so keep the `.js` extension on these specifiers even though the real file is `.ts`.
-  `db` and `shared` don't have this alias — they're always imported by package name (above).
-- Never use relative imports (`./`, `../`) to reach back into `packages/*/src` from a test file —
+  `db` and `shared` don't have this alias: they're always imported by package name (above).
+- Never use relative imports (`./`, `../`) to reach back into `packages/*/src` from a test file:
   the depth varies per file and is easy to get wrong. Relative imports are fine only for reaching
   *other test files/helpers*, e.g. `tests/server/repositories/foo.test.ts` importing
   `../helpers/testDb.js`.
 - `vi.mock(...)` specifiers must match whatever specifier the *source under test* would resolve to
-  the same absolute file — use the `~server`/`~client`/`~ingest` alias there too (e.g.
+  the same absolute file: use the `~server`/`~client`/`~ingest` alias there too (e.g.
   `vi.mock("~client/lib/idb", ...)`), not a relative path computed from the test file's own
   location.
-- Third-party packages that only `packages/client` (not this root `package.json`) depends on —
-  `idb`, `@capacitor/*` — need a `resolve.alias` entry in `vitest.config.ts` pointing straight at
+- Third-party packages that only `packages/client` (not this root `package.json`) depends on:
+  `idb`, `@capacitor/*`: need a `resolve.alias` entry in `vitest.config.ts` pointing straight at
   `packages/client/node_modules/<pkg>` before `vi.mock("idb", ...)`-style mocking of them will
   actually take effect. Without it, a bare `import "idb"` from a test file (outside any package)
   and from `packages/client/src/lib/idb.ts` resolve to two *different* module ids, so the test's
@@ -45,7 +45,7 @@ pnpm typecheck:tests      # tsc/vue-tsc over tests/, one pass per package
 
 ### `vi.mock()` + a same-file `const` mock: use `vi.hoisted()`
 
-`vi.mock()` calls are hoisted above all imports *and* above top-of-file `const`s — but a `const
+`vi.mock()` calls are hoisted above all imports *and* above top-of-file `const`s: but a `const
 fooMock = vi.fn()` sitting next to it is **not** hoisted along with it. If the mock factory reads
 that `const` directly (`vi.mock("~client/services/fooService", () => ({ getFoo: fooMock })))`),
 you get `ReferenceError: Cannot access 'fooMock' before initialization` at runtime, because the
@@ -58,7 +58,7 @@ vi.mock("~client/services/fooService", () => ({ getFoo: fooMock }));
 ```
 
 (Nesting the reference inside an uninvoked inner function, or reading it via `vi.mocked(importedFn)`
-*after* importing the now-mocked module, both dodge the same TDZ hazard too — `vi.hoisted()` is
+*after* importing the now-mocked module, both dodge the same TDZ hazard too: `vi.hoisted()` is
 just the most direct fix.)
 
 ## Rank balance & anti-cheat testing
@@ -75,20 +75,20 @@ knowing before touching this area:
   session. Read `peakTier`/`peakDivision` (queried directly from the `ranks` table, decay-immune) for
   any pacing/balance assertion; only use `tier`/`division` when a scenario is deliberately testing
   decay itself.
-- Peak only advances once a candidate is corroborated by a SECOND, separate calendar day — including
+- Peak only advances once a candidate is corroborated by a SECOND, separate calendar day: including
   a lifter's very first-ever session (there's nothing to corroborate against yet). A weight curve
   that increases every single session without ever repeating a rounded value can leave peak "stuck",
   which can in turn false-positive the separate `improbable_jump` plausibility check once the gap
-  from stored (stale) peak grows past its threshold — see the `[FINDING]`-tagged tests for two real,
+  from stored (stale) peak grows past its threshold: see the `[FINDING]`-tagged tests for two real,
   reproduced instances of this (and a bodyweight-manipulation blind spot) found while building this
   suite. They're regression trip-wires, not something this test suite fixes on its own.
 
 ## Shared test helpers
 
-- `tests/server/helpers/testDb.ts` — `createTestDb()` returns a fresh, fully-migrated in-memory
+- `tests/server/helpers/testDb.ts`: `createTestDb()` returns a fresh, fully-migrated in-memory
   SQLite `LiftrDb` (real constraints/cascades, no disk I/O). `insertTestExercise(db, overrides?)`
   seeds a minimal exercise row. Use in a `beforeEach` for one fresh db per test.
-- `tests/server/helpers/testApp.ts` — `createTestApp()` returns `{ app, db }`: a bare Fastify
+- `tests/server/helpers/testApp.ts`: `createTestApp()` returns `{ app, db }`: a bare Fastify
   instance with the production `configureApp()` wiring (real Zod validation + the real error
   handler) but no db/CORS/static/auth setup. Register only the route(s) under test on it:
   ```ts
@@ -96,39 +96,39 @@ knowing before touching this area:
   registerXpRoutes(app, db);
   const res = await app.inject({ method: "GET", url: "/api/xp" });
   ```
-  `requireAuth` is only wired up in the real `buildApp()`, not here — route tests don't need an
+  `requireAuth` is only wired up in the real `buildApp()`, not here: route tests don't need an
   Authorization header at all.
-- `tests/client/helpers/mountWithProviders.ts` — `mountWithProviders(Component, options?)` wraps
+- `tests/client/helpers/mountWithProviders.ts`: `mountWithProviders(Component, options?)` wraps
   `@vue/test-utils`'s `mount()` with a fresh Pinia, the real `i18n` instance (actual `de` copy, so
   text assertions match production strings), and a stub router (`createTestRouter()`, no real
-  routes — good enough for components that just call `useRouter()`/render `<router-link>`). Pass
+  routes: good enough for components that just call `useRouter()`/render `<router-link>`). Pass
   `options.global` to add more; it's merged in, not replaced. Ionic's `ion-*` tags need no special
-  handling — Vue's compiler already renders unresolved hyphenated tags as plain custom elements
+  handling: Vue's compiler already renders unresolved hyphenated tags as plain custom elements
   (no warning), so they render in jsdom without the real Stencil/web-components runtime. If a
   component reads a property/method Ionic itself would set on one, stub that specific element via
   `global.stubs` instead of trying to load real `@ionic/vue`.
 
-  It also resets `i18n.global.locale.value = "de"` before every mount — jsdom's
+  It also resets `i18n.global.locale.value = "de"` before every mount: jsdom's
   `navigator.language` always reports `"en-US"`, so `i18n.ts`'s `getStoredLocale()` would
   otherwise default the shared i18n singleton to English for the rest of the test process, and a
   test that switches locale (a language-picker test, say) would leak English into every test that
   runs after it. A test file that constructs its own `mount()` with `plugins: [i18n]` instead of
   using this helper (real named routes are the usual reason) needs the same reset in its own
-  `beforeEach` — `i18n.global.locale.value = "de";` — or its German-text assertions can fail
+  `beforeEach`: `i18n.global.locale.value = "de";`: or its German-text assertions can fail
   depending on test run order.
-- `tests/client/helpers/withSetup.ts` — `withSetup(() => useMyComposable(...))` returns
+- `tests/client/helpers/withSetup.ts`: `withSetup(() => useMyComposable(...))` returns
   `{ result, unmount }`. Needed for any composable using lifecycle hooks or injection
-  (`onMounted`/`onUnmounted`/`watch`/`useI18n`/`inject`) — calling those bare outside a component's
+  (`onMounted`/`onUnmounted`/`watch`/`useI18n`/`inject`): calling those bare outside a component's
   `setup()` throws. It mounts a throwaway host component and runs the composable inside its real
   `setup()`, so lifecycle behavior (including cleanup on `unmount()`) works exactly as in
   production. Needs a real DOM, so add `// @vitest-environment jsdom` to any test file that uses
-  it (composables/ isn't covered by the `environmentMatchGlobs` jsdom glob — only
+  it (composables/ isn't covered by the `environmentMatchGlobs` jsdom glob: only
   components/pages are). Composables with no lifecycle hooks don't need this; call them directly.
 
 ## Environment
 
 Everything runs under vitest's `node` environment by default. `tests/client/components/**` and
-`tests/client/pages/**` run under `jsdom` (`environmentMatchGlobs` in `vitest.config.ts`) — that's
+`tests/client/pages/**` run under `jsdom` (`environmentMatchGlobs` in `vitest.config.ts`): that's
 the only place DOM globals exist. A composable/store/service test that needs `document`/`window`
 needs to move under one of those two globs, or add its own
 `// @vitest-environment jsdom` docblock at the top of the file.
@@ -138,6 +138,6 @@ needs to move under one of those two globs, or add its own
 Match the existing tests: `describe`/`it` from `vitest`, no test framework abstractions beyond
 that. Test names read as full sentences describing the behavior (`"does not regress on a lower LP
 within the same tier/division"`, not `"test 3"`). Prefer exercising real collaborators (the real
-in-memory db, the real error handler, the real i18n strings) over mocking — mock only true
+in-memory db, the real error handler, the real i18n strings) over mocking: mock only true
 external boundaries (network, IndexedDB, Capacitor native plugins, `Date.now()`/timers where a
 test needs to control time).

@@ -24,7 +24,7 @@ function makeExercise(overrides: Partial<CatalogExercise> = {}): CatalogExercise
   };
 }
 
-/** jsdom has no matchMedia implementation at all — the component reads
+/** jsdom has no matchMedia implementation at all; the component reads
  *  `prefers-reduced-motion` once, synchronously, at setup() time, so it has to be stubbed
  *  *before* mounting for a "reduced motion" test to have any effect. */
 function stubReducedMotion(matches: boolean) {

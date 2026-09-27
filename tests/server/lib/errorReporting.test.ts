@@ -13,7 +13,7 @@ describe("reportError", () => {
     expect(b.report).toHaveBeenCalledWith(error, ctx);
   });
 
-  it("isolates one reporter's failure — the rest still run, and it's surfaced via onReporterFailure, not thrown", async () => {
+  it("isolates one reporter's failure: the rest still run, and it's surfaced via onReporterFailure, not thrown", async () => {
     const failing: ErrorReporter = { report: vi.fn().mockRejectedValue(new Error("disk full")) };
     const healthy: ErrorReporter = { report: vi.fn() };
     const onFailure = vi.fn();

@@ -4,7 +4,7 @@ import { findRecentBodyweightLogs, upsertBodyweightLog } from "../repositories/b
 import type { ZodFastifyInstance } from "../types.js";
 
 /**
- * Bodyweight log. Not just a stats feature — `rankEngine.ts` needs a current bodyweight to
+ * Bodyweight log. Not just a stats feature: `rankEngine.ts` needs a current bodyweight to
  * compute load_ratio ranks and falls back to a
  * hardcoded 75kg guess when no entry exists, which silently makes every loaded-lift rank wrong
  * for anyone who isn't close to that weight. This closes that gap.

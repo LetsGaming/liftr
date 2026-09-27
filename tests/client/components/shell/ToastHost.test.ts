@@ -1,8 +1,8 @@
 // ToastHost.vue renders whatever useToast.ts's shared module-level queue currently holds. That
-// queue is a singleton (not a Pinia store — see useToast.ts's own header comment), so state
+// queue is a singleton (not a Pinia store, see useToast.ts's own header comment), so state
 // leaks across tests unless each test resets modules and re-imports both useToast and ToastHost
 // fresh, same discipline tests/client/composables/useToast.test.ts already uses for the
-// composable alone. Real composable throughout (not mocked) — it's simple and already covered
+// composable alone. Real composable throughout (not mocked): it's simple and already covered
 // at the composable level; this file only checks that the host renders/removes toasts as that
 // queue changes, including driving the auto-dismiss timing from the component side.
 import { flushPromises } from "@vue/test-utils";

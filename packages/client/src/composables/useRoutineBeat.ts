@@ -1,7 +1,7 @@
 /**
  * Detects when a user made changes to the routine while in the workout (e.g. more weight/reps
  * than the routine default) so the app can ask to overwrite the routine. Pure comparison/rebuild
- * logic, kept out of WorkoutPage.vue so it's testable without mounting the page — the litmus
+ * logic, kept out of WorkoutPage.vue so it's testable without mounting the page: the litmus
  * test from this project's Vue conventions (domain logic doesn't need a component to run).
  */
 import type { ActiveExercise } from "../stores/activeWorkoutStore";
@@ -18,7 +18,7 @@ export interface RoutineBeat {
 }
 
 /** A logged set "beats" its routine target if it was done at more weight, or (at the same or no
- *  tracked weight) more reps than planned — warmups never count, they're not the working set. */
+ *  tracked weight) more reps than planned: warmups never count, they're not the working set. */
 function setBeatsTarget(loggedWeightKg: number | null, loggedReps: number, targetWeightKg: number | null, targetReps: number): boolean {
   if (targetWeightKg != null && loggedWeightKg != null && loggedWeightKg > targetWeightKg) return true;
   if ((targetWeightKg == null || loggedWeightKg === targetWeightKg) && loggedReps > targetReps) return true;
@@ -36,7 +36,7 @@ export function findRoutineBeats(routine: Routine, activeExercises: ActiveExerci
     for (const set of ex.sets) {
       if (!set.logged || set.isWarmup) continue;
       const target = re.targetSets[set.index];
-      if (!target) continue; // extra set beyond the routine's planned count — nothing to compare
+      if (!target) continue; // extra set beyond the routine's planned count: nothing to compare
       if (setBeatsTarget(set.weightKg, set.reps, target.weightKg, target.reps)) {
         beats.push({
           exerciseId: ex.exerciseId,
@@ -54,8 +54,8 @@ export function findRoutineBeats(routine: Routine, activeExercises: ActiveExerci
 }
 
 /** Rebuilds the routine's full exercise list (PATCH /api/routines/:id replaces it wholesale)
- *  with every set that beat its target raised to what was actually performed. Everything else —
- *  order, superset grouping, rest-time overrides, sets never touched this session — is carried
+ *  with every set that beat its target raised to what was actually performed. Everything else:
+ *  order, superset grouping, rest-time overrides, sets never touched this session: is carried
  *  over unchanged from the routine as it already was. */
 export function buildRoutineUpdate(routine: Routine, activeExercises: ActiveExercise[]): RoutineExerciseInput[] {
   const byExerciseId = new Map(activeExercises.map((ex) => [ex.exerciseId, ex]));

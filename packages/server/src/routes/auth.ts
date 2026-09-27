@@ -29,7 +29,7 @@ const usernameSchema = z.string().regex(USERNAME_PATTERN, "3-24 lowercase letter
 const passwordSchema = z
   .string()
   .min(8, "at least 8 characters")
-  // scrypt's hashing cost scales with input length (see passwords.ts) — an unbounded password
+  // scrypt's hashing cost scales with input length (see passwords.ts): an unbounded password
   // lets a client force expensive hashing on every login attempt. 128 chars is generous for any
   // real password.
   .max(128, "at most 128 characters")
@@ -42,15 +42,15 @@ const changePasswordInput = z.object({ currentPassword: z.string(), newPassword:
 const changeUsernameInput = z.object({ currentPassword: z.string(), username: usernameSchema });
 const changeNameInput = z.object({ name: z.string().trim().min(1).max(40) });
 
-/** A real hash (in the same `scrypt:N:r:p:salt:hash` format `hashPassword` produces — see
+/** A real hash (in the same `scrypt:N:r:p:salt:hash` format `hashPassword` produces: see
  *  passwords.ts) computed once at module load and used only as a timing decoy in `/api/auth/login`
  *  below, so a lookup for a nonexistent username still pays the full scrypt cost before returning
- *  401 — never used to actually authenticate. Computed via `hashPassword` (rather than hand-crafted)
+ *  401: never used to actually authenticate. Computed via `hashPassword` (rather than hand-crafted)
  *  so the format is guaranteed valid; the one-time cost at startup is negligible. */
 const dummyPasswordHashPromise = hashPassword("dummy-password-for-timing");
 
 /** 10 attempts per 15 minutes per username (falling back to IP when no username is present, e.g.
- *  a malformed body or /api/auth/setup which takes no username) — generous enough that a real
+ *  a malformed body or /api/auth/setup which takes no username): generous enough that a real
  *  user fat-fingering their password a few times never gets blocked, tight enough to make
  *  scripted guessing impractical even parallelized across a handful of connections. Scoped to
  *  these three routes only: they're the ones an attacker can use to guess a credential (password
@@ -59,7 +59,7 @@ const dummyPasswordHashPromise = hashPassword("dummy-password-for-timing");
  *  Keyed on `req.body.username` rather than the default `req.ip`: this app's documented
  *  deployment sits behind a reverse proxy with no `trustProxy` configured (see
  *  docs/operations/docker-deployment.md), so every real client's `request.ip` resolves to the
- *  proxy's own address — an IP-only key would put every legitimate user behind one shared bucket,
+ *  proxy's own address: an IP-only key would put every legitimate user behind one shared bucket,
  *  letting an outsider lock everyone out with 10 failed attempts. `hook: "preHandler"` is required
  *  so `request.body` has already been parsed/validated when the key generator runs (the default
  *  hook, onRequest, runs before body parsing). */
@@ -77,7 +77,7 @@ const authRateLimit = {
 
 /** 10 attempts per 15 minutes per IP, for `/api/auth/register` only. Unlike login/setup, the
  *  attacker here is guessing an 8-character invite `code` and freely chooses their own `username`
- *  on every attempt — keying by username (like `authRateLimit` above) would let them pick a fresh
+ *  on every attempt: keying by username (like `authRateLimit` above) would let them pick a fresh
  *  throwaway username per attempt and land in a fresh, empty bucket every time, so the limit would
  *  never actually engage. Keyed on `req.ip` instead, same fallback `authRateLimit` already uses. */
 const registerRateLimit = {
@@ -93,7 +93,7 @@ const tokenResponse = z.object({ token: z.string() });
 const statusResponse = z.object({ needsSetup: z.boolean() });
 const meResponse = z.object({ id: z.string(), username: z.string(), name: z.string(), role: z.enum(["owner", "member"]) });
 const okResponse = z.object({ ok: z.literal(true) });
-/** Every non-200 branch below returns one of these — declared per status code on each route's own
+/** Every non-200 branch below returns one of these: declared per status code on each route's own
  *  `schema.response` (fastify-type-provider-zod only lets `reply.code(n).send(...)` target a
  *  status the schema actually lists) so the error shape stays checked like everything else here. */
 const errorResponse = z.object({ error: z.string(), detail: z.string().optional() });
@@ -107,7 +107,7 @@ const sessionSummaryResponse = z.object({
   current: z.boolean(),
 });
 
-/** 10 attempts per 15 minutes per user — for the two authenticated routes that re-verify a
+/** 10 attempts per 15 minutes per user: for the two authenticated routes that re-verify a
  *  password (change password/username). Keyed on `req.userId` via `userRateLimit`, not on
  *  `req.body.username` like `authRateLimit` above: the caller is already authenticated, so their
  *  own id is a stable, spoof-proof key. */
@@ -119,7 +119,7 @@ async function issueSession(db: LiftrDb, userId: string, userAgent?: string | nu
   return token;
 }
 
-/** No auth is required on setup/login/register — they're how a bearer token is obtained in the
+/** No auth is required on setup/login/register: they're how a bearer token is obtained in the
  *  first place. `/me` and `/logout` need one, wired via `app.ts`'s auth hook. */
 export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   app.get("/api/auth/status", { schema: { response: { 200: statusResponse } } }, async () => {
@@ -149,7 +149,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
         // so this branch takes about as long as a wrong-password check below. Otherwise a
         // nonexistent username short-circuits fast while a real username with a wrong password
         // pays ~128 MiB of scrypt work, letting an attacker enumerate valid usernames by timing.
-        // The result is discarded — it never gates authentication.
+        // The result is discarded: it never gates authentication.
         await verifyPassword(req.body.password, await dummyPasswordHashPromise);
         return reply.code(401).send({ error: "invalid_credentials" });
       }
@@ -176,14 +176,14 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
       });
       // `findValidInviteCode` (check) and redeeming (act) are separate steps, so two concurrent
       // registrations against the same still-unused code can both pass the check above before
-      // either redeems it. `redeemInviteCode` is a conditional update — `usedByUserId IS NULL` in
-      // its WHERE clause — that only one concurrent caller can actually claim; the other gets
+      // either redeems it. `redeemInviteCode` is a conditional update: `usedByUserId IS NULL` in
+      // its WHERE clause: that only one concurrent caller can actually claim; the other gets
       // `false` back. The user row has to be inserted first (not after, as one might expect for a
       // "redeem before commit" flow) because `invite_codes.used_by_user_id` has a FOREIGN KEY
       // against `users.id`, so the redemption can't reference a user that doesn't exist yet.
       // Instead, atomicity from the caller's perspective is achieved by deleting the just-inserted
-      // user when the redemption loses the race, so a losing caller never ends up with — or the
-      // system never ends up holding — an account it didn't actually earn with a valid code.
+      // user when the redemption loses the race, so a losing caller never ends up with: or the
+      // system never ends up holding: an account it didn't actually earn with a valid code.
       const redeemed = await redeemInviteCode(db, invite.id, user.id);
       if (!redeemed) {
         await deleteUser(db, user.id);
@@ -207,8 +207,8 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   });
 
   // Self-service account deletion (data-export/deletion right, not owner-gated like
-  // routes/members.ts's DELETE /api/members/:id). The owner can't self-delete this way — there's
-  // no one left to run the app's owner-only routes afterward — so an owner wanting out has to
+  // routes/members.ts's DELETE /api/members/:id). The owner can't self-delete this way: there's
+  // no one left to run the app's owner-only routes afterward: so an owner wanting out has to
   // hand off ownership or wipe the whole instance, not delete their own row.
   app.delete(
     "/api/auth/me",
@@ -221,7 +221,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
     },
   );
 
-  /** Every credential-changing route below revokes every *other* session for this user — the same
+  /** Every credential-changing route below revokes every *other* session for this user: the same
    *  "sign out everywhere else" behavior a stolen-password recovery flow needs, applied
    *  proactively on any password/username change rather than only via the reset-password CLI. The
    *  caller's own token (identified by re-hashing its own bearer token, same as `/logout` above)
@@ -263,7 +263,7 @@ export function registerAuthRoutes(app: ZodFastifyInstance, db: LiftrDb) {
           await setUsername(db, req.userId, req.body.username);
         } catch {
           // Pre-check above is racy against a concurrent registration/rename claiming the same
-          // name between the check and this write — `users_username_idx` (schema.ts) is the
+          // name between the check and this write: `users_username_idx` (schema.ts) is the
           // actual guarantee; a unique-constraint failure here means someone else won the race.
           return reply.code(409).send({ error: "username_taken" });
         }

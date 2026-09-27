@@ -1,12 +1,12 @@
 // RunMap.vue mounts LeafletMapBase.vue (see LeafletMapBase.test.ts) for the actual Leaflet
 // instance/tile layer/resize handling, and only owns drawing its own polyline + circle markers
 // in response to `ready`. So "leaflet" is mocked the same lightweight way LeafletMapBase.test.ts
-// and RouteMapEditor.test.ts do — lightweight fakes that record every call — and this file only
+// and RouteMapEditor.test.ts do (lightweight fakes that record every call), and this file only
 // tests RunMap's own render/prop-handling logic, not the map lifecycle LeafletMapBase already
 // covers on its own.
 //
 // mapMock/tileLayerMock/polylineMock/circleMarkerMock are read directly (by value) inside the
-// vi.mock("leaflet", ...) factory below, so — per tests/README.md's vi.hoisted() note — they're
+// vi.mock("leaflet", ...) factory below, so, per tests/README.md's vi.hoisted() note, they're
 // declared via vi.hoisted() rather than a plain same-file const, dodging the TDZ crash a plain
 // const would hit (vi.mock's factory runs before those consts would otherwise be initialized).
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,7 +45,7 @@ const fakeMap = {
     fitBoundsCalls.push({ bounds, opts });
   }),
   // RunMap.vue registers dragstart/zoomstart listeners on `ready` to guard its resize-triggered
-  // re-fit against fighting a user who's already panned/zoomed by hand — see handleResize's doc.
+  // re-fit against fighting a user who's already panned/zoomed by hand; see handleResize's doc.
   on: vi.fn(),
 };
 

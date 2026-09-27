@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // shareCard.ts's `drawWorkoutCard` is canvas-drawing code (fonts, gradients, image loading) with
-// no independent branching logic worth asserting on in isolation — jsdom doesn't implement a real
+// no independent branching logic worth asserting on in isolation: jsdom doesn't implement a real
 // 2D canvas context either (canvas.getContext("2d") returns null without the native `canvas`
 // package), so exercising it would mean re-implementing pixel-level rendering, not testing real
 // behavior. This file instead covers the module's actual conditional logic: the three-way
@@ -144,7 +144,7 @@ describe("shareOrDownloadBlob", () => {
     vi.stubGlobal("showSaveFilePicker", showSaveFilePicker);
     (URL as unknown as { createObjectURL: (b: Blob) => string }).createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
     (URL as unknown as { revokeObjectURL: (url: string) => void }).revokeObjectURL = vi.fn();
-    // Stub the anchor's click() — jsdom doesn't implement real navigation, and a plain `.click()`
+    // Stub the anchor's click(): jsdom doesn't implement real navigation, and a plain `.click()`
     // on an anchor with an href otherwise logs a noisy (harmless) "Not implemented" error.
     const anchor = document.createElement("a");
     vi.spyOn(anchor, "click").mockImplementation(() => {});

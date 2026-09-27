@@ -3,12 +3,12 @@
  * removes the third-party catalog/standards/run-standards/images/muscle assets along with it, and
  * nothing re-ingests them on its own. Migrations already run automatically on server boot (see
  * @liftr/db's runMigrations, wired into buildApp); this covers the rest of "starting from
- * scratch" — the assets that only ever come from this CLI (index.ts's own "never run from the
+ * scratch": the assets that only ever come from this CLI (index.ts's own "never run from the
  * running server" rule for the network-bound steps still holds; this script is still the CLI,
  * just auto-invoked at the start of `pnpm dev` and meant to run once as part of a prod deploy too).
  *
  * Guarded on the exercises table being empty, so this is a no-op (fast) on every normal
- * `pnpm dev` once the environment is already seeded — it doesn't re-hit the network or re-walk
+ * `pnpm dev` once the environment is already seeded: it doesn't re-hit the network or re-walk
  * the catalog on every dev boot, only the first time (or after data/ is wiped again).
  */
 import { createDb, resolveDbPath, runMigrations, warnIfDefaultDbPath } from "@liftr/db";
@@ -40,7 +40,7 @@ async function main() {
     return;
   }
 
-  console.log("bootstrap: no exercises found — running full ingest (catalog, standards, run standards, images, muscle assets)...");
+  console.log("bootstrap: no exercises found: running full ingest (catalog, standards, run standards, images, muscle assets)...");
   const entries = await loadCatalog(CATALOG_PATH);
   await ingestCatalog(db, CATALOG_PATH);
   await generateExerciseI18n(entries, I18N_LOCALES_DIR);

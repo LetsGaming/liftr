@@ -1,5 +1,5 @@
 /**
- * `pnpm ingest --run-standards`. Thin wrapper around `@liftr/db`'s `syncCardioStandards` — the
+ * `pnpm ingest --run-standards`. Thin wrapper around `@liftr/db`'s `syncCardioStandards`: the
  * writer itself lives there so server boot (app.ts's self-heal) can reuse the exact same
  * change-detecting rewrite this CLI step performs.
  */

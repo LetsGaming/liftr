@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Progress chart per exercise: e1RM (or best reps, for bodyweight exercises) over time.
- * Hand-drawn inline SVG polyline rather than a charting library — a full charting dependency
+ * Hand-drawn inline SVG polyline rather than a charting library: a full charting dependency
  * costs more bundle size than four small sparklines are worth on a PWA. Reuses the existing
  * /api/exercises/:id/history route, which already returns {weightKg, reps, loggedAt, isWarmup}
  * per set.
@@ -28,7 +28,7 @@ interface DayBest {
   value: number; // e1RM (kg) for loaded lifts, best reps for bodyweight
 }
 
-/** Best value per calendar day, ascending — a day's PR set represents that day on the chart. */
+/** Best value per calendar day, ascending: a day's PR set represents that day on the chart. */
 const series = computed<DayBest[]>(() => {
   const byDay = new Map<string, number>();
   for (const s of props.sets) {

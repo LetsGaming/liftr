@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Bodyweight trend tile. Inline SVG sparkline of the raw log plus an EMA-smoothed trend label
- * from @liftr/shared — no charting library, same rule as ProgressChart.vue.
+ * from @liftr/shared: no charting library, same rule as ProgressChart.vue.
  */
 import { computeBodyweightTrend, type BodyweightTrendDirection } from "@liftr/shared";
 import { computed } from "vue";

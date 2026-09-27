@@ -3,7 +3,7 @@
  * muscle groups they want to train... analyze their stats, find fitting exercises and
  * recommended sets, reps and weight." One function serves both a returning lifter (recommends
  * off their actual last performed set) and a brand-new one (falls back to the bronze/division-III
- * entry standard per exercise — see @liftr/shared's recommendExerciseSets) — there's
+ * entry standard per exercise: see @liftr/shared's recommendExerciseSets): there's
  * deliberately no separate hardcoded "starter preset" content system; a user with zero history
  * just takes the standards-only branch of the exact same recommendation for every candidate
  * exercise, so presets can never drift out of sync with the catalog or the rank thresholds.
@@ -38,7 +38,7 @@ function toSubstituteCandidate(row: {
     exerciseId: row.exercise.id,
     movementPattern: row.exercise.movementPattern,
     // The candidate pool here is already scoped to one primary muscle per findSubstitute call
-    // (see byMuscle below) — primaryMuscles/secondaryMuscles only need to carry that one slug
+    // (see byMuscle below): primaryMuscles/secondaryMuscles only need to carry that one slug
     // for the overlap score to work, not the exercise's full muscle tag set.
     primaryMuscles: [row.muscleId],
     secondaryMuscles: [],
@@ -50,7 +50,7 @@ function toSubstituteCandidate(row: {
 export interface SuggestExercisesInput {
   muscleSlugs: string[];
   exercisesPerMuscle: number;
-  /** Omit to fall back to the stored /api/settings/equipment value (single-user app — there's
+  /** Omit to fall back to the stored /api/settings/equipment value (single-user app: there's
    *  exactly one such setting, so the service can resolve it itself rather than requiring every
    *  caller to look it up and pass it through first). Explicitly empty array means "no
    *  restriction" (not "owns nothing"), same as the setting being unset. */
@@ -64,22 +64,22 @@ export interface SuggestedExercise {
   slug: string;
   targetSets: { reps: number; weightKg: number | null }[];
   /** Muscle-guided suggestions only: which requested muscle slug produced this pick. Absent for
-   *  recommendForChosenExercises (manual picks, Quick Start) — there's no "requested muscle" to
+   *  recommendForChosenExercises (manual picks, Quick Start): there's no "requested muscle" to
    *  attribute those to. Surfaces the muscle-to-exercise mapping the suggester already computes
    *  internally so the wizard's Review step can show real coverage instead of discarding this
    *  and leaving the user to guess. */
   matchedMuscleSlug?: string;
   /** True when this pick replaced a preferred candidate the user couldn't perform with their
-   *  owned equipment (see findSubstitute below) — surfaced so Review can flag it instead of
+   *  owned equipment (see findSubstitute below): surfaced so Review can flag it instead of
    *  silently presenting a swapped-in exercise as if it were the first choice. */
   isSubstitute?: boolean;
-  /** Present only when isSubstitute is true — the equipment item(s) the originally preferred
+  /** Present only when isSubstitute is true: the equipment item(s) the originally preferred
    *  candidate needed but the owned-equipment list didn't cover, so the client can say "swapped
    *  because you don't own X" and actually name X instead of a generic sentence. */
   missingEquipment?: string[];
 }
 
-/** POST /api/routines/suggest's logic — muscle groups in, a draft exercise list + recommended
+/** POST /api/routines/suggest's logic: muscle groups in, a draft exercise list + recommended
  *  sets out. Never writes anything; the client feeds the result into the routine wizard for the
  *  user to review/edit before actually saving, same as any other draft in that flow. */
 export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, input: SuggestExercisesInput): Promise<SuggestedExercise[]> {
@@ -96,7 +96,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, in
 
   const taggedRowsUnfiltered = await findPrimaryExerciseMusclesForMuscles(db, [...muscleIdBySlug.keys()]);
 
-  // Group candidate exercises per requested muscle first, *before* any equipment filtering —
+  // Group candidate exercises per requested muscle first, *before* any equipment filtering:
   // this same unfiltered per-muscle pool doubles as the substitute search space below, so a
   // muscle group's own candidates (already the right movement family) are what an unusable
   // exercise gets swapped against, not the whole catalog.
@@ -109,13 +109,13 @@ export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, in
   }
 
   // Feature: "map equipment to exercises accurately... if there is a similar exercise that uses
-  // equipment the user actually has, that should be used instead" — canPerform checks the full
+  // equipment the user actually has, that should be used instead": canPerform checks the full
   // requirement list (not just the one primary `equipment` tag), and an unusable candidate gets
   // one shot at a same-muscle, same-pattern substitute before being dropped outright. A
   // null/empty ownedEquipment means "no restriction configured yet" (see SuggestExercisesInput).
   const restrictingEquipment = ownedEquipment && ownedEquipment.length > 0 ? ownedEquipment : null;
 
-  // A Set naturally de-dupes an exercise primary to two requested muscles — it only needs to
+  // A Set naturally de-dupes an exercise primary to two requested muscles: it only needs to
   // survive being picked once, from whichever muscle iterates over it first. pickMeta tracks the
   // same two facts per exercise (which muscle earned it a slot, whether it's a substitute) so
   // they survive into the returned SuggestedExercise instead of being computed and discarded.
@@ -123,7 +123,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, in
   const pickMeta = new Map<string, { muscleSlug: string; isSubstitute: boolean; missingEquipment?: string[] }>();
   for (const muscleSlug of input.muscleSlugs) {
     const candidates = byMuscle.get(muscleSlug) ?? [];
-    // Prefer catalog (non-custom) exercises — a real sets/reps/weight recommendation from a
+    // Prefer catalog (non-custom) exercises: a real sets/reps/weight recommendation from a
     // vetted, standards-modeled movement beats one built on a user's own untested custom entry.
     const ranked = [...candidates].sort((a, b) => Number(a.exercise.isCustom) - Number(b.exercise.isCustom));
 
@@ -154,7 +154,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, in
         });
         addedForMuscle++;
       }
-      // else: no usable substitute for this candidate — dropped, same as before this feature.
+      // else: no usable substitute for this candidate: dropped, same as before this feature.
     }
   }
 
@@ -164,7 +164,7 @@ export async function suggestExercisesForMuscles(db: LiftrDb, userId: string, in
 /**
  * The per-exercise recommendation loop, shared by two entry points: the muscle-group suggester
  * above (candidates chosen by muscle) and `recommendForChosenExercises` below (candidates
- * already chosen by the user, manually or via Quick Start) — one recommendation engine, not two
+ * already chosen by the user, manually or via Quick Start): one recommendation engine, not two
  * that could drift, per the module doc's "presets can never drift out of sync" principle.
  */
 async function recommendForExercises(
@@ -205,11 +205,11 @@ async function recommendForExercises(
 }
 
 /**
- * Recommendation for exercises the user has already chosen — manual routine-wizard picks and
+ * Recommendation for exercises the user has already chosen: manual routine-wizard picks and
  * Quick Start's first-4-catalog-exercises fallback. Reuses the exact same engine the
  * muscle-group suggester already uses, so sets/reps/weight reflect the lifter's stated
  * experience level and history instead of a hardcoded default, and so there's no second, simpler
- * engine to keep in sync. No equipment filtering here — the exercises are already explicitly
+ * engine to keep in sync. No equipment filtering here: the exercises are already explicitly
  * chosen, not candidates to narrow down.
  */
 export async function recommendForChosenExercises(

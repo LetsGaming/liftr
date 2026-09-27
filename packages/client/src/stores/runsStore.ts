@@ -25,7 +25,7 @@ export const useRunsStore = defineStore("runs", {
   }),
   actions: {
     async load() {
-      // offline — list stays whatever it was, no crash
+      // offline: list stays whatever it was, no crash
       await withLoadState(getRuns, {
         apply: (runs) => (this.runs = runs),
         setLoaded: (v) => (this.loaded = v),
@@ -58,7 +58,7 @@ export const useRunsStore = defineStore("runs", {
       await this.load();
     },
 
-    /** `clientId` isn't used here today (no client-side dedup/idempotency check yet) — kept in
+    /** `clientId` isn't used here today (no client-side dedup/idempotency check yet): kept in
      *  the input shape since LiveRunScreen.vue already generates one per finish() attempt, so a
      *  future retry-safe resubmit doesn't need a signature change to add it. */
     async submitLiveRun(input: { clientId: string; name: string | null; points: PhoneGpsRunPoint[] }): Promise<RunSummary> {

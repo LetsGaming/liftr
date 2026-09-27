@@ -112,7 +112,7 @@ describe("updatePlannedRouteMeta", () => {
 });
 
 describe("archivePlannedRoute", () => {
-  it("soft-deletes — the row survives with archivedAt set", async () => {
+  it("soft-deletes: the row survives with archivedAt set", async () => {
     const route = await newRoute();
 
     await archivePlannedRoute(db, OWNER_USER_ID, route.id);

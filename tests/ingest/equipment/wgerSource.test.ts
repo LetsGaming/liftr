@@ -42,7 +42,7 @@ describe("wgerEquipmentSource.buildIndex", () => {
     const index = await wgerEquipmentSource.buildIndex();
 
     expect(index.get("10")).toBe("barbell");
-    // id 20 carries both "none (bodyweight exercise)" and "Bench" — bodyweight wins by priority.
+    // id 20 carries both "none (bodyweight exercise)" and "Bench": bodyweight wins by priority.
     expect(index.get("20")).toBe("bodyweight");
   });
 

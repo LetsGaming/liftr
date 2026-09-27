@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe("pruneErrorLogs", () => {
   it("keeps only the most recent `keep` rows", async () => {
-    // Explicit, strictly-increasing timestamps — back-to-back inserts can otherwise land in the
+    // Explicit, strictly-increasing timestamps: back-to-back inserts can otherwise land in the
     // same millisecond, making "most recent" ambiguous and this assertion flaky.
     for (let i = 0; i < 5; i++) {
       await insertErrorLog(db, {

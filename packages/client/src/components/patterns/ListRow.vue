@@ -20,7 +20,7 @@ const props = withDefaults(
 const tag = computed(() => (props.as === "router-link" ? RouterLink : props.as));
 const isInteractive = computed(() => props.interactive ?? (props.as === "button" || props.as === "router-link"));
 
-/** Only the attrs the current `as` actually uses — see base/Button.vue's own doc comment for why
+/** Only the attrs the current `as` actually uses. See base/Button.vue's own doc comment for why
  *  binding an unused one as an explicit `undefined` is unsafe on a RouterLink target. */
 const tagAttrs = computed(() => {
   if (props.as === "router-link") return { to: props.to };
@@ -71,7 +71,7 @@ const tagAttrs = computed(() => {
   flex: none;
   color: var(--faint);
   /* AppIcon only ships a left-pointing chevron path (see CollapsibleCard.vue's identical
-     rotation for the same reason) — rotated to read as a right-pointing disclosure. */
+     rotation for the same reason), rotated here to read as a right-pointing disclosure. */
   transform: rotate(180deg);
 }
 </style>

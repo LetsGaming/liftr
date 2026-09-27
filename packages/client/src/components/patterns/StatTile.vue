@@ -2,18 +2,18 @@
 /**
  * A bordered surface card showing one big value + a small label underneath. Was hand-rolled
  * four times (OverviewPage's .status-tile, WorkoutDetail's .stat, WorkoutPage's
- * finished-summary .stat — byte-identical to WorkoutDetail's — and RunsPage's .stat, which
+ * finished-summary .stat: byte-identical to WorkoutDetail's: and RunsPage's .stat, which
  * inverted the value/label order) with drifted radius/gap/font-size each time. One canonical
  * look here; place several inside a CSS grid (`display:grid; grid-template-columns: repeat(N,
- * 1fr)`) in the parent to get a stat row — this component only owns one tile.
+ * 1fr)`) in the parent to get a stat row: this component only owns one tile.
  */
 /** `reward` opts a tile into the tier-tinted .panel-reward treatment instead of the flat .panel
- *  one — otherwise every container in the app (a stat, a warning, a form panel) shares one
+ *  one: otherwise every container in the app (a stat, a warning, a form panel) shares one
  *  identical flat recipe, and nothing but proximity tells a plain summary tile apart from an
- *  earned one. Only the dashboard's overall-rank tile sets it now — see `accent` below for why
+ *  earned one. Only the dashboard's overall-rank tile sets it now: see `accent` below for why
  *  streak/level don't.
  *
- *  `accent`: `.panel-reward` has no tier scope of its own — it resolves --b1/--b2/--b3 from
+ *  `accent`: `.panel-reward` has no tier scope of its own: it resolves --b1/--b2/--b3 from
  *  whatever `.t-<tier>` ancestor is nearest, which in practice is always the single overall-rank
  *  tier App.vue puts on `.app-shell`. Streak and Level are different progression axes from rank,
  *  so painting them with `reward` made all three dashboard tiles render the identical color,

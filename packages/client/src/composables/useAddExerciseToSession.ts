@@ -1,5 +1,5 @@
 /**
- * Mid-session "add exercise" — a busy squat rack or a piece of equipment in use would otherwise
+ * Mid-session "add exercise": a busy squat rack or a piece of equipment in use would otherwise
  * dead-end the workout or force cancelling it entirely. Extracted out of WorkoutPage.vue.
  */
 import { computed, ref } from "vue";

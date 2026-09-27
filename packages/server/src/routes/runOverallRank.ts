@@ -1,11 +1,11 @@
 /**
- * GET /api/runs/overall-rank — the account-level "how good a runner am I overall" aggregate.
+ * GET /api/runs/overall-rank: the account-level "how good a runner am I overall" aggregate.
  * Own dedicated route file, mirroring how `routes/overallRank.ts` (the strength analog) is
- * separate from `routes/workouts.ts`/`routes/runs.ts` — see Ruling 4 in this task's brief. Same
+ * separate from `routes/workouts.ts`/`routes/runs.ts`: see Ruling 4 in this task's brief. Same
  * thin-schema-wrapper shape as `routes/overallRank.ts`: the actual aggregation lives in
  * `overallRunnerRankService.ts`.
  *
- * No `?activityType=` query param — Overall Runner Rank only ever aggregates the activities whose
+ * No `?activityType=` query param: Overall Runner Rank only ever aggregates the activities whose
  * registry entry counts toward it (today: running only; see cardioActivities.ts). Walking/hiking
  * each have exactly one rank bucket, surfaced directly via `GET /api/runs/ranks?activityType=`
  * instead of through this aggregate.

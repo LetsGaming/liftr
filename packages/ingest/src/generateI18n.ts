@@ -1,7 +1,7 @@
 /**
  * `pnpm ingest --catalog` also regenerates the exercise i18n files (closes the "raw slugs in
  * the UI" gap): each exercise's name (curated.yaml's nameDe/nameEn, the source of truth) and
- * a short "how do I log this" cue per locale (packages/ingest/src/generateHowTo.ts — templated,
+ * a short "how do I log this" cue per locale (packages/ingest/src/generateHowTo.ts: templated,
  * not hand-written, see that file's header for why). Reshaped into the nested-key JSON vue-i18n
  * expects: `exercise.<slug>.name` / `exercise.<slug>.howto`. Fully offline.
  */

@@ -19,7 +19,7 @@ describe("GET /api/export.zip", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.headers["content-type"]).toBe("application/zip");
-    // ZIP local-file-header magic bytes ("PK\x03\x04") — confirms a real zip was written, not an
+    // ZIP local-file-header magic bytes ("PK\x03\x04"): confirms a real zip was written, not an
     // empty/garbage buffer.
     expect(res.rawPayload.subarray(0, 2).toString("latin1")).toBe("PK");
   });
@@ -72,7 +72,7 @@ describe("GET /api/export.zip", () => {
     expect(raw).toContain("runs.csv");
     expect(raw).toContain("bodyweight.csv");
 
-    // workouts.csv exports the row's own id, not the sync `clientId` — assert on the id actually
+    // workouts.csv exports the row's own id, not the sync `clientId`: assert on the id actually
     // returned from the insert.
     expect(raw).toContain(workout!.id);
     expect(raw).toContain("export-test-exercise");

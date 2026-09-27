@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 //
 // useHealthConnectImport.ts now calls i18n.ts's t(), which reads localStorage at module load
-// (needs a DOM) — jsdom's navigator.language always reports "en-US", so i18n.ts's
+// (needs a DOM): jsdom's navigator.language always reports "en-US", so i18n.ts's
 // getStoredLocale() would otherwise default the shared i18n singleton to "en" for the rest of
-// the test process — mountWithProviders.ts resets this for component tests, but this file drives
+// the test process: mountWithProviders.ts resets this for component tests, but this file drives
 // the composable directly, bypassing that helper.
 import { flushPromises } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -43,7 +43,7 @@ beforeEach(() => {
   requestHealthConnectPermissionsMock.mockResolvedValue({ granted: true, missing: [] });
 });
 
-describe("useHealthConnectImport — connectHealthConnect()", () => {
+describe("useHealthConnectImport: connectHealthConnect()", () => {
   it("refreshes XP/streak/rank once a manual sync actually imports a workout", async () => {
     importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 1, skipped: 0, failed: 0, workouts: [] });
     const { connectHealthConnect } = useHealthConnectImport();
@@ -77,7 +77,7 @@ describe("useHealthConnectImport — connectHealthConnect()", () => {
     importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 0, skipped: 0, failed: 0, workouts: [] });
     const { connectHealthConnect } = useHealthConnectImport();
     // The composable's own init effect (isHealthConnectAvailable().then(checkHealthConnectPermissions))
-    // also calls checkHealthConnectPermissions once — flush and clear that call before exercising
+    // also calls checkHealthConnectPermissions once: flush and clear that call before exercising
     // connectHealthConnect()'s own permission check in isolation.
     await flushPromises();
     checkHealthConnectPermissionsMock.mockClear();

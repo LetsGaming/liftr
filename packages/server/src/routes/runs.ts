@@ -15,7 +15,7 @@ import { activityTypeSchema, boundedNumber } from "../schemas.js";
 
 /**
  * Running: import a GPX you own, or log a run manually with no file. Both paths converge on the
- * same `runs` + `run_points` tables and the same history/streak plumbing — a manual entry and an
+ * same `runs` + `run_points` tables and the same history/streak plumbing: a manual entry and an
  * imported one are indistinguishable downstream. See services/runImportService.ts for the shared
  * write path all three creation routes share.
  */
@@ -23,7 +23,7 @@ import { activityTypeSchema, boundedNumber } from "../schemas.js";
 const manualRunInput = z.object({
   name: z.string().nullable().optional(),
   startedAt: z.coerce.date(),
-  // 500,000 m (500 km) / 86,400 s (24 h) — far beyond any real run, but finite so it can't hang
+  // 500,000 m (500 km) / 86,400 s (24 h): far beyond any real run, but finite so it can't hang
   // computeLevel/computeRunXp downstream (see schemas.ts's boundedNumber doc comment).
   distanceM: boundedNumber(0, 500_000).positive(),
   durationS: boundedNumber(0, 86_400).positive(),
@@ -41,15 +41,15 @@ const healthConnectPointSchema = z.object({
 });
 
 // Health Connect import: the client (capacitor-health's queryWorkouts, called from the app
-// itself — no separate companion app needed) already resolved a workout's route + HR samples
+// itself: no separate companion app needed) already resolved a workout's route + HR samples
 // into this shape. `platformId` is Health Connect's own record id, reused as the idempotency key
 // (same clientId-uniqueness pattern as every other write path) so re-checking on app resume never
 // creates duplicate runs for a workout already imported. `workoutType` is Health Connect's own
-// raw exercise-type string (e.g. "RUNNING", "WALKING", "BIKING") — classified server-side, see
+// raw exercise-type string (e.g. "RUNNING", "WALKING", "BIKING"): classified server-side, see
 // runImportService.ts's `classifyHealthConnectWorkoutType`.
 //
 // `points` may be empty for a workout Health Connect withheld the route for (consent gate not
-// granted, or no route recorded at all) — in that case `distanceM`/`durationS` (the watch's own
+// granted, or no route recorded at all): in that case `distanceM`/`durationS` (the watch's own
 // aggregate, requested via READ_DISTANCE) are the fallback, and `startedAt` is required since
 // there's no first point to derive it from. At least one of "points" or "distanceM+durationS"
 // must be present; the service rejects a payload with neither.
@@ -97,7 +97,7 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
     return findRecentRuns(db, req.userId);
   });
 
-  // GET /api/runs/:id — includes the full point array, needed for both the route map and replay.
+  // GET /api/runs/:id: includes the full point array, needed for both the route map and replay.
   app.get(
     "/api/runs/:id",
     { schema: { params: runIdParams, response: { 200: runResponse.extend({ points: z.array(runPointResponse) }) } } },
@@ -109,8 +109,8 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // POST /api/runs/import — multipart GPX or FIT file upload. Multipart bodies aren't JSON, so
-  // this can't carry a `schema.body` the way the JSON routes do — validation happens inline.
+  // POST /api/runs/import: multipart GPX or FIT file upload. Multipart bodies aren't JSON, so
+  // this can't carry a `schema.body` the way the JSON routes do: validation happens inline.
   // Rate-limited: parsing a file is real CPU work, unlike the plain JSON routes above.
   app.post("/api/runs/import", { config: userRateLimit(20, "1 minute") }, async (req, reply) => {
     const file = await req.file();
@@ -132,7 +132,7 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
     }
   });
 
-  // POST /api/runs/healthconnect — native in-app import via capacitor-health. Rate-limited like
+  // POST /api/runs/healthconnect: native in-app import via capacitor-health. Rate-limited like
   // the other run-creation routes for generic abuse prevention (not an external paid API, but
   // still a DB write triggering rank/streak/XP recompute).
   app.post(
@@ -161,7 +161,7 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
   /**
    * DELETE /api/runs/:id. Cascades to run_points via FK (`PRAGMA foreign_keys = ON`,
    * db/src/client.ts). Runs *do* feed rank now (see services/runRankService.ts's
-   * `recomputeRunRank`, wired in via runImportService.ts's `persistRun`) — but deleting one still
+   * `recomputeRunRank`, wired in via runImportService.ts's `persistRun`): but deleting one still
    * doesn't need a live recompute here, unlike logging one: `runRanks`/`runPrs` are caches of the
    * *current* best derived from the surviving history, not an append-only ledger that needs
    * pruning on delete (same reasoning as workout deletion not retroactively undoing past rank
@@ -181,7 +181,7 @@ export function registerRunRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // POST /api/runs — manual fallback for runs without a file. Rate-limited for generic abuse
+  // POST /api/runs: manual fallback for runs without a file. Rate-limited for generic abuse
   // prevention, matching /api/runs/import's limit.
   app.post("/api/runs", { config: userRateLimit(20, "1 minute"), schema: { body: manualRunInput } }, async (req, reply) => {
     const run = await logManualRun(db, req.userId, {

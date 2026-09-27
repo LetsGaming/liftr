@@ -16,7 +16,7 @@ import { i18n } from "~client/i18n";
 import { useCatalogStore } from "~client/stores/catalogStore";
 import { createTestRouter, mountWithProviders } from "../../helpers/mountWithProviders";
 
-/** Finds the `.field` block by its visible `.field-label` text, rather than a brittle index —
+/** Finds the `.field` block by its visible `.field-label` text, rather than a brittle index:
  *  the Gerät field only renders while `!isBodyweight`, which shifts every later field's index. */
 function fieldByLabel(wrapper: ReturnType<typeof mountForm>["wrapper"], label: string) {
   return wrapper.findAll(".field").find((f) => f.find(".field-label").exists() && f.find(".field-label").text() === label)!;
@@ -244,7 +244,7 @@ describe("AddCustomExerciseForm", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(wrapper.find(".error-msg").text()).toBe("Speichern fehlgeschlagen — prüfe, ob der Name bereits vergeben ist.");
+    expect(wrapper.find(".error-msg").text()).toBe("Speichern fehlgeschlagen. Prüfe, ob der Name bereits vergeben ist.");
     expect(wrapper.emitted("created")).toBeUndefined();
     expect(wrapper.find(".btn-primary").text()).toBe("Übung speichern");
     expect(wrapper.find(".btn-primary").attributes("disabled")).toBeUndefined();

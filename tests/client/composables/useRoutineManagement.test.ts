@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // useRoutineManagement.ts registers real document click/keydown listeners and cleans them up in
-// onUnmounted, so it needs a real component instance (withSetup) and a real DOM (jsdom) — see
+// onUnmounted, so it needs a real component instance (withSetup) and a real DOM (jsdom): see
 // tests/README.md's Environment section and tests/client/helpers/withSetup.ts.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withSetup } from "../helpers/withSetup";

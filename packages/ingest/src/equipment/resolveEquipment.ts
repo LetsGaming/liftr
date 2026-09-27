@@ -1,10 +1,10 @@
 /**
  * Orchestrates the equipment adapters, so equipment doesn't need mapping to exercises by hand
  * one at a time. curated.yaml's own `equipment:` stays authoritative when set
- * — this only fills in entries that leave it null, and cross-checks the rest so a hand-set value
+ *: this only fills in entries that leave it null, and cross-checks the rest so a hand-set value
  * that's drifted from what the upstreams now say gets surfaced instead of silently ignored.
  * Non-destructive by design: this never writes back into curated.yaml (that would blur "hand-
- * curated" vs "auto-derived" provenance and fight manual edits with git churn) — it only affects
+ * curated" vs "auto-derived" provenance and fight manual edits with git churn): it only affects
  * what ingestCatalog.ts writes into the `exercises` table.
  */
 import type { Equipment } from "@liftr/shared";
@@ -15,13 +15,13 @@ export interface EquipmentResolutionSummary {
   handSet: number;
   resolvedFromSource: number;
   unresolved: string[];
-  /** A curated.yaml value that disagrees with what an upstream source says — logged, not
+  /** A curated.yaml value that disagrees with what an upstream source says: logged, not
    *  auto-corrected, since curated.yaml wins on purpose (it may know something the upstream
    *  general-purpose tag doesn't, e.g. this app's specific movement variant). */
   conflicts: { slug: string; curated: Equipment; source: string; sourceValue: Equipment }[];
 }
 
-/** Join key each source's index is keyed by, per catalog entry — null skips that source for
+/** Join key each source's index is keyed by, per catalog entry: null skips that source for
  *  this entry (e.g. no wgerId hand-verified yet, same gap curated.yaml's own doc comment notes). */
 function joinKeyFor(sourceName: string, entry: CatalogEntry): string | null {
   if (sourceName === "free-exercise-db") return entry.freeExerciseDbId;
@@ -38,7 +38,7 @@ export async function resolveEquipmentForCatalog(
     try {
       indexes.set(source.name, await source.buildIndex());
     } catch (err) {
-      // Degrade, don't fail (external-integrations.md) — one upstream being down/rate-limited
+      // Degrade, don't fail (external-integrations.md): one upstream being down/rate-limited
       // shouldn't abort the whole catalog ingest; entries just fall through to the next source
       // or stay unresolved, same as if this source had never been wired in at all.
       console.warn(`  ! equipment source "${source.name}" unavailable, skipping: ${err instanceof Error ? err.message : err}`);
@@ -51,7 +51,7 @@ export async function resolveEquipmentForCatalog(
   for (const entry of entries) {
     const curated = entry.equipment as Equipment | null;
 
-    // Conflict check runs regardless of whether curated.yaml already has a value — a hand-set
+    // Conflict check runs regardless of whether curated.yaml already has a value: a hand-set
     // value silently drifting from what every upstream now agrees on is worth surfacing on its
     // own, not just filling in blanks.
     for (const source of sources) {
@@ -96,6 +96,6 @@ export function logEquipmentResolutionSummary(summary: EquipmentResolutionSummar
     console.log(`  unresolved: ${summary.unresolved.join(", ")}`);
   }
   for (const c of summary.conflicts) {
-    console.warn(`  ! equipment mismatch for "${c.slug}": curated.yaml says "${c.curated}", ${c.source} says "${c.sourceValue}" — kept curated.yaml`);
+    console.warn(`  ! equipment mismatch for "${c.slug}": curated.yaml says "${c.curated}", ${c.source} says "${c.sourceValue}": kept curated.yaml`);
   }
 }

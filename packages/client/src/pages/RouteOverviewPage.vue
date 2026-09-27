@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Route Overview screen — the running-side counterpart to RoutineOverviewPage.vue, reached by
+ * Route Overview screen: the running-side counterpart to RoutineOverviewPage.vue, reached by
  * tapping a route card instead of starting immediately (see RouteList.vue's openOverview()).
  * Same "drill-in screen, sticky start bar, no nav-bar entry of its own" shape; the two genuine
  * differences from the workout side are what there is to preview (a map instead of an exercise
@@ -30,7 +30,7 @@ const plannedRoute = computed(() => plannedRouteStore.byId(routeId.value));
 onMounted(() => {
   if (!plannedRouteStore.loaded) void plannedRouteStore.load();
   // Deep-link from RouteList.vue's card "Starten" button (RunsPage.vue), same pattern as
-  // ProfilePage.vue's `?focus=account-app` — reuses this page's own live-tracking wiring instead
+  // ProfilePage.vue's `?focus=account-app`: reuses this page's own live-tracking wiring instead
   // of duplicating LiveRunScreen's invocation on the card's page.
   if (route.query.autostart === "live") {
     showLiveRun.value = true;
@@ -122,7 +122,7 @@ function onLiveRunFinished() {
 </template>
 
 <style scoped>
-/* Route-specific additions — shared drill-in-screen chrome (back button, skeleton, not-found,
+/* Route-specific additions: shared drill-in-screen chrome (back button, skeleton, not-found,
    header, sticky start bar) now lives in DrillInScreen.vue. */
 .ro-route-stats {
   display: flex;
@@ -132,7 +132,7 @@ function onLiveRunFinished() {
   flex: none;
 }
 /* Grows to fill whatever's left of the viewport (DrillInScreen's fill-height mode) instead of a
-   fixed vh — was previously wrapping RouteThumbnail.vue, a component whose own hardcoded 88px
+   fixed vh: was previously wrapping RouteThumbnail.vue, a component whose own hardcoded 88px
    thumbnail height silently ignored the height/interactive props this page tried to pass it,
    leaving a large blank gap above the action buttons. RunMap.vue (height:100%) is the actual
    interactive, properly-sized map component the other run/route screens already use. */

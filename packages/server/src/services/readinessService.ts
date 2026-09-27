@@ -10,9 +10,9 @@ export interface MuscleLastTrained {
 /**
  * One row per muscle: the most recent set that touched it and whether that involvement was
  * primary or secondary. A muscle trained as both primary (recently) and secondary (more
- * recently still) reports whichever happened last — "last trained" is about recency, the
+ * recently still) reports whichever happened last: "last trained" is about recency, the
  * primary/secondary distinction only affects how fast @liftr/shared considers it to recover.
- * A real decision (the "most recent per muscle" reduction), not just a fetch — that's what
+ * A real decision (the "most recent per muscle" reduction), not just a fetch: that's what
  * makes this a service rather than something the route calls straight off the repository.
  */
 export async function computeMuscleLastTrained(db: LiftrDb, userId: string): Promise<MuscleLastTrained[]> {

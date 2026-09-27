@@ -11,7 +11,7 @@ export const useRankEventsStore = defineStore("rankEvents", {
   }),
   actions: {
     async load() {
-      // offline with nothing cached yet — the strip just doesn't render
+      // offline with nothing cached yet: the strip just doesn't render
       await withLoadState(getRankEvents, {
         apply: (byWeekday) => (this.byWeekday = byWeekday),
         setLoaded: (v) => (this.loaded = v),

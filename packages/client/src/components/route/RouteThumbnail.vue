@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Small, fully inert map preview for a route card — real OSM tiles under the route line, via
+ * Small, fully inert map preview for a route card: real OSM tiles under the route line, via
  * LeafletMapBase (owns lazy-mount, tile layer, and resize handling). This sits in a grid that
  * mounts/unmounts on every Verlauf/Strecken tab switch, so LeafletMapBase's lazy prop matters
  * here: no Leaflet instance or tile fetch until the card actually scrolls into view.
@@ -69,14 +69,14 @@ function handleResize() {
 .route-thumb-map {
   width: 100%;
   /* Matches RoutineList.vue's .rc-preview row height (ex-list + MuscleFigure) at its typical
-     content length — was 88px, ~16px short of that row, which left RouteList's cards visibly
+     content length: was 88px, ~16px short of that row, which left RouteList's cards visibly
      shorter than RoutineList's despite both grids sharing the same sizing recipe otherwise. */
   height: 96px;
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-2);
   /* Leaflet's tile/marker/popup panes carry their own z-index (200-700) that isn't scoped to
-     `.leaflet-container` unless something establishes a stacking context there — without this,
+     `.leaflet-container` unless something establishes a stacking context there: without this,
      those panes leak past this thumbnail and paint over ListCard's ⋮ dropdown (styles/
      list-card.css's `.card-menu`, z-index 2), which now sits in the same card, right above this
      thumbnail in the head-first card layout. */

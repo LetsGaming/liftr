@@ -4,11 +4,11 @@ import { fileURLToPath } from "node:url";
 import type { LiftrDb } from "./client.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Resolves correctly whether this runs from src/ (tsx) or dist/ (built) — both sit one level
+// Resolves correctly whether this runs from src/ (tsx) or dist/ (built): both sit one level
 // under packages/db, so "../drizzle" always lands on packages/db/drizzle regardless of caller cwd.
 const MIGRATIONS_FOLDER = path.join(__dirname, "../drizzle");
 
-/** Applies every pending migration. Safe to call on every process start — drizzle tracks what's
+/** Applies every pending migration. Safe to call on every process start: drizzle tracks what's
  *  already applied and no-ops the rest, so this is how both the CLI (`pnpm db:migrate`) and the
  *  server's own boot sequence stay on a schema that actually exists (feedback: a fresh clone or
  *  a wiped data/ dir 500'd on "no such table" instead of just working).
@@ -16,7 +16,7 @@ const MIGRATIONS_FOLDER = path.join(__dirname, "../drizzle");
  *  `migrate()` runs every pending migration file inside ONE `session.transaction(...)` (verified
  *  directly in drizzle-orm's sqlite dialect). SQLite ignores `PRAGMA foreign_keys` *inside* a
  *  transaction, so a generated migration's own `PRAGMA foreign_keys=OFF` header (drizzle-kit
- *  emits one at the top of any table-recreate migration) is a silent no-op — FK enforcement
+ *  emits one at the top of any table-recreate migration) is a silent no-op, so FK enforcement
  *  stays on, and a recreate's `DROP TABLE` then cascades onto every child row instead of just
  *  the table being rebuilt. Toggling the pragma from out here, before `migrate()` opens its own
  *  transaction, is what actually disables it. The `foreign_key_check` afterward is the backstop:

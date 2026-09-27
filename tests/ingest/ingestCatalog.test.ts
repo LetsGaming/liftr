@@ -11,7 +11,7 @@ import { createTestDb } from "./helpers/testDb.js";
 
 // fetchWgerFullEquipmentIndex hits a real network endpoint and is called unconditionally inside
 // ingestCatalog() (fetchWgerFullEquipmentIndexSafely) regardless of which equipmentSources are
-// passed in — this is the one true I/O boundary that must be mocked (per tests/README.md) rather
+// passed in: this is the one true I/O boundary that must be mocked (per tests/README.md) rather
 // than routed around. Named with the vitest-required "mock" prefix so it's usable inside the
 // hoisted vi.mock factory below; vi.mock itself is hoisted above every import in this file
 // regardless of where it's written, so the mocked module is what ingestCatalog.js actually
@@ -280,7 +280,7 @@ exercises:
 
   it("falls back to deriveRequirements when the joined wger tags disagree with the resolved equipment", async () => {
     const db = createTestDb();
-    // wgerId 42's real tags say "dumbbell", but curated.yaml's hand-set equipment says barbell —
+    // wgerId 42's real tags say "dumbbell", but curated.yaml's hand-set equipment says barbell:
     // the sanity-guard should reject this join and fall back to the rule-based deriver instead.
     mockFetchWgerFullEquipmentIndex.mockResolvedValue(new Map([["42", ["Dumbbell"]]]));
     const path = writeCatalog(`

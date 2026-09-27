@@ -7,13 +7,13 @@ interface SparklineOptions {
 }
 
 /**
- * Min/max-normalized SVG polyline `points` string for an inline sparkline — no charting library,
+ * Min/max-normalized SVG polyline `points` string for an inline sparkline: no charting library,
  * same rationale ProgressChart.vue/BodyweightTrend.vue's own doc comments give (a full charting
  * dependency costs more bundle size than a few small sparklines are worth on a PWA). Was
  * implemented twice, byte-for-byte the same algorithm, differing only in which field of the
  * source data fed it and the width/height/pad constants.
  *
- * Returns "" for fewer than 2 points — a single point has no line to draw, and both call sites
+ * Returns "" for fewer than 2 points: a single point has no line to draw, and both call sites
  * already gate their `<svg>` on a length of at least 2, so this is a no-op guard, not a behavior
  * change.
  */

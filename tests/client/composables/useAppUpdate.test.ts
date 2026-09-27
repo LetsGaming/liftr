@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // useAppUpdate.ts keeps its state as module-level singletons (App.vue's launch check and
-// ProfilePage.vue's own display/recheck share one result — see the file's header comment), so
+// ProfilePage.vue's own display/recheck share one result: see the file's header comment), so
 // every test here resets modules and re-imports fresh, same convention as useToast.test.ts.
 // jsdom (not this project's default node environment for composables) because openDownload()
 // now navigates window.location directly rather than calling out to @capacitor/browser.

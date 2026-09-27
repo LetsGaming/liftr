@@ -4,7 +4,7 @@ import { isNative } from "../lib/platform";
 import { t } from "../i18n";
 import { resolveCurrentVersion } from "./useAppUpdate";
 
-/** How long a candidate server gets to answer before this gives up and reports "unreachable" —
+/** How long a candidate server gets to answer before this gives up and reports "unreachable":
  *  generous enough for a slow LAN/cold-start container, short enough not to leave the picker
  *  hanging on a genuinely dead address. */
 const VERIFY_TIMEOUT_MS = 8000;
@@ -24,10 +24,10 @@ export function normalizeServerUrl(input: string): string | null {
   }
 }
 
-/** Hits `${url}/api/health` and checks for the `service: "liftr"` marker (app.ts) — the same
+/** Hits `${url}/api/health` and checks for the `service: "liftr"` marker (app.ts): the same
  *  path/shape check Docker healthchecks and CI already rely on, plus the one field that tells a
  *  real Liftr instance apart from any other server answering on that host/path. `version` is
- *  whatever the server reports (app.ts's env.version) — absent for an older server that predates
+ *  whatever the server reports (app.ts's env.version): absent for an older server that predates
  *  this field, which is fine, checkVersionMismatch below just skips comparing in that case. */
 export async function checkServerIdentity(
   url: string,
@@ -49,7 +49,7 @@ export async function checkServerIdentity(
   }
 }
 
-// Module-level (not per-call refs — same shared-state pattern as useAppUpdate.ts) so App.vue's
+// Module-level (not per-call refs: same shared-state pattern as useAppUpdate.ts) so App.vue's
 // launch-time check and ProfilePage.vue's connection section agree on one result instead of each
 // firing its own request.
 const serverVersion = ref<string | null>(getServerVersion());
@@ -57,11 +57,11 @@ const versionMismatch = ref(false);
 
 /**
  * Compares the saved server's version (via checkServerIdentity) against this app's own version
- * (useAppUpdate.ts's resolveCurrentVersion — the one place that knows APK versionName vs
+ * (useAppUpdate.ts's resolveCurrentVersion: the one place that knows APK versionName vs
  * __APP_VERSION__, reused rather than reimplemented here). Native-only: a web/PWA build is
  * same-origin with its server and deploys together, so they can't mismatch. Skipped until a
  * server URL is actually saved (first-run setup already runs checkServerIdentity itself via
- * verifyAndSave). Non-blocking — it only ever sets `versionMismatch`, never throws or prevents
+ * verifyAndSave). Non-blocking: it only ever sets `versionMismatch`, never throws or prevents
  * app usage. No internal "already ran" guard, same as useAppUpdate.ts's check(): App.vue's own
  * onMounted (which only ever runs once per real app boot) is what makes this "once per boot" in
  * practice, and ProfilePage.vue calling it again on its own mount is a deliberate re-check (same
@@ -80,7 +80,7 @@ export async function checkVersionMismatch(): Promise<boolean> {
     versionMismatch.value = clientVersion !== result.version;
   } catch (err) {
     // App.getInfo() (resolveCurrentVersion) can reject on-device (plugin misconfiguration, OS
-    // quirk) — same fail-silent contract as checkServerIdentity's own network-error catch above:
+    // quirk): same fail-silent contract as checkServerIdentity's own network-error catch above:
     // this whole feature is warn-only, so a resolution failure just means no mismatch is flagged,
     // never an unhandled rejection reaching App.vue's/ProfilePage.vue's un-caught `.then()`.
     console.warn("client version resolution failed", err);

@@ -34,7 +34,7 @@ function baseParams(overrides: Partial<Parameters<typeof computeRankCore>[0]> = 
   };
 }
 
-describe("computeRankCore — uncorroborated bands", () => {
+describe("computeRankCore: uncorroborated bands", () => {
   it("with no corroborating day and no decay backlog, shows the plain resolved band", () => {
     const result = computeRankCore(baseParams({ daysSinceLastTrained: 0 }));
     expect(result.peak).toBeNull();
@@ -43,7 +43,7 @@ describe("computeRankCore — uncorroborated bands", () => {
 
   it("an uncorroborated band still ages once past the decay grace period", () => {
     // Regression guard: previously, `peak == null` returned the resolved band verbatim forever,
-    // since decay ran only off a stored peak — corroboration refusing to create a peak meant a
+    // since decay ran only off a stored peak: corroboration refusing to create a peak meant a
     // one-off outlier could never decay. Past RANK_DECAY_GRACE_DAYS (21) it must start moving
     // toward the floor even with no peak established.
     const fresh = computeRankCore(baseParams({ daysSinceLastTrained: 0 }));

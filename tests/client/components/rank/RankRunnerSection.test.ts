@@ -4,10 +4,10 @@ import RankProgress from "~client/components/rank/RankProgress.vue";
 import RankRunnerSection from "~client/components/rank/RankRunnerSection.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-// Task 13: running rank section — sourced from Task 10's runRankStore, same store also used by
+// Task 13: running rank section: sourced from Task 10's runRankStore, same store also used by
 // RecordsPage's running records section. `prs` is now also read here (RankCategoryCard.vue's back
 // face shows a per-category personal best, same PR data RecordsPage's cardio-records section
-// reduces) so it's part of this mock too, left empty by default (no PR-related assertions here —
+// reduces) so it's part of this mock too, left empty by default (no PR-related assertions here:
 // RankRunBack.vue has its own test coverage for the formatting).
 const runRankState = reactive({
   ranks: [] as unknown[],
@@ -23,7 +23,7 @@ const runRankState = reactive({
 
 vi.mock("~client/stores/runRankStore", () => ({ useRunRankStore: () => runRankState }));
 
-// Real 9-tier ids (@liftr/shared's TIERS) — TierBadge's emblem geometry indexes TIER_PALETTE by
+// Real 9-tier ids (@liftr/shared's TIERS): TierBadge's emblem geometry indexes TIER_PALETTE by
 // this string and throws on an unknown key, where the old CSS-only badge silently no-op'd on a
 // class like `t-bronze` that matched nothing.
 function makeRunRank(overrides: Partial<Record<string, unknown>> = {}) {
@@ -112,7 +112,7 @@ describe("RankRunnerSection", () => {
 
     expect(wrapper.text()).toContain("Gehen");
     expect(wrapper.text()).toContain("Wandern");
-    expect(wrapper.text()).toContain("Noch kein Rang — sammle genug Distanz, um zu starten.");
+    expect(wrapper.text()).toContain("Noch kein Rang: sammle genug Distanz, um zu starten.");
     expect(wrapper.text()).toContain("Gehen und Wandern zählen nicht in den Overall Runner Rank");
   });
 
@@ -142,7 +142,7 @@ describe("RankRunnerSection", () => {
     const wrapper = mountWithProviders(RankRunnerSection);
 
     expect(wrapper.text()).toContain("5:00/km");
-    // "Ziel", not "Nächstes Ziel" — the hero variant's label (RankProgress.vue's heroFields),
+    // "Ziel", not "Nächstes Ziel": the hero variant's label (RankProgress.vue's heroFields),
     // since RankCategoryCard.vue's front face is now the same hero variant the Kraft grid uses.
     expect(wrapper.text()).toContain("Ziel");
     expect(wrapper.text()).toContain("???");

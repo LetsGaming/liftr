@@ -1,5 +1,5 @@
 /**
- * FIT parser. Uses the official `@garmin/fitsdk` rather than hand-rolling a binary decoder —
+ * FIT parser. Uses the official `@garmin/fitsdk` rather than hand-rolling a binary decoder:
  * FIT's definition-message/base-type/developer-field machinery is real complexity that an
  * official, actively-maintained SDK already gets right. Extracts the full per-record trackpoint
  * array, same as gpx.ts, for the same reason: replay needs every point, not just the file's own
@@ -32,7 +32,7 @@ export function parseFit(buffer: Buffer): RunPoint[] {
   const points: RunPoint[] = [];
 
   for (const r of records) {
-    // Records before GPS lock (or on an indoor trainer) carry no position — same "skip
+    // Records before GPS lock (or on an indoor trainer) carry no position, the same "skip
     // incomplete points" rule gpx.ts applies to trackpoints missing lat/lon.
     if (r.positionLat == null || r.positionLong == null || !r.timestamp) continue;
     const t = new Date(r.timestamp).getTime();

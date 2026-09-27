@@ -3,7 +3,7 @@
 // useExerciseName / useDragReorder. catalogStore is seeded via a Pinia built and passed in
 // directly (see PickStepManual.test.ts's header comment for why). useDragReorder's actual drag gesture
 // is driven by native PointerEvent (pointerdown/pointermove/pointerup + setPointerCapture) which
-// this repo's jsdom (25.x) doesn't implement at all — dispatching synthetic pointer events would
+// this repo's jsdom (25.x) doesn't implement at all: dispatching synthetic pointer events would
 // either no-op or throw on the missing setPointerCapture call, so the drag-to-reorder gesture
 // itself is not exercised here (same class of jsdom gap as RunMap's Leaflet layout needs); every
 // other interaction on this component (steppers, kind cycling, rest adjust, link, remove, add) is

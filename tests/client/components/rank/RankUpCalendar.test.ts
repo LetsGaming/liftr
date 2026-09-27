@@ -1,4 +1,4 @@
-// vi.mock() is hoisted above imports, but a same-file const the factory reads is not — wrap it
+// vi.mock() is hoisted above imports, but a same-file const the factory reads is not: wrap it
 // in vi.hoisted() (tests/README.md) so getRankEventsMock exists by the time the mock runs.
 const { getRankEventsMock } = vi.hoisted(() => ({ getRankEventsMock: vi.fn() }));
 vi.mock("~client/services/rankEventsService", () => ({ getRankEvents: getRankEventsMock }));
@@ -53,7 +53,7 @@ describe("RankUpCalendar", () => {
     const wrapper = await mountCalendar([]);
 
     expect(wrapper.find(".ruc-empty").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Dein nächster Rangaufstieg wartet — leg los!");
+    expect(wrapper.text()).toContain("Dein nächster Rangaufstieg wartet, leg los!");
     for (const dot of wrapper.findAll(".dot")) {
       expect(dot.text()).toBe("");
       expect(dot.classes()).not.toContain("active");

@@ -1,6 +1,6 @@
 /**
  * Unified workout+run feed, backed by /api/history.
- * Read-only, online-only for now — the offline story for history is "you see what was synced
+ * Read-only, online-only for now: the offline story for history is "you see what was synced
  * last time you had signal," which is fine: history is a review surface, not the logging loop.
  */
 import { defineStore } from "pinia";
@@ -18,7 +18,7 @@ export const useHistoryStore = defineStore("history", {
     error: false,
     nextCursor: null as string | null,
     loadingMore: false,
-    // per-id cache for the detail page — GET /api/workouts/:id existed and was never called
+    // per-id cache for the detail page: GET /api/workouts/:id existed and was never called
     // from anywhere in the client before this.
     detailCache: new Map<string, WorkoutDetail>(),
     // In-flight requests per id, so the route's own beforeEnter prefetch and the page's onMounted
@@ -37,7 +37,7 @@ export const useHistoryStore = defineStore("history", {
       });
     },
 
-    /** Was fetched and silently discarded before — history was permanently capped at 20 rows. */
+    /** Was fetched and silently discarded before: history was permanently capped at 20 rows. */
     async loadMore() {
       if (!this.nextCursor || this.loadingMore) return;
       this.loadingMore = true;

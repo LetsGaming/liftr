@@ -172,7 +172,7 @@ describe("logEquipmentResolutionSummary", () => {
     });
 
     expect(warn).toHaveBeenCalledWith(
-      '  ! equipment mismatch for "back-squat": curated.yaml says "barbell", free-exercise-db says "machine" — kept curated.yaml',
+      '  ! equipment mismatch for "back-squat": curated.yaml says "barbell", free-exercise-db says "machine": kept curated.yaml',
     );
   });
 });

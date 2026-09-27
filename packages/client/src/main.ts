@@ -1,4 +1,4 @@
-// Must run — and therefore be imported — before ./router: see devAutoLogin.ts's own doc comment.
+// Must run before ./router, and therefore be imported before it: see devAutoLogin.ts's own doc comment.
 import "./lib/devAutoLogin";
 
 import { IonicVue } from "@ionic/vue";
@@ -11,7 +11,7 @@ import { applyLocale, getStoredLocale } from "./stores/localeStore";
 import { applyTheme, getStoredTheme } from "./stores/themeStore";
 import { useSyncStore } from "./stores/syncStore";
 
-// Ionic's structural/typography CSS only — deliberately not its color/palette CSS, since
+// Ionic's structural/typography CSS only, deliberately not its color/palette CSS, since
 // tokens.css (ported verbatim from the mockup) stays the single source of truth for the
 // visual design. Ionic is themed to it (see styles/ionic-theme.css), not the other way round.
 import "@ionic/vue/css/core.css";

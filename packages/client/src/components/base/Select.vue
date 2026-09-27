@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Mirrors Input.vue's flat recipe and fallthrough-attrs contract (see that component's own doc
- * comment) — a `<select>` has no replaced-element `::after` problem, so there's no `surface`
+ * comment): a `<select>` has no replaced-element `::after` problem, so there's no `surface`
  * variant to mirror.
  */
 defineOptions({ inheritAttrs: false });

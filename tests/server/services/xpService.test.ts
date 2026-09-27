@@ -41,7 +41,7 @@ describe("getXpSummary", () => {
     await db.insert(sets).values({
       workoutExerciseId: we!.id,
       setIndex: 0,
-      weightKg: 999999, // arbitrary/absurd weight — must not affect XP magnitude at all
+      weightKg: 999999, // arbitrary/absurd weight: must not affect XP magnitude at all
       reps: 10,
       kind: "normal",
       isWarmup: false,
@@ -102,7 +102,7 @@ describe("getXpSummary", () => {
       plausibilityMultiplier: 0.5,
       clientId: "xp-run-gps",
     });
-    // Manual run — plausibilityMultiplier is null in the DB (the gate never runs against manual
+    // Manual run: plausibilityMultiplier is null in the DB (the gate never runs against manual
     // entries). This must map to a multiplier of 1 (full credit), NOT 0.
     await db.insert(runs).values({
       userId: OWNER_USER_ID,

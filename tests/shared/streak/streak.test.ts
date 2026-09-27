@@ -58,7 +58,7 @@ describe("computeStreak", () => {
     });
 
     it("a 3x/week lifter's normal 2-day between-session gaps don't cost the streak", () => {
-      // trains Mon/Wed/Fri-style: today, 2 days ago, 4 days ago — two 1-day gaps in between
+      // trains Mon/Wed/Fri-style: today, 2 days ago, 4 days ago: two 1-day gaps in between
       const dates = new Set([daysAgo(0), daysAgo(2), daysAgo(4)]);
       const result = computeStreak(dates, NOW, 3);
       expect(result.streak).toBe(3);
@@ -66,7 +66,7 @@ describe("computeStreak", () => {
     });
 
     it("a 2x/week lifter's on-schedule rest days don't falsely break the streak", () => {
-      // trains today and 3 days ago — a gap the flat 2-token pool alone could not fully bridge
+      // trains today and 3 days ago: a gap the flat 2-token pool alone could not fully bridge
       const dates = new Set([daysAgo(0), daysAgo(3)]);
       const flatPoolResult = computeStreak(dates, NOW); // no workoutsPerWeek: today's flat behavior
       const scaledResult = computeStreak(dates, NOW, 2);

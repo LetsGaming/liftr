@@ -1,8 +1,8 @@
 /**
  * Change-detecting sync for the `run_standards` table, built from `@liftr/shared`'s
- * `buildCardioStandards()` (pure/offline — walks the cardio activity registry through the same
+ * `buildCardioStandards()` (pure/offline: walks the cardio activity registry through the same
  * anchor-interpolation pipeline strength standards use). Used both by the CLI ingest step
- * (`ingestRunStandards.ts`, a thin wrapper around this) and by server-boot self-heal (`app.ts`) —
+ * (`ingestRunStandards.ts`, a thin wrapper around this) and by server-boot self-heal (`app.ts`);
  * the latter needs to know whether anything actually changed so it only pays for a full rank
  * recompute when it must.
  */
@@ -15,7 +15,7 @@ function rowKey(r: { activityType: string; category: string; sex: string; tier: 
   return `${r.activityType}|${r.category}|${r.sex}|${r.tier}|${r.division}`;
 }
 
-/** True unless `existing` has exactly the same rows (key set + thresholds) as `built` — a row
+/** True unless `existing` has exactly the same rows (key set + thresholds) as `built`. A row
  *  count mismatch is the cheap, common case (e.g. an install that never got walk/hike rows at
  *  all), but a same-count table with a changed anchor/threshold value must also be caught. */
 function standardsDiverge(existing: (typeof runStandards.$inferSelect)[], built: CardioStandardRow[]): boolean {
@@ -27,7 +27,7 @@ function standardsDiverge(existing: (typeof runStandards.$inferSelect)[], built:
 /**
  * Idempotent, change-detecting rewrite of `run_standards`: rebuilds the full table from
  * `buildCardioStandards()` and only touches the database when the result actually differs from
- * what's stored — so calling this on every server boot is cheap on the (overwhelmingly common)
+ * what's stored, so calling this on every server boot is cheap on the (overwhelmingly common)
  * no-op path.
  */
 export async function syncCardioStandards(db: LiftrDb): Promise<{ changed: boolean }> {

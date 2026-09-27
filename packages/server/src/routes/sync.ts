@@ -6,12 +6,12 @@ import { boundedNumber } from "../schemas.js";
 import type { ZodFastifyInstance } from "../types.js";
 
 /**
- * The heart of offline support — see services/syncService.ts for the actual per-item decisions.
+ * The heart of offline support: see services/syncService.ts for the actual per-item decisions.
  * This route is just: validate the batch shape, call the service, return its results.
  */
 
 /**
- * `id` here is *client-generated* (crypto.randomUUID() on-device) — not server-assigned. This is
+ * `id` here is *client-generated* (crypto.randomUUID() on-device): not server-assigned. This is
  * what makes "start today's routine" itself offline-capable: the client never needs a round-trip
  * just to get an id back before it can start logging sets against workout_exercise rows that
  * reference it. The server upserts on this id.
@@ -24,7 +24,7 @@ const startWorkoutPayload = z.object({
 });
 
 /**
- * `kind` replaces the old standalone `isWarmup` boolean on the wire — `isWarmup` is still the
+ * `kind` replaces the old standalone `isWarmup` boolean on the wire: `isWarmup` is still the
  * column every rank/XP/history query filters on (see schema.ts's comment), but it's now derived
  * from `kind` in syncService.ts rather than sent independently, so client and server can't
  * disagree about whether a "warmup" kind counts as isWarmup.
@@ -47,15 +47,15 @@ const finishWorkoutPayload = z.object({
   endedAt: z.coerce.date(),
   // 86,400s = 24h, well beyond any real pause.
   pausedSeconds: z.number().int().min(0).max(86_400).default(0),
-  // Workout-level notes — see activeWorkoutStore.ts's finish(). Rides the same offline-safe
+  // Workout-level notes: see activeWorkoutStore.ts's finish(). Rides the same offline-safe
   // outbox path rather than a second online-only PATCH call bolted onto the finish flow.
   notes: z.string().max(500).nullable().optional(),
 });
 
 /**
- * Mid-session "add exercise" — lets a user swap in a different exercise (e.g. a busy squat rack)
+ * Mid-session "add exercise": lets a user swap in a different exercise (e.g. a busy squat rack)
  * without cancelling the whole workout. Same client-generated-id idempotency pattern as
- * start_workout's exercise rows — `id` is minted on-device so the client can start logging
+ * start_workout's exercise rows: `id` is minted on-device so the client can start logging
  * sets against it immediately, before this has even synced.
  */
 const addExercisePayload = z.object({
@@ -74,7 +74,7 @@ const syncItem = z.discriminatedUnion("type", [
 
 const syncBody = z.object({ items: z.array(syncItem).min(1).max(200) });
 
-// 60/min per user — the offline outbox can flush a large backlog after reconnecting, so this
+// 60/min per user: the offline outbox can flush a large backlog after reconnecting, so this
 // stays generous; it's a resource-abuse backstop, not a normal-usage limit.
 const syncRateLimit = userRateLimit(60, "1 minute");
 

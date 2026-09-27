@@ -5,7 +5,7 @@ import { hashSessionToken } from "./lib/sessionTokens.js";
 
 /**
  * Every `/api/*` request carries a bearer token; this looks it up against `sessions` and, on a
- * hit, sets `request.userId`/`request.role` for the rest of the request to use — the one place
+ * hit, sets `request.userId`/`request.role` for the rest of the request to use: the one place
  * identity gets resolved for the whole request.
  */
 export function requireAuth(db: LiftrDb) {
@@ -22,7 +22,7 @@ export function requireAuth(db: LiftrDb) {
     }
     const now = Date.now();
     if (session.expiresAt.getTime() <= now || session.absoluteExpiresAt.getTime() <= now) {
-      // Lazily clean up the stale row here rather than relying on a separate sweep job — an
+      // Lazily clean up the stale row here rather than relying on a separate sweep job: an
       // expired session (idle or past its hard cap) is only ever discovered at the point
       // something tries to use it.
       await deleteSessionByTokenHash(db, tokenHash);

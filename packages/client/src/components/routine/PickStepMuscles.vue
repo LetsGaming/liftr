@@ -4,7 +4,7 @@
  *  the wizard's `selected` draft, reviewable/editable on the next step.
  *
  *  Split out of a single PickStep.vue that took a `mode: "manual" | "muscles"` prop and branched
- *  its whole template/state on it — see PickStepManual.vue's doc comment for the full rationale.
+ *  its whole template/state on it: see PickStepManual.vue's doc comment for the full rationale.
  *  This one has no continue button; picking suggestions moves the wizard on by itself. */
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";

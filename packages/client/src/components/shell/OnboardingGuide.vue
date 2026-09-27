@@ -2,14 +2,14 @@
 /**
  * Setup wizard ("a setup guide that asks the user basic questions... use these stats across the
  * platform"). Shown once, from App.vue, when settingsStore.needsOnboarding is true (profile
- * fetched and confirmed null). A real multi-step wizard — one focused question per screen,
- * more engaging than the original flat scrolling form — following the same shell shape as
+ * fetched and confirmed null). A real multi-step wizard: one focused question per screen,
+ * more engaging than the original flat scrolling form: following the same shell shape as
  * RoutineWizard.vue: SheetModal with a custom #header carrying a step indicator, one `step`
  * index, thin step components mutating a shared reactive draft (OnboardingDraft.ts).
  *
  * Steps: welcome -> about -> experience -> frequency -> equipment -> [plates, conditional on a
  * barbell-family pick] -> done. The plates step only appears once there's something to load a
- * bar with — asking a bodyweight-only user to enumerate plates they don't own would be noise.
+ * bar with: asking a bodyweight-only user to enumerate plates they don't own would be noise.
  */
 import { computed, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -57,7 +57,7 @@ const progressPct = computed(() => Math.round(((stepIndex.value + 1) / steps.val
 const isFirst = computed(() => stepIndex.value === 0);
 const isLast = computed(() => stepIndex.value === steps.value.length - 1);
 
-/** Light validation, not a hard gate everywhere — the original form let every field be skipped
+/** Light validation, not a hard gate everywhere: the original form let every field be skipped
  *  (sex/birth year/weight are all optional server-side), so only steps with a genuinely
  *  meaningless "empty" state block continuing. */
 const canContinue = computed(() => {
@@ -76,7 +76,7 @@ function goNext() {
     return;
   }
   direction.value = "forward";
-  // Recompute against the *current* steps list before advancing — inserting/removing "plates"
+  // Recompute against the *current* steps list before advancing: inserting/removing "plates"
   // as equipment changes must not leave stepIndex pointing at the wrong entry.
   const list = steps.value;
   const idx = list.indexOf(currentStep.value);
@@ -107,7 +107,7 @@ async function finish() {
     const barWeights = Object.fromEntries(draft.barWeightsKg.entries());
     // Either signal (a changed bar weight OR a plate count) is reason enough to persist gym
     // setup. Requiring plateEntries.length > 0 as well would silently discard a dumbbell-only
-    // owner's bar/handle-weight edit on save — they have no "Scheiben pro Größe" section to
+    // owner's bar/handle-weight edit on save: they have no "Scheiben pro Größe" section to
     // touch at all (see PlatesStep.vue's ownedBarbellFamilyTypes gate), reverting to
     // @liftr/shared's flat default the moment they left onboarding.
     if (needsPlatesStep(draft) && (plateEntries.length > 0 || Object.keys(barWeights).length > 0)) {
@@ -120,7 +120,7 @@ async function finish() {
   }
 }
 
-// Skip still marks onboarding as "seen" (an empty-but-non-null profile) — otherwise a user who
+// Skip still marks onboarding as "seen" (an empty-but-non-null profile): otherwise a user who
 // dismisses this would get it shoved back in front of them on every single app open.
 async function skip() {
   if (saving.value) return;
@@ -175,7 +175,7 @@ async function skip() {
   padding: var(--sp4);
   /* Full-bleed modal header (SheetModal's #header slot bypasses .sheet's own padding entirely,
      see that file), so the step label and "Später" button otherwise sit under the status bar /
-     notch on Android — reported bug. The footer below already handled safe-area-inset-bottom;
+     notch on Android: reported bug. The footer below already handled safe-area-inset-bottom;
      the top was simply forgotten. */
   padding-top: calc(var(--sp4) + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
@@ -212,7 +212,7 @@ async function skip() {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--blue), var(--blue-hi));
-  /* transform, not width — animating width triggers layout on every frame. Always renders full
+  /* transform, not width: animating width triggers layout on every frame. Always renders full
      width and scales from the track's start via transform-origin instead. */
   transform-origin: left;
   transition: transform var(--dur-base) var(--ease-out);
@@ -223,13 +223,13 @@ async function skip() {
   overflow-y: auto;
   padding: var(--sp5) var(--sp4);
 }
-/* SheetModal.vue wraps this whole component's default slot — .wizard-body AND .wizard-actions
-   together — in one scrolling `.sheet-scroll` container (see that file's template:
+/* SheetModal.vue wraps this whole component's default slot: .wizard-body AND .wizard-actions
+   together: in one scrolling `.sheet-scroll` container (see that file's template:
    `<div class="sheet-scroll"><slot /></div>`). That means the continue/back bar was never
    actually a fixed footer; it scrolled away with .wizard-body's content on any step tall enough
    to need scrolling, so the primary CTA could go completely off-screen. `position: sticky;
    bottom: 0` inside that same scrolling container pins it to the bottom of the viewport without
-   touching SheetModal.vue (a shared shell other flows also use) — the sticky element still
+   touching SheetModal.vue (a shared shell other flows also use): the sticky element still
    scrolls into view initially, then holds at the bottom edge for the rest of the scroll range.
    Needs its own opaque background (the modal's own --bg, matching SheetModal's
    `background="var(--bg)"` prop above) so scrolled-past content doesn't show through underneath
@@ -253,7 +253,7 @@ async function skip() {
   flex: 1;
 }
 
-/* Horizontal slide, direction-aware — forward advances left, back retreats right, matching the
+/* Horizontal slide, direction-aware: forward advances left, back retreats right, matching the
    physical "step forward/back through a sequence" mental model instead of a flat crossfade. */
 .slide-fwd-enter-active,
 .slide-fwd-leave-active,

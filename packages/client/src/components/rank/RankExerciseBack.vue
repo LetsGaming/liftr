@@ -1,18 +1,18 @@
 <script setup lang="ts">
 /**
- * The flip "backside" content of a Kraft-Ränge card — renamed from RankOverallBack.vue as part of
+ * The flip "backside" content of a Kraft-Ränge card, renamed from RankOverallBack.vue as part of
  * fixing a real data bug: this used to bind the ACCOUNT'S overall rank (identical on every card)
  * instead of the specific exercise the card is about, and used MuscleFigure's `heat` (readiness/
- * recency) mode instead of its `primary`/`secondary` (what-does-this-exercise-train) mode — also
+ * recency) mode instead of its `primary`/`secondary` (what-does-this-exercise-train) mode, also
  * account-wide data on a per-exercise face. Both are now genuinely per-exercise: the caller
  * (RankLifterSection.vue, via RankFlipCard.vue) passes this row's own RankRow fields and this
  * row's own catalog muscle list, the same primary/secondary split ExerciseInfoPanel.vue already
- * uses for its own muscle figure. Still replaces the old per-card e1RM chart-expand — that chart
+ * uses for its own muscle figure. Still replaces the old per-card e1RM chart-expand; that chart
  * lives in ExerciseInfoPanel.vue's Statistiken tab, reached here via "Rang-Statistiken".
  *
  * Pure content now, not a self-contained card: RankFlipCard.vue's own flip-face supplies the
  * surface (background, border, padding, sizing, centering) that this used to provide itself via
- * `.panel-reward` — the whole point of that split (see RankFlipCard.vue's own header comment) is
+ * `.panel-reward`. The whole point of that split (see RankFlipCard.vue's own header comment) is
  * that the back face gets the exact same full card box the front face does, not a smaller nested
  * container. Text tokens follow accordingly: this sits on the card's own NEUTRAL glass now, not a
  * saturated tier fill, so it reads from `--text`/`--dim` like RankProgress.vue's card/hero variants
@@ -20,7 +20,7 @@
  *
  * No "Zurück" button: RankFlipCard.vue's whole back face is tappable to flip back now (matching
  * the front face's whole-card tap target), the same as tapping the card was always how you got
- * TO the back in the first place — a redundant explicit control here just for the reverse
+ * TO the back in the first place, so a redundant explicit control here just for the reverse
  * direction was asymmetric. "Rang-Statistiken" stays as the one explicit action, since opening the
  * stats panel isn't undoable by tapping the card again the way a flip is.
  */
@@ -52,7 +52,7 @@ const { t } = useI18n();
 const lpDisplay = computed(() => (props.lp == null ? null : Math.max(0, Math.round(props.lp))));
 
 /** Same "name the peak, don't hide why the rank moved" wording as RankProgress.vue's own
- *  decay caption — now the per-exercise version of that pattern (this used to be the account-
+ *  decay caption, now the per-exercise version of that pattern (this used to be the account-
  *  level equivalent; see this file's header comment). */
 const decayCaption = computed(() => {
   if (props.tier == null || props.division == null) return null;
@@ -96,7 +96,7 @@ const decayCaption = computed(() => {
 
 <style scoped>
 /* .rank-card-back (root) and .reb-eyebrow/.reb-tier/.reb-tier-body/.reb-tier-label/.reb-lp/
-   .reb-decay/.reb-badge/.reb-empty moved to the global styles/rank-card.css — identical between
+   .reb-decay/.reb-badge/.reb-empty moved to the global styles/rank-card.css: identical between
    this face (Kraft) and RankRunBack.vue (Läufe); only what's unique to a muscle-trained readout
    (the figure, its legend, the stats action) stays scoped here. */
 .reb-legend {
@@ -123,7 +123,7 @@ const decayCaption = computed(() => {
   background: var(--muscle-secondary);
 }
 /* The one action left now that "Zurück" is gone (tapping anywhere on the back face flips it,
-   RankFlipCard.vue) — centers on its own via the parent's flex centering, same as everything
+   RankFlipCard.vue), centers on its own via the parent's flex centering, same as everything
    else on this face, rather than sitting off to one side the way it did next to a sibling. */
 .reb-actions {
   display: flex;

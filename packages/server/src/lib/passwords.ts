@@ -15,7 +15,7 @@ const KEY_LENGTH = 64;
  *  memory requirement is ~128 * N * r bytes, which for these values is ~128 MiB, so callers must
  *  pass an explicit `maxmem` above Node's 32 MiB default or scrypt throws ERR_CRYPTO_INVALID_SCRYPT_PARAMS.
  *
- *  Vitest sets `VITEST=true` for every process it runs — an env var a real deployment can never
+ *  Vitest sets `VITEST=true` for every process it runs, an env var a real deployment can never
  *  have set, so this can't accidentally weaken production hashing. The test suite exercises the
  *  real hashPassword/verifyPassword round-trip dozens of times (login, setup, rate-limit loops,
  *  password/username changes), and at full cost (~0.5-1s/hash) that alone used to dominate the
@@ -49,7 +49,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 /** Constant-time comparison against a stored `scrypt:N:r:p:salt:hash` string. The N/r/p parameters
  *  are parsed from the stored value itself (not the current constants above) so that re-deriving
- *  the hash for comparison uses whatever cost parameters actually produced it — this is what makes
+ *  the hash for comparison uses whatever cost parameters actually produced it: this is what makes
  *  the format tolerate a future parameter change without invalidating hashes made under the old one.
  *  Any malformed/wrong-shaped input (wrong part count, non-numeric N/r/p, wrong algorithm tag, or a
  *  hex/length mismatch) is treated as a mismatch and returns `false` rather than throwing. */

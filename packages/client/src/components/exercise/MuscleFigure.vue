@@ -10,7 +10,7 @@
  *
  * Rendering is plain layered <img> tags, not inlined/recolored SVG-in-DOM: the mirrored files
  * are pre-recolored once at ingest time (see packages/ingest/src/ingestMuscleAssets.ts), so no
- * runtime SVG manipulation is needed — simpler and cheaper than fetching+inlining+restyling.
+ * runtime SVG manipulation is needed: simpler and cheaper than fetching+inlining+restyling.
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -23,11 +23,11 @@ const props = withDefaults(
     secondary?: string[];
     /** slug -> 0..1 readiness (readinessStore.heat). When set, this overrides the
      *  primary/secondary trained-muscle rendering entirely and instead paints every known
-     *  muscle warm (fatigued) or cool (recovered) — the Erholungszone hero's mode, not the
+     *  muscle warm (fatigued) or cool (recovered): the Erholungszone hero's mode, not the
      *  "what did this session train" mode every other call site uses. */
     heat?: Record<string, number>;
     /** Width in px of each front/back figure (default 96, matching the original hardcoded
-     *  size) — routine-card / launchpad previews use a smaller size so the figure fits
+     *  size): routine-card / launchpad previews use a smaller size so the figure fits
      *  alongside an exercise-name list instead of dominating the card. */
     size?: number;
   }>(),
@@ -58,7 +58,7 @@ function trainedOverlaysFor(side: "front" | "back"): Overlay[] {
 }
 
 /** heat mode: every muscle renders, warm (fatigue asset) below the halfway readiness point,
- *  cool (main/blue asset) above it — opacity scales with how far into that half the value sits,
+ *  cool (main/blue asset) above it: opacity scales with how far into that half the value sits,
  *  so a just-trained muscle reads as strongly warm and a nearly-recovered one as faintly warm,
  *  rather than a hard flip at exactly 0.5. */
 function heatOverlaysFor(side: "front" | "back"): Overlay[] {
@@ -120,7 +120,7 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
      overlay assets' ratio (200/362, ~1.9% shorter). These are <img> tags, not inlined SVG, so
      with the default object-fit: fill (below), that mismatch stretched the body outline
      non-uniformly to fit a box sized for the overlays, distorting its path geometry (visible as
-     a stray dark artifact at the chest, muscle-4's more geometrically complex region — the same
+     a stray dark artifact at the chest, muscle-4's more geometrically complex region: the same
      issue on every screen using this component, just only visible where the geometry made it
      obvious). The body outline is what every overlay must align to, so its own ratio is the
      shared box, not the reverse. */
@@ -132,7 +132,7 @@ const backOverlays = computed(() => (props.heat ? heatOverlaysFor("back") : trai
   width: 100%;
   height: 100%;
   /* object-fit defaults to `fill`, which stretches each image non-uniformly to the box
-     regardless of its own aspect ratio — the cause of the distortion above. `contain` scales
+     regardless of its own aspect ratio: the cause of the distortion above. `contain` scales
      each image uniformly instead: the body outline (now matching the box exactly) is unaffected,
      and the overlay assets whose own crop is shorter than 369 (muscles 1-4, both main/secondary
      variants) get a small uniform letterbox instead of a stretch-induced glitch. */

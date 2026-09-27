@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
  * Lauf-Ränge: hero ladder (Overall Runner Rank) + the fixed 5-category running grid, plus one
- * card per single-speed cardio activity (Gehen, Wandern — each ranked on one "all" bucket, see
+ * card per single-speed cardio activity (Gehen, Wandern: each ranked on one "all" bucket, see
  * cardioActivities.ts). Extracted out of RanksPage.vue (which now just switches between this and
- * RankLifterSection.vue) — self-contained, no props, same pattern as RoutineList.vue.
+ * RankLifterSection.vue): self-contained, no props, same pattern as RoutineList.vue.
  *
  * Walking/hiking don't count toward Overall Runner Rank (their standards are synthetic estimates,
- * not the physiologically cross-validated running table) — that exclusion is stated below the
+ * not the physiologically cross-validated running table): that exclusion is stated below the
  * grid rather than left for the user to infer from the hero ladder simply never moving.
  */
 import { RUN_CATEGORIES, rankedCardioActivities, type RunCategory } from "@liftr/shared";
@@ -29,10 +29,10 @@ onMounted(() => {
 });
 
 /** One card flipped at a time, same accordion rule RankLifterSection.vue's Kraft grid already
- *  follows (see that file's own comment on `flipped`/`activatedBacks`) — kept here rather than in
+ *  follows (see that file's own comment on `flipped`/`activatedBacks`): kept here rather than in
  *  RankCategoryCard.vue itself so both grids share the exact same interaction, not two similar-
  *  but-independent implementations. Keyed by category for the RUN_CATEGORIES loop below and by
- *  activity id for the single-speed loop — both stable even before a rank row exists. */
+ *  activity id for the single-speed loop: both stable even before a rank row exists. */
 const flipped = ref<string | null>(null);
 const activatedBacks = ref(new Set<string>());
 function toggleFlip(id: string) {
@@ -40,7 +40,7 @@ function toggleFlip(id: string) {
   flipped.value = flipped.value === id ? null : id;
 }
 
-/** The current personal best per running category (fastest "time" PR) — RecordsPage.vue's own
+/** The current personal best per running category (fastest "time" PR): RecordsPage.vue's own
  *  cardio-records section does this exact reduction for the exact same reason: run_prs keeps
  *  every historical PR event, not just the current best, so "current best" is an application-
  *  level reduction over runRankStore.prs rather than something the API hands back pre-reduced. */
@@ -54,7 +54,7 @@ const bestRunTimeByCategory = computed(() => {
   return out;
 });
 
-/** Single-speed activities (walk/hike) have no "time" PR — no fixed distance to divide by — so
+/** Single-speed activities (walk/hike) have no "time" PR: no fixed distance to divide by: so
  *  their personal best is the fastest (highest-value) "speed" PR instead, same convention
  *  RecordsPage.vue's own bestSpeedByActivity follows. */
 const bestSpeedByActivity = computed(() => {
@@ -68,7 +68,7 @@ const bestSpeedByActivity = computed(() => {
 });
 
 // RUN_CATEGORIES is a fixed 5-entry list (mile/5k/10k/half_marathon/marathon), same fixed-row
-// convention RecordsPage.vue's running section already uses — every category always renders,
+// convention RecordsPage.vue's running section already uses: every category always renders,
 // with an honest placeholder for one with no rank yet, rather than a variable-length list like
 // the per-exercise strength grid.
 const runRankByCategory = computed(() => {
@@ -79,11 +79,11 @@ const runRankByCategory = computed(() => {
   return out;
 });
 
-/** Single-speed activities (today: walk, hike) — the ones with rank.mode === "single-speed" in
- *  the shared registry — each get exactly one card, keyed by activity id rather than category
+/** Single-speed activities (today: walk, hike): the ones with rank.mode === "single-speed" in
+ *  the shared registry: each get exactly one card, keyed by activity id rather than category
  *  ("all" isn't a distance, so it has nothing to head a card with). Read from the registry rather
  *  than derived from `runRankStore.ranks` so every ranked single-speed activity always renders a
- *  card, with an empty-state placeholder for one with no rank row yet — same fixed-row convention
+ *  card, with an empty-state placeholder for one with no rank row yet: same fixed-row convention
  *  RUN_CATEGORIES above already follows, rather than a card simply not existing (indistinguishable
  *  from broken) for someone who's never walked/hiked. */
 const singleSpeedActivities = computed(() => rankedCardioActivities().filter((a) => a.rank.mode === "single-speed"));
@@ -96,8 +96,8 @@ const singleSpeedRankByActivity = computed(() => {
 
 /** RankProgress's built-in "next target" formatting assumes a weight×reps pair, which doesn't
  *  fit a cardio bucket's next target (a pace). Formatted here and passed through
- *  RankProgress's `nextTargetLabel` override instead of forking the component — see that prop's
- *  own comment. No "Nächstes Ziel:" prefix here — RankProgress's own `.rp-next-label` caption
+ *  RankProgress's `nextTargetLabel` override instead of forking the component: see that prop's
+ *  own comment. No "Nächstes Ziel:" prefix here: RankProgress's own `.rp-next-label` caption
  *  already carries that, sitting beside whichever chip this label ends up as. Uses lib/format.ts's
  *  shared formatPace (mm:ss/km), converting from the stored m/s speed the same way
  *  runRankService.ts's nextTargetSpeedMps is defined. */
@@ -172,7 +172,7 @@ function formatNextSpeedTarget(speedMps: number | null): string {
 /* .page-note/.rank-skel-card/.load-error and the grid's self-centering are shared with
    RankLifterSection.vue and ExerciseInfoPanel.vue via the global styles/rank-card.css (loaded
    from main.ts); .card/.card-grid/.card-head/.card-name come from global list-card.css, same as
-   every other card grid in the app — only this section's own empty-state note stays scoped
+   every other card grid in the app: only this section's own empty-state note stays scoped
    here. */
 .overall-exclusion-note {
   margin-top: var(--sp3);

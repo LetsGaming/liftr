@@ -1,5 +1,5 @@
 /**
- * Maps a server error code (ApiError.code — the body's `error` field, see lib/api.ts and
+ * Maps a server error code (ApiError.code: the body's `error` field, see lib/api.ts and
  * app.ts's error handler) to a translated message. Most server 400s carry a `detail` that's
  * already a human sentence and gets shown as-is; a growing minority (Health Connect's
  * "no_route_or_distance", the shared password-strength check's "password_too_common") carry a
@@ -14,7 +14,7 @@ const ERROR_CODE_KEYS: Record<string, string> = {
 };
 
 /** `fallback` is shown for any code with no dedicated translation (e.g. `detail` text the server
- *  already sends translated-enough, or a raw error message) — falling back to a generic message
+ *  already sends translated-enough, or a raw error message): falling back to a generic message
  *  only when there's nothing else to show. */
 export function serverErrorMessage(code: string | undefined, fallback?: string): string {
   const key = code ? ERROR_CODE_KEYS[code] : undefined;

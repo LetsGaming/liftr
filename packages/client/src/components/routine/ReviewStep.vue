@@ -1,8 +1,8 @@
 <script setup lang="ts">
-/** Step 3 — quick summary + save, plus three additive glance-checks that make this worth
+/** Step 3: quick summary + save, plus three additive glance-checks that make this worth
  *  actually looking at instead of a rubber-stamp: does the routine cover the muscles you asked
  *  for, did the generator swap in a substitute because you lack equipment, and does one exercise
- *  carry a lopsided share of the routine's sets. None of them block Save — they inform, they
+ *  carry a lopsided share of the routine's sets. None of them block Save: they inform, they
  *  don't gate. Name stays editable via the wizard's persistent header field. */
 import { toRef } from "vue";
 import { useI18n } from "vue-i18n";
@@ -22,7 +22,7 @@ const props = defineProps<{
   saving: boolean;
   canSave: boolean;
   isEditing: boolean;
-  /** Muscle slugs the user asked "Übungen vorschlagen" for — empty for a fully manual routine,
+  /** Muscle slugs the user asked "Übungen vorschlagen" for: empty for a fully manual routine,
    *  which skips the coverage check entirely (nothing to compare the routine against). */
   requestedMuscleSlugs: string[];
   /** Keyed by exerciseId; absent for manually-picked exercises. */
@@ -38,7 +38,7 @@ function setSummary(cfg: DraftExercise): string {
   return cfg.sets.map((s) => (s.weightKg !== null ? `${s.weightKg}×${s.reps}` : `${s.reps}`)).join(" / ");
 }
 
-/** "swapped because you don't own X" (Global Constraint) — names the actual equipment instead of
+/** "swapped because you don't own X" (Global Constraint): names the actual equipment instead of
  *  a generic sentence. Falls back to the old generic copy only if the server didn't send a
  *  missing-equipment list (e.g. an older cached suggestion response). */
 function substituteReason(exerciseId: string): string {

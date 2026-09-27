@@ -42,7 +42,7 @@ describe("summarizeRun", () => {
     const withGap = summarizeRun(spliced);
     const clean = summarizeRun(points);
     // the paused interval itself (1s of "normal" time in the clean run) is dropped entirely,
-    // not just the 60s gap, so duration comes in a hair under clean's — that's the point of
+    // not just the 60s gap, so duration comes in a hair under clean's: that's the point of
     // the pause-gap rule (audit §5), not a bug: don't count "in transit through the gap" time.
     expect(withGap.durationS).toBeLessThanOrEqual(clean.durationS);
     expect(clean.durationS - withGap.durationS).toBeLessThan(2);

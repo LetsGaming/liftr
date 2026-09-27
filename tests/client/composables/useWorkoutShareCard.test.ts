@@ -1,6 +1,6 @@
 // useWorkoutShareCard.ts wraps ~client/lib/shareCard (canvas drawing + native share/clipboard),
-// which already has its own dedicated tests (tests/client/lib/shareCard.test.ts) — mocked here so
-// these tests exercise only this composable's own orchestration: building the card model from
+// which already has its own dedicated tests (tests/client/lib/shareCard.test.ts). It is mocked
+// here so these tests exercise only this composable's own orchestration: building the card model from
 // the finish flow's refs, the busy-flag bookkeeping, and each method's early-return guards. No
 // lifecycle hooks/injections here, so no component host or jsdom is needed.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +10,7 @@ import type { RankUpSummary } from "~client/components/workout/FinishSequence.vu
 import type { FinishedSummary } from "~client/composables/useWorkoutFinish";
 
 // vi.hoisted() (not a plain `const xMock = vi.fn()`) so these are initialized before the
-// vi.mock() factory below runs — see the comment in useStartRoutine.test.ts for why a factory
+// vi.mock() factory below runs; see the comment in useStartRoutine.test.ts for why a factory
 // that reads a variable as a direct property value needs this.
 const { drawWorkoutCardMock, canvasToBlobMock, copyBlobToClipboardMock, shareOrDownloadBlobMock } = vi.hoisted(() => ({
   drawWorkoutCardMock: vi.fn().mockResolvedValue(undefined),
@@ -43,7 +43,7 @@ const rankUps: RankUpSummary[] = [
 ];
 
 // drawWorkoutCard/canvasToBlob are both mocked above, so the composable never actually touches
-// this as a real canvas — a bare object stands in fine and keeps this file off jsdom.
+// this as a real canvas: a bare object stands in fine and keeps this file off jsdom.
 function makeCanvas(): HTMLCanvasElement {
   return {} as HTMLCanvasElement;
 }

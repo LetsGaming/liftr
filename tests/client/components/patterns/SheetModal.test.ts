@@ -1,10 +1,10 @@
 // SheetModal.vue wraps @ionic/vue's real <IonModal>, which itself wraps a lazily-defined Stencil
-// custom element (`ion-modal`) — loading that for real under jsdom is exactly what tests/README.md
+// custom element (`ion-modal`): loading that for real under jsdom is exactly what tests/README.md
 // warns against ("if a component reads a property/method Ionic itself would set on one, stub that
 // specific element via global.stubs instead of trying to load real @ionic/vue"). This stub mimics
 // the one property SheetModal.vue actually reaches for: dismiss() on the modal's own $el (see
 // that file's header comment on why dismiss() must go through the real element, never a plain
-// Vue unmount) — our stub's dismiss() emits "did-dismiss" synchronously, standing in for Ionic's
+// Vue unmount): our stub's dismiss() emits "did-dismiss" synchronously, standing in for Ionic's
 // real (asynchronous) teardown finishing.
 import { flushPromises } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -39,7 +39,7 @@ function mountSheet(options: Parameters<typeof mountWithProviders>[1] = {}) {
 
 beforeEach(() => {
   // requestAnimationFrame drives the deferred `close` emit (see SheetModal.vue's 2026-09-05
-  // header comment) — made synchronous so tests don't depend on jsdom's real rAF timing.
+  // header comment): made synchronous so tests don't depend on jsdom's real rAF timing.
   vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
     cb(0);
     return 0;

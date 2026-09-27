@@ -10,7 +10,7 @@ describe("CollapsibleCard", () => {
     });
 
     // v-show sets inline `display` rather than removing the element, so this checks the style
-    // attribute directly — VTU's isVisible() proved unreliable across repeated re-renders of the
+    // attribute directly: VTU's isVisible() proved unreliable across repeated re-renders of the
     // same element in this project's VTU version (it kept reporting `true` after a second toggle
     // even though the DOM's own `style="display: none"` was correct).
     expect(wrapper.text()).toContain("Trainingsprofil");

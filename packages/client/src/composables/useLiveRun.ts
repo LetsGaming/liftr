@@ -3,7 +3,7 @@
  * useStartPlannedRoute.ts. Records a run in real time via the device's own built-in GPS (`@capacitor/geolocation`'s
  * `watchPosition`), with zero dependency on a smartwatch: every requirement here (start/pause/
  * finish, live distance/pace, XP/LP on finish) has to work from phone GPS alone, since that's the
- * whole point — a watch is a bonus later (`reconcileWithHealthConnect` on the server), never a
+ * whole point: a watch is a bonus later (`reconcileWithHealthConnect` on the server), never a
  * prerequisite.
  *
  * Deliberately a thin recorder, not a router: this composable only tracks and buffers points and
@@ -20,7 +20,7 @@ import type { PhoneGpsRunPoint } from "../services/runService";
 export type LiveRunStatus = "idle" | "tracking" | "paused" | "finished";
 
 /** Below this accuracy (meters, per `Position.coords.accuracy`), a fix is dropped rather than
- *  folded into the trace — an indoor/urban-canyon fix can jump 50m+ in one sample, which would
+ *  folded into the trace: an indoor/urban-canyon fix can jump 50m+ in one sample, which would
  *  register as a burst of fake pace. Generous enough that ordinary open-sky GPS noise (typically
  *  3–15m) never gets rejected. */
 const MAX_FIX_ACCURACY_M = 30;
@@ -32,7 +32,7 @@ export function useLiveRun() {
 
   let watchId: string | null = null;
   let startedAtMs: number | null = null;
-  // Elapsed tracking excludes paused time — accumulated on each pause, resumed from on unpause,
+  // Elapsed tracking excludes paused time: accumulated on each pause, resumed from on unpause,
   // exactly like a stopwatch's lap/split bookkeeping.
   let accumulatedMs = 0;
   let lastResumeMs: number | null = null;
@@ -60,7 +60,7 @@ export function useLiveRun() {
   });
 
   function onFix(pos: Position) {
-    // Dropped while paused too — otherwise distance (computed from points.value) keeps growing
+    // Dropped while paused too: otherwise distance (computed from points.value) keeps growing
     // against elapsed time that correctly excludes the paused interval, feeding an artificially
     // fast, implausible pace into the server's plausibility gate on finish.
     if (status.value !== "tracking") return;
@@ -72,7 +72,7 @@ export function useLiveRun() {
         lat: pos.coords.latitude,
         lon: pos.coords.longitude,
         ele: pos.coords.altitude ?? null,
-        hr: null, // phone GPS alone never has heart rate — a later Health Connect sync can add it
+        hr: null, // phone GPS alone never has heart rate: a later Health Connect sync can add it
         cadence: null,
       },
     ];
@@ -133,7 +133,7 @@ export function useLiveRun() {
     stopTicking();
   }
 
-  /** Stops tracking and returns everything needed to submit the run — does not itself call the
+  /** Stops tracking and returns everything needed to submit the run: does not itself call the
    *  API, leaving that (and any error handling/toast) to the caller (see LiveRunScreen.vue). */
   async function finish() {
     if (status.value === "tracking") pause();

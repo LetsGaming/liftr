@@ -11,7 +11,7 @@ const xpResponse = z.object({
   progressPercent: z.number(),
 });
 
-/** GET /api/xp — total XP across every logged non-warmup set + the resulting level. */
+/** GET /api/xp: total XP across every logged non-warmup set + the resulting level. */
 export function registerXpRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.get("/api/xp", { schema: { response: { 200: xpResponse } } }, async (request) => {
     return getXpSummary(db, request.userId);

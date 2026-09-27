@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * The flip "backside" content of a Läufe-Ränge card — the running equivalent of
+ * The flip "backside" content of a Läufe-Ränge card: the running equivalent of
  * RankExerciseBack.vue. There's no muscle diagram to show here (no per-category muscle data
  * exists for a run), so the lead content is this category's personal best instead: the closest
  * "something extra worth flipping to" a running category has. Tier/LP/decay chrome below it is
  * identical to the Kraft back face and comes from the same global `.rank-card-back` rules
- * (styles/rank-card.css) — only the lead content above differs per caller.
+ * (styles/rank-card.css): only the lead content above differs per caller.
  *
  * `prLabel`/`prDate` arrive pre-formatted from RankRunnerSection.vue, which already has to choose
  * the right PR source (a "time" PR for a distance category, a "speed" PR for a single-speed
- * activity like Gehen/Wandern) and the right formatter for each — this component stays a plain
+ * activity like Gehen/Wandern) and the right formatter for each: this component stays a plain
  * renderer, same division of responsibility RankProgress.vue's own `nextTargetLabel` prop follows.
  */
 import { computed } from "vue";

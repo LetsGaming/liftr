@@ -1,5 +1,5 @@
 /**
- * Server-side run-rank recompute — the run-analog of `rankService.ts`'s
+ * Server-side run-rank recompute: the run-analog of `rankService.ts`'s
  * `recomputeRankForExercise`. Same algorithm shape (scan full history -> track best value + a
  * daily-best map for corroboration -> resolve rank -> corroborate -> reconstruct stored peak ->
  * eligibility gates -> ratchet peak -> decay/recovery if untrained -> next-target -> insert rank
@@ -10,7 +10,7 @@
  *
  * Running Riegel-normalizes onto its bucket's exact distance before computing speed; single-speed
  * activities use the run's raw distance/duration average with no normalization at all, and are
- * additionally gated on `isRankEligible` — a run below that activity's minimum distance/duration
+ * additionally gated on `isRankEligible`: a run below that activity's minimum distance/duration
  * never enters the aggregate (still earns XP/streak, just not rank). See cardioActivities.ts.
  */
 import { users, type LiftrDb } from "@liftr/db";
@@ -41,7 +41,7 @@ import { getUserSex, PEAK_ELIGIBILITY_FLOOR, PR_ELIGIBILITY_FLOOR, type Recomput
 
 /** A run's rank-comparable speed (m/s), dispatched by the activity's rank mode: Riegel-normalized
  *  onto the bucket's exact distance for a "distance-ladder" activity (running), or a plain
- *  distance/duration average for "single-speed" (walk/hike) — see this file's module comment for
+ *  distance/duration average for "single-speed" (walk/hike): see this file's module comment for
  *  why single-speed skips normalization entirely. */
 function cardioSpeedMps(activityType: RankedActivityType, distanceM: number, durationS: number): number {
   const def = cardioActivity(activityType);
@@ -68,7 +68,7 @@ export async function recomputeRunRank(
   const thresholdRows = (await findRunStandardsForBucket(db, bucket, activityType)).filter((t) => t.sex === sex);
   if (thresholdRows.length === 0) {
     // A missing threshold table means every recompute for this bucket silently no-ops (import
-    // still succeeds, XP/streak still credit — just no rank row) with no other trace anywhere,
+    // still succeeds, XP/streak still credit: just no rank row) with no other trace anywhere,
     // so this is the only diagnostic signal an operator gets.
     console.warn(`recomputeRunRank: no standards rows for activityType=${activityType} bucket=${bucket}`);
     return null;
@@ -82,7 +82,7 @@ export async function recomputeRunRank(
   }));
 
   const allLoggedRuns = await findLoggedRunsForBucket(db, userId, bucket, activityType, { rankEligibleOnly: true });
-  // Single-speed activities additionally gate on the activity's minimum distance/duration — a
+  // Single-speed activities additionally gate on the activity's minimum distance/duration: a
   // short walk still earns XP/streak (see runImportService.ts), it just never enters the rank
   // aggregate. Running has no such floor (isRankEligible returns true for every distance-ladder
   // activity).
@@ -98,7 +98,7 @@ export async function recomputeRunRank(
   for (const run of loggedRuns) {
     const speedMps = cardioSpeedMps(activityType, run.distanceM, run.durationS);
     // A degenerate historical row (distanceM<=0 or durationS<=0, e.g. from a malformed GPX/FIT
-    // import that skipped manual-entry's `.positive()` validation) produces a non-finite speed —
+    // import that skipped manual-entry's `.positive()` validation) produces a non-finite speed:
     // skip it here so one bad row can't poison this bucket's whole rank with a NaN that would
     // otherwise flow into resolveRank and get persisted on the runRanks row.
     if (!Number.isFinite(speedMps)) continue;
@@ -116,7 +116,7 @@ export async function recomputeRunRank(
 
   const previousRank = await findRunRankByBucket(db, userId, bucket, activityType);
 
-  // Ratchet-only peak snapshot, reconstructed from the prior runRanks row — same nullable-until-
+  // Ratchet-only peak snapshot, reconstructed from the prior runRanks row: same nullable-until-
   // fully-populated convention as rankService.ts's `storedPeak`. `e1rm` here holds the
   // rank-comparable speed (m/s); `ratchetPeak`'s PeakSnapshot type is metric-agnostic (it just
   // compares tier/division/lp and carries one extra numeric field through untouched).
@@ -139,7 +139,7 @@ export async function recomputeRunRank(
   const peakEligible = plausibilityMultiplier >= PEAK_ELIGIBILITY_FLOOR;
   const prEligible = plausibilityMultiplier >= PR_ELIGIBILITY_FLOOR;
 
-  // Current-rank decay/recovery, using the run's own startedAt for "days since last trained" —
+  // Current-rank decay/recovery, using the run's own startedAt for "days since last trained":
   // days since the most recent rank-eligible run in this bucket.
   const lastTrainedAtMs = loggedRuns.reduce((max, r) => Math.max(max, r.startedAt.getTime()), 0);
   const daysSinceLastTrained = Math.floor((Date.now() - lastTrainedAtMs) / (24 * 60 * 60 * 1000));
@@ -148,7 +148,7 @@ export async function recomputeRunRank(
     ? { tier: previousRank.tier, division: previousRank.division, lp: previousRank.lp }
     : null;
 
-  // Resolve/corroborate/ratchet/decay — identical mechanics to rankService.ts's
+  // Resolve/corroborate/ratchet/decay: identical mechanics to rankService.ts's
   // `recomputeRankForExercise`, factored out into rankAlgorithm.ts's `computeRankCore`. Running
   // has a single metric (speed), so `bestValue` and `peakMetricValue` are the same number here,
   // unlike strength where rank-score and e1RM diverge.
@@ -167,7 +167,7 @@ export async function recomputeRunRank(
   });
 
   // Next-target prediction follows the decayed current band, same as rankService.ts. Running has
-  // a single metric (speed) — no load_ratio/reps split, so no nextLoadTarget/nextRepTarget
+  // a single metric (speed): no load_ratio/reps split, so no nextLoadTarget/nextRepTarget
   // conversion is needed; the raw threshold speed IS the next target.
   const currentOrdinal = ordinal(currentBand.tier, currentBand.division);
   const decayedNextTarget = nextTargetAtOrdinal(thresholds, currentOrdinal);
@@ -198,7 +198,7 @@ export async function recomputeRunRank(
     peakAchievedAt: peak ? new Date(peak.achievedAt) : null,
   });
 
-  // PR detection: independently gated by prEligible, mirroring rankService.ts's PR hard-block —
+  // PR detection: independently gated by prEligible, mirroring rankService.ts's PR hard-block:
   // a badly-flagged run cannot produce a PR record at all.
   let newPr: RecomputeResult["newPr"] = null;
   if (prEligible) {
@@ -216,9 +216,9 @@ export async function recomputeRunRank(
     }
 
     // The "time" PR only makes sense for a distance-ladder bucket, where there's a fixed exact
-    // distance (RUN_CATEGORY_DISTANCE_M) to divide by — a single-speed bucket ("all") has no such
+    // distance (RUN_CATEGORY_DISTANCE_M) to divide by: a single-speed bucket ("all") has no such
     // distance, so it gets a speed PR only. The category-equivalent time is the exact reciprocal
-    // of the already-computed (Riegel-normalized) bestSpeedMps — not the run's raw wall-clock
+    // of the already-computed (Riegel-normalized) bestSpeedMps: not the run's raw wall-clock
     // durationS. For an exact-category-distance run these are numerically identical (the Riegel
     // adjustment is a no-op), but for an off-distance run storing the raw duration produces a
     // materially false record (e.g. an 8000m run bucketed into "10k" would otherwise store its

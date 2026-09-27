@@ -6,33 +6,33 @@
 ## Context
 
 Liftr's core loop is logging a set mid-workout, and the app explicitly needs to survive "a dead
-connection" — the README's own framing is logging a set "with zero signal in a basement gym" and
+connection": the README's own framing is logging a set "with zero signal in a basement gym" and
 having it sync once back online. A gym is a plausible dead zone; blocking the logging UI on a
 network round-trip, or losing data typed while offline, would violate the app's own "logging sets
 fast enough that using it doesn't feel like a chore" design rule.
 
 ## Decision
 
-Every mutation from the active workout store is written to IndexedDB first — optimistic, instant,
-no network wait — then enqueued in an outbox (`packages/client/src/stores/syncStore.ts`).
+Every mutation from the active workout store is written to IndexedDB first, optimistically and
+instantly with no network wait, then enqueued in an outbox (`packages/client/src/stores/syncStore.ts`).
 `flush()` POSTs the queued items to `/api/sync` and removes only the items the server confirms;
 anything that errors stays queued for the next flush. Flush is triggered opportunistically (on
 `online`/`focus` browser events, on Capacitor `resume`/network-change on native, and
-fire-and-forget after every enqueue) and is always best-effort — it never blocks the UI.
+fire-and-forget after every enqueue) and is always best-effort: it never blocks the UI.
 
 The service worker layer (`packages/client/vite.config.ts`) complements this at the HTTP-caching
 level: the app shell is precached, the exercise catalog and images use `CacheFirst`, and other API
 GETs use `StaleWhileRevalidate`, so reads keep working offline too, not just writes.
 
 The outbox batches requests in chunks of 150 (`SYNC_CHUNK_SIZE`), comfortably under the server's
-200-item-per-request cap (`routes/sync.ts`) — added after a real bug where an extended offline
+200-item-per-request cap (`routes/sync.ts`), added after a real bug where an extended offline
 stretch could build a queue large enough that every flush attempt 400'd forever, permanently
 wedging the sync queue.
 
 ## Consequences
 
 - The client and server both need to be able to recompute rank purely from synced data,
-  identically — `tiers.ts`'s pure-function design exists specifically so the client can compute
+  identically: `tiers.ts`'s pure-function design exists specifically so the client can compute
   optimistically offline and the server can recompute authoritatively after sync with guaranteed-
   identical results.
 - Every mutation needs a stable `clientId` so the server can dedupe (`already_synced`) rather than

@@ -4,7 +4,7 @@
  * there's room for more than a bare equipment glyph (see ExerciseIcon.vue for that). Reuses
  * the same slug-convention image path ExerciseDemo.vue already uses
  * (`${apiBase()}/images/<slug>/start.jpg`) rather than the dead `demoStartImage` DB column
- * (see lib/equipmentIcons.ts's sibling note — that column is always null, ingest never writes
+ * (see lib/equipmentIcons.ts's sibling note: that column is always null, ingest never writes
  * it). 12 of 94 catalog slugs have no mirrored photo (no open-licensed source exists); those
  * fall back to the equipment icon instead of a broken-image frame.
  */
@@ -16,7 +16,7 @@ import ExerciseIcon from "./ExerciseIcon.vue";
 const props = withDefaults(defineProps<{ slug: string; equipment: string; size?: number }>(), { size: 40 });
 const catalog = useCatalogStore();
 const failed = ref(false);
-// `!== false` — an unloaded/stale-cached catalog entry has hasImage undefined, which keeps the
+// `!== false`: an unloaded/stale-cached catalog entry has hasImage undefined, which keeps the
 // old "attempt it, fall back on @error" behavior; only a *known* false skips the request outright.
 const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === false);
 </script>
@@ -38,7 +38,7 @@ const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === fal
      photography/licensing), so this softens the fallback with the same radial-highlight tonal
      variation a photo thumbnail naturally has, making the gap read as a quieter, deliberate
      icon slot rather than a stark placeholder.
-     Deliberately exempt from .surface-hybrid — this is an image-placeholder fill (photo missing
+     Deliberately exempt from .surface-hybrid: this is an image-placeholder fill (photo missing
      -> icon fallback), not a content surface. A translucent/blurred treatment here would read
      as a see-through image slot, which makes no sense next to the real opaque photo thumbnails
      beside it. Stays opaque. */

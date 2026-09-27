@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * "Rangaufstiege" — a Mo-So calendar strip showing how many rank-ups happened each weekday of
+ * "Rangaufstiege": a Mo-So calendar strip showing how many rank-ups happened each weekday of
  * the current rolling week, backed by /api/rank-events. Visual pattern copied from
  * FinishSequence.vue's `.streak-strip`/`.streak-day`/`.dot`/`.dl` rather than inventing a second
- * "week strip" look — same 32px circular dot + label-below layout, just filled with a rank-up
+ * "week strip" look: same 32px circular dot + label-below layout, just filled with a rank-up
  * count instead of a streak flame.
  */
 import { computed, onMounted } from "vue";
@@ -84,7 +84,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 .ruc-eyebrow {
   --eyebrow-color: var(--blue-hi);
 }
-/* Copied verbatim from FinishSequence.vue's streak strip — same shape/sizing, don't drift. */
+/* Copied verbatim from FinishSequence.vue's streak strip: same shape/sizing, don't drift. */
 .streak-strip {
   display: flex;
   justify-content: space-between;
@@ -115,7 +115,7 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
 }
 /* Small accent marking which weekdays had at least one rank-up this week; only present in the
    DOM for days with count > 0 (v-if above), not just visually hidden. A real element rather
-   than .dot::after, since .dot is itself a grid/place-items container for the count number — a
+   than .dot::after, since .dot is itself a grid/place-items container for the count number: a
    pseudo-element there would become a second grid item and fight the number for placement. */
 .nebula-dot {
   width: 6px;

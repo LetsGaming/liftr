@@ -2,14 +2,14 @@
 
 All notable changes to this project are documented in this file. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow
-Semantic Versioning strictly — see `.github/workflows/release.yml` for how a release is cut.
+Semantic Versioning strictly; see `.github/workflows/release.yml` for how a release is cut.
 
 ## [Unreleased]
 
 ### Added
 
 - Ranks that haven't been confirmed on a second day now show a "Vorläufig" note, so a single strong session doesn't look like a fully-earned rank.
-- English language support, alongside German. Switch languages any time in Profil → Darstellung, right next to the theme toggle — the whole app, including exercise names and how-to instructions, updates immediately.
+- English language support, alongside German. Switch languages any time in Profil → Darstellung, right next to the theme toggle. The whole app, including exercise names and how-to instructions, updates immediately.
 
 ### Changed
 
@@ -78,27 +78,27 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Changed
 
-- The Läufe (running) rank cards now flip to a back face showing that distance's personal best, same interaction the Kraft (strength) rank cards already had — the two grids now look and behave like one design instead of two.
+- The Läufe (running) rank cards now flip to a back face showing that distance's personal best, same interaction the Kraft (strength) rank cards already had. The two grids now look and behave like one design instead of two.
 - Scrollbars now match the app's own dark/light theme instead of falling back to the browser's default light scrollbar.
 
 ## [1.6.0] - 2026-09-22
 
 ### Added
 
-- **Walking and hiking are now tracked alongside running** , each with its own rank based on average pace, its own Personal Records, and its own XP rate — separate from running because they take real, different effort.
-- **A new Diagnose page** shows exactly what happened on every Health Connect sync — including activities that were skipped and why (no route, route not shared, etc.
+- **Walking and hiking are now tracked alongside running** , each with its own rank based on average pace, its own Personal Records, and its own XP rate, separate from running because they take real, different effort.
+- **A new Diagnose page** shows exactly what happened on every Health Connect sync, including activities that were skipped and why (no route, route not shared, etc.
 - A toast after an automatic Health Connect sync tells you what happened, when anything actually imported or failed (a sync that found nothing new stays quiet, as before).
 
 ### Changed
 
-- Health Connect imports now work even when a route wasn't shared for a workout — you still get credit for the activity (distance, duration, XP), you just don't get a rank for it without GPS data to verify the distance.
+- Health Connect imports now work even when a route wasn't shared for a workout: you still get credit for the activity (distance, duration, XP), you just don't get a rank for it without GPS data to verify the distance.
 - The "Letzte Aktivität" activity filter on the overview page now only shows filters for activity types you actually have history for.
 - The Rekorde page's running-records section is now a cardio-records section, with walking and hiking rows alongside the five running distances.
 
 ### Fixed
 
-- A Health Connect workout whose route wasn't shared with Liftr (rather than never recorded at all) used to be silently dropped — it now imports without a route, or is recorded as skipped with a clear reason on the new Diagnose page.
-- The Kraft-Ränge card grid no longer drifts wider than the rank-analytics tiles above it on larger screens — both now line up to the same edge.
+- A Health Connect workout whose route wasn't shared with Liftr (rather than never recorded at all) used to be silently dropped; it now imports without a route, or is recorded as skipped with a clear reason on the new Diagnose page.
+- The Kraft-Ränge card grid no longer drifts wider than the rank-analytics tiles above it on larger screens; both now line up to the same edge.
 
 ## [1.5.4] - 2026-09-21
 
@@ -110,7 +110,7 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Fixed
 
-- **A fresh `docker compose up --build` failed outright** with `Failed to read patch file /app/patches/capacitor-health.patch: No such file or directory`. The build stages ran `pnpm install` without ever copying the `patches/` directory the lockfile's `capacitor-health` patch depends on — only worked before because of stale cached layers; a real rebuild always hit this.
+- **A fresh `docker compose up --build` failed outright** with `Failed to read patch file /app/patches/capacitor-health.patch: No such file or directory`. The build stages ran `pnpm install` without ever copying the `patches/` directory the lockfile's `capacitor-health` patch depends on. It only worked before because of stale cached layers; a real rebuild always hit this.
 
 ## [1.5.2] - 2026-09-21
 
@@ -173,42 +173,42 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Added
 
-- **You can now change your display name, username, and password from Profil → Konto → Anmeldedaten** , and see and sign out your other logged-in devices from a new "Aktive Sitzungen" list there — no more needing to delete and re-invite an account just to fix a username or password.
-- **Forgotten a password? The server operator can reset it** with a new `pnpm reset-password` command — this app still has no email, so this replaces "there's no way to recover it at all.
+- **You can now change your display name, username, and password from Profil → Konto → Anmeldedaten** , and see and sign out your other logged-in devices from a new "Aktive Sitzungen" list there. No more needing to delete and re-invite an account just to fix a username or password.
+- **Forgotten a password? The server operator can reset it** with a new `pnpm reset-password` command; this app still has no email, so this replaces "there's no way to recover it at all.
 
 ### Changed
 
 - **Changing your password or username now signs out every other device you were logged in on** , so a leaked login can be cut off just by changing your credentials.
-- **The inactivity timeout for staying logged in is now 30 days (was 90), and logins now also expire after 90 days no matter how often you use the app.** Previously an actively-used login never expired at all — this bounds how long a leaked-but-actively-used login stays valid too.
+- **The inactivity timeout for staying logged in is now 30 days (was 90), and logins now also expire after 90 days no matter how often you use the app.** Previously an actively-used login never expired at all. This bounds how long a leaked-but-actively-used login stays valid too.
 
 ## [1.2.0] - 2026-09-17
 
 ### Added
 
-- **You'll now be signed out automatically after 90 days of inactivity.** Every action while using the app extends this window, so an account in regular use is never affected — this only bounds how long a lost or leaked login stays valid.
+- **You'll now be signed out automatically after 90 days of inactivity.** Every action while using the app extends this window, so an account in regular use is never affected; this only bounds how long a lost or leaked login stays valid.
 
 ### Fixed
 
 - **Live GPS run tracking didn't work at all in the installed Android app.** The app never requested location permission, so starting a run silently failed to record any route.
 - **A workout logged fully offline could silently vanish from history instead of syncing.** If the offline queue happened to flush out of order, finishing a workout could be reported as synced before it actually existed on the server, permanently losing that session with no error shown.
 - **A hung server connection (weak wifi, captive portal) could leave sync stuck "syncing" forever.** Requests now time out instead of waiting indefinitely.
-- **Pausing a live-tracked run didn't actually pause GPS recording.** Location fixes kept being added to the route while paused, inflating distance against a duration that correctly excluded the paused time — an artificially fast pace that could get a real run rejected.
+- **Pausing a live-tracked run didn't actually pause GPS recording.** Location fixes kept being added to the route while paused, inflating distance against a duration that correctly excluded the paused time: an artificially fast pace that could get a real run rejected.
 - **A sync item that could never succeed (a rejected or invalid entry) would silently retry forever on every reconnect.** After 3 days it now stops retrying and shows a sync-error indicator instead of quietly repeating in the background.
-- **Creating an account with a wrong invite code wasn't meaningfully rate-limited** — guessing the code with a fresh username each time bypassed the existing protection. Registration is now throttled per device regardless of the username tried.
+- **Creating an account with a wrong invite code wasn't meaningfully rate-limited**: guessing the code with a fresh username each time bypassed the existing protection. Registration is now throttled per device regardless of the username tried.
 - **Creating or editing a planned route, or logging a manual/Health-Connect run, had no rate limit**, unlike every similar action elsewhere in the app.
 - **The collapse arrow on section headers (Profil and elsewhere) wasn't vertically centered against the title text.**
 - **Tapping "Starten" on a saved route's card opened a manual duration-entry form instead of starting live GPS tracking**, unlike the Workout tab, where starting a routine begins tracking immediately. It now starts live tracking directly; manual entry is still available from the route's own detail page or the standalone "Manuell" button.
 
 ### Changed
 
-- **The "Update verfügbar" notification now takes you straight to the download button** instead of just telling you which page to visit — tapping it opens Profil with the "Konto & App" card already expanded and scrolled into view.
+- **The "Update verfügbar" notification now takes you straight to the download button** instead of just telling you which page to visit; tapping it opens Profil with the "Konto & App" card already expanded and scrolled into view.
 - **Profil page regrouped for clarity**: "Darstellung", "Konto" (Mitglieder, Konto & App, Konto löschen), and "Daten" (Health Connect, Daten-Export) are now their own sections instead of one combined "Daten & Server" group.
 
 ## [1.1.3] - 2026-09-17
 
 ### Fixed
 
-- **First login/setup on a new device could leave the app stuck with no data and no onboarding.** Setting the owner password (or logging in) on a device with no cached session left the level ring, streak, and onboarding wizard silently empty until the app was fully restarted — the app now reloads that data immediately after signing in.
+- **First login/setup on a new device could leave the app stuck with no data and no onboarding.** Setting the owner password (or logging in) on a device with no cached session left the level ring, streak, and onboarding wizard silently empty until the app was fully restarted. The app now reloads that data immediately after signing in.
 - **"Health Connect verbinden" crashed with `permissions.every is not a function`.** A wrong type in the Health Connect plugin masked a real runtime shape mismatch.
 - **The barbell/EZ-bar/trap-bar weight couldn't go below 5 kg** , even though some aluminum barbells weigh less.
 
@@ -222,11 +222,11 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 ### Fixed
 
-- **Native app couldn't connect to a server with `LIFTR_ALLOWED_ORIGINS` set.** The Android app's own WebView origin was never on the allow-list, so the server rejected its requests with no useful error — the app just showed "Server nicht erreichbar".
+- **Native app couldn't connect to a server with `LIFTR_ALLOWED_ORIGINS` set.** The Android app's own WebView origin was never on the allow-list, so the server rejected its requests with no useful error; the app just showed "Server nicht erreichbar".
 
 ### Changed
 
-- **New app icon and logo.** Replaced the plain blue hexagon with a new mark on the app's Nebula gradient — favicons, the installed-app icon, and the Android launcher/splash screens all updated.
+- **New app icon and logo.** Replaced the plain blue hexagon with a new mark on the app's Nebula gradient: favicons, the installed-app icon, and the Android launcher/splash screens all updated.
 
 ## [1.1.1] - 2026-09-17
 
@@ -237,11 +237,11 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 ### Added
 
 - **In-app version display + update checks.** Every platform now shows the app's own version on Profil → Version.
-- **Runtime server connection for the native app.** The Android app now asks for its server's address on first launch and verifies it's actually a running Liftr instance (`GET /api/health` now returns `service: "liftr"`) before proceeding, instead of baking a fixed backend URL in at build time — the same pattern as Home Assistant/Jellyfin.
+- **Runtime server connection for the native app.** The Android app now asks for its server's address on first launch and verifies it's actually a running Liftr instance (`GET /api/health` now returns `service: "liftr"`) before proceeding, instead of baking a fixed backend URL in at build time, the same pattern as Home Assistant/Jellyfin.
 
 ### Changed
 
-- Removed the `VITE_API_BASE` build-time variable and the `LIFTR_BACKEND_URL` CI variable it read from — no longer needed now that the native app resolves its server at runtime.
+- Removed the `VITE_API_BASE` build-time variable and the `LIFTR_BACKEND_URL` CI variable it read from; no longer needed now that the native app resolves its server at runtime.
 - Android now permits plain `http://` server addresses (previously blocked by default since API 28), since a self-hosted instance often has no reverse-proxy/TLS in front yet.
 
 ## [1.0.1] - 2026-09-16
@@ -252,50 +252,50 @@ Semantic Versioning strictly — see `.github/workflows/release.yml` for how a r
 
 Initial release. Liftr is a self-hosted strength + running tracker: Vue 3 (Ionic/Capacitor PWA)
 client, Fastify server, SQLite via Drizzle. This entry captures the full feature set as it stands
-today — see [`docs/features.md`](docs/features.md) for the detailed tour this summary is drawn
+today; see [`docs/features.md`](docs/features.md) for the detailed tour this summary is drawn
 from.
 
 ### Added
 
-- **Workout logging** — routine-based or freeform, with last-time-aware defaults, set-kind
+- **Workout logging**: routine-based or freeform, with last-time-aware defaults, set-kind
   tagging (warm-up/drop/failure), optional RPE/notes capture, a rest timer, a mobile exercise
   rail, warm-up ramp suggestions, a plate-math calculator, and a beat-by-beat Finish Sequence
   recapping XP/streaks/rank-ups/PRs.
-- **Rank system** — nine tiers (Initiate → Apex) with divisions, computed from real strength
+- **Rank system**: nine tiers (Initiate → Apex) with divisions, computed from real strength
   standards where available and clearly-marked estimates where not. Separate peak/current rank
   (peak is a ratchet, current decays gracefully after inactivity), a corroboration gate against
   one-off flukes, a plausibility gate that discounts (never discards) implausible sessions, an
   Overall Rank aggregate, and rank UI (tier ladder, distribution donut, progress chart, rank-up
   calendar). Personal Records ledger at `/records`.
-- **XP, levels, and streaks** — decelerating level curve, consistency/variety bonuses,
+- **XP, levels, and streaks**: decelerating level curve, consistency/variety bonuses,
   streaks that forgive a missed day instead of resetting, discounted (never zero) XP for
   plausibility-flagged sessions.
-- **Recovery Zone** — a heuristic green-light/rest-day read on the Overview page from recent
+- **Recovery Zone**: a heuristic green-light/rest-day read on the Overview page from recent
   training load.
-- **Running as a first-class second discipline** — GPX/FIT import, Android Health Connect
+- **Running as a first-class second discipline**: GPX/FIT import, Android Health Connect
   import, run detail view with route map and replay, manual entry with inline validation, a
   combined workout/runs switcher, and full XP/rank parity with lifting (five distance categories,
-  peak/current rank, corroboration, decay, PRs, Overall Runner Rank) — no third-party fitness
+  peak/current rank, corroboration, decay, PRs, Overall Runner Rank); no third-party fitness
   platform dependency.
-- **Routines and planning** — a guided + fast-path routine builder wizard, drag-to-reorder,
+- **Routines and planning**: a guided + fast-path routine builder wizard, drag-to-reorder,
   equipment-substitution copy, optional mesocycle planning, custom exercises, and route planning
   (waypoints on a map, automatic distance/elevation, loop-closing).
-- **Exercise catalog** — ~94 curated exercises with demos, muscle-group tagging and an
+- **Exercise catalog**: ~94 curated exercises with demos, muscle-group tagging and an
   interactive muscle diagram, per-exercise history, and a third-party attributions page.
-- **Multi-user accounts** — a per-instance owner (set up on first launch) can invite other
+- **Multi-user accounts**: a per-instance owner (set up on first launch) can invite other
   people via time-limited invite codes; everyone logs in with their own username/password to a
   session-scoped bearer token. Supersedes the original single shared `LIFTR_TOKEN` design (see
   `docs/adr/0006-multi-user-hardening.md`). Includes self-service account deletion.
-- **Profile and settings** — staged skippable onboarding, bodyweight tracking with a trend
+- **Profile and settings**: staged skippable onboarding, bodyweight tracking with a trend
   chart, API token management, CSV/ZIP data export, light/dark theme, shareable workout image
   cards.
-- **PWA / offline-first** — installable, no app store required; every mutation writes to
+- **PWA / offline-first**: installable, no app store required; every mutation writes to
   IndexedDB and queues in an outbox that flushes opportunistically, so logging never blocks on
   the network. Self-hosted, single SQLite file, no cloud account or analytics by default.
-- **Operational hardening** — graceful shutdown, non-root container execution, per-user rate
+- **Operational hardening**: graceful shutdown, non-root container execution, per-user rate
   limiting on high-value endpoints, Dependabot-managed dependency updates, and a self-hosted
   error-tracking/diagnostics panel (owner-only) with a Sentry-compatible interface for future
   GlitchTip-style integration.
-- **Android release pipeline** — tag-triggered GitHub Actions workflow that runs CI, builds a
+- **Android release pipeline**: tag-triggered GitHub Actions workflow that runs CI, builds a
   signed release APK, and attaches it to a GitHub Release (see
   `docs/operations/android-release-signing.md`).

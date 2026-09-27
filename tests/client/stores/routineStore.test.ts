@@ -145,7 +145,7 @@ describe("routineStore", () => {
 
       expect(deleteRoutineMock).toHaveBeenCalledWith("r-a");
       expect(store.routines).toEqual([b]);
-      // No reload triggered by remove() — local filtering is the only source of the update.
+      // No reload triggered by remove(): local filtering is the only source of the update.
       expect(getRoutinesMock).toHaveBeenCalledTimes(1);
     });
   });

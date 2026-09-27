@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The slug is derived from the typed display name (lowercased, non-alphanumeric runs collapsed to
- * hyphens) and used only as the exercise's stable lookup key — the typed `displayName` is sent as
+ * hyphens) and used only as the exercise's stable lookup key: the typed `displayName` is sent as
  * `name` and displayed verbatim (see useExerciseName.ts).
  *
  * EXERCISE_SLUG_PATTERN is reused from @liftr/shared (packages/shared/src/catalog/slug.ts), the
@@ -80,7 +80,7 @@ const canSave = computed(
 );
 
 /* Clear equipment when isBodyweight is checked, so a bodyweight exercise doesn't submit stale
-   equipment (e.g. "barbell" picked earlier). "" is the "no equipment" sentinel — the select's own
+   equipment (e.g. "barbell" picked earlier). "" is the "no equipment" sentinel: the select's own
    default option. */
 watch(isBodyweight, (bodyweight) => {
   if (bodyweight) equipment.value = "";

@@ -35,14 +35,14 @@ export function calculatePlates(
   return { barWeightKg, perSide, achievedWeightKg, exact: Math.abs(achievedWeightKg - targetWeightKg) < EPS };
 }
 
-/** One plate size the user owns, e.g. `{ weightKg: 2.5, count: 4 }` — "I have four 2.5kg
+/** One plate size the user owns, e.g. `{ weightKg: 2.5, count: 4 }`: "I have four 2.5kg
  *  plates". `count` is the physical plate count (both sides combined), not pairs. */
 export interface PlateInventory {
   weightKg: number;
   count: number;
 }
 
-/** Integer scale for the knapsack DP below — plate weights are always a multiple of 0.01kg in
+/** Integer scale for the knapsack DP below: plate weights are always a multiple of 0.01kg in
  *  practice (0.25kg increments, sometimes 1kg/2kg for smaller home-gym plates); scaling to
  *  hundredths avoids floating-point drift in the sum comparisons the DP relies on. */
 const SCALE = 100;
@@ -50,11 +50,11 @@ const SCALE = 100;
 /**
  * Inventory-aware version of calculatePlates, for users who specify exactly which plates they
  * own so the app can show how to load the barbell from real inventory. Unlike the
- * unlimited-supply greedy algorithm above, a bounded plate count breaks pure greedy — owning
+ * unlimited-supply greedy algorithm above, a bounded plate count breaks pure greedy: owning
  * 4x1.25kg but no 2.5kg plate means the
  * greedy pick of "always take the biggest plate that fits" can strand weight the smaller plates
  * could have covered. This runs a 0/1 subset-sum DP over each physical plate *pair* (plates load
- * symmetrically, so only whole pairs are usable — floor(count / 2) pairs per size), maximizing
+ * symmetrically, so only whole pairs are usable: floor(count / 2) pairs per size), maximizing
  * the achieved weight first and, among ties, minimizing how many plates get loaded (matches
  * calculatePlates' own preference for fewer, bigger plates over many small ones).
  */
@@ -63,7 +63,7 @@ export function calculatePlatesFromInventory(targetWeightKg: number, barWeightKg
   const targetUnits = Math.round(remaining * SCALE);
 
   // Expand to one entry per available pair, largest plate size first so equal-sum ties below
-  // naturally prefer bigger plates (processed — and therefore chosen — first).
+  // naturally prefer bigger plates (processed: and therefore chosen: first).
   const pairs = [...inventory]
     .sort((a, b) => b.weightKg - a.weightKg)
     .flatMap((p) => Array.from({ length: Math.floor(p.count / 2) }, () => Math.round(p.weightKg * SCALE)))
@@ -74,7 +74,7 @@ export function calculatePlatesFromInventory(targetWeightKg: number, barWeightKg
   const parent = new Array<number>(targetUnits + 1).fill(-1); // plate units used to arrive at s
   dp[0] = 0;
 
-  // `s` and `s - units` are always within [0, targetUnits] by the loop bounds above — non-null
+  // `s` and `s - units` are always within [0, targetUnits] by the loop bounds above: non-null
   // assertions are safe here, not a real possibility of undefined.
   for (const units of pairs) {
     for (let s = targetUnits; s >= units; s--) {

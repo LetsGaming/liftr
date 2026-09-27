@@ -20,7 +20,7 @@ export const useRanksStore = defineStore("ranks", {
       });
     },
 
-    /** Applies a sync-flush rank verdict to the in-memory list without a round trip — the
+    /** Applies a sync-flush rank verdict to the in-memory list without a round trip: the
      *  in-session RankProgress bar needs to move the instant a set's verdict arrives, not after
      *  the next full /api/ranks reload. Falls back to a full load() the one time an exercise has
      *  no cached row yet (e.g. its first-ever ranked set this session). */

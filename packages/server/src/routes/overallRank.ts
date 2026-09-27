@@ -1,5 +1,5 @@
 /**
- * GET /api/overall-rank — the account-level "how good a lifter am I overall" aggregate. Same
+ * GET /api/overall-rank: the account-level "how good a lifter am I overall" aggregate. Same
  * shape as `readiness.ts`/`rankEvents.ts`: the route is a thin schema wrapper, the actual
  * aggregation lives in `overallRankService.ts`.
  */

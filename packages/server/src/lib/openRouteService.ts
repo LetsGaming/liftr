@@ -42,18 +42,18 @@ export interface OrsRouteResult {
 
 /**
  * Calls OpenRouteService's directions API for a road/trail-snapped route + per-point elevation.
- * ORS's own coordinate order is [lon, lat] — the opposite of every other lat/lon pair in this
+ * ORS's own coordinate order is [lon, lat], the opposite of every other lat/lon pair in this
  * codebase, which is always {lat, lon}. This swap happens ONLY here, in both directions (request
  * and response), so it can never leak into the rest of the app as a silent bug. `avoidPolygons`
- * shares the same swap — see plannedRouteService.ts's `buildAvoidCorridor` usage for how a closed
+ * shares the same swap: see plannedRouteService.ts's `buildAvoidCorridor` usage for how a closed
  * loop's closing leg uses this to route around its own outbound corridor instead of retracing it.
  */
 export async function fetchOrsRoute(
   waypoints: { lat: number; lon: number }[],
   opts?: { avoidPolygons?: CorridorRing[] | null },
 ): Promise<OrsRouteResult> {
-  // Safe today — every caller (computeGeometry) already guards on env.orsApiKey being present
-  // before calling this — but this function is exported, so a direct call without that guard
+  // Safe today: every caller (computeGeometry) already guards on env.orsApiKey being present
+  // before calling this. But this function is exported, so a direct call without that guard
   // would otherwise silently send `Authorization: undefined` instead of failing loudly.
   if (!env.orsApiKey) {
     throw new OrsUnavailableError("network", "ORS API key is not configured");
@@ -67,7 +67,7 @@ export async function fetchOrsRoute(
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: env.orsApiKey },
       body: JSON.stringify({
-        coordinates: waypoints.map((w) => [w.lon, w.lat]), // [lon, lat] — see module doc above
+        coordinates: waypoints.map((w) => [w.lon, w.lat]), // [lon, lat] (see module doc above)
         elevation: true,
         instructions: false,
         units: "m",
@@ -78,8 +78,8 @@ export async function fetchOrsRoute(
               options: {
                 avoid_polygons: {
                   type: "MultiPolygon",
-                  // One polygon per ring, single outer ring, no holes — [lon, lat] again, same
-                  // swap as `coordinates` above.
+                  // One polygon per ring, single outer ring, no holes ([lon, lat] again, same
+                  // swap as `coordinates` above).
                   coordinates: rings.map((ring) => [ring.map((p) => [p.lon, p.lat])]),
                 },
               },

@@ -1,9 +1,9 @@
 /**
- * Mesocycle controls — a per-routine "+ Mesozyklus" reveal on the not-started routine list,
+ * Mesocycle controls: a per-routine "+ Mesozyklus" reveal on the not-started routine list,
  * deliberately kept off the routine card itself: this is a planning-desk action like building
  * the routine, not something that should add visual weight to the one-tap "start today's
  * workout" list. Extracted out of WorkoutPage.vue (that file was the largest in the app, mixing
- * several unrelated concerns) — reusable state/logic, not template.
+ * several unrelated concerns): reusable state/logic, not template.
  */
 import { computed, reactive, ref } from "vue";
 import type { useActiveWorkoutStore } from "../stores/activeWorkoutStore";

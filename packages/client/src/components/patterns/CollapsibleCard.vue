@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
- * Header-button + chevron disclosure for a settings card's *contents* — the card frame itself
+ * Header-button + chevron disclosure for a settings card's *contents*: the card frame itself
  * (`.card.surface-hybrid`) stays on the host `<section>` so the pop-in stagger
  * (`:nth-of-type` in ProfilePage.vue) keeps counting real `<section>` siblings. Same shape as
  * TierLadder.vue's rung disclosure (aria-expanded + rotating chevron), just for a single
  * always-available section instead of an accordion list.
  *
- * `v-show` (not `v-if`) on the body — collapsing a card with unsaved form input shouldn't lose
+ * `v-show` (not `v-if`) on the body: collapsing a card with unsaved form input shouldn't lose
  * it.
  */
 const props = defineProps<{ title: string; defaultOpen?: boolean }>();
@@ -44,7 +44,7 @@ if (props.defaultOpen) open.value = true;
   justify-content: space-between;
   gap: var(--sp2);
   width: 100%;
-  /* Native <button> UA defaults (white background, border, black text) — every other button in
+  /* Native <button> UA defaults (white background, border, black text): every other button in
      the app resets these (see InfoToggle.vue's identical rule), missed here initially and
      visible as a white pill around the card title in a mobile-viewport check. */
   background: none;

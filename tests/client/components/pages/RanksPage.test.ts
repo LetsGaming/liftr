@@ -3,7 +3,7 @@ import RanksPage from "~client/pages/RanksPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 // Kraft/Lauf section internals are covered at their own layer now (RankLifterSection.test.ts /
-// RankRunnerSection.test.ts) — this page only owns the switcher and which section is mounted.
+// RankRunnerSection.test.ts): this page only owns the switcher and which section is mounted.
 const STUBS = { RankLifterSection: true, RankRunnerSection: true };
 
 describe("RanksPage", () => {

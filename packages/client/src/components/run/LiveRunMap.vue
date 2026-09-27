@@ -3,7 +3,7 @@
  * Read-only map for an in-progress live run: draws the growing GPS trace and a marker at the
  * current position, auto-panning to follow it. A new sibling to RouteMapEditor.vue (waypoint
  * editing) and RunMap.vue (finished-run replay, with its own imperative fast path) rather than a
- * reuse of either — this one's whole job is "append one point and keep the view centered on it",
+ * reuse of either: this one's whole job is "append one point and keep the view centered on it",
  * a genuinely different, much simpler concern than either.
  */
 import L from "leaflet";
@@ -71,7 +71,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   width: 100%;
   height: 100%;
   /* No min-height floor: sits inside LiveRunScreen.vue's `.live-map` (flex: 1; min-height: 0,
-     itself inside SheetModal's `fill-body` flex column), which already guarantees real height —
+     itself inside SheetModal's `fill-body` flex column), which already guarantees real height:
      see RouteMapEditor.vue's matching comment for why a floor here would fight that instead. */
   min-height: 0;
   overflow: hidden;

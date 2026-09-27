@@ -2,7 +2,7 @@
  *  WorkoutPage's set-row badge, and SetKindPicker.vue's option rows all import this, rather than
  *  each hand-writing the same four labels). Client-owned (unlike the `SetKind` type/slugs
  *  themselves, which stay in @liftr/shared for the server's routine zod schema) since display
- *  copy needs i18n, which shared code has no access to — same split as lib/tierIcons.ts's
+ *  copy needs i18n, which shared code has no access to: same split as lib/tierIcons.ts's
  *  tierLabel(). */
 import type { SetKind } from "@liftr/shared";
 import { t } from "../i18n";

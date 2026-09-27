@@ -6,11 +6,11 @@ import { api } from "../lib/api";
 export interface CatalogExercise {
   id: string;
   slug: string;
-  /** Literal display name — set for custom exercises, null for catalog exercises (which resolve
+  /** Literal display name: set for custom exercises, null for catalog exercises (which resolve
    *  their name via i18n on `slug` instead; see useExerciseName.ts). */
   name: string | null;
   equipment: string | null;
-  /** Full physical requirement list (@liftr/shared's TieredRequirement[]) — e.g. bench-press:
+  /** Full physical requirement list (@liftr/shared's TieredRequirement[]): e.g. bench-press:
    *  barbell/plates/bench all "required", distinct from `equipment` above (just the icon-driving
    *  item). Only `required`-tier misses block an exercise; `recommended`/`optional` are hints. */
   requiredEquipment: TieredRequirement[];
@@ -55,9 +55,9 @@ export interface CreateExerciseInput {
   muscleSlugs?: { slug: string; role: "primary" | "secondary" }[];
 }
 
-/** POST /api/exercises — custom user-added exercise. Server always returns isCustom: true; the
+/** POST /api/exercises: custom user-added exercise. Server always returns isCustom: true; the
  *  response shape is the same row `insertCustomExercise` returns, not the full `CatalogExercise`
- *  join shape (no `muscles`/`requiredEquipment`/`hasImage` computed fields) — callers should
+ *  join shape (no `muscles`/`requiredEquipment`/`hasImage` computed fields): callers should
  *  re-fetch the catalog (catalogStore.load()) rather than splice this response directly into a
  *  CatalogExercise[] list. */
 export function createExercise(input: CreateExerciseInput): Promise<{ id: string; slug: string }> {

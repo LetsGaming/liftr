@@ -295,7 +295,7 @@ describe("buildRoutineUpdate", () => {
         sets: [
           {
             index: 0,
-            weightKg: 5, // extra weight added on top of bodyweight — but target has no weight tracked
+            weightKg: 5, // extra weight added on top of bodyweight: but target has no weight tracked
             reps: 20,
             isWarmup: false,
             kind: "normal",
@@ -314,7 +314,7 @@ describe("buildRoutineUpdate", () => {
     const update = buildRoutineUpdate(routine, active);
 
     // target.weightKg was null, so the beaten target keeps weightKg null even though the logged
-    // set itself tracked weight — only the reps side of the beat "counts" here per useRoutineBeat.ts
+    // set itself tracked weight: only the reps side of the beat "counts" here per useRoutineBeat.ts
     expect(update[0]!.targetSets[0]).toEqual({ reps: 20, weightKg: null });
   });
 

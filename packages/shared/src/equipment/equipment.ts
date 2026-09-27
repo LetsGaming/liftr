@@ -1,10 +1,10 @@
 /**
  * Canonical equipment vocabulary, so exercises can be mapped to equipment without manually
  * adjusting code for every new exercise. Single source of truth for what "equipment" means
- * in this app — the client's icon/label maps (equipmentIcons.ts) and the ingest pipeline's
+ * in this app: the client's icon/label maps (equipmentIcons.ts) and the ingest pipeline's
  * external-source normalizers (packages/ingest/src/equipment/) both key off this list instead
  * of each inventing/duplicating it. Deliberately a closed, curated set (not "whatever the
- * upstream API happens to call things") — every exercise's equipment must render a real icon and
+ * upstream API happens to call things"), since every exercise's equipment must render a real icon and
  * be filterable by the equipment picker, so an unrecognized upstream value normalizes to `null`
  * (see normalizeFreeExerciseDbEquipment/normalizeWgerEquipment below) rather than being
  * invented as an eleventh category no icon/label exists for.
@@ -36,7 +36,7 @@ export const EQUIPMENT_SLUGS: Equipment[] = [
 
 /**
  * free-exercise-db (github.com/yuhonas/free-exercise-db, Unlicense) uses its own 12-value
- * `equipment` string per exercise — verified against its `dist/exercises.json` (873 rows) as of
+ * `equipment` string per exercise, verified against its `dist/exercises.json` (873 rows) as of
  * this mapping's authoring. Four of its values (bands, medicine ball, exercise ball, foam roll)
  * and the catch-all "other" have no equivalent in this app's vocabulary and intentionally map to
  * null rather than being force-fit onto the nearest-sounding category.
@@ -64,7 +64,7 @@ export function normalizeFreeExerciseDbEquipment(raw: string | null | undefined)
 /**
  * wger (wger.de/api/v2, CC-BY-SA 4.0) tags an exercise with zero or more equipment items (a
  * bench press might carry both "Barbell" and "Bench") rather than this app's single equipment
- * field — resolved by priority, most training-defining piece of kit first (a barbell matters
+ * field: resolved by priority, most training-defining piece of kit first (a barbell matters
  * more to "what do I need" than the bench it's performed on). "Bench"/"Incline bench"/"Gym
  * mat"/"Swiss Ball" are supporting props, not the thing the app's equipment filter means by
  * "equipment" (per free-exercise-db's own tighter list above), so they never win a match; a

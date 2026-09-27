@@ -1,7 +1,7 @@
 /**
  * The single source of truth for the 9-tier rank ramp's colors. Nebula-harmonised per the emblem
  * redesign (docs/design/nebula-design-system.md's "tier colors stay independent of Nebula" rule
- * was deliberately revisited for this — see that doc's amendment): bronze/silver/gold read for the
+ * was deliberately revisited for this, see that doc's amendment): bronze/silver/gold read for the
  * bottom three tiers, giving way to an abstract cyan → azure → indigo → violet → magenta →
  * incandescent climb above. Luminance and chroma both rise monotonically tier-to-tier, and every
  * tier shifts hue (not just lightness) between its shadow and highlight stop, which is what keeps
@@ -9,7 +9,7 @@
  *
  * This used to be duplicated by hand in tokens.css AND in shareCard.ts's own TIER_COLORS constant
  * (which had already drifted out of sync with tokens.css once). This module is now the only place
- * the four hex stops per tier are typed in — tokens.css's `--<tier>-1/-2/-3/-t` custom properties
+ * the four hex stops per tier are typed in: tokens.css's `--<tier>-1/-2/-3/-t` custom properties
  * and shareCard.ts's canvas drawing both read from it (tokens.css by literal value, kept in sync by
  * a vitest assertion; shareCard.ts by importing this module directly).
  */
@@ -50,7 +50,7 @@ function toHex(v: number): string {
 
 /** Linear-interpolates two hex colors at `t` (0 = a, 1 = b). Used by the emblem geometry generator
  *  to derive per-facet shading from a tier's shadow/highlight stops without needing a 3rd color
- *  library dependency — this is deliberately the only color math the emblem system needs. */
+ *  library dependency; this is deliberately the only color math the emblem system needs. */
 export function mixHex(a: string, b: string, t: number): string {
   const [ar, ag, ab] = hexToRgb(a);
   const [br, bg, bb] = hexToRgb(b);

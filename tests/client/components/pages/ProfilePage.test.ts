@@ -10,7 +10,7 @@ const { isNativeMock, isAndroidMock, getInfoMock, shareOrDownloadBlobMock } = vi
   shareOrDownloadBlobMock: vi.fn().mockResolvedValue(undefined),
 }));
 // useDataExport hands the fetched blob to shareOrDownloadBlob (native share sheet / save picker)
-// instead of clicking a plain `<a download>` itself — Capacitor's Android WebView is known to
+// instead of clicking a plain `<a download>` itself: Capacitor's Android WebView is known to
 // silently drop blob: downloads triggered that way. Mocked here since shareCard.ts's own logic
 // already has dedicated tests (tests/client/lib/shareCard.test.ts).
 vi.mock("~client/lib/shareCard", () => ({ shareOrDownloadBlob: shareOrDownloadBlobMock }));
@@ -20,7 +20,7 @@ vi.mock("~client/lib/platform", async (importOriginal) => {
 });
 vi.mock("@capacitor/app", () => ({ App: { getInfo: getInfoMock } }));
 // useHealthConnectImport() runs isHealthConnectAvailable() unconditionally on every mount (its
-// result decides whether the Health Connect card even renders) — unmocked, Health.isHealthAvailable
+// result decides whether the Health Connect card even renders): unmocked, Health.isHealthAvailable
 // throws "not implemented on web" under jsdom, same as any other native-only Capacitor plugin.
 vi.mock("capacitor-health", () => ({
   Health: { isHealthAvailable: vi.fn().mockResolvedValue({ available: false }), requestHealthPermissions: vi.fn(), queryWorkouts: vi.fn() },
@@ -31,7 +31,7 @@ import { useAppUpdate } from "~client/composables/useAppUpdate";
 import { useServerVersionInfo } from "~client/composables/useServerConnection";
 import { ApiError } from "~client/lib/api";
 
-// Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
+// Plain top-of-file consts (not vi.hoisted: `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
 // hoisting above these declarations never dereferences them before they exist.
 const bodyweightState = reactive({
@@ -84,10 +84,10 @@ beforeEach(async () => {
   isAndroidMock.mockReturnValue(false);
   getInfoMock.mockResolvedValue({ version: "1.0.0" });
   localStorage.clear();
-  // useAppUpdate.ts is a module-level singleton (see its header comment) — reset it directly
+  // useAppUpdate.ts is a module-level singleton (see its header comment): reset it directly
   // rather than re-importing the module, so a result from one test never leaks into the next.
   // currentVersion resets to __APP_VERSION__ (matching the module's own non-Android default,
-  // isAndroidMock already false at this point), not null — non-Android never calls check() to
+  // isAndroidMock already false at this point), not null: non-Android never calls check() to
   // repopulate it.
   const appUpdate = useAppUpdate();
   appUpdate.currentVersion.value = __APP_VERSION__;
@@ -143,7 +143,7 @@ describe("ProfilePage", () => {
     expect(bwChip.classes()).toContain("locked");
 
     await bwChip.trigger("click");
-    expect(bwChip.classes()).toContain("active"); // still active — bodyweight can't be deselected
+    expect(bwChip.classes()).toContain("active"); // still active: bodyweight can't be deselected
   });
 
   it("shows XP/level stats once xpStore has loaded, and toggles visibility on tap", async () => {
@@ -176,7 +176,7 @@ describe("ProfilePage", () => {
     expect(document.documentElement.lang).toBe("en");
 
     // i18n.global is a real, module-level singleton shared with every other test in this file
-    // (mountWithProviders installs the actual instance) — leaving it on "en" would break every
+    // (mountWithProviders installs the actual instance): leaving it on "en" would break every
     // German string assertion that runs after this test.
     const { i18n } = await import("~client/i18n");
     i18n.global.locale.value = "de";
@@ -282,9 +282,9 @@ describe("ProfilePage", () => {
 
     const wrapper = mountWithProviders(ProfilePage);
     // "Speichern" isn't unique to this section (bodyweight/profile/equipment/gym cards each have
-    // their own) — scope every lookup after "Ändern" to the Server section itself.
+    // their own): scope every lookup after "Ändern" to the Server section itself.
     // Server/Version/Diagnose all live inside one merged "Konto & App" CollapsibleCard now, so a
-    // section can have several .eyebrow elements (the card's own title plus each sub-heading) —
+    // section can have several .eyebrow elements (the card's own title plus each sub-heading):
     // match any of them, not just the first.
     const section = wrapper.findAll("section").find((s) => s.findAll(".eyebrow").some((e) => e.text() === "Server"))!;
     await section.findAll("button").find((b) => b.text() === "Ändern")!.trigger("click");
@@ -353,7 +353,7 @@ describe("ProfilePage", () => {
       }),
     );
     // openAppUpdateDownload navigates the WebView itself (not @capacitor/browser's in-app Custom
-    // Tab) so Capacitor's own external-host handoff takes over — see useAppUpdate.ts's comment.
+    // Tab) so Capacitor's own external-host handoff takes over: see useAppUpdate.ts's comment.
     const location = { ...window.location, href: "" };
     vi.stubGlobal("location", location);
 

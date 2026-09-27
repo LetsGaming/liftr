@@ -9,7 +9,7 @@ import { i18n } from "~client/i18n";
 import ExercisesPage from "~client/pages/ExercisesPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-// Plain top-of-file const (not vi.hoisted — `reactive` isn't available inside that factory, see
+// Plain top-of-file const (not vi.hoisted: `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside an uninvoked closure below, so vi.mock's own
 // hoisting above this declaration never dereferences it before it exists.
 const catalogState = reactive({ exercises: [] as unknown[], loaded: false, load: vi.fn() });

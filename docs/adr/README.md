@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 An ADR is a short, dated write-up of one significant technical decision: what problem forced the
-choice, what was decided, and what it costs. The point isn't ceremony — it's so that six months
+choice, what was decided, and what it costs. The point isn't ceremony: it's so that six months
 from now, nobody has to reverse-engineer *why* the code looks the way it does from commit
 messages alone, and nobody proposes "just add user accounts" without knowing that was already
 weighed and rejected on purpose.
@@ -13,7 +13,7 @@ painful or awkward to reverse later) should get a new one going forward.
 
 ## Format
 
-Each ADR is a short file, `NNNN-title-in-kebab-case.md`, numbered sequentially. Terse — a
+Each ADR is a short file, `NNNN-title-in-kebab-case.md`, numbered sequentially. Terse: a
 paragraph or two per section, not an essay:
 
 ```markdown

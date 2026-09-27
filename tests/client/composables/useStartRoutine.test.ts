@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 //
-// useStartRoutine.ts calls useExerciseName() internally, which calls vue-i18n's useI18n() —
+// useStartRoutine.ts calls useExerciseName() internally, which calls vue-i18n's useI18n():
 // that only works injected inside a real component's setup() (withSetup + the real i18n plugin,
 // same pattern tests/client/helpers/withSetup.ts documents), so this needs a real DOM (jsdom)
 // for @vue/test-utils' mount(). The stores and services it talks to are true external
-// boundaries (network via services, Pinia stores with their own tests) — mocked here so these
+// boundaries (network via services, Pinia stores with their own tests): mocked here so these
 // tests exercise only useStartRoutine's own orchestration (ordering, mesocycle scaling,
 // last-time fallback, quick-start recommendation lookup).
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,11 +14,11 @@ import type { Routine } from "~client/stores/routineStore";
 import type { CatalogExercise } from "~client/stores/catalogStore";
 import type { SuggestedExercise } from "~client/services/routineService";
 
-// vi.mock() factories are only hoisted themselves (the bare `vi.mock(...)` call) — a plain
+// vi.mock() factories are only hoisted themselves (the bare `vi.mock(...)` call): a plain
 // `const xMock = vi.fn()` declared nearby is NOT hoisted with it, so a factory that reads such a
 // variable as a direct property value (not behind its own nested closure) can run before that
 // const initializes. vi.hoisted() hoists the declaration itself right alongside the vi.mock()
-// calls, in source order, so it's guaranteed to be initialized first — the documented fix for
+// calls, in source order, so it's guaranteed to be initialized first: the documented fix for
 // exactly this ordering hazard.
 const { getExerciseHistoryMock, recommendExercisesMock, startMock, catalogExercisesMock } = vi.hoisted(() => {
   const catalogExercisesMock: CatalogExercise[] = Array.from({ length: 6 }, (_, i) => ({
@@ -75,7 +75,7 @@ function mount() {
 }
 
 beforeEach(() => {
-  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply) — jsdom's
+  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply): jsdom's
   // navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would otherwise
   // default the shared i18n singleton to "en" for the rest of the test process.
   i18n.global.locale.value = "de";

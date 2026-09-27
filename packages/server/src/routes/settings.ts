@@ -1,7 +1,7 @@
 /**
  * Feature: onboarding setup guide ("gender, age, weight, prior experience... workouts per
  * week") + owned-equipment filtering. Backed by the existing generic `settings` k/v table
- * (already used for defaultBodyweightKg) rather than dedicated tables — the table is user-scoped
+ * (already used for defaultBodyweightKg) rather than dedicated tables: the table is user-scoped
  * (see docs/adr/0006-multi-user-hardening.md), but with no login yet there's exactly one resolved
  * identity, so a plain k/v row per key still models it with no schema change needed.
  */
@@ -23,7 +23,7 @@ const profileInput = z.object({
   experienceLevel: experienceLevel.optional(),
   workoutsPerWeek: z.number().int().min(1).max(14).optional(),
   /** Convenience: also upserts today's bodyweightLogs entry (same field rankEngine.ts reads
-   *  for load_ratio ranks) — the onboarding guide asks for weight once, not twice. */
+   *  for load_ratio ranks): the onboarding guide asks for weight once, not twice. */
   currentWeightKg: z.number().positive().max(400).optional(),
 });
 export type ProfileInput = z.infer<typeof profileInput>;
@@ -42,7 +42,7 @@ const equipmentInput = z.object({ equipment: z.array(z.string()) });
 const equipmentResponse = z.object({ equipment: z.array(z.string()).nullable() });
 
 /** Feature: "specify which weight plates you have (e.g. 4x1kg, 2x5kg)... showing the user how
- *  to load the barbell" — same single-user k/v pattern as profile/equipment above.
+ *  to load the barbell": same single-user k/v pattern as profile/equipment above.
  *
  * A barbell, an EZ-bar, a trap-bar, and an adjustable-dumbbell handle are all meaningfully
  * different empty weights, so one flat barWeightKg was wrong for mixed equipment. Each is
@@ -53,7 +53,7 @@ const barWeightsInput = z.object({
   barbell: z.number().positive().max(50).optional(),
   "ez-bar": z.number().positive().max(50).optional(),
   "trap-bar": z.number().positive().max(50).optional(),
-  /** Adjustable-dumbbell handle (not a full fixed-weight dumbbell) — a real but less common
+  /** Adjustable-dumbbell handle (not a full fixed-weight dumbbell): a real but less common
    *  home-gym setup: short handle + your own plates per side, same "bar" math either way. */
   dumbbell: z.number().positive().max(10).optional(),
 });
@@ -66,12 +66,12 @@ export type BarWeights = z.infer<typeof barWeightsInput>;
 const gymSetupResponse = gymSetupInput.nullable();
 
 export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
-  // GET /api/settings/profile — null until the onboarding guide has been completed once.
+  // GET /api/settings/profile: null until the onboarding guide has been completed once.
   app.get("/api/settings/profile", { schema: { response: { 200: profileResponse.nullable() } } }, async (req) => {
     return readJsonSetting<Profile>(db, req.userId, PROFILE_KEY);
   });
 
-  // PUT /api/settings/profile — onboarding guide's save, and ProfilePage.vue's later edits.
+  // PUT /api/settings/profile: onboarding guide's save, and ProfilePage.vue's later edits.
   app.put(
     "/api/settings/profile",
     { schema: { body: profileInput, response: { 200: profileResponse } } },
@@ -91,7 +91,7 @@ export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
     },
   );
 
-  // GET /api/settings/equipment — null (not []) until the user has actually set anything, so
+  // GET /api/settings/equipment: null (not []) until the user has actually set anything, so
   // the client can tell "never configured, don't filter" apart from "configured to own nothing".
   app.get("/api/settings/equipment", { schema: { response: { 200: equipmentResponse } } }, async (req) => {
     return { equipment: await readJsonSetting<string[]>(db, req.userId, EQUIPMENT_KEY) };
@@ -106,7 +106,7 @@ export function registerSettingsRoutes(app: ZodFastifyInstance, db: LiftrDb) {
     },
   );
 
-  // GET/PUT /api/settings/gym — bar weight + owned plate counts. Null until configured, same
+  // GET/PUT /api/settings/gym: bar weight + owned plate counts. Null until configured, same
   // "not yet set" vs "set to nothing" distinction as equipment above (plates.ts callers fall
   // back to the unlimited-standard-set calculator while this is null).
   app.get("/api/settings/gym", { schema: { response: { 200: gymSetupResponse } } }, async (req) => {

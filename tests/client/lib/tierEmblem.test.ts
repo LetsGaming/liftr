@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildTierEmblem, wingReachUnits } from "~client/lib/tierEmblem";
 
 /** Counts wing-blade polygons by re-deriving the exact fill count a single blade contributes
- *  (1 polygon per blade, 2 sides) — mirrors buildTierEmblem's own `wings` push count rather than
+ *  (1 polygon per blade, 2 sides): mirrors buildTierEmblem's own `wings` push count rather than
  *  asserting on total shape count, which would break on any unrelated cosmetic addition. */
 function bladesPerSide(tier: Tier): number {
   const n = TIERS.indexOf(tier) + 1;
@@ -56,7 +56,7 @@ describe("buildTierEmblem", () => {
   it("`small` hides the tier-progress tick but keeps wings intact", () => {
     const full = buildTierEmblem("apex", { small: false });
     const small = buildTierEmblem("apex", { small: true });
-    // The tick is 2 <rect> shapes appended only when !small — everything else (polygons for wings
+    // The tick is 2 <rect> shapes appended only when !small: everything else (polygons for wings
     // included) must be identical in count between the two.
     const fullNonRect = full.shapes.filter((s) => s.kind !== "rect").length;
     const smallNonRect = small.shapes.filter((s) => s.kind !== "rect").length;
@@ -74,7 +74,7 @@ describe("wingReachUnits", () => {
 
   it("keeps overflow-past-the-viewBox-edge (reach - 64, floored at 0) monotonic across all 9 tiers", () => {
     // The raw reach value itself dips at Stufe 4 (wings start small enough to still sit inside
-    // the viewBox) before climbing past it — that's correct, not a bug: what actually matters to
+    // the viewBox) before climbing past it: that's correct, not a bug: what actually matters to
     // every consumer (shareCard.ts's corner-stamp shift, the emblem's own overflow:visible) is how
     // far PAST the edge a tier's wings reach, and that is monotonic.
     const overflow = TIERS.map((t) => Math.max(0, wingReachUnits(t) - 64));

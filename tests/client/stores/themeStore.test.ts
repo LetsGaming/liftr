@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// themeStore manipulates `document`/`localStorage`/`matchMedia` directly (no service layer) —
+// themeStore manipulates `document`/`localStorage`/`matchMedia` directly (no service layer):
 // see tests/README.md's Environment section for why this needs jsdom rather than the default
 // node environment.
 import { createPinia, setActivePinia } from "pinia";

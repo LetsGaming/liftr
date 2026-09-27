@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Tap-to-place / drag-to-reposition waypoint editor. Sibling to RunMap.vue rather than a
- * variant of it — RunMap is view-only, this component's whole job is click/drag interaction.
+ * variant of it: RunMap is view-only, this component's whole job is click/drag interaction.
  */
 import L from "leaflet";
 import { onBeforeUnmount, watch } from "vue";
@@ -18,11 +18,11 @@ const props = defineProps<{
   waypoints: Waypoint[];
   routedPoints: RoutePoint[];
   approximate?: boolean;
-  /** Draws the fallback line's closing segment back to waypoints[0] — used for a closed loop when
+  /** Draws the fallback line's closing segment back to waypoints[0]: used for a closed loop when
    *  there's no real routedPoints geometry yet (RouteWizard.vue's synthetic closing point is
    *  deliberately not in `waypoints`, since those are only the user's editable markers, so without
    *  this the local line of a closed loop stops one segment short). Ignored once routedPoints is
-   *  non-empty — real geometry already closes itself. Markers are unaffected either way. */
+   *  non-empty: real geometry already closes itself. Markers are unaffected either way. */
   closed?: boolean;
   initialCenter?: { lat: number; lon: number };
   readonly?: boolean;
@@ -46,7 +46,7 @@ function renderMarkers() {
   markers = props.waypoints.map((w, i) => {
     const confirming = removeConfirm.isArmed(String(i));
     // "generated" (the loop-close arc, see RouteWizard.vue's setCloseLoop) gets an outlined
-    // rather than filled badge — still an ordinary draggable/removable marker, just visibly
+    // rather than filled badge: still an ordinary draggable/removable marker, just visibly
     // distinct so it's obvious at a glance which points the app placed vs. the user.
     const classes = [confirming ? "confirming" : "", w.gen ? "generated" : ""].filter(Boolean).join(" ");
     const icon = L.divIcon({
@@ -77,7 +77,7 @@ function renderLine() {
       ? props.routedPoints
       : (() => {
           const local = props.waypoints.map((w, idx) => ({ idx, lat: w.lat, lon: w.lon, ele: null }));
-          // Real geometry (routedPoints) already closes itself server-side — this only patches
+          // Real geometry (routedPoints) already closes itself server-side: this only patches
           // the local fallback line, which draws through the raw editable waypoints and would
           // otherwise stop one segment short of the actual closing point.
           return props.closed && props.waypoints.length >= 2
@@ -158,7 +158,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   height: 100%;
   /* No min-height floor: this only ever sits inside RouteWizard.vue's `.wizard-map` (flex: 1;
      min-height: 0, itself inside SheetModal's `fill-body` flex column), which already guarantees
-     real height. A floor here fights that flex sizing on a short viewport — a taller floor than
+     real height. A floor here fights that flex sizing on a short viewport: a taller floor than
      the available space is exactly what forced the wizard's page to scroll before fill-body
      existed (see RouteWizard.vue's header comment and SheetModal.vue's fillBody prop doc). */
   min-height: 0;
@@ -169,7 +169,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   border-radius: var(--r-lg);
   background: var(--bg);
 }
-/* Stacks below .basemap-toggle-slot (top:12px) rather than sharing its row — top-left is
+/* Stacks below .basemap-toggle-slot (top:12px) rather than sharing its row: top-left is
    Leaflet's own zoom control, bottom-right its attribution, so top-right is the only free corner
    for both of this component's own floating buttons. */
 .basemap-toggle-slot {
@@ -193,7 +193,7 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
 /* Waypoint marker badge: L.divIcon's `className` REPLACES Leaflet's default class rather than
    adding to it, so this component owns the full visual (no leaflet.css box/border styling).
    Leaflet also sets inline width/height on the outer div from `iconSize` (28px, sized for map
-   density, not touch target), so the 44px touch target lives on the inner <span> instead —
+   density, not touch target), so the 44px touch target lives on the inner <span> instead:
    centering it in the larger, unclipped flex box keeps it anchored on the same map coordinate
    while presenting a full 44px hit area. `:deep()` is needed because Leaflet injects this markup
    via innerHTML, outside Vue's scoped-CSS render tree. */
@@ -215,14 +215,14 @@ defineExpose({ invalidateSize: () => map?.invalidateSize() });
   font-size: 14px;
   line-height: 1;
 }
-/* Armed-to-delete state, added by renderMarkers() while removeConfirm has this waypoint armed —
+/* Armed-to-delete state, added by renderMarkers() while removeConfirm has this waypoint armed:
    mirrors WorkoutPage.vue's .cancel-btn.confirming treatment for the same pattern elsewhere. */
 :deep(.route-waypoint-icon span.confirming) {
   background: var(--danger-lo);
   border-color: var(--danger);
   color: var(--text);
 }
-/* Generated loop-close point (RouteWizard.vue's setCloseLoop) — outlined instead of filled so
+/* Generated loop-close point (RouteWizard.vue's setCloseLoop): outlined instead of filled so
    it's visibly distinct from a user-placed waypoint at a glance, while staying just as draggable
    and removable. Confirming-to-delete still wins over this if both apply. */
 :deep(.route-waypoint-icon span.generated) {

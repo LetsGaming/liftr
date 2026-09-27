@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Filterable/searchable exercise list — search + equipment/muscle filters + thumbnail cards.
+ * Filterable/searchable exercise list: search + equipment/muscle filters + thumbnail cards.
  * Extracted out of ExercisesPage.vue (the library tab) so the routine wizard's exercise picker
  * (PickStepManual.vue) reuses the exact same list instead of a second, drifting implementation. Two
  * modes on the same markup:
@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<{ mode?: "browse" | "select"; selectedIds
   mode: "browse",
   selectedIds: () => new Set(),
   // Explicit `undefined` (not omitted!) so an absent prop resolves to `undefined`, not Vue's
-  // usual "unset boolean prop -> false" auto-cast — the `?? props.mode !== "select"` below needs
+  // usual "unset boolean prop -> false" auto-cast: the `?? props.mode !== "select"` below needs
   // to see a real "caller didn't specify" signal, not a false positive.
   defaultOnlyDoable: undefined,
 });
@@ -43,9 +43,9 @@ const { exerciseName } = useExerciseName();
 const search = ref("");
 const equipmentFilter = ref("");
 const muscleFilter = ref("");
-// Defaults ON in "browse" mode — hiding exercises the user can't do with their owned equipment
+// Defaults ON in "browse" mode: hiding exercises the user can't do with their owned equipment
 // is the useful default there. In "select" mode (the routine wizard's manual picker) the caller
-// decides via `defaultOnlyDoable` (PickStepManual.vue passes true — building a routine you intend to
+// decides via `defaultOnlyDoable` (PickStepManual.vue passes true: building a routine you intend to
 // actually do should default to only showing what's doable; see UX-05). Either way, only
 // offered/applied once there's actually an owned-equipment list to filter by (an unset/empty list
 // means "no restriction configured", not "owns nothing"), and uses the full requiredEquipment
@@ -82,7 +82,7 @@ const filtered = computed(() =>
       return true;
     })
     .sort((a, b) => {
-      // Deprioritize (not hide) exercises the user can't currently do — most relevant when the
+      // Deprioritize (not hide) exercises the user can't currently do: most relevant when the
       // toggle above is off, harmless otherwise since everything shown is already doable then.
       // Only a required-tier gap deprioritizes; a recommended-only gap (e.g. no mat) doesn't.
       const doableDiff = Number(missingRequiredFor(a).length > 0) - Number(missingRequiredFor(b).length > 0);
@@ -97,10 +97,10 @@ function onCardClick(ex: CatalogExercise) {
 }
 
 /** `equipment` comes untyped (`string | null`) off the API boundary, so this falls back to the
- *  raw slug rather than throwing on an unrecognized value — a translation gap should degrade,
+ *  raw slug rather than throwing on an unrecognized value: a translation gap should degrade,
  *  not break. */
 function equipmentLabel(eq: string | null): string {
-  if (!eq) return "—";
+  if (!eq) return "-";
   return equipmentRequirementLabelDe(eq as Parameters<typeof equipmentRequirementLabelDe>[0]);
 }
 </script>
@@ -183,7 +183,7 @@ function equipmentLabel(eq: string | null): string {
   gap: var(--sp2);
 }
 /* Select's own root is a wrapper div, not the <select> the fallthrough `.filter-select` class
-   lands on — so the flex-grow that used to sit directly on the flex child now targets it
+   lands on: so the flex-grow that used to sit directly on the flex child now targets it
    generically by position instead. */
 .filters > * {
   flex: 1;
@@ -227,7 +227,7 @@ button.equipment-toggle.active {
   transform: scale(0.98);
 }
 @media (hover: hover) {
-  /* Was `background: var(--surface-3)` — with .surface-hybrid now supplying the base fill,
+  /* Was `background: var(--surface-3)`: with .surface-hybrid now supplying the base fill,
      overriding `background` on hover would flatten the card back to opaque right when the user
      is interacting with it. `filter: brightness()` gives the same "lit up" hover feedback
      without fighting the hybrid fill or its backdrop-filter blur. */
@@ -238,7 +238,7 @@ button.equipment-toggle.active {
 .ex-card.selected {
   /* Deliberate exception, not a flat-surface leftover: "selected" is an accent STATE (wizard
      picker), not a neutral panel background, so it stays the existing opaque --blue-lo treatment
-     rather than adopting the hybrid neutral fill — same reasoning as .equipment-toggle.active
+     rather than adopting the hybrid neutral fill: same reasoning as .equipment-toggle.active
      below and the app's other active/selected chip states. */
   background: var(--blue-lo);
   border: 1px solid var(--blue);

@@ -23,7 +23,7 @@ function baseRunRankUpsert(overrides: Partial<RunRankUpsert> = {}): RunRankUpser
 
 describe("GET /api/runs/overall-rank", () => {
   // The empty-state (both null) case is `overallRunnerRankService`'s own logic, not this
-  // route's — covered by tests/server/services/overallRunnerRankService.test.ts, which this
+  // route's: covered by tests/server/services/overallRunnerRankService.test.ts, which this
   // thin route wraps. This route's job is HTTP status + the Zod response shape, which the test
   // below already pins (it asserts both a populated current band and a still-null peak).
   it("returns the aggregated current band once a category has a computed rank", async () => {

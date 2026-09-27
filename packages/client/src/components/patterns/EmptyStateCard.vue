@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * "Nothing here yet" surface — eyebrow + copy + a primary action. Was hand-rolled twice
+ * "Nothing here yet" surface: eyebrow + copy + a primary action. Was hand-rolled twice
  * (RouteList.vue's .route-empty, RoutineList.vue's .routine-empty) with byte-identical layout
  * and near-identical CSS, only the color/width details drifting between the two copies.
  */

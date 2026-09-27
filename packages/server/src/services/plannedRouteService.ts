@@ -19,14 +19,14 @@ export interface ComputedGeometry {
   geometrySource: "ors" | "straight";
 }
 
-/** A route that ends within this of where it started is a loop by any reading — the wizard sends
+/** A route that ends within this of where it started is a loop by any reading: the wizard sends
  *  an exact duplicate of waypoints[0], but a hand-edited route or a marker dragged back onto the
  *  start needn't be pixel-exact. Metres, not coordinate equality, so the threshold means the same
  *  thing at every latitude. */
 const LOOP_CLOSE_EPS_M = 25;
 
 /** A 4xx while an avoidance corridor was applied means ORS understood the request and couldn't
- *  satisfy it — a dead-end street, the one bridge out of the valley. That's worth one retry
+ *  satisfy it: a dead-end street, the one bridge out of the valley. That's worth one retry
  *  without the corridor. A network error, timeout, 5xx, or parse failure says nothing about the
  *  corridor, and retrying would just double a real outage. */
 function isAvoidanceRejection(err: OrsUnavailableError): boolean {
@@ -34,9 +34,9 @@ function isAvoidanceRejection(err: OrsUnavailableError): boolean {
 }
 
 /** Returns the outbound leg of a closed loop (the duplicate closing point dropped, generated arc
- *  points filtered out — see the module doc on `fetchLoopRoute` for why), or `null` when
+ *  points filtered out: see the module doc on `fetchLoopRoute` for why), or `null` when
  *  `waypoints` isn't a loop at all. `gen` points are the wizard's blind geometric guess at a
- *  return leg (loop.ts) — with a real avoidance corridor the router picks the return streets
+ *  return leg (loop.ts): with a real avoidance corridor the router picks the return streets
  *  itself, so they're dropped from what gets routed. They stay in the saved `waypoints` column
  *  untouched, so the wizard's own editable markers and offline line are unaffected. */
 function closedLoopOutbound(waypoints: Waypoint[]): Waypoint[] | null {
@@ -51,7 +51,7 @@ function closedLoopOutbound(waypoints: Waypoint[]): Waypoint[] | null {
 /**
  * Routes a closed loop as two ORS calls: the outbound leg exactly as an ordinary route, then a
  * closing leg from its end back to its start that avoids a corridor buffered around the
- * *outbound leg's own snapped streets* — real roads, a better buffer target than the raw taps
+ * *outbound leg's own snapped streets*: real roads, a better buffer target than the raw taps
  * that produced them. This is what makes the loop respect actual streets: the router, not blind
  * arc geometry, decides where the return leg goes, and it's explicitly told not to just walk back
  * the same way.
@@ -59,7 +59,7 @@ function closedLoopOutbound(waypoints: Waypoint[]): Waypoint[] | null {
  * A single-call version (avoid the corridor for the whole route in one request) doesn't work:
  * `avoid_polygons` deletes graph edges before snapping, so the outbound waypoints themselves would
  * sit on deleted edges and fail to route at all. Two calls, only for loops, only at save/preview
- * time (never per live edit — see RouteWizard.vue), is the shape that actually routes.
+ * time (never per live edit: see RouteWizard.vue), is the shape that actually routes.
  */
 async function fetchLoopRoute(outbound: Waypoint[], logger: FastifyBaseLogger): Promise<OrsRouteResult> {
   const out = await fetchOrsRoute(outbound);
@@ -76,7 +76,7 @@ async function fetchLoopRoute(outbound: Waypoint[], logger: FastifyBaseLogger): 
   }
 
   return {
-    // Drop back's first coordinate — it's the same point as out's last, just snapped twice.
+    // Drop back's first coordinate: it's the same point as out's last, just snapped twice.
     coordinates: [...out.coordinates, ...back.coordinates.slice(1)],
     distanceM: out.distanceM + back.distanceM,
     elevationGainM:
@@ -87,7 +87,7 @@ async function fetchLoopRoute(outbound: Waypoint[], logger: FastifyBaseLogger): 
 }
 
 /** The one place every write path (create, update, preview) converges so ORS-vs-fallback can't
- *  drift between them — the line the preview endpoint shows is provably the line that gets saved. */
+ *  drift between them: the line the preview endpoint shows is provably the line that gets saved. */
 export async function computeGeometry(waypoints: Waypoint[], logger: FastifyBaseLogger): Promise<ComputedGeometry> {
   if (env.orsApiKey) {
     try {
@@ -136,10 +136,10 @@ export async function createPlannedRoute(
   return { ...route, points: geometry.points };
 }
 
-/** Recomputes geometry + replaces points only when `waypoints` is present in the patch — mirrors
+/** Recomputes geometry + replaces points only when `waypoints` is present in the patch: mirrors
  *  routine PATCH only touching exercises when `body.exercises` is present, so a rename-only patch
  *  never calls ORS. Assumes the caller (the route handler) has already confirmed the route exists
- *  and belongs to `userId` — this function does not re-check. */
+ *  and belongs to `userId`: this function does not re-check. */
 export async function updatePlannedRoute(
   db: LiftrDb,
   userId: string,
@@ -148,7 +148,7 @@ export async function updatePlannedRoute(
   logger: FastifyBaseLogger,
 ) {
   if (!patch.waypoints) {
-    // An all-undefined patch (e.g. `{}`) reaches here with nothing to set — Drizzle's
+    // An all-undefined patch (e.g. `{}`) reaches here with nothing to set: Drizzle's
     // mapUpdateSet throws "No values to set" on an empty .set({}), so no-op rather than issue a
     // pointless update.
     if (patch.name === undefined && patch.orderIndex === undefined) return;
@@ -157,7 +157,7 @@ export async function updatePlannedRoute(
   }
   const geometry = await computeGeometry(patch.waypoints, logger);
   // better-sqlite3's db.transaction() runs its callback fully synchronously (the underlying
-  // native binding commits as soon as the callback returns) — an async callback returns a
+  // native binding commits as soon as the callback returns): an async callback returns a
   // pending Promise immediately, on the first `await`, so the driver considers the transaction
   // finished before the awaited statements actually execute, and every statement after the
   // first `await` silently runs on an already-closed transaction. So this callback stays
@@ -176,7 +176,7 @@ export async function updatePlannedRoute(
     deletePlannedRoutePoints(tx, id).run();
     // Inlined rather than routed through insertPlannedRoutePoints: that helper's no-op-on-empty
     // guard returns a plain Promise for the empty case (fine for its other, non-transactional
-    // callers), which isn't a runnable query builder — this guard is equivalent, just expressed
+    // callers), which isn't a runnable query builder: this guard is equivalent, just expressed
     // so every branch here stays a synchronous .run() call.
     if (geometry.points.length > 0) {
       tx.insert(plannedRoutePoints)

@@ -57,7 +57,7 @@ describe("refreshCardioDerivedStores", () => {
     expect(getStreakMock).toHaveBeenCalledTimes(1);
     expect(getRunPrsMock).toHaveBeenCalledTimes(1);
     expect(getRunOverallRankMock).toHaveBeenCalledTimes(1);
-    // Called once per ranked cardio activity (run/walk/hike) — see runRankStore.ts's loadAllRanks().
+    // Called once per ranked cardio activity (run/walk/hike): see runRankStore.ts's loadAllRanks().
     expect(getRunRanksMock).toHaveBeenCalledTimes(3);
   });
 });

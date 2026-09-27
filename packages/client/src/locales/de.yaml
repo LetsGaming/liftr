@@ -1,12 +1,12 @@
-# German — the source of truth. Every key used anywhere in the app must exist here first;
+# German, the source of truth. Every key used anywhere in the app must exist here first;
 # `pnpm i18n:check` (scripts/i18n-check.mjs) fails if en.yaml is missing or has extra keys
 # relative to this file. See docs/guides/adding-a-language.md for how to add a locale.
 app:
-  # App.vue's launch-time toasts (APK update available, client/server version mismatch) — both
+  # App.vue's launch-time toasts (APK update available, client/server version mismatch), both
   # tappable, routing to Profil > Konto & App. Distinct wording from profile.accountApp.update/
   # server's own strings, which describe the same facts inline on that page rather than as a toast.
-  updateAvailableToast: "Update verfügbar: v{version} — antippen für Details"
-  versionMismatchToast: "Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen"
+  updateAvailableToast: "Update verfügbar: v{version} (antippen für Details)"
+  versionMismatchToast: "Server- und App-Version stimmen nicht überein. Das kann zu Fehlern führen"
   mainNavAriaLabel: Hauptnavigation
   levelProgressAriaLabel: "Level {level}, {xpIntoLevel} von {xpForNextLevel} XP bis Level {nextLevel}"
   xpUntilNextLevel: "{xpIntoLevel}/{xpForNextLevel} bis Lv. {nextLevel}"
@@ -130,7 +130,7 @@ profile:
     placeholder: "z.B. 72,5"
     ariaLabel: "Körpergewicht in Kilogramm"
     current: "Aktuell:"
-    noEntry: "Trag dein Gewicht oben ein — bis dahin nutzt die Rang-Berechnung vorläufig 75 kg."
+    noEntry: "Trag dein Gewicht oben ein. Bis dahin nutzt die Rang-Berechnung vorläufig 75 kg."
   trainingProfile:
     hint: "Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast."
     sex:
@@ -167,7 +167,7 @@ profile:
     saveFailed: "Speichern fehlgeschlagen."
   xp:
     title: "XP & Level"
-    hint: "Zusätzlich zum Rangsystem — nichts hängt davon ab, kann jederzeit ausgeblendet werden."
+    hint: "Zusätzlich zum Rangsystem: nichts hängt davon ab, kann jederzeit ausgeblendet werden."
     levelLabel: Level
     levelValue: "Lv. {level}"
     totalLabel: Gesamt-XP
@@ -219,7 +219,7 @@ profile:
       cancel: Abbrechen
       versionPrefix: "Server-Version: v"
       appVersionSuffix: " · App-Version: v{version}"
-      versionMismatch: "Server- und App-Version stimmen nicht überein — das kann zu Fehlern führen."
+      versionMismatch: "Server- und App-Version stimmen nicht überein. Das kann zu Fehlern führen."
     version:
       title: Version
     update:
@@ -230,7 +230,7 @@ profile:
     title: Diagnose
     syncLog: Sync-Protokoll
     andServerErrors: " und Serverfehler"
-    hintRest: " — hilfreich, falls mal etwas nicht funktioniert. Normalerweise brauchst du das nicht."
+    hintRest: ". Hilfreich, falls mal etwas nicht funktioniert. Normalerweise brauchst du das nicht."
     open: Protokoll öffnen
   deleteAccount:
     title: Konto löschen
@@ -239,23 +239,23 @@ profile:
     confirm: "Wirklich löschen?"
     cta: Konto löschen
   healthConnect:
-    hint: "Läufe, die du mit deiner Uhr aufgezeichnet hast, importieren — inklusive Route, sobald Health Connect sie liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button stößt eine Synchronisierung jederzeit sofort an."
+    hint: "Läufe, die du mit deiner Uhr aufgezeichnet hast, importieren, inklusive Route, sobald Health Connect sie liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button stößt eine Synchronisierung jederzeit sofort an."
     syncing: "Synchronisiere…"
     syncNow: Jetzt synchronisieren
     connect: Health Connect verbinden
   export:
     title: Daten-Export
-    hint: "Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei — lesbar ohne Liftr."
+    hint: "Alle Workouts, Sätze, Läufe und Körpergewicht als CSV in einer ZIP-Datei: lesbar ohne Liftr."
     creating: "Wird erstellt…"
     download: Backup herunterladen
   about:
     attributions: "Quellen & Lizenzen →"
 recordsPage:
   title: Rekorde
-  subtitle: "Deine Rekord-Historie — jeder neue Bestwert automatisch erfasst."
+  subtitle: "Deine Rekord-Historie: jeder neue Bestwert automatisch erfasst."
   loadError: Rekorde konnten nicht geladen werden.
   retry: Erneut versuchen
-  empty: "Noch keine Rekorde — dein erster harter Satz auf einer beliebigen Übung startet einen."
+  empty: "Noch keine Rekorde: dein erster harter Satz auf einer beliebigen Übung startet einen."
   kind:
     e1rm: e1RM
     weight: Gewicht
@@ -290,7 +290,7 @@ routineOverviewPage:
   exercises: Übungen
   setSummary: "{count} × {weightPart}{reps} Wdh."
   setSummaryWeightPart: "{weight} kg · "
-  setLine: "Satz {n} — {weightPart}{reps} Wdh."
+  setLine: "Satz {n}: {weightPart}{reps} Wdh."
   setLineWeightPart: "{weight} kg × "
   starting: "Wird gestartet…"
   startNow: Jetzt starten
@@ -300,7 +300,7 @@ routine:
     moveAriaLabel: Verschieben
     removeAriaLabel: Entfernen
     setLabel: "Satz {n}"
-    setKindTitle: "Satzart: {kind} — tippen zum Ändern"
+    setKindTitle: "Satzart: {kind} (tippen zum Ändern)"
     weightLabel: Gewicht
     repsLabel: Wiederholungen
     removeSetAriaLabel: Satz entfernen
@@ -311,10 +311,10 @@ routine:
     logWithoutWeight: Ohne Gewicht loggen
     restBetweenSets: Pause zwischen Sätzen
     restAfterExercise: Pause nach der Übung
-    supersetTitle: "Superset: kein Pausentimer zwischen dieser und der nächsten Übung — nur nach der ganzen Runde."
+    supersetTitle: "Superset: kein Pausentimer zwischen dieser und der nächsten Übung, nur nach der ganzen Runde."
     supersetActive: Superset aktiv
     supersetLink: Als Superset mit nächster Übung
-    supersetHint: Kein Pausentimer nach dieser Übung — er startet erst nach der nächsten.
+    supersetHint: Kein Pausentimer nach dieser Übung, er startet erst nach der nächsten.
     addExercise: "+ Übung hinzufügen"
     continue: "Weiter →"
   routineList:
@@ -332,7 +332,7 @@ routine:
     start: Starten
     emptyState:
       eyebrow: Noch keine Routine
-      body: "Eine Routine ist dein fester Trainingsplan — welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist der Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür braucht es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten."
+      body: "Eine Routine ist dein fester Trainingsplan: welche Übungen, in welcher Reihenfolge, mit welchen Zielen. Sie ist der Ausgangspunkt für alles hier: dein Rang wächst pro Übung erst, wenn du sie wiederholt trainierst, und dafür braucht es diese feste Struktur. Leg dir eine Routine an, dann kannst du ab dem nächsten Training direkt starten."
     addRoutine: "+ Neue Routine"
     mesoWeeksLabel: Wochen
     quickStart:
@@ -344,7 +344,7 @@ routine:
     removeAriaLabel: Entfernen
     substituteGeneric: "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast."
     substituteMissing: "Ersetzt: bevorzugte Variante braucht {equipment}, das du nicht hast."
-    lopsidedNote: Deutlich mehr Sätze als der Rest der Routine — passt das so?
+    lopsidedNote: Deutlich mehr Sätze als der Rest der Routine. Passt das so?
     addExercise: "+ Übung hinzufügen"
     coverageLabel: Muskelabdeckung
     coverageState:
@@ -364,13 +364,13 @@ routine:
       missing: fehlt
     substituteGeneric: "Ersetzt: bevorzugte Variante braucht Ausrüstung, die du nicht hast."
     substituteMissing: "Ersetzt: bevorzugte Variante braucht {equipment}, das du nicht hast."
-    lopsidedNote: Deutlich mehr Sätze als der Rest der Routine — passt das so?
+    lopsidedNote: Deutlich mehr Sätze als der Rest der Routine. Passt das so?
     back: "← Zurück"
     save: Routine speichern
     saveChanges: Änderungen speichern
   routineWizard:
     namePlaceholder: Name der Routine
-    saveFailed: Speichern fehlgeschlagen — bitte erneut versuchen.
+    saveFailed: Speichern fehlgeschlagen. Bitte erneut versuchen.
     steps:
       pick: "1 Wählen"
       arrange: "2 Anordnen"
@@ -379,18 +379,18 @@ routine:
     selectPrompt: Übungen auswählen
     selectedCount: "{n} ausgewählt · Weiter →"
   pickStepMuscles:
-    hint: "Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen — mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast."
+    hint: "Welche Muskelgruppen willst du trainieren? Liftr stellt passende Übungen zusammen, mit Sätzen, Wiederholungen und Gewichten, die zu dem passen, was du bisher geschafft hast."
     assembling: "Wird zusammengestellt…"
     suggest: "Übungen vorschlagen ({n} Muskelgruppen)"
   pathChooser:
     manualTitle: Selbst zusammenstellen
     manualDesc: Übungen aus der Liste wählen und Sätze, Wiederholungen und Gewicht selbst festlegen.
     musclesTitle: Nach Muskelgruppe vorschlagen lassen
-    musclesDesc: "Muskelgruppen wählen — Liftr stellt passende Übungen zusammen, mit Sätzen, Wiederholungen und Gewicht, die zu deinem bisherigen Training passen."
+    musclesDesc: "Muskelgruppen wählen: Liftr stellt passende Übungen zusammen, mit Sätzen, Wiederholungen und Gewicht, die zu deinem bisherigen Training passen."
 workoutDetailPage:
   fallbackTitle: Workout-Details
   loading: "Lädt…"
-  loadError: "Dieses Workout ließ sich nicht laden — möglicherweise keine Verbindung zum Server."
+  loadError: "Dieses Workout ließ sich nicht laden. Möglicherweise keine Verbindung zum Server."
   exercises: Übungen
   prTitle: Persönlicher Rekord
   shareTitle: Mein Liftr-Workout
@@ -401,7 +401,7 @@ workoutDetailPage:
 runDetailPage:
   fallbackTitle: Lauf-Details
   loading: "Lädt…"
-  loadError: "Dieser Lauf ließ sich nicht laden — möglicherweise keine Verbindung zum Server."
+  loadError: "Dieser Lauf ließ sich nicht laden. Möglicherweise keine Verbindung zum Server."
   routeChipPrefix: "Strecke: "
   newRecord: Neuer Rekord
   stats:
@@ -410,7 +410,7 @@ runDetailPage:
     avgPace: "Pace ø"
     avgHr: "Puls ø"
     elevation: Höhenmeter
-  noRoute: "Manuell erfasster Lauf — keine Route verfügbar."
+  noRoute: "Manuell erfasster Lauf, keine Route verfügbar."
   saveAsRoute: Als Strecke speichern
   delete:
     deleting: "Wird gelöscht…"
@@ -434,7 +434,7 @@ runsPage:
     prefix: "Strecke: "
     approxSuffix: " ≈"
     elevationSuffix: " · {m} hm"
-    tail: " — nur noch Dauer eintragen"
+    tail: ": nur noch Dauer eintragen"
   toast:
     runSaved: Lauf gespeichert.
     runImported: Lauf importiert.
@@ -445,7 +445,7 @@ diagnosticsPage:
   title: Diagnose
   sync:
     heading: Synchronisierung
-    hint: "Jeder Health-Connect-Abgleich — auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst, warum."
+    hint: "Jeder Health-Connect-Abgleich, auch übersprungene Workouts, die nie bei Liftr ankommen, damit du siehst, warum."
     rescanChecking: "Prüfe…"
     rescan30: Letzte 30 Tage erneut prüfen
     rescan90: Letzte 90 Tage erneut prüfen
@@ -462,13 +462,13 @@ diagnosticsPage:
     showRawData: Rohdaten anzeigen
     hideRawData: Rohdaten ausblenden
     copyReport: Bericht kopieren
-    rescanResultPrefix: "Letzte {days} Tage geprüft — "
-    rescanResultNone: "Letzte {days} Tage geprüft — keine neuen Aktivitäten gefunden."
+    rescanResultPrefix: "Letzte {days} Tage geprüft: "
+    rescanResultNone: "Letzte {days} Tage geprüft: keine neuen Aktivitäten gefunden."
     copySuccess: Bericht kopiert.
     copyFailed: Kopieren fehlgeschlagen.
   errors:
     heading: Serverfehler
-    hint: "Die letzten unerwarteten Serverfehler — hilfreich, falls mal etwas nicht funktioniert."
+    hint: "Die letzten unerwarteten Serverfehler. Hilfreich, falls mal etwas nicht funktioniert."
     hide: Ausblenden
     show: Fehler anzeigen
     loading: "Wird geladen…"
@@ -484,9 +484,9 @@ diagnosticsPage:
     walking: Gehen
     hiking: Wandern
   workoutSummary:
-    imported: "{label} — importiert"
-    skipped: "{label} — übersprungen: {reason}"
-    failed: "{label} — fehlgeschlagen: {message}"
+    imported: "{label}: importiert"
+    skipped: "{label}: übersprungen, {reason}"
+    failed: "{label}: fehlgeschlagen, {message}"
 attributionsPage:
   title: "Quellen & Lizenzen"
   intro: "Liftr importiert Referenzdaten einmalig (nicht bei jeder Anfrage) aus den folgenden Quellen. Eine Ausnahme: die Routenberechnung für geplante Strecken fragt OpenRouteService bei Bedarf live pro Anfrage ab, nicht einmalig."
@@ -499,7 +499,7 @@ attributionsPage:
     name: "wger Exercise Database"
     desc: "Übungsfotos für 2 Übungen ohne freie free-exercise-db-Aufnahme (\"Einbeiniges RDL\", \"Pike-Liegestütze\")"
     license: "CC-BY-SA 4.0"
-    credit: "wger.de/media/exercise-images · Autoren: Tierrasverdes (Einbeiniges RDL), Nash (Pike-Liegestütze). Das Pike-Liegestütze-Foto ist laut wger als KI-generiert gekennzeichnet (\"is_ai_generated\") — bewusst übernommen, da keine andere frei lizenzierte Aufnahme dieser Übung existiert."
+    credit: "wger.de/media/exercise-images · Autoren: Tierrasverdes (Einbeiniges RDL), Nash (Pike-Liegestütze). Das Pike-Liegestütze-Foto ist laut wger als KI-generiert gekennzeichnet (\"is_ai_generated\"), bewusst übernommen, da keine andere frei lizenzierte Aufnahme dieser Übung existiert."
   muscleDiagram:
     name: "Muskel-Diagramm (Anatomie-Figur)"
     desc: "Körperumriss + 15 einzeln hervorgehobene Muskeln, mirror von wger's Assets, ursprünglich abgeleitet von \"Muscular system.svg\"/\"Muscular system-back.svg\" von Termininja"
@@ -524,7 +524,7 @@ attributionsPage:
     name: "Esri World Imagery"
     desc: "Satellitenansicht für Laufrouten (Vantor/Vexcel-Luftbilder), mit Straßen- und Ortsnamen-Beschriftung (Esri Reference/World_Transportation)"
     license: "© Esri"
-    credit: "Tiles © Esri — Vantor, Earthstar Geographics, and the GIS User Community · Beschriftungen: Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende"
+    credit: "Tiles © Esri (Vantor, Earthstar Geographics, and the GIS User Community) · Beschriftungen: Esri, HERE, Garmin, © OpenStreetMap-Mitwirkende"
   openRouteService:
     name: "OpenRouteService"
     desc: "Routenberechnung für geplante Strecken"
@@ -546,7 +546,7 @@ overview:
     start: Starten
     switchRoutine: "Andere Routine wählen →"
     noRoutineTitle: Noch keine Routine
-    noRoutineHint: "Ohne Routine kein Rang — eine Routine legt fest, welche Übungen du wiederholt trainierst."
+    noRoutineHint: "Ohne Routine kein Rang: eine Routine legt fest, welche Übungen du wiederholt trainierst."
     createFirstRoutine: "Erste Routine anlegen →"
   firstRun:
     ladderTitle: Deine Rangleiter
@@ -567,7 +567,7 @@ overview:
     nextRankMiddle: bis zum nächsten Rang in
     nextRankEmpty: "Dein erster Rang entsteht, sobald du eine Übung geloggt hast."
     bodyweightTitle: Körpergewicht
-    bodyweightEmpty: "Trag dein Körpergewicht in Profil ein — nach zwei Einträgen siehst du hier den Verlauf."
+    bodyweightEmpty: "Trag dein Körpergewicht in Profil ein. Nach zwei Einträgen siehst du hier den Verlauf."
   discover:
     title: Entdecken
     rankAnalysis: Rang-Analyse
@@ -591,7 +591,7 @@ overview:
     legendWarm: Weniger erholt
     legendCool: Mehr erholt
     statusPill: DEIN STATUS
-    verdictNone: "Keine Muskelgruppe ist gerade eindeutig erholt — leg trotzdem los, wo du willst."
+    verdictNone: "Keine Muskelgruppe ist gerade eindeutig erholt. Leg trotzdem los, wo du willst."
     namesJoiner: " und "
     verdict: "{names} ist vollständig erholt. | {names} sind vollständig erholt."
     startCta: "Jetzt trainieren →"
@@ -620,7 +620,7 @@ exerciseUi:
     noEquipmentOption: Kein primäres Gerät
     primaryMuscleLabel: Hauptmuskel
     secondaryMusclesLabel: "Weitere Muskeln (optional)"
-    errorSaveFailed: "Speichern fehlgeschlagen — prüfe, ob der Name bereits vergeben ist."
+    errorSaveFailed: "Speichern fehlgeschlagen. Prüfe, ob der Name bereits vergeben ist."
     cancel: Abbrechen
     save: Übung speichern
   detail:
@@ -639,7 +639,7 @@ exerciseUi:
     musclesEyebrow: Trainierte Muskeln
     legendPrimary: Primär
     legendSecondary: Sekundär
-    noRankYet: "Noch kein Rang — er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast."
+    noRankYet: "Noch kein Rang: er entsteht aus deinem besten Satz, sobald du diese Übung einmal trainiert hast."
     loading: "Lädt…"
     statBest: Bestleistung
     statVolume: Volumen
@@ -653,7 +653,7 @@ exerciseUi:
     muscleFilterAriaLabel: Nach Muskelgruppe filtern
     allMusclesOption: Alle Muskeln
     onlyDoableToggle: Nur machbare Übungen
-    emptyWithFilterHint: "Keine Übung passt zu diesen Filtern — \"Nur machbare Übungen\" blendet dabei möglicherweise passende Übungen aus."
+    emptyWithFilterHint: "Keine Übung passt zu diesen Filtern. \"Nur machbare Übungen\" blendet dabei möglicherweise passende Übungen aus."
     emptyPlain: Keine Übung passt zu diesen Filtern.
     disableOnlyDoable: "Filter \"Nur machbare Übungen\" ausschalten"
     missingNote: "fehlt: {list}"
@@ -680,9 +680,9 @@ rank:
   tierLadder:
     stepsLabel: "{n} Stufen"
   lifterSection:
-    infoLabel: "Pro Übung · echte Standards wo verfügbar, sonst abgeleitet — nichts gesperrt"
+    infoLabel: "Pro Übung · echte Standards wo verfügbar, sonst abgeleitet, nichts gesperrt"
     infoBodyLead: ". Ein"
-    infoBodyTail: " markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests — dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt."
+    infoBodyTail: " markiert einen abgeleiteten oder geschätzten Standard statt eines echten Maximaltests. Dein Rang bleibt trotzdem gültig, nur die Grundlage ist weniger exakt."
     loadError: "Ränge konnten nicht geladen werden. Was du geloggt hast, ist lokal gespeichert."
     retry: Erneut versuchen
     empty: Dein erster Rang entsteht, sobald du eine Übung geloggt hast.
@@ -698,9 +698,9 @@ rank:
   runnerSection:
     loadError: Lauf-Ränge konnten nicht geladen werden.
     retry: Erneut versuchen
-    categoryEmptyNote: "Noch kein Rang — lauf diese Distanz, um zu starten."
-    singleSpeedEmptyNote: "Noch kein Rang — sammle genug Distanz, um zu starten."
-    exclusionNote: "Gehen und Wandern zählen nicht in den Overall Runner Rank — sie haben ihre eigene Wertung."
+    categoryEmptyNote: "Noch kein Rang: lauf diese Distanz, um zu starten."
+    singleSpeedEmptyNote: "Noch kein Rang: sammle genug Distanz, um zu starten."
+    exclusionNote: "Gehen und Wandern zählen nicht in den Overall Runner Rank, sie haben ihre eigene Wertung."
   progress:
     nextTargetLabel: Nächstes Ziel
     topOfStandards: "???"
@@ -710,13 +710,13 @@ rank:
     heroRepsFieldLabel: "Wdh."
     trustDerived: Abgeleiteter Standard
     trustSynthetic: Geschätzter Standard
-    provisional: "Vorläufig — an einem zweiten Tag bestätigen"
+    provisional: "Vorläufig (an einem zweiten Tag bestätigen)"
   runBack:
     prEyebrow: Bestleistung
     emptyPr: Noch kein Rekord für diese Distanz.
   upCalendar:
     eyebrow: Rangaufstiege diese Woche
-    empty: "Dein nächster Rangaufstieg wartet — leg los!"
+    empty: "Dein nächster Rangaufstieg wartet, leg los!"
     days:
       mo: Mo
       di: Di
@@ -741,21 +741,21 @@ rank:
 onboarding:
   welcomeStep:
     title: Willkommen bei Liftr
-    body: "Ein paar kurze Fragen, damit Trainingsvorschläge, Rang-Berechnung und die Scheiben-Anzeige von Anfang an zu dir passen. Dauert unter einer Minute — und lässt sich jederzeit im Profil ändern."
+    body: "Ein paar kurze Fragen, damit Trainingsvorschläge, Rang-Berechnung und die Scheiben-Anzeige von Anfang an zu dir passen. Dauert unter einer Minute und lässt sich jederzeit im Profil ändern."
   equipmentStep:
     title: Vorhandenes Equipment
-    hint: "Übungsvorschläge werden darauf beschränkt, was dir tatsächlich zur Verfügung steht — inklusive Dinge wie Bank oder Klimmzugstange, nicht nur das Trainingsgerät selbst."
+    hint: "Übungsvorschläge werden darauf beschränkt, was dir tatsächlich zur Verfügung steht, inklusive Dinge wie Bank oder Klimmzugstange, nicht nur das Trainingsgerät selbst."
     alwaysActiveHint: Immer aktiv
   doneStep:
     title: "Fertig!"
-    subtitle: "Los geht's — hier ist, was das für dich freischaltet:"
+    subtitle: "Los geht's, hier ist, was das für dich freischaltet:"
     unlockWeight: Gewichtsvorschläge passend zu deiner Erfahrung
-    unlockExercises: "Übungsvorschläge, die zu deinem Equipment ({n} ausgewählt) passen — mit Alternativen statt einfach nichts"
+    unlockExercises: "Übungsvorschläge, die zu deinem Equipment ({n} ausgewählt) passen, mit Alternativen statt einfach nichts"
     unlockPlates: "Exakte Scheiben-Anzeige beim Training, mit deinen eigenen Gewichten"
     unlockRank: Rang-Berechnung basierend auf Körpergewicht und Geschlecht
   aboutStep:
     title: Über dich
-    hint: "Alles optional — wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet."
+    hint: "Alles optional, wird für die Rang-Berechnung (Gewicht / Körpergewicht) verwendet."
     weightLabel: Aktuelles Körpergewicht
   experienceStep:
     hint: "Legt fest, mit welchen Gewichten Liftr startet, solange du eine Übung noch nie gemacht hast."
@@ -785,7 +785,7 @@ workoutUi:
     showPlates: Scheiben anzeigen
     platesBreakdown: "{bar} kg Stange + je Seite {perSide} kg"
     barOnly: "nur die {bar} kg Stange"
-    platesInexact: "Mit deinen Scheiben nicht exakt erreichbar — {achieved} kg stattdessen"
+    platesInexact: "Mit deinen Scheiben nicht exakt erreichbar: {achieved} kg stattdessen"
   rpeCapture:
     hint: "Wie anstrengend war der Satz? (1 = sehr leicht, 10 = maximal)"
   noteCapture:
@@ -854,11 +854,11 @@ shell:
 route:
   routeWizard:
     titlePlaceholder: Name der Strecke
-    maxWaypointsWithLoop: "Mit Schleife sind maximal {max} Wegpunkte möglich — entferne zuerst Punkte."
-    maxWaypoints: "Maximal {max} Wegpunkte — entferne zuerst einen Punkt."
-    saveRejected: Strecke abgelehnt — zu viele oder ungültige Wegpunkte.
-    tooManyRequests: Zu viele Anfragen — bitte kurz warten.
-    saveFailed: Speichern fehlgeschlagen — bitte erneut versuchen.
+    maxWaypointsWithLoop: "Mit Schleife sind maximal {max} Wegpunkte möglich. Entferne zuerst Punkte."
+    maxWaypoints: "Maximal {max} Wegpunkte. Entferne zuerst einen Punkt."
+    saveRejected: "Strecke abgelehnt: zu viele oder ungültige Wegpunkte."
+    tooManyRequests: Zu viele Anfragen. Bitte kurz warten.
+    saveFailed: Speichern fehlgeschlagen. Bitte erneut versuchen.
     waypointsLabel: "{count} Wegpunkte"
     closeLoopLabel: Schleife schließen
   routeList:
@@ -876,7 +876,7 @@ route:
 run:
   runReplay:
     play: Abspielen
-    reduceMotionNote: "Automatisches Abspielen deaktiviert (reduzierte Bewegung) — manuell scrubben funktioniert weiterhin."
+    reduceMotionNote: "Automatisches Abspielen deaktiviert (reduzierte Bewegung). Manuell scrubben funktioniert weiterhin."
   liveRunScreen:
     freeRun: Freier Lauf
     paused: Pausiert
@@ -890,7 +890,7 @@ run:
     resumeAction: Weiter
     submitting: "Speichert…"
     finishRun: Lauf beenden
-    saveFailed: "Speichern fehlgeschlagen — der Lauf bleibt auf diesem Gerät, bis du es erneut versuchst."
+    saveFailed: "Speichern fehlgeschlagen. Der Lauf bleibt auf diesem Gerät, bis du es erneut versuchst."
 patterns:
   numberStepper:
     decrease: Weniger
@@ -915,10 +915,10 @@ serverConnection:
     notLiftr: "Antwort erhalten, aber das scheint keine Liftr-Instanz zu sein."
     unreachable: "Server nicht erreichbar. Adresse und Verbindung prüfen."
 liveRun:
-  locationDenied: "Standortzugriff wurde nicht erlaubt — ohne GPS kann kein Lauf getrackt werden."
-  gpsSignalLost: "GPS-Signal verloren — Tracking läuft weiter, sobald es zurückkommt."
-  startFailedDevice: "Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen."
-  startFailedInsecure: "GPS braucht eine sichere (HTTPS-)Verbindung — im Browser nur über HTTPS verfügbar."
+  locationDenied: "Standortzugriff wurde nicht erlaubt. Ohne GPS kann kein Lauf getrackt werden."
+  gpsSignalLost: "GPS-Signal verloren. Tracking läuft weiter, sobald es zurückkommt."
+  startFailedDevice: "Standort konnte nicht gestartet werden. GPS auf dem Gerät prüfen."
+  startFailedInsecure: "GPS braucht eine sichere (HTTPS-)Verbindung, im Browser nur über HTTPS verfügbar."
 healthConnect:
   permissionLabels:
     workouts: Aktivitäten
@@ -930,19 +930,19 @@ healthConnect:
   status:
     missingPermissions: "Bitte folgende Health-Connect-Freigaben aktivieren: {missing}."
     unavailable: "Health Connect ist nicht verfügbar."
-    noNewActivities: "Verbunden — keine neuen Aktivitäten gefunden."
-    synced: "Verbunden — {n} Aktivität synchronisiert. | Verbunden — {n} Aktivitäten synchronisiert."
+    noNewActivities: "Verbunden: keine neuen Aktivitäten gefunden."
+    synced: "Verbunden: {n} Aktivität synchronisiert. | Verbunden: {n} Aktivitäten synchronisiert."
     partSynced: "{n} synchronisiert"
     partSkipped: "{n} übersprungen"
     partFailed: "{n} fehlgeschlagen"
-    detailsWrap: "Verbunden — {parts}. Details im Protokoll."
+    detailsWrap: "Verbunden: {parts}. Details im Protokoll."
     connectionFailed: "Verbindung fehlgeschlagen."
     resumeSyncToast: "Health Connect: {parts}."
 workoutFinish:
   plausibility:
-    pace: "Diese Session war ungewöhnlich schnell — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
-    improbableJump: "Dieser Sprung war ungewöhnlich groß — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
-    exceedsCeiling: "Dieser Wert liegt ungewöhnlich hoch — dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
+    pace: "Diese Session war ungewöhnlich schnell. Dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
+    improbableJump: "Dieser Sprung war ungewöhnlich groß. Dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
+    exceedsCeiling: "Dieser Wert liegt ungewöhnlich hoch. Dein Rang- und XP-Gewinn fällt deshalb vorsichtiger aus."
   recoveryBonus: "+{lp} LP (Rückkehr-Bonus)"
 runValidation:
   distanceRequired: "Bitte eine Distanz in km angeben."

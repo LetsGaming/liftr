@@ -26,7 +26,7 @@ function flushRafOnce(advanceMs = 2000) {
 }
 
 /** Repeatedly flushes pending animation frames (jumping the clock far enough to finish any
- *  single frame's animation in one step) and lets Vue's watchers react in between — needed
+ *  single frame's animation in one step) and lets Vue's watchers react in between; needed
  *  because FinishSequence's beat-3 watcher schedules a *nested* rAF that only assigns the
  *  useCountUp targets, which themselves only schedule their own rAFs once their own `watch`
  *  fires on the next microtask. */
@@ -110,7 +110,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
 }
 
 describe("FinishSequence", () => {
-  it("skips Beat 1 (Rangaufstiege) entirely when the session had no rank-ups — Beat 2 (Serie) is first", async () => {
+  it("skips Beat 1 (Rangaufstiege) entirely when the session had no rank-ups: Beat 2 (Serie) is first", async () => {
     const wrapper = mountWithProviders(FinishSequence, { props: baseProps({ rankUps: [] }) });
     await vi.advanceTimersByTimeAsync(0);
 
@@ -133,7 +133,7 @@ describe("FinishSequence", () => {
   });
 
   it("stages the sequence's background on the highest genuine tier among this session's rank-ups", async () => {
-    // TIERS order (shared/rank/tiers.ts): ... trainee < athlete < lifter < advanced ... — lifter
+    // TIERS order (shared/rank/tiers.ts): ... trainee < athlete < lifter < advanced ...; lifter
     // outranks both athlete and trainee here.
     const rankUps = [rankUp({ tier: "athlete" }), rankUp({ tier: "lifter" }), rankUp({ tier: "trainee" })];
     const wrapper = mountWithProviders(FinishSequence, { props: baseProps({ rankUps }) });

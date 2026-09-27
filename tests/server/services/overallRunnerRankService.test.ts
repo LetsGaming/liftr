@@ -70,7 +70,7 @@ describe("getOverallRunnerRank", () => {
     await upsertRunRank(db, OWNER_USER_ID, "5k", "run", baseRunRankUpsert({ tier: "athlete", division: 3, lp: 50 }));
     const withRunOnly = await getOverallRunnerRank(db, OWNER_USER_ID);
 
-    // A wildly different walk rank must not shift the Runner aggregate at all — walking doesn't
+    // A wildly different walk rank must not shift the Runner aggregate at all: walking doesn't
     // count toward Overall Runner Rank (cardioActivities.ts's countsTowardOverallRunnerRank).
     await upsertRunRank(db, OWNER_USER_ID, "all", "walk", baseRunRankUpsert({ tier: "apex", division: 1, lp: 9999 }));
     const withWalkAdded = await getOverallRunnerRank(db, OWNER_USER_ID);

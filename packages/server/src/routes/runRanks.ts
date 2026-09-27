@@ -1,7 +1,7 @@
 /**
- * GET /api/runs/ranks — every rank bucket with a computed rank, for one cardio activity type
+ * GET /api/runs/ranks: every rank bucket with a computed rank, for one cardio activity type
  * (`?activityType=run|walk|hike`, defaults to "run"). Own dedicated route file, mirroring how
- * `routes/ranks.ts` (the strength analog) is separate from `routes/workouts.ts` — see Ruling 4 in
+ * `routes/ranks.ts` (the strength analog) is separate from `routes/workouts.ts`: see Ruling 4 in
  * this task's brief.
  */
 import { z } from "zod";
@@ -21,7 +21,7 @@ const runRankResponse = z.object({
   bestSpeedMps: z.number().nullable(),
   trust: trustSchema.nullable(),
   nextTargetSpeedMps: z.number().nullable(),
-  /** Peak snapshot — nullable only for a row never recomputed since peak tracking was added;
+  /** Peak snapshot: nullable only for a row never recomputed since peak tracking was added;
    *  a normal row always has all four set together. Mirrors `routes/ranks.ts`'s own
    *  peakTier/peakDivision convention. */
   peakTier: tierSchema.nullable(),

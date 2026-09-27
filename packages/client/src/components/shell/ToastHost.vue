@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Renders whatever useToast.ts's shared queue currently holds — mount exactly once (App.vue),
+/** Renders whatever useToast.ts's shared queue currently holds: mount exactly once (App.vue),
  *  every caller elsewhere just calls useToast().toast(...). Bottom-center, above the mobile tab
  *  bar/desktop content, so it never covers the action that triggered it. */
 import { useToast } from "../../composables/useToast";

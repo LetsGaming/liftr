@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Past-workout detail — a routed page (was WorkoutDetail.vue's SheetModal sheet), reached via
+ * Past-workout detail: a routed page (was WorkoutDetail.vue's SheetModal sheet), reached via
  * `/workouts/:id` for a real URL, back-button semantics, and a cold deep-link, converging with
  * ExerciseDetailPage.vue and RunDetailPage.vue on the same BasePage shell.
  *
  * GET /api/workouts/:id doesn't carry the workout's own display title (the history feed's title
- * is server-derived per list row, not stored on the workout itself) — the opening feed row passes
+ * is server-derived per list row, not stored on the workout itself). The opening feed row passes
  * it through as a `title` query param (same idiom as `/routes/:id?autostart=live`), falling back
  * to a generic title for a cold/direct deep-link.
  */
@@ -50,7 +50,7 @@ const sharing = ref(false);
 const deleting = ref(false);
 
 /** Deletion reverses LP server-side (routes/workouts.ts recomputes every touched exercise's
- *  rank) and XP is never cached in the first place — reload both here so the rest of the app
+ *  rank) and XP is never cached in the first place, so reload both here so the rest of the app
  *  (nav chips, Ränge tab) reflects the loss immediately instead of on next natural refresh. */
 const deleteConfirm = useConfirmTap(async () => {
   deleting.value = true;
@@ -75,7 +75,7 @@ const orderedExercises = computed(() =>
 
 const durationLabel = computed(() => {
   const d = detail.value;
-  if (!d?.endedAt) return "—";
+  if (!d?.endedAt) return "-";
   const s = Math.max(0, (new Date(d.endedAt).getTime() - new Date(d.startedAt).getTime()) / 1000 - d.pausedSeconds);
   return formatDurationMinutes(s);
 });
@@ -91,7 +91,7 @@ const prCount = computed(() => orderedExercises.value.reduce((sum, we) => sum + 
 
 const dateLabel = computed(() => (detail.value ? formatDateLong(detail.value.startedAt) : ""));
 
-/** Same union-of-primary-over-secondary logic as WorkoutPage.vue's sessionMuscles — reused via
+/** Same union-of-primary-over-secondary logic as WorkoutPage.vue's sessionMuscles, reused via
  *  the same catalogStore lookup rather than re-derived, so the two never drift. */
 const muscles = computed(() => {
   const primary = new Set<string>();
@@ -130,7 +130,7 @@ async function share() {
       // when this specific past workout happened (that would need a historical snapshot this
       // view doesn't have).
       tier: overallRank.current ? { tier: overallRank.current.tier, division: overallRank.current.division, level: xpStore.level } : null,
-      // No "session's highest rank-up" concept for a past workout viewed later — that's a
+      // No "session's highest rank-up" concept for a past workout viewed later; that's a
       // finish-flow-only idea (see useWorkoutShareCard.ts).
       topRankUp: null,
     };
@@ -208,7 +208,7 @@ async function share() {
   font-weight: 700;
   margin-bottom: var(--sp4);
 }
-/* 4 tiles squeezed into one row left each card too narrow for its own value — e.g. "1.658 kg"
+/* 4 tiles squeezed into one row left each card too narrow for its own value, e.g. "1.658 kg"
    wrapped awkwardly inside the Volumen tile. 2x2 gives each tile real width instead of fighting
    the other three for horizontal space; the row just grows a little taller. */
 .stat-row {

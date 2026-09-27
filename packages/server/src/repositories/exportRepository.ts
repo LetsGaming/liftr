@@ -1,7 +1,7 @@
 import { bodyweightLogs, exercises, runs, sets, workoutExercises, workouts, type LiftrDb } from "@liftr/db";
 import { desc, eq } from "drizzle-orm";
 
-/** Every source table the data export pulls from — derived/cache tables (ranks, prs, streaks)
+/** Every source table the data export pulls from: derived/cache tables (ranks, prs, streaks)
  *  are deliberately excluded, they're rebuildable from this data, not source-of-truth facts. */
 export function findAllWorkoutsForExport(db: LiftrDb, userId: string) {
   return db.query.workouts.findMany({ where: eq(workouts.userId, userId), orderBy: desc(workouts.startedAt) });

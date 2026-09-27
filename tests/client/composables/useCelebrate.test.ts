@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // useCelebrate checks prefers-reduced-motion via matchMedia, a browser API jsdom doesn't
-// implement by default — stubbed per test below.
+// implement by default: stubbed per test below.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useCelebrate } from "~client/composables/useCelebrate";
 

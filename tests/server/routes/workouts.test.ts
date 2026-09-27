@@ -38,7 +38,7 @@ describe("workout routes", () => {
       expect(rows[0]?.exerciseId).toBe(exercise.id);
     });
 
-    it("is idempotent on clientId — replaying the same start returns the existing workout without a second insert", async () => {
+    it("is idempotent on clientId: replaying the same start returns the existing workout without a second insert", async () => {
       const payload = { clientId: "client-workout-2", startedAt: "2026-01-01T10:00:00Z", exerciseIds: [] };
       const first = await app.inject({ method: "POST", url: "/api/workouts", payload });
       const second = await app.inject({ method: "POST", url: "/api/workouts", payload });

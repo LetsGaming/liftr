@@ -4,7 +4,7 @@
  * just their current band. One shared component, two call sites: RanksPage's hero (real
  * position) and OverviewPage's first-run state (Initiate lit, nothing else known yet).
  *
- * Divisions are NOT uniform across tiers (TIER_DIVISION_COUNT: 5/4/4/3/3/3/2/2/1 — more at the
+ * Divisions are NOT uniform across tiers (TIER_DIVISION_COUNT: 5/4/4/3/3/3/2/2/1: more at the
  * bottom for frequent early rank-ups, fewer at the top since Apex is a single real milestone).
  * This only ever labels the *current* tier's division (via DIVISION_LABEL), so it never assumes
  * three divisions or any other fixed count.
@@ -39,7 +39,7 @@ const currentIndex = () => (props.currentTier ? TIERS.indexOf(props.currentTier 
 function rungState(tier: Tier): "current" | "reached" | "ahead" {
   const idx = TIERS.indexOf(tier);
   const cur = currentIndex();
-  if (cur === -1) return idx === 0 ? "current" : "ahead"; // no rank yet — only Initiate is "lit"
+  if (cur === -1) return idx === 0 ? "current" : "ahead"; // no rank yet: only Initiate is "lit"
   if (idx === cur) return "current";
   return idx < cur ? "reached" : "ahead";
 }
@@ -120,12 +120,12 @@ function toggleExpand(tier: Tier) {
 }
 .rung {
   /* --rung-gap: badge-to-label spacing, read by both .rung-row (the gap itself) and
-     .division-list (to align its chips under the label, not the badge) — set here on .rung, their
+     .division-list (to align its chips under the label, not the badge): set here on .rung, their
      shared parent, rather than on .rung-row, since .division-list is a sibling of .rung-row, not a
      descendant, and wouldn't inherit a var defined there. Widened from the old var(--sp3) (~12px):
      wings now render at this size (TierBadge's `small` only hides the progress tick, not wings)
      and escalate from Stufe 4 through a 4-blade span at Apex, so the label needs real room to its
-     left or the two collide. Even at this width the Apex wing still reaches close to the label —
+     left or the two collide. Even at this width the Apex wing still reaches close to the label:
      if that reads as too tight in practice, cap ladder-context wing span smaller than the
      hero/detail context rather than widening this further indefinitely. */
   --rung-gap: 28px;
@@ -173,9 +173,9 @@ function toggleExpand(tier: Tier) {
 }
 /* Divisions render worst-to-best (III -> I, see `divisions()` above), so a chip with a later
    `.current` sibling was already climbed past this rung, and one after `.current` hasn't been
-   reached yet — same tier-accent-fill/opacity vocabulary as RankProgress.vue rather than a new
+   reached yet: same tier-accent-fill/opacity vocabulary as RankProgress.vue rather than a new
    one. Was previously reached into from outside via a `.ranks-tier-ladder :deep(...)` rule in
-   styles/rank-card.css, which silently never applied — `:deep()` is a Vue SFC `<style scoped>`
+   styles/rank-card.css, which silently never applied: `:deep()` is a Vue SFC `<style scoped>`
    construct, rewritten at compile time; a plain global stylesheet ships it to the browser
    unrewritten, an invalid selector the browser drops. This file's own template is exactly where
    these selectors belong instead. */
@@ -210,7 +210,7 @@ function toggleExpand(tier: Tier) {
   color: var(--tt, var(--text));
 }
 /* Same "second-loudest, name it, don't hide it" treatment as RankProgress.vue's per-exercise
-   .rp-decay — the account-level equivalent. */
+   .rp-decay: the account-level equivalent. */
 .rung-peak {
   font-size: 11px;
   font-weight: 700;
@@ -221,7 +221,7 @@ function toggleExpand(tier: Tier) {
   color: var(--faint);
 }
 
-/* Already-climbed tiers: legible, not the focus — full badge color, quieter label. */
+/* Already-climbed tiers: legible, not the focus: full badge color, quieter label. */
 .rung.reached {
   opacity: 0.65;
 }
@@ -242,11 +242,11 @@ function toggleExpand(tier: Tier) {
   color: var(--tt, var(--text));
 }
 
-/* Not reached yet: dimmed, not hidden — the aspirational/teaser half of the ladder. Per Liftoff's
+/* Not reached yet: dimmed, not hidden: the aspirational/teaser half of the ladder. Per Liftoff's
    own ladder (the reference for this rework): tiers above your current one keep their real material
-   color, just quieter — only tiers already surpassed go fully flat. An earlier version of this rule
+   color, just quieter: only tiers already surpassed go fully flat. An earlier version of this rule
    desaturated every "ahead" tier to gray instead, which read as a downgrade (nothing above your
-   current band looked like it was worth reaching for) and didn't match that reference — removed. */
+   current band looked like it was worth reaching for) and didn't match that reference: removed. */
 .rung.ahead {
   opacity: 0.55;
 }
@@ -260,7 +260,7 @@ function toggleExpand(tier: Tier) {
   position: relative;
   isolation: isolate;
 }
-/* Dialed back from an earlier, much brighter 0 0 34px -6px at full --tier-accent opacity — that
+/* Dialed back from an earlier, much brighter 0 0 34px -6px at full --tier-accent opacity: that
    read as too loud for a resting list row; a glow here is fine, it just needs to be a hint, not a
    halo. Smaller blur, tighter spread, and color-mix'd down to partial opacity (same idiom
    rank-card.css's tier wash already uses) instead of the accent color at full strength. */
@@ -271,17 +271,17 @@ function toggleExpand(tier: Tier) {
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), #000);
 }
 
-/* Pyramid backdrop — Liftoff's own ladder sits inside a literal spotlight-cone graphic, tiers in
+/* Pyramid backdrop: Liftoff's own ladder sits inside a literal spotlight-cone graphic, tiers in
    the foreground on top of it; this is Liftr's own take rather than a straight copy: a soft
    Nebula-tinted triangular wash (violet narrowing at Apex, deepening to blue toward the bottom)
    instead of a stark white beam, so the whole list reads as one lit shaft without borrowing the
-   Nebula brand gradient onto the tier badges themselves (still forbidden — see the .t-<tier> rules
+   Nebula brand gradient onto the tier badges themselves (still forbidden: see the .t-<tier> rules
    above and docs/design/nebula-design-system.md). A static triangle spanning the ladder's own box,
-   not positioned relative to the current-tier row — simpler, and correct in every state including
+   not positioned relative to the current-tier row: simpler, and correct in every state including
    the no-rank-yet first-run ladder (OverviewPage.vue's null-current call site).
 
    Fixed a real bug here: this used to clip-path a 24%-wide flat chord at the top (`38% 0%, 62%
-   0%, ...`) instead of a single point, so it was a truncated trapezoid, not a triangle — and with
+   0%, ...`) instead of a single point, so it was a truncated trapezoid, not a triangle: and with
    `inset: 0` giving it no headroom above the first rung, that flat top sat flush against the
    ladder's own edge and read as cut off. Now a genuine single-point apex, in a box extended 28px
    above the ladder itself so the point has real room to breathe above the Apex rung instead of

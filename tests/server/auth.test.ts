@@ -72,7 +72,7 @@ describe("requireAuth", () => {
     const token = generateSessionToken();
     const tokenHash = hashSessionToken(token);
     await createSession(db, "00000000-0000-4000-8000-000000000001", tokenHash);
-    // expiresAt (idle) is still far in the future — only the hard cap has passed.
+    // expiresAt (idle) is still far in the future; only the hard cap has passed.
     await db
       .update(sessions)
       .set({ absoluteExpiresAt: new Date(Date.now() - 1000) })

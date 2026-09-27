@@ -1,4 +1,4 @@
-<img src="docs/assets/banner.svg" alt="Liftr — log a set, watch your rank move" width="100%" />
+<img src="docs/assets/banner.svg" alt="Liftr: log a set, watch your rank move" width="100%" />
 
 <p align="center">
   <a href="LICENSE"><img alt="license: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-5ba0ff?style=flat-square" /></a>
@@ -10,13 +10,13 @@
 
 # Liftr
 
-**A self-hosted, open-source workout and running tracker that gives every lift a real rank —
+**A self-hosted, open-source workout and running tracker that gives every lift a real rank:
 so progress is something you can see, not just something you hope is happening.**
 
 Liftr is a strength- and running-tracker PWA you run on your own hardware: log sets and runs from
 your phone, get a rank per exercise built on real strength standards (or an honest, clearly-marked
 estimate where none exist), and keep every rep in one SQLite file that never leaves your network
-unless you say so. No ads, no analytics, no subscription, no cloud account required — install it
+unless you say so. No ads, no analytics, no subscription, no cloud account required: install it
 to your home screen like a native app and it works even with zero signal in the gym.
 
 <p align="center"><sub>Free. Open source. Runs on hardware you already own.</sub></p>
@@ -37,7 +37,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-Open `http://localhost:3001/` — first visit prompts the owner to set a password, no token or
+Open `http://localhost:3001/`: first visit prompts the owner to set a password, no token or
 extra config needed. From there, invite anyone else in your household via a time-limited code
 from the members screen; everyone gets their own login.
 
@@ -78,10 +78,10 @@ punishing a Tuesday.
 
 ## What's in it
 
-- <img src="docs/assets/icon-dumbbell.svg" width="16" height="16" align="absmiddle" alt="" /> **A rank for almost every lift**, not just squat/bench/deadlift — nine tiers, real strength standards
-- <img src="docs/assets/icon-run.svg" width="16" height="16" align="absmiddle" alt="" /> **Runs, walks, and hikes count too** — import GPX/FIT from any watch or Health Connect, no Strava required, each with its own pace-based rank
+- <img src="docs/assets/icon-dumbbell.svg" width="16" height="16" align="absmiddle" alt="" /> **A rank for almost every lift**, not just squat/bench/deadlift: nine tiers, real strength standards
+- <img src="docs/assets/icon-run.svg" width="16" height="16" align="absmiddle" alt="" /> **Runs, walks, and hikes count too**: import GPX/FIT from any watch or Health Connect, no Strava required, each with its own pace-based rank
 - <img src="docs/assets/icon-offline.svg" width="16" height="16" align="absmiddle" alt="" /> **Installable PWA that works offline.** Log a set in a basement gym with zero signal, it syncs later
-- <img src="docs/assets/icon-lock.svg" width="16" height="16" align="absmiddle" alt="" /> **Self-hosted, no ads, no analytics** — the whole household can have their own login, and your training data stays on your own server
+- <img src="docs/assets/icon-lock.svg" width="16" height="16" align="absmiddle" alt="" /> **Self-hosted, no ads, no analytics**: the whole household can have their own login, and your training data stays on your own server
 - <img src="docs/assets/icon-database.svg" width="16" height="16" align="absmiddle" alt="" /> **One SQLite file.** Back it up, move it, own it
 
 ## The ladder
@@ -91,14 +91,14 @@ punishing a Tuesday.
 | Initiate | You showed up and logged real numbers. Everyone starts here. |
 | Apprentice | Building a real base. |
 | Trainee | Training with real weight, momentum building. |
-| Athlete | Consistent, solid lifting — the floor most lifters live on. |
+| Athlete | Consistent, solid lifting: the floor most lifters live on. |
 | Lifter | Visibly, genuinely strong. |
 | Advanced | Strong relative to standard, the tier that starts turning heads. |
 | Elite | Rare air. |
 | Expert | The standards here assume years of dedicated training. |
-| Apex | The top of the curve. One real milestone, not another grind — getting here on even one lift is a genuine feat. |
+| Apex | The top of the curve. One real milestone, not another grind: getting here on even one lift is a genuine feat. |
 
-Nine tiers per exercise, each split into divisions — more of them near the bottom (Initiate has
+Nine tiers per exercise, each split into divisions: more of them near the bottom (Initiate has
 five) so early rank-ups come often, tapering to a single division at Apex, plus one **Overall
 Rank** that rolls your strongest lifts into a single headline number.
 
@@ -128,18 +128,18 @@ no companion cloud service and no plans for one. If that trade sounds right, it'
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | What's shipped, what's open |
 
 Tests live under `tests/`, mirroring the package layout (`tests/server/services/foo.test.ts` for
-`packages/server/src/services/foo.ts`, and so on) — run them with `pnpm test`; see
+`packages/server/src/services/foo.ts`, and so on): run them with `pnpm test`; see
 `tests/README.md` for the conventions if you're adding to them.
 
 ## Contributing
 
-Issues and PRs are welcome — see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for the workflow
+Issues and PRs are welcome: see [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for the workflow
 this repo actually enforces, and please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Found a
 vulnerability? See [`docs/SECURITY.md`](docs/SECURITY.md) for how to report it.
 
 ## License
 
-Liftr is licensed under [AGPL-3.0](LICENSE): self-host it freely, fork it, modify it — but if you
+Liftr is licensed under [AGPL-3.0](LICENSE): self-host it freely, fork it, modify it: but if you
 run a modified copy of Liftr as a service for other people, you must make your source available to
 them too.
 
@@ -152,7 +152,7 @@ Vue 3 + Ionic/Capacitor (installable PWA) · Fastify + SQLite/Drizzle · TypeScr
 <p align="center"><sub>One household's home gym, one server, no third parties in between.*</sub> <img src="docs/assets/icon-dumbbell.svg" width="14" height="14" align="absmiddle" alt="" /></p>
 
 <sub>\* With one opt-in exception: planned-route creation can call OpenRouteService for road-snapped
-distance/elevation if you set `LIFTR_ORS_API_KEY` — unset by default, gracefully degrades to
+distance/elevation if you set `LIFTR_ORS_API_KEY`: unset by default, gracefully degrades to
 straight-line distance, and self-hostable via `LIFTR_ORS_BASE_URL` to remove the third party
 entirely. See [docs/SECURITY.md](docs/SECURITY.md#outbound-requests-openrouteservice) and
 [ADR 0007](docs/adr/0007-openrouteservice-external-routing-exception.md).</sub>

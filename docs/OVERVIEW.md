@@ -1,8 +1,8 @@
 # Overview
 
-This is the "why" document — what Liftr believes and why it's built the way it is. For *what it
+This is the "why" document: what Liftr believes and why it's built the way it is. For *what it
 does*, see [`docs/features.md`](features.md). For *where it's headed*, see
-[`docs/ROADMAP.md`](ROADMAP.md). This document doesn't duplicate either — it's the design
+[`docs/ROADMAP.md`](ROADMAP.md). This document doesn't duplicate either: it's the design
 philosophy that both of those sit on top of.
 
 ## The one design rule
@@ -12,8 +12,8 @@ philosophy that both of those sit on top of.
 
 Every other decision in the app is downstream of this. The rank engine (nine tiers, divisions,
 peak/current, Overall Rank) is the thing users are meant to actually care about coming back for.
-The logging flow — a routine's next set already on screen with last time's weight and reps next to
-the input, one or two taps to log — exists purely so that caring about the rank system doesn't
+The logging flow: a routine's next set already on screen with last time's weight and reps next to
+the input, one or two taps to log: exists purely so that caring about the rank system doesn't
 require fighting the app to feed it data. When a feature proposal doesn't clearly serve one of
 those two things, it's out of scope by default, not a missing "nice to have."
 
@@ -24,36 +24,36 @@ understand, or that can be taken away for reasons outside their control, stops f
 and starts feeling like noise. Two concrete mechanisms enforce this:
 
 **Peak vs. current.** Once a rank is reached, it's locked in as a lifter's peak
-(`packages/shared/src/rank/decay.ts`) and the app never quietly takes it back — not for a
+(`packages/shared/src/rank/decay.ts`) and the app never quietly takes it back: not for a
 bodyweight fluctuation, not for a recalibrated standard. *Current* rank is a separate, softer
 number: it decays toward the floor of the peak's own tier after a grace period of inactivity
-(never below it — no progress is ever fully lost), and recovers with a buffed multi-session climb
+(never below it: no progress is ever fully lost), and recovers with a buffed multi-session climb
 once training resumes, rather than an instant snap back. The floor guarantee and the buffed
 recovery both exist for the same reason: decay should read as "you've been away," never as
 punishment severe enough to make someone stop checking the app altogether.
 
 **Trust markers on estimated numbers.** Not every exercise has a directly-sourced strength
 standard (barbell classics like squat/bench/deadlift do; most of the catalog doesn't).
-`packages/shared/src/rank/defaultStandards.ts` tracks a `trust` tier per threshold —
+`packages/shared/src/rank/defaultStandards.ts` tracks a `trust` tier per threshold:
 `"real"` (a citable, sourced standard), `"derived"` (computed from a real standard via a
 ratio to a related exercise), or `"synthetic"` (a ratio that isn't itself directly sourced). A
-derived exercise is never treated as more trustworthy than the standard it was derived from — the
+derived exercise is never treated as more trustworthy than the standard it was derived from: the
 code's own rule is that trust only ever downgrades along a derivation chain, never upgrades. The
 UI surfaces this directly: when an estimate is doing the guessing, it's marked with a small `≈`
 instead of presenting a guess with the same confidence as a sourced number. Pretending precision
-that isn't there is exactly the kind of thing that erodes trust in the rank system over time — so
+that isn't there is exactly the kind of thing that erodes trust in the rank system over time: so
 the app doesn't do it, even where a plain number would look cleaner.
 
 The tier ladder itself follows the same honesty principle in a different direction: divisions are
-deliberately front-loaded (more of them at the bottom, tapering to a single division at Apex — see
+deliberately front-loaded (more of them at the bottom, tapering to a single division at Apex: see
 `TIER_DIVISION_COUNT`'s doc comment in `tiers.ts`), so early rank-ups come often and the one
-top-tier milestone stays a genuine, rare achievement rather than another grind — climbing is
+top-tier milestone stays a genuine, rare achievement rather than another grind: climbing is
 supposed to get harder, not just take longer.
 
 ## Self-hosted, real accounts, offline-first
 
 Liftr runs on hardware the user owns, keeps its data in a single SQLite file, and works offline as
-an installable PWA. This isn't a technical constraint that happened to shape the product — it's
+an installable PWA. This isn't a technical constraint that happened to shape the product: it's
 the point:
 
 - **Privacy.** Workout and body data is personal. There's no reason a set logged in a home gym
@@ -61,17 +61,17 @@ the point:
   pipeline. Self-hosting means the only copy of your data is the one you control.
 - **Real per-person accounts, no shared token.** An owner is set up on first launch and can invite
   other people who share the instance (Home Assistant-style) via time-limited invite codes.
-  Everyone logs in with their own username and password to a session-scoped bearer token — there's
+  Everyone logs in with their own username and password to a session-scoped bearer token: there's
   no `LIFTR_TOKEN` shared identity to hand around anymore (see [`docs/SECURITY.md`](SECURITY.md)
   for the actual mechanism).
 - **No third parties in the loop.** Run imports read GPX/FIT files you already have from any
-  watch or app — no Strava account or third-party API required to get your own data into your own
+  watch or app: no Strava account or third-party API required to get your own data into your own
   tracker. Catalog images are mirrored at ingest time rather than hotlinked at runtime, so the app
   doesn't silently depend on an external service staying up.
 - **Offline-first.** A basement gym with zero signal is a normal place to train, so it has to be
-  a normal place to log a set — the PWA queues writes locally and syncs once connectivity
+  a normal place to log a set: the PWA queues writes locally and syncs once connectivity
   returns, rather than treating connectivity as a given.
 
-Taken together: Liftr optimizes for being *yours* — your data, your server, your rank system that
+Taken together: Liftr optimizes for being *yours*: your data, your server, your rank system that
 doesn't answer to anyone else's roadmap. See [`docs/ROADMAP.md`](ROADMAP.md) for how that plays
 out in what's planned next.

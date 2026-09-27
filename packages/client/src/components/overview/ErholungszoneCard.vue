@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * "Erholungszone" — a reason to open the app on a rest day. A muscle-recovery heat map plus a
+ * "Erholungszone": a reason to open the app on a rest day. A muscle-recovery heat map plus a
  * one-line verdict naming what's actually ready, styled after Liftoff's own recovery-zone screen
- * (examples/Screenshot_20260824-175320.png). A training-decision aid, not a score — deliberately
+ * (examples/Screenshot_20260824-175320.png). A training-decision aid, not a score: deliberately
  * adds no new currency, since stacking badges/streaks/points into noise undermines the other
  * progression systems; this is the one genuinely new surface, and it's a suggestion, not
  * something to chase.
@@ -67,7 +67,7 @@ const verdict = computed(() => {
   --eyebrow-color: var(--warning-hi);
 }
 /* Explains MuscleFigure's heat-mode coloring (warm/fatigue = fc0000-derived orange asset,
-   cool/main = the app's blue asset — see ingestMuscleAssets.ts's FATIGUE_COLOR/PRIMARY_TO)
+   cool/main = the app's blue asset: see ingestMuscleAssets.ts's FATIGUE_COLOR/PRIMARY_TO)
    so the figure isn't just decorative color a reader has to guess the meaning of. */
 .ez-legend {
   display: flex;
@@ -110,7 +110,7 @@ const verdict = computed(() => {
   line-height: 1.5;
 }
 
-/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep, these just give each
+/* Skeleton pieces: .shimmer (styles/motion.css) supplies the sweep, these just give each
    piece the real content's approximate size/shape/background. */
 .ez-skeleton .shimmer {
   background-color: var(--surface-2);

@@ -2,7 +2,7 @@
  * Trainingsprofil card: onboarding's answers, editable again later ("alles lässt sich später im
  * Profil ändern", per OnboardingGuide.vue's own hint text). Local drafts seeded from the store
  * once it's loaded, same pattern OnboardingGuide.vue itself uses. Extracted out of
- * ProfilePage.vue — that file mixed six+ unrelated settings concerns together.
+ * ProfilePage.vue: that file mixed six+ unrelated settings concerns together.
  */
 import { computed, ref, watch } from "vue";
 import { useToast } from "./useToast";

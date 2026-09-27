@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The factory below must construct its own vi.fn()s inline rather than referencing outer
-// `const` bindings — vi.mock() is hoisted above them, so a direct property reference (e.g.
+// `const` bindings: vi.mock() is hoisted above them, so a direct property reference (e.g.
 // `getBodyweightLogs: getBodyweightLogsMock`) would hit the TDZ. Grab typed handles to the
 // mocks afterwards via vi.mocked() on the (mocked) module's own exports instead.
 vi.mock("~client/services/bodyweightService", () => ({

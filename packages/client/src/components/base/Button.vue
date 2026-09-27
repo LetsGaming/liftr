@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
 /**
- * Thin wrapper around tokens.css's own `.btn-primary`/`.btn-secondary`/`.btn-block` rules — this
+ * Thin wrapper around tokens.css's own `.btn-primary`/`.btn-secondary`/`.btn-block` rules: this
  * component owns which class combination applies, tokens.css keeps owning the actual recipe.
  */
 const props = withDefaults(
@@ -21,7 +21,7 @@ const props = withDefaults(
 
 const tag = computed(() => (props.as === "router-link" ? RouterLink : props.as));
 
-/** Only the attribute keys the current `as` actually uses — binding an unused one (e.g. `href`)
+/** Only the attribute keys the current `as` actually uses: binding an unused one (e.g. `href`)
  *  as an explicit `undefined` still merges that key into the rendered root's attrs and wipes out
  *  RouterLink's own computed `href`, even though the value itself is empty. */
 const linkAttrs = computed(() => {

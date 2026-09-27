@@ -6,7 +6,7 @@ describe("computeOverallRank", () => {
     expect(computeOverallRank([])).toBeNull();
   });
 
-  it("excludes nothing implicitly — a single real-trust input is returned as-is", () => {
+  it("excludes nothing implicitly: a single real-trust input is returned as-is", () => {
     const input: RankInput[] = [{ tier: "advanced", division: 2, lp: 40, trust: "real" }];
     expect(computeOverallRank(input)).toEqual({ tier: "advanced", division: 2, lp: 40 });
   });
@@ -39,8 +39,8 @@ describe("computeOverallRank", () => {
     expect(posSynthetic).toBeGreaterThan(posEqualWeight);
   });
 
-  it("never counts an unranked exercise as zero (excluded, not zero) — verified by construction: callers never pass unranked rows", () => {
-    // computeOverallRank has no concept of "unranked" itself — exclusion happens by the caller
+  it("never counts an unranked exercise as zero (excluded, not zero): verified by construction: callers never pass unranked rows", () => {
+    // computeOverallRank has no concept of "unranked" itself: exclusion happens by the caller
     // simply not including such exercises in the input array. A single high-trust exercise
     // should reflect its own value, not be dragged toward zero by anything unranked.
     const input: RankInput[] = [{ tier: "apex", division: 1, lp: 100, trust: "real" }];

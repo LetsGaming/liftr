@@ -44,5 +44,5 @@ describe("GET /api/rank-events", () => {
   });
 
   // The 7-day rolling-window exclusion is `computeRankEventsByWeekday`'s own logic, not this
-  // route's — covered by tests/server/services/rankService.test.ts, which this thin route wraps.
+  // route's: covered by tests/server/services/rankService.test.ts, which this thin route wraps.
 });

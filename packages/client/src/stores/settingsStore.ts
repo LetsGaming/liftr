@@ -1,7 +1,7 @@
 /**
  * Onboarding profile ("gender, age, weight, prior experience... workouts per week") + owned
  * equipment (feature: filter exercises to what a home-gym user actually has). Both are
- * single-user settings, mirroring @liftr/db's plain k/v `settings` table server-side — see
+ * single-user settings, mirroring @liftr/db's plain k/v `settings` table server-side: see
  * server's routes/settings.ts. `profileLoaded` distinguishes "haven't fetched yet" from
  * "fetched, and there's genuinely no profile" (App.vue's onboarding-prompt trigger needs that
  * distinction; a flat `null` alone can't tell the two apart while the very first load is still
@@ -33,12 +33,12 @@ export const useSettingsStore = defineStore("settings", {
     gymLoaded: false,
   }),
   getters: {
-    /** Onboarding hasn't been completed yet — App.vue shows the setup guide once for this. */
+    /** Onboarding hasn't been completed yet: App.vue shows the setup guide once for this. */
     needsOnboarding: (state) => state.profileLoaded && state.profile === null,
   },
   actions: {
     async load() {
-      // No `error` flag on any of these three — a failed fetch just leaves its `xLoaded` flag
+      // No `error` flag on any of these three: a failed fetch just leaves its `xLoaded` flag
       // false (offline with nothing cached: don't prompt onboarding blind, equipment filtering
       // stays unavailable, plate calculator falls back to the unlimited standard set).
       await withLoadState(getProfile, {

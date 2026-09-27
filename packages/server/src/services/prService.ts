@@ -1,6 +1,6 @@
 /**
- * Personal Records ledger. Reads the `prs` table — already fully populated on
- * every workout finish per the rank-recompute pipeline — joined to the exercise's slug (for
+ * Personal Records ledger. Reads the `prs` table: already fully populated on
+ * every workout finish per the rank-recompute pipeline: joined to the exercise's slug (for
  * display via the client's useExerciseName composable) and, where the originating set still
  * exists, the workout it belongs to (for a "jump to this workout" link). Purely additive read
  * access; no new computation, no schema change.
@@ -12,7 +12,7 @@ export interface PrListItem {
   id: string;
   exerciseId: string;
   exerciseSlug: string;
-  /** Literal display name — set for custom exercises. Null for catalog exercises (resolved
+  /** Literal display name: set for custom exercises. Null for catalog exercises (resolved
    *  client-side via i18n on `exerciseSlug`). */
   exerciseName: string | null;
   kind: "e1rm" | "weight" | "reps" | "volume";

@@ -10,14 +10,14 @@ import { getExercises, type CatalogExercise } from "../services/exerciseService"
 
 export type { CatalogExercise };
 
-// v2: requiredEquipment moved from a flat string[] to TieredRequirement[] ({item, tier}) — a
+// v2: requiredEquipment moved from a flat string[] to TieredRequirement[] ({item, tier}): a
 // stale v1 cache entry has plain strings there, and missingByTier() destructuring {item, tier}
-// off a string crashes (`result[undefined].push` — TypeError) before the fresh fetch below ever
+// off a string crashes (`result[undefined].push`: TypeError) before the fresh fetch below ever
 // gets a chance to overwrite it. Bumping invalidates any pre-existing cached shape instead of
 // requiring every reader to defensively handle a schema this store itself controls.
 const CACHE_KEY = "liftr.catalog.v2";
 
-/** Lightweight structural guard for the localStorage cache — this is exactly the kind of
+/** Lightweight structural guard for the localStorage cache: this is exactly the kind of
  *  v1-vs-v2 shape drift documented above (requiredEquipment as string[] instead of
  *  {item,tier}[]), so check each entry's requiredEquipment shape too, not just that it parsed. A
  *  cache entry that fails this is treated the same as "no cache" rather than crashed into state. */
@@ -56,7 +56,7 @@ export const useCatalogStore = defineStore("catalog", {
             this.loaded = true;
           }
         } catch {
-          // corrupt/unparseable cache entry — same as "not cached"
+          // corrupt/unparseable cache entry: same as "not cached"
         }
       }
       try {

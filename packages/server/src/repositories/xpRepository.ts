@@ -20,7 +20,7 @@ export function findAllSetsForXp(db: LiftrDb, userId: string) {
 
 /** Sum of the per-workout consistency/variety XP bonuses across every *finished* workout
  *  (`endedAt` not null) this user has. `coalesce(..., 0)` guards the case where this user has no
- *  finished workouts at all — SQL `SUM()` over zero rows yields `null`, not `0`, which would
+ *  finished workouts at all: SQL `SUM()` over zero rows yields `null`, not `0`, which would
  *  otherwise propagate into `getXpSummary`'s total as `NaN`. */
 export async function findTotalSessionBonusXp(
   db: LiftrDb,
@@ -41,9 +41,9 @@ export async function findTotalSessionBonusXp(
 }
 
 /** Every logged run's XP-relevant fields, across every run this user has ever logged. No join
- *  needed — unlike `findAllSetsForXp`'s three-way join, every field `computeRunXp` (@liftr/shared)
+ *  needed: unlike `findAllSetsForXp`'s three-way join, every field `computeRunXp` (@liftr/shared)
  *  needs lives directly on `runs` itself. `plausibilityMultiplier` is `null` in the DB for a
- *  manual run (the plausibility gate never runs against one) — callers must map that to `1` (full
+ *  manual run (the plausibility gate never runs against one): callers must map that to `1` (full
  *  credit), never `0`, when building a `RunXpInput` (Ruling 5). */
 export function findAllRunsForXp(db: LiftrDb, userId: string) {
   return db
@@ -54,7 +54,7 @@ export function findAllRunsForXp(db: LiftrDb, userId: string) {
       startedAt: runs.startedAt,
       plausibilityMultiplier: runs.plausibilityMultiplier,
       source: runs.source,
-      // Omitting this would silently price every walk (and "other" cardio) as a run — see
+      // Omitting this would silently price every walk (and "other" cardio) as a run: see
       // runXp.ts's activity-aware base rate and decay-key namespacing.
       activityType: runs.activityType,
     })

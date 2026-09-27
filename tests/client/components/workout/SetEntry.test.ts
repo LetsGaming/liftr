@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // SetEntry.vue is the core two-stepper logging card (weight/reps) plus the optional plate
-// calculator reveal. It reads/writes activeWorkoutStore directly (real Pinia store — mutating
+// calculator reveal. It reads/writes activeWorkoutStore directly (real Pinia store: mutating
 // actions fire-and-forget persist() into IndexedDB, stubbed the same way
 // tests/client/stores/activeWorkoutStore.spec.ts does) and, for the plate calculator, reads
 // settingsStore.gymSetup + catalogStore.byId() for the current exercise's equipment.
@@ -45,7 +45,7 @@ function catalogExercise(overrides: Partial<CatalogExercise> = {}): CatalogExerc
 }
 
 /** Mounts SetEntry, seeds a single active exercise/set into the (real) activeWorkoutStore, and
- *  optionally the catalog/settings stores too — then awaits a tick so the mount's initial render
+ *  optionally the catalog/settings stores too: then awaits a tick so the mount's initial render
  *  and the $patch-driven re-render both land before assertions run (a bare $patch after mount()
  *  mutates reactive state synchronously, but Vue's own DOM update is batched onto the next
  *  microtask, so every test needs to await one before reading the rendered DOM). */

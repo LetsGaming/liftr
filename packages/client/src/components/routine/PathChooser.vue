@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /** Step 0 (create mode only): the manual-vs-muscle-guided choice gets its own explicit first
- *  screen so both paths carry equal visual weight before either one starts — a toggle buried
+ *  screen so both paths carry equal visual weight before either one starts: a toggle buried
  *  inside a later step would read as "one mode is the real one, the other is a fallback," which
  *  isn't true. Both paths converge into the same Pick/Arrange/Review steps after. Edit mode
- *  never reaches this screen — it jumps straight to Arrange since exercises already exist. */
+ *  never reaches this screen: it jumps straight to Arrange since exercises already exist. */
 import { useI18n } from "vue-i18n";
 
 defineEmits<{ choose: [mode: "manual" | "muscles"] }>();

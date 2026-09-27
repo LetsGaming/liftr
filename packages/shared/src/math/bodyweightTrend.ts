@@ -14,7 +14,7 @@ export type BodyweightTrendDirection = "up" | "down" | "stable";
 export interface BodyweightTrend {
   emaKg: number;
   trend: BodyweightTrendDirection;
-  /** actual days spanned by the comparison — may be less than the requested window if the log is younger than that. */
+  /** actual days spanned by the comparison: may be less than the requested window if the log is younger than that. */
   daysSpan: number;
 }
 

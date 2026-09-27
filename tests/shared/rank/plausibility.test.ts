@@ -90,8 +90,8 @@ describe("computeWorkoutPlausibility", () => {
 
   it("a genuine mid-range breakthrough jump is only lightly discounted, not floored", () => {
     // Guards the engagement-audit-v3 Phase 3 risk explicitly: JUMP_MAX_SEVERITY_THRESHOLD was
-    // tightened from 1.0 to 0.75, but a jump only slightly past where discounting *starts* — the
-    // ~40-60% range a real short-rest/good-day PR session might land in — must stay well above
+    // tightened from 1.0 to 0.75, but a jump only slightly past where discounting *starts*: the
+    // ~40-60% range a real short-rest/good-day PR session might land in: must stay well above
     // the floor, not get crushed by the same heuristic meant to catch a fabricated set.
     const storedPeakRatio = 1.3;
     const midRangeJump = JUMP_FINE_THRESHOLD + (JUMP_MAX_SEVERITY_THRESHOLD - JUMP_FINE_THRESHOLD) * 0.3;

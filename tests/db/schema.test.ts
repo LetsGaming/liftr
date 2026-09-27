@@ -200,7 +200,7 @@ describe("running rank engine tables", () => {
 
     await db.insert(runPrs).values({ category: "5k", kind: "time", value: 1500, runId: run!.id, achievedAt: new Date() });
 
-    // "best" is an application-level concept (findBestRunPrByKind, Task 9) — the DB allows
+    // "best" is an application-level concept (findBestRunPrByKind, Task 9): the DB allows
     // multiple historical rows per (userId, category, kind), same as the existing `prs` table.
     await expect(
       db.insert(runPrs).values({ category: "5k", kind: "time", value: 1400, runId: run!.id, achievedAt: new Date() }),

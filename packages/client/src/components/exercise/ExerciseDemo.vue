@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * Only 2 real frames exist for any exercise (from free-exercise-db or wger, both start/end photo
- * pairs) — a hard ceiling on source material, not a corner cut; GIF/video sources lacked a clean
+ * pairs): a hard ceiling on source material, not a corner cut; GIF/video sources lacked a clean
  * open license. To read as more of a "tutorial" without fabricating a 3rd frame, the two real
  * images auto-loop cross-fading into each other, falling back to a static side-by-side pair under
  * prefers-reduced-motion.
  *
  * Images are mirrored by `pnpm ingest --images` into data/images/<slug>/{start,end}.jpg and
- * served at /images/<slug>/... — never hotlinked from free-exercise-db at request time.
+ * served at /images/<slug>/...: never hotlinked from free-exercise-db at request time.
  * Degrades to a placeholder when a slug has no mirrored images yet.
  */
 import { computed, ref } from "vue";
@@ -20,7 +20,7 @@ const { t } = useI18n();
 const catalog = useCatalogStore();
 
 // A missing photo means *both* start.jpg and end.jpg are missing (they're mirrored as a pair,
-// see ingestImages.ts) — one known-missing flag covers both frames instead of needing a second.
+// see ingestImages.ts): one known-missing flag covers both frames instead of needing a second.
 // `!== false` keeps today's attempt-then-@error behavior for an unloaded/stale-cached catalog.
 const knownMissing = computed(() => catalog.bySlug(props.slug)?.hasImage === false);
 const startFailed = ref(false);
@@ -62,7 +62,7 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
 <style scoped>
 .demo-stage {
   /* This is an image-loading backdrop, visible only until the cross-fading start/end photos
-     paint over it — not a content surface, so it's exempt from .surface-hybrid for the same
+     paint over it: not a content surface, so it's exempt from .surface-hybrid for the same
      reason as .placeholder/.frame below and ExerciseThumb.vue's fallback fill. */
   position: relative;
   aspect-ratio: 4 / 3;
@@ -134,7 +134,7 @@ const bothLoaded = () => !knownMissing.value && !startFailed.value && !endFailed
   display: grid;
   place-items: center;
   /* Matches ExerciseThumb.vue's fallback treatment: a tonal radial-highlight fill instead of a
-     flat single tone. Deliberately exempt from .surface-hybrid — this is an image placeholder
+     flat single tone. Deliberately exempt from .surface-hybrid: this is an image placeholder
      standing in for a missing photo, not a content surface, so a translucent "glass" treatment
      would read as a see-through image. Stays an opaque, hardcoded tonal fill on purpose. */
   background: radial-gradient(circle at 35% 30%, var(--surface-2), var(--surface-3) 70%);

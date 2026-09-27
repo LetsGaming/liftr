@@ -2,7 +2,7 @@
 /**
  * Single place that creates a Leaflet map instance, attaches the OSM tile layer, and keeps it
  * correctly sized. Every map component (RunMap, RouteMapEditor, RouteThumbnail) mounts this and
- * adds its own layers/markers/handlers in response to `ready` — this component owns only the
+ * adds its own layers/markers/handlers in response to `ready`: this component owns only the
  * lifecycle, not any domain rendering.
  *
  * The resize handling is the actual bug fix this consolidation buys: a `ResizeObserver` that
@@ -10,7 +10,7 @@
  * `requestAnimationFrame` after mount. Leaflet measures its container once at creation and caches
  * that size; if the container is still animating into its final size at that point (e.g. a sheet
  * modal's open transition), a one-shot invalidate fired too early leaves the map painting only a
- * stale tile island in one corner — reproduced in `RouteMapEditor.vue` before this component
+ * stale tile island in one corner: reproduced in `RouteMapEditor.vue` before this component
  * existed. A live `ResizeObserver` has no such timing dependency: it fires whenever the box's real
  * size settles, whatever caused that, for as long as the map is mounted.
  */
@@ -24,7 +24,7 @@ const props = defineProps<{
   mapOptions?: Partial<L.MapOptions>;
   initialView?: { center: [number, number]; zoom: number };
   lazy?: boolean;
-  /** Pins the tile layer to this basemap, ignoring the shared standard/satellite preference —
+  /** Pins the tile layer to this basemap, ignoring the shared standard/satellite preference:
    *  RouteThumbnail.vue passes "standard" so a small inert route-card preview stays consistent
    *  regardless of what the user last picked on a real map. Omit to follow the shared preference
    *  (useBasemap.ts) like every interactive map does. */
@@ -38,7 +38,7 @@ const { basemap: sharedBasemap } = useBasemap();
 const container = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let tileLayer: L.TileLayer | null = null;
-// Only ever present alongside the satellite base layer — see createLabelsTileLayer's doc for why
+// Only ever present alongside the satellite base layer: see createLabelsTileLayer's doc for why
 // this is a second stacked layer rather than something baked into the base tile URL.
 let labelsLayer: L.TileLayer | null = null;
 let intersectionObserver: IntersectionObserver | null = null;
@@ -69,7 +69,7 @@ function createMap(el: HTMLDivElement) {
   emit("ready", map);
 }
 
-// Only reacts to the shared preference when `basemap` isn't pinning this map to one — see the
+// Only reacts to the shared preference when `basemap` isn't pinning this map to one: see the
 // prop doc above. The getter short-circuits past `sharedBasemap.value` entirely while pinned, so
 // Vue never even tracks it as a dependency and this watcher simply never fires in that case.
 watch(

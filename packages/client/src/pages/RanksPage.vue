@@ -4,11 +4,11 @@
 // gated/paywalled.
 //
 // Kraft and Lauf ranks used to stack as two full sections on one long scroll (hero ladder,
-// analytics, grid — each duplicated), so reaching your running rank meant scrolling past a
+// analytics, grid: each duplicated), so reaching your running rank meant scrolling past a
 // 30+ card strength grid first. Split into local sub-tabs instead, sharing TabSwitcher.vue with
-// WorkoutPage.vue/RunsPage.vue's Workout↔Läufe switcher (Jakob's Law — reuse a pattern users
+// WorkoutPage.vue/RunsPage.vue's Workout↔Läufe switcher (Jakob's Law: reuse a pattern users
 // already know). No `to` on either tab here, since Kraft/Lauf are two views of one /ranks route,
-// not two real routes — TabSwitcher renders local-toggle buttons instead of RouterLinks in that
+// not two real routes: TabSwitcher renders local-toggle buttons instead of RouterLinks in that
 // case. Section content itself lives in RankLifterSection.vue/RankRunnerSection.vue.
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";

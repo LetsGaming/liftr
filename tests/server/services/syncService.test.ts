@@ -7,7 +7,7 @@ import { getXpSummary } from "~server/services/xpService.js";
 import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 
 /** Inserts a muscle row (or reuses one by slug) and links it as a primary-role muscle of the given
- *  exercise — the minimal fixture the variety-bonus tests need, since `insertTestExercise` alone
+ *  exercise: the minimal fixture the variety-bonus tests need, since `insertTestExercise` alone
  *  doesn't seed any `exercise_muscles` rows. */
 async function linkPrimaryMuscle(db: LiftrDb, exerciseId: string, slug: string) {
   const [muscle] = await db
@@ -19,7 +19,7 @@ async function linkPrimaryMuscle(db: LiftrDb, exerciseId: string, slug: string) 
   await db.insert(exerciseMuscles).values({ exerciseId, muscleId, role: "primary" });
 }
 
-/** Matches rankService.test.ts's own `seedStandards` helper — a minimal load_ratio standards
+/** Matches rankService.test.ts's own `seedStandards` helper: a minimal load_ratio standards
  *  ladder so `recomputeRankForExercise` (called internally by finish_workout) actually produces
  *  a verdict instead of bailing out with "no standards modeled". */
 async function seedStandards(db: LiftrDb, exerciseId: string) {
@@ -38,7 +38,7 @@ beforeEach(async () => {
   exerciseId = (await insertTestExercise(db)).id;
 });
 
-/** A minimal, valid start_workout item — tests override only what they care about. */
+/** A minimal, valid start_workout item: tests override only what they care about. */
 function startWorkoutItem(overrides: Partial<SyncItem & { type: "start_workout" }> = {}): SyncItem {
   return {
     clientId: "client-start-1",
@@ -52,20 +52,20 @@ function startWorkoutItem(overrides: Partial<SyncItem & { type: "start_workout" 
   } as SyncItem;
 }
 
-describe("applySyncBatch — start_workout", () => {
+describe("applySyncBatch: start_workout", () => {
   it("creates a workout and its exercises", async () => {
     const [result] = await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     expect(result).toMatchObject({ clientId: "client-start-1", status: "created", serverId: "workout-1" });
   });
 
-  it("is idempotent on the client-generated workout id — replaying the same batch is a no-op", async () => {
+  it("is idempotent on the client-generated workout id: replaying the same batch is a no-op", async () => {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const [result] = await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     expect(result).toMatchObject({ status: "already_synced", serverId: "workout-1" });
   });
 });
 
-describe("applySyncBatch — unexpected errors", () => {
+describe("applySyncBatch: unexpected errors", () => {
   it("does not leak the raw exception message to the client on an unexpected error", async () => {
     const item = startWorkoutItem({
       clientId: "fk-violation",
@@ -82,7 +82,7 @@ describe("applySyncBatch — unexpected errors", () => {
   });
 });
 
-describe("applySyncBatch — log_set", () => {
+describe("applySyncBatch: log_set", () => {
   async function withStartedWorkout() {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
   }
@@ -109,7 +109,7 @@ describe("applySyncBatch — log_set", () => {
     expect(result!.status).toBe("created");
   });
 
-  it("is idempotent on clientId — a retried flush never duplicates a set", async () => {
+  it("is idempotent on clientId: a retried flush never duplicates a set", async () => {
     await withStartedWorkout();
     await applySyncBatch(db, OWNER_USER_ID, [logSetItem()]);
     const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem()]);
@@ -147,7 +147,7 @@ describe("applySyncBatch — log_set", () => {
   // day to decide whether a peak was reached on a genuinely separate real training occasion. If
   // loggedAt has no bound relative to the workout it belongs to, a single sync batch can carry
   // two log_set items for the SAME workout with client-supplied loggedAt values days apart,
-  // fabricating a "second day" that never happened — see rankService.ts's dailyBest map and its
+  // fabricating a "second day" that never happened: see rankService.ts's dailyBest map and its
   // corroboration comment (~line 220).
   it("rejects a loggedAt far outside its own workout's session window (closes the fabricated-corroboration bypass)", async () => {
     await withStartedWorkout(); // workout-1 started 2026-01-01T10:00:00Z
@@ -165,14 +165,14 @@ describe("applySyncBatch — log_set", () => {
 
   it("accepts a loggedAt within the workout's plausible session window", async () => {
     await withStartedWorkout(); // workout-1 started 2026-01-01T10:00:00Z
-    // Several hours into a long session — still well within the 24h bound.
+    // Several hours into a long session: still well within the 24h bound.
     const sameDayLater = new Date("2026-01-01T20:00:00Z");
     const [result] = await applySyncBatch(db, OWNER_USER_ID, [logSetItem({ loggedAt: sameDayLater })]);
     expect(result!.status).toBe("created");
   });
 });
 
-describe("applySyncBatch — log_set peak-corroboration anti-cheat (single-batch exploit)", () => {
+describe("applySyncBatch: log_set peak-corroboration anti-cheat (single-batch exploit)", () => {
   function logSetItemFor(workoutExerciseId: string, loggedAt: Date, clientId: string): SyncItem {
     return {
       clientId,
@@ -187,7 +187,7 @@ describe("applySyncBatch — log_set peak-corroboration anti-cheat (single-batch
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem({ payload: { id: "workout-1", startedAt, exercises: [{ id: "we-1", exerciseId, orderIndex: 0 }] } })]);
 
     // Same performance logged "twice", loggedAt a week apart, but both items are part of ONE
-    // sync batch for the SAME still-open workout — exactly the exploit: fabricating two
+    // sync batch for the SAME still-open workout: exactly the exploit: fabricating two
     // "distinct calendar days" without any real second training session.
     const dayOne = new Date("2026-01-01T10:05:00Z");
     const weekLater = new Date("2026-01-08T10:05:00Z");
@@ -206,7 +206,7 @@ describe("applySyncBatch — log_set peak-corroboration anti-cheat (single-batch
         payload: { workoutId: "workout-1", endedAt: new Date("2026-01-01T11:00:00Z"), pausedSeconds: 0 },
       } as SyncItem,
     ]);
-    // Only one real day of data survived, so the peak is NOT corroborated yet — no fabricated
+    // Only one real day of data survived, so the peak is NOT corroborated yet: no fabricated
     // rank-up from a single sync batch.
     const verdict = finishResult!.ranks!.find((r) => r.exerciseId === exerciseId);
     expect(verdict!.rankedUp).toBe(false);
@@ -214,8 +214,8 @@ describe("applySyncBatch — log_set peak-corroboration anti-cheat (single-batch
 
   it("still corroborates correctly across a legitimate multi-day offline sync batch (separate real workouts)", async () => {
     await seedStandards(db, exerciseId);
-    // Two genuinely separate workouts, each with its own server-anchored startedAt a week apart —
-    // a realistic "offline for a week, flush the whole backlog at once" scenario — submitted
+    // Two genuinely separate workouts, each with its own server-anchored startedAt a week apart:
+    // a realistic "offline for a week, flush the whole backlog at once" scenario: submitted
     // together in one batch. Each log_set's loggedAt stays within ITS OWN workout's session
     // window, unlike the fabricated-single-workout exploit above.
     const day1Start = new Date("2026-01-01T10:00:00Z");
@@ -245,7 +245,7 @@ describe("applySyncBatch — log_set peak-corroboration anti-cheat (single-batch
   });
 });
 
-describe("applySyncBatch — finish_workout", () => {
+describe("applySyncBatch: finish_workout", () => {
   it("marks the workout ended and credits the day's streak", async () => {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const [result] = await applySyncBatch(db, OWNER_USER_ID, [
@@ -256,12 +256,12 @@ describe("applySyncBatch — finish_workout", () => {
       } as SyncItem,
     ]);
     expect(result!.status).toBe("created");
-    // no standards seeded for the test exercise, so no rank verdicts — an empty array, not a crash
+    // no standards seeded for the test exercise, so no rank verdicts: an empty array, not a crash
     expect(result!.ranks).toEqual([]);
   });
 
   it("rejects finishing a workout whose start_workout hasn't applied yet (out-of-order flush), instead of silently no-op'ing to 'created'", async () => {
-    // Deliberately no startWorkoutItem() applied first — mirrors an outbox flushed in
+    // Deliberately no startWorkoutItem() applied first: mirrors an outbox flushed in
     // clientId (UUID) order instead of queuedAt order, where finish_workout can land before its
     // own start_workout.
     const [result] = await applySyncBatch(db, OWNER_USER_ID, [
@@ -311,7 +311,7 @@ describe("applySyncBatch — finish_workout", () => {
     expect(workoutRow!.notes).toBeNull();
   });
 
-  it("is idempotent — finishing an already-finished workout returns already_synced", async () => {
+  it("is idempotent: finishing an already-finished workout returns already_synced", async () => {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const finishItem: SyncItem = {
       clientId: "client-finish-1",
@@ -342,7 +342,7 @@ describe("applySyncBatch — finish_workout", () => {
     await seedStandards(db, exerciseId);
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const startedAt = new Date("2026-01-01T10:00:00Z");
-    // 20 sets crammed into the ~60-second window between startedAt and endedAt below — no human
+    // 20 sets crammed into the ~60-second window between startedAt and endedAt below: no human
     // logs 20 sets a minute apart, so this should trip the pace heuristic (severity maxes out at
     // or below PACE_MAX_SEVERITY_THRESHOLD_S = 6s/set; here it's 3s/set).
     const setItems: SyncItem[] = Array.from({ length: 20 }, (_, i) =>
@@ -365,7 +365,7 @@ describe("applySyncBatch — finish_workout", () => {
 
   it("persists workouts.plausibility_multiplier and getXpSummary reflects a discounted XP total end-to-end", async () => {
     // Full-chain integration test (finding: only pure unit tests + verdict.plausibilityReason
-    // coverage existed before this) — finish a flagged workout, confirm the multiplier is
+    // coverage existed before this): finish a flagged workout, confirm the multiplier is
     // actually persisted on the `workouts` row (not just returned in the verdict), then confirm
     // getXpSummary actually returns a discounted total for those sets, not the full undiscounted
     // amount a normal, unflagged session of the exact same sets would produce.
@@ -392,7 +392,7 @@ describe("applySyncBatch — finish_workout", () => {
     expect(workoutRow!.plausibilityMultiplier!).toBeLessThan(1);
 
     // 2. getXpSummary's total for these sets is measurably lower than what an identical, fully
-    // plausible (multiplier 1) session of the same sets would produce — computed directly via
+    // plausible (multiplier 1) session of the same sets would produce: computed directly via
     // the same computeTotalXp @liftr/shared uses internally, forcing plausibilityMultiplier to 1,
     // as the "what an unflagged session would have earned" baseline.
     const rankRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, exerciseId) });
@@ -416,7 +416,7 @@ describe("applySyncBatch — finish_workout", () => {
     await seedStandards(db, exerciseId);
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const startedAt = new Date("2026-01-01T10:00:00Z");
-    // 5 sets spread across 30 minutes — a realistic pace (well above the 15s/set fine threshold).
+    // 5 sets spread across 30 minutes: a realistic pace (well above the 15s/set fine threshold).
     const setItems: SyncItem[] = Array.from({ length: 5 }, (_, i) =>
       logSetItemAt(new Date(startedAt.getTime() + i * 6 * 60_000), `client-normal-set-${i}`),
     );
@@ -437,7 +437,7 @@ describe("applySyncBatch — finish_workout", () => {
 
   it("still flags pace (max severity) when endedAt <= startedAt, instead of silently skipping the check", async () => {
     // endedAt at/before startedAt drives the raw (endedAt - startedAt)/1000 - pausedSeconds
-    // duration to <= 0 even with pausedSeconds: 0 — the schema's 24h cap on pausedSeconds alone
+    // duration to <= 0 even with pausedSeconds: 0: the schema's 24h cap on pausedSeconds alone
     // doesn't stop this, since startedAt/endedAt themselves are unbounded client-supplied dates.
     // Without a floor at the computation site, plausibility.ts's paceSeverity treats a <= 0
     // duration as "no signal" and returns severity 0, i.e. the pace check is silently disabled.
@@ -501,7 +501,7 @@ describe("applySyncBatch — finish_workout", () => {
 
     // Session 1b: same performance on a distinct day. Peak corroboration (XP/rank balancing
     // redesign §3) requires a second day at/above a result before it's confirmed as the stored
-    // peak — without this, session 1 alone would leave `peakE1rm` null, and the improbable-jump
+    // peak: without this, session 1 alone would leave `peakE1rm` null, and the improbable-jump
     // check below (which compares against a *stored* peak) could never fire at all.
     await applySyncBatch(db, OWNER_USER_ID, [
       {
@@ -529,7 +529,7 @@ describe("applySyncBatch — finish_workout", () => {
     // 175kg), the e1RM-ratio jump is ~1.33x above the stored peak ratio, well past the jump
     // heuristic's severity ceiling. Using raw added weight alone (the pre-fix bug: 100kg / 75kg
     // bodyweight ~= 1.33 vs. peak ratio ~1.167, only a ~0.14 fractional jump) would NOT have
-    // tripped this check — the bodyweight-adjusted math is what makes this exercise's real jump
+    // tripped this check: the bodyweight-adjusted math is what makes this exercise's real jump
     // detectable at all.
     await applySyncBatch(db, OWNER_USER_ID, [
       {
@@ -565,7 +565,7 @@ describe("applySyncBatch — finish_workout", () => {
     ]);
 
     // Session 1 establishes a peak: rankService.ts stores the rep count itself (8) as `peakE1rm`
-    // for a reps-metric exercise — it is not an e1RM at all.
+    // for a reps-metric exercise: it is not an e1RM at all.
     await applySyncBatch(db, OWNER_USER_ID, [
       {
         clientId: "start-reps-1",
@@ -591,9 +591,9 @@ describe("applySyncBatch — finish_workout", () => {
     // Session 2's set happens to carry a large `weightKg` value even though this exercise is
     // reps-metric. An older version of this check would have built `sessionBestRatio` from that
     // raw weight (100 / 75kg bodyweight ~= 1.33) and compared it against peakE1rm/bodyweight
-    // (8 / 75 ~= 0.107) as if both were load ratios — a huge, spurious "jump". The engagement-
+    // (8 / 75 ~= 0.107) as if both were load ratios: a huge, spurious "jump". The engagement-
     // audit-v3 Phase 3 fix instead compares rep count directly (session-best reps vs. stored-peak
-    // reps), ignoring `weightKg` for a reps-metric exercise entirely — same rep count (8) both
+    // reps), ignoring `weightKg` for a reps-metric exercise entirely: same rep count (8) both
     // sessions here, so this correctly reports no jump even with a wildly different weightKg.
     await applySyncBatch(db, OWNER_USER_ID, [
       {
@@ -624,7 +624,7 @@ describe("applySyncBatch — finish_workout", () => {
   it("flags improbable_jump for a metric===\"reps\" exercise on an implausible rep-count spike (Phase 3 gap fix)", async () => {
     // Before engagement-audit-v3 Phase 3, every reps-metric exercise (pull-ups, push-ups, etc.)
     // was passed null sessionBestRatio/storedPeakRatio/apexThreshold, so the jump/ceiling
-    // heuristics never ran for it at all — a single suspiciously large rep count would sail
+    // heuristics never ran for it at all: a single suspiciously large rep count would sail
     // through undetected as long as the rest of the session's pace looked normal. This test
     // exercises the fix: rep counts are compared the same way load ratios are for a load_ratio
     // exercise.
@@ -659,7 +659,7 @@ describe("applySyncBatch — finish_workout", () => {
     ]);
 
     // Session 1b: same performance on a distinct day, corroborating it into a confirmed stored
-    // peak (XP/rank balancing redesign §3) — without this, session 1 alone leaves `peakE1rm`
+    // peak (XP/rank balancing redesign §3): without this, session 1 alone leaves `peakE1rm`
     // null and the improbable-jump check below (which compares against a *stored* peak) could
     // never fire.
     await applySyncBatch(db, OWNER_USER_ID, [
@@ -684,7 +684,7 @@ describe("applySyncBatch — finish_workout", () => {
       } as SyncItem,
     ]);
 
-    // Session 2: a single set at 25 reps — a >200% jump over the 8-rep stored peak, with an
+    // Session 2: a single set at 25 reps: a >200% jump over the 8-rep stored peak, with an
     // otherwise unremarkable single-set session (no pace red flag).
     await applySyncBatch(db, OWNER_USER_ID, [
       {
@@ -713,7 +713,7 @@ describe("applySyncBatch — finish_workout", () => {
   });
 });
 
-describe("applySyncBatch — finish_workout consistency/variety bonuses", () => {
+describe("applySyncBatch: finish_workout consistency/variety bonuses", () => {
   function startItem(id: string, exId: string, startedAt: Date, clientId: string): SyncItem {
     return {
       clientId,
@@ -765,7 +765,7 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
     expect(result!.varietyBonusXp).toBe(computeVarietyBonus(0));
     expect(result!.varietyBonusXp).toBe(0);
     // Additive-only: the second session's own consistency bonus (now streakDays=2) is unaffected
-    // by scoring 0 on variety — it's strictly larger than day 1's, never penalized.
+    // by scoring 0 on variety: it's strictly larger than day 1's, never penalized.
     expect(result!.consistencyBonusXp).toBe(computeConsistencyBonus(2));
     expect(result!.consistencyBonusXp!).toBeGreaterThan(computeConsistencyBonus(1));
   });
@@ -821,7 +821,7 @@ describe("applySyncBatch — finish_workout consistency/variety bonuses", () => 
   });
 });
 
-describe("applySyncBatch — add_exercise", () => {
+describe("applySyncBatch: add_exercise", () => {
   it("creates a mid-session workout_exercise and is idempotent on its id", async () => {
     await applySyncBatch(db, OWNER_USER_ID, [startWorkoutItem()]);
     const item: SyncItem = {

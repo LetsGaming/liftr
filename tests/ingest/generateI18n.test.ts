@@ -48,7 +48,7 @@ describe("generateExerciseI18n", () => {
       exercise: {
         "back-squat": {
           name: "Kniebeuge",
-          howto: "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel.",
+          howto: "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken, spürbar in den vorderen Oberschenkel.",
         },
       },
     });
@@ -58,7 +58,7 @@ describe("generateExerciseI18n", () => {
       exercise: {
         "back-squat": {
           name: "Back Squat",
-          howto: "Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs.",
+          howto: "Keep your back straight, knees tracking over toes, lower under control. You'll feel it in the front of your thighs.",
         },
       },
     });

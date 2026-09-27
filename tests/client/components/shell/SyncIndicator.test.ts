@@ -1,5 +1,5 @@
 // SyncIndicator.vue just reads useSyncStore()'s pendingCount/flushing reactively (no store
-// mutations of its own) — real store, seeded directly via its state, same as any other
+// mutations of its own): real store, seeded directly via its state, same as any other
 // prop/store-driven display component. syncStore.ts's Capacitor/idb imports are only touched
 // inside actions this component never calls, so no mocking is needed at module scope (see
 // tests/client/stores/syncStore.test.ts for the fuller mock set those action-level tests need).
@@ -69,7 +69,7 @@ describe("SyncIndicator", () => {
     expect(wrapper.attributes("data-sync-state")).toBe("idle");
   });
 
-  it("is aria-hidden — a purely decorative confidence cue, never announced", () => {
+  it("is aria-hidden: a purely decorative confidence cue, never announced", () => {
     const wrapper = mountWithProviders(SyncIndicator);
     expect(wrapper.attributes("aria-hidden")).toBe("true");
   });

@@ -10,7 +10,7 @@ export interface RunPoint {
   cadence: number | null;
 }
 
-/** One fix from useLiveRun.ts's live-tracking recorder — same shape as RunPoint minus the
+/** One fix from useLiveRun.ts's live-tracking recorder: same shape as RunPoint minus the
  *  server-assigned `idx` (ordering is implicit: array order === recording order). */
 export interface PhoneGpsRunPoint {
   t: string;
@@ -49,7 +49,7 @@ export function getRunDetail(id: string): Promise<RunDetail> {
   return api.get<RunDetail>(`/api/runs/${id}`);
 }
 
-/** Multipart upload — the one call in this service that can't go through the shared `api`
+/** Multipart upload: the one call in this service that can't go through the shared `api`
  *  wrapper (JSON-only), so it builds the request directly, same auth-header convention as
  *  every other call. */
 export async function importRunFile(file: File): Promise<RunSummary> {
@@ -103,7 +103,7 @@ export function logManualRun(input: {
  *  doesn't need a client-side recompute trigger, unlike logging one: `runRanks`/`runPrs` are
  *  caches of the *current* best derived from the surviving history, not an append-only ledger
  *  that needs pruning on delete. The next run logged in that category recomputes from whatever
- *  history remains — see runRankStore.ts. */
+ *  history remains: see runRankStore.ts. */
 export function deleteRun(id: string): Promise<void> {
   return api.del(`/api/runs/${id}`);
 }

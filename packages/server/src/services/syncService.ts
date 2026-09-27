@@ -34,7 +34,7 @@ import { getCurrentBodyweightKg, getUserSex, recomputeRankForExercise } from "./
  * stamped with a `clientId` generated on-device, and flushes them here in a batch once
  * connectivity returns. Every mutation type below is upserted keyed on `clientId`, so replaying
  * the same batch twice (e.g. a retry after a flaky connection) is always a no-op the second time
- * — never a duplicate set, workout, or run.
+ *: never a duplicate set, workout, or run.
  */
 
 export interface StartWorkoutItem {
@@ -95,12 +95,12 @@ export interface SyncResult {
   status: "created" | "already_synced" | "error";
   serverId?: string;
   error?: string;
-  /** Set only on finish_workout results — rank recompute runs per-workout rather than per-set: a
+  /** Set only on finish_workout results: rank recompute runs per-workout rather than per-set: a
    *  session with many sets on the same exercise would otherwise pay a recompute after every one
    *  of them, and rank-ups would fire mid-set instead of reading as one end-of-workout moment.
    *  One verdict per exercise that had at least one non-warmup set logged in this workout. */
   ranks?: RankVerdict[];
-  /** Set only on finish_workout results — the two session-level XP bonuses frozen onto this
+  /** Set only on finish_workout results: the two session-level XP bonuses frozen onto this
    *  workout's row, plus which muscles actually earned the variety bonus so the client's Finish
    *  Sequence can name them (e.g. "Schultern zum ersten Mal seit letztem Training") instead of
    *  showing a bare count. */
@@ -109,7 +109,7 @@ export interface SyncResult {
   /** Primary-role muscle slugs trained this session that were NOT trained in the immediately-
    *  preceding finished session (or, for a user's first-ever finished session, all of this
    *  session's own primary muscles). Length always matches the muscle count that fed
-   *  `computeVarietyBonus` before the per-session cap — the cap only bounds the XP magnitude, not
+   *  `computeVarietyBonus` before the per-session cap: the cap only bounds the XP magnitude, not
    *  this list, so the client can still name every newly-trained muscle even past the cap. */
   newMuscleSlugs?: string[];
 }
@@ -133,17 +133,17 @@ async function applyStartWorkout(db: LiftrDb, userId: string, item: StartWorkout
 }
 
 /**
- * Plausibility ceiling — without it, rank/XP are computed straight from weightKg/reps with no
+ * Plausibility ceiling: without it, rank/XP are computed straight from weightKg/reps with no
  * upper bound otherwise. MAX_PLAUSIBLE_*
  * live in @liftr/shared so the client can clamp its steppers to the same ceiling (a normal UI
  * flow should never actually hit this branch); this check is defense-in-depth against a request
- * that didn't go through the client — direct API use or tampered local data. Checked here rather
+ * that didn't go through the client: direct API use or tampered local data. Checked here rather
  * than in the request schema: the batch's schema validates the *whole* array atomically, so a
  * schema-level `.max()` would fail every item in the batch (including an unrelated
  * finish_workout) over one bad set.
  */
 // A set's loggedAt has no upper/lower bound at the schema level (routes/sync.ts's
-// logSetPayload) — it's a client-supplied date used verbatim, so it needs a server-trustworthy
+// logSetPayload): it's a client-supplied date used verbatim, so it needs a server-trustworthy
 // anchor here instead. rankService.ts's peak-corroboration logic buckets sets by loggedAt's UTC
 // calendar day to decide whether a peak was reached on a genuinely separate real training day
 // (see its `dailyBest` map); without this bound, a single sync batch could carry two log_set
@@ -152,7 +152,7 @@ async function applyStartWorkout(db: LiftrDb, userId: string, item: StartWorkout
 // at start_workout time, and immutable afterward) closes that: two log_sets belonging to one
 // workout can never straddle more than a bounded window, so they can't fabricate a second
 // corroborating day out of one sync transaction. A *legitimate* multi-day offline sync (several
-// real past workouts flushed together) is unaffected — each workout has its own startedAt anchor.
+// real past workouts flushed together) is unaffected: each workout has its own startedAt anchor.
 // MAX_WORKOUT_DURATION_MS mirrors finishWorkoutPayload's 86_400s (24h) pausedSeconds ceiling
 // ("well beyond any real pause"); LOG_SET_TIME_GRACE_MS absorbs client clock skew.
 const MAX_WORKOUT_DURATION_MS = 86_400_000;
@@ -188,7 +188,7 @@ async function applyLogSet(db: LiftrDb, userId: string, item: LogSetItem): Promi
     isWarmup: item.payload.kind === "warmup",
     clientId: item.clientId,
   });
-  // No rank recompute here — it runs once per touched exercise when the workout finishes
+  // No rank recompute here: it runs once per touched exercise when the workout finishes
   // (applyFinishWorkout below), not after every set.
   return { clientId: item.clientId, status: "created", serverId: row.id };
 }
@@ -197,7 +197,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
   const existing = await findWorkoutById(db, userId, item.payload.workoutId);
   if (existing?.endedAt) return { clientId: item.clientId, status: "already_synced", serverId: existing.id };
   // Guard against finishing a workout whose start_workout item hasn't applied yet (e.g. an
-  // out-of-order flush) — without this, patchWorkout below silently no-ops on a nonexistent row
+  // out-of-order flush): without this, patchWorkout below silently no-ops on a nonexistent row
   // and this function would still fall through and report "created" for an item that touched
   // nothing. Leave it queued for retry, same as applyAddExercise's unknown_workout guard.
   if (!existing) return { clientId: item.clientId, status: "error", error: "unknown_workout" };
@@ -208,12 +208,12 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
     notes: item.payload.notes ?? null,
   });
 
-  // Streak credit — the day the workout finished counts, which is what matters for
+  // Streak credit: the day the workout finished counts, which is what matters for
   // "did you train today", not when the sync happened to reach the server.
   const dateStr = item.payload.endedAt.toISOString().slice(0, 10);
   await creditStreak(db, userId, dateStr, "workout");
 
-  // Consistency bonus — `creditStreak` above already
+  // Consistency bonus: `creditStreak` above already
   // recorded today's date, so `computeStreak` here already reflects this session: do NOT add +1
   // or credit again. Uses `item.payload.endedAt` (not `new Date()`, unlike the live GET /api/streak
   // route) as "now" so a delayed/replayed sync flush computes the same streak the user actually
@@ -225,7 +225,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
   const streakDays = computeStreak(streakDates, item.payload.endedAt, profile?.workoutsPerWeek).streak;
   const consistencyBonusXp = computeConsistencyBonus(streakDays);
 
-  // Variety bonus — a plain factual diff between this session's own primary-muscle set
+  // Variety bonus: a plain factual diff between this session's own primary-muscle set
   // and the single immediately-preceding *finished* session's, never a recovery/readiness model.
   // `findPrimaryMuscleSlugsForWorkout` naturally returns [] for a workout with zero logged sets
   // (no sets to join against), so the zero-sets edge case falls out of this without a special case:
@@ -236,7 +236,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
   let newMuscleSlugs: string[];
   if (!previousWorkout) {
     // First-ever finished session: nothing to compare against, so every muscle trained today
-    // counts as "new" — intentional; a brand-new user gets the full variety bonus on day one.
+    // counts as "new": intentional; a brand-new user gets the full variety bonus on day one.
     newMuscleSlugs = thisSessionSlugs;
   } else {
     const previousMuscles = await findPrimaryMuscleSlugsForWorkout(db, previousWorkout.id);
@@ -250,7 +250,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
   // Plausibility gate: computed once per finished workout, before the
   // per-exercise recompute loop, from the full set of sets just logged in this session. The
   // jump/ceiling checks need a load-ratio value in the same units as `apexThreshold`/
-  // `storedPeakRatio` (both load-ratio = e1RM/bodyweight) — using raw weight-kg directly (ignoring
+  // `storedPeakRatio` (both load-ratio = e1RM/bodyweight): using raw weight-kg directly (ignoring
   // reps entirely, and ignoring bodyweight+leverage for bodyweight exercises) would compare the
   // wrong units. `sessionBestRatio` is computed via `bestLoadRatio` (shared/math/e1rm.ts), which
   // mirrors rankService.ts's own per-set e1RM/bodyweight-leverage loop, so the two never drift.
@@ -267,7 +267,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
     // Floored at 1s, not 0: plausibility.ts's paceSeverity treats a duration <= 0 as "no signal"
     // and skips the pace check entirely, so clamping to exactly 0 would still silently disable it.
     // A 1s floor keeps the check live and drives it straight to max severity (correctly, since a
-    // non-positive raw duration — from any input combination, not just an unbounded pausedSeconds —
+    // non-positive raw duration: from any input combination, not just an unbounded pausedSeconds:
     // is itself implausible), instead of trusting endedAt/startedAt/pausedSeconds to always compose
     // into something positive.
     const effectiveDurationSeconds = Math.max(
@@ -286,16 +286,16 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
         .filter((s) => !s.isWarmup);
       const standards = await findStandardsForExercise(db, exerciseId, sex);
       const apexThreshold = standards.find((s) => s.tier === "apex")?.threshold ?? null;
-      // `metric === "reps"` exercises store a rep count in `peakE1rm`, not an e1RM — there is no
+      // `metric === "reps"` exercises store a rep count in `peakE1rm`, not an e1RM: there is no
       // load-ratio concept for them, so they can't share the load-ratio math (`bestLoadRatio`)
       // with `metric === "load_ratio"` exercises, and a prior version of this function passed
       // null for all three fields here for that reason. But the jump/ceiling heuristics in
-      // plausibility.ts are unit-agnostic ratio comparisons — they only ever compare a session
+      // plausibility.ts are unit-agnostic ratio comparisons: they only ever compare a session
       // value against the *same exercise's own* stored peak / apex threshold, so a rep count
       // compared against a rep-count peak and a rep-count apex threshold is just as valid an
       // input as a load ratio compared against a load-ratio peak/threshold. This closes the gap
       // where a rep-based exercise, e.g. pull-ups/push-ups, would otherwise have zero
-      // jump/ceiling protection — a single suspiciously large rep count would sail through
+      // jump/ceiling protection: a single suspiciously large rep count would sail through
       // undetected as long as the rest of the session's pace looked normal. The pace check is
       // metric-agnostic either way and always runs regardless.
       const metric = standards[0]?.metric;
@@ -316,7 +316,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
             ? rank.peakE1rm / bodyweightKg
             : null
           : metric === "reps"
-            ? (rank?.peakE1rm ?? null) // rep count, not divided by bodyweight — see comment above
+            ? (rank?.peakE1rm ?? null) // rep count, not divided by bodyweight: see comment above
             : null;
       exerciseInputs.push({
         exerciseId,
@@ -334,7 +334,7 @@ async function applyFinishWorkout(db: LiftrDb, userId: string, item: FinishWorko
   }
 
   // Single write for every value this handler computes at finish-time (plausibility multiplier +
-  // the two session-level XP bonuses) — freezes each value once at finish-time rather than
+  // the two session-level XP bonuses): freezes each value once at finish-time rather than
   // re-deriving it on every read. `plausibilityMultiplier` is only set when `workoutWithSets` was
   // found (the pre-existing guard); the two bonuses are always set, including the zero-sets edge
   // case.
@@ -384,7 +384,7 @@ async function applyAddExercise(db: LiftrDb, userId: string, item: AddExerciseIt
   return { clientId: item.clientId, status: "created", serverId: row.id };
 }
 
-/** Applies one queued mutation and returns its result — never throws for an *expected* failure
+/** Applies one queued mutation and returns its result: never throws for an *expected* failure
  *  (those are `status: "error"` results, retried by the client next flush); an unexpected
  *  exception here is caught by the route and turned into an `"error"` result for that one item
  *  only, so one bad item in a batch doesn't fail its siblings. */

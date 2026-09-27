@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
- * The rank medal — "Orbit": a segmented ring + Liftr's own logomark, escalating wings from Stufe 4.
+ * The rank medal: "Orbit": a segmented ring + Liftr's own logomark, escalating wings from Stufe 4.
  * Geometry lives in lib/tierEmblem.ts (shared with shareCard.ts's canvas port and the raw badge
- * markup in WorkoutPage.vue/OverviewPage.vue — this component is the only place that shape list
+ * markup in WorkoutPage.vue/OverviewPage.vue: this component is the only place that shape list
  * actually gets turned into SVG elements). Pulled out of RankProgress.vue so the Ränge grid cards
  * (RankLifterSection.vue/RankRunnerSection.vue) can put it in ListCard's own #badge slot instead of
  * nesting the whole RankProgress readout there.
  *
  * `small` hides the sub-2px tier-progress tick under the mark for badges under ~36px (the rank
- * ladder, list rows) — it does NOT hide wings. Wings render at every size now; callers with tight
+ * ladder, list rows): it does NOT hide wings. Wings render at every size now; callers with tight
  * horizontal room (TierLadder.vue's rung-row) are responsible for giving them space, not this
  * component.
  */
@@ -24,7 +24,7 @@ const emblem = computed(() => buildTierEmblem(props.tier as RankTier, { small: p
 const linearGradients = computed(() => emblem.value.gradients.filter((g) => g.kind === "linear"));
 const radialGradients = computed(() => emblem.value.gradients.filter((g) => g.kind === "radial"));
 
-/** Maps a shape record to the exact attributes its SVG tag needs — deliberately explicit rather
+/** Maps a shape record to the exact attributes its SVG tag needs: deliberately explicit rather
  *  than a generic v-bind spread, because SVG multi-word attributes are kebab-case
  *  (`stroke-width`, not `strokeWidth`) and `shape.kind` itself must never land on the DOM. */
 function shapeAttrs(shape: EmblemShape): Record<string, string | number> {
@@ -95,7 +95,7 @@ function shapeAttrs(shape: EmblemShape): Record<string, string | number> {
     <!-- Explicit per-tag branches, not <component :is="tagName">: a dynamic :is for a NATIVE SVG
          element name bypasses the SFC compiler's own SVG-namespace detection (it only recognizes
          literal tags like <polygon>/<path> at compile time), which can render the wrong element
-         type in some environments and corrupt Vue's patch algorithm on the next re-render —
+         type in some environments and corrupt Vue's patch algorithm on the next re-render:
          reproduced in tests as an intermittent "Cannot read properties of null (reading
          'nextSibling')" crash the moment `tier`/`small` changed after first mount. Literal tags
          per kind, keyed and typed per-shape, side-step the whole class of bug. -->
@@ -111,7 +111,7 @@ function shapeAttrs(shape: EmblemShape): Record<string, string | number> {
 </template>
 
 <style scoped>
-/* The emblem is a single self-contained SVG now — no wrapper span for pseudo-element wings, no
+/* The emblem is a single self-contained SVG now: no wrapper span for pseudo-element wings, no
    --badge-size calc plumbing. Host contexts size it exactly like an <img>: set width/height (or
    font-size-relative em/rem) on .tier-emblem directly. overflow:visible on the root <svg> (set
    inline above, since a scoped style can't reliably win against host sizing) lets wings extend

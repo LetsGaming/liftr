@@ -1,26 +1,26 @@
 <script setup lang="ts">
 /**
  * A small persistent (non-modal) pendingCount/flushing indicator, animating
- * queued -> syncing-pulse -> settle — gives offline confidence rather than blocking.
+ * queued -> syncing-pulse -> settle: gives offline confidence rather than blocking.
  *
  * Reads syncStore.ts directly (pendingCount/flushing are already tracked reactively there,
- * no store changes needed) — same self-contained "mount it, it reads its own store" shape as
+ * no store changes needed): same self-contained "mount it, it reads its own store" shape as
  * ToastHost.vue. Deliberately a tiny corner dot/badge, not a banner or toast: it must never
  * block or cover tappable content.
  *
  * Four states:
  *  - idle:    pendingCount === 0 && !flushing -> a small, quickly-fading checkmark dot.
- *  - queued:  pendingCount > 0 && !flushing   -> a small count badge (no animation — nothing
+ *  - queued:  pendingCount > 0 && !flushing   -> a small count badge (no animation: nothing
  *             is happening right now, just "N queued").
  *  - syncing: flushing === true                -> pulsing via the existing .shimmer utility
  *             (styles/motion.css), reusing the same technique as WorkoutPage.vue's
  *             .rank-skeleton.shimmer instead of adding a new keyframe.
  *  - error:   lastError set && pendingCount > 0 -> a red dot. Before this, `lastError` was
  *             tracked in syncStore but never rendered anywhere, so a stuck flush (offline for
- *             a while, or a server rejecting the batch) looked identical to "idle" — the
+ *             a while, or a server rejecting the batch) looked identical to "idle": the
  *             indicator appeared to "do nothing" because the one state a user actually needs to
  *             notice was invisible. Not shown once the queue drains even if `lastError` is
- *             still set from a prior failed attempt — nothing is actually wrong anymore then.
+ *             still set from a prior failed attempt: nothing is actually wrong anymore then.
  */
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -54,7 +54,7 @@ const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
 </template>
 
 <style scoped>
-/* Deliberately tiny — a corner dot/badge, never a banner. pointer-events: none so it can never
+/* Deliberately tiny: a corner dot/badge, never a banner. pointer-events: none so it can never
    intercept a tap even if a future layout tweak overlaps it with something tappable.
    In normal flow (not absolutely positioned) so it can never be laid on top of a sibling by
    construction: it was originally `position: absolute; top/right: var(--sp2)` anchored to
@@ -75,7 +75,7 @@ const state = computed<"idle" | "queued" | "syncing" | "error">(() => {
   height: 8px;
   border-radius: 50%;
 }
-/* Idle: a subtle "synced" presence, not an alert — low-contrast, no motion. */
+/* Idle: a subtle "synced" presence, not an alert: low-contrast, no motion. */
 .sync-dot-idle {
   background: var(--dim);
   opacity: 0.35;

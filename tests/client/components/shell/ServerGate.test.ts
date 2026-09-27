@@ -50,7 +50,7 @@ describe("ServerGate", () => {
     expect(wrapper.find(".protected").exists()).toBe(false);
   });
 
-  it("renders the slot immediately on native when a server URL was already saved — no re-verification on every launch", () => {
+  it("renders the slot immediately on native when a server URL was already saved, with no re-verification on every launch", () => {
     isNativeMock.mockReturnValue(true);
     localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
 

@@ -6,7 +6,7 @@ description: Use after any change to packages/client/src (.vue files, styles, pa
 # Mobile Viewport Check
 
 Liftr's client (`packages/client`) is a Vue 3 + Ionic/Capacitor PWA used primarily on
-phones. Any visual or interaction change must be verified at mobile width first —
+phones. Any visual or interaction change must be verified at mobile width first:
 checking only a full-width desktop browser window is not sufficient and has previously
 let mobile-only layout bugs through.
 
@@ -18,13 +18,13 @@ or any component/page/composable that changes rendered UI or touch interaction.
 ## Steps
 
 1. Make sure an isolated dev session is running: `node scripts/dev-up.mjs --id <session-id>`
-   (see this repo's CLAUDE.md and `docs/guides/local-development.md`) — never a bare `pnpm dev`
+   (see this repo's CLAUDE.md and `docs/guides/local-development.md`), never a bare `pnpm dev`
    or `pnpm --filter @liftr/client dev`. Use the dashboard URL it prints.
 2. Use the Chrome DevTools MCP tools (`resize_page` / `emulate`) or Playwright's
-   `browser_resize` to set the viewport to a phone size — default to **390x844**
+   `browser_resize` to set the viewport to a phone size, defaulting to **390x844**
    (iPhone 12/13/14 class) unless the change is specifically about a different device.
 3. Navigate to the affected page(s) and exercise the changed flow with touch-style
-   taps/clicks (not hover-dependent interactions — hover states don't exist on mobile).
+   taps/clicks (not hover-dependent interactions; hover states don't exist on mobile).
 4. Check specifically for:
    - Tap targets that are too small or too close together
    - Content clipped or requiring horizontal scroll
@@ -32,7 +32,7 @@ or any component/page/composable that changes rendered UI or touch interaction.
    - Text truncation or wrapping issues at narrow width
    - Bottom safe-area / notch clearance for fixed UI (Ionic tab bars, FABs)
 5. Only after the mobile check passes, optionally verify desktop width as a secondary
-   check — it is not the primary target and should never be checked instead of mobile.
+   check: it is not the primary target and should never be checked instead of mobile.
 
-Report what you saw at mobile width, not just "it works" — a screenshot or explicit
+Report what you saw at mobile width, not just "it works": a screenshot or explicit
 description of the interaction confirms this was actually checked rather than assumed.

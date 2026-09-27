@@ -29,7 +29,7 @@ const workoutIdParams = z.object({ id: z.string() });
 const okResponse = z.object({ ok: z.literal(true) });
 
 export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
-  // POST /api/workouts — start a session. Idempotent on clientId, same as /api/sync.
+  // POST /api/workouts: start a session. Idempotent on clientId, same as /api/sync.
   app.post("/api/workouts", { schema: { body: startWorkoutInput } }, async (req, reply) => {
     const body = req.body;
 
@@ -51,7 +51,7 @@ export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
     return workout;
   });
 
-  // PATCH /api/workouts/:id — finish / pause-seconds / notes.
+  // PATCH /api/workouts/:id: finish / pause-seconds / notes.
   app.patch(
     "/api/workouts/:id",
     { schema: { params: workoutIdParams, body: patchWorkoutInput, response: { 200: okResponse } } },
@@ -63,7 +63,7 @@ export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // GET /api/workouts/:id — full detail for the history detail view and share cards.
+  // GET /api/workouts/:id: full detail for the history detail view and share cards.
   app.get("/api/workouts/:id", { schema: { params: workoutIdParams } }, async (req) => {
     const workout = await findWorkoutWithExercisesAndSets(db, req.userId, req.params.id);
     if (!workout) throw new NotFoundError();
@@ -78,7 +78,7 @@ export function registerWorkoutRoutes(app: ZodFastifyInstance, db: AppDb) {
     };
   });
 
-  // DELETE /api/workouts/:id — see services/workoutService.ts for the cascade+recompute this triggers.
+  // DELETE /api/workouts/:id: see services/workoutService.ts for the cascade+recompute this triggers.
   app.delete(
     "/api/workouts/:id",
     { schema: { params: workoutIdParams, response: { 200: okResponse } } },

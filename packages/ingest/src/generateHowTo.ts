@@ -3,7 +3,7 @@
  * mockup's "Wie protokollieren?" text). Templated from movementPattern + primary muscle, not
  * hand-written per exercise: translation budget is effectively zero, and 89 individually
  * hand-written cues per locale would blow well past that. Honest tradeoff, documented rather than
- * hidden — see the DIFFERENCE from free-exercise-db's `instructions` field (a *possible* richer
+ * hidden; see the DIFFERENCE from free-exercise-db's `instructions` field (a *possible* richer
  * source, English-only, not used here since translating 89 multi-step instructions is exactly
  * the effort this approach is meant to skip).
  */
@@ -48,31 +48,31 @@ const MUSCLE_EN: Record<string, string> = {
 };
 
 const PATTERN_TEMPLATE_DE: Record<string, (muscle: string) => string> = {
-  squat: (m) => `Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in ${m}.`,
+  squat: (m) => `Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken, spürbar in ${m}.`,
   hinge: (m) => `Bewegung aus der Hüfte, Rücken neutral halten, ${m} bewusst anspannen.`,
-  "push-horizontal": (m) => `Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken — ${m} arbeitet.`,
+  "push-horizontal": (m) => `Ellenbogen ca. 45° zum Körper, kontrolliert ablassen, ohne Schwung drücken: ${m} arbeitet.`,
   "push-vertical": (m) => `Rumpf anspannen, Gewicht gerade nach oben führen, ${m} trägt die Bewegung.`,
-  "pull-horizontal": (m) => `Schulterblätter zusammenziehen, Ellenbogen nah am Körper — ${m} zieht.`,
-  "pull-vertical": (m) => `Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen — ${m} übernimmt.`,
-  carry: (m) => `Rumpf stabil halten, aufrechte Haltung, gleichmäßige Schritte — ${m} stabilisiert.`,
+  "pull-horizontal": (m) => `Schulterblätter zusammenziehen, Ellenbogen nah am Körper: ${m} zieht.`,
+  "pull-vertical": (m) => `Schulterblätter aktiv nach unten ziehen, kontrolliert ablassen: ${m} übernimmt.`,
+  carry: (m) => `Rumpf stabil halten, aufrechte Haltung, gleichmäßige Schritte: ${m} stabilisiert.`,
 };
 
 const PATTERN_TEMPLATE_EN: Record<string, (muscle: string) => string> = {
-  squat: (m) => `Keep your back straight, knees tracking over toes, lower under control — you'll feel it in ${m}.`,
+  squat: (m) => `Keep your back straight, knees tracking over toes, lower under control. You'll feel it in ${m}.`,
   hinge: (m) => `Move from the hips, keep your back neutral, brace ${m} on the way up.`,
-  "push-horizontal": (m) => `Elbows at roughly 45° to your body, lower under control, press with no bounce — ${m} does the work.`,
-  "push-vertical": (m) => `Brace your core, drive the weight straight up — ${m} carries the movement.`,
-  "pull-horizontal": (m) => `Squeeze your shoulder blades together, elbows close to your body — ${m} does the pulling.`,
-  "pull-vertical": (m) => `Actively pull your shoulder blades down, lower under control — ${m} takes over.`,
-  carry: (m) => `Keep your core braced, stand tall, take even steps — ${m} keeps you stable.`,
+  "push-horizontal": (m) => `Elbows at roughly 45° to your body, lower under control, press with no bounce: ${m} does the work.`,
+  "push-vertical": (m) => `Brace your core, drive the weight straight up: ${m} carries the movement.`,
+  "pull-horizontal": (m) => `Squeeze your shoulder blades together, elbows close to your body: ${m} does the pulling.`,
+  "pull-vertical": (m) => `Actively pull your shoulder blades down, lower under control: ${m} takes over.`,
+  carry: (m) => `Keep your core braced, stand tall, take even steps: ${m} keeps you stable.`,
 };
 
 function isolationTemplateDe(muscle: string): string {
-  return `Bewegung langsam und kontrolliert ausführen, ${muscle} bewusst anspannen — kein Schwung.`;
+  return `Bewegung langsam und kontrolliert ausführen, ${muscle} bewusst anspannen, kein Schwung.`;
 }
 
 function isolationTemplateEn(muscle: string): string {
-  return `Move slowly and under control, keep ${muscle} braced the whole time — no swinging.`;
+  return `Move slowly and under control, keep ${muscle} braced the whole time, no swinging.`;
 }
 
 const LOCALES: Record<HowToLocale, {

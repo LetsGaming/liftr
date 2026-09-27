@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // useXpChip.ts reads `window.matchMedia` (prefers-reduced-motion) directly, which doesn't exist
-// under vitest's default `node` environment — see tests/README.md's Environment section.
+// under vitest's default `node` environment. See tests/README.md's Environment section.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useXpChip } from "~client/composables/useXpChip";
 

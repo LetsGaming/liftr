@@ -58,7 +58,7 @@ describe("rankRepMultiplier", () => {
 
   it("grows faster in zone 2 (12-20) than Epley's own extension would", () => {
     // Epley's own linear continuation past 12 reps would give 1 + 20/30 ≈ 1.667 at 20 reps.
-    // Zone 2's steeper slope must exceed that — this is the actual fix for "reps count for
+    // Zone 2's steeper slope must exceed that: this is the actual fix for "reps count for
     // more than a token bonus" in the well-supported 12-20 rep range.
     const epleyExtension20 = 1 + 20 / 30;
     expect(rankRepMultiplier(RANK_REP_ZONE_2_MAX)).toBeGreaterThan(epleyExtension20);
@@ -91,7 +91,7 @@ describe("rankSkillScore", () => {
   });
 
   it("does not encode a 12-rep cliff: a well-executed 15-rep set outscores a proportionally lighter 8-rep set", () => {
-    // Same total volume-ish ballpark, different rep counts — the zone-2 boost means 15 reps at a
+    // Same total volume-ish ballpark, different rep counts: the zone-2 boost means 15 reps at a
     // somewhat lower weight isn't automatically punished relative to a low-rep set.
     const fifteenRepScore = rankSkillScore(50, 15);
     const eightRepScore = rankSkillScore(50, 8);

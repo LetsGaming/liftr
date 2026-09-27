@@ -93,7 +93,7 @@ describe("fetchOrsRoute", () => {
 
   it("distinguishes a timeout from other network failures via status \"timeout\"", async () => {
     // fetchOrsRoute uses AbortSignal.timeout(8000), which rejects the fetch promise with a
-    // DOMException/Error named "TimeoutError" — that's the exact signal it checks (err.name) to
+    // DOMException/Error named "TimeoutError": that's the exact signal it checks (err.name) to
     // tell a timeout apart from every other network failure (which falls back to "network").
     const timeoutError = new Error("The operation timed out.");
     timeoutError.name = "TimeoutError";

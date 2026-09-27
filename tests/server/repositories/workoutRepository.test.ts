@@ -60,7 +60,7 @@ describe("findPreviousFinishedWorkout", () => {
       startedAt: new Date("2026-08-01T10:00:00Z"),
       endedAt: new Date("2026-08-01T11:00:00Z"),
     });
-    // The "current" workout — most recent by endedAt, and the one we pass as workoutId.
+    // The "current" workout: most recent by endedAt, and the one we pass as workoutId.
     const current = await insertWorkout({
       clientId: "w-current",
       startedAt: new Date("2026-09-04T10:00:00Z"),
@@ -90,7 +90,7 @@ describe("findPreviousFinishedWorkout", () => {
       startedAt: new Date("2026-08-01T10:00:00Z"),
       endedAt: new Date("2026-08-01T11:00:00Z"),
     });
-    // Started later than `finished`, but never ended — must not be returned.
+    // Started later than `finished`, but never ended: must not be returned.
     const unfinished = await insertWorkout({
       clientId: "w-unfinished",
       startedAt: new Date("2026-09-03T10:00:00Z"),
@@ -129,7 +129,7 @@ describe("findPrimaryMuscleSlugsForWorkout", () => {
     const [we] = await db.insert(workoutExercises).values({ workoutId: workout.id, exerciseId: bench.id, orderIndex: 0 }).returning();
     await db.insert(sets).values({ workoutExerciseId: we!.id, setIndex: 0, weightKg: 60, reps: 8, kind: "normal", isWarmup: false, loggedAt: new Date(), clientId: "s-wr-1" });
 
-    // Squat set logged in a *different* workout — must not leak into this workout's result.
+    // Squat set logged in a *different* workout: must not leak into this workout's result.
     const [weOther] = await db.insert(workoutExercises).values({ workoutId: otherWorkout.id, exerciseId: squat.id, orderIndex: 0 }).returning();
     await db.insert(sets).values({ workoutExerciseId: weOther!.id, setIndex: 0, weightKg: 100, reps: 5, kind: "normal", isWarmup: false, loggedAt: new Date(), clientId: "s-wr-2" });
 

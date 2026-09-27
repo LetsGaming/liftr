@@ -73,7 +73,7 @@ describe("runRankStore", () => {
 
   describe("loadRanks()", () => {
     // loadRanks() now fetches every ranked activity type (run/walk/hike) and flattens the
-    // results — mockImplementation keyed on the activityType argument mirrors that fan-out
+    // results: mockImplementation keyed on the activityType argument mirrors that fan-out
     // realistically, rather than a single queued return value per test.
     it("populates ranks on success, combining every ranked activity type", async () => {
       const rows = [makeRankRow()];

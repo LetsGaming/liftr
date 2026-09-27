@@ -2,11 +2,11 @@
 /**
  * Single-screen creation/edit sheet for a planned route (Strecke): pinned header (close + name
  * input) → map filling the remaining height → pinned bottom bar with live stats + "Speichern".
- * No multi-step machine — a route only ever needs one screen, and the whole thing must never
- * itself scroll — dragging to scroll would instead pan/drag the map underneath, trapping the
+ * No multi-step machine: a route only ever needs one screen, and the whole thing must never
+ * itself scroll: dragging to scroll would instead pan/drag the map underneath, trapping the
  * gesture. That "map fills the remaining height" layout needs `SheetModal`'s `fill-body` prop
  * (see its own doc) to actually hold: without it, `.wizard-map`'s `flex: 1` had no flex container
- * to grow inside, and `RouteMapEditor`'s own min-height floor decided the real height instead —
+ * to grow inside, and `RouteMapEditor`'s own min-height floor decided the real height instead:
  * once that floor plus the header/footer exceeded the viewport, the sheet scrolled.
  *
  * `SheetModal.vue` emits no `did-present` event, so there's nothing here to invalidate the map's
@@ -14,7 +14,7 @@
  * `ResizeObserver` keeps calling `invalidateSize()` for as long as the map exists, so a
  * still-animating sheet settling into its final size is handled regardless of timing.
  *
- * The road-snapped line is computed once, server-side, at Save — not while editing. This sheet
+ * The road-snapped line is computed once, server-side, at Save: not while editing. This sheet
  * makes no network call per waypoint edit (see docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md):
  * every tap/drag/remove/loop-toggle only ever recomputes the local straight-line/geometric-arc
  * preview (`RouteMapEditor`'s own fallback rendering, previously only used when ORS was
@@ -43,10 +43,10 @@ const props = defineProps<{
   route?: PlannedRoute | null;
   initialCenter?: { lat: number; lon: number };
   /** Pre-fills a brand-new route (only used when `route` is unset) from an already-recorded
-   *  track — e.g. RunDetail.vue's "Als Strecke speichern" turning a finished run's GPS points
+   *  track: e.g. RunDetail.vue's "Als Strecke speichern" turning a finished run's GPS points
    *  into a reusable route. Goes through the same waypoints/save path as manually placed points;
    *  unlike manual editing, this one hydration fires a single one-time preview call to enrich the
-   *  already-real recorded points with a snapped distance/elevation up front — see hydrateFrom. */
+   *  already-real recorded points with a snapped distance/elevation up front: see hydrateFrom. */
   seedWaypoints?: Waypoint[];
   seedName?: string;
 }>();
@@ -75,7 +75,7 @@ const closeLoop = ref(true);
  *  generated point is deleted and a brand-new arc reappears ~400 ms later, silently undoing the
  *  deletion and contradicting this file's own promise that gen points are never regenerated
  *  (findings B2). Cleared only by hydrating a different route, or by the user explicitly asking for
- *  a loop again via the toggle — not by further tapping, since a dismissal is a statement about the
+ *  a loop again via the toggle: not by further tapping, since a dismissal is a statement about the
  *  feature, not about one particular arc. */
 const arcDismissed = ref(false);
 
@@ -89,7 +89,7 @@ const effectiveWaypoints = computed(() =>
 const distanceM = computed(() =>
   routedPoints.value.length > 0 ? lastComputedDistanceM.value : pathDistanceM(effectiveWaypoints.value),
 );
-// Generated loop points don't count toward "is there a real route here" — otherwise the loop
+// Generated loop points don't count toward "is there a real route here": otherwise the loop
 // toggle alone (with 0 user-placed points) could satisfy this.
 const canSave = computed(
   () => name.value.trim().length > 0 && userWaypointCount.value >= 2 && effectiveWaypoints.value.length <= SERVER_MAX_WAYPOINTS,
@@ -100,7 +100,7 @@ const canSave = computed(
 // generator gets whatever's left after the user's own points.
 const SERVER_MAX_WAYPOINTS = 50;
 
-/** How many points the generator asks for by default — mirrors @liftr/shared's DEFAULT_COUNT.
+/** How many points the generator asks for by default: mirrors @liftr/shared's DEFAULT_COUNT.
  *  Reserved out of the budget below so the return-leg bulge doesn't silently thin out and vanish
  *  as the user approaches the server's cap (findings B4). */
 const RESERVED_ARC_WAYPOINTS = 3;
@@ -114,11 +114,11 @@ const maxUserWaypoints = computed(() =>
 const userWaypointCount = computed(() => waypoints.value.filter((w) => !w.gen).length);
 
 /** Generates the arc once closeLoop is on and there isn't one yet. Called from the *debounced*
- *  scheduler below (scheduleArc), not straight from onAdd — closeLoop defaults to true on a
+ *  scheduler below (scheduleArc), not straight from onAdd: closeLoop defaults to true on a
  *  brand-new route, so generating eagerly the instant a 2nd waypoint lands would bridge only
  *  those first two points and ignore every waypoint placed after, since gen points, once present,
  *  are never regenerated (see setCloseLoop's own doc for why). Debouncing means it only fires once
- *  the user actually pauses, by which point every waypoint they meant to place is there — and it
+ *  the user actually pauses, by which point every waypoint they meant to place is there: and it
  *  still covers the "toggle already on, never fires a change event" case this exists for in the
  *  first place. No-ops (via generateLoopWaypoints's own guard) below 2 waypoints, and is a no-op
  *  whenever a generated arc already exists. */
@@ -130,18 +130,18 @@ function generateArcIfNeeded() {
 }
 
 /** User-driven toggle handler (bound to the checkbox below), distinct from the plain
- *  `closeLoop.value = …` assignment hydrateFrom uses — hydrating a saved route must never
+ *  `closeLoop.value = …` assignment hydrateFrom uses: hydrating a saved route must never
  *  synthesize a new arc or strip an existing one, only a manual flip should. */
 function setCloseLoop(checked: boolean) {
   closeLoop.value = checked;
   if (checked) {
-    // Ticking the box is the user asking for a loop, which overrides an earlier dismissal — it's
+    // Ticking the box is the user asking for a loop, which overrides an earlier dismissal: it's
     // also the only affordance in this sheet for getting a discarded arc back.
     arcDismissed.value = false;
     generateArcIfNeeded();
     // The loop-on budget is lower than the loop-off cap (room is reserved for the generated
     // arc). If the user already placed more waypoints than that budget allows, canSave silently
-    // goes false with nothing but a red counter to explain it — tell them why.
+    // goes false with nothing but a red counter to explain it: tell them why.
     if (userWaypointCount.value > maxUserWaypoints.value) {
       toast(t("route.routeWizard.maxWaypointsWithLoop", { max: maxUserWaypoints.value }));
     }
@@ -187,7 +187,7 @@ async function hydrateFrom(route: PlannedRoute | null | undefined) {
     const detail = await getPlannedRouteDetail(route.id);
     routedPoints.value = detail.points;
   } catch {
-    // Detail fetch failed — falls back to the straight-line distance/rendering, same non-event
+    // Detail fetch failed: falls back to the straight-line distance/rendering, same non-event
     // handling as a failed preview below.
   }
 }
@@ -195,7 +195,7 @@ watch(() => props.route, hydrateFrom, { immediate: true });
 
 let arcTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** Debounced local arc (re)generation — no network involved. The debounce exists so a burst of
+/** Debounced local arc (re)generation: no network involved. The debounce exists so a burst of
  *  taps produces one arc bridging the finished path, not one per tap (see generateArcIfNeeded's
  *  own doc); it has nothing to do with request traffic since removing the live ORS preview below. */
 function scheduleArc() {
@@ -203,7 +203,7 @@ function scheduleArc() {
   arcTimer = setTimeout(generateArcIfNeeded, 400);
 }
 
-/** Any edit invalidates whatever geometry is on screen — a hydrated route's saved ORS line most
+/** Any edit invalidates whatever geometry is on screen: a hydrated route's saved ORS line most
  *  of all, which would otherwise keep showing the old snapped shape under freshly moved markers.
  *  There is no live preview request to replace it with (see the module doc), so the sheet drops
  *  back to the local straight/arc line and the "≈" label until the user actually saves. */
@@ -213,7 +213,7 @@ function markLocalGeometry() {
   elevationGainM.value = null;
 }
 
-/** The one network call this sheet makes — a one-time enrichment when a brand-new route is
+/** The one network call this sheet makes: a one-time enrichment when a brand-new route is
  *  seeded from a recorded GPS track (props.seedWaypoints, called once from hydrateFrom). Manual
  *  editing never calls this; the map shows the local line until Speichern. */
 async function runPreview() {
@@ -225,7 +225,7 @@ async function runPreview() {
     lastComputedDistanceM.value = result.distanceM;
     elevationGainM.value = result.elevationGainM;
   } catch {
-    // A failed preview is a non-event — the straight line and its ≈ label just stay.
+    // A failed preview is a non-event: the straight line and its ≈ label just stay.
   }
 }
 
@@ -238,13 +238,13 @@ function onAdd(waypoint: Waypoint) {
   if (!arcDismissed.value && waypoints.value.some((w) => w.gen)) {
     // A new tap after the arc has already generated invalidates it twice over: appending behind it
     // would make the route visit the arc and then jump back out to the new point (a zigzag that
-    // saves without complaint — findings B3), and the arc was computed from a different final
+    // saves without complaint: findings B3), and the arc was computed from a different final
     // waypoint and therefore a different approach heading. Drop it; the debounce rebuilds it from
     // the full updated path.
     waypoints.value = [...waypoints.value.filter((w) => !w.gen), waypoint];
   } else {
     // The arc was dismissed, so any surviving generated points are ones the user deliberately kept
-    // — effectively their own return leg now. Slot the new tap in after the last point they placed
+    //: effectively their own return leg now. Slot the new tap in after the last point they placed
     // rather than destroying them. (reduce, not findLastIndex: lib is ES2022.)
     const lastUserIdx = waypoints.value.reduce((acc, w, i) => (w.gen ? acc : i), -1);
     waypoints.value = [
@@ -281,7 +281,7 @@ function requestClose() {
 }
 
 /** The server's 400 body carries Zod's own English message as `detail` (see app.ts's error
- *  handler) — diagnostic, not user copy, and this UI is German. So: a German sentence chosen by
+ *  handler): diagnostic, not user copy, and this UI is German. So: a German sentence chosen by
  *  status, and the detail to the console for whoever is debugging. The old catch-all told the user
  *  to try again for every failure, which is actively wrong on a 400: the same waypoints fail
  *  identically every time (findings B4). */
@@ -297,8 +297,8 @@ function saveErrorMessage(err: unknown): string {
 async function save() {
   if (!canSave.value) return;
   // The arc normally lands on the 400 ms debounce (see generateArcIfNeeded's doc for why it can't
-  // fire straight from onAdd). Saving is the one moment where waiting for it is pointless — there
-  // are no more taps coming — and where skipping it is destructive: effectiveWaypoints would be
+  // fire straight from onAdd). Saving is the one moment where waiting for it is pointless: there
+  // are no more taps coming: and where skipping it is destructive: effectiveWaypoints would be
   // read with the timer still pending and the route would persist as a straight closing line with
   // "Schleife schließen" checked, which hydrateFrom then never repairs (findings B1). This call is
   // a no-op when an arc already exists; any pending arc timer left running is harmless either way.
@@ -392,13 +392,13 @@ async function save() {
   font-size: 0.9rem;
   color: var(--dim);
 }
-/* Only appears in the last five waypoints before the cap — the footer row is tight on a 375px
+/* Only appears in the last five waypoints before the cap: the footer row is tight on a 375px
    viewport, so the counter stays a plain number until the limit is actually relevant. */
 .stat-warn {
   color: var(--danger);
 }
 /* min-height + horizontal padding puts the whole label (not just the ~13px checkbox glyph) at
-   the app's --touch-target-min — otherwise this is the one interactive control in the route flow
+   the app's --touch-target-min: otherwise this is the one interactive control in the route flow
    that isn't a real 44px tap target. */
 .loop-toggle {
   display: flex;

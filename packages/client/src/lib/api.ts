@@ -5,7 +5,7 @@
  * `apiBase()` matters once the client runs inside a Capacitor WebView: there's no dev-server
  * proxy and no same-origin server to fall back to on-device, so every request needs an absolute
  * server URL. On native, that's whatever the user entered and verified via ServerGate.vue
- * (composables/useServerConnection.ts) — never baked in at build time, so moving/rebuilding the
+ * (composables/useServerConnection.ts): never baked in at build time, so moving/rebuilding the
  * backend never requires a new APK. On web, this stays "" (same-origin; the existing Vite dev
  * proxy or the server's own single-origin static serving handles the rest).
  */
@@ -28,7 +28,7 @@ export function setServerUrl(url: string) {
 }
 
 /** Last version the saved server reported via /api/health (useServerConnection.ts's
- *  checkVersionMismatch) — persisted so ProfilePage can show it immediately on open, before that
+ *  checkVersionMismatch): persisted so ProfilePage can show it immediately on open, before that
  *  boot's own re-check has finished. */
 export function getServerVersion(): string | null {
   return localStorage.getItem(SERVER_VERSION_KEY);
@@ -50,11 +50,11 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    // Server error bodies are `{ error: string, detail?: string }` (see app.ts's error handler) —
+    // Server error bodies are `{ error: string, detail?: string }` (see app.ts's error handler):
     // carried here so callers (e.g. AuthGate.vue) can distinguish *why* a 400 happened instead of
     // showing one generic message for every 400 cause.
     public detail?: string,
-    // The body's own `error` field — a stable machine-readable code (e.g. "password_too_common",
+    // The body's own `error` field: a stable machine-readable code (e.g. "password_too_common",
     // "parse_failed"). See lib/errorMessages.ts's serverErrorMessage() for mapping this to a
     // translated message instead of showing `detail` (which is sometimes prose, sometimes itself
     // a code) raw.
@@ -65,7 +65,7 @@ export class ApiError extends Error {
   }
 }
 
-// A reachable-but-hung server (weak wifi, captive portal) would otherwise never settle — no
+// A reachable-but-hung server (weak wifi, captive portal) would otherwise never settle: no
 // caller currently passes its own `init.signal`, so a flat per-request timeout is enough; 20s is
 // generous for a slow mobile connection while still bounding syncStore's `flushing` flag (which
 // this timeout, surfaced as a rejection, resets via its existing try/finally) to a sane worst
@@ -85,7 +85,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       signal: init?.signal ?? controller.signal,
       headers: {
-        // Only set Content-Type when there's actually a body — Fastify's default JSON body
+        // Only set Content-Type when there's actually a body: Fastify's default JSON body
         // parser rejects an empty body sent with this header (400), which silently broke
         // every bodyless DELETE (e.g. routine deletion) until caught by an actual click test.
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
@@ -115,7 +115,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         }
       }
     } catch {
-      // Non-JSON or empty error body (e.g. a 429 with no body) — no detail/code available.
+      // Non-JSON or empty error body (e.g. a 429 with no body): no detail/code available.
     }
     throw new ApiError(`${init?.method ?? "GET"} ${path} failed: ${res.status}`, res.status, detail, code);
   }

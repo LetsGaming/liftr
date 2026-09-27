@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Floating standard/satellite switch for an interactive map — same "floating chrome over the map
+ * Floating standard/satellite switch for an interactive map: same "floating chrome over the map
  * surface" recipe RouteMapEditor.vue's own 📍 locate button uses (surface + border, z-index 1000
  * to clear Leaflet's own control panes). Purely a dumb button: the shared preference itself lives
  * in useBasemap.ts so every mounted map can react to it at once.
@@ -39,7 +39,7 @@ const { basemap, toggle } = useBasemap();
   display: grid;
   place-items: center;
 }
-/* Satellite is active — same accent-fill convention RouteWizard.vue's active speed button
+/* Satellite is active: same accent-fill convention RouteWizard.vue's active speed button
    (RunReplay.vue's .speed-btn.active) uses for "this mode is on". */
 .basemap-toggle.active {
   background: var(--blue);

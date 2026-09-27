@@ -62,7 +62,7 @@ describe("resolveRank", () => {
   });
 
   it("lp growth past the top threshold is monotonic with diminishing increments", () => {
-    // Equal-sized steps in x (0, 1, 2, 3, 4) — the log curve's increments per step shrink as x grows.
+    // Equal-sized steps in x (0, 1, 2, 3, 4): the log curve's increments per step shrink as x grows.
     const values = [0, 1, 2, 3, 4].map((x) => 1.1 + x * 0.2);
     const lps = values.map((v) => resolveRank(v, loadThresholds).lp);
     for (let i = 1; i < lps.length; i++) {
@@ -97,7 +97,7 @@ describe("resolveRank", () => {
 describe("nextLoadTarget", () => {
   it("finds a concrete weight x reps pair crossing the target ratio", () => {
     // Rank scoring resolves ratios via `rankSkillScore` (XP/rank balancing redesign §2), not
-    // Epley — the suggested target must be verified against the same curve it was derived from.
+    // Epley: the suggested target must be verified against the same curve it was derived from.
     const target = nextLoadTarget(1.1, 80, 6);
     const impliedScore = target.weightKg * rankRepMultiplier(target.reps);
     expect(impliedScore).toBeGreaterThanOrEqual(1.1 * 80 - 1); // within rounding
@@ -120,7 +120,7 @@ describe("nextRepTarget", () => {
 });
 
 describe("ratchetPeak", () => {
-  // Every existing behavior below is verified with `isCorroborated: true` — corroboration itself
+  // Every existing behavior below is verified with `isCorroborated: true`: corroboration itself
   // (whether a result *gets* to be compared at all) is tested separately below.
 
   it("adopts current as peak when there is no stored peak yet", () => {

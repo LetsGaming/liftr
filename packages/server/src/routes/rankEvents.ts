@@ -1,5 +1,5 @@
 /**
- * GET /api/rank-events — rank-ups grouped by weekday over the current rolling week. Feeds the
+ * GET /api/rank-events: rank-ups grouped by weekday over the current rolling week. Feeds the
  * Ränge page's "Rangaufstiege" calendar strip. Same shape as
  * `readiness.ts`: the route is a thin schema wrapper, the actual reduction (repository fetches
  * raw rows, service groups them) lives in `rankService.ts`'s `computeRankEventsByWeekday`.

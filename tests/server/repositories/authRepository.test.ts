@@ -178,7 +178,7 @@ describe("invite codes", () => {
     expect(await findValidInviteCode(db, "USEDCODE")).toBeUndefined();
   });
 
-  it("redeemInviteCode returns true for the first caller and false for a second, concurrent-style call on the same id — only the first usedByUserId sticks", async () => {
+  it("redeemInviteCode returns true for the first caller and false for a second, concurrent-style call on the same id: only the first usedByUserId sticks", async () => {
     await createInviteCode(db, { code: "RACECODE", createdByUserId: OWNER_USER_ID, expiresAt: new Date(Date.now() + 86_400_000) });
     const found = await findValidInviteCode(db, "RACECODE");
     const first = await insertUser(db, { username: "erin", name: "Erin", role: "member", passwordHash: "x:y" });

@@ -1,8 +1,8 @@
 /**
- * Generates the intermediate waypoints for a "close the loop" return leg — placed once, then
+ * Generates the intermediate waypoints for a "close the loop" return leg: placed once, then
  * edited like any other waypoint (dragged, removed) rather than regenerated live. Used by the
  * route wizard's "Schleife schließen" toggle: without this, closing a loop was a single synthetic
- * point back at the start, which OpenRouteService then routed as the shortest path home — usually
+ * point back at the start, which OpenRouteService then routed as the shortest path home: usually
  * the same roads walked out on, not a loop at all.
  *
  * ## The shape
@@ -19,26 +19,26 @@
  * That single construction decides both things the previous implementation decided separately and
  * badly: which side of the chord to bulge toward (the side û points to) and what shape to bulge in
  * (an arc that departs along û rather than a symmetric sine hump ignoring it). A route traced
- * around a roundabout closes roughly along the roundabout — closer to exact the more densely the
+ * around a roundabout closes roughly along the roundabout: closer to exact the more densely the
  * points are spaced, since the heading estimate that drives the construction is itself just the
  * direction of the last real segment; for a handful of widely-spaced taps it's a good
  * approximation, not an exact reconstruction.
  *
  * ## The plane
  *
- * Works in a local metric plane bridging the chord — see ./localPlane.ts for the projection this
+ * Works in a local metric plane bridging the chord: see ./localPlane.ts for the projection this
  * (and corridor.ts) works in. Every public lat/lon in and out here is a real WGS84 coordinate,
  * clamped to the ranges the server's waypoint schema accepts.
  *
  * ## What this cannot do
  *
- * **No terrain or water awareness.** This module knows two-dimensional geometry and nothing else —
+ * **No terrain or water awareness.** This module knows two-dimensional geometry and nothing else:
  * not where the lake is, not where the valley floor ends, not whether there is a bridge. A ferry
  * route across the Chiemsee gets a return leg in open water; an out-and-back along the Lauterbrunnen
  * valley floor gets one part-way up the valley wall. Fixing that needs a real data source (OSM water
  * polygons, a DEM) that this app does not have, and guessing is worse than not guessing: a
  * heuristic that looks plausible removes the user's reason to check the map. The generated points
- * are therefore ordinary editable waypoints by design — the route wizard renders them with a
+ * are therefore ordinary editable waypoints by design: the route wizard renders them with a
  * distinct outlined marker and the user can drag or delete any of them.
  *
  * **Two waypoints carry no heading signal.** With exactly two waypoints the only segment in the path
@@ -46,7 +46,7 @@
  * two points lies exactly on the line between them. Nothing in the input prefers either side, and no
  * arithmetic can invent a preference. The side is therefore decided by a fixed compass convention
  * (see bulgeNormal), chosen to be tap-order invariant so the same two taps at least always produce
- * the same loop — but which side that is remains arbitrary with respect to the ground. On a coastal
+ * the same loop: but which side that is remains arbitrary with respect to the ground. On a coastal
  * path or a riverside route it is a coin flip between open ground and water. A "flip the loop"
  * affordance in the wizard would be the real fix and does not exist yet.
  */
@@ -55,15 +55,15 @@ import { isFiniteWaypoint, projector, type Point2, type Waypoint } from "./local
 
 export type { Waypoint };
 
-/** A loop shorter than this is already closed for practical purposes — bulging an arc across a
+/** A loop shorter than this is already closed for practical purposes: bulging an arc across a
  *  near-zero chord would just create a tiny, meaningless zigzag. */
 const MIN_CHORD_M = 50;
-/** Shortest segment that still counts as an approach heading — below this a "segment" is a
+/** Shortest segment that still counts as an approach heading: below this a "segment" is a
  *  double-tap on the same spot, or GPS-grade jitter in a seeded track, not a direction of travel. */
 const MIN_HEADING_SEGMENT_M = 1;
 /** Both operands are unit vectors, so this is |sin(angle)|: the point at which two directions are
  *  numerically parallel and genuinely pick no side. Deliberately a floating-point epsilon and not
- *  a "how confident are we" threshold — see bulgeNormal's doc. */
+ *  a "how confident are we" threshold: see bulgeNormal's doc. */
 const SIDE_EPS = 1e-6;
 /** Excursion floor, as a fraction of the chord. Scale-free by design: a fixed metre floor is a
  *  99%-of-chord detour on a 50 m loop (findings A3). */
@@ -80,7 +80,7 @@ const MAX_BULGE_RATIO = 1.0;
 /** Chord length past which the ceiling grows as a square root rather than linearly. The old hard
  *  2000 m cap stopped growing entirely at 5.7 km and was 2% of a 100 km chord (findings A4). */
 const BULGE_KNEE_CHORD_M = 5000;
-/** Excursion as a fraction of the chord for the no-heading-signal case only — a 2-waypoint
+/** Excursion as a fraction of the chord for the no-heading-signal case only: a 2-waypoint
  *  out-and-back, or an approach that runs exactly along the chord. When a heading IS available the
  *  excursion is derived from it instead (see approachBulgeM), and this value does not apply.
  *  `opts.bulgeRatio` overrides exactly this number and nothing else. */
@@ -95,7 +95,7 @@ const MAX_GENERATED_COUNT = 48;
 /** The direction the runner was travelling when they placed their final waypoint, as a unit vector
  *  in the projected plane. This is the input the old implementation never read (findings A6): it
  *  only ever looked at waypoints[0], waypoints[length-1], and the centroid of all of them, none of
- *  which encode a direction of travel — which is why the generated arc was provably byte-identical
+ *  which encode a direction of travel: which is why the generated arc was provably byte-identical
  *  for two routes whose final approach differed by more than 90°. Walks backwards past sub-metre
  *  segments so a double-tap on the last point can't erase the signal. Returns null when no such
  *  segment exists, i.e. for a 2-waypoint out-and-back or a pile of identical taps. */
@@ -109,7 +109,7 @@ function approachDirection(projected: Point2[]): Point2 | null {
   return null;
 }
 
-/** The part of `v` perpendicular to `axis`, re-normalised — or null when `v` is numerically
+/** The part of `v` perpendicular to `axis`, re-normalised: or null when `v` is numerically
  *  parallel to `axis` and therefore points to neither side of it. Both arguments are unit vectors. */
 function perpendicularComponent(v: Point2, axis: Point2): Point2 | null {
   const along = v.x * axis.x + v.y * axis.y;
@@ -122,20 +122,20 @@ function perpendicularComponent(v: Point2, axis: Point2): Point2 | null {
  * Unit normal to the chord, pointing to the side the return leg should bulge toward. Picked from
  * the strongest signal the route actually contains:
  *
- *  1. **The approach heading** — bulge toward whichever side of the chord the runner was already
+ *  1. **The approach heading**: bulge toward whichever side of the chord the runner was already
  *     moving. A loop that keeps turning the way you were already turning is one you can run; one
  *     that asks for a 99° lateral swing at the last waypoint is one ORS has to reach by sending you
  *     back the way you came (findings A6).
- *  2. **Away from the route's own centroid** — the old primary rule, kept as the fallback for when
+ *  2. **Away from the route's own centroid**: the old primary rule, kept as the fallback for when
  *     the approach is exactly along the chord (a straight out-and-back). Encloses new ground rather
  *     than re-covering the outbound path.
- *  3. **A fixed compass convention** — when the route contains no preference at all.
+ *  3. **A fixed compass convention**: when the route contains no preference at all.
  *
  * There is deliberately no "is the signal strong enough" threshold. The old
  * `perpDistM < DEGENERATE_SIDE_RATIO * chordM` gate threw away a perfectly usable signal on any
  * route whose bend was under 5% of the chord, and flipped the output side for a ~3 m waypoint nudge
  * at the boundary (findings A1). A sign is ambiguous only when it is zero, and at zero the two
- * candidate sides are mirror images of each other — so which one wins cannot matter.
+ * candidate sides are mirror images of each other: so which one wins cannot matter.
  */
 function bulgeNormal(chordUnit: Point2, approach: Point2 | null, projected: Point2[]): Point2 {
   if (approach) {
@@ -158,7 +158,7 @@ function bulgeNormal(chordUnit: Point2, approach: Point2 | null, projected: Poin
     if (away) return away;
   }
 
-  // Nothing in the input prefers either side — see the module doc's two-waypoint limitation note.
+  // Nothing in the input prefers either side: see the module doc's two-waypoint limitation note.
   // Chosen by an absolute criterion (east, tie-broken north) rather than "left of the chord": the
   // candidate pair {n, -n} is the same whichever end the user tapped first, so an absolute pick is
   // tap-order invariant where a chord-relative one flips (findings A1, Fischland-Darß).
@@ -177,7 +177,7 @@ function bulgeNormal(chordUnit: Point2, approach: Point2 | null, projected: Poin
  * head directly away from it. The caller clamps both ends (see clampBulgeM).
  *
  * With no heading signal there is nothing to derive it from, so the documented default ratio stands
- * in — see bulgeNormal and the module doc for why that case exists and why it can't be solved.
+ * in: see bulgeNormal and the module doc for why that case exists and why it can't be solved.
  */
 function approachBulgeM(
   approach: Point2 | null,
@@ -193,7 +193,7 @@ function approachBulgeM(
 }
 
 /** Holds the heading-derived excursion inside a band that stays proportionate at both ends of the
- *  scale this app actually sees — a 50 m park loop and a 40 km ultra. Below the knee the ceiling is
+ *  scale this app actually sees: a 50 m park loop and a 40 km ultra. Below the knee the ceiling is
  *  a plain ratio of the chord; above it, growth continues as a square root (bounded, sublinear,
  *  still a visible fraction of the loop). The floor is clamped to the ceiling rather than the other
  *  way round, so the two can't cross on an absurdly long chord. */
@@ -205,10 +205,10 @@ function clampBulgeM(rawM: number, chordLenM: number): number {
 
 /**
  * Generates `count` waypoints (excluding both endpoints) forming the return leg from the route's
- * last waypoint back toward its first — a circular arc that departs along the direction the runner
+ * last waypoint back toward its first: a circular arc that departs along the direction the runner
  * was already moving and curves back to the start, so the loop encloses new ground instead of
  * folding back over the outbound path. Callers append these between the existing waypoints and the
- * closing point back at the start (mirrors RouteWizard.vue's `effectiveWaypoints` — this function
+ * closing point back at the start (mirrors RouteWizard.vue's `effectiveWaypoints`: this function
  * only produces the new interior points). Pure and deterministic: the same input always produces
  * the same output, and the input array is never mutated.
  *
@@ -223,7 +223,7 @@ function clampBulgeM(rawM: number, chordLenM: number): number {
  * @param opts.bulgeRatio Excursion as a fraction of the chord, used **only** when the route carries
  *                        no approach-heading signal (a 2-waypoint out-and-back, or an approach
  *                        exactly along the chord). When a heading is available the excursion comes
- *                        from it instead. An explicit `0` means no bulge at all — points
+ *                        from it instead. An explicit `0` means no bulge at all: points
  *                        interpolated straight along the chord; anything negative or non-finite is
  *                        ignored in favour of the default.
  */
@@ -243,23 +243,23 @@ export function generateLoopWaypoints(
   const end = waypoints[waypoints.length - 1]!;
   const chordM = haversineM(end, start);
   // Inverted rather than `chordM < MIN_CHORD_M` so a NaN chord fails the guard instead of passing
-  // it — belt and braces behind isFiniteWaypoint above.
+  // it: belt and braces behind isFiniteWaypoint above.
   if (!(chordM >= MIN_CHORD_M)) return [];
 
-  // Unwrap everything relative to the loop's own start — arbitrary but consistent, and always
+  // Unwrap everything relative to the loop's own start: arbitrary but consistent, and always
   // within ±180° of every other point on a route short enough to run.
   const refLon = waypoints[0]!.lon;
   const { project, unproject } = projector((end.lat + start.lat) / 2, refLon);
   const projected = waypoints.map(project);
-  const p = projected[projected.length - 1]!; // route's current end — where the arc departs
-  const q = projected[0]!; // route's start — where the arc closes
+  const p = projected[projected.length - 1]!; // route's current end: where the arc departs
+  const q = projected[0]!; // route's start: where the arc closes
   const chord = { x: q.x - p.x, y: q.y - p.y };
   const chordLenM = Math.hypot(chord.x, chord.y);
   const chordUnit = { x: chord.x / chordLenM, y: chord.y / chordLenM };
   const approach = approachDirection(projected);
   const normal = bulgeNormal(chordUnit, approach, projected);
 
-  // An explicit 0 means no bulge at all — points interpolated straight along the chord — rather
+  // An explicit 0 means no bulge at all: points interpolated straight along the chord: rather
   // than silently becoming the floor as it used to. Anything non-finite or negative is not a
   // meaningful ratio and falls back to the default instead of producing a mirrored or NaN arc.
   const bulgeRatio =
@@ -280,11 +280,11 @@ export function generateLoopWaypoints(
   const bulgeM = clampBulgeM(rawBulgeM, chordLenM);
 
   // Lay the points on the circle through P and Q whose greatest distance from the chord is
-  // `bulgeM` on the `normal` side — the unique circular return leg with that excursion. When
+  // `bulgeM` on the `normal` side: the unique circular return leg with that excursion. When
   // `bulgeM` wasn't clamped, that is exactly the circle tangent to the approach heading at P, so
   // the first thing the route asks of the runner is to keep going rather than to swing sideways
   // (findings A6). `phi` is the tangent–chord angle the clamp actually left us with; the arc
-  // sweeps 2·phi, which exceeds 180° — a teardrop rather than a lens — whenever the start is
+  // sweeps 2·phi, which exceeds 180°: a teardrop rather than a lens: whenever the start is
   // behind the runner, which is precisely when a lens would have been a fold-back.
   const phi = 2 * Math.atan((2 * bulgeM) / chordLenM);
   const radius = chordLenM / (2 * Math.sin(phi));

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 //
-// useLiveRun.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM) —
+// useLiveRun.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a DOM):
 // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-// otherwise default the shared i18n singleton to "en" for the rest of the test process —
+// otherwise default the shared i18n singleton to "en" for the rest of the test process:
 // mountWithProviders.ts resets this for component tests, but this file drives the composable
 // directly, bypassing that helper.
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
@@ -25,7 +25,7 @@ vi.mock("@capacitor/geolocation", () => ({
 
 import { useLiveRun } from "~client/composables/useLiveRun";
 
-// Minimal shape of @capacitor/geolocation's `Position`, just what onFix() reads — avoids
+// Minimal shape of @capacitor/geolocation's `Position`, just what onFix() reads: avoids
 // importing that package's types from a test file outside packages/client (same idb/@capacitor
 // resolution mismatch vitest.config.ts's alias comments describe, but for type declarations,
 // which that runtime-only alias doesn't fix).
@@ -57,14 +57,14 @@ describe("useLiveRun start() failure copy", () => {
     vi.stubGlobal("isSecureContext", false);
     const live = useLiveRun();
     await live.start();
-    expect(live.error.value).toBe("GPS braucht eine sichere (HTTPS-)Verbindung — im Browser nur über HTTPS verfügbar.");
+    expect(live.error.value).toBe("GPS braucht eine sichere (HTTPS-)Verbindung, im Browser nur über HTTPS verfügbar.");
   });
 
   it("keeps the generic device-check message on a secure context", async () => {
     vi.stubGlobal("isSecureContext", true);
     const live = useLiveRun();
     await live.start();
-    expect(live.error.value).toBe("Standort konnte nicht gestartet werden — GPS auf dem Gerät prüfen.");
+    expect(live.error.value).toBe("Standort konnte nicht gestartet werden. GPS auf dem Gerät prüfen.");
   });
 });
 
@@ -90,7 +90,7 @@ describe("useLiveRun pause()", () => {
     expect(live.points.value).toHaveLength(1);
 
     live.pause();
-    onFix(fixAt(2)); // dropped — paused
+    onFix(fixAt(2)); // dropped: paused
     expect(live.points.value).toHaveLength(1);
 
     live.resume();

@@ -22,7 +22,7 @@ const okResponse = z.object({ ok: z.literal(true) });
 
 /** Periodization / mesocycle: attach/advance/end a week-by-week intensity curve on a routine. */
 export function registerMesocycleRoutes(app: ZodFastifyInstance, db: AppDb) {
-  // POST /api/routines/:id/mesocycle — attach a new cycle, replacing any existing one for this routine.
+  // POST /api/routines/:id/mesocycle: attach a new cycle, replacing any existing one for this routine.
   app.post(
     "/api/routines/:id/mesocycle",
     { schema: { params: routineIdParams, body: startMesocycleInput, response: { 200: mesocycleResponse } } },
@@ -31,7 +31,7 @@ export function registerMesocycleRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // DELETE /api/routines/:id/mesocycle — end/detach the cycle; the routine reverts to plain behavior.
+  // DELETE /api/routines/:id/mesocycle: ends/detaches the cycle, so the routine reverts to plain behavior.
   app.delete(
     "/api/routines/:id/mesocycle",
     { schema: { params: routineIdParams, response: { 200: okResponse } } },
@@ -41,8 +41,8 @@ export function registerMesocycleRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // POST /api/routines/:id/mesocycle/advance — called once a workout on this routine finishes;
-  // capped at totalWeeks rather than looping, so a finished cycle needs a deliberate restart.
+  // POST /api/routines/:id/mesocycle/advance: called once a workout on this routine finishes.
+  // It's capped at totalWeeks rather than looping, so a finished cycle needs a deliberate restart.
   app.post(
     "/api/routines/:id/mesocycle/advance",
     { schema: { params: routineIdParams, response: { 200: mesocycleResponse } } },

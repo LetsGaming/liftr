@@ -3,7 +3,7 @@ import { buildExportZip } from "../services/exportService.js";
 import type { ZodFastifyInstance } from "../types.js";
 
 /**
- * Data export / backup — see services/exportService.ts for what's included and why. No response
+ * Data export / backup. See services/exportService.ts for what's included and why. No response
  * schema here: this returns a binary zip, not JSON, so a Fastify JSON response schema doesn't
  * apply.
  */

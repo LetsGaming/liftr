@@ -202,7 +202,7 @@ function fmt(ms: number): string {
 .map-wrap {
   height: 320px;
 }
-/* .panel (tokens.css) supplies the surface fill/blur/border but no padding of its own — every
+/* .panel (tokens.css) supplies the surface fill/blur/border but no padding of its own: every
    other .panel consumer adds its own, and this one never did, leaving the scrubber/controls/
    stat readouts flush against the card edges. */
 .replay-chrome {
@@ -217,7 +217,7 @@ function fmt(ms: number): string {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  /* Matches .btn-primary's fill (tokens.css) — bright gradient, dark ink, not the inverse. */
+  /* Matches .btn-primary's fill (tokens.css): bright gradient, dark ink, not the inverse. */
   background: var(--icon-fill-blue);
   color: var(--blue-ink);
   font-size: 15px;

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // xpStore reads/writes `localStorage` directly for the showXp toggle (getShowXp/setShowXp),
-// which doesn't exist under vitest's default `node` environment — see tests/README.md's
+// which doesn't exist under vitest's default `node` environment: see tests/README.md's
 // Environment section.
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";

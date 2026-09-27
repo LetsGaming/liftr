@@ -27,7 +27,7 @@ function entry(overrides: Partial<CatalogEntry> = {}): CatalogEntry {
 describe("howToTextFor", () => {
   it("uses the movementPattern's template with the primary muscle's German name interpolated", () => {
     const text = howToTextFor(entry({ movementPattern: "squat", primaryMuscles: ["quads"] }));
-    expect(text).toBe("Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel.");
+    expect(text).toBe("Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken, spürbar in den vorderen Oberschenkel.");
   });
 
   it("has a distinct template per known movement pattern", () => {
@@ -41,7 +41,7 @@ describe("howToTextFor", () => {
 
   it("falls back to the isolation template for an unrecognized movement pattern", () => {
     const text = howToTextFor(entry({ movementPattern: "isolation-arms", primaryMuscles: ["biceps"] }));
-    expect(text).toBe("Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen — kein Schwung.");
+    expect(text).toBe("Bewegung langsam und kontrolliert ausführen, den Bizeps bewusst anspannen, kein Schwung.");
   });
 
   it("falls back to a generic muscle phrase when primaryMuscles is empty", () => {
@@ -62,7 +62,7 @@ describe("howToTextFor", () => {
 
   it("uses the English template with the primary muscle's English name interpolated", () => {
     const text = howToTextFor(entry({ movementPattern: "squat", primaryMuscles: ["quads"] }), "en");
-    expect(text).toBe("Keep your back straight, knees tracking over toes, lower under control — you'll feel it in the front of your thighs.");
+    expect(text).toBe("Keep your back straight, knees tracking over toes, lower under control. You'll feel it in the front of your thighs.");
   });
 
   it("has a distinct English template per known movement pattern", () => {
@@ -76,7 +76,7 @@ describe("howToTextFor", () => {
 
   it("falls back to the English isolation template for an unrecognized movement pattern", () => {
     const text = howToTextFor(entry({ movementPattern: "isolation-arms", primaryMuscles: ["biceps"] }), "en");
-    expect(text).toBe("Move slowly and under control, keep your biceps braced the whole time — no swinging.");
+    expect(text).toBe("Move slowly and under control, keep your biceps braced the whole time, no swinging.");
   });
 
   it("falls back to a generic English muscle phrase when primaryMuscles is empty", () => {

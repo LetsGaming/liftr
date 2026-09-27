@@ -14,7 +14,7 @@ const pkg = JSON.parse(readFileSync(fileURLToPath(new URL("./package.json", impo
 // core logging loop keeps working with no signal (audit's "gym basement" requirement).
 export default defineConfig(({ command }) => ({
   resolve: command === "serve" ? { conditions: ["development"] } : undefined,
-  // See src/vite-env.d.ts — useAppUpdate.ts reads this as the app version on platforms with no
+  // See src/vite-env.d.ts: useAppUpdate.ts reads this as the app version on platforms with no
   // native build to ask (web/PWA); the native (Android) build reads its own real installed
   // version via @capacitor/app's App.getInfo() instead, since that's the authoritative source
   // there.
@@ -29,7 +29,7 @@ export default defineConfig(({ command }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,woff2,png}"],
         // Without this, workbox's default NavigationRoute answers *every* navigation with the
-        // precached app shell — so opening /api/health or an /images/ URL directly in a browser
+        // precached app shell: so opening /api/health or an /images/ URL directly in a browser
         // returns the onboarding page instead of the real response.
         navigateFallbackDenylist: [/^\/api\//, /^\/images\//],
         runtimeCaching: [
@@ -49,7 +49,7 @@ export default defineConfig(({ command }) => ({
             options: { cacheName: "liftr-api" },
           },
           // OSM route/run map tiles (RunMap.vue, RouteMapEditor.vue, RouteThumbnail.vue) were
-          // entirely uncached before this — every mount re-fetched every tile from
+          // entirely uncached before this: every mount re-fetched every tile from
           // tile.openstreetmap.org, with no offline story at all. Cross-origin, so the pattern
           // matches the full URL rather than just a path.
           {
@@ -62,7 +62,7 @@ export default defineConfig(({ command }) => ({
             },
           },
           // Esri street/place-name labels overlay for satellite mode (lib/leafletTheme.ts's
-          // createLabelsTileLayer) — a more specific pattern than the arcgisonline.com rule below,
+          // createLabelsTileLayer): a more specific pattern than the arcgisonline.com rule below,
           // and listed first so it wins the match: without its own rule, every label tile would
           // count against esri-satellite-tiles' 150-entry budget too, roughly halving how much
           // imagery actually stays cached. Label PNGs are much lighter than imagery, so a bigger
@@ -77,7 +77,7 @@ export default defineConfig(({ command }) => ({
             },
           },
           // Esri World Imagery satellite basemap (lib/leafletTheme.ts's createSatelliteTileLayer,
-          // toggled via BasemapToggle.vue) — its own cache entry, same reasoning as the OSM rule
+          // toggled via BasemapToggle.vue): its own cache entry, same reasoning as the OSM rule
           // above, since a different tile host isn't covered by that pattern. Lower maxEntries
           // than OSM's: satellite JPEGs run several times heavier per tile than OSM's PNGs, so an
           // equal entry count would use noticeably more offline storage for the same coverage.
@@ -95,7 +95,7 @@ export default defineConfig(({ command }) => ({
       manifest: {
         name: "Liftr",
         short_name: "Liftr",
-        // Static build output — can't follow the runtime locale a user picks in-app (see
+        // Static build output: can't follow the runtime locale a user picks in-app (see
         // docs/adr/0013-localization.md). German is the app's default/fallback locale, so the
         // install prompt and app metadata default to it too.
         lang: "de",
@@ -103,7 +103,7 @@ export default defineConfig(({ command }) => ({
         theme_color: "#0a0c14",
         background_color: "#0a0c14",
         display: "standalone",
-        // Was empty (feedback: no PWA icons at all) — "any" purpose icons render as-is; the
+        // Was empty (feedback: no PWA icons at all): "any" purpose icons render as-is; the
         // maskable pair has extra padding baked in (public/icons/icon-maskable.svg) so an OS
         // that clips to a circle/squircle doesn't cut into the hex mark. See public/icons/ for
         // the source SVGs these were rasterized from.
@@ -142,7 +142,7 @@ export default defineConfig(({ command }) => ({
   server: {
     proxy: {
       // BACKEND_PORT lets an isolated dev session (scripts/dev-up.mjs --id <name>) point this
-      // client at its own dynamically-allocated backend instead of the default :3001 — unset in
+      // client at its own dynamically-allocated backend instead of the default :3001: unset in
       // the normal `pnpm dev` flow, where it keeps defaulting to 3001 exactly as before.
       "/api": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,
       "/images": `http://localhost:${process.env.BACKEND_PORT ?? 3001}`,

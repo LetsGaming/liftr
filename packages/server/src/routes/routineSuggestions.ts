@@ -17,14 +17,14 @@ const recommendInput = z.object({
 });
 
 /** See services/routineSuggestionService.ts for the actual candidate-selection/recommendation
- *  logic — this route is just: validate, call the service, shape the response. */
+ *  logic: this route is just: validate, call the service, shape the response. */
 export function registerRoutineSuggestionRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   app.post("/api/routines/suggest", { schema: { body: suggestInput } }, async (req) => {
     const exercises = await suggestExercisesForMuscles(db, req.userId, req.body);
     return { exercises };
   });
 
-  // POST /api/routines/recommend — sets/reps/weight for exercises the user already picked
+  // POST /api/routines/recommend: sets/reps/weight for exercises the user already picked
   // (manual routine-wizard selection, Quick Start), reusing the same recommendation engine as
   // the muscle-group suggester above so both paths get experience-aware sets/reps/weight instead
   // of a hardcoded default.

@@ -19,7 +19,7 @@ const deleteWorkoutMock = vi.mocked(deleteWorkout);
 const getWorkoutMock = vi.mocked(getWorkout);
 
 // Factories, not shared constants: the store's load()/loadMore() assign `this.items` straight
-// to the resolved array (no defensive clone) and loadMore() then `push`es into it — a shared
+// to the resolved array (no defensive clone) and loadMore() then `push`es into it: a shared
 // array literal reused across `it()`s would get mutated in place by one test and leak into the
 // next. Each call below returns a fresh array/objects.
 function page1Items(): HistoryItem[] {

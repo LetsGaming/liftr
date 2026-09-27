@@ -17,7 +17,7 @@ export interface RoutineExerciseInput {
   restAfterExerciseSeconds?: number | null;
 }
 
-/** `targetSets`/`weekPercents` are stored as JSON text columns — parsing them here, at the
+/** `targetSets`/`weekPercents` are stored as JSON text columns: parsing them here, at the
  *  repository edge, is what keeps every caller working with the real domain shape (a real
  *  array) instead of each one having to remember to `JSON.parse` a string column itself
  *  (data-persistence.md: "map storage shapes to clean domain types at the repository edge"). */
@@ -37,7 +37,7 @@ export async function findActiveRoutinesWithExercises(db: LiftrDb, userId: strin
   }));
 }
 
-/** `mesocycles` has no `user_id` of its own (child-via-parent, one-to-one with `routines`) — the
+/** `mesocycles` has no `user_id` of its own (child-via-parent, one-to-one with `routines`): the
  *  caller must already have resolved `routineIds` from `findActiveRoutinesWithExercises` (or
  *  another userId-scoped routine lookup), so ownership is inherited from that set of ids. */
 export async function findMesocyclesByRoutineIds(db: LiftrDb, routineIds: string[]) {

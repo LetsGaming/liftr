@@ -7,7 +7,7 @@ import type { ZodFastifyInstance } from "../types.js";
 const rankResponse = z.object({
   exerciseId: z.string(),
   slug: z.string(),
-  /** Literal display name — set for custom exercises. Null for catalog exercises (resolved
+  /** Literal display name, set for custom exercises. Null for catalog exercises (resolved
    *  client-side via i18n on `slug`). Custom exercises get ranked like any other, so this
    *  route needs it too, not just /api/exercises. */
   name: z.string().nullable(),
@@ -19,13 +19,13 @@ const rankResponse = z.object({
   trust: trustSchema,
   nextTargetWeightKg: z.number().nullable(),
   nextTargetReps: z.number().nullable(),
-  /** Peak snapshot — nullable only for a row never recomputed since peak tracking was added;
+  /** Peak snapshot: nullable only for a row never recomputed since peak tracking was added;
    *  a normal row always has all four set together. */
   peakTier: tierSchema.nullable(),
   peakDivision: z.number().nullable(),
 });
 
-/** GET /api/ranks — every exercise with a computed rank. */
+/** GET /api/ranks: every exercise with a computed rank. */
 export function registerRankRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.get("/api/ranks", { schema: { response: { 200: z.array(rankResponse) } } }, async (request) => {
     const rows = await findAllRanksWithExercise(db, request.userId);

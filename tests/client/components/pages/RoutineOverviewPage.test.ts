@@ -7,7 +7,7 @@ import { i18n } from "~client/i18n";
 import RoutineWizard from "~client/components/routine/RoutineWizard.vue";
 import RoutineOverviewPage from "~client/pages/RoutineOverviewPage.vue";
 
-// Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
+// Plain top-of-file consts (not vi.hoisted: `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
 // hoisting above these declarations never dereferences them before they exist.
 const catalogState = reactive({ exercises: [] as { id: string; slug: string; name: string | null; muscles: unknown[] }[], loaded: false, load: vi.fn(), byId: (id: string) => catalogState.exercises.find((e) => e.id === id) });
@@ -65,7 +65,7 @@ async function mountAtRoute(id: string) {
   await router.push(`/routines/${id}`);
   await router.isReady();
   // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-  // otherwise default this test to English — force German (see mountWithProviders.ts's own
+  // otherwise default this test to English: force German (see mountWithProviders.ts's own
   // comment on this exact issue).
   i18n.global.locale.value = "de";
   const wrapper = mount(RoutineOverviewPage, { global: { plugins: [createPinia(), i18n, router], stubs: STUBS } });

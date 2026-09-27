@@ -5,7 +5,7 @@ import { createTestApp } from "../helpers/testApp.js";
 import { insertTestExercise } from "../helpers/testDb.js";
 
 /**
- * HTTP-contract coverage only — see tests/server/services/syncService.test.ts for the exhaustive
+ * HTTP-contract coverage only: see tests/server/services/syncService.test.ts for the exhaustive
  * per-item-type behavior (idempotency, plausibility, XP bonuses, ...) this route just wires up.
  */
 describe("POST /api/sync", () => {

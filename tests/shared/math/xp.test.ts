@@ -19,7 +19,7 @@ import {
 
 describe("computeSetXp", () => {
   it("always uses the nominal bodyweight load, ignoring any typed weight", () => {
-    // nominal * 5 * 1.3 (advanced) — the typed 100kg no longer affects magnitude.
+    // nominal * 5 * 1.3 (advanced): the typed 100kg no longer affects magnitude.
     expect(computeSetXp(100, 5, "advanced")).toBeCloseTo(BODYWEIGHT_NOMINAL_LOAD_KG * 5 * 1.3, 5);
   });
 
@@ -164,7 +164,7 @@ describe("computeTotalXp", () => {
         computeSetXp(20, 10, null, 3) +
         computeSetXp(20, 10, null, 4);
       expect(computeTotalXp(sets)).toBeCloseTo(expected, 5);
-      // Sanity: this is strictly less than 4x the undecayed value — decay actually happened.
+      // Sanity: this is strictly less than 4x the undecayed value: decay actually happened.
       expect(computeTotalXp(sets)).toBeLessThan(base * 4);
       // And each successive set earned no more than the previous one (monotonic decay).
       const perSetValues = [
@@ -224,7 +224,7 @@ describe("computeConsistencyBonus", () => {
     expect(atCap).toBeCloseTo(CONSISTENCY_BASE + CONSISTENCY_SCALE * Math.sqrt(CONSISTENCY_STREAK_CAP), 5);
   });
 
-  it("never decreases past the cap — flat, never a regression from resetting", () => {
+  it("never decreases past the cap: flat, never a regression from resetting", () => {
     const atCap = computeConsistencyBonus(CONSISTENCY_STREAK_CAP);
     const pastCap = computeConsistencyBonus(CONSISTENCY_STREAK_CAP + 200);
     expect(pastCap).toBe(atCap);

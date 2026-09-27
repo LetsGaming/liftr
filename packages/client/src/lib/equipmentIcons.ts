@@ -4,13 +4,13 @@
  * exercises.ts -> catalogStore.ts) with exactly 10 values. This maps those 10 values to icons
  * instead of trying to cover every exercise individually.
  *
- * The `Equipment` type/vocabulary itself now lives in @liftr/shared (equipment/equipment.ts) —
+ * The `Equipment` type/vocabulary itself now lives in @liftr/shared (equipment/equipment.ts):
  * it's also what packages/ingest's free-exercise-db/wger adapters normalize external equipment
  * strings into, so the client's icon/label maps and the ingest pipeline's source-of-truth
  * mapping can never drift into two different "what counts as equipment" lists.
  *
  * Six of these are Tabler Icons (github.com/tabler/tabler-icons, MIT, no attribution required),
- * copied verbatim as outline paths — same 24x24/stroke-width:2/round-cap contract as App.vue's
+ * copied verbatim as outline paths: same 24x24/stroke-width:2/round-cap contract as App.vue's
  * hand-authored nav icons, so they render identically via the same <svg> wrapper. Tabler has no
  * kettlebell, cable-machine, ab-wheel, or gymnastic-rings glyph; those four are hand-drawn here
  * in the same visual language rather than left as a gap or reusing a misleading icon.
@@ -26,7 +26,7 @@ export const EQUIPMENT_ICON_PATH: Record<Equipment, string> = {
   barbell:
     '<path d="M2 12h1" /><path d="M6 8h-2a1 1 0 0 0 -1 1v6a1 1 0 0 0 1 1h2" /><path d="M6 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1" /><path d="M9 12h6" /><path d="M15 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1" /><path d="M18 8h2a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-2" /><path d="M22 12h-1" />',
   // ez-bar / trap-bar are barbell variants with no real external-standards distinction in the
-  // catalog either (curated.yaml anchors them to the barbell lifts) — reuse, don't invent.
+  // catalog either (curated.yaml anchors them to the barbell lifts): reuse, don't invent.
   "ez-bar":
     '<path d="M2 12h1" /><path d="M6 8h-2a1 1 0 0 0 -1 1v6a1 1 0 0 0 1 1h2" /><path d="M6 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1" /><path d="M9 12h6" /><path d="M15 7v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1h-1a1 1 0 0 0 -1 1" /><path d="M18 8h2a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-2" /><path d="M22 12h-1" />',
   "trap-bar":
@@ -49,7 +49,7 @@ export const EQUIPMENT_ICON_PATH: Record<Equipment, string> = {
   "ab-wheel": '<circle cx="12" cy="14" r="6" /><path d="M4 14h2M18 14h2" /><circle cx="12" cy="14" r="1.3" fill="currentColor" stroke="none" />',
 };
 
-/** Supporting props (equipment/requirements.ts) — hand-drawn in the same visual language as the
+/** Supporting props (equipment/requirements.ts): hand-drawn in the same visual language as the
  *  primary-equipment icons above, for ExerciseInfoPanel's "Benötigtes Equipment" list and the
  *  gym-setup step of onboarding/Profil. */
 export const SUPPORT_EQUIPMENT_ICON_PATH: Record<SupportEquipment, string> = {
@@ -91,7 +91,7 @@ const EQUIPMENT_LABEL_KEY: Record<Equipment, string> = {
   "ab-wheel": "equipment.ab-wheel",
 };
 
-/** Keys into `equipment.support.*` — same convention as EQUIPMENT_LABEL_KEY above. */
+/** Keys into `equipment.support.*`: same convention as EQUIPMENT_LABEL_KEY above. */
 const SUPPORT_EQUIPMENT_LABEL_KEY: Record<SupportEquipment, string> = {
   plates: "equipment.support.plates",
   bench: "equipment.support.bench",
@@ -111,7 +111,7 @@ export function supportEquipmentLabel(equipment: SupportEquipment): string {
   return t(SUPPORT_EQUIPMENT_LABEL_KEY[equipment]);
 }
 
-/** Every requirement's label, primary and support vocabularies combined — the one lookup
+/** Every requirement's label, primary and support vocabularies combined: the one lookup
  *  ExerciseInfoPanel/onboarding's equipment list actually needs. */
 export function equipmentRequirementLabelDe(requirement: EquipmentRequirement): string {
   const primaryKey = (EQUIPMENT_LABEL_KEY as Record<string, string>)[requirement];

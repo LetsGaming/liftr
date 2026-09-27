@@ -2,14 +2,14 @@
  * `pnpm ingest --standards`. Fully offline: seeds Tier-A anchor thresholds from
  * @liftr/shared's ANCHOR_STANDARDS/REP_STANDARDS defaults, then derives every Tier B/C
  * exercise's thresholds from its declared anchor x ratio (the synthetic-standard method).
- * No network call — OpenPowerlifting/ExRx calibration already lives in the shared
+ * No network call: OpenPowerlifting/ExRx calibration already lives in the shared
  * constants; re-run any time curated.yaml's ratios change to re-derive the long tail.
  *
  * Writes one row set per sex: male rows from ANCHOR_STANDARDS (the OPL-competition-
  * scale data this app was already calibrated against), female rows from
- * FEMALE_ANCHOR_STANDARDS (the same anchors run through a sourced male:female ratio — see that
+ * FEMALE_ANCHOR_STANDARDS (the same anchors run through a sourced male:female ratio: see that
  * constant's own doc for exactly what's sourced vs. inferred-by-analogy). Bodyweight rep norms
- * (REP_STANDARDS) have no sex-specific source yet, so both sexes get the same rep thresholds —
+ * (REP_STANDARDS) have no sex-specific source yet, so both sexes get the same rep thresholds:
  * an honest scope limit, not a claim either direction.
  */
 import { exercises, standards, type LiftrDb } from "@liftr/db";
@@ -55,13 +55,13 @@ export async function ingestStandards(db: LiftrDb, entries: CatalogEntry[]) {
       if (thresholds) bySex.set(sex, thresholds);
     }
     if (bySex.size === 0) {
-      console.warn(`  ! "${entry.slug}" has no anchor/ratio and no default standard — skipped`);
+      console.warn(`  ! "${entry.slug}" has no anchor/ratio and no default standard: skipped`);
       continue;
     }
 
     const exercise = exerciseBySlug.get(entry.slug);
     if (!exercise) {
-      console.warn(`  ! "${entry.slug}" not found in exercises table — run --catalog first`);
+      console.warn(`  ! "${entry.slug}" not found in exercises table: run --catalog first`);
       continue;
     }
 

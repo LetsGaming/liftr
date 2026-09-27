@@ -1,7 +1,7 @@
 import { settings, type LiftrDb } from "@liftr/db";
 import { and, eq } from "drizzle-orm";
 
-/** The `settings` table is a generic k/v store (JSON-encoded value) — every reader/writer of it
+/** The `settings` table is a generic k/v store (JSON-encoded value): every reader/writer of it
  *  goes through these two functions so the JSON.parse/stringify pairing can't drift between
  *  call sites (profile, equipment, and any future single-row setting). */
 export async function readJsonSetting<T>(db: LiftrDb, userId: string, key: string): Promise<T | null> {

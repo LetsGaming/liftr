@@ -1,5 +1,5 @@
 /**
- * Routine (template) CRUD. This is the one place friction is acceptable — you
+ * Routine (template) CRUD. This is the one place friction is acceptable: you
  * build a routine once, then "one-tap start" reuses it forever. Talks to /api/routines
  * directly (not through the offline sync queue): building/editing a routine is a planning
  * activity done at a desk with signal, not part of the gym-basement logging loop.
@@ -29,7 +29,7 @@ export const useRoutineStore = defineStore("routine", {
     error: false,
   }),
   getters: {
-    /** Resolves a single routine by id for the `/routines/:id` Routine Overview route —
+    /** Resolves a single routine by id for the `/routines/:id` Routine Overview route:
      *  everything the overview screen needs (exercises, targetSets,
      *  weights/reps) is already present on the hydrated `Routine` objects `load()` returns, so
      *  this is a pure lookup, no new fetch. Returns `undefined` for an unknown id (bogus deep
@@ -59,7 +59,7 @@ export const useRoutineStore = defineStore("routine", {
     /**
      * Edit an existing routine (rename and/or replace its exercise list wholesale, including
      * order and supersets). The server side of this (`PATCH /api/routines/:id`) has existed
-     * since the routine routes were first built — it was simply never called from the client,
+     * since the routine routes were first built: it was simply never called from the client,
      * so the only "edit" path was delete-and-rebuild. `exercises` replaces the full list; omit
      * it to only rename.
      */
@@ -93,7 +93,7 @@ export const useRoutineStore = defineStore("routine", {
       await this.load();
     },
 
-    /** Called once a finished workout's routine has an active cycle — fire-and-forget from finishWorkout(). */
+    /** Called once a finished workout's routine has an active cycle: fire-and-forget from finishWorkout(). */
     async advanceMesocycle(routineId: string) {
       await advanceMesocycle(routineId);
       await this.load();
@@ -102,7 +102,7 @@ export const useRoutineStore = defineStore("routine", {
     /**
      * Routine-list drag-reorder. Persists every routine whose position changed as a result of
      * one drag, then reloads so the server's own orderIndex-sorted GET stays the single source
-     * of truth for display order (no client-side re-sort of the in-memory list — avoids the
+     * of truth for display order (no client-side re-sort of the in-memory list: avoids the
      * two ever disagreeing after a failed/partial request).
      */
     async reorder(orderedIds: string[]) {
@@ -113,7 +113,7 @@ export const useRoutineStore = defineStore("routine", {
       await this.load();
     },
 
-    /** Quickly create a routine from past training stats and a selection of muscle groups —
+    /** Quickly create a routine from past training stats and a selection of muscle groups:
      *  server analyzes stats (or falls back to entry-level standards for a brand-new lifter)
      *  and returns a draft exercise list + recommended sets/reps/weight for the wizard to
      *  prefill, never saved until the user reviews and taps save themselves. */

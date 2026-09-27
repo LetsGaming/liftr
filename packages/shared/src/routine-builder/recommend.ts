@@ -3,11 +3,11 @@
  * they want to train, by analyzing their stats (best/last performed set per candidate exercise)
  * and recommending sets/reps/weight. Pure function, no DB access, so it's
  * unit-testable and shared between server (the authoritative /api/routines/suggest response) and
- * any future client-side preview — same split as the rank engine (rankEngine.ts orchestrates,
+ * any future client-side preview: same split as the rank engine (rankEngine.ts orchestrates,
  * @liftr/shared's tiers.ts does the math).
  *
  * A brand-new user (no `lastPerformed` for a given exercise) doesn't get a hardcoded "8 reps,
- * 0 kg" placeholder — they fall back to that exercise's bronze/division-III entry standard via
+ * 0 kg" placeholder: they fall back to that exercise's bronze/division-III entry standard via
  * the same resolveRank/nextLoadTarget machinery the rank engine already uses for "next target",
  * so their very first suggested weight is already a real, achievable number instead of a blank
  * stepper. This is also what makes "brand-new-user presets" not a separate hardcoded content
@@ -25,14 +25,14 @@ export interface LastPerformedSet {
   reps: number;
 }
 
-/** Onboarding's "prior experience" question — shifts where along the standards ladder
+/** Onboarding's "prior experience" question: shifts where along the standards ladder
  *  a first-time recommendation for a *never-logged* exercise starts. Only matters when
  *  `lastPerformed` is null; a lifter's own history always wins regardless of this. */
 export type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 
 export interface ExerciseRecommendationInput {
   isBodyweight: boolean;
-  /** null when the exercise has no modeled standards at all (e.g. plank/side-plank — no
+  /** null when the exercise has no modeled standards at all (e.g. plank/side-plank: no
    *  anchor/ratio, skipped at ingest time). Falls back to a generic default in that case. */
   metric: RankMetric | null;
   thresholds: StandardThreshold[];
@@ -40,7 +40,7 @@ export interface ExerciseRecommendationInput {
   /** The lifter's best recent set for this exercise, or null if they've never logged it. */
   lastPerformed: LastPerformedSet | null;
   setCount?: number;
-  /** Defaults to "beginner" (bronze/division-III, the weakest modeled threshold) — the safest
+  /** Defaults to "beginner" (bronze/division-III, the weakest modeled threshold): the safest
    *  assumption when nothing is known about the lifter yet. */
   experienceLevel?: ExperienceLevel;
 }
@@ -50,7 +50,7 @@ const DEFAULT_SET_COUNT = 3;
 const GENERIC_FALLBACK_REPS = 8;
 
 /** Fraction of the way up the sorted threshold ladder each experience level starts a
- *  never-logged exercise at — beginner at the very bottom (bronze/III), advanced roughly
+ *  never-logged exercise at: beginner at the very bottom (bronze/III), advanced roughly
  *  two-thirds up (comfortably intermediate-to-advanced territory) rather than the same
  *  first-timer weight a beginner would get. There's no per-experience-level calibration data to
  *  draw on (unlike the bronze/III floor, which the rank engine's own standards already define),
@@ -85,7 +85,7 @@ export function recommendExerciseSets(input: ExerciseRecommendationInput): SetTa
     if (entry) {
       if (input.metric === "reps") {
         // entry.threshold can be fractional for a derived/synthetic exercise (deriveStandards()
-        // multiplies an anchor's integer threshold by a ratio like 0.25) — reps must be an
+        // multiplies an anchor's integer threshold by a ratio like 0.25): reps must be an
         // integer both because a fractional rep count is meaningless and because the server's
         // create/update routine schema rejects non-integer reps outright.
         return repeat({ reps: Math.max(1, Math.round(entry.threshold)), weightKg: null }, setCount);

@@ -42,7 +42,7 @@ export function registerHistoryRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // GET /api/exercises/:id/history — "last time" reference + chart series.
+  // GET /api/exercises/:id/history: "last time" reference + chart series.
   app.get(
     "/api/exercises/:id/history",
     { schema: { params: exerciseHistoryParams, response: { 200: exerciseHistoryResponse } } },

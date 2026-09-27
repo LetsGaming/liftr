@@ -1,13 +1,13 @@
 // OnboardingGuide.vue is the multi-step setup wizard shown once via App.vue when
 // settingsStore.needsOnboarding is true. It's built on SheetModal.vue, which is stubbed here via
 // the shared stubSheetModal() helper (same convention as RpeCapture/NoteCapture/SetKindPicker's
-// tests) — that helper's own header comment explains why: @ionic/vue's real IonModal
+// tests): that helper's own header comment explains why: @ionic/vue's real IonModal
 // self-registers/hydrates as a real Stencil custom element even under jsdom, and never projects
 // slot content into visible light DOM without the native runtime driving its open/present
 // lifecycle, so testing anything nested inside SheetModal needs it stubbed one level up.
 //
 // Every real step component (WelcomeStep, AboutStep, ExperienceStep, ...) renders for real here
-// (not stubbed), matching tests/README.md's "prefer exercising real collaborators" guidance —
+// (not stubbed), matching tests/README.md's "prefer exercising real collaborators" guidance;
 // only the network boundary (settingsService, underneath settingsStore) is mocked.
 import { flushPromises } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,7 +55,7 @@ function clickBack(wrapper: Wrapper) {
 }
 
 /** welcome -> about -> experience (picks the first option, "Anfänger") -> frequency -> equipment.
- *  Lands on the equipment step (bodyweight preselected, so it never blocks continuing) — the
+ *  Lands on the equipment step (bodyweight preselected, so it never blocks continuing): the
  *  common jumping-off point most tests below need before doing their own thing. */
 async function advanceToEquipmentStep(wrapper: Wrapper) {
   await clickNext(wrapper); // welcome -> about

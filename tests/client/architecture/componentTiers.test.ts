@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Structural rules from docs/adr/0012-component-tiers.md that ESLint's per-file `files` globs
- * can't see (they need to look at a whole directory, or cross-reference two directories) — the
+ * can't see (they need to look at a whole directory, or cross-reference two directories). The
  * import-direction half of the same rules lives in eslint.config.js's no-restricted-imports
  * blocks. Every assertion failure names the ADR rule it enforces, not just what failed.
  */
@@ -30,7 +30,7 @@ describe("component tier discipline (docs/adr/0012-component-tiers.md)", () => {
       expect(
         files.includes("index.ts"),
         `components/${tier}/index.ts would barrel-import every primitive into the first chunk ` +
-          `that touches one, defeating per-route code-splitting — ADR 0012 forbids it.`,
+          `that touches one, defeating per-route code-splitting; ADR 0012 forbids it.`,
       ).toBe(false);
     }
   });
@@ -44,7 +44,7 @@ describe("component tier discipline (docs/adr/0012-component-tiers.md)", () => {
       const count = readdirSync(join(COMPONENTS, dir.name)).length;
       expect(
         count,
-        `components/${dir.name}/ has ${count} file(s) — ADR 0012 requires a components/ folder ` +
+        `components/${dir.name}/ has ${count} file(s): ADR 0012 requires a components/ folder ` +
           `be keyed by a domain noun and never hold fewer than 2 files; a single-file folder ` +
           `should dissolve into its parent domain folder instead.`,
       ).toBeGreaterThanOrEqual(2);
@@ -58,7 +58,7 @@ describe("component tier discipline (docs/adr/0012-component-tiers.md)", () => {
       const liftrComponentImports = specifiers.filter((s) => s.startsWith(".") && s.endsWith(".vue"));
       expect(
         liftrComponentImports,
-        `components/base/${file} imports another Liftr component (${liftrComponentImports.join(", ")}) — ` +
+        `components/base/${file} imports another Liftr component (${liftrComponentImports.join(", ")}); ` +
           `ADR 0012: base/ is one control, zero composition of other Liftr components.`,
       ).toEqual([]);
     }
@@ -74,7 +74,7 @@ describe("component tier discipline (docs/adr/0012-component-tiers.md)", () => {
     for (const file of pageFiles) {
       expect(
         routedPages.has(file),
-        `pages/${file} exists but router.ts never imports it — ADR 0012: pages/ is routed, 1:1 with router.ts.`,
+        `pages/${file} exists but router.ts never imports it; ADR 0012: pages/ is routed, 1:1 with router.ts.`,
       ).toBe(true);
     }
     for (const file of routedPages) {

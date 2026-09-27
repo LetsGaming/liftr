@@ -129,7 +129,7 @@ describe("buildCardioStandards", () => {
   it("walk/hike anchors are benchmarked against fitness pace, not ambient comfortable gait speed", () => {
     // Regression guard for the "brisk fitness walk lands near Experte" bug: the median (index 2)
     // anchor must sit at brisk/fitness-walking pace (~1.6+ m/s), not comfortable gait speed
-    // (~1.3-1.4 m/s per Bohannon & Williams Andrews 2011) — see cardioActivities.ts's own
+    // (~1.3-1.4 m/s per Bohannon & Williams Andrews 2011): see cardioActivities.ts's own
     // doc comment for the full rationale.
     expect(WALK_ANCHOR_STANDARDS.male[2]).toBeGreaterThanOrEqual(1.6);
     expect(WALK_ANCHOR_STANDARDS.female[2]).toBeGreaterThanOrEqual(1.5);
@@ -159,7 +159,7 @@ describe("buildCardioStandards", () => {
     const runResult = resolveRank(3.701, run5kThresholds); // the 5k male median anchor
 
     // Both should land in the same rough mid-ladder neighborhood (trainee/athlete/lifter), not at
-    // the extremes — proof the two ladders are calibrated consistently rather than one being more
+    // the extremes: proof the two ladders are calibrated consistently rather than one being more
     // generous than the other.
     const midTiers = ["trainee", "athlete", "lifter", "advanced"];
     expect(midTiers).toContain(walkResult.tier);

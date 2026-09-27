@@ -16,7 +16,7 @@ beforeEach(() => {
 
 /** category "5k" thresholds (male), speed in m/s. distanceM=5000 is the exact category distance,
  *  so runRankValue's Riegel adjustment is a no-op (ratio=1) and speedMps = distanceM / durationS
- *  exactly — lets tests reason about durationS directly without hand-computing Riegel exponents. */
+ *  exactly: lets tests reason about durationS directly without hand-computing Riegel exponents. */
 async function seedStandards() {
   await db.insert(runStandards).values([
     { category: "5k", sex: "male", tier: "apprentice", division: 3, threshold: 3.0, trust: "real" },
@@ -120,7 +120,7 @@ describe("recomputeRunRank", () => {
     const first = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
     expect(first!.rankedUp).toBe(true);
 
-    // Second recompute, no new runs logged — same stale history, so decay now applies.
+    // Second recompute, no new runs logged: same stale history, so decay now applies.
     const second = await recomputeRunRank(db, OWNER_USER_ID, "5k", "run");
 
     expect(second!.rankedUp).toBe(false); // peak itself doesn't change on a decay-only recompute
@@ -190,7 +190,7 @@ describe("recomputeRunRank", () => {
     });
     expect(timePrRowsAfterSecond).toHaveLength(2);
 
-    // Recompute #3: an extra run logged that is slower than D2 but faster than D1 (1450s) — it
+    // Recompute #3: an extra run logged that is slower than D2 but faster than D1 (1450s): it
     // does NOT change which run is the overall best (still the D2=1400s run), so nothing has
     // actually improved. Before the fix, `findBestRunPrByKind(..., "time")`'s desc(value)
     // ordering would incorrectly return the stale D1=1500 row as "existing", and
@@ -202,7 +202,7 @@ describe("recomputeRunRank", () => {
     const timePrRowsAfterThird = await db.query.runPrs.findMany({
       where: and(eq(runPrs.userId, OWNER_USER_ID), eq(runPrs.category, "5k"), eq(runPrs.kind, "time")),
     });
-    expect(timePrRowsAfterThird).toHaveLength(2); // still exactly 2 — no spurious insert
+    expect(timePrRowsAfterThird).toHaveLength(2); // still exactly 2: no spurious insert
   });
 
   it("does not record a PR when plausibilityMultiplier is below PR_ELIGIBILITY_FLOOR (0.5)", async () => {
@@ -265,7 +265,7 @@ describe("recomputeRunRank", () => {
     });
     expect(timePrRow?.value).toBeCloseTo(expectedEquivalentTimeS, 0);
     // The bug this regresses: storing the run's raw, un-normalized duration as if it were a real
-    // 10K time (2480s = "41:20" — a run that was never actually run at 10K).
+    // 10K time (2480s = "41:20": a run that was never actually run at 10K).
     expect(Math.abs((timePrRow?.value ?? 0) - 2480)).toBeGreaterThan(500);
   });
 
@@ -273,7 +273,7 @@ describe("recomputeRunRank", () => {
     await seedStandards();
     await logRun(1500); // valid apprentice/III run, 3.333 m/s
 
-    // A degenerate row (durationS=0) that could arise from a malformed GPX/FIT import — Riegel's
+    // A degenerate row (durationS=0) that could arise from a malformed GPX/FIT import: Riegel's
     // division makes its speed Infinity, which would otherwise beat any real run and win as
     // `bestRun`/`bestSpeedMps`, poisoning the persisted rank row with a non-finite value.
     const degenerateStartedAt = new Date();
@@ -325,7 +325,7 @@ describe("recomputeRunRank", () => {
 });
 
 describe("recomputeRunRank: walk (single-speed, bucket 'all')", () => {
-  /** Walk-equivalent of seedStandards() — same shape, "walk" activityType, bucket "all" (walking
+  /** Walk-equivalent of seedStandards(): same shape, "walk" activityType, bucket "all" (walking
    *  has exactly one rank bucket, not five distance categories), deliberately different threshold
    *  values so a test asserting the walk ladder resolved (not the run ladder) is actually
    *  meaningful. */
@@ -337,7 +337,7 @@ describe("recomputeRunRank: walk (single-speed, bucket 'all')", () => {
     ]);
   }
 
-  /** Distance/duration default clear walking's rank-eligibility floor (>=1000m, >=600s — see
+  /** Distance/duration default clear walking's rank-eligibility floor (>=1000m, >=600s: see
    *  cardioActivities.ts) unless overridden, so most cases don't need to think about the floor. */
   async function logWalk(durationS: number, startedAt: Date = new Date(), distanceM = 5000) {
     const run = await insertRun(db, OWNER_USER_ID, {
@@ -373,7 +373,7 @@ describe("recomputeRunRank: walk (single-speed, bucket 'all')", () => {
 
   it("uses the raw distance/duration average, no Riegel normalization", async () => {
     await seedWalkStandards();
-    // An off-"5k" distance (8000m) at a pace that would be Riegel-adjusted if this were running —
+    // An off-"5k" distance (8000m) at a pace that would be Riegel-adjusted if this were running:
     // walking must NOT adjust it: raw average speed is 8000/6154 ~= 1.3 m/s, same tier as the 5k
     // case above.
     await logWalk(6154, new Date(), 8000);
@@ -430,15 +430,15 @@ describe("recomputeRunRank: walk (single-speed, bucket 'all')", () => {
     expect(walkPrRows.length).toBeGreaterThan(0);
     expect(runPrRows.filter((r) => r.kind === "speed").every((r) => r.value > 3)).toBe(true); // run m/s
     expect(walkPrRows.filter((r) => r.kind === "speed").every((r) => r.value < 2)).toBe(true); // walk m/s
-    // Single-speed activities have no "time" PR — there's no fixed distance to divide by.
+    // Single-speed activities have no "time" PR: there's no fixed distance to divide by.
     expect(walkPrRows.some((r) => r.kind === "time")).toBe(false);
   });
 });
 
 describe("boot-time cardio standards self-heal (syncCardioStandards + recomputeAllCardioRanks)", () => {
   /** Mirrors exactly what app.ts's buildApp() runs at boot: rewrite run_standards if it's out of
-   *  sync, then recompute every user's cardio ranks. Seeds run_standards with only "run" rows —
-   *  the exact shape of a pre-walk/hike-rankable install — to reproduce the original bug (a
+   *  sync, then recompute every user's cardio ranks. Seeds run_standards with only "run" rows:
+   *  the exact shape of a pre-walk/hike-rankable install: to reproduce the original bug (a
    *  walk/hike recompute silently returning null forever) and confirm the self-heal fixes it. */
   async function seedRunOnlyStandards() {
     const runRows = buildCardioStandards().filter((r) => r.activityType === "run");
@@ -478,7 +478,7 @@ describe("boot-time cardio standards self-heal (syncCardioStandards + recomputeA
     await seedRunOnlyStandards();
     await logWalk(4000); // clears walk's eligibility floor (>=1000m, >=600s)
 
-    // Before the heal: exactly the original bug — no standards rows for walk, so the recompute
+    // Before the heal: exactly the original bug: no standards rows for walk, so the recompute
     // silently no-ops.
     expect(await recomputeRunRank(db, OWNER_USER_ID, "all", "walk")).toBeNull();
 

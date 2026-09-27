@@ -1,6 +1,6 @@
 ---
 name: db-migration
-description: Generate and apply a Drizzle migration for @liftr/db after changing packages/db/src/schema.ts. User-invoked only — running migrations has side effects on the local SQLite database.
+description: Generate and apply a Drizzle migration for @liftr/db after changing packages/db/src/schema.ts. User-invoked only (running migrations has side effects on the local SQLite database).
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 `@liftr/db` uses `drizzle-kit generate` to produce migrations from `packages/db/src/schema.ts`,
 and a custom `migrate.ts` runner to apply them against the local SQLite (`better-sqlite3`) database.
-Migration files are generated artifacts — never hand-edit them (see the `PreToolUse` guard in
+Migration files are generated artifacts: never hand-edit them (see the `PreToolUse` guard in
 `.claude/settings.json`, which blocks edits under `packages/db/drizzle/`, the generated-migrations
 output directory).
 
@@ -23,7 +23,7 @@ output directory).
    pnpm db:generate
    ```
    (equivalent to `pnpm --filter @liftr/db generate`, i.e. `drizzle-kit generate`)
-3. **Read the generated SQL** in the new migration file before applying it — check for:
+3. **Read the generated SQL** in the new migration file before applying it, checking for:
    - Unexpected `DROP COLUMN` / `DROP TABLE` on tables that may hold real data
    - Column type changes that could truncate or reject existing rows
    - Missing default values on new `NOT NULL` columns (SQLite will fail the migration
@@ -34,7 +34,7 @@ output directory).
    ```
    (equivalent to `pnpm --filter @liftr/db migrate`, i.e. `tsx src/migrate.ts`)
 5. Verify: run `pnpm --filter @liftr/server run typecheck` and the relevant tests, since
-   `schema.ts` types flow into `server/src/repositories` and `db.ts` — a schema change
+   `schema.ts` types flow into `server/src/repositories` and `db.ts`, so a schema change
    that doesn't also update consuming code will surface as type errors there.
 
 ## Notes
@@ -46,5 +46,5 @@ output directory).
   and `docs/reference/http-api.md#auth`), so a schema mistake can affect every user's
   data, not just one.
 - Never run this against a production/homelab database without a backup of the SQLite
-  file first — ask the user to confirm the target database before applying if it's
+  file first: ask the user to confirm the target database before applying if it's
   anything other than local dev data.

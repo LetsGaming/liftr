@@ -20,10 +20,10 @@ export const usePlannedRouteStore = defineStore("plannedRoute", {
   },
   actions: {
     async load() {
-      // `loaded` means "attempted", not "succeeded" — `error` already carries the
+      // `loaded` means "attempted", not "succeeded": `error` already carries the
       // success/failure distinction for anything that cares. Every call site guards a refetch
       // on `if (!loaded) load()`, so leaving `loaded` false forever on a failed attempt would
-      // refire the request on every subsequent visit instead of just once — hence
+      // refire the request on every subsequent visit instead of just once: hence
       // `loadedOnError` below.
       await withLoadState(getPlannedRoutes, {
         apply: (routes) => (this.routes = routes),

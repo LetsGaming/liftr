@@ -28,9 +28,9 @@ describe("insertCustomExercise", () => {
     expect(row.name).toBe("My Custom Move");
   });
 
-  it("stores and returns the literal typed name, umlauts and all — the display-name bug this closes (WS2)", async () => {
+  it("stores and returns the literal typed name, umlauts and all: the display-name bug this closes (WS2)", async () => {
     // The bug this regression-tests: the exercises table had no `name` column at all, only a
-    // `nameKey` i18n key the client's display resolution never actually read — so every custom
+    // `nameKey` i18n key the client's display resolution never actually read: so every custom
     // exercise rendered its machine slug everywhere (list, detail sheet, API response), not what
     // the user typed. Slug transliteration (ü→ue) already worked; the missing name field is the
     // part that was actually broken.

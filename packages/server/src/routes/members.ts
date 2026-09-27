@@ -13,7 +13,7 @@ const memberIdParams = z.object({ id: z.string() });
 const okResponse = z.object({ ok: z.literal(true) });
 const errorResponse = z.object({ error: z.string() });
 
-/** Every route here is owner-only — `requireOwner` runs as a route-level `onRequest`, layered on
+/** Every route here is owner-only: `requireOwner` runs as a route-level `onRequest`, layered on
  *  top of the app-wide `requireAuth` hook that already resolved `request.role`. */
 export function registerMemberRoutes(app: ZodFastifyInstance, db: LiftrDb) {
   app.post(

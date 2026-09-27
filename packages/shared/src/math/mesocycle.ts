@@ -1,7 +1,7 @@
 /**
  * Periodization / mesocycle builder. Deliberately the simplest structure that's
  * still a real mesocycle: attach a fixed-length week-by-week intensity curve to a routine, with
- * a built-in deload on the final week — no hand-entered percentages per week (that would be
+ * a built-in deload on the final week: no hand-entered percentages per week (that would be
  * exactly the kind of planning-desk friction the routine builder already avoids elsewhere).
  * "Purely additive": a routine with no mesocycle attached behaves exactly as it always has.
  */

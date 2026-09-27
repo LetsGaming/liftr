@@ -1,12 +1,12 @@
 /**
- * Pure layout math for shareable workout/run cards. No canvas, no DOM —
+ * Pure layout math for shareable workout/run cards. No canvas, no DOM:
  * unit-testable in CI, and reusable if a server-side renderer is ever added later without
  * rewriting the layout logic. The actual drawing (canvas + SVG data URIs) lives in the client
  * package; this module only decides *where things go* and *how text wraps/compresses*.
  */
 
 /** This module lives in @liftr/shared (not packages/client) so a server-side renderer could reuse
- *  the same layout math later without duplicating it — see the file header above — but it has no
+ *  the same layout math later without duplicating it: see the file header above: but it has no
  *  actual server caller today, and shared code has no access to vue-i18n either way. Locale-
  *  dependent copy therefore takes this parameter instead of calling a translate function.
  *  Defaults to "de" so a caller that doesn't pass one keeps the original behavior unchanged. */
@@ -37,7 +37,7 @@ export interface ExerciseCardEntry {
   sets: SetChip[];
 }
 
-/** The overall rank badge to draw on the card, plus the level it was earned at — same shape
+/** The overall rank badge to draw on the card, plus the level it was earned at: same shape
  *  `overallRankStore`/`xpStore` already carry client-side, kept
  *  string-typed here (not `Tier`) so @liftr/shared's share layer doesn't need a hard dependency
  *  on the rank engine's tier union just to describe what a caller hands it. */
@@ -47,7 +47,7 @@ export interface WorkoutCardTier {
   level: number;
 }
 
-/** The session's single highest rank-up, if any — mirrors `FinishSequence.vue`'s own
+/** The session's single highest rank-up, if any: mirrors `FinishSequence.vue`'s own
  *  "topRankUp" reduction (already computed client-side in WorkoutPage.vue), not a full list:
  *  the card shows one earned headline, not a repeat of the in-app rank-up beat. */
 export interface WorkoutCardTopRankUp {
@@ -71,7 +71,7 @@ export interface WorkoutCardModel {
    *  anatomical silhouette (see client/src/lib/shareCard.ts) rather than a second,
    *  differently-styled representation. */
   muscles: { primary: string[]; secondary: string[] };
-  /** null when the caller has no rank context yet (e.g. offline, never loaded) — the card simply
+  /** null when the caller has no rank context yet (e.g. offline, never loaded): the card simply
    *  omits the badge rather than drawing a placeholder. */
   tier: WorkoutCardTier | null;
   topRankUp: WorkoutCardTopRankUp | null;
@@ -110,11 +110,11 @@ export function renderExerciseLines(exercises: ExerciseCardEntry[], locale: Shar
       const detail = ex.sets
         .map((s) => {
           const w = s.isWarmup ? "W " : "";
-          // reps×weight, not weight×reps — reps first is how every other set display in the app
+          // reps×weight, not weight×reps: reps first is how every other set display in the app
           // already reads it, e.g. WorkoutPage.vue's set rows show "7,5 kg · 8 Wdh.".
           // Bodyweight sets (weightKg null) get an explicit reps-word suffix: the bare number
           // ("4  4  7") is legible only with the surrounding app's context, which a shared image
-          // doesn't have — an outside viewer has no way to read it as reps otherwise.
+          // doesn't have: an outside viewer has no way to read it as reps otherwise.
           return s.weightKg != null ? `${w}${s.reps}×${formatKg(s.weightKg, locale)}kg` : `${w}${s.reps} ${repsWord}`;
         })
         .join("  ");
@@ -134,7 +134,7 @@ function formatKg(kg: number, locale: ShareLocale = "de"): string {
   return locale === "de" ? formatted.replace(".", ",") : formatted;
 }
 
-/** How many 2-column exercise-grid rows a given number of rendered lines needs — the exercise
+/** How many 2-column exercise-grid rows a given number of rendered lines needs: the exercise
  *  list draws as a 2-column grid of bordered rows instead of a single-column list. */
 export function exerciseGridRowCount(lineCount: number): number {
   return Math.ceil(lineCount / 2);
@@ -143,11 +143,11 @@ export function exerciseGridRowCount(lineCount: number): number {
 /**
  * Picks which fixed card size actually fits the content instead of always defaulting to
  * "square" and either leaving dead space (a short routine) or silently overflowing (a long one)
- * — `CardSize` already had a "story" (9:16) variant defined and unused before Phase 5 (confirmed
+ *: `CardSize` already had a "story" (9:16) variant defined and unused before Phase 5 (confirmed
  * bug: `CARD_DIMENSIONS.square` fixed at 1080x1080 regardless of content). `square` and `story`
  * share the same width (1080), so only height needs to be picked; the caller supplies the real
  * pixel height its own draw-time fonts/spacing produce (font sizes live in the client's
- * canvas-drawing code, not duplicated here — this function is pure size arithmetic only).
+ * canvas-drawing code, not duplicated here: this function is pure size arithmetic only).
  * `overflowsStory: true` tells the caller even "story" isn't tall enough, so it should fall back
  * to compressing/capping rows within story rather than growing a third format.
  */
@@ -164,11 +164,11 @@ export function chooseCardSize(
 
 /**
  * A short routine leaves the fixed-size card with dead space at the bottom (Phase 5, confirmed
- * bug — Liftoff's own reference run card has the identical flaw, not something worth copying).
+ * bug: Liftoff's own reference run card has the identical flaw, not something worth copying).
  * Rather than leaving a blank gap after the last drawn row, the unused space is spread evenly
  * across the gaps between the card's major sections so the layout reads as intentionally roomy,
  * not unfinished. Capped per-slot (`maxPerSlot`) so a near-empty card doesn't stretch into an
- * absurd gap — any leftover past the cap just becomes a slightly larger bottom margin.
+ * absurd gap: any leftover past the cap just becomes a slightly larger bottom margin.
  */
 export function distributeFillGap(
   naturalContentHeight: number,

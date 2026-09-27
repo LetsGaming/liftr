@@ -64,7 +64,7 @@ button.option-row {
   border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  /* A plain <button> has no inherited text color of its own — browsers paint unstyled button
+  /* A plain <button> has no inherited text color of its own: browsers paint unstyled button
      text with the UA "ButtonText" system color (near-black), which reads as near-invisible dark
      text on this dark surface without an explicit color here. --dim (not --text) is deliberate
      for the *unselected* rows: it reads as "available but not chosen" against the active row's
@@ -98,7 +98,7 @@ button.option-row.active {
 }
 .option-row.active b,
 .option-row.active span {
-  /* Full opacity, not a dimmed variant — the gradient's own hue range already gives the hint
+  /* Full opacity, not a dimmed variant: the gradient's own hue range already gives the hint
      line lower apparent weight than the bold label without sacrificing contrast (an
      opacity-reduced dark ink over a bright gradient loses AA margin fast; measured full-strength
      instead of eyeballed, per the same standard applied to the unselected state above). */

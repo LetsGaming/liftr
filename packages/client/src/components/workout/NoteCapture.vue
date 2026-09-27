@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
- * Notes capture — shared shape for both set- and workout-level notes, parameterized rather than
+ * Notes capture: shared shape for both set- and workout-level notes, parameterized rather than
  * two near-duplicate components (set notes: WorkoutPage.vue's per-set
  * affordance writing store.currentSet.notes; workout notes: the rail-column affordance writing
  * store.workoutNotes). Same "explicitly speculative, off the primary path" framing as
- * RpeCapture.vue — no required state, closing without saving is a silent no-op.
+ * RpeCapture.vue: no required state, closing without saving is a silent no-op.
  *
- * Free-text needs a text area, which doesn't fit SheetModal's smallest heights well — taller
+ * Free-text needs a text area, which doesn't fit SheetModal's smallest heights well: taller
  * sheet than RpeCapture.vue's, same fixed-percentage convention as SetKindPicker.vue rather than
  * content-driven sizing.
  *
  * Saving closes this sheet via sheetRef.dismiss(), not by having the caller flip its own v-if
- * straight away — see SheetModal.vue's header comment for why that crashes ("Cannot read
+ * straight away: see SheetModal.vue's header comment for why that crashes ("Cannot read
  * properties of null (reading 'insertBefore')"). The caller's own state teardown (its
  * `noteCaptureTarget = null`) happens off `@close`, which only fires after Ionic's real dismiss
  * animation/teardown finishes.

@@ -15,7 +15,7 @@ const PUBLIC_AUTH_ROUTES = new Set(["/api/auth/status", "/api/auth/setup", "/api
 
 async function buildApp(db: LiftrDb) {
   const app = configureApp(Fastify({ logger: false }));
-  // Mirrors app.ts's registration (global: false — only routes with their own `config.rateLimit`,
+  // Mirrors app.ts's registration (global: false: only routes with their own `config.rateLimit`,
   // set in routes/auth.ts, are actually limited). A fresh app per test gives each test its own
   // rate-limit counter, so this doesn't bleed between tests.
   await app.register(rateLimit, { global: false });
@@ -125,7 +125,7 @@ describe("POST /api/auth/login", () => {
   // Timing-side-channel fix: a nonexistent username must still hit the dummy-hash `verifyPassword`
   // call before returning 401, so it isn't measurably faster than a wrong-password check against a
   // real account. A reliable timing assertion in a unit test would be flaky, so this only checks
-  // that both branches remain behavior-identical (same status + body) after the fix — the "dummy
+  // that both branches remain behavior-identical (same status + body) after the fix: the "dummy
   // verifyPassword is unconditionally reached" part is confirmed by reading the diff in
   // packages/server/src/routes/auth.ts, not by timing here.
   it("returns the identical invalid_credentials response for an unknown username and a wrong password on a real account", async () => {
@@ -221,7 +221,7 @@ describe("POST /api/auth/login rate limiting", () => {
   it(
     "returns 429 after exceeding the attempt limit",
     // 11 failed logins each verify against a real scrypt hash (deliberately slow, see
-    // lib/passwords.ts) — comfortably over vitest's 5000ms default once this file's other
+    // lib/passwords.ts): comfortably over vitest's 5000ms default once this file's other
     // scrypt-heavy tests (setup/login/PATCH credential changes) are sharing a worker with it.
     async () => {
       const app = await buildApp(db);
@@ -243,13 +243,13 @@ describe("POST /api/auth/login rate limiting", () => {
   // Regression test for the reverse-proxy IP-collapse finding: without a per-username
   // keyGenerator, every request in this test shares the same source IP (app.inject's default),
   // so exhausting one username's bucket would also lock out every other username sharing that
-  // IP — exactly what happens for real users behind a reverse proxy with no trustProxy configured
+  // IP: exactly what happens for real users behind a reverse proxy with no trustProxy configured
   // (see authRateLimit's comment in routes/auth.ts). Two different usernames must get independent
   // buckets even though they share an IP.
   it(
-    "keys the rate limit on username, not just IP — a second username from the same IP still gets its own bucket",
+    "keys the rate limit on username, not just IP: a second username from the same IP still gets its own bucket",
     // 11 failed logins each verify against a real scrypt hash (deliberately slow, see
-    // lib/passwords.ts) — comfortably over vitest's 5000ms default on a loaded CI runner.
+    // lib/passwords.ts): comfortably over vitest's 5000ms default on a loaded CI runner.
     async () => {
       const app = await buildApp(db);
 
@@ -432,7 +432,7 @@ describe("GET/DELETE /api/auth/sessions", () => {
     const memberSessions = await app.inject({ method: "GET", url: "/api/auth/sessions", headers: { authorization: `Bearer ${memberToken}` } });
     const memberSessionId = (memberSessions.json() as Array<{ id: string }>)[0]!.id;
 
-    // Owner tries to delete the member's session id — must not affect it (IDOR guard).
+    // Owner tries to delete the member's session id: must not affect it (IDOR guard).
     const idorAttempt = await app.inject({
       method: "DELETE",
       url: `/api/auth/sessions/${memberSessionId}`,
@@ -476,7 +476,7 @@ describe("POST /api/auth/register rate limiting", () => {
   // username on every attempt. If register were keyed on username (like login's authRateLimit),
   // each attempt would land in its own empty bucket and the limit would never engage. It must
   // instead be keyed on IP (registerRateLimit in routes/auth.ts) so repeated attempts from the
-  // same source — all sharing app.inject's default IP — still get throttled.
+  // same source: all sharing app.inject's default IP: still get throttled.
   it("returns 429 after exceeding the attempt limit, even with a fresh username each time", async () => {
     const app = await buildApp(db);
 

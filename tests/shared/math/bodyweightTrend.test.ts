@@ -49,7 +49,7 @@ describe("computeBodyweightTrend", () => {
     expect(r?.trend).toBe("stable");
   });
 
-  it("is order-independent — desc (server) order gives the same result as asc", () => {
+  it("is order-independent: desc (server) order gives the same result as asc", () => {
     const asc = [
       { date: "2026-01-01", weightKg: 70 },
       { date: "2026-01-02", weightKg: 70.5 },

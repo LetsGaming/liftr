@@ -1,4 +1,4 @@
-// RunDetailPage.vue loads its detail via runsStore.loadDetail() (a network boundary — mocked
+// RunDetailPage.vue loads its detail via runsStore.loadDetail() (a network boundary: mocked
 // here) on mount, then renders BasePage (real shell) and RunReplay (its own leaflet/map rendering
 // is covered by RunReplay.test.ts/RunMap.test.ts; stubbed here so this file tests only
 // RunDetailPage's own loading/formatting logic).
@@ -82,7 +82,7 @@ const RunReplayStub = {
   props: ["points"],
   template: `<div class="runreplay-stub" :data-count="points.length"></div>`,
 };
-// RouteWizard.vue pulls in plannedRouteStore/RouteMapEditor/leaflet — stubbed here since this
+// RouteWizard.vue pulls in plannedRouteStore/RouteMapEditor/leaflet: stubbed here since this
 // file only tests that RunDetailPage opens it with the right seed props, not the wizard itself
 // (covered by tests/client/components/route/RouteWizard.test.ts).
 const RouteWizardStub = {
@@ -102,7 +102,7 @@ async function mountAtRun(runId = "run-1") {
   await router.push(`/runs/${runId}`);
   await router.isReady();
   // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-  // default this test to English — force German to match production/mountWithProviders (see its
+  // default this test to English: force German to match production/mountWithProviders (see its
   // own comment on this exact issue).
   i18n.global.locale.value = "de";
   const wrapper = mount(RunDetailPage, {
@@ -199,7 +199,7 @@ describe("RunDetailPage", () => {
     const { wrapper } = await mountAtRun();
 
     expect(wrapper.find(".runreplay-stub").exists()).toBe(false);
-    expect(wrapper.text()).toContain("Manuell erfasster Lauf — keine Route verfügbar.");
+    expect(wrapper.text()).toContain("Manuell erfasster Lauf, keine Route verfügbar.");
   });
 
   it("uses the run name (or a fallback) as the page title", async () => {

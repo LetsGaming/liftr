@@ -58,7 +58,7 @@ beforeEach(() => {
   isHealthConnectAvailableMock.mockResolvedValue(true);
 });
 
-describe("DiagnosticsPage — rescan", () => {
+describe("DiagnosticsPage: rescan", () => {
   it("resets the scan window and immediately runs an import, then re-reads the log", async () => {
     readSyncLogMock.mockReturnValueOnce([]).mockReturnValueOnce([logEntry()]);
     importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 1, skipped: 0, failed: 0, workouts: [] });
@@ -118,7 +118,7 @@ describe("DiagnosticsPage — rescan", () => {
   });
 });
 
-describe("DiagnosticsPage — clear log", () => {
+describe("DiagnosticsPage: clear log", () => {
   it("shows a clear-log action only once there is a log, and wires it behind a confirm tap", async () => {
     readSyncLogMock.mockReturnValue([logEntry()]);
     importNewHealthConnectWorkoutsMock.mockResolvedValue({ imported: 0, skipped: 0, failed: 0, workouts: [] });
@@ -137,7 +137,7 @@ describe("DiagnosticsPage — clear log", () => {
   });
 });
 
-describe("DiagnosticsPage — Health Connect gating", () => {
+describe("DiagnosticsPage: Health Connect gating", () => {
   it("hides the whole Synchronisierung section on a platform without Health Connect", async () => {
     isHealthConnectAvailableMock.mockResolvedValue(false);
     const wrapper = mountWithProviders(DiagnosticsPage);

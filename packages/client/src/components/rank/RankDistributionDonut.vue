@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * "Rangverteilung" — a donut showing how many exercises sit in each tier. Pure client-side
+ * "Rangverteilung": a donut showing how many exercises sit in each tier. Pure client-side
  * aggregation of `ranksStore.ranks` grouped by `tier`, no separate fetch.
  *
  * Every chart in this app is inline SVG rather than a charting library (see ProgressChart.vue).
- * Segments are drawn with `stroke-dasharray` on stacked circles rather than `<path>` arcs —
- * a donut needs no partial-circle geometry, so this keeps the math trivial.
+ * Segments are drawn with `stroke-dasharray` on stacked circles rather than `<path>` arcs,
+ * since a donut needs no partial-circle geometry, which keeps the math trivial.
  *
  * Colors come from the same per-tier tokens (tokens.css) RanksPage.vue/RankProgress.vue use
  * for tier fills, read directly as CSS custom properties (e.g. `--advanced-3`) instead of via

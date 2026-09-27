@@ -2,7 +2,7 @@
  * Turns the cardio activity registry's anchor data (`cardioActivities.ts`) into full 9-tier
  * threshold tables, via the exact same `widenAnchorSpread -> interpolateNineTierAnchors -> expand`
  * pipeline `defaultStandards.ts` already uses for strength standards. Zero new interpolation math
- * — only new anchor data and, for single-speed activities, a single "all" bucket instead of five
+ *: only new anchor data and, for single-speed activities, a single "all" bucket instead of five
  * per-category ones.
  */
 
@@ -54,7 +54,7 @@ function buildSingleSpeedStandards(activityId: RankedActivityType): CardioStanda
   return buildAnchorRows(def.rank.anchors, activityId, "all", def.trust);
 }
 
-/** Every rankable activity's standards in one array — the single source `ingestRunStandards.ts`
+/** Every rankable activity's standards in one array: the single source `ingestRunStandards.ts`
  *  writes from, so its whole-table delete-and-rewrite stays correct by construction regardless of
  *  how many activities the registry grows to. */
 export function buildCardioStandards(): CardioStandardRow[] {
@@ -63,7 +63,7 @@ export function buildCardioStandards(): CardioStandardRow[] {
     if (activity.rank.mode === "distance-ladder") {
       if (activity.id === "run") out.push(...buildRunStandards());
       // A future second distance-ladder activity would need its own buildXStandards() the same
-      // shape as buildRunStandards() — not written generically since "run" is the only one today
+      // shape as buildRunStandards(): not written generically since "run" is the only one today
       // and RUN_CATEGORIES/riegel.ts's normalization is running-specific.
     } else if (activity.rank.mode === "single-speed") {
       out.push(...buildSingleSpeedStandards(activity.id));

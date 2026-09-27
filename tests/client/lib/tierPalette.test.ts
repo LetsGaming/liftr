@@ -2,7 +2,7 @@
  * Guards against the exact drift that already happened once before this redesign: shareCard.ts's
  * old TIER_COLORS was a hand-copied duplicate of tokens.css's --<tier>-1/-2/-3/-t values that had
  * silently fallen out of sync. lib/tierPalette.ts's TIER_PALETTE is now the single source of truth
- * (shareCard.ts and tierEmblem.ts both import it directly) — this test is the other half: it
+ * (shareCard.ts and tierEmblem.ts both import it directly): this test is the other half: it
  * asserts tokens.css's own hand-authored custom properties, which non-emblem CSS (rank-card.css's
  * tier wash, .panel-reward, .rankbar, App.vue's --tier-accent) still reads directly, haven't
  * drifted from that same source of truth either.

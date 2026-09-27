@@ -4,10 +4,10 @@
  * switcher (two real routes, RouterLink pills) and RanksPage.vue's Kraft↔Lauf switcher (two views
  * of one route, local-state buttons) were the same pill strip hand-duplicated twice with the same
  * CSS recipe. One tab renders as a RouterLink when it carries a `to`, otherwise as a plain button
- * that emits `update:modelValue` — so the same component covers both call shapes.
+ * that emits `update:modelValue`: so the same component covers both call shapes.
  *
  * Deliberately not the same shape as tokens.css's `.tablist-pills` (role="tablist" sub-level
- * pills, e.g. ExerciseInfoPanel.vue) — that one is visually distinct on purpose (see tokens.css's
+ * pills, e.g. ExerciseInfoPanel.vue): that one is visually distinct on purpose (see tokens.css's
  * own comment); this component only unifies the boxed/equal-width switcher pattern.
  */
 import { RouterLink } from "vue-router";
@@ -15,7 +15,7 @@ import { RouterLink } from "vue-router";
 export interface TabSwitcherTab {
   id: string;
   label: string;
-  /** Route path — render this tab as a RouterLink instead of a local-toggle button. */
+  /** Route path: render this tab as a RouterLink instead of a local-toggle button. */
   to?: string;
 }
 
@@ -74,7 +74,7 @@ defineEmits<{ "update:modelValue": [id: string] }>();
     color var(--dur-fast) var(--ease-out);
 }
 .switcher-pill.active {
-  /* One fixed "active" color, not destination-dependent — see git history for the previous
+  /* One fixed "active" color, not destination-dependent: see git history for the previous
      --blue/--fire split this replaced. --blue is the app's established primary/interactive
      accent. */
   background: var(--blue);

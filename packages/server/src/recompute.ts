@@ -1,5 +1,5 @@
 /**
- * `pnpm --filter @liftr/server recompute` — force-recomputes every exercise's rank and every
+ * `pnpm --filter @liftr/server recompute` force-recomputes every exercise's rank and every
  * running category's rank.
  *
  * Rank recompute normally only happens as a side effect of logging a set or syncing a run, so if
@@ -7,7 +7,7 @@
  * `pnpm ingest --run-standards` with new numbers, existing `ranks`/`runRanks` rows go stale
  * until someone happens to log a set or a rank-eligible run again. This closes that gap: run it
  * after any standards change (strength or running) to bring every rank up to date immediately.
- * Safe to run any time — `ranks`/`prs`/`runRanks`/`runPrs` are derived caches, never the source
+ * Safe to run any time: `ranks`/`prs`/`runRanks`/`runPrs` are derived caches, never the source
  * of truth.
  */
 import { exercises, users } from "@liftr/db";

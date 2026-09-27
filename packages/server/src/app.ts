@@ -49,13 +49,13 @@ import { registerXpRoutes } from "./routes/xp.js";
  * instance (`registerXRoutes(app, testDb)` on a bare Fastify()) that exercises the same
  * validation/error behavior as production, without the singleton db/static-file wiring below.
  */
-/** Called only for the genuinely-unexpected (500) branch below — every typed/expected error above
+/** Called only for the genuinely-unexpected (500) branch below. Every typed/expected error above
  *  it (validation, not-found, conflict, rate-limit, oversized-body) returns before reaching this,
  *  same as it never reaching `request.log.error`. Defaults to a no-op so every test file that
  *  builds its own bare `configureApp(Fastify())` (see this function's own doc comment) keeps
  *  working unchanged; `buildApp` below is the only caller that passes a real one. */
 /** The native app's WebView origin is Capacitor's own localhost (android: https, ios: capacitor:),
- *  never the deployment's domain — so a locked-down LIFTR_ALLOWED_ORIGINS would otherwise silently
+ *  never the deployment's domain, so a locked-down LIFTR_ALLOWED_ORIGINS would otherwise silently
  *  break every APK. Safe to always allow: auth is a bearer header out of localStorage, which no
  *  other origin can read regardless of CORS. */
 export const NATIVE_APP_ORIGINS = ["https://localhost", "capacitor://localhost"];
@@ -115,13 +115,13 @@ export function configureApp(
   typedApp.setErrorHandler((error: FastifyError, request, reply) => {
     if (error instanceof ZodError || error.code === "FST_ERR_VALIDATION") {
       // The passwordSchema refine (routes/auth.ts) fails validation the same way any other Zod
-      // issue does — recognized here by its exact message so the client can show a dedicated
+      // issue does: it is recognized here by its exact message so the client can show a dedicated
       // "password too weak" message via a real error code instead of string-matching the
       // generic `invalid_request` detail text.
       if (hasCommonPasswordIssue(error)) {
         return reply.code(400).send({ error: "password_too_common" });
       }
-      // Always logged (not gated behind env.verboseLogging like the onResponse hook below) — a
+      // Always logged, not gated behind env.verboseLogging like the onResponse hook below. A
       // 400 body reaches the client with this same `detail`, but without this, the *server*
       // side of a validation failure was otherwise unlogged entirely by default, making a
       // recurring client-side bug (a bad request shape from a real device) undiagnosable from
@@ -139,13 +139,13 @@ export function configureApp(
       return reply.code(409).send({ error: "conflict", detail: error.message });
     }
     if (error.statusCode === 429) {
-      // Thrown by @fastify/rate-limit (see routes/auth.ts's per-route config) — a real client
+      // Thrown by @fastify/rate-limit (see routes/auth.ts's per-route config): a real client
       // condition, not a server failure, so it must not fall through to the generic 500 below.
       return reply.code(429).send({ error: "rate_limited" });
     }
     if (error.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
       // Thrown by Fastify itself before routing/Zod ever run, once a request exceeds the
-      // `bodyLimit` set on the Fastify() constructor — a real client condition (oversized
+      // `bodyLimit` set on the Fastify() constructor. This is a real client condition (oversized
       // payload), not a server failure, so it must not fall through to the generic 500 below.
       return reply.code(413).send({ error: "payload_too_large" });
     }
@@ -168,7 +168,7 @@ export async function buildApp() {
   ];
 
   // Fastify's built-in per-request logging (incoming + completed, both at 'info') logs
-  // unconditionally regardless of status code — fine in production, but it turns a dev/seed run
+  // unconditionally regardless of status code: fine in production, but it turns a dev/seed run
   // into a log line per asset/API call. Muted by default (env.verboseLogging): disable the
   // built-in logging and replace it with a targeted onResponse hook that only logs 4xx/5xx, so a
   // real failure still shows up without the noise of every 200.
@@ -176,7 +176,7 @@ export async function buildApp() {
     Fastify({
       logger: env.verboseLogging ? true : { level: "warn" },
       disableRequestLogging: !env.verboseLogging,
-      // 1MB — Fastify's own default, made explicit rather than implicit so an oversized request
+      // 1MB, Fastify's own default, made explicit rather than implicit so an oversized request
       // cleanly 413s instead of surfacing as a bare, unexplained 500.
       bodyLimit: 1_048_576,
     }),
@@ -202,7 +202,7 @@ export async function buildApp() {
   await app.register(cors, { origin: corsOrigin(env.allowedOrigins) });
   await app.register(helmet, {
     // This server also directly serves the built client PWA as static files (see the
-    // clientDistRoot wiring below) — helmet's default CSP would block that app's own inline
+    // clientDistRoot wiring below). Helmet's default CSP would block that app's own inline
     // styles/scripts if left at full strictness. contentSecurityPolicy: false here keeps the
     // scope of this task to the two headers the audit specifically flagged as missing
     // (X-Content-Type-Options, X-Frame-Options) plus HSTS; a hand-tuned CSP for the client bundle
@@ -210,7 +210,7 @@ export async function buildApp() {
     contentSecurityPolicy: false,
     // Helmet's default CORP ("same-origin") would block the native/Capacitor client from loading
     // exercise-catalog images, which it fetches from this server's own absolute (cross-origin, from
-    // the app's point of view) URL — see apiBase() in packages/client/src/lib/api.ts. Auth here is
+    // the app's point of view) URL; see apiBase() in packages/client/src/lib/api.ts. Auth here is
     // a bearer header, not cookies, so CORP's ambient-credential protection doesn't apply anyway.
     crossOriginResourcePolicy: { policy: "cross-origin" },
   });
@@ -219,29 +219,29 @@ export async function buildApp() {
 
   // Paths in env.ts are resolved relative to process.cwd() (the package's own directory when
   // run via `pnpm --filter @liftr/server dev/start`), matching how LIFTR_DB_PATH already
-  // works — NOT relative to this file's location, which differs between tsx (src/) and the
+  // works; they are NOT relative to this file's location, which differs between tsx (src/) and the
   // built output (dist/) and previously produced wrong double-nested paths.
   const imagesRoot = path.resolve(process.cwd(), env.imagesDir);
   const clientDistRoot = path.resolve(process.cwd(), env.clientDistDir);
 
-  // Mirrored catalog images — never hotlink third parties at runtime.
-  // Missing in a fresh checkout until `pnpm ingest --images` has run — don't fail startup.
+  // Mirrored catalog images; never hotlink third parties at runtime.
+  // Missing in a fresh checkout until `pnpm ingest --images` has run, so don't fail startup.
   if (existsSync(imagesRoot)) {
     await app.register(staticFiles, { root: imagesRoot, prefix: "/images/", decorateReply: false });
   } else {
-    app.log.warn(`images dir ${imagesRoot} does not exist yet — run \`pnpm ingest --images\``);
+    app.log.warn(`images dir ${imagesRoot} does not exist yet, run \`pnpm ingest --images\``);
   }
 
   // serves the built PWA client in production (single self-hosted origin). In dev, the client
-  // runs on its own Vite server and proxies /api here instead — this dir won't exist yet.
+  // runs on its own Vite server and proxies /api here instead, so this dir won't exist yet.
   if (existsSync(clientDistRoot)) {
     await app.register(staticFiles, { root: clientDistRoot, prefix: "/", decorateReply: true });
   } else {
-    app.log.warn(`client dist ${clientDistRoot} does not exist yet — run \`pnpm --filter @liftr/client build\``);
+    app.log.warn(`client dist ${clientDistRoot} does not exist yet, run \`pnpm --filter @liftr/client build\``);
   }
 
   app.addHook("onRequest", async (request, reply) => {
-    // /api/auth/{status,setup,login,register} must be reachable with no session yet — they're
+    // /api/auth/{status,setup,login,register} must be reachable with no session yet, since they're
     // how a token is obtained in the first place. /api/health must also stay public: Docker
     // healthchecks, the CI boot-smoke test, and external monitoring all need to reach it with no
     // credentials, the same as any other health-check endpoint's usual contract.
@@ -264,7 +264,7 @@ export async function buildApp() {
   try {
     const { changed } = await syncCardioStandards(db);
     if (changed) {
-      app.log.info("run_standards was out of sync at boot — resyncing and recomputing cardio ranks");
+      app.log.info("run_standards was out of sync at boot, resyncing and recomputing cardio ranks");
       const { recomputed, skipped } = await recomputeAllCardioRanks(db);
       app.log.info({ recomputed, skipped }, "cardio rank recompute after run_standards resync complete");
     }

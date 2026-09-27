@@ -1,7 +1,7 @@
 // RouteOverviewPage.vue is the running-side counterpart to RoutineOverviewPage.vue: a route
 // card's drill-in screen with a sticky start bar offering live GPS tracking or manual entry.
 // This file covers the `?autostart=live` deep link (RunsPage.vue's card "Starten" button now
-// navigates here instead of opening the manual form directly — see RunsPage.test.ts) plus the
+// navigates here instead of opening the manual form directly: see RunsPage.test.ts) plus the
 // page's own "Manuell eintragen" button, which must stay unaffected by that change.
 import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
@@ -22,7 +22,7 @@ interface PlannedRoute {
   polyline: unknown[];
 }
 
-// Plain top-of-file const referenced only inside an uninvoked closure below — `reactive` isn't
+// Plain top-of-file const referenced only inside an uninvoked closure below: `reactive` isn't
 // available inside vi.mock's hoisted factory (see RunsPage.test.ts's identical comment).
 const plannedRouteState = reactive({
   routes: [] as PlannedRoute[],
@@ -60,7 +60,7 @@ async function mountAtRoute(pathAndQuery: string) {
   await router.push(pathAndQuery);
   await router.isReady();
   // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-  // otherwise default this test to English — force German (see mountWithProviders.ts's own
+  // otherwise default this test to English: force German (see mountWithProviders.ts's own
   // comment on this exact issue).
   i18n.global.locale.value = "de";
   const wrapper = mount(RouteOverviewPage, { global: { plugins: [createPinia(), i18n, router], stubs: STUBS } });

@@ -5,7 +5,7 @@ import TierLadder from "~client/components/rank/TierLadder.vue";
 import OverviewPage from "~client/pages/OverviewPage.vue";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-// Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
+// Plain top-of-file consts (not vi.hoisted: `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
 // hoisting above these declarations never dereferences them before they exist.
 const historyState = reactive({
@@ -109,7 +109,7 @@ describe("OverviewPage", () => {
 
     expect(streakState.load).toHaveBeenCalledOnce();
     expect(xpState.load).toHaveBeenCalledOnce();
-    expect(routineState.load).not.toHaveBeenCalled(); // routineStore.error is false — left alone
+    expect(routineState.load).not.toHaveBeenCalled(); // routineStore.error is false, so left alone
   });
 
   it("launchpad: resumes an in-progress workout when one is active", () => {
@@ -153,7 +153,7 @@ describe("OverviewPage", () => {
   });
 
   it("activity feed: shows an offline message when history failed to load", () => {
-    // historyStore.load() only sets `error`, not `loaded`, on a failed fetch — a genuinely empty
+    // historyStore.load() only sets `error`, not `loaded`, on a failed fetch: a genuinely empty
     // *successful* load (loaded && items.length === 0) is what triggers the first-run ladder
     // instead (see the test above); this is the "still has whatever was cached, fetch failed"
     // case, which keeps the normal dashboard shell and shows the activity section's own error line.

@@ -1,7 +1,7 @@
 import { plannedRoutePoints, plannedRoutes, type LiftrDb } from "@liftr/db";
 import { and, eq, inArray } from "drizzle-orm";
 
-/** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx` —
+/** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx`:
  *  both expose the same query-builder methods these write helpers use, but `tx`'s concrete type
  *  (`SQLiteTransaction<...>`) isn't structurally assignable to `LiftrDb` itself (it's missing
  *  `$client`), so writers that need to run inside a transaction (see
@@ -14,8 +14,8 @@ export interface Waypoint {
   lon: number;
   /** Set on a waypoint the "Schleife schließen" loop generator placed (RouteWizard.vue's
    *  generateLoopWaypoints call), as opposed to one the user placed by tapping the map. Lets the
-   *  client tell them apart on reopen — to style them distinctly and to strip them back out when
-   *  the loop toggle is unchecked — without a schema change, since `waypoints` is already a JSON
+   *  client tell them apart on reopen: to style them distinctly and to strip them back out when
+   *  the loop toggle is unchecked: without a schema change, since `waypoints` is already a JSON
    *  text column (see plannedRoutes.waypoints in packages/db/src/schema.ts) rather than a
    *  relational table with fixed columns. Round-trips through JSON.stringify/parse exactly like
    *  `lat`/`lon` above; server logic (ORS requests, distance math) reads only lat/lon and ignores
@@ -40,12 +40,12 @@ export interface NewPlannedRoute {
   computedAt: Date;
 }
 
-/** `waypoints` is stored as JSON text — parsed here, at the repository edge, same convention as
+/** `waypoints` is stored as JSON text: parsed here, at the repository edge, same convention as
  *  routineRepository.ts's targetSets. */
 export async function findActivePlannedRoutes(db: LiftrDb, userId: string) {
   const rows = await db.query.plannedRoutes.findMany({
     where: (r, { isNull, and: andOp, eq: eqOp }) => andOp(eqOp(r.userId, userId), isNull(r.archivedAt)),
-    // orderIndex alone is effectively undefined ordering — nothing client-side ever sets a
+    // orderIndex alone is effectively undefined ordering: nothing client-side ever sets a
     // non-zero orderIndex, so every row ties at 0 and falls back to SQLite rowid order in
     // practice. createdAt as a secondary key gives a stable, meaningful tiebreak.
     orderBy: (r, { asc }) => [asc(r.orderIndex), asc(r.createdAt)],
@@ -61,7 +61,7 @@ export async function findPlannedRouteById(db: LiftrDb, userId: string, id: stri
   return { ...row, waypoints: JSON.parse(row.waypoints) as Waypoint[] };
 }
 
-/** `planned_route_points` has no `user_id` of its own (child-via-parent, like `run_points`) —
+/** `planned_route_points` has no `user_id` of its own (child-via-parent, like `run_points`):
  *  callers must already have resolved/authorized `routeId` via `findPlannedRouteById` first. */
 export function findPlannedRoutePoints(db: LiftrDb, routeId: string) {
   return db.query.plannedRoutePoints.findMany({
@@ -70,7 +70,7 @@ export function findPlannedRoutePoints(db: LiftrDb, routeId: string) {
   });
 }
 
-/** Same child-via-parent authorization rule as findPlannedRoutePoints — callers must already
+/** Same child-via-parent authorization rule as findPlannedRoutePoints: callers must already
  *  have resolved/authorized every id in `routeIds` (e.g. via findActivePlannedRoutes) before
  *  calling this. Batches the points fetch for a whole route list into one query instead of one
  *  round-trip per route, grouped back into a per-route map ordered by idx within each group. */

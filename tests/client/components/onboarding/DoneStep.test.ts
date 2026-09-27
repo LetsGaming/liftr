@@ -56,7 +56,7 @@ describe("DoneStep", () => {
 
   it("hides the plates line even with plate counts if no bar-family equipment is owned", () => {
     // Defensive: plates should only ever be populated alongside a bar type in practice, but
-    // hasPlates is gated on needsPlatesStep(draft) first, not just plates.size — verify that gate.
+    // hasPlates is gated on needsPlatesStep(draft) first, not just plates.size: verify that gate.
     const draft = createOnboardingDraft();
     draft.plates.set(20, 2);
 

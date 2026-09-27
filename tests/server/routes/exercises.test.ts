@@ -10,7 +10,7 @@ import { insertTestExercise } from "../helpers/testDb.js";
 let app: FastifyInstance;
 let db: LiftrDb;
 
-// Only used by the route for a live existsSync() check when computing `hasImage` — doesn't need
+// Only used by the route for a live existsSync() check when computing `hasImage`: doesn't need
 // to exist on disk for these tests, which never seed a real demo photo.
 const imagesRoot = path.join(os.tmpdir(), "liftr-test-images-does-not-exist");
 

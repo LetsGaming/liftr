@@ -5,7 +5,7 @@
  * component, matching App.vue's `navItems` convention exactly: 24x24 viewBox,
  * `fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
  * stroke-linejoin="round"`, hand-authored static path data (never user input, so v-html here
- * carries no injection risk — same justification as App.vue's nav icons). `currentColor` means
+ * carries no injection risk: same justification as App.vue's nav icons). `currentColor` means
  * every icon inherits the surrounding text color automatically in both themes.
  *
  * Sizing: the icon is `1em` square by default so it scales with the font-size of whatever text
@@ -51,7 +51,7 @@ const props = withDefaults(
   { size: undefined },
 );
 
-// Static, hand-authored SVG path data only — never derived from user input.
+// Static, hand-authored SVG path data only: never derived from user input.
 const PATHS: Record<AppIconName, string> = {
   check: '<path d="M5 12l4 4L19 7"/>',
   "chevron-left": '<polyline points="15 18 9 12 15 6"/>',

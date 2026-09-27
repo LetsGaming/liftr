@@ -1,5 +1,5 @@
 /** Theme preference, applied via <html data-theme="...">.
- *  Purely a client-side rendering preference — not synced to the server, same reasoning as
+ *  Purely a client-side rendering preference: not synced to the server, same reasoning as
  *  xpStore.ts's showXp flag: this needs to be readable before the app has even authenticated.
  *
  *  A first-time visitor with no stored preference gets the OS's `prefers-color-scheme` as the
@@ -16,11 +16,11 @@ export function getStoredTheme(): Theme {
   return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
-/** Keeps index.html's `<meta name="theme-color">` (the color the OS/browser chrome — status
- *  bar, task switcher — paints around the page) in sync with the active theme. Reads the
+/** Keeps index.html's `<meta name="theme-color">` (the color the OS/browser chrome: status
+ *  bar, task switcher: paints around the page) in sync with the active theme. Reads the
  *  *actual* current `--bg` off the document (post `dataset.theme` assignment, so the right
  *  `:root`/`:root[data-theme="light"]` block is already in effect) instead of duplicating
- *  tokens.css's hex constants here — this can't silently drift out of sync with tokens.css the
+ *  tokens.css's hex constants here: this can't silently drift out of sync with tokens.css the
  *  way a hardcoded second copy could. */
 function applyThemeColorMeta() {
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -30,7 +30,7 @@ function applyThemeColorMeta() {
 }
 
 /** Applies a theme to the document: sets `data-theme` (tokens.css's selector) and, in the same
- *  step, the theme-color meta tag above — called both at boot (main.ts, before first paint) and
+ *  step, the theme-color meta tag above: called both at boot (main.ts, before first paint) and
  *  on every explicit toggle, so the meta tag never lags the actual visible theme. */
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;

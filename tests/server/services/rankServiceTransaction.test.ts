@@ -5,7 +5,7 @@
  *  - atomicity: a simulated failure partway through the write sequence must leave no partial
  *    state (no rank_events row without its matching ranks/prs write, or vice versa).
  *  - overlapping recomputes: two recomputes for the same exercise racing via Promise.all must
- *    still produce exactly one rank_events row for a genuine rank-up, not zero or two — the
+ *    still produce exactly one rank_events row for a genuine rank-up, not zero or two: the
  *    concrete failure mode the un-transactioned version had (two overlapping syncs could both
  *    read the same stale previous rank and both decide a rank-up occurred).
  */
@@ -17,7 +17,7 @@ import { createTestDb, insertTestExercise } from "../helpers/testDb.js";
 const state = vi.hoisted(() => ({ throwOnInsertPr: false }));
 
 // Mocks only insertPr (a write inside the recompute transaction) so it can be made to throw on
-// demand — everything else in the module passes through to the real implementation.
+// demand: everything else in the module passes through to the real implementation.
 vi.mock("~server/repositories/rankRepository.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~server/repositories/rankRepository.js")>();
   return {
@@ -60,7 +60,7 @@ async function logSet(exerciseId: string, weightKg: number, reps: number, logged
   });
 }
 
-describe("recomputeRankForExercise — transaction atomicity", () => {
+describe("recomputeRankForExercise: transaction atomicity", () => {
   it("rolls back the rankEvents/ranks writes if a later write in the same transaction throws", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);
@@ -72,11 +72,11 @@ describe("recomputeRankForExercise — transaction atomicity", () => {
     await expect(recomputeRankForExercise(db, OWNER_USER_ID, ex.id)).rejects.toThrow("simulated mid-transaction failure");
 
     // insertRankEvent runs before the (now-throwing) insertPr inside the same synchronous
-    // transaction — a real transaction boundary rolls that back too, not just leaves it uncommitted.
+    // transaction: a real transaction boundary rolls that back too, not just leaves it uncommitted.
     const events = await db.select().from(rankEvents).where(eq(rankEvents.exerciseId, ex.id));
     expect(events).toHaveLength(0);
 
-    // upsertRank also ran earlier in the same transaction and must be rolled back — no partial
+    // upsertRank also ran earlier in the same transaction and must be rolled back: no partial
     // "rank row exists but PR/rankEvents don't" state left behind.
     const rankRow = await db.query.ranks.findFirst({ where: eq(ranks.exerciseId, ex.id) });
     expect(rankRow).toBeUndefined();
@@ -96,7 +96,7 @@ describe("recomputeRankForExercise — transaction atomicity", () => {
   });
 });
 
-describe("recomputeRankForExercise — overlapping recomputes stay consistent", () => {
+describe("recomputeRankForExercise: overlapping recomputes stay consistent", () => {
   it("two racing recomputes for the same exercise produce exactly one rank_events row, not zero or two", async () => {
     const ex = await insertTestExercise(db);
     await seedStandards(ex.id);

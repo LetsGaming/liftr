@@ -52,7 +52,7 @@ describe("buildAvoidCorridor", () => {
     ];
     const rings = buildAvoidCorridor(path, { widthM: 30, trimEndsM: 0 });
     expect(rings).toHaveLength(1);
-    // Corners 0 and 3 are the two long edges' endpoints at the same end of the segment —
+    // Corners 0 and 3 are the two long edges' endpoints at the same end of the segment:
     // haversineM between them should be close to the requested width.
     const ring = rings![0]!;
     expect(haversineM(ring[0]!, ring[3]!)).toBeGreaterThan(28);
@@ -103,7 +103,7 @@ describe("buildAvoidCorridor", () => {
   it("drops a ring that itself crosses the antimeridian, keeping the rest of the corridor accurate", () => {
     // Segment 0 stays entirely east of the line (survives); segment 1 crosses it, which its own
     // rectangle can't represent without wrapping around the planet, so it's dropped rather than
-    // shipped as garbage geometry — the same "reject rather than guess" stance as loop.ts.
+    // shipped as garbage geometry: the same "reject rather than guess" stance as loop.ts.
     const path = [
       { lat: 10, lon: 179.99 },
       { lat: 10, lon: 179.995 },
@@ -113,7 +113,7 @@ describe("buildAvoidCorridor", () => {
     expect(rings).not.toBeNull();
     expect(rings).toHaveLength(1); // only the non-crossing segment survives
     for (const p of rings![0]!) {
-      // A torn (unwrapped) ring would land ~40,000 km away on the opposite side of the planet —
+      // A torn (unwrapped) ring would land ~40,000 km away on the opposite side of the planet:
       // the surviving ring's vertices stay within a couple of km of the segment they buffer.
       const distToEither = Math.min(haversineM(p, path[0]!), haversineM(p, path[1]!));
       expect(distToEither).toBeLessThan(2000);

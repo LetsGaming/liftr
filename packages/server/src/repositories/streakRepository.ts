@@ -6,7 +6,7 @@ export async function findAllStreakDates(db: LiftrDb, userId: string): Promise<S
   return new Set(rows.map((r) => r.date));
 }
 
-/** Idempotent: a date already credited for this activity kind is a no-op, not a duplicate —
+/** Idempotent: a date already credited for this activity kind is a no-op, not a duplicate:
  *  both `services/syncService.ts` (finish_workout) and `services/runImportService.ts` (every
  *  run-creation path) credit through this one function. */
 export function creditStreak(db: LiftrDb, userId: string, date: string, kind: "workout" | "run") {

@@ -2,13 +2,13 @@ import { createRouter, createWebHistory } from "vue-router";
 
 declare module "vue-router" {
   interface RouteMeta {
-    /** An i18n key (not the translated text — the route table is evaluated once at module load,
+    /** An i18n key (not the translated text: the route table is evaluated once at module load,
      *  before a user might switch locale) drives App.vue's sr-only <h1> and the routes below with
      *  no navItems entry of their own (App.vue's own pageTitle special-cases handle every other
      *  title source: navItems' nav labels, /runs, and the dynamic per-routine title). App.vue
      *  calls t() on this at the point of use. */
     title?: string;
-    /** True for every route whose page renders BasePage with `back-button` — App.vue's
+    /** True for every route whose page renders BasePage with `back-button`: App.vue's
      *  `hideTopHud` reads this to suppress the mobile top-hud (level ring/streak chip) there,
      *  since it's pinned to the exact same top-left/top-right corners as BasePage's own back
      *  button and header-actions slot (see App.vue's hideTopHud doc comment for why z-index
@@ -18,7 +18,7 @@ declare module "vue-router" {
 }
 
 /**
- * One codebase, two layouts: AppShell renders SideNav above the md breakpoint, TabBar below —
+ * One codebase, two layouts: AppShell renders SideNav above the md breakpoint, TabBar below:
  * these routes are shared by both.
  */
 export const router = createRouter({
@@ -43,7 +43,7 @@ export const router = createRouter({
       name: "route-overview",
       component: () => import("./pages/RouteOverviewPage.vue"),
       meta: { backButton: true },
-      // Same eager-prefetch pattern as /routines/:id above — get the fetch in flight while the
+      // Same eager-prefetch pattern as /routines/:id above: get the fetch in flight while the
       // route's own chunk resolves, rather than waiting for onMounted.
       beforeEnter: () => {
         void import("./stores/plannedRouteStore").then(({ usePlannedRouteStore }) => usePlannedRouteStore().load());
@@ -56,7 +56,7 @@ export const router = createRouter({
       component: () => import("./pages/RecordsPage.vue"),
       meta: { title: "recordsPage.title", backButton: true },
       // Kick the PR fetch off as soon as navigation starts (not onMounted, which only runs once
-      // the component actually mounts — see the beforeResolve prefetch comment below for why
+      // the component actually mounts: see the beforeResolve prefetch comment below for why
       // that's too late) so data is already in flight while the chunk resolves and the outgoing
       // page's leave-transition plays.
       beforeEnter: () => {
@@ -69,7 +69,7 @@ export const router = createRouter({
       name: "exercise-detail",
       component: () => import("./pages/ExerciseDetailPage.vue"),
       meta: { title: "workout.exerciseFallbackTitle", backButton: true },
-      // Same eager-prefetch pattern as /records above — get the fetch in flight while the chunk
+      // Same eager-prefetch pattern as /records above: get the fetch in flight while the chunk
       // resolves. Guarded on !loaded (matching ExerciseDetailPage.vue's own onMounted guard and
       // /records' prStore prefetch) since catalogStore.load() always re-fetches the whole
       // exercise catalog, unlike prStore/historyStore's own per-id caching.
@@ -86,7 +86,7 @@ export const router = createRouter({
       name: "workout-detail",
       component: () => import("./pages/WorkoutDetailPage.vue"),
       meta: { title: "workoutDetailPage.fallbackTitle", backButton: true },
-      // Same eager-prefetch pattern as /records and /exercises/:slug above — historyStore.loadWorkout()
+      // Same eager-prefetch pattern as /records and /exercises/:slug above: historyStore.loadWorkout()
       // is safe to call again here even though the page's own onMounted calls it too: it's cached
       // per id (see historyStore.ts), so a concurrent call while this one is still in flight is the
       // only case that ever does two fetches, not a guaranteed double-fetch.
@@ -120,10 +120,10 @@ export const router = createRouter({
 });
 
 // Blank-flash fix: App.vue wraps <RouterView> in <Transition mode="out-in"> (load-bearing for
-// every other page transition — do not remove). With mode="out-in" the outgoing page fully
+// every other page transition: do not remove). With mode="out-in" the outgoing page fully
 // unmounts and its leave-transition completes before the incoming route component even exists,
 // so on a cold navigation (its lazy chunk not yet fetched) there's a real window where <main> is
-// empty — no component is mounted yet to show even a visible skeleton. beforeResolve fires after
+// empty: no component is mounted yet to show even a visible skeleton. beforeResolve fires after
 // all per-route guards but before the navigation is confirmed and the leave-transition starts, so
 // awaiting every matched route's async component here guarantees the chunk has resolved (and is
 // module-cached) before the outgoing page starts leaving. Generic across all routes, not just

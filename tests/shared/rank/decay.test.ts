@@ -55,7 +55,7 @@ describe("computeCurrentBand", () => {
     expect(midway.tier).toBe("apex");
     expect(midway.division).toBe(1);
     // apex's floor is its own single division at lp 0, so mid-decay must sit strictly between
-    // the floor (0) and the full post-Apex peak (300) — never flattened to the old 100 clamp.
+    // the floor (0) and the full post-Apex peak (300): never flattened to the old 100 clamp.
     expect(midway.lp).toBeGreaterThan(0);
     expect(midway.lp).toBeLessThan(300);
   });

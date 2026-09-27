@@ -73,8 +73,8 @@ describe("missingByTier / canPerform", () => {
     expect(canPerform(reqs, ["barbell"])).toBe(true);
   });
 
-  it("implies plate ownership from owning a barbell — no separate 'plates' tick required", () => {
-    // deadlift needs barbell+plates but no support prop — ticking just "Barbell" must be enough.
+  it("implies plate ownership from owning a barbell: no separate 'plates' tick required", () => {
+    // deadlift needs barbell+plates but no support prop: ticking just "Barbell" must be enough.
     const reqs = deriveRequirements({ slug: "deadlift", equipment: "barbell", movementPattern: "hinge" });
     expect(items(reqs)).toContain("plates");
     expect(canPerform(reqs, ["barbell"])).toBe(true);

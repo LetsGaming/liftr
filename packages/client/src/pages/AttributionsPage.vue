@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// Attributions page — required by license for every ingested third-party source. Content is
+// Attributions page, required by license for every ingested third-party source. Content is
 // static except for one noted exception (OpenRouteService), which is a live per-request call
-// rather than an ingest-once source — see the intro paragraph below.
+// rather than an ingest-once source: see the intro paragraph below.
 //
-// Not reachable from any nav item — same "reachable, not surfaced" shape as DiagnosticsPage.vue
-// — so it needs BasePage's back-button to have any way out.
+// Not reachable from any nav item: same "reachable, not surfaced" shape as DiagnosticsPage.vue,
+// so it needs BasePage's back-button to have any way out.
 import { useI18n } from "vue-i18n";
 import BasePage from "../components/patterns/BasePage.vue";
 
@@ -20,42 +20,42 @@ const { t } = useI18n();
 
       <ul class="sources">
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.wger.name") }}</b> — {{ t("attributionsPage.wger.desc") }}
+          <b>{{ t("attributionsPage.wger.name") }}</b>: {{ t("attributionsPage.wger.desc") }}
           <span class="license">{{ t("attributionsPage.wger.license") }}</span>
           <p>{{ t("attributionsPage.wger.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.wgerPhotos.name") }}</b> — {{ t("attributionsPage.wgerPhotos.desc") }}
+          <b>{{ t("attributionsPage.wgerPhotos.name") }}</b>: {{ t("attributionsPage.wgerPhotos.desc") }}
           <span class="license">{{ t("attributionsPage.wgerPhotos.license") }}</span>
           <p>{{ t("attributionsPage.wgerPhotos.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.muscleDiagram.name") }}</b> — {{ t("attributionsPage.muscleDiagram.desc") }}
+          <b>{{ t("attributionsPage.muscleDiagram.name") }}</b>: {{ t("attributionsPage.muscleDiagram.desc") }}
           <span class="license">{{ t("attributionsPage.muscleDiagram.license") }}</span>
           <p>{{ t("attributionsPage.muscleDiagram.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.freeExerciseDb.name") }}</b> — {{ t("attributionsPage.freeExerciseDb.desc") }}
+          <b>{{ t("attributionsPage.freeExerciseDb.name") }}</b>: {{ t("attributionsPage.freeExerciseDb.desc") }}
           <span class="license">{{ t("attributionsPage.freeExerciseDb.license") }}</span>
           <p>{{ t("attributionsPage.freeExerciseDb.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.openPowerlifting.name") }}</b> — {{ t("attributionsPage.openPowerlifting.desc") }}
+          <b>{{ t("attributionsPage.openPowerlifting.name") }}</b>: {{ t("attributionsPage.openPowerlifting.desc") }}
           <span class="license">{{ t("attributionsPage.openPowerlifting.license") }}</span>
           <p>{{ t("attributionsPage.openPowerlifting.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.openStreetMap.name") }}</b> — {{ t("attributionsPage.openStreetMap.desc") }}
+          <b>{{ t("attributionsPage.openStreetMap.name") }}</b>: {{ t("attributionsPage.openStreetMap.desc") }}
           <span class="license">{{ t("attributionsPage.openStreetMap.license") }}</span>
           <p>{{ t("attributionsPage.openStreetMap.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.esri.name") }}</b> — {{ t("attributionsPage.esri.desc") }}
+          <b>{{ t("attributionsPage.esri.name") }}</b>: {{ t("attributionsPage.esri.desc") }}
           <span class="license">{{ t("attributionsPage.esri.license") }}</span>
           <p>{{ t("attributionsPage.esri.credit") }}</p>
         </li>
         <li class="surface-hybrid">
-          <b>{{ t("attributionsPage.openRouteService.name") }}</b> — {{ t("attributionsPage.openRouteService.desc") }}
+          <b>{{ t("attributionsPage.openRouteService.name") }}</b>: {{ t("attributionsPage.openRouteService.desc") }}
           <span class="license">{{ t("attributionsPage.openRouteService.license") }}</span>
           <p>{{ t("attributionsPage.openRouteService.credit") }}</p>
         </li>

@@ -11,12 +11,12 @@
  *
  * The background wash mirrors tokens.css's `--nebula-sweep-*` layer: the same diagonal-base +
  * three-wide-radial-wash recipe every live screen sits on, but at roughly 2x the live tokens'
- * wash opacities — a static share PNG has no "settling back" concept the live app's celebratory
+ * wash opacities: a static share PNG has no "settling back" concept the live app's celebratory
  * glow does, so there's no reason to cap it at the same restrained baseline intensity. Canvas has
  * no `mix-blend-mode`, but `globalCompositeOperation = "screen"` is the same blend mode under a
  * different name, so the three washes below screen-composite onto the base gradient exactly like
  * the CSS layer does. The tier medal is drawn as a small top-right corner stamp rather than a
- * centered headline section, so "rank and level" reads as a badge, not the headline — freeing
+ * centered headline section, so "rank and level" reads as a badge, not the headline: freeing
  * vertical space for the trained-muscle figures and exercise grid.
  */
 import {
@@ -34,7 +34,7 @@ import { MUSCLE_META } from "./muscles";
 import { buildTierEmblem, wingReachUnits, type EmblemGradientDef, type EmblemShape } from "./tierEmblem";
 import { DIVISION_LABEL, tierLabel, type RankTier } from "./tierIcons";
 
-/** Hardcoded copy of tokens.css's live palette — see this file's header comment for why these
+/** Hardcoded copy of tokens.css's live palette: see this file's header comment for why these
  *  are copies, not CSS-var reads. Keep in sync manually if tokens.css's palette changes. */
 const COLORS = {
   bg: "#0a0c14", // --bg
@@ -46,13 +46,13 @@ const COLORS = {
   blueHi: "#5ba0ff", // --blue-hi
   violet: "#8f6dff", // --violet
   fireHi: "#ffa04d", // --fire-hi
-  pr: "#ffd23f", // --pr — tokens.css's dedicated PR-accent token, not an invented "gold"
+  pr: "#ffd23f", // --pr: tokens.css's dedicated PR-accent token, not an invented "gold"
   line: "rgba(255,255,255,0.14)", // --line
   // Nebula brand gradient (tokens.css --nebula-1/-m/-2)
   nebula1: "#2f9fe0",
   nebulaM: "#8a6dff",
   nebula2: "#d63aff",
-  // tokens.css's dark-mode `--nebula-sweep-base-1..4` — the same diagonal 155deg base gradient
+  // tokens.css's dark-mode `--nebula-sweep-base-1..4`: the same diagonal 155deg base gradient
   // every live screen's body::before sits on.
   sweepBase1: "#0a0c14",
   sweepBase2: "#0b0d19",
@@ -62,14 +62,14 @@ const COLORS = {
 
 /**
  * Each of the 4 stats gets one accent from the app's own restrained palette (tokens.css's
- * tier/brand hues) rather than plain colored text — see drawStatCard below for the full colored
+ * tier/brand hues) rather than plain colored text: see drawStatCard below for the full colored
  * card treatment. PRs echoes --pr, the token the rest of the app uses for achievement moments.
  * Dauer and Volumen use the Nebula gradient's own two end stops (--nebula-m/--nebula-1) so the
  * card's headline color story matches the app's brand identity.
  */
 const STAT_COLORS = [COLORS.nebulaM, COLORS.nebula1, COLORS.fireHi, COLORS.pr];
 
-/** tokens.css uses a two-face type system — Hanken Grotesk for body copy, Unbounded for
+/** tokens.css uses a two-face type system: Hanken Grotesk for body copy, Unbounded for
  *  display/numeral treatment (tier labels, .tnum stat numbers, celebratory numbers). Every
  *  ctx.font call goes through one of these two helpers instead of repeating a font-family
  *  literal, so the two can't drift apart. */
@@ -79,7 +79,7 @@ function font(weight: number, size: number, display = false): string {
   return `${weight} ${size}px ${display ? FONT_DISPLAY : FONT_BODY}`;
 }
 
-/** Shrinks a font size in 2px steps until `text` fits `maxWidth`, floored at `min` — needed now
+/** Shrinks a font size in 2px steps until `text` fits `maxWidth`, floored at `min`: needed now
  *  that numbers render inside narrow per-stat card insets instead of a full-width text row, so a
  *  long value ("12.345 kg") can't just run off the edge the way free-floating text could. Leaves
  *  ctx.font set to the size it settles on. */
@@ -94,7 +94,7 @@ function fitFontSize(ctx: CanvasRenderingContext2D, text: string, maxWidth: numb
   return size;
 }
 
-/** Manual rounded-rect path (not ctx.roundRect) — kept explicit rather than relying on a method
+/** Manual rounded-rect path (not ctx.roundRect): kept explicit rather than relying on a method
  *  that's only reliably available on newer engines, since this draws inside a Capacitor WebView
  *  as well as the browser. */
 function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -109,8 +109,8 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 }
 
 /**
- * One headline stat as its own full, solid-colored rounded card — a small label pill near the
- * top, a larger dark inset box below holding the value — rather than colored text on a shared
+ * One headline stat as its own full, solid-colored rounded card: a small label pill near the
+ * top, a larger dark inset box below holding the value: rather than colored text on a shared
  * dark background. Uses Liftr's own palette (STAT_COLORS).
  */
 function drawStatCard(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: string, label: string, accent: string): void {
@@ -168,7 +168,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
   roundRectPath(ctx, iconX, iconY, iconSize, iconSize, 12);
   ctx.fillStyle = COLORS.surface2;
   ctx.fill();
-  // Generic dumbbell glyph — one shared icon for every row rather than a full per-exercise icon set.
+  // Generic dumbbell glyph: one shared icon for every row rather than a full per-exercise icon set.
   ctx.strokeStyle = COLORS.dim;
   ctx.lineWidth = 2.8;
   ctx.beginPath();
@@ -208,7 +208,7 @@ function drawExerciseCell(ctx: CanvasRenderingContext2D, x: number, y: number, w
 /** Splits a detail string to at most 2 lines that fit `maxWidth` at the exercise-cell detail
  *  font, truncating a still-too-long final line with an ellipsis rather than overflowing the
  *  card (long set lists on a narrow half-width column). Font size must match drawExerciseCell's
- *  own detail-line font exactly — this measures the wrap, that one renders it. */
+ *  own detail-line font exactly: this measures the wrap, that one renders it. */
 function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   ctx.font = font(600, 22, false); // keep in sync with drawExerciseCell's own detail-line font
   const words = text.split(/\s+/);
@@ -237,9 +237,9 @@ function wrapDetail(ctx: CanvasRenderingContext2D, text: string, maxWidth: numbe
 }
 
 /** Builds a canvas linear gradient matching a CSS `linear-gradient(<angleDeg>deg, ...)` over box
- *  (x, y, w, h) — CSS angle 0deg points "to top", increasing clockwise, and sizes the gradient
+ *  (x, y, w, h): CSS angle 0deg points "to top", increasing clockwise, and sizes the gradient
  *  line to the box's own projection onto that axis (the same formula the CSS spec uses), not an
- *  arbitrary corner-to-corner guess — needed since every layer below is a direct port of an
+ *  arbitrary corner-to-corner guess: needed since every layer below is a direct port of an
  *  actual tokens.css `linear-gradient(...)` value, not a redesign. */
 function cssAngleGradient(ctx: CanvasRenderingContext2D, angleDeg: number, x: number, y: number, w: number, h: number): CanvasGradient {
   const rad = (angleDeg * Math.PI) / 180;
@@ -251,7 +251,7 @@ function cssAngleGradient(ctx: CanvasRenderingContext2D, angleDeg: number, x: nu
   return ctx.createLinearGradient(cx - dx * halfLen, cy - dy * halfLen, cx + dx * halfLen, cy + dy * halfLen);
 }
 
-/** Appends an alpha channel to a `#rrggbb` hex color as a 2-digit hex suffix (`#rrggbbaa`) — the
+/** Appends an alpha channel to a `#rrggbb` hex color as a 2-digit hex suffix (`#rrggbbaa`): the
  *  same convention the old hand-rolled halo code here used, and a valid CSS color canvas's
  *  addColorStop accepts directly (WebKit/Blink/Gecko all parse 8-digit hex). */
 function hexAlpha(hex: string, opacity: number): string {
@@ -263,11 +263,11 @@ function hexAlpha(hex: string, opacity: number): string {
 
 /**
  * Resolves one EmblemGradientDef to a real CanvasGradient, in the SAME 0-128 coordinate space the
- * shape geometry itself uses — the caller is expected to have already applied a ctx.translate +
+ * shape geometry itself uses: the caller is expected to have already applied a ctx.translate +
  * ctx.scale that maps that space onto the card, so the raw EMBLEM_LIGHT_AXIS/shape coordinates can
  * be used as-is instead of re-deriving pixel positions. Radial gradients in this module are only
  * ever used by the single ambient-glow circle each emblem draws (see tierEmblem.ts's
- * buildTierEmblem) — SVG's default `objectBoundingBox` radial fills exactly the shape that
+ * buildTierEmblem): SVG's default `objectBoundingBox` radial fills exactly the shape that
  * references it, so that circle's own cx/cy/r double as the gradient's bounds here too.
  */
 function resolveEmblemGradient(ctx: CanvasRenderingContext2D, def: EmblemGradientDef, ownerCx: number, ownerCy: number, ownerR: number): CanvasGradient {
@@ -295,10 +295,10 @@ function resolveEmblemPaint(ctx: CanvasRenderingContext2D, defs: EmblemGradientD
 
 /**
  * Draws one EmblemShape (from lib/tierEmblem.ts's buildTierEmblem()) onto canvas, in the emblem's
- * own 0-128 coordinate space — the caller applies the translate+scale, this function just walks
+ * own 0-128 coordinate space: the caller applies the translate+scale, this function just walks
  * the shape list and issues the matching canvas draw call per `kind`. This is the ONLY place the
  * geometry gets turned into pixels for canvas; TierBadge.vue is the equivalent for SVG. Neither
- * duplicates the ring/wing/mark math itself — see tierEmblem.ts.
+ * duplicates the ring/wing/mark math itself: see tierEmblem.ts.
  */
 function drawEmblemShape(ctx: CanvasRenderingContext2D, shape: EmblemShape, defs: EmblemGradientDef[]): void {
   const ownerCx = "cx" in shape ? shape.cx : 0;
@@ -391,7 +391,7 @@ function drawEmblemShape(ctx: CanvasRenderingContext2D, shape: EmblemShape, defs
   ctx.restore();
 }
 
-/** Draws the tier medal — ring, mark, escalating wings — at real pixel position/size, using the
+/** Draws the tier medal: ring, mark, escalating wings: at real pixel position/size, using the
  *  exact same geometry lib/tierEmblem.ts's buildTierEmblem() gives TierBadge.vue for SVG. The
  *  translate+scale maps the emblem's fixed 0-128 coordinate space onto a `size`-px square whose
  *  top-left is (cx - size/2, topY), matching the old drawTierBadge's own (cx, topY, size) contract. */
@@ -407,16 +407,16 @@ function drawTierBadge(ctx: CanvasRenderingContext2D, cx: number, topY: number, 
 /**
  * Draws the tier medal + "Tier Division" / "Level N" / rank-up caption as a small top-right
  * corner stamp, so rank/level stays visible without dominating the card (the medal's own
- * material — halo, bevel, face gradient, specular streaks — is still drawn in full at `size`,
+ * material: halo, bevel, face gradient, specular streaks: is still drawn in full at `size`,
  * just smaller). Drawn independently of the header/stats/muscles/exercise cursorY flow: its
  * position is fixed relative to the top-right corner, so it never pushes later sections down.
- * Returns nothing — nothing else in the layout is positioned relative to it.
+ * Returns nothing: nothing else in the layout is positioned relative to it.
  */
 function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: number, size: number, model: WorkoutCardModel): void {
   if (!model.tier) return;
   const tier = model.tier.tier as RankTier;
   // Shift left by however far this tier's wings actually reach past the emblem's own 128-unit
-  // viewBox — the live DOM avoids this via overflow:visible plus TierBadge.vue's layout box; canvas
+  // viewBox: the live DOM avoids this via overflow:visible plus TierBadge.vue's layout box; canvas
   // has no layout pass, so the corner position accounts for it explicitly here. wingReachUnits()
   // mirrors buildTierEmblem's own escalation span table (lib/tierEmblem.ts) so this can't drift
   // out of sync with what actually gets drawn.
@@ -443,7 +443,7 @@ function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: numb
     const headline = model.topRankUp.isPr
       ? `${model.topRankUp.exerciseName}: ${t("shareCard.newRecord")}`
       : `${model.topRankUp.exerciseName}: ${tierLabel(model.topRankUp.tier as RankTier)} ${DIVISION_LABEL[model.topRankUp.division] ?? ""}`.trim();
-    // The corner column is narrow (roughly `size` wide) — a long exercise name would run past it,
+    // The corner column is narrow (roughly `size` wide): a long exercise name would run past it,
     // unlike the old centered treatment which had the full card width to work with.
     let displayHeadline = headline;
     while (ctx.measureText(displayHeadline).width > size * 1.9 && displayHeadline.length > 1) {
@@ -456,7 +456,7 @@ function drawCornerBadge(ctx: CanvasRenderingContext2D, width: number, pad: numb
 }
 
 /** crossOrigin="anonymous" keeps the canvas untainted when apiBase() points at a different
- *  origin than the page (a Capacitor WebView talking to a LAN server, see lib/api.ts) — without
+ *  origin than the page (a Capacitor WebView talking to a LAN server, see lib/api.ts): without
  *  it, a cross-origin image draws fine but toBlob() throws afterward. Same-origin loads (the
  *  normal web/PWA case) are unaffected either way. */
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -530,11 +530,11 @@ const STAT_CARD_H = 176;
 const STAT_GAP = 20;
 // The tier medal is drawn as a small top-right corner stamp (see drawCornerBadge below),
 // independent of the header/stats/muscles/exercise cursor, so it needs no reserved section
-// height, fill slot, or rank-up-caption growth allowance — the vertical space that would have
+// height, fill slot, or rank-up-caption growth allowance: the vertical space that would have
 // gone to an in-flow badge section is spent on MUSCLE_FIG_H and EXERCISE_ROW_H instead.
 // Only the stats->muscles gap absorbs the fillGap surplus below; the header->stats and
 // muscles->divider gaps stay fixed so the stat row and exercise grid don't drift with unrelated
-// whitespace — that space goes directly into MUSCLE_FIG_H/EXERCISE_ROW_H (and the exercise
+// whitespace: that space goes directly into MUSCLE_FIG_H/EXERCISE_ROW_H (and the exercise
 // cell's own font sizes) as real content size instead.
 const CORNER_BADGE_SIZE = 110;
 const MUSCLE_FIG_H = 470;
@@ -546,13 +546,13 @@ const EXERCISE_COL_GAP = 20;
 
 export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutCardModel): Promise<void> {
   // tokens.css's @font-face blocks are declared app-wide, but the browser only actually fetches
-  // a face once something on the page requests it — waiting here avoids the first share ever
+  // a face once something on the page requests it: waiting here avoids the first share ever
   // drawn in a session silently falling back to a system font.
   if (typeof document !== "undefined" && document.fonts?.ready) {
     try {
       await document.fonts.ready;
     } catch {
-      // best-effort — worst case the first draw uses a fallback font, not a crash
+      // best-effort: worst case the first draw uses a fallback font, not a crash
     }
   }
 
@@ -562,7 +562,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   const hasMuscles = model.muscles.primary.length > 0 || model.muscles.secondary.length > 0;
 
   // ---- Header: routine name + date. Real height depends on how many lines the name wraps to.
-  // Wrap width is narrower when a tier badge is present (17 vs. 20 chars) — the corner badge now
+  // Wrap width is narrower when a tier badge is present (17 vs. 20 chars): the corner badge now
   // occupies the top-right, and the routine name/date must not run under it. ----
   const nameLines = wrapText(model.routineName, hasBadge ? 17 : 20).slice(0, 2);
   const headerH = 98 + nameLines.length * 64 + 44 + 30;
@@ -585,7 +585,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   if (!ctx) return;
   ctx.scale(scale, scale);
 
-  // A short routine leaves real dead space in a fixed-size card — spread whatever's unused into
+  // A short routine leaves real dead space in a fixed-size card: spread whatever's unused into
   // the stats->muscles gap rather than leaving it all silently at the bottom. `overflowsStory`
   // (too many exercises even for the taller format) means there's no surplus to distribute; rows
   // get capped by maxRows below instead.
@@ -593,10 +593,10 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   const fillSlots = 1;
   const fillGap = overflowsStory ? 0 : distributeFillGap(naturalTotal, available, fillSlots, 150);
 
-  // background — mirrors tokens.css's live `--nebula-sweep-*` recipe (body::before): the same
+  // background: mirrors tokens.css's live `--nebula-sweep-*` recipe (body::before): the same
   // diagonal 155deg base gradient, plus the same three wide radial washes (violet top, magenta
   // bottom-right, blue left), screen-composited so hues melt into each other instead of reading
-  // as separate patches — but at roughly 2x the live tokens' wash opacities, since a share PNG
+  // as separate patches: but at roughly 2x the live tokens' wash opacities, since a share PNG
   // has no in-app settle-back to protect the way the live celebratory glow does.
   const bgGrad = cssAngleGradient(ctx, 155, 0, 0, width, height);
   bgGrad.addColorStop(0, COLORS.sweepBase1);
@@ -607,11 +607,11 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.fillRect(0, 0, width, height);
 
   // `globalCompositeOperation = "screen"` is canvas's equivalent of CSS `mix-blend-mode: screen`
-  // (tokens.css's --nebula-sweep-blend in dark mode) — reset to "source-over" immediately after
+  // (tokens.css's --nebula-sweep-blend in dark mode): reset to "source-over" immediately after
   // so it doesn't leak into the wordmark/badge/stat/exercise drawing below.
   ctx.globalCompositeOperation = "screen";
 
-  // Wash 1 — violet, top area (CSS: ellipse 140% 100% at 60% -20%, --nebula-sweep-wash-1 is
+  // Wash 1: violet, top area (CSS: ellipse 140% 100% at 60% -20%, --nebula-sweep-wash-1 is
   // rgba(138,109,255,0.10) live; ~2x here).
   const wash1 = ctx.createRadialGradient(width * 0.6, height * -0.2, 0, width * 0.6, height * -0.2, width * 1.1);
   wash1.addColorStop(0, "rgba(138, 109, 255, 0.22)");
@@ -619,7 +619,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.fillStyle = wash1;
   ctx.fillRect(0, 0, width, height);
 
-  // Wash 2 — magenta, bottom-right (CSS: ellipse 120% 90% at 100% 90%, --nebula-sweep-wash-2 is
+  // Wash 2: magenta, bottom-right (CSS: ellipse 120% 90% at 100% 90%, --nebula-sweep-wash-2 is
   // rgba(214,58,255,0.07) live; ~2x here).
   const wash2 = ctx.createRadialGradient(width * 1.0, height * 0.9, 0, width * 1.0, height * 0.9, width * 0.9);
   wash2.addColorStop(0, "rgba(214, 58, 255, 0.16)");
@@ -627,7 +627,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.fillStyle = wash2;
   ctx.fillRect(0, 0, width, height);
 
-  // Wash 3 — blue, left-mid (CSS: ellipse 100% 80% at -10% 60%, --nebula-sweep-wash-3 is
+  // Wash 3: blue, left-mid (CSS: ellipse 100% 80% at -10% 60%, --nebula-sweep-wash-3 is
   // rgba(47,159,224,0.06) live; ~2x here).
   const wash3 = ctx.createRadialGradient(width * -0.1, height * 0.6, 0, width * -0.1, height * 0.6, width * 0.8);
   wash3.addColorStop(0, "rgba(47, 159, 224, 0.14)");
@@ -639,7 +639,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
 
   const pad = PAD;
 
-  // wordmark — gradient-filled with the Nebula brand gradient across its own text box, matching
+  // wordmark: gradient-filled with the Nebula brand gradient across its own text box, matching
   // --nebula-grad's 120deg exactly.
   ctx.font = font(800, 30, true);
   const wordmarkW = ctx.measureText("LIFTR").width;
@@ -651,7 +651,7 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
   ctx.textAlign = "left";
   ctx.fillText("LIFTR", pad, pad + 20);
 
-  // Corner tier badge — drawn right after the wordmark, independent of the header/stats/muscles/
+  // Corner tier badge: drawn right after the wordmark, independent of the header/stats/muscles/
   // exercise cursorY flow (see drawCornerBadge's own comment for why).
   if (hasBadge) drawCornerBadge(ctx, width, pad, CORNER_BADGE_SIZE, model);
 
@@ -693,9 +693,9 @@ export async function drawWorkoutCard(canvas: HTMLCanvasElement, model: WorkoutC
       ctx.fillText(t("shareCard.trainedMuscles"), width / 2, cursorY);
       ctx.textAlign = "left";
       cursorY = await drawMuscleFigures(ctx, width / 2, cursorY + 24, MUSCLE_FIG_H, model.muscles.primary, model.muscles.secondary);
-      cursorY += 40; // no fillGap here — the exercise grid sits snug against the muscle section
+      cursorY += 40; // no fillGap here: the exercise grid sits snug against the muscle section
     } catch {
-      // image load failed — carry on without the figure, see comment above
+      // image load failed: carry on without the figure, see comment above
     }
   } else {
     cursorY += 20 + fillGap;
@@ -755,9 +755,9 @@ interface FileSystemFileHandleLike {
 type WindowWithSavePicker = Window & { showSaveFilePicker?: (opts?: SaveFilePickerOptions) => Promise<FileSystemFileHandleLike> };
 
 /**
- * navigator.share() with a Files payload where supported (mobile — this is a PWA/Capacitor
+ * navigator.share() with a Files payload where supported (mobile: this is a PWA/Capacitor
  * build, so that's the primary target). Desktop has no such share sheet, but Chromium desktop
- * does support the File System Access API's showSaveFilePicker() — a real "Save As" dialog with
+ * does support the File System Access API's showSaveFilePicker(): a real "Save As" dialog with
  * a destination picker, instead of always silently dropping into the browser's default downloads
  * folder. Falls back to the plain `<a download>` blob-click for anything without either API
  * (Firefox, Safari).
@@ -770,7 +770,7 @@ export async function shareOrDownloadBlob(blob: Blob, filename: string, shareTit
       await navigator.share({ files: [file], title: shareTitle });
       return;
     } catch {
-      // user cancelled the share sheet, or it failed — fall through to save/download
+      // user cancelled the share sheet, or it failed: fall through to save/download
     }
   }
 
@@ -787,7 +787,7 @@ export async function shareOrDownloadBlob(blob: Blob, filename: string, shareTit
       await writable.close();
       return;
     } catch (err) {
-      // AbortError = user cancelled the picker, a real "do nothing" — anything else falls
+      // AbortError = user cancelled the picker, a real "do nothing": anything else falls
       // through to the plain download so a save is never silently lost.
       if (err instanceof DOMException && err.name === "AbortError") return;
     }
@@ -820,7 +820,7 @@ export async function copyBlobToClipboard(blob: Blob): Promise<boolean> {
   }
 }
 
-/** Feature-detects whether copyBlobToClipboard has a real chance of working here — same checks,
+/** Feature-detects whether copyBlobToClipboard has a real chance of working here: same checks,
  *  without actually touching the clipboard, so a caller can decide whether to show the button at
  *  all rather than show-then-fail. */
 export function canCopyToClipboard(): boolean {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** Clickable exercise list with done/active states. None of this component's own CSS is gated
- *  behind a viewport media query — WorkoutPage.vue's mobile layout renders this as a full
+ *  behind a viewport media query: WorkoutPage.vue's mobile layout renders this as a full
  *  vertical list (identical markup to desktop), just stacked above the focus column with no
  *  responsive treatment. `variant="horizontal"` is the mobile-parity fix: a compact scroll-snap
  *  strip so the rail doesn't push the current exercise below the fold on narrow viewports.
@@ -24,7 +24,7 @@ function jump(i: number) {
   emit("jump", i);
 }
 
-/** The rail used to show only "2 / 4 Sätze" — a set count with no rep target at all, so you
+/** The rail used to show only "2 / 4 Sätze": a set count with no rep target at all, so you
  *  couldn't tell 3×5 from 3×15 without switching to that exercise. Reps can vary per set
  *  (warm-up ramp, drop sets), so this shows the first working (non-warmup) set's rep target
  *  as the representative number, not a claim that every set matches it exactly. */
@@ -66,12 +66,12 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item {
   padding: var(--sp3);
   border-radius: var(--r-md);
-  /* Every row is a real dark surface, always — state is expressed by accent (active fill,
+  /* Every row is a real dark surface, always: state is expressed by accent (active fill,
      done dimming), never by flipping to a lighter background. A bare native <button> falls
      back to the browser's own light chrome if you don't set this explicitly.
      `.surface-hybrid` (template) supplies the base background/blur/shadow/hairline; `.active`'s
      own fill below is re-derived the same way WorkoutPage.vue's `.rank-toggle-btn.active`
-     re-derives its "on" state against --surface-hybrid-bg — color-mix over the hybrid base, not
+     re-derives its "on" state against --surface-hybrid-bg: color-mix over the hybrid base, not
      a special-cased opaque fill. */
   color: var(--dim);
   transition: background var(--dur-base) var(--ease-out);
@@ -86,7 +86,7 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item.active .meta b {
   color: var(--text);
 }
-/* Was opacity:0.65 — fading a whole row (including its now-more-readable --faint text and
+/* Was opacity:0.65: fading a whole row (including its now-more-readable --faint text and
    the green done-check) reads as "disabled," and it's not; it's finished. Express "done" with
    color instead of knocking down contrast on the surface itself. */
 .rail-item.done {
@@ -95,7 +95,7 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item.done .meta b {
   color: var(--faint);
 }
-/* Was `border-left: 3px solid var(--blue-hi)` — a full-height colored bar is the loudest
+/* Was `border-left: 3px solid var(--blue-hi)`: a full-height colored bar is the loudest
    possible encoding of a quiet grouping fact (superset membership), and reads as a card-level
    alert rather than a label (craft-floor: no colored border-left/right above 1px on list items).
    A small inline dot next to the exercise name instead. */
@@ -122,7 +122,7 @@ function workingReps(ex: ActiveExercise): number | null {
 .rail-item.done .n {
   background: var(--success);
   color: #04120a;
-  /* Draws in rather than snapping — an exercise going from "3/4" to a green check is the row's
+  /* Draws in rather than snapping: an exercise going from "3/4" to a green check is the row's
      own small reward moment. */
   animation: pop-in var(--dur-base) var(--ease-spring) both;
 }
@@ -137,7 +137,7 @@ function workingReps(ex: ActiveExercise): number | null {
 }
 
 /* Mobile jump-to-exercise parity: same buttons, same store.jumpToExercise(i) handler, same
-   active/done/superset states — only the container's flex-direction and item sizing change,
+   active/done/superset states: only the container's flex-direction and item sizing change,
    so this reuses the template/logic above rather than duplicating the component. A horizontal
    scroll-snap strip keeps the rail reachable without the vertical list's full-height cost on
    narrow viewports (which otherwise pushes the focus column below the fold). */
@@ -157,7 +157,7 @@ function workingReps(ex: ActiveExercise): number | null {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--sp2);
-  /* Touch-target floor (WCAG 2.5.5 / Apple HIG 44pt) — same token used across the app's other
+  /* Touch-target floor (WCAG 2.5.5 / Apple HIG 44pt): same token used across the app's other
      interactive controls (see tokens.css --touch-target-min). */
   min-width: 116px;
   min-height: var(--touch-target-min);

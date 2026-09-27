@@ -1,16 +1,16 @@
 <script setup lang="ts">
 /**
  * A full-bleed wizard sheet's header: a plain custom `<header>`, styled to this app's own tokens
- * rather than Ionic's toolbar defaults — an editable title input, a close button (with an
+ * rather than Ionic's toolbar defaults: an editable title input, a close button (with an
  * optional "confirm discard" state), and an optional step indicator row. Used by
  * RoutineWizard.vue/RouteWizard.vue inside SheetModal's `#header` slot, which renders whatever
- * it's given as a plain flex child (see SheetModal.vue) — no Ionic toolbar wrapper wanted there.
+ * it's given as a plain flex child (see SheetModal.vue): no Ionic toolbar wrapper wanted there.
  *
  * `titlePlaceholder` is required, not defaulted: this file carries zero domain vocabulary (ADR
  * 0012's rule for `patterns/`), so it can't fall back to a routine- or route-shaped placeholder
- * string — every caller names its own noun ("Name der Routine", "Name der Strecke").
+ * string: every caller names its own noun ("Name der Routine", "Name der Strecke").
  *
- * Split out of a single BaseHeader.vue that took a `variant: "page" | "wizard"` prop — see
+ * Split out of a single BaseHeader.vue that took a `variant: "page" | "wizard"` prop: see
  * PageHeader.vue's doc comment for the full rationale, including why the CSS-scoping gotcha that
  * originally caused these two to be merged no longer applies.
  */
@@ -67,7 +67,7 @@ const title = defineModel<string>("title", { default: "" });
 .base-header-wizard {
   flex: none;
   padding: var(--sp3) var(--sp4);
-  /* Full-bleed modal header (see SheetModal.vue) — without this, the title input and close
+  /* Full-bleed modal header (see SheetModal.vue): without this, the title input and close
      button sit under the notch/status bar on Android. See this file's header comment for why a
      caller must never redeclare `.base-header`/its descendants in its own <style scoped> block. */
   padding-top: calc(var(--sp3) + env(safe-area-inset-top, 0px));

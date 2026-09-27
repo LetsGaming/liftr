@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 //
 // useExerciseName calls vue-i18n's useI18n(), which needs an active component instance with the
-// i18n plugin installed — mounting a tiny host component (via withSetup) needs a real DOM.
+// i18n plugin installed: mounting a tiny host component (via withSetup) needs a real DOM.
 import { beforeEach, describe, expect, it } from "vitest";
 import { i18n } from "~client/i18n";
 import { useExerciseName } from "~client/composables/useExerciseName";
 import { withSetup } from "../helpers/withSetup";
 
 // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-// otherwise default the shared i18n singleton to "en" for the rest of the test process —
+// otherwise default the shared i18n singleton to "en" for the rest of the test process:
 // mountWithProviders.ts resets this for component tests, but this file drives the composable
 // directly via withSetup, bypassing that helper.
 beforeEach(() => {
@@ -51,7 +51,7 @@ describe("useExerciseName", () => {
       const { result } = setup();
 
       expect(result.exerciseHowTo("back-squat")).toBe(
-        "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken — spürbar in den vorderen Oberschenkel.",
+        "Rücken gerade halten, Knie in Fußrichtung, kontrolliert absenken, spürbar in den vorderen Oberschenkel.",
       );
     });
 

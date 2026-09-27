@@ -1,7 +1,7 @@
 /**
  * The active workout's state machine. Every mutation (log a set, pause, advance) writes to
  * IndexedDB immediately via persist(), so a crashed tab or a locked phone mid-set loses
- * nothing — on next load, restore() picks the workout back up exactly where it left off.
+ * nothing: on next load, restore() picks the workout back up exactly where it left off.
  */
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { MAX_PLAUSIBLE_REPS, MAX_PLAUSIBLE_WEIGHT_KG, warmupRamp, type SetKind } from "@liftr/shared";
@@ -13,7 +13,7 @@ import { setKindLabel } from "../lib/setKindLabels";
 import { computeAdvanceAfterLog } from "../lib/supersetAdvance";
 import { useSyncStore, type RankVerdict } from "./syncStore";
 
-// Re-exported for existing call sites (SetKindPicker.vue, WorkoutPage.vue) — the `SetKind` type
+// Re-exported for existing call sites (SetKindPicker.vue, WorkoutPage.vue): the `SetKind` type
 // itself lives in @liftr/shared/workout/setKind.ts so the server's routine zod schema and
 // routine-template SetTarget share the same vocabulary, letting a routine pre-plan a set's
 // kind rather than only reclassify it live; `setKindLabel` is client-owned (lib/setKindLabels.ts)
@@ -24,7 +24,7 @@ export const WEIGHT_STEP_KG = 1.25;
 export const REPS_STEP = 1;
 /** RestTimer.vue's own built-in fallback when an exercise doesn't override it. */
 export const DEFAULT_REST_SECONDS = 90;
-/** Threshold for `isStale` below — 3 hours is well past any realistic single session
+/** Threshold for `isStale` below: 3 hours is well past any realistic single session
  *  (including a long leg day + accessories) without being so tight it nags mid-workout. */
 export const STALE_WORKOUT_SECONDS = 3 * 60 * 60;
 
@@ -67,7 +67,7 @@ interface ActiveWorkoutState {
   totalPausedMs: number;
   currentExerciseIndex: number;
   exercises: ActiveExercise[];
-  /** Free-text notes for the whole session — rides along in `finish()`'s
+  /** Free-text notes for the whole session: rides along in `finish()`'s
    *  `enqueueAndAwaitFlush` payload, the same offline-safe path as everything else in this
    *  loop, rather than a second online-only PATCH call after finish. */
   workoutNotes: string | null;
@@ -79,7 +79,7 @@ export interface StartSetTarget {
    *  "extra kg" added on top of bodyweight (weighted dips/pull-ups). */
   weightKg: number | null;
   /** Lets a routine pre-plan a set's kind instead of only reclassifying it live via
-   *  SetKindPicker.vue — absent/undefined means "normal", same as before this field existed. */
+   *  SetKindPicker.vue: absent/undefined means "normal", same as before this field existed. */
   kind?: SetKind;
 }
 
@@ -87,10 +87,10 @@ export interface StartExerciseInput {
   exerciseId: string;
   name: string;
   isBodyweight: boolean;
-  /** One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid) — set count is this array's length. */
+  /** One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid): set count is this array's length. */
   targetSets: StartSetTarget[];
   /** Per set index, oldest-first. `reps: null` (like `weightKg: null`) means "no history for
-   *  this set index" — distinct from a genuine historical 0, so the reps-defaulting fallback
+   *  this set index": distinct from a genuine historical 0, so the reps-defaulting fallback
    *  below can tell "nothing to fall back to" apart from "you really did 0 last time". */
   lastTime?: { weightKg: number | null; reps: number | null }[];
   supersetGroup?: number | null;
@@ -99,7 +99,7 @@ export interface StartExerciseInput {
 }
 
 /**
- * `state` is a Vue reactive Proxy (Pinia's $state) — structured clone (what IndexedDB's put()
+ * `state` is a Vue reactive Proxy (Pinia's $state): structured clone (what IndexedDB's put()
  * uses under the hood) does not reliably clone nested reactive Proxies, and fails *silently*
  * here since callers don't await/catch this fire-and-forget write. Strip reactivity first via
  * a JSON round-trip (the state is plain JSON-safe data: no Dates, no functions) so the write
@@ -109,11 +109,11 @@ function persist(state: ActiveWorkoutState) {
   void saveActiveWorkout(JSON.parse(JSON.stringify(state)));
 }
 
-/** Lightweight structural guard for loadActiveWorkout() — catches a persisted value from an
+/** Lightweight structural guard for loadActiveWorkout(): catches a persisted value from an
  *  older app version whose shape has since drifted (a missing/renamed field, a value saved
  *  before `exercises` was even an array) so restore() falls back to "nothing saved" instead of
  *  crashing partway through backfilling it below. Doesn't validate every nested field (that's
- *  what the backfills in restore() are for) — just enough to make iterating `exercises` and
+ *  what the backfills in restore() are for): just enough to make iterating `exercises` and
  *  `sets` safe. */
 function isActiveWorkoutState(value: unknown): value is ActiveWorkoutState {
   if (!value || typeof value !== "object") return false;
@@ -144,7 +144,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
 
     currentExercise: (state): ActiveExercise | null => state.exercises[state.currentExerciseIndex] ?? null,
 
-    /** first unlogged set of the current exercise — the one the steppers edit right now. */
+    /** first unlogged set of the current exercise: the one the steppers edit right now. */
     currentSet(): ActiveSet | null {
       const ex = this.currentExercise;
       if (!ex) return null;
@@ -153,7 +153,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
 
     /**
      * True once every set in every exercise is logged. NOT the same as `currentExercise`
-     * being null — the index stays pointed at the last exercise once its own sets are done
+     * being null: the index stays pointed at the last exercise once its own sets are done
      * (there's nothing left to auto-advance *to*), so the "workout complete" view must check
      * this explicitly rather than assuming currentExercise goes null on completion.
      */
@@ -168,16 +168,16 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     progressLabel: (state) => t("workout.progressLabel", { current: state.currentExerciseIndex + 1, total: state.exercises.length }),
 
     /** A workout left running for hours (phone locked, app backgrounded and forgotten, a crash
-     *  that never got back to the app) has no natural end. This doesn't auto-end anything —
+     *  that never got back to the app) has no natural end. This doesn't auto-end anything:
      *  silently discarding or finishing a session the user never actually confirmed would be
-     *  its own bug — it just flags "this has been going a suspiciously long time" so
+     *  its own bug: it just flags "this has been going a suspiciously long time" so
      *  WorkoutPage.vue can nudge the user to explicitly finish or cancel it, once, on resume. */
     isStale(): boolean {
       return this.isActive && this.elapsedSeconds > STALE_WORKOUT_SECONDS;
     },
 
     /**
-     * The warm-up ramp only makes sense before any real work has happened on this exercise —
+     * The warm-up ramp only makes sense before any real work has happened on this exercise:
      * offering it mid-exercise, or for bodyweight movements with no meaningful "working
      * weight" yet, would just be clutter in the logging flow.
      */
@@ -200,18 +200,18 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
         for (const ex of saved.exercises) {
           for (const s of ex.sets) {
             if (!s.kind) s.kind = s.isWarmup ? "warmup" : "normal";
-            // Same reasoning for rpe/notes — a session persisted before these fields existed
+            // Same reasoning for rpe/notes: a session persisted before these fields existed
             // loads back with them undefined, which would crash the RPE chip's render.
             if (s.rpe === undefined) s.rpe = null;
             if (s.notes === undefined) s.notes = null;
           }
           // Same backfill for a workout persisted before restBetweenSetsSeconds/
-          // restAfterExerciseSeconds existed — they'd otherwise load back as undefined and
+          // restAfterExerciseSeconds existed: they'd otherwise load back as undefined and
           // RestTimer would render "undefined:undefined".
           if (ex.restBetweenSetsSeconds == null) ex.restBetweenSetsSeconds = DEFAULT_REST_SECONDS;
           if (ex.restAfterExerciseSeconds == null) ex.restAfterExerciseSeconds = DEFAULT_REST_SECONDS;
         }
-        // Workout-level notes — same undefined-backfill reasoning as above.
+        // Workout-level notes: same undefined-backfill reasoning as above.
         if (saved.workoutNotes === undefined) saved.workoutNotes = null;
         this.$patch(saved);
       }
@@ -250,7 +250,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
             restAfterExerciseSeconds: input.restAfterExerciseSeconds ?? DEFAULT_REST_SECONDS,
             sets: Array.from({ length: input.targetSets.length }, (_, i) => {
               const target = input.targetSets[i]!;
-              // isBodyweight no longer forces weightKg to null unconditionally — a routine can
+              // isBodyweight no longer forces weightKg to null unconditionally: a routine can
               // set a per-set "extra kg" target (weighted dips/pull-ups) even on a bodyweight
               // exercise. It's only null when the target itself is null (plain bodyweight) and
               // there's no historical weight to fall back to either.
@@ -258,7 +258,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
               return {
                 index: i,
                 weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-                // Reps always start at the routine's target, not last time's actual — unlike
+                // Reps always start at the routine's target, not last time's actual: unlike
                 // weight (progressive overload), reps are the thing the routine prescribes, and
                 // defaulting to whatever was actually done last time (which may have been a
                 // failed/short set) silently drifted the target down.
@@ -300,7 +300,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       const set = this.currentSet;
       if (!set) return;
       // Clamped to the same MAX_PLAUSIBLE_* the server enforces, closing off inflating weight/reps
-      // for XP/ranks — capping here means the normal stepper flow can never construct a value the
+      // for XP/ranks: capping here means the normal stepper flow can never construct a value the
       // server would reject, which matters beyond just UX: a rejected log_set stays queued and
       // gets retried forever (see syncStore.ts's flush()), so letting the UI produce one at all
       // would wedge the sync queue on a value that can never succeed.
@@ -313,7 +313,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** Direct numeric entry — ±1-per-tap-only made a 20kg->100kg change take ~64 taps. Same
+    /** Direct numeric entry: ±1-per-tap-only made a 20kg->100kg change take ~64 taps. Same
      *  clamps as adjustCurrentSet's delta path, so typing a value can never produce a set the
      *  server would reject either. Reps rounds to a whole number; weight rounds to the nearest
      *  step so an oddly-typed value (e.g. "83") doesn't silently ignore the app's own
@@ -331,7 +331,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** RPE capture — off the primary logging path: no sync enqueue here, the value rides
+    /** RPE capture: off the primary logging path: no sync enqueue here, the value rides
      *  along in `logCurrentSet()`'s own `log_set` payload once the set is actually logged,
      *  same as weightKg/reps. */
     setCurrentSetRpe(rpe: number | null) {
@@ -341,7 +341,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** Set-level notes capture — same fire-and-forget-free timing as setCurrentSetRpe above. */
+    /** Set-level notes capture: same fire-and-forget-free timing as setCurrentSetRpe above. */
     setCurrentSetNotes(notes: string | null) {
       const set = this.currentSet;
       if (!set) return;
@@ -349,7 +349,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       persist(this.$state);
     },
 
-    /** Workout-level notes — captured during the session, sent as part of `finish()`'s existing
+    /** Workout-level notes: captured during the session, sent as part of `finish()`'s existing
      *  `enqueueAndAwaitFlush` payload, not a separate network call. */
     setWorkoutNotes(notes: string | null) {
       this.workoutNotes = notes;
@@ -359,7 +359,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     /**
      * Reclassifies a set ("Satzart auswählen"). Scoped to sets that haven't been logged yet: a
      * logged set is already synced server-side and this store has no update-in-place sync
-     * mutation (log_set is an idempotent insert keyed on clientId, not an upsert-by-content) —
+     * mutation (log_set is an idempotent insert keyed on clientId, not an upsert-by-content):
      * reclassifying history would need a real edit endpoint, which is a bigger change than this
      * picker. Deciding what the *next* set will be is the actual use case anyway.
      */
@@ -385,11 +385,11 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
 
     /**
      * Returns the rest duration (seconds) that should fire after this set, or null for no rest.
-     * Standalone exercises always rest between sets, using the exercise's own restBetweenSetsSeconds —
+     * Standalone exercises always rest between sets, using the exercise's own restBetweenSetsSeconds:
      * except for its very last set, which uses restAfterExerciseSeconds instead (the pause
      * before the *next* exercise starts, not another set of this one). A superset/circuit
-     * instead advances round-robin between its member exercises with **no** rest in between —
-     * that's the whole point of a superset — resting (at restBetweenSetsSeconds) only once a
+     * instead advances round-robin between its member exercises with **no** rest in between:
+     * that's the whole point of a superset: resting (at restBetweenSetsSeconds) only once a
      * full round (one set of every member) is done, i.e. when the round-robin would wrap back
      * to an earlier position in the group, and at restAfterExerciseSeconds once the whole group
      * is finished and it's moving on to the next exercise.
@@ -398,8 +398,8 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
       const ex = this.currentExercise;
       const set = this.currentSet;
       if (!ex || !set) return null;
-      // A set with 0 reps isn't a completed set (and reps now defaults to last-time/target —
-      // see the seeding logic in start()/addExercise() above — so this is no longer "was the
+      // A set with 0 reps isn't a completed set (and reps now defaults to last-time/target:
+      // see the seeding logic in start()/addExercise() above: so this is no longer "was the
       // stepper ever touched", just a sanity floor). The UI already disables "Satz speichern"
       // in this state; this is the belt-and-braces guard against a submit slipping through some
       // other path.
@@ -471,7 +471,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     },
 
     /**
-     * Adds an exercise mid-session — a busy squat rack or a piece of equipment in use would
+     * Adds an exercise mid-session: a busy squat rack or a piece of equipment in use would
      * otherwise dead-end the workout or force cancelling it entirely. Builds one exercise the
      * same way start() does, appends it, and queues the matching "add_exercise" sync item so
      * log_set for its sets has a real workout_exercise row to reference server-side (see
@@ -485,7 +485,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
         exerciseId: input.exerciseId,
         name: input.name,
         isBodyweight: input.isBodyweight,
-        supersetGroup: null, // added mid-session — never auto-joins an existing superset
+        supersetGroup: null, // added mid-session: never auto-joins an existing superset
         restBetweenSetsSeconds: input.restBetweenSetsSeconds ?? DEFAULT_REST_SECONDS,
         restAfterExerciseSeconds: input.restAfterExerciseSeconds ?? DEFAULT_REST_SECONDS,
         sets: Array.from({ length: input.targetSets.length }, (_, i) => {
@@ -494,7 +494,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
           return {
             index: i,
             weightKg: input.lastTime?.[i]?.weightKg ?? fallbackWeight,
-            // Same reps-defaulting as start() above — always the routine's target, not last time's actual.
+            // Same reps-defaulting as start() above: always the routine's target, not last time's actual.
             reps: target.reps,
             isWarmup: (target.kind ?? "normal") === "warmup",
             kind: target.kind ?? "normal",
@@ -520,7 +520,7 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     },
 
     /**
-     * Skip past the current exercise without deleting it — jumps to the next exercise with any
+     * Skip past the current exercise without deleting it: jumps to the next exercise with any
      * unlogged set, wrapping around, so an exercise you can't do right now (equipment in use)
      * doesn't block the rest of the session. Unlike removing it outright, you can always
      * jumpToExercise() back to it later via the rail.
@@ -548,10 +548,10 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
     },
 
     /**
-     * Discards the in-progress session entirely — no finish_workout sync item, so the server's
+     * Discards the in-progress session entirely: no finish_workout sync item, so the server's
      * workout row (if start_workout already synced) is simply left with endedAt: null forever,
      * which /api/history already filters out (isNotNull(workouts.endedAt)). Any sets logged
-     * before cancelling stay synced and keep counting toward ranks/PRs — cancelling only means
+     * before cancelling stay synced and keep counting toward ranks/PRs: cancelling only means
      * "I'm not finishing this session," not "undo everything I already did."
      */
     async cancelWorkout() {
@@ -563,11 +563,11 @@ export const useActiveWorkoutStore = defineStore("activeWorkout", {
      * Returns this session's rank verdicts (one per exercise that had a non-warmup set logged)
      * plus its two session-level XP bonuses (consistency and variety), so the caller can build
      * the finish sequence's reward beat. Rank is recomputed once here, when
-     * the workout actually finishes, not after every individual set — so unlike every other
+     * the workout actually finishes, not after every individual set: so unlike every other
      * mutation in this store, this one is awaited all the way through the network flush rather
      * than fire-and-forget: the caller needs the real verdicts/bonuses before it decides what to
      * show, not a guess made a moment later. Returns all-empty/zero if offline or the flush
-     * otherwise didn't complete this round — the finish screen just shows no rank-ups/bonuses for
+     * otherwise didn't complete this round: the finish screen just shows no rank-ups/bonuses for
      * that session; a later background flush still lands the workout itself either way.
      */
     async finish(): Promise<{

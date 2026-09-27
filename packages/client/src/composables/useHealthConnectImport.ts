@@ -2,9 +2,9 @@
  * Health Connect status/import card. Native-only (Android), so the whole card is hidden on
  * web/iOS builds rather than shown broken (see isHealthConnectAvailable() re-export). Permission
  * grant here; the actual import check then also happens automatically on every app resume (see
- * syncStore.ts) — `healthConnectConnected` tracks which state the button is in (see its own
- * comment) so that's visible in the UI instead of both states sharing one "verbinden" label.
- * Extracted out of ProfilePage.vue — that file mixed six+ unrelated settings concerns together.
+ * syncStore.ts). `healthConnectConnected` tracks which state the button is in (see its own
+ * comment), so that's visible in the UI instead of both states sharing one "verbinden" label.
+ * Extracted out of ProfilePage.vue, which mixed six+ unrelated settings concerns together.
  */
 import { ref } from "vue";
 import { refreshCardioDerivedStores } from "./useCardioDerivedStores";
@@ -22,11 +22,11 @@ export function useHealthConnectImport() {
   const healthConnectStatus = ref("");
   const healthConnectBusy = ref(false);
   // isHealthConnectAvailable() is async (it initializes the native plugin's lateinit client via
-  // Health.isHealthAvailable() — see healthConnect.ts) so the card's v-if needs a resolved ref
+  // Health.isHealthAvailable(), see healthConnect.ts) so the card's v-if needs a resolved ref
   // rather than calling the async function directly in the template.
   const healthConnectAvailable = ref(false);
   // Drives the button's label ("Verbinden" vs "Jetzt synchronisieren") and the hint text below
-  // it — without this, a user who already granted permission (so the button's only remaining
+  // it: without this, a user who already granted permission (so the button's only remaining
   // job is to trigger an immediate re-sync) saw the exact same "verbinden" wording as a first-time
   // connect, with nothing telling them this tap is a sync, not a fresh connection.
   const healthConnectConnected = ref(false);
@@ -38,7 +38,7 @@ export function useHealthConnectImport() {
   async function connectHealthConnect() {
     healthConnectBusy.value = true;
     try {
-      // Only request (native permission activity, pauses the app) when not already granted — a
+      // Only request (native permission activity, pauses the app) when not already granted, since a
       // plain re-sync tap must never trigger that pause/resume cycle (see healthConnect.ts).
       let result = await checkHealthConnectPermissions();
       if (!result.granted) {
@@ -53,7 +53,7 @@ export function useHealthConnectImport() {
         return;
       }
       const { imported, skipped, failed } = await importNewHealthConnectWorkouts("manual");
-      // Only an actual import changes XP/streak/rank — a no-op resync (nothing new to import) or
+      // Only an actual import changes XP/streak/rank: a no-op resync (nothing new to import) or
       // an all-skipped/all-failed run has nothing for these stores to reflect.
       if (imported > 0) refreshCardioDerivedStores();
       if (imported === 0 && failed === 0 && skipped === 0) {
@@ -67,11 +67,11 @@ export function useHealthConnectImport() {
         healthConnectStatus.value = t("healthConnect.status.detailsWrap", { parts: parts.join(", ") });
       }
     } catch (err) {
-      // ApiError carries the server's actual validation reason (see api.ts) — surfacing it here
+      // ApiError carries the server's actual validation reason (see api.ts), so surfacing it here
       // (rather than the generic "POST ... failed: 400" from err.message) is what turned this
       // failure mode from "no further logs" into something the user (and support) can act on.
       // `detail` doubles as a machine-readable code for some failures (e.g.
-      // "no_route_or_distance") — serverErrorMessage() translates those and falls back to the
+      // "no_route_or_distance"); serverErrorMessage() translates those and falls back to the
       // raw text for everything else.
       healthConnectStatus.value =
         err instanceof ApiError

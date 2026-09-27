@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 // idb.ts is the only place raw IndexedDB access happens; it wraps the `idb` package, which
 // itself needs a real `indexedDB` global that doesn't exist under vitest's default node
-// environment. Mock `idb`'s openDB so these tests exercise idb.ts's own logic — the store/key
-// shaping and the getDb() memoization — without touching a real database.
+// environment. Mock `idb`'s openDB so these tests exercise idb.ts's own logic: the store/key
+// shaping and the getDb() memoization: without touching a real database.
 //
 // vi.mock factories are hoisted above the rest of the file, so any mock fn/state they reference
-// must come from vi.hoisted() — plain top-level `const`s would still be in their temporal dead
+// must come from vi.hoisted(): plain top-level `const`s would still be in their temporal dead
 // zone when the (hoisted) factory actually runs.
 const { openDBMock, putMock, getAllMock, deleteMock, getMock, getCapturedUpgrade } = vi.hoisted(() => {
   let capturedUpgrade: ((db: { createObjectStore: (...args: unknown[]) => unknown }) => void) | undefined;
@@ -35,7 +35,7 @@ import {
 } from "~client/lib/idb";
 
 describe("idb", () => {
-  // Runs first so it's the call that actually triggers getDb()'s openDB() — every function under
+  // Runs first so it's the call that actually triggers getDb()'s openDB(): every function under
   // test shares one memoized connection, so this also anchors the "opened only once" assertion
   // at the bottom of this file.
   it("opens the 'liftr' database at version 1 and creates both object stores on upgrade", async () => {
@@ -65,7 +65,7 @@ describe("idb", () => {
 
   it("listOutboxItems sorts by queuedAt ascending, not by getAll's (UUID key) order", async () => {
     // getAll on a clientId-keyed store returns rows in ascending UUID order, which has nothing
-    // to do with when the items were actually queued — these clientIds are deliberately NOT in
+    // to do with when the items were actually queued: these clientIds are deliberately NOT in
     // queuedAt order, mirroring a real offline session's start_workout/log_set/finish_workout
     // sequence, each minted with a fresh random UUID.
     getAllMock.mockResolvedValueOnce([

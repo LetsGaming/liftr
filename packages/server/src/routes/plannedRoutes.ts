@@ -13,7 +13,7 @@ import {
 import { createPlannedRoute, previewPlannedRoute, updatePlannedRoute } from "../services/plannedRouteService.js";
 import type { ZodFastifyInstance } from "../types.js";
 
-// `gen` marks a waypoint the loop generator placed rather than the user — see the field's doc on
+// `gen` marks a waypoint the loop generator placed rather than the user; see the field's doc on
 // repositories/plannedRouteRepository.ts's Waypoint interface for why this needs no schema/
 // migration beyond this one optional field.
 const waypointSchema = z.object({
@@ -92,7 +92,7 @@ export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // Not persisted, no id — this is what makes the map show the real snapped line while editing,
+  // Not persisted, no id: this is what makes the map show the real snapped line while editing,
   // via the exact same computeGeometry the create/update paths use, so it can't drift from them.
   // Rate-limited: unlike the other routes here, this one can call the paid OpenRouteService API.
   app.post(
@@ -104,7 +104,7 @@ export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
   );
 
   // Rate-limited: create computes route geometry via the same paid OpenRouteService call as
-  // /preview (up to 2 outbound ORS requests per call for a closed loop) — same limit as /preview.
+  // /preview (up to 2 outbound ORS requests per call for a closed loop), so it uses the same limit as /preview.
   app.post(
     "/api/planned-routes",
     {
@@ -118,7 +118,7 @@ export function registerPlannedRouteRoutes(app: ZodFastifyInstance, db: AppDb) {
     },
   );
 
-  // Rate-limited: same reason as create above — update recomputes geometry via the same paid
+  // Rate-limited for the same reason as create above: update recomputes geometry via the same paid
   // OpenRouteService call when waypoints change.
   app.patch(
     "/api/planned-routes/:id",

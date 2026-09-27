@@ -2,10 +2,10 @@
 /**
  * Tier badge + LP bar + next-target line. Extracted out of RanksPage.vue's card markup so the
  * exact same unit renders in three places: the Ränge grid, the active-workout focus column, and
- * the finish sequence's first beat — one implementation, not three that can drift.
+ * the finish sequence's first beat: one implementation, not three that can drift.
  *
  * LP is 0-100 within the current tier/division band. `.bar-fill` (styles/motion.css) animates
- * its width whenever `lp` changes — in the active-workout column that's a static read of the
+ * its width whenever `lp` changes: in the active-workout column that's a static read of the
  * session's starting rank (recompute runs once at finish, not per set, so it doesn't move
  * mid-session); on the Ränge grid and in the finish sequence it animates whenever the
  * underlying data actually updates.
@@ -26,26 +26,26 @@ const props = withDefaults(
     nextTargetReps?: number | null;
     /** Pre-formatted override for the "next target" line, for callers whose target isn't a
      *  weight×reps pair (e.g. RanksPage.vue's running rows, where the next target is a pace).
-     *  Takes precedence over nextTargetWeightKg/nextTargetReps when set — this keeps the
+     *  Takes precedence over nextTargetWeightKg/nextTargetReps when set: this keeps the
      *  weight/reps formatting (and its "???" fallback) as the strength-specific default while
      *  letting a caller opt into fully custom wording instead of forking this component. */
     nextTargetLabel?: string | null;
     trust?: "real" | "derived" | "synthetic";
-    /** "card" — badge left, stacked text right. "inline" — compact single row for the
-     *  active-workout focus column, where vertical space is scarce. "hero" — vertical stack with
+    /** "card": badge left, stacked text right. "inline": compact single row for the
+     *  active-workout focus column, where vertical space is scarce. "hero": vertical stack with
      *  a large centered badge as the card's focal point (tier+LP header above it, labeled Kg/Wdh
-     *  fields and the bar below) — the Kraft grid's front face, modeled directly on the Liftoff
+     *  fields and the bar below): the Kraft grid's front face, modeled directly on the Liftoff
      *  reference's own card layout rather than the compact badge-left row the other two variants
      *  use. */
     variant?: "card" | "inline" | "hero";
     /** When the displayed (possibly decayed) tier/division sits below peak, a caption names the
-     *  peak instead of silently showing a lower number — never hide why the rank moved. Omit at
+     *  peak instead of silently showing a lower number: never hide why the rank moved. Omit at
      *  call sites that don't have peak data (e.g. the in-session focus column, which never
      *  decays mid-workout). */
     peakTier?: string | null;
     peakDivision?: number | null;
     /** Set by the caller right after a workout that applied a buffed recovery gain to this
-     *  exercise (e.g. "+18 LP"). A one-time celebratory caption, not persisted — the caller is
+     *  exercise (e.g. "+18 LP"). A one-time celebratory caption, not persisted: the caller is
      *  responsible for only passing this immediately after the relevant recompute, not on every
      *  render. */
     recoveryGainLabel?: string | null;
@@ -53,7 +53,7 @@ const props = withDefaults(
      *  reduced by the plausibility gate. Never shows exact thresholds. */
     plausibilityNote?: string | null;
     /** The Ränge grid cards (RankLifterSection.vue/RankRunnerSection.vue) already render the
-     *  medal themselves, in ListCard's #badge slot next to the exercise name — set false there so
+     *  medal themselves, in ListCard's #badge slot next to the exercise name: set false there so
      *  it isn't shown twice. Every other call site keeps the default. */
     badge?: boolean;
   }>(),
@@ -81,7 +81,7 @@ const decayCaption = computed(() => {
   return t("rank.decayCaption", { tier: tierLabel(props.peakTier as RankTier), division: DIVISION_LABEL[props.peakDivision] });
 });
 
-/** Visible caption rather than a `title` attribute — a tooltip is invisible on touch (the app's
+/** Visible caption rather than a `title` attribute: a tooltip is invisible on touch (the app's
  *  only platform) and to screen readers. The page-level LP-explainer already teaches what "≈"
  *  means in general; this names the specific case per card as a normal caption alongside the
  *  decay/recovery/plausibility lines below, rather than a second interactive element (which
@@ -92,18 +92,18 @@ const trustLabel = computed(() => {
   return null;
 });
 
-/** No peak means the rank engine has never corroborated this band on a second calendar day —
+/** No peak means the rank engine has never corroborated this band on a second calendar day:
  *  the displayed tier is a single session's result, not yet a proven, decay-tracked peak.
  *  Mutually exclusive with decayCaption, which requires a peak to name. */
 const isProvisional = computed(() => props.peakTier == null);
 
 /** 1-2 chip strings for the "next target" readout: outline chip first (weight, or the sole chip
- *  when there's only one), filled chip second (reps) — a lone filled pill next to nothing reads
+ *  when there's only one), filled chip second (reps): a lone filled pill next to nothing reads
  *  worse than a single outline one, so a reps-only/label-only target renders as one outline chip,
  *  never a lone filled one. */
 const nextChips = computed<string[]>(() => {
   if (props.nextTargetLabel != null) return [props.nextTargetLabel];
-  // Both targets null means the top of the currently-modeled standards has been reached —
+  // Both targets null means the top of the currently-modeled standards has been reached:
   // "???" invites "what's next?" instead of flatly stating there's nothing left, which reads as
   // a dead end. A real next target still renders normally below.
   if (props.nextTargetReps == null) return [t("rank.progress.topOfStandards")];
@@ -111,7 +111,7 @@ const nextChips = computed<string[]>(() => {
   return props.nextTargetWeightKg != null ? [`${props.nextTargetWeightKg} kg`, reps] : [reps];
 });
 
-/** hero variant only — the same next-target data as `nextChips` above, but as separate labeled
+/** hero variant only: the same next-target data as `nextChips` above, but as separate labeled
  *  fields (Liftoff's own "Kg" / "Wdh." boxes) instead of one combined pill string per value, since
  *  the hero layout has room to label each field the way the compact card/inline rows don't. Same
  *  ordering/fallback rules as nextChips (weight first when present, "???" at the top of modeled
@@ -134,18 +134,18 @@ const heroFields = computed<HeroField[]>(() => {
 });
 
 const isTopBand = computed(() => ordinal(props.tier as Tier, props.division as Division) === MAX_ORDINAL);
-/** Feeds the bar's scaleX only — a plain [0,100] clamp so a decayed apex peak (which can
+/** Feeds the bar's scaleX only: a plain [0,100] clamp so a decayed apex peak (which can
  *  legitimately sit anywhere between 0 and 100 LP) still shows a true partial fill instead of
  *  always reading as full just because the tier is apex. */
 const lpBarPercent = computed(() => Math.max(0, Math.min(100, Math.round(props.lp))));
-/** Feeds the numeric readout only — uncapped once truly in the top band (lp can grow past 100
+/** Feeds the numeric readout only: uncapped once truly in the top band (lp can grow past 100
  *  there), clamped everywhere else (LP genuinely cannot exceed 100 below Apex). */
 const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props.lp)) : lpBarPercent.value));
 </script>
 
 <template>
   <div class="rank-progress" :class="[`t-${tier}`, `variant-${variant}`, { 'panel-reward': variant === 'inline' }]">
-    <!-- hero — vertical stack, badge as the card's focal point (Liftoff's own card layout: tier
+    <!-- hero: vertical stack, badge as the card's focal point (Liftoff's own card layout: tier
          + LP above a large centered medal, target fields and the bar below it). -->
     <template v-if="variant === 'hero'">
       <div class="rp-hero-tier">
@@ -170,7 +170,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
       <div v-if="plausibilityNote" class="rp-plausibility">{{ plausibilityNote }}</div>
     </template>
 
-    <!-- card/inline — compact badge-left row. -->
+    <!-- card/inline: compact badge-left row. -->
     <template v-else>
       <TierBadge v-if="badge" :tier="tier" />
       <div class="rp-body">
@@ -236,7 +236,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   /* var(--text), not var(--tt): --tt is an on-metal color (tokens.css's per-tier tokens, all
      near-white) meant for text sitting directly on a saturated tier fill. This readout now sits
      on the card's own neutral glass (or .panel-reward for the inline variant, which re-pins
-     --text locally) — --tt would be unreadable in light theme, where the page background is
+     --text locally): --tt would be unreadable in light theme, where the page background is
      light and there's no dark fill underneath to contrast against. */
   color: var(--text);
 }
@@ -263,10 +263,10 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-weight: 700;
   color: var(--faint);
 }
-/* Twin stat chips (weight outline, reps filled) replacing a plain text line — the outline chip is
+/* Twin stat chips (weight outline, reps filled) replacing a plain text line: the outline chip is
    the sole chip for a reps-only/pace/label target (never a lone filled pill, see nextChips' own
    comment). `.fill` uses --tier-deep (--b1), not --b3, so the on-metal --tt tint stays readable
-   against it — the same reasoning `.rp-tier` above already gives for avoiding --tt on lighter
+   against it: the same reasoning `.rp-tier` above already gives for avoiding --tt on lighter
    surfaces. */
 .rp-chip {
   font-variant-numeric: tabular-nums;
@@ -279,7 +279,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   color: var(--tt, var(--text));
   background: var(--tier-deep, var(--surface-3));
 }
-/* A rank loss is the second-loudest thing on the card after the tier name — deliberately not
+/* A rank loss is the second-loudest thing on the card after the tier name: deliberately not
    faint text, since it's the loudest event a rank ladder can produce. */
 .rp-decay {
   font-size: 12.5px;
@@ -306,11 +306,11 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-style: italic;
 }
 
-/* card variant (Ränge grid, ExerciseInfoPanel's Rang tab) — larger badge, roomier text. `variant`
+/* card variant (Ränge grid, ExerciseInfoPanel's Rang tab): larger badge, roomier text. `variant`
    now only controls density; which surface it sits on (plain card glass, or ExerciseInfoPanel's
    .panel-reward) is the caller's choice, not baked in here. Prefixed `variant-` (not a bare
    `card`/`inline` class matching the `variant` prop) so this component's own root class can never
-   collide with an unrelated global class of the same name — it did, once list-card.css's own
+   collide with an unrelated global class of the same name: it did, once list-card.css's own
    `.card` became this component's typical container (RankLifterSection.vue/
    RankRunnerSection.vue), matching a descendant selector meant for the grid's own cards. */
 .rank-progress.variant-card .tier-emblem {
@@ -320,7 +320,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-size: 12px;
 }
 
-/* inline variant (active-workout focus column, finish-sequence beat) — compact, sits on the
+/* inline variant (active-workout focus column, finish-sequence beat): compact, sits on the
    app's normal dark surface rather than a tier gradient, so text uses the standard tokens
    rather than --tt. Uses .panel-reward (tokens.css), not the flat .panel recipe, since this is
    the one progress readout visible for most of a session. */
@@ -333,9 +333,9 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   color: var(--dim);
 }
 
-/* hero variant (Kraft grid's flip-card front face) — modeled on the Liftoff reference's own card:
+/* hero variant (Kraft grid's flip-card front face): modeled on the Liftoff reference's own card:
    tier+LP as a header, a large centered medal as the card's actual focal point (the thing this
-   variant exists to fix — every other variant treats the badge as a small label next to text),
+   variant exists to fix: every other variant treats the badge as a small label next to text),
    labeled Kg/Wdh. fields, the bar last. Column layout, centered, replacing the row layout the
    other two variants share. */
 .rank-progress.variant-hero {
@@ -363,7 +363,7 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
 }
 .rp-hero-fields {
   display: flex;
-  /* Tighter than --sp3 (12px) — the Kraft grid runs these cards two-up on phones (rank-card.css),
+  /* Tighter than --sp3 (12px): the Kraft grid runs these cards two-up on phones (rank-card.css),
      down to a ~160px column, and two field boxes at the old 52px min-width + 12px gap (116px)
      plus the card's own side padding didn't fit that width. */
   gap: 6px;
@@ -380,10 +380,10 @@ const lpDisplay = computed(() => (isTopBand.value ? Math.max(0, Math.round(props
   font-weight: 700;
   color: var(--faint);
 }
-/* Same outline/fill vocabulary as .rp-chip (weight outline, reps filled — see that rule's own
+/* Same outline/fill vocabulary as .rp-chip (weight outline, reps filled: see that rule's own
    comment), just laid out as a labeled box instead of a pill, to match Liftoff's boxed Kg/Wdh.
    fields. Sized to fit two side by side on the narrowest two-up phone card (see .rp-hero-fields'
-   own comment) — smaller than the old 52px/12px would allow. */
+   own comment): smaller than the old 52px/12px would allow. */
 .rp-hero-field-value {
   min-width: 40px;
   padding: 6px 8px;

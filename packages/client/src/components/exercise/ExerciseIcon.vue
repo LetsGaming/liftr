@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * Equipment glyph for an exercise (see lib/equipmentIcons.ts for the source mapping and why
- * it's equipment-keyed, not per-exercise). Static, hand-authored SVG paths only — never user
- * input — so v-html here carries no injection risk, same reasoning as App.vue's nav icons.
+ * it's equipment-keyed, not per-exercise). Static, hand-authored SVG paths only: never user
+ * input: so v-html here carries no injection risk, same reasoning as App.vue's nav icons.
  */
 import { computed } from "vue";
 import { equipmentIconSvg } from "../../lib/equipmentIcons";

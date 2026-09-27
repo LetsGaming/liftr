@@ -1,7 +1,7 @@
 import { createPinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
-// activeWorkoutStore's mutations persist() to IndexedDB (lib/idb.ts) and read syncStore — neither
+// activeWorkoutStore's mutations persist() to IndexedDB (lib/idb.ts) and read syncStore; neither
 // exists/is relevant under jsdom, same stub as tests/client/stores/activeWorkoutStore.spec.ts.
 vi.mock("~client/lib/idb", () => ({
   saveActiveWorkout: vi.fn(),
@@ -94,7 +94,7 @@ describe("ExerciseRail", () => {
     ]);
 
     // Two spaces before "·" is the real rendered output (a text-node newline collapses to one
-    // space, plus the <template> branch's own leading space) — not condensed further by Vue.
+    // space, plus the <template> branch's own leading space), not condensed further by Vue.
     expect(wrapper.find(".rail-item .meta span").text()).toBe("2 / 3 Sätze  · 8 Wdh.");
   });
 

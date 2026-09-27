@@ -39,14 +39,14 @@ const router = useRouter();
 
 /** Mirrors RoutineOverviewPage.vue's jetztStarten(): startRoutine() itself never navigates, so
  *  the card's own "Starten" button is responsible for getting to the workout screen once the
- *  routine is actually active. `replace`, not `push` — see that page's own comment on why. */
+ *  routine is actually active. `replace`, not `push`: see that page's own comment on why. */
 async function startFromCard(routine: Routine) {
   await startRoutine(routine);
   await router.replace("/workout");
 }
 
 /** Tapping a routine card opens the Routine Overview screen instead of starting the routine
- *  immediately — that screen's own sticky "Jetzt starten" button is the quick-start path, so
+ *  immediately: that screen's own sticky "Jetzt starten" button is the quick-start path, so
  *  this card doesn't need its own inline shortcut. */
 function openOverview(routineId: string) {
   void router.push(`/routines/${routineId}`);
@@ -91,7 +91,7 @@ function handleDragDown(e: PointerEvent, index: number, cardEl: HTMLElement | nu
   onPointerDown(e, index, routineStore.routines.length, cardEl);
 }
 
-/** useDragReorder is built for "one list, vertical only" — its translateY math assumes one
+/** useDragReorder is built for "one list, vertical only": its translateY math assumes one
  *  itemHeight step per index, with no concept of column-wrap. .card-grid switches to a
  *  multi-column grid at the same 900px breakpoint used below, so dragging across a row boundary
  *  at desktop widths would resolve to the wrong target index. Rather than teaching the shared

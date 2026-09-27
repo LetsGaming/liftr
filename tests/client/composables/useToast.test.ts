@@ -1,4 +1,4 @@
-// useToast.ts keeps its queue as module-level reactive state (not a Pinia store — see the
+// useToast.ts keeps its queue as module-level reactive state (not a Pinia store: see the
 // file's own header comment) shared by every caller. That means state leaks across tests unless
 // each test gets a fresh module instance, so every test here resets modules and re-imports
 // rather than sharing one top-level import.

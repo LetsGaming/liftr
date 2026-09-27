@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** Fixed common plate sizes rather than a free-form add/remove list — faster to fill in on a
+/** Fixed common plate sizes rather than a free-form add/remove list: faster to fill in on a
  *  phone, and covers what actually ships in a home-gym plate set; @liftr/shared's
  *  calculatePlatesFromInventory only needs the counts. */
 import { useI18n } from "vue-i18n";
@@ -12,7 +12,7 @@ const BAR_LABEL_KEY: Record<BarType, string> = {
   barbell: "onboarding.platesStep.barLabel.barbell",
   "ez-bar": "onboarding.platesStep.barLabel.ezBar",
   "trap-bar": "onboarding.platesStep.barLabel.trapBar",
-  // "Kurzhantel-Griff" (not just "Kurzhantel") — this asks for the adjustable-dumbbell HANDLE's
+  // "Kurzhantel-Griff" (not just "Kurzhantel"): this asks for the adjustable-dumbbell HANDLE's
   // own empty weight, same wording ProfilePage.vue's later-editable copy of this step uses.
   dumbbell: "onboarding.platesStep.barLabel.dumbbell",
 };
@@ -20,7 +20,7 @@ function barLabel(type: BarType): string {
   return t(BAR_LABEL_KEY[type]);
 }
 const ownedBarTypes = BAR_TYPES.filter((barType) => draft.equipment.has(barType));
-// Loadable-plate inventory only applies to the barbell family — a dumbbell handle's own plates
+// Loadable-plate inventory only applies to the barbell family: a dumbbell handle's own plates
 // are covered by the same PLATE_SIZES_KG count below, but a dumbbell-only user (no barbell-family
 // bar) has nothing to load onto a "bar" beyond the handle itself, so the plate-count section
 // stays scoped to that case.

@@ -44,7 +44,7 @@ describe("freeExerciseDbEquipmentSource.buildIndex", () => {
     expect(index.get("Plank")).toBeNull();
   });
 
-  it("throws (rather than degrading itself) when the fetch is not ok — resolveEquipment.ts is what degrades this", async () => {
+  it("throws (rather than degrading itself) when the fetch is not ok: resolveEquipment.ts is what degrades this", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(null, false)));
 
     await expect(freeExerciseDbEquipmentSource.buildIndex()).rejects.toThrow(/fetch failed/);

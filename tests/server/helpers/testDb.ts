@@ -1,4 +1,4 @@
-/** In-memory, fully-migrated DB for service-layer tests — real SQLite behavior (constraints,
+/** In-memory, fully-migrated DB for service-layer tests: real SQLite behavior (constraints,
  *  cascades, uniqueness) without touching disk. Not exported from the package's public surface;
  *  test files import it directly by relative path. */
 import { createDb, runMigrations, users, type LiftrDb, exercises } from "@liftr/db";
@@ -11,7 +11,7 @@ export function createTestDb(): LiftrDb {
   return db;
 }
 
-/** A second, non-owner user — for cross-user isolation tests. The migration already seeds the
+/** A second, non-owner user: for cross-user isolation tests. The migration already seeds the
  *  owner (OWNER_USER_ID); this is for asserting a member can't see/touch the owner's rows (or
  *  vice versa). */
 export async function insertTestUser(db: LiftrDb, overrides: Partial<typeof users.$inferInsert> = {}) {

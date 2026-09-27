@@ -48,7 +48,7 @@ describe("runMigrations", () => {
     expect(found?.id).toBe(muscle?.id);
   });
 
-  it("is idempotent — calling it again on an already-migrated db does not error or duplicate applied migrations", async () => {
+  it("is idempotent: calling it again on an already-migrated db does not error or duplicate applied migrations", async () => {
     runMigrations(db);
     const namesAfterFirstRun = tableNames(db);
     const migrationRowsAfterFirstRun = db.$client

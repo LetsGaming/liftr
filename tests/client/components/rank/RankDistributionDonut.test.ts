@@ -28,7 +28,7 @@ function makeRow(overrides: Partial<RankRow> = {}): RankRow {
   };
 }
 
-/** Component reads ranksStore directly rather than via props — seed a fresh, active pinia
+/** Component reads ranksStore directly rather than via props: seed a fresh, active pinia
  *  before mounting so the very first render already sees the intended state (no need to patch
  *  and await a re-render afterward). */
 function mountDonut(rows: RankRow[], loaded = true) {
@@ -68,7 +68,7 @@ describe("RankDistributionDonut", () => {
     ];
     const wrapper = mountDonut(rows);
 
-    // total=4: initiate=2 (50%), advanced=1 (25%), apex=1 (25%) — tiers with zero count
+    // total=4: initiate=2 (50%), advanced=1 (25%), apex=1 (25%): tiers with zero count
     // (apprentice, trainee, athlete, lifter, elite, expert) contribute no segment/legend row.
     const legendRows = wrapper.findAll(".rd-legend-row");
     expect(legendRows).toHaveLength(3);

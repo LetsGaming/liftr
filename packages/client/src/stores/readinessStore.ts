@@ -18,7 +18,7 @@ export const useReadinessStore = defineStore("readiness", {
   }),
   getters: {
     /** slug -> 0..1 readiness, recomputed against the current time on every access. `birthYear`
-     *  only ever widens the recovery window, never shortens it — see @liftr/shared's
+     *  only ever widens the recovery window, never shortens it: see @liftr/shared's
      *  computeReadiness for the (deliberately modest, capped) adjustment. */
     heat(state): Record<string, number> {
       const now = new Date();
@@ -29,8 +29,8 @@ export const useReadinessStore = defineStore("readiness", {
       }
       return out;
     },
-    /** Muscles at or above this threshold, sorted most-recovered first — feeds the
-     *  Erholungszone verdict line ("Quads, Hamstrings und Glutes sind erholt — ..."). */
+    /** Muscles at or above this threshold, sorted most-recovered first: feeds the
+     *  Erholungszone verdict line ("Quads, Hamstrings und Glutes sind erholt: ..."). */
     recoveredSlugs(): string[] {
       return Object.entries(this.heat)
         .filter(([, v]) => v >= 0.85)

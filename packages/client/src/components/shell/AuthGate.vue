@@ -32,7 +32,7 @@ function getInviteCodeFromUrl(): string | null {
  * server response, which became actively misleading once this branch added two new rejection
  * paths: a 429 from `authRateLimit` (routes/auth.ts) reads as a wrong password/code with no way to
  * learn "wait and retry", and a `password_too_common` from the common-password refine
- * (passwordSchema in routes/auth.ts, backed by lib/commonPasswords.ts — recognized and given its
+ * (passwordSchema in routes/auth.ts, backed by lib/commonPasswords.ts, recognized and given its
  * own error code by app.ts's error handler) reads as a generic setup/invite failure with no way
  * to learn the password itself was rejected. Every other 400 (bad invite code, taken username,
  * plain validation failures) falls through to `fallback`.
@@ -55,7 +55,7 @@ async function check() {
       status.value = "setup";
       return;
     }
-    // /api/health is intentionally public (see app.ts) and would succeed with no token — check an
+    // /api/health is intentionally public (see app.ts) and would succeed with no token: check an
     // authenticated route instead, so an owner already existing on the server doesn't skip login.
     await api.get("/api/auth/me");
     status.value = "ok";
@@ -64,7 +64,7 @@ async function check() {
       inviteCode.value = getInviteCodeFromUrl() ?? "";
       status.value = inviteCode.value ? "join" : "login";
     } else {
-      // Offline on first load with no cached auth state — let the app through; the PWA shell +
+      // Offline on first load with no cached auth state: let the app through; the PWA shell +
       // cached catalog still work, and API calls retry once online.
       status.value = "offline";
     }
@@ -199,7 +199,7 @@ function submit() {
 
 <style scoped>
 /* No background here: an opaque fill would sit in front of tokens.css's body::before cosmic
-   sweep, which paints behind body's children and gets hidden by any opaque child on top of it —
+   sweep, which paints behind body's children and gets hidden by any opaque child on top of it:
    this is the first screen a locked-down server shows, so it needs to let the sweep show through
    like every other screen. */
 .gate {

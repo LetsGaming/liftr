@@ -1,5 +1,5 @@
 // RunReplay.vue's own logic (playback schedule, interpolated frames, play/pause/seek, speed) is
-// independent of how the marker actually gets drawn — RunMap.vue (stubbed here, its own Leaflet
+// independent of how the marker actually gets drawn: RunMap.vue (stubbed here, its own Leaflet
 // rendering is covered by RunMap.test.ts) is just told where to put a marker. rAF/matchMedia are
 // stubbed the same deterministic way tests/client/composables/useCountUp.test.ts already
 // establishes for this repo (jsdom has neither), so playback is driven frame-by-frame instead of

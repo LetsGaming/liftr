@@ -1,19 +1,19 @@
 /**
- * Run by scripts/dev-up.mjs against that session's own LIFTR_DB_PATH — never invoked directly
+ * Run by scripts/dev-up.mjs against that session's own LIFTR_DB_PATH: never invoked directly
  * outside of it. Brings a freshly-migrated, empty database to "every feature has something real
  * to show" in three phases:
  *
  *  1. Exercise catalog: ingests tools/catalog/curated.yaml (movements, muscles, strength
- *     standards) into this session's DB — always, since a fresh DB has zero exercises. Also
- *     ingests the running-standards table (ingestRunStandards — must run before any run is seeded
+ *     standards) into this session's DB: always, since a fresh DB has zero exercises. Also
+ *     ingests the running-standards table (ingestRunStandards: must run before any run is seeded
  *     below, since recomputeRunRank returns null per category until it has rows). Catalog *images*
  *     are the one part of this that's expensive (network-fetched) and content-identical across
  *     every session, so they're skipped here unless the shared data/images/ dir (see dev-up.mjs)
- *     is still empty — first run on a machine pays that cost once, every session after reuses it
+ *     is still empty: first run on a machine pays that cost once, every session after reuses it
  *     instantly.
  *  2. A user profile: onboarding profile, owned equipment, gym/plate setup, a bodyweight trend,
  *     one custom exercise, three routines (Push/Pull/Bein Tag) with a mesocycle on one of them.
- *  3. ~4 weeks of workout history, fed through the real sync pipeline (applySyncBatch — the exact
+ *  3. ~4 weeks of workout history, fed through the real sync pipeline (applySyncBatch: the exact
  *     function packages/server/src/routes/sync.ts calls for a real client flush) so ranks, PRs,
  *     streaks, and XP all come out correctly derived rather than hand-computed here. Deliberately
  *     varied: some exercises get a corroborated (locked-in) peak, one is left uncorroborated on
@@ -23,12 +23,12 @@
  *     that lands nearest the 10k category off its exact distance, exercising the Riegel-adjustment
  *     path) each run through the same plausibility-gate -> rank-recompute pipeline
  *     runImportService.ts's persistRun uses for a real import, plus one manually-logged run (no
- *     route/HR/elevation, per POST /api/runs' actual manual-entry contract, and — since a manual
- *     run has no run_points to rank-eligibility-check against — XP-only, no rank chip) — so both
+ *     route/HR/elevation, per POST /api/runs' actual manual-entry contract, and: since a manual
+ *     run has no run_points to rank-eligibility-check against: XP-only, no rank chip): so both
  *     the presence and the absence of GPS-derived rank/PR features are covered, not just the happy
  *     path. Also two planned routes, written straight through plannedRouteRepository (never via
  *     the OpenRouteService adapter, so this stays fully offline): one with "ors"-style full
- *     geometry, one left as an unresolved "straight"-line fallback — and the manual run above is
+ *     geometry, one left as an unresolved "straight"-line fallback: and the manual run above is
  *     linked to the first via plannedRouteId.
  */
 import { randomUUID } from "node:crypto";
@@ -73,7 +73,7 @@ const CATALOG_PATH = path.join(repoRoot, "tools/catalog/curated.yaml");
 const DB_PATH = process.env.LIFTR_DB_PATH;
 const IMAGES_DIR = process.env.LIFTR_IMAGES_DIR ?? path.join(repoRoot, "data/images");
 
-if (!DB_PATH) throw new Error("LIFTR_DB_PATH must be set — run this via scripts/dev-up.mjs, not directly.");
+if (!DB_PATH) throw new Error("LIFTR_DB_PATH must be set: run this via scripts/dev-up.mjs, not directly.");
 
 const USER_ID = OWNER_USER_ID;
 const BODYWEIGHT_KG = 82;
@@ -94,7 +94,7 @@ async function ensureCatalog(db: LiftrDb) {
   const entries = await loadCatalog(CATALOG_PATH);
   await ingestCatalog(db, CATALOG_PATH);
   await ingestStandards(db, entries);
-  // Must run before any run is seeded below — recomputeRunRank returns null for every category
+  // Must run before any run is seeded below: recomputeRunRank returns null for every category
   // until run_standards has rows (see runRankService.ts's own guard), which would otherwise leave
   // the seeded run history with zero rank/PR content.
   await ingestRunStandards(db);
@@ -112,7 +112,7 @@ async function seedProfile(db: LiftrDb) {
   });
 
   // Must cover every support-equipment requirement the seeded routines/history actually trigger
-  // (deriveRequirements() in @liftr/shared/equipment/requirements.ts) — bench-press needs "bench",
+  // (deriveRequirements() in @liftr/shared/equipment/requirements.ts): bench-press needs "bench",
   // back-squat/overhead-press need "rack", pullup/chinup need "pullup-bar", dip needs "dip-bars".
   // Omitting any of these makes "Nur machbare Übungen" hide exercises the seeded user actually
   // has real logged history for (see UX-11).
@@ -141,7 +141,7 @@ async function seedProfile(db: LiftrDb) {
   };
   await writeJsonSetting(db, USER_ID, "gymSetup", gymSetup);
 
-  // A gently rising trend over the last month, logged every ~3 days (not daily — realistic).
+  // A gently rising trend over the last month, logged every ~3 days (not daily: realistic).
   const start = 80.5;
   const end = BODYWEIGHT_KG;
   const logDays = [27, 24, 21, 18, 15, 12, 9, 6, 3, 0];
@@ -180,7 +180,7 @@ interface PlannedSession {
 type RoutineName = "Push Tag" | "Pull Tag" | "Bein Tag";
 const CUSTOM_EXERCISE_SLUG = "face-pull-cable";
 
-/** Barbell working sets, with one light warmup set in front — weightKg step-repeats every other
+/** Barbell working sets, with one light warmup set in front: weightKg step-repeats every other
  *  occurrence so the exercise gets a real corroborated (locked-in) peak, per ADR-0005. */
 function barbellSets(occurrence: number, bwMultiplierAtStep: (step: number) => number, reps: number): PlannedSet[] {
   const step = Math.floor(occurrence / 2);
@@ -193,7 +193,7 @@ function barbellSets(occurrence: number, bwMultiplierAtStep: (step: number) => n
   ];
 }
 
-/** overhead-press deliberately never repeats a weight (step === occurrence, not floor(occ/2)) —
+/** overhead-press deliberately never repeats a weight (step === occurrence, not floor(occ/2)):
  *  the one exercise in this seed left with an uncorroborated, still-pending peak. */
 function overheadPressSets(occurrence: number): PlannedSet[] {
   const working = round25(BODYWEIGHT_KG * (0.45 + occurrence * 0.05));
@@ -205,7 +205,7 @@ function overheadPressSets(occurrence: number): PlannedSet[] {
   ];
 }
 
-/** Bodyweight rep-based movement — reps step-repeat the same way barbellSets' weight does. */
+/** Bodyweight rep-based movement: reps step-repeat the same way barbellSets' weight does. */
 function bodyweightRepSets(occurrence: number, repsAtStep: number[], addedWeightKg: number | null = null): PlannedSet[] {
   const step = Math.floor(occurrence / 2);
   const reps = repsAtStep[step] ?? repsAtStep[repsAtStep.length - 1]!;
@@ -261,7 +261,7 @@ function buildSessionPlan(): PlannedSession[] {
     } else {
       const occ = legsOcc++;
       const exercises: PlannedExercise[] = [{ slug: "back-squat", sets: barbellSets(occ, (s) => 1.3 + s * 0.15, 5) }];
-      // Deadlift every other legs day — realistic programming, and (with only 2 total sessions at
+      // Deadlift every other legs day: realistic programming, and (with only 2 total sessions at
       // the same weight) still ends up corroborated.
       if (occ % 2 === 0) {
         exercises.push({ slug: "deadlift", sets: barbellSets(deadliftOcc++, () => 1.6, 5) });
@@ -270,7 +270,7 @@ function buildSessionPlan(): PlannedSession[] {
     }
   }
 
-  // Chin-up: trained twice, early, then never again — enough to corroborate a peak (ADR-0005),
+  // Chin-up: trained twice, early, then never again: enough to corroborate a peak (ADR-0005),
   // then left well past the 21-day decay grace period so current-vs-peak actually diverges.
   sessions.push({ daysAgo: 40, routineName: "Pull Tag", exercises: [{ slug: "chinup", sets: bodyweightRepSets(0, [7]) }] });
   sessions.push({ daysAgo: 37, routineName: "Pull Tag", exercises: [{ slug: "chinup", sets: bodyweightRepSets(1, [7]) }] });
@@ -325,7 +325,7 @@ async function seedRoutines(db: LiftrDb, customExerciseId: string): Promise<Reco
   return routineIds;
 }
 
-/** Two routes writing straight through plannedRouteRepository — must NEVER call ORS (this script
+/** Two routes writing straight through plannedRouteRepository: must NEVER call ORS (this script
  *  has to work fully offline, same as its existing image-fetch step already treats network as
  *  optional). Reuses seedRankedGpsRun's 52.4732/13.4021 Tempelhof coordinates so the mock data reads as
  *  one person's neighborhood. Returns the "ors" route's id so the manual run below can link to it. */
@@ -345,10 +345,10 @@ async function seedPlannedRoutes(db: LiftrDb): Promise<string> {
     computedAt: new Date(),
   });
   // Real ORS output is a much denser polyline than the sparse user-placed waypoints it's snapped
-  // from — interpolate a couple of lerp'd points between each consecutive waypoint pair (plus the
+  // from: interpolate a couple of lerp'd points between each consecutive waypoint pair (plus the
   // closing segment back to the start, since this is a loop) so the seeded "ors" route's points
   // array is genuinely denser than its waypoints array, not just a copy of them. Not
-  // geographically accurate (straight lerp, not road-snapped) — this is mock data, it only needs
+  // geographically accurate (straight lerp, not road-snapped): this is mock data, it only needs
   // to be structurally representative of "denser than waypoints".
   const INTERPOLATED_PER_SEGMENT = 2;
   const orsPoints: { idx: number; lat: number; lon: number; ele: number }[] = [];
@@ -368,7 +368,7 @@ async function seedPlannedRoutes(db: LiftrDb): Promise<string> {
   }
   await insertPlannedRoutePoints(db, orsRoute.id, orsPoints);
 
-  // A second route covers what the feature *can't* show — no ORS key, so a real straight-line
+  // A second route covers what the feature *can't* show: no ORS key, so a real straight-line
   // fallback, same reasoning that already put a manual run alongside the GPS run in this script.
   const parkweg = [{ lat: 52.4732, lon: 13.4021 }, { lat: 52.478, lon: 13.4021 }, { lat: 52.478, lon: 13.409 }];
   const straightRoute = await insertPlannedRoute(db, USER_ID, {
@@ -455,7 +455,7 @@ async function seedWorkoutHistory(db: LiftrDb, routineIds: Record<RoutineName, s
   console.log(`  ${workoutCount} finished workouts seeded (${setCount} sets) across 3 routines, spanning the last 40 days.`);
 }
 
-/** Berlin-Tempelhof loop coordinates shared by every seeded GPS run below — same neighborhood as
+/** Berlin-Tempelhof loop coordinates shared by every seeded GPS run below: same neighborhood as
  *  seedPlannedRoutes, so the mock data reads as one person's usual running spot. */
 const RUN_CENTER_LAT = 52.4732;
 const RUN_CENTER_LON = 13.4021;
@@ -463,7 +463,7 @@ const METERS_PER_DEG_LAT = 111_320;
 
 /** Builds a closed circular loop of `pointCount` points whose real path length (as
  *  `pathDistanceM`/the plausibility gate's own distance-mismatch check would recompute it) is
- *  close to `distanceM` — unlike a loop with a fixed radius reused across differently-sized runs,
+ *  close to `distanceM`: unlike a loop with a fixed radius reused across differently-sized runs,
  *  which would trip `computeRunPlausibility`'s distance-mismatch heuristic for anything but one
  *  specific distance. Radius is derived from the target circumference (distanceM = 2*pi*r). */
 function loopPoints(distanceM: number, durationS: number, startedAt: Date, avgHr: number, pointCount = 24): (RunPoint & { idx: number })[] {
@@ -500,13 +500,13 @@ interface RankedGpsRunInput {
 
 /** Inserts one GPS-tracked activity + its points, then runs it through the exact same
  *  plausibility-gate -> rank-recompute pipeline `runImportService.ts`'s `persistRun` uses for a
- *  real GPX/FIT/Health Connect import — this is the piece the original single-run seed skipped,
+ *  real GPX/FIT/Health Connect import: this is the piece the original single-run seed skipped,
  *  which is why no amount of seeded run history ever produced rank/PR content before
  *  (recomputeRunRank was simply never called). Requires run_standards already ingested (see
  *  ensureCatalog) and the profile's sex already written (see seedProfile), since recomputeRunRank
  *  reads both. Works for any ranked activity type: running Riegel-normalizes onto a distance
  *  category, walking/hiking rank on raw average speed in the single "all" bucket (see
- *  cardioActivities.ts) — recomputeRunRank itself decides which, this function just picks the
+ *  cardioActivities.ts): recomputeRunRank itself decides which, this function just picks the
  *  right bucket to pass it. A sub-floor walk/hike (below its activity's minDistanceM/minDurationS)
  *  still goes through this same path; recomputeRunRank's own eligibility filter is what produces
  *  no rank row for it, exactly like the real import path. */
@@ -543,7 +543,7 @@ async function seedRankedGpsRun(db: LiftrDb, input: RankedGpsRunInput) {
   const result = await recomputeRunRank(db, USER_ID, bucket, activityType, plausibility.multiplier, plausibility.reason);
 
   const flag = plausibility.reason ? ` [${plausibility.reason}]` : "";
-  const rankNote = result ? `category ${bucket}, ${speedMps.toFixed(2)} m/s` : "below rank-eligibility floor — XP only";
+  const rankNote = result ? `category ${bucket}, ${speedMps.toFixed(2)} m/s` : "below rank-eligibility floor: XP only";
   console.log(
     `  ${activityType} "${input.name}" seeded (${(input.distanceM / 1000).toFixed(1)} km, ${rankNote}, ` +
       `plausibility ${plausibility.multiplier.toFixed(2)}${flag}).`,
@@ -551,10 +551,10 @@ async function seedRankedGpsRun(db: LiftrDb, input: RankedGpsRunInput) {
 }
 
 /** For "other" cardio (cycling, rowing, ...): inserted + point-populated the same way, but never
- *  runs the plausibility/rank pipeline at all — mirrors `runImportService.ts`'s `persistRun`,
+ *  runs the plausibility/rank pipeline at all: mirrors `runImportService.ts`'s `persistRun`,
  *  whose rank block is gated on `cardioActivity(activityType).rank.mode !== "none"` and "other"
  *  is the one activity whose mode is "none". XP/streak still apply (computed at read time from
- *  the `runs` row itself, same as every other activity — see runXp.ts's "no XP ledger" note). */
+ *  the `runs` row itself, same as every other activity: see runXp.ts's "no XP ledger" note). */
 async function seedOtherCardio(db: LiftrDb, input: {
   name: string;
   daysAgo: number;
@@ -587,7 +587,7 @@ async function seedOtherCardio(db: LiftrDb, input: {
 
 /** A short realistic GPS run history: three 5k-category runs (varied pace across different days,
  *  so the fastest gets corroborated per ADR-0005's same-band-different-day rule) plus one 8 km run
- *  — nearest to the 10k category but off its exact distance, so it exercises the Riegel-adjustment
+ * : nearest to the 10k category but off its exact distance, so it exercises the Riegel-adjustment
  *  path (runRankValue/riegel.ts) rather than landing on a category's exact distance like the others.
  *  Together this covers >= 2 categories, at least one corroborated peak, and the Riegel path, per
  *  this task's brief. */
@@ -607,7 +607,7 @@ async function seedRunHistory(db: LiftrDb) {
     daysAgo: 12,
     hour: 7,
     minute: 0,
-    distanceM: 8000, // nearest category is 10k (|8000-10000|=2000 < |8000-5000|=3000) — Riegel-adjusted, not an exact-distance run
+    distanceM: 8000, // nearest category is 10k (|8000-10000|=2000 < |8000-5000|=3000): Riegel-adjusted, not an exact-distance run
     durationS: 2480, // ~41:20
     avgHr: 158,
     elevationGainM: 22,
@@ -627,7 +627,7 @@ async function seedRunHistory(db: LiftrDb) {
     daysAgo: 1,
     hour: 18,
     minute: 30,
-    // Same distance/duration as "5k Wiederholung" above (3.333 m/s) — an exact tie, not just a
+    // Same distance/duration as "5k Wiederholung" above (3.333 m/s): an exact tie, not just a
     // close pace, so it's guaranteed to resolve to the identical tier/division/lp on a different
     // day and satisfy ratchetPeak's isCorroborated check (band-position comparison, not raw-speed
     // equality), rather than leaving corroboration to chance the way a merely-similar pace would.
@@ -640,7 +640,7 @@ async function seedRunHistory(db: LiftrDb) {
 
 /** Mirrors POST /api/runs' manual-entry path (runImportService.ts's logManualRun): no
  *  RunPoint rows at all (no map, no replay, no HR/elevation), pace derived from distance/duration
- *  — the "what a manual entry can't do that a GPS import can" feature-coverage counterpart to
+ * : the "what a manual entry can't do that a GPS import can" feature-coverage counterpart to
  *  the seeded GPS run history. Name left null on purpose: a real manual entry has no title unless the user types
  *  one, so this also exercises the unnamed-run display state. */
 async function seedManualRun(db: LiftrDb, plannedRouteId: string) {
@@ -662,7 +662,7 @@ async function seedManualRun(db: LiftrDb, plannedRouteId: string) {
   console.log(`  Manual run seeded (${(distanceM / 1000).toFixed(1)} km, no GPS points) linked to planned route ${plannedRouteId}.`);
 }
 
-/** Walk/hike/other cardio history — exercises the new single-speed rank buckets, the
+/** Walk/hike/other cardio history: exercises the new single-speed rank buckets, the
  *  rank-eligibility floor, and "other"'s XP-only path. Mirrors seedRunHistory's "same band,
  *  different day" corroboration trick for the walk peak. */
 async function seedCardioHistory(db: LiftrDb) {
@@ -691,7 +691,7 @@ async function seedCardioHistory(db: LiftrDb) {
     activityType: "walk",
   });
 
-  // A short walk below the rank-eligibility floor (< 1000m and < 600s) — XP + streak only, no
+  // A short walk below the rank-eligibility floor (< 1000m and < 600s): XP + streak only, no
   // rank row. Proves the floor without needing a dedicated code path in the seed script.
   await seedRankedGpsRun(db, {
     name: "Kurzer Gang zum Briefkasten",
@@ -706,7 +706,7 @@ async function seedCardioHistory(db: LiftrDb) {
   });
 
   // One hike, well clear of its own (higher) floor. Deliberately a single day, unlike the two
-  // corroborating walks above — this is what exercises RankProgress's "Vorläufig" caption
+  // corroborating walks above: this is what exercises RankProgress's "Vorläufig" caption
   // (no peak yet) in the seeded dashboard, while the walk section shows the corroborated,
   // non-provisional peak state.
   await seedRankedGpsRun(db, {
@@ -721,7 +721,7 @@ async function seedCardioHistory(db: LiftrDb) {
     activityType: "hike",
   });
 
-  // "other": earns XP + streak, never a rank ladder — no honest standards data for cycling exists.
+  // "other": earns XP + streak, never a rank ladder: no honest standards data for cycling exists.
   await seedOtherCardio(db, {
     name: "Radtour",
     daysAgo: 7,
@@ -778,7 +778,7 @@ async function main() {
 
   console.log("[seed] done.");
 
-  // Set by dev-up.mjs only on a seed-cache miss (see scripts/lib/seedCache.mjs) — publishes this
+  // Set by dev-up.mjs only on a seed-cache miss (see scripts/lib/seedCache.mjs): publishes this
   // freshly seeded database as the cached snapshot future dev-up.mjs runs can copy in directly
   // instead of re-running all of the above. wal_checkpoint(TRUNCATE) merges the WAL back into the
   // main db file first: createDb() runs in WAL mode, so a raw file copy without this would miss

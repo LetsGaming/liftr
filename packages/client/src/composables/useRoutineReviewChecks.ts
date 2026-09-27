@@ -1,7 +1,7 @@
-/** The three additive glance-checks that make a routine's review moment worth looking at —
+/** The three additive glance-checks that make a routine's review moment worth looking at:
  *  muscle coverage vs. what was requested, an equipment-substitution flag, and a lopsided
  *  set-distribution flag. Shared by ReviewStep.vue (full wizard) and FastPathStep.vue (the
- *  condensed flow for simple routines) so the two never drift. None of these block Save — they
+ *  condensed flow for simple routines) so the two never drift. None of these block Save: they
  *  inform, never gate: no compliance-theater. */
 import { computed, type Ref } from "vue";
 import { useCatalogStore } from "../stores/catalogStore";
@@ -30,7 +30,7 @@ export function useRoutineReviewChecks(
 
   /** "Does this routine actually hit what you said you wanted?" Primary involvement counts as
    *  covered; secondary-only counts as the lighter "indirekt" state. Exercises with no muscle
-   *  tags at all (wrist-curl/reverse-wrist-curl — the 15-muscle taxonomy has no forearm shape)
+   *  tags at all (wrist-curl/reverse-wrist-curl: the 15-muscle taxonomy has no forearm shape)
    *  simply contribute nothing to either set, never crash. null when nothing was requested (a
    *  fully manual routine has nothing to compare against). */
   const coverage = computed<CoverageChip[] | null>(() => {

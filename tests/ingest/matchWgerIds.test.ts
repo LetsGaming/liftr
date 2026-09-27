@@ -46,14 +46,14 @@ describe("tokenOverlapScore", () => {
 
   it("rewards wger's name fully containing curated's shorter name plus one qualifier word", () => {
     // curated "Incline Bench Press" fully contained in wger's "Incline Bench Press - Barbell"
-    // (an extra "barbell" qualifier) — containment-anchored to curated's own token count.
+    // (an extra "barbell" qualifier): containment-anchored to curated's own token count.
     const score = tokenOverlapScore("Incline Bench Press", "Incline Bench Press - Barbell");
     expect(score).toBeGreaterThanOrEqual(FUZZY_ACCEPT_THRESHOLD);
   });
 
   it("does not reward containment when the candidate adds more than one extra qualifier word", () => {
     // "Barbell Curl" is a strict subset of "Barbell Reverse Wrist Curl" token-wise, but that's
-    // two extra words (reverse, wrist) — a different exercise, not a fuller name for the same one.
+    // two extra words (reverse, wrist): a different exercise, not a fuller name for the same one.
     const score = tokenOverlapScore("Barbell Curl", "Barbell Reverse Wrist Curl");
     expect(score).toBeLessThan(FUZZY_ACCEPT_THRESHOLD);
   });

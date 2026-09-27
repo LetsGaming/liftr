@@ -1,6 +1,6 @@
 /**
  * GPS trackpoint math for run import: smoothing, distance, and pause-gap detection over a
- * stored per-point trackpoint array. Pure functions, no I/O — used by the server on import
+ * stored per-point trackpoint array. Pure functions, no I/O: used by the server on import
  * and reusable by the client for replay math.
  */
 
@@ -28,7 +28,7 @@ export function haversineM(a: { lat: number; lon: number }, b: { lat: number; lo
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
 
-/** Sum of haversineM over consecutive waypoints — the straight-line distance through an ordered
+/** Sum of haversineM over consecutive waypoints: the straight-line distance through an ordered
  *  point list. Used both as the server-side fallback when ORS is unavailable, and client-side for
  *  an instant provisional distance while the user is still placing waypoints on the map. */
 export function pathDistanceM(points: { lat: number; lon: number }[]): number {
@@ -55,7 +55,7 @@ export function elevationGainFrom(points: { ele?: number | null }[]): number | n
   return gain;
 }
 
-/** Implausible for a run — points faster than this are dropped as GPS jitter/error. */
+/** Implausible for a run: points faster than this are dropped as GPS jitter/error. */
 export const MAX_PLAUSIBLE_SPEED_M_S = 8;
 
 /** A gap longer than this between consecutive points is treated as a pause, not distance/time. */
@@ -86,7 +86,7 @@ export interface RunSummary {
 /**
  * Compute a run summary from a (possibly raw, un-smoothed) trackpoint array.
  * Drops implausible-speed jumps and excludes pause gaps from both distance and duration.
- * The caller is responsible for persisting `points` in full (run_points) — this function
+ * The caller is responsible for persisting `points` in full (run_points): this function
  * only derives the cached summary; it never discards the source array.
  */
 export function summarizeRun(rawPoints: RunPoint[]): RunSummary {
@@ -114,7 +114,7 @@ export function summarizeRun(rawPoints: RunPoint[]): RunSummary {
     const dM = haversineM(prev, cur);
     const speed = dM / dtS;
     if (speed > MAX_PLAUSIBLE_SPEED_M_S) {
-      // GPS jitter/error spike — skip this interval's distance, but keep the time
+      // GPS jitter/error spike: skip this interval's distance, but keep the time
       movingS += dtS;
       continue;
     }

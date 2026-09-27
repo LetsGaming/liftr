@@ -65,7 +65,7 @@ describe("runsStore", () => {
     expect(store.loaded).toBe(true);
   });
 
-  it("load() silently no-ops on failure — list stays whatever it was, no crash", async () => {
+  it("load() silently no-ops on failure: list stays whatever it was, no crash", async () => {
     getRunsMock.mockRejectedValue(new Error("offline"));
     const store = useRunsStore();
 

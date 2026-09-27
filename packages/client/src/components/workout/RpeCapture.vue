@@ -1,21 +1,21 @@
 <script setup lang="ts">
 /**
- * RPE capture, off the primary tap path. Explicitly speculative — no prior pattern to anchor
+ * RPE capture, off the primary tap path. Explicitly speculative: no prior pattern to anchor
  * this on, so kept as small and reversible as possible: a single sheet, a row of tappable
  * numbers, no required state.
  *
- * A row of 10 discrete tap targets, not a slider — a slider adds drag-precision friction to
+ * A row of 10 discrete tap targets, not a slider: a slider adds drag-precision friction to
  * something meant to be a 1-tap afterthought, and matches this app's existing preference for
  * discrete tap targets over continuous controls (e.g. NumberStepper) over the whole active-
  * workout screen.
  *
  * This component only ever writes into store.currentSet.rpe (via setCurrentSetRpe() in the
- * caller), which rides along in the next logCurrentSet() sync payload — it never blocks or
+ * caller), which rides along in the next logCurrentSet() sync payload: it never blocks or
  * gates "Satz speichern", and closing without picking is a silent no-op, not a dismissed-warning
  * state.
  *
  * Picking a number closes this sheet via sheetRef.dismiss(), not by having the caller flip its
- * own v-if straight away — see SheetModal.vue's header comment for why that crashes
+ * own v-if straight away: see SheetModal.vue's header comment for why that crashes
  * ("Cannot read properties of null (reading 'insertBefore')"). The caller's own state teardown
  * (its `showRpeCapture = false`) happens off `@close`, which only fires after Ionic's real
  * dismiss animation/teardown finishes.

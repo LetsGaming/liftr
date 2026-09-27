@@ -2,12 +2,12 @@
 //
 // useGymSetup.ts's bar-weight stepper used to hardcode a flat 1-50kg clamp, independent of
 // onboarding's per-type MIN_BAR_WEIGHT_KG/MAX_BAR_WEIGHT_KG (which mirrors the server's
-// barWeightsInput schema exactly — see settings.ts). That let a dumbbell handle be set above its
+// barWeightsInput schema exactly: see settings.ts). That let a dumbbell handle be set above its
 // 10kg server-side cap, silently failing to save. This regression-tests both the barbell-family
-// floor (lowered to 1kg — some aluminum barbells weigh under 5kg) and the dumbbell ceiling.
+// floor (lowered to 1kg: some aluminum barbells weigh under 5kg) and the dumbbell ceiling.
 //
 // jsdom (not the default node environment) because it transitively imports lib/equipmentIcons.ts,
-// which now calls i18n.ts's t() — that reads localStorage at module load (needs a DOM); jsdom's
+// which now calls i18n.ts's t(): that reads localStorage at module load (needs a DOM); jsdom's
 // navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would otherwise
 // default the shared i18n singleton to "en" for the rest of the test process.
 import { createPinia, setActivePinia } from "pinia";

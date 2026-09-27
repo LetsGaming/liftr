@@ -1,5 +1,5 @@
 /**
- * Muscle taxonomy — adopted wholesale from wger's public API (`GET /api/v2/muscle/`), which
+ * Muscle taxonomy: adopted wholesale from wger's public API (`GET /api/v2/muscle/`), which
  * itself maps 1:1 onto the 15 individually-shaped highlight overlays mirrored by
  * `ingestMuscleAssets.ts`. Deliberately not our own invented list: using wger's own 15 muscles
  * means every tag here has a real, precisely-shaped highlight on the anatomical figure instead
@@ -8,7 +8,7 @@
  */
 export interface MuscleSeed {
   slug: string;
-  svgRegionKey: string; // stores the wger muscle id as a string — the join key for asset lookup
+  svgRegionKey: string; // stores the wger muscle id as a string: the join key for asset lookup
   wgerMuscleId: number;
   isFront: boolean;
 }

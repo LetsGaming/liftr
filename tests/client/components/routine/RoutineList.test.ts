@@ -1,4 +1,4 @@
-// vi.mock() is hoisted above imports, but same-file consts a mock factory reads are not — wrap
+// vi.mock() is hoisted above imports, but same-file consts a mock factory reads are not; wrap
 // them in vi.hoisted() (tests/README.md) so these mocks exist by the time the mock runs.
 const {
   getRoutinesMock,
@@ -99,7 +99,7 @@ function makeRoutine(overrides: Partial<Routine> = {}): Routine {
   };
 }
 
-// A minimal stand-in for the real (heavier, separately-tested) RoutineWizard.vue — RoutineList's
+// A minimal stand-in for the real (heavier, separately-tested) RoutineWizard.vue. RoutineList's
 // own responsibility ends at showing/hiding it and passing the right `routine` prop; the
 // wizard's own internals are out of scope here. Renders its `routine` prop's id into a data
 // attribute so tests can assert which routine (if any) was passed for editing.
@@ -125,7 +125,7 @@ function mountRoutineList(routines: Routine[], exercises: CatalogExercise[] = [m
 }
 
 beforeEach(() => {
-  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply) — jsdom's
+  // Mounts here bypass mountWithProviders.ts (its own reset doesn't apply); jsdom's
   // navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would otherwise
   // default the shared i18n singleton to "en" for the rest of the test process.
   i18n.global.locale.value = "de";

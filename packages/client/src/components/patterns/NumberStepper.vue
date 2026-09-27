@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
  * A −/+ control adjusting a number, in the two sizes the app actually uses: `lg` (SetEntry's
- * big card stepper — number on top, a row of two large buttons below) and `sm` (the routine
- * wizard's compact inline stepper — button/number/button in one row, also used for the
- * mesocycle-weeks input) — a stepper is more touch-friendly for a quick ±1 than triggering the
+ * big card stepper, number on top with a row of two large buttons below) and `sm` (the routine
+ * wizard's compact inline stepper: button/number/button in one row, also used for the
+ * mesocycle-weeks input). A stepper is more touch-friendly for a quick ±1 than triggering the
  * OS numeric keyboard. One shared component keeps the minus glyph ("−") consistent everywhere
  * it's used.
  *
- * Emits the delta (±1), not the new value — the caller owns clamping/rounding/step-size (e.g.
+ * Emits the delta (±1), not the new value; the caller owns clamping/rounding/step-size (e.g.
  * SetEntry's 1.25kg weight step vs. a plain ±1 rep step), since that varies per use.
  *
- * Named `NumberStepper` (not `Stepper`) per the project's multi-word-component-name convention
- * — avoids colliding with the current/future HTML `<stepper>`-shaped custom elements.
+ * Named `NumberStepper` (not `Stepper`) per the project's multi-word-component-name convention,
+ * to avoid colliding with the current/future HTML `<stepper>`-shaped custom elements.
  */
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -24,11 +24,11 @@ const props = withDefaults(
     unit?: string;
     size?: "lg" | "sm";
     label?: string;
-    /** Colors the number to flag "this needs your attention" — used for the reps stepper while
+    /** Colors the number to flag "this needs your attention". Used for the reps stepper while
      *  it's still at its unset starting value (feedback: reps must always be actively entered,
      *  never silently defaulted). */
     emphasize?: boolean;
-    /** Displays `formatValue(modelValue)` instead of the bare number — for a value whose natural
+    /** Displays `formatValue(modelValue)` instead of the bare number, for a value whose natural
      *  display isn't its raw number (e.g. a duration in seconds shown as "1:30"). Direct numeric
      *  entry (`lg` size) still edits/emits the raw underlying number; only the display changes. */
     formatValue?: (value: number) => string;
@@ -40,7 +40,7 @@ const display = (value: number) => props.formatValue?.(value) ?? String(value);
 const emit = defineEmits<{ adjust: [delta: 1 | -1]; set: [value: number] }>();
 
 // The label prop is caller-supplied and already translated (e.g. SetEntry.vue passes
-// t("workoutUi.setEntry.weightLabel")) — these compose it into a full aria-label via i18n
+// t("workoutUi.setEntry.weightLabel")); these compose it into a full aria-label via i18n
 // interpolation rather than a hardcoded German string concatenation, so the result isn't a
 // German/English mix regardless of what locale the label itself came from.
 const decreaseAriaLabel = computed(() =>
@@ -57,9 +57,9 @@ function editAriaLabel(value: number): string {
 }
 
 /**
- * Long-press repeat — plain ±1-per-tap alone would take ~64 taps to go from a 20kg default to
+ * Long-press repeat: plain ±1-per-tap alone would take ~64 taps to go from a 20kg default to
  * 100kg at a 1.25kg step. Holding a button fires the same 'adjust' delta the caller already
- * handles — no new event, no change to step size or clamping, both owned by the caller
+ * handles: no new event, no change to step size or clamping, both owned by the caller
  * (activeWorkoutStore's adjustCurrentSet) exactly as before. A normal tap is unaffected: the
  * hold timer only starts accelerated repetition after `holdDelayMs`, and holdFired suppresses
  * the click handler's own emit so a completed hold never double-fires on release.
@@ -109,7 +109,7 @@ function onClick(delta: 1 | -1) {
   emit("adjust", delta);
 }
 
-/** Direct numeric entry — tapping the big number itself (lg size only; the compact sm stepper
+/** Direct numeric entry: tapping the big number itself (lg size only; the compact sm stepper
  *  has no room for this) opens a plain numeric input. The caller's existing clamping path is NOT
  *  bypassed: the caller (e.g. SetEntry.vue) is expected to route this through the same
  *  validation adjustCurrentSet uses for deltas, not write the raw value straight to state. */
@@ -204,7 +204,7 @@ function commitEdit() {
   color: var(--warning-hi);
   transition: color var(--dur-base) var(--ease-out);
 }
-/* .num-edit is the same number, just as a <button> (direct-entry affordance) — background
+/* .num-edit is the same number, just as a <button> (direct-entry affordance): background
    transparent so it stays visually identical to the old plain <div> until touched. */
 .num-edit {
   background: none;
@@ -257,7 +257,7 @@ function commitEdit() {
   padding: 4px;
 }
 .stepper.sm .ctrls button {
-  /* 44px meets the WCAG 2.5.5 touch-target floor — only ever used two-up (mesocycle-weeks +/-),
+  /* 44px meets the WCAG 2.5.5 touch-target floor: only ever used two-up (mesocycle-weeks +/-),
      so there's room without crowding. Reads --touch-target-min instead of a bare literal. */
   width: var(--touch-target-min);
   height: var(--touch-target-min);
@@ -273,7 +273,7 @@ function commitEdit() {
   transform: scale(0.9);
 }
 .stepper.sm .ctrls span {
-  /* Fixed, not min-width: a value going from "8" to "182.5" must not change this span's width —
+  /* Fixed, not min-width: a value going from "8" to "182.5" must not change this span's width:
      that would shift every button to its right (the +/- controls, remove/kind buttons in the
      parent row) on every adjustment. Wide enough for most realistic values (a 3-digit weight
      plus unit); nowrap + visible overflow lets a rare longer decimal (e.g. "93.75kg") spill past

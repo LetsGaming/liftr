@@ -1,6 +1,6 @@
 // useWorkoutChrome.ts is a one-line module-level reactive singleton (`showingFinishRecap`) that
 // hides the top-hud level/streak chips during the finish-sequence recap (see the file's own
-// audit-fix comment). Nothing to mount — it's a bare `ref`, same pattern as useToast.ts's
+// audit-fix comment). Nothing to mount: it's a bare `ref`, same pattern as useToast.ts's
 // module-level `toasts` array.
 import { describe, expect, it } from "vitest";
 

@@ -8,12 +8,12 @@ import { useOnboardingDraft } from "./OnboardingDraft";
 const { t } = useI18n();
 const draft = useOnboardingDraft();
 
-// "plates" isn't a pickable chip here — owning a barbell already implies plate ownership for
+// "plates" isn't a pickable chip here: owning a barbell already implies plate ownership for
 // the accuracy check (requirements.ts's withImpliedPlates); the plate *inventory* detail (which
 // sizes, how many) is its own dedicated step, not this coarse ownership picker.
 const supportSlugs = SUPPORT_EQUIPMENT_SLUGS.filter((s) => s !== "plates");
 
-// Bodyweight training isn't optional equipment the way a barbell or dumbbell is — every user can
+// Bodyweight training isn't optional equipment the way a barbell or dumbbell is: every user can
 // do bodyweight exercises regardless of what else they own, so it starts pre-selected
 // (createOnboardingDraft) and must stay that way; deselecting it would leave a user with zero
 // equipment able to see zero exercise suggestions. Locked instead of just "always re-added on
@@ -101,7 +101,7 @@ function toggle(slug: string) {
 .equip-chip-label {
   flex: 1;
 }
-/* Bodyweight is always-on, not optional equipment — a lock cue plus a non-interactive cursor
+/* Bodyweight is always-on, not optional equipment: a lock cue plus a non-interactive cursor
    communicates why the click did nothing, rather than the chip silently ignoring taps like a
    broken toggle would. Stays on the active state (never grayed out): it's not disabled
    functionality, it's a permanently-true fact about the user. */
@@ -109,7 +109,7 @@ button.equip-chip.locked {
   cursor: default;
 }
 .lock-hint {
-  /* Full-strength ink, not a dimmed opacity — measured, not eyeballed: opacity on this small
+  /* Full-strength ink, not a dimmed opacity: measured, not eyeballed: opacity on this small
      (10px) uppercase label dropped its contrast against the gradient to ~3.5:1, below AA even
      for large text. Font-size/tracking alone (not opacity) carries the "secondary" hierarchy. */
   font-size: 10px;

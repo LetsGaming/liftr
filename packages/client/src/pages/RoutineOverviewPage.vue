@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * Routine Overview screen. Reached by tapping a routine card instead of starting immediately —
+ * Routine Overview screen. Reached by tapping a routine card instead of starting immediately:
  * all three start call sites route here first. Everything shown is already client-side once
  * routineStore.load() has run, no new backend endpoint needed. The trained-muscle summary is
- * always the mannequin, never a text/tag list — this copies the exact existing aggregation
+ * always the mannequin, never a text/tag list: this copies the exact existing aggregation
  * pattern verbatim from RoutineList.vue/OverviewPage.vue rather than inventing a new one.
  */
 import { computed, onMounted, reactive } from "vue";
@@ -41,7 +41,7 @@ function toggleExpanded(routineExerciseId: string) {
   expandedExercises[routineExerciseId] = !expandedExercises[routineExerciseId];
 }
 
-/** Same aggregation as RoutineList.vue:39-41 / OverviewPage.vue:130-132 — trained muscles are
+/** Same aggregation as RoutineList.vue:39-41 / OverviewPage.vue:130-132: trained muscles are
  *  always the mannequin, never a text/tag list. */
 const routineMuscles = computed(() =>
   aggregateMuscles((routine.value?.routineExercises ?? []).map((re) => catalog.byId(re.exerciseId)?.muscles ?? [])),
@@ -54,7 +54,7 @@ function exerciseDisplayName(exerciseId: string, fallbackSlug: string, fallbackN
   return cat ? exerciseName(cat.slug, cat.name) : exerciseName(fallbackSlug, fallbackName);
 }
 
-/** "4 × 80 kg · 8 Wdh." — set count plus the first set's weight/reps as the representative
+/** "4 × 80 kg · 8 Wdh.": set count plus the first set's weight/reps as the representative
  *  target, same "first working set as the summary number" idiom ExerciseRail.vue already uses
  *  for its own per-exercise line. */
 function setSummary(targetSets: { reps: number; weightKg: number | null }[]): string {
@@ -64,7 +64,7 @@ function setSummary(targetSets: { reps: number; weightKg: number | null }[]): st
   return t("routineOverviewPage.setSummary", { count: targetSets.length, weightPart, reps: first.reps });
 }
 
-/** Expanded-row detail: one line per planned set, e.g. "Satz 2 — 80 kg × 8 Wdh." */
+/** Expanded-row detail: one line per planned set, e.g. "Satz 2: 80 kg × 8 Wdh." */
 function setLine(targetSet: { reps: number; weightKg: number | null }, index: number): string {
   const weightPart = targetSet.weightKg != null ? t("routineOverviewPage.setLineWeightPart", { weight: targetSet.weightKg }) : "";
   return t("routineOverviewPage.setLine", { n: index + 1, weightPart, reps: targetSet.reps });
@@ -73,7 +73,7 @@ function setLine(targetSet: { reps: number; weightKg: number | null }, index: nu
 onMounted(() => {
   // Deep-link cold-load safety net: router.ts's beforeEnter already kicks routineStore.load()
   // off before this component mounts, but catalog isn't fetched by that guard (it's shared by
-  // every page, not routine-overview-specific) — load it here too so `catalog.byId()` above has
+  // every page, not routine-overview-specific): load it here too so `catalog.byId()` above has
   // data even on a bare cold navigation straight to this URL.
   void catalog.load();
   if (!routineStore.loaded) void routineStore.load();
@@ -83,7 +83,7 @@ async function jetztStarten() {
   if (!routine.value) return;
   await startRoutine(routine.value);
   // startRoutine()/store.start() itself never navigates (it only flips store.isActive and
-  // WorkoutPage re-renders because of that) — this screen's own start button is responsible for
+  // WorkoutPage re-renders because of that): this screen's own start button is responsible for
   // getting there. `replace`, not `push`: pressing back from the now-active workout must not
   // land the user back on this now-stale overview.
   await router.replace("/workout");

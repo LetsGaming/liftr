@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // catalogStore reads/writes `localStorage` directly (its offline-cold-start fallback), which
-// doesn't exist under vitest's default `node` environment — see tests/README.md's Environment
+// doesn't exist under vitest's default `node` environment: see tests/README.md's Environment
 // section.
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Canonical pill shape for chip/badge/pill patterns — variant and size change color and spacing,
+ * Canonical pill shape for chip/badge/pill patterns: variant and size change color and spacing,
  * never the base geometry, so every consumer stays visually identical regardless of what it's
  * labeling. `tier` reads its fill from a `--tier-accent` custom property set by the caller (tier
  * color is data-driven, not a fixed palette entry) rather than hardcoding one tier's color here.

@@ -26,14 +26,14 @@ import { recomputeRunRank } from "./runRankService.js";
 
 /**
  * Running: import a GPX you own, or log a run manually with no file. All three write paths below
- * converge on the same `runs` + `run_points` tables and the same history/streak/rank plumbing — a
+ * converge on the same `runs` + `run_points` tables and the same history/streak/rank plumbing: a
  * manual entry and an imported one are indistinguishable downstream except for the rank step
  * itself. Factored here (not left as three near-identical route handlers) because that
  * convergence is exactly the kind of duplicated-across-a-boundary shape that drifts if repeated.
  *
  * This is the run-analog of workoutService.ts's `applyFinishWorkout`: insert -> streak -> (for a
  * GPS-tracked run only) plausibility gate -> rank recompute. A manual run has no `run_points` to
- * independently check its claimed distance/duration against, so it's XP-only — it skips both the
+ * independently check its claimed distance/duration against, so it's XP-only: it skips both the
  * plausibility computation and the rank recompute entirely, and `plausibilityMultiplier` stays
  * `null` on that row forever (never defaulted to 1, which would be a silent lie about a check that
  * never ran).
@@ -49,7 +49,7 @@ async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (Run
   if (rankMode !== "none" && run.source !== "manual" && points.length > 0) {
     // "other" is the only ActivityType with rank.mode "none", so rankMode !== "none" above
     // narrows run.activityType to RankedActivityType for every other activity, walk/hike
-    // included — this cast is safe regardless of which ranked activity reaches here.
+    // included: this cast is safe regardless of which ranked activity reaches here.
     const activityType = run.activityType as RankedActivityType;
     const plausibility = computeRunPlausibility({
       distanceM: run.distanceM,
@@ -59,7 +59,7 @@ async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (Run
     });
     inserted = await updateRunPlausibilityMultiplier(db, inserted.id, plausibility.multiplier);
     // Distance-ladder (running) picks its bucket from distance; single-speed (walk/hike) has
-    // exactly one bucket, "all" — see cardioActivities.ts's RankMode.
+    // exactly one bucket, "all": see cardioActivities.ts's RankMode.
     const bucket: RankBucket = rankMode === "distance-ladder" ? runRankValue(run.distanceM, run.durationS).category : "all";
     rankResult = await recomputeRunRank(
       db,
@@ -77,7 +77,7 @@ async function persistRun(db: LiftrDb, userId: string, run: NewRun, points: (Run
 export class UnsupportedFileFormatError extends Error {}
 export class RunParseError extends Error {}
 
-/** POST /api/runs/import — GPX or FIT file bytes in, a stored run + full point array out. */
+/** POST /api/runs/import: GPX or FIT file bytes in, a stored run + full point array out. */
 export async function importRunFile(db: LiftrDb, userId: string, filename: string, buffer: Buffer) {
   const lower = filename.toLowerCase();
   const isGpx = lower.endsWith(".gpx");
@@ -127,23 +127,23 @@ export interface HealthConnectImportInput {
   /** Health Connect's own raw exercise-type string, classified via
    *  `classifyHealthConnectWorkoutType` below. */
   rawWorkoutType: string;
-  /** Required when `points` is empty — there's no first point to derive it from. */
+  /** Required when `points` is empty: there's no first point to derive it from. */
   startedAt: Date | null;
   /** The watch's own aggregate distance/duration (READ_DISTANCE), used only when `points` is
-   *  empty — a workout Health Connect withheld the route for (consent gate, or none recorded)
+   *  empty: a workout Health Connect withheld the route for (consent gate, or none recorded)
    *  still gets XP + streak credit from these, just never a rank (persistRun's rank gate
-   *  requires points, matching the existing "manual runs never earn rank" rule — no GPS trace
+   *  requires points, matching the existing "manual runs never earn rank" rule: no GPS trace
    *  means no independent check against a claimed distance). */
   distanceM: number | null;
   durationS: number | null;
   points: HealthConnectPoint[];
 }
 
-/** POST /api/runs/healthconnect — native in-app import via capacitor-health. */
+/** POST /api/runs/healthconnect: native in-app import via capacitor-health. */
 export async function importHealthConnectRun(db: LiftrDb, userId: string, input: HealthConnectImportInput) {
   const clientId = `healthconnect:${input.platformId}`;
   const existing = await findRunByClientId(db, userId, clientId);
-  if (existing) return existing; // already imported this workout — idempotent, not an error
+  if (existing) return existing; // already imported this workout: idempotent, not an error
 
   const activityType: ActivityType = classifyHealthConnectWorkoutType(input.rawWorkoutType);
   const rawPoints = input.points.map((p) => ({
@@ -177,10 +177,10 @@ export async function importHealthConnectRun(db: LiftrDb, userId: string, input:
   }
 
   // Route-less fallback: no GPS trace, so no independent plausibility check and no rank (the
-  // `points.length > 0` gate in persistRun already handles that) — XP + streak credit only, from
+  // `points.length > 0` gate in persistRun already handles that): XP + streak credit only, from
   // the watch's own reported distance/duration.
   if (input.distanceM == null || input.durationS == null || input.startedAt == null) {
-    // Machine-readable code, not prose — routes/runs.ts forwards this verbatim as `detail`, and
+    // Machine-readable code, not prose: routes/runs.ts forwards this verbatim as `detail`, and
     // the client maps it to a translated message via lib/errorMessages.ts's serverErrorMessage().
     throw new RunParseError("no_route_or_distance");
   }
@@ -203,7 +203,7 @@ export async function importHealthConnectRun(db: LiftrDb, userId: string, input:
   );
 }
 
-/** POST /api/runs — manual fallback for runs without a file. */
+/** POST /api/runs: manual fallback for runs without a file. */
 export async function logManualRun(
   db: LiftrDb,
   userId: string,
@@ -233,7 +233,7 @@ export async function logManualRun(
       name: input.name,
       startedAt: input.startedAt,
       clientId: crypto.randomUUID(),
-      distanceM: input.distanceM, // always from the body — adjusting the real result is the point
+      distanceM: input.distanceM, // always from the body: adjusting the real result is the point
       durationS: input.durationS,
       avgPaceSPerKm: input.distanceM > 0 ? input.durationS / (input.distanceM / 1000) : null,
       elevationGainM,

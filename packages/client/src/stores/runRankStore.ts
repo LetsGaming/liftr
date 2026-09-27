@@ -2,7 +2,7 @@
  *  /api/runs/prs (all activities together), and /api/runs/overall-rank (running only). Combines
  *  what would be three separate stores on the strength side (ranksStore/prStore/overallRankStore)
  *  into one, since all three describe the same "cardio rank" concept and are expected to be
- *  consumed together — but each section keeps its own loaded/error pair and load action, same as
+ *  consumed together: but each section keeps its own loaded/error pair and load action, same as
  *  its strength-side counterpart, so one section failing never blocks the others. */
 import { defineStore } from "pinia";
 import { rankedCardioActivities } from "@liftr/shared";
@@ -18,7 +18,7 @@ import {
 
 export type { RunOverallRankBand, RunPrListItem, RunRankRow } from "../services/runRankService";
 
-/** Every activity that can produce a rank row (run/walk/hike today) — read from the shared
+/** Every activity that can produce a rank row (run/walk/hike today): read from the shared
  *  registry rather than hardcoded here, so a future ranked activity needs no client change to
  *  start being fetched. */
 async function loadAllRanks(): Promise<RunRankRow[]> {

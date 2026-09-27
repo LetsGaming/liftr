@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
  * Fast path: when a routine is simple (≤4 exercises, still using the default set/rep shape, no
- * supersets — see RoutineWizard.vue's `isFastPathEligible`), Arrange and Review collapse into
+ * supersets: see RoutineWizard.vue's `isFastPathEligible`), Arrange and Review collapse into
  * one condensed screen instead of the full multi-step flow. This is progressive disclosure, not
  * a second parallel mode to maintain: the same eligibility check that puts a routine here also
  * drops it back into the full ArrangeStep the moment anything is customized (a set added, weight
  * changed, a superset linked) via "Alle Details anpassen" below. The three review glance-checks
- * (useRoutineReviewChecks) still run here — the fast path shortens the screens, not the review
+ * (useRoutineReviewChecks) still run here: the fast path shortens the screens, not the review
  * itself.
  */
 import { toRef } from "vue";

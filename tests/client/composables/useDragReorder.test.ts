@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // useDragReorder is built directly on native Pointer Events / window listeners / element
-// geometry — real DOM APIs, so this needs jsdom. jsdom doesn't implement
+// geometry: real DOM APIs, so this needs jsdom. jsdom doesn't implement
 // Element.setPointerCapture (stubbed per element below) or a real layout engine (rect stubbed
 // per element too). onPointerMove/onPointerUp are internal closures registered as window
 // listeners rather than returned values, so they're exercised the same way the real browser
@@ -115,7 +115,7 @@ describe("useDragReorder", () => {
 
     dispatchPointerMove(ITEM_HEIGHT * 2, 999); // a different pointer moving
 
-    expect(styleFor(0)).toMatchObject({ transform: "translateY(0px)" }); // unaffected — still at origin
+    expect(styleFor(0)).toMatchObject({ transform: "translateY(0px)" }); // unaffected: still at origin
   });
 
   it("onPointerUp commits the reorder when the target slot differs from the origin", () => {

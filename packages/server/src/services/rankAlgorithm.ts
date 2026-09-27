@@ -3,7 +3,7 @@
  * `recomputeRunRank`: resolve a candidate value against thresholds, corroborate it against the
  * rest of the day-keyed history, ratchet the stored peak, detect a genuine rank-up, and run
  * decay/recovery on the displayed current band. Everything metric-specific (extracting `value`
- * per row, next-target unit conversion, PR persistence) stays in the two call sites — this
+ * per row, next-target unit conversion, PR persistence) stays in the two call sites: this
  * function is pure, metric-agnostic, and does no I/O.
  */
 import {
@@ -34,7 +34,7 @@ export interface RankCoreResult {
 }
 
 /** `position` helper used throughout the algorithm to compare tier/division/lp bands as one
- *  ordered number — hoisted out of both call sites verbatim (`ordinal(tier, division) * 100 + lp`). */
+ *  ordered number: hoisted out of both call sites verbatim (`ordinal(tier, division) * 100 + lp`). */
 function position(band: { tier: Tier; division: number; lp: number }): number {
   return ordinal(band.tier, band.division) * 100 + band.lp;
 }
@@ -42,7 +42,7 @@ function position(band: { tier: Tier; division: number; lp: number }): number {
 /**
  * Resolve + corroborate + ratchet + decay/recover one metric's full history into this recompute's
  * rank result. See rankService.ts's `recomputeRankForExercise` for the full rationale behind each
- * step (corroboration, peak-eligibility floor, decay-backlog-gated recovery gain) — this function
+ * step (corroboration, peak-eligibility floor, decay-backlog-gated recovery gain): this function
  * only contains the mechanics, not the "why", to avoid duplicating that documentation.
  */
 export function computeRankCore(params: {
@@ -53,7 +53,7 @@ export function computeRankCore(params: {
   /** Value carried into the peak snapshot's `e1rm` field. For running this is the same as
    *  `bestValue` (speed is both the ranking metric and the displayed peak metric); for strength
    *  this is the separate Epley e1RM estimate, since rank resolution uses the load-ratio/rep
-   *  skill score while the peak/PR display uses e1RM — see rankService.ts's `value` vs `e1rm`. */
+   *  skill score while the peak/PR display uses e1RM: see rankService.ts's `value` vs `e1rm`. */
   peakMetricValue: number;
   bestDayKey: string;
   bestAchievedAtMs: number;
@@ -105,7 +105,7 @@ export function computeRankCore(params: {
 
   let currentBand: RankBandPosition;
   if (peak == null) {
-    // No corroborated peak: the freshly-resolved band is all we have, but it must still age —
+    // No corroborated peak: the freshly-resolved band is all we have, but it must still age:
     // otherwise a single uncorroborated outlier would display forever, since decay elsewhere
     // in this function runs off `peak`. Treat the resolved band as its own decay origin.
     currentBand = computeCurrentBand({ tier: rank.tier, division: rank.division, lp: rank.lp }, daysSinceLastTrained);

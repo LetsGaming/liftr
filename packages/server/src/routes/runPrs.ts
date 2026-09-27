@@ -1,6 +1,6 @@
 /**
- * GET /api/runs/prs — running Personal Records ledger. Own dedicated route file, mirroring how
- * `routes/prs.ts` (the strength analog) is separate from `routes/workouts.ts` — see Ruling 4 in
+ * GET /api/runs/prs: running Personal Records ledger. Own dedicated route file, mirroring how
+ * `routes/prs.ts` (the strength analog) is separate from `routes/workouts.ts`: see Ruling 4 in
  * this task's brief. Unlike `routes/prs.ts`, no service layer/join is needed: `run_prs` carries
  * `category` directly (no exercise table to join to) and `runId` alone is the "jump to this run"
  * link, so this route reads straight off the repository.
@@ -25,7 +25,7 @@ const runPrListResponse = z.array(
 
 export function registerRunPrRoutes(app: ZodFastifyInstance, db: AppDb) {
   app.get("/api/runs/prs", { schema: { response: { 200: runPrListResponse } } }, async (request) => {
-    // No activityType filter — both ladders' PRs come back together, same list the client already
+    // No activityType filter: both ladders' PRs come back together, same list the client already
     // renders; RecordsPage.vue distinguishes them by the new activityType field.
     const rows = await findAllRunPrs(db, request.userId);
     return rows.map((r) => ({

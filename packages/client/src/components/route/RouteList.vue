@@ -56,12 +56,12 @@ if (typeof window !== "undefined") {
 }
 const canDragReorder = computed(() => !isDesktopGrid.value);
 
-/** Opens the route's detail screen — mirrors RoutineList.vue's openOverview() drill-in pattern. */
+/** Opens the route's detail screen: mirrors RoutineList.vue's openOverview() drill-in pattern. */
 function openOverview(routeId: string) {
   void router.push(`/routes/${routeId}`);
 }
 
-// Per-card ⋮ menu (Starten lives on the card itself; Bearbeiten/Löschen here) — same
+// Per-card ⋮ menu (Starten lives on the card itself; Bearbeiten/Löschen here): same
 // useCardMenu composable as RoutineList.vue's useRoutineManagement, so both lists dismiss the
 // same way (outside click / Escape, one open id at a time).
 const { openMenuId, toggleMenu, closeMenu } = useCardMenu();
@@ -138,7 +138,7 @@ function editFromMenu(route: PlannedRoute) {
 
 <style scoped>
 /* Outer radius minus this card's own padding, so the thumbnail nests snugly instead of using its
-   default (--r-md, 16px) — recomputed for each breakpoint's own radius/padding pair in ListCard's
+   default (--r-md, 16px): recomputed for each breakpoint's own radius/padding pair in ListCard's
    shared .card rule (styles/list-card.css). `.card` here reaches ListCard.vue's root element
    because Vue stamps a parent's scoped attribute onto a child component's root node. */
 .card :deep(.route-thumb-map) {

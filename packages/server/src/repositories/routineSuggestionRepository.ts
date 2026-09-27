@@ -5,7 +5,7 @@ export function findMusclesBySlugs(db: LiftrDb, slugs: string[]) {
   return db.query.muscles.findMany({ where: inArray(muscles.slug, slugs) });
 }
 
-/** Primary-only involvement rows for the given muscle ids, each joined with its exercise —
+/** Primary-only involvement rows for the given muscle ids, each joined with its exercise:
  *  "train chest" should suggest chest-primary movements, not every exercise that merely uses
  *  chest as a secondary stabilizer. */
 export function findPrimaryExerciseMusclesForMuscles(db: LiftrDb, muscleIds: string[]) {

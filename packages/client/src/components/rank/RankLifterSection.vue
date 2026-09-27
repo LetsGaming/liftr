@@ -2,7 +2,7 @@
 /**
  * Kraft-Ränge: hero ladder, analytics (donut + calendar), tier filter, and the per-exercise card
  * grid. Extracted out of RanksPage.vue (which now just switches between this and
- * RankRunnerSection.vue) — self-contained, no props, same pattern as RoutineList.vue.
+ * RankRunnerSection.vue): self-contained, no props, same pattern as RoutineList.vue.
  */
 import { ordinal, TIERS, type Tier } from "@liftr/shared";
 import { computed, onMounted, ref } from "vue";
@@ -38,17 +38,17 @@ onMounted(() => {
 const { exerciseName } = useExerciseName();
 
 /** One card flipped at a time (same accordion rule TierLadder.vue's division-expand already
- *  follows) — flipping shows RankExerciseBack.vue's per-exercise rank + trained muscles on the
+ *  follows): flipping shows RankExerciseBack.vue's per-exercise rank + trained muscles on the
  *  back, a real CSS 3D flip (see the template/style below), replacing both the old per-card e1RM
  *  chart-expand AND, more recently, a height-jumping v-if/v-else content swap that only *looked*
- *  like a flip (no rotateY/backface-visibility at all) and — the actual bug report — showed the
+ *  like a flip (no rotateY/backface-visibility at all) and: the actual bug report: showed the
  *  account's overall rank on every card's back instead of that card's own exercise.
  *
  *  `activatedBacks` lazily mounts each card's back face on its FIRST flip rather than always (a
- *  RankExerciseBack renders a MuscleFigure, i.e. several <img> requests — pre-mounting all of them
+ *  RankExerciseBack renders a MuscleFigure, i.e. several <img> requests: pre-mounting all of them
  *  for a 30-40-exercise grid, per this file's own comment on sortedRanks below, would cost real
  *  load time nobody asked for) and then keeps it mounted via v-show from then on, so every flip
- *  AFTER the first is a pure transform with zero remount/reflow — only the very first flip of a
+ *  AFTER the first is a pure transform with zero remount/reflow: only the very first flip of a
  *  given card can cost a one-time layout settle while its back face mounts. */
 const flipped = ref<string | null>(null);
 const activatedBacks = ref(new Set<string>());
@@ -80,11 +80,11 @@ const sortedRanks = computed(() =>
     .sort((a, b) => b.lp - a.lp || ordinal(b.tier as Tier, b.division) - ordinal(a.tier as Tier, a.division)),
 );
 
-/** Tier filter — a flat "all ranks" list gets unwieldy once someone has trained a real number of
+/** Tier filter: a flat "all ranks" list gets unwieldy once someone has trained a real number of
  *  exercises (the seeded mock data only has 8, but a real gym history can easily have 30-40).
  *  Tier is the one grouping already on every RankRow with no extra store/join needed (a
  *  muscle-group filter would need catalogStore's per-exercise muscle data, which ranksStore
- *  doesn't carry). Only tiers the user actually has a rank in render as options — same "every
+ *  doesn't carry). Only tiers the user actually has a rank in render as options: same "every
  *  option is real" rule OverviewPage's own tab-strip filter follows. */
 const tierFilter = ref<"alle" | Tier>("alle");
 const presentTiers = computed(() => {
@@ -140,7 +140,7 @@ const filteredRanks = computed(() =>
           {{ t("rank.lifterSection.filterAll") }}
         </button>
         <!-- A flat pill row stopped scaling once someone has trained enough exercises to span
-             more than 2 tiers (9-tier system, TierLadder.vue) — a select collapses the long tail
+             more than 2 tiers (9-tier system, TierLadder.vue): a select collapses the long tail
              into one control instead of a pill row wrapping across multiple lines. -->
         <select
           v-if="presentTiers.length > 2"
@@ -209,8 +209,8 @@ const filteredRanks = computed(() =>
 /* .page-note/.rank-skel-card/.load-error are shared with RankRunnerSection.vue and
    ExerciseInfoPanel.vue via the global styles/rank-card.css (loaded from main.ts); the grid/card
    shell itself comes from CardGrid.vue/ListCard.vue + global list-card.css, same as every other
-   card grid in the app (RoutineList.vue/RouteList.vue) — including the grid's own self-centering
-   (also in rank-card.css, shared with RankRunnerSection.vue's identical rule) — only this
+   card grid in the app (RoutineList.vue/RouteList.vue): including the grid's own self-centering
+   (also in rank-card.css, shared with RankRunnerSection.vue's identical rule): only this
    section's own unique pieces (analytics tiles, tier filter) stay scoped here. */
 .rank-analytics {
   display: grid;
@@ -219,9 +219,9 @@ const filteredRanks = computed(() =>
   margin: var(--sp4) auto 0;
   max-width: var(--content-w-wide);
 }
-/* .rank-tier-filter/.tab-pill-sm/.rank-tier-select moved to tokens.css (global) — OverviewPage.vue
+/* .rank-tier-filter/.tab-pill-sm/.rank-tier-select moved to tokens.css (global): OverviewPage.vue
    now uses the same secondary-filter pattern for its activity-type filter. */
-/* Skeleton pieces — .shimmer (styles/motion.css) supplies the sweep; `.surface-hybrid`
+/* Skeleton pieces: .shimmer (styles/motion.css) supplies the sweep; `.surface-hybrid`
    (tokens.css) puts a loading Ränge screen on the same translucent/hairline system as the loaded
    content it stands in for, rather than reverting to flat --surface-2 while data is in flight.
    `.surface-hybrid` supplies background/blur/shadow + the ::after hairline; border-radius/sizing

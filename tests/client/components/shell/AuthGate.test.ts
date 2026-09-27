@@ -4,7 +4,7 @@ import { mountWithProviders } from "../../helpers/mountWithProviders";
 
 // AuthGate imports { ApiError, api, setToken } from "../../lib/api" (relative from its own
 // file), which resolves to the same absolute packages/client/src/lib/api.ts that the ~client
-// alias points at — so mocking "~client/lib/api" here does apply to it (tests/README.md).
+// alias points at, so mocking "~client/lib/api" here does apply to it (tests/README.md).
 // ApiError itself needs to stay the *real* class (AuthGate does `err instanceof ApiError`), so
 // only api.get/api.post and setToken are overridden via importOriginal instead of replacing the
 // module wholesale.
@@ -136,7 +136,7 @@ describe("AuthGate", () => {
     expect(mockPost).toHaveBeenCalledWith("/api/auth/setup", { password: "ownerpass1" });
     expect(mockSetToken).toHaveBeenCalledWith("owner-token");
     expect(wrapper.find(".protected").exists()).toBe(true);
-    // App.vue re-runs its App-mount store loads (streak/xp/settings/overallRank) off this emit —
+    // App.vue re-runs its App-mount store loads (streak/xp/settings/overallRank) off this emit;
     // without it, a fresh install's first-ever session stayed permanently stale-empty (the
     // onboarding wizard never showing, the top HUD never populating) until a full app restart.
     // See App.vue's loadAppState()/showOnboarding watcher comments for the full bug.

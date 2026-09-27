@@ -44,13 +44,13 @@ describe("generateLoopWaypoints", () => {
   it("produces a lens shape for a 2-waypoint out-and-back, on the same side whichever end was tapped first", () => {
     // With exactly 2 waypoints there is no approach-heading signal at all: the only segment in the
     // path IS the chord, so the heading is exactly anti-parallel to it and picks no side, and the
-    // centroid of two points sits exactly on the line between them. The arc still has to bulge —
-    // collapsing onto the chord would make "Schleife schließen" a straight line — so a fixed
+    // centroid of two points sits exactly on the line between them. The arc still has to bulge:
+    // collapsing onto the chord would make "Schleife schließen" a straight line: so a fixed
     // convention decides, and that convention is absolute (east, then north) rather than
     // "left of the chord". Tap order must not decide which side of a coastal path the return leg
     // lands on (loop-findings.md A1, Fischland-Darß).
     const a = { lat: 52.5, lon: 13.4 };
-    const b = { lat: 52.5, lon: 13.41 }; // due east, same latitude — an easy line to reason about
+    const b = { lat: 52.5, lon: 13.41 }; // due east, same latitude: an easy line to reason about
 
     const forward = generateLoopWaypoints([a, b]);
     const reversed = generateLoopWaypoints([b, a]);
@@ -70,11 +70,11 @@ describe("generateLoopWaypoints", () => {
   it("bulges to the side the final approach heading points toward, not to a fixed fallback side", () => {
     // An L bending north: start -> north -> east. Arriving at the last waypoint the runner is
     // heading southeast; the chord home points due west; southeast is south of due west, so the
-    // return leg sweeps south — enclosing the ground between it and the northward outbound leg
+    // return leg sweeps south: enclosing the ground between it and the northward outbound leg
     // instead of folding back over it.
-    const end = { lat: 52.5, lon: 13.4 }; // waypoints[0] — where the loop closes
+    const end = { lat: 52.5, lon: 13.4 }; // waypoints[0]: where the loop closes
     const bend = { lat: 52.51, lon: 13.4 };
-    const start = { lat: 52.5, lon: 13.41 }; // waypoints[last] — where the arc starts
+    const start = { lat: 52.5, lon: 13.41 }; // waypoints[last]: where the arc starts
     const arc = generateLoopWaypoints([end, bend, start]);
     expect(arc.length).toBeGreaterThan(0);
     for (const p of arc) {
@@ -94,7 +94,7 @@ describe("generateLoopWaypoints", () => {
       const arc = generateLoopWaypoints([p0, southBend(offsetM), p2]);
       expect(arc.length).toBeGreaterThan(0);
       for (const p of arc) {
-        expect(p.lat).toBeGreaterThan(52.5); // north — away from the southward bend
+        expect(p.lat).toBeGreaterThan(52.5); // north: away from the southward bend
       }
     }
   });
@@ -102,7 +102,7 @@ describe("generateLoopWaypoints", () => {
   it("picks the bulge side continuously across the whole range of bend depths", () => {
     // Same route, sweeping the bend from 200 m north of the chord to 200 m south of it. The side
     // may change exactly once, where the bend crosses the chord and the two sides are genuinely
-    // mirror images — never anywhere else, and never at an arbitrary fraction-of-chord threshold.
+    // mirror images: never anywhere else, and never at an arbitrary fraction-of-chord threshold.
     const p0 = { lat: 52.5, lon: 13.4 };
     const p2 = { lat: 52.5, lon: 13.41 };
     const sideAt = (offsetM: number) => {
@@ -132,7 +132,7 @@ describe("generateLoopWaypoints", () => {
   });
 
   it("round-trips the projection without drifting the arc off the correct hemisphere", () => {
-    // A route in the southern hemisphere, western longitudes — exercises the cos(lat) scaling and
+    // A route in the southern hemisphere, western longitudes: exercises the cos(lat) scaling and
     // negative-coordinate unprojection path.
     const start = { lat: -33.86, lon: -70.9 };
     const end = { lat: -33.85, lon: -70.88 };
@@ -157,7 +157,7 @@ describe("generateLoopWaypoints", () => {
   // --- findings A2 / C: the projection layer's own correctness ---
 
   it("keeps an arc across the ±180° line beside the route, not on the far side of the planet", () => {
-    // Taveuni area, Fiji — two taps ~5 km apart straddling the antimeridian (loop-findings.md A2).
+    // Taveuni area, Fiji: two taps ~5 km apart straddling the antimeridian (loop-findings.md A2).
     // haversineM already gets the distance right; it was projector()'s raw `lon * mPerDegLon`
     // that interpolated the long way around the globe and produced points 3,750-5,385 km away.
     const start = { lat: -16.841, lon: 179.97 };
@@ -266,7 +266,7 @@ describe("generateLoopWaypoints", () => {
       // 75 m, not 15 m: a raw last-segment-chord heading estimate is, by the tangent-chord
       // theorem, off from the true tangent by half the subtended arc angle. For this deliberately
       // coarse 3-tap/60°-spaced synthetic roundabout that produces a provable, deterministic ring
-      // deviation of up to ~69 m across the three generated points — not a construction bug (the
+      // deviation of up to ~69 m across the three generated points: not a construction bug (the
       // "places every generated point on one circle" test below independently verifies the
       // construction is exact to ~5 m regardless of heading accuracy). 75 m clears that deviation
       // with margin while still catching a real regression, e.g. an inverted `sense`, which fails
@@ -302,7 +302,7 @@ describe("generateLoopWaypoints", () => {
       d;
     const radii = xy.map((p) => Math.hypot(p.x - ux, p.y - uy));
     for (const r of radii) {
-      expect(r).toBeCloseTo(radii[0]!, -1); // within ~5 m — projection rounding only
+      expect(r).toBeCloseTo(radii[0]!, -1); // within ~5 m: projection rounding only
     }
   });
 
@@ -310,7 +310,7 @@ describe("generateLoopWaypoints", () => {
 
   it("puts the return leg on the same side of a coastal path however the pair was tapped", () => {
     // Fischland-Darß (Baltic coast): a spit running NNE-SSW, water on both sides, two taps ~1.2 km
-    // apart. Nothing in a 2-point route can tell the generator which side is land — but tapping the
+    // apart. Nothing in a 2-point route can tell the generator which side is land: but tapping the
     // same two points in the other order must not silently move the return leg across the water.
     const south = { lat: 54.365, lon: 12.38 };
     const north = { lat: 54.376, lon: 12.383 };
@@ -381,7 +381,7 @@ describe("generateLoopWaypoints", () => {
 
   // --- findings A3 / A4: proportionate at both ends of the scale ---
 
-  /** Greatest distance from the chord over the generated arc — the quantity A3/A4 tabulate. */
+  /** Greatest distance from the chord over the generated arc: the quantity A3/A4 tabulate. */
   function excursionM(waypoints: { lat: number; lon: number }[]) {
     const start = waypoints[0]!;
     const end = waypoints[waypoints.length - 1]!;
@@ -426,7 +426,7 @@ describe("generateLoopWaypoints", () => {
 
   it("keeps the detour a meaningful fraction of a long chord instead of capping it at 2 km", () => {
     // loop-findings.md A4: the old cap made the return leg 5% of a 40 km chord and 2% of a 100 km
-    // one. Still bounded — it just doesn't stop growing.
+    // one. Still bounded: it just doesn't stop growing.
     const north = (metres: number) => [
       { lat: 52.0, lon: 13.4 },
       { lat: 52.0 + metres / 111_195, lon: 13.4 },
@@ -456,7 +456,7 @@ describe("generateLoopWaypoints", () => {
     // purely perpendicular to the chord, so only a chord that itself runs along one projected axis
     // (here: due east) makes the two symmetric interior points (t=1/3 and 2/3) equidistant in raw
     // lat from the chord's mean lat. A diagonal chord bulges along a normal that mixes lat and lon,
-    // so the same "matched pair" check would fail even with a correctly-floored count — that's an
+    // so the same "matched pair" check would fail even with a correctly-floored count: that's an
     // artifact of which axis the assertion reads, not of the count handling under test here.
     const waypoints = [
       { lat: 52.5, lon: 13.4 },

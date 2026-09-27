@@ -8,9 +8,9 @@ import type { Profile } from "./settings.js";
 
 const streakResponse = z.object({ streak: z.number(), tokensRemaining: z.number() });
 
-/** GET /api/streak — current streak + remaining protection. Protection scales with the
- *  onboarding profile's `workoutsPerWeek` when set — a lifter who trains 2x/week by design
- *  shouldn't have their on-schedule rest days read as a broken streak — see @liftr/shared's
+/** GET /api/streak: current streak + remaining protection. Protection scales with the
+ *  onboarding profile's `workoutsPerWeek` when set: a lifter who trains 2x/week by design
+ *  shouldn't have their on-schedule rest days read as a broken streak: see @liftr/shared's
  *  computeStreak for the derivation. Falls back to the flat default pool when the profile
  *  question was never answered. */
 export function registerStreakRoutes(app: ZodFastifyInstance, db: AppDb) {

@@ -1,5 +1,5 @@
 // Split out of a single PickStep.test.ts alongside PickStepManual.vue/PickStepMuscles.vue's own
-// split from PickStep.vue — see PickStepManual.vue's doc comment. No store/composable to seed
+// split from PickStep.vue; see PickStepManual.vue's doc comment. No store/composable to seed
 // here (MuscleFigure/Chip render from static muscle-slug data).
 import { describe, expect, it } from "vitest";
 import PickStepMuscles from "~client/components/routine/PickStepMuscles.vue";

@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 //
 // checkVersionMismatch keeps state as module-level singletons (App.vue's launch check and
-// ProfilePage.vue's own display share one result — see useServerConnection.ts's header comment
+// ProfilePage.vue's own display share one result: see useServerConnection.ts's header comment
 // on serverVersion/versionMismatch), so every test resets modules and re-imports fresh, same
 // convention as useAppUpdate.test.ts.
 //
 // jsdom (not the default node environment) because checkServerIdentity's error copy goes through
 // i18n.ts's t(), which reads localeStore.ts's getStoredLocale() at module load; plain Node's own
 // built-in `navigator.language` reflects the host OS locale (German on a German-locale machine),
-// while jsdom's always reports "en-US" — without forcing jsdom here, these assertions on the
+// while jsdom's always reports "en-US": without forcing jsdom here, these assertions on the
 // English default copy would pass or fail depending on which machine ran them.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -151,7 +151,7 @@ describe("useServerConnection", () => {
 });
 
 describe("checkVersionMismatch", () => {
-  it("does nothing on a non-native (web/PWA) build — client and server always deploy together there", async () => {
+  it("does nothing on a non-native (web/PWA) build: client and server always deploy together there", async () => {
     isNativeMock.mockReturnValue(false);
     localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
     const fetchMock = vi.fn();
@@ -194,7 +194,7 @@ describe("checkVersionMismatch", () => {
     expect(await checkVersionMismatch()).toBe(false);
   });
 
-  it("resolves to false (never rejects) when App.getInfo() rejects on-device — warn-only, no unhandled rejection", async () => {
+  it("resolves to false (never rejects) when App.getInfo() rejects on-device: warn-only, no unhandled rejection", async () => {
     localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(fakeResponse(200, { ok: true, service: "liftr", version: "9.9.9" })));
     getInfoMock.mockRejectedValue(new Error("plugin not available"));
@@ -204,7 +204,7 @@ describe("checkVersionMismatch", () => {
     expect(useServerVersionInfo().versionMismatch.value).toBe(false);
   });
 
-  it("has no internal run-once guard — the caller's own single onMounted is what makes this once-per-boot (App.vue only mounts once)", async () => {
+  it("has no internal run-once guard: the caller's own single onMounted is what makes this once-per-boot (App.vue only mounts once)", async () => {
     localStorage.setItem("liftr.serverUrl", "https://liftr.example.com");
     const fetchMock = vi.fn().mockResolvedValue(fakeResponse(200, { ok: true, service: "liftr", version: "9.9.9" }));
     vi.stubGlobal("fetch", fetchMock);

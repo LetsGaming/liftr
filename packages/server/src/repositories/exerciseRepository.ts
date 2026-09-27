@@ -15,7 +15,7 @@ export interface CustomExerciseInput {
   movementPattern: string;
   isBodyweight: boolean;
   /** Optional at creation time (a custom exercise with none is still valid, just invisible to
-   *  muscle-filtered browse/suggest until edited) — unknown slugs are silently dropped rather
+   *  muscle-filtered browse/suggest until edited): unknown slugs are silently dropped rather
    *  than failing the whole insert, same tolerant-degrade posture as this file's equipment
    *  parsing elsewhere in the codebase. */
   muscleSlugs?: { slug: string; role: "primary" | "secondary" }[];

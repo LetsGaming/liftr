@@ -26,7 +26,7 @@ describe("findTotalSessionBonusXp", () => {
       varietyBonusXp: 1500,
     });
 
-    // Finished workout with null bonus values — the columns are nullable at the schema level,
+    // Finished workout with null bonus values: the columns are nullable at the schema level,
     // even though the real finish-workout write path always sets them; this exercises that
     // type-level null case directly.
     await db.insert(workouts).values({
@@ -38,7 +38,7 @@ describe("findTotalSessionBonusXp", () => {
       varietyBonusXp: null,
     });
 
-    // Unfinished workout (never ended) — must be excluded even though it has no bonus values.
+    // Unfinished workout (never ended): must be excluded even though it has no bonus values.
     await db.insert(workouts).values({
       clientId: "w-unfinished",
       startedAt: new Date("2026-09-03T10:00:00Z"),
@@ -73,7 +73,7 @@ describe("findAllRunsForXp", () => {
       clientId: "xp-run-gps",
     });
     // Manual run: plausibilityMultiplier is always null in the DB (the gate never runs against
-    // manual entries) — this row is the one Ruling 5's `?? 1` mapping exists to protect.
+    // manual entries): this row is the one Ruling 5's `?? 1` mapping exists to protect.
     await db.insert(runs).values({
       userId: OWNER_USER_ID,
       source: "manual",

@@ -73,7 +73,7 @@ describe("BasePage", () => {
     const subheader = wrapper.find(".base-page-subheader");
     expect(subheader.exists()).toBe(true);
     expect(subheader.find(".tabs").exists()).toBe(true);
-    // A non-scrolling sibling of ion-content, not nested inside it — the whole point of the slot.
+    // A non-scrolling sibling of ion-content, not nested inside it: the whole point of the slot.
     expect(wrapper.find("ion-content .tabs").exists()).toBe(false);
     expect(wrapper.find("ion-content .body").exists()).toBe(true);
   });

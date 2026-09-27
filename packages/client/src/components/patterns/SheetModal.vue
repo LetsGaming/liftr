@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Shared modal shell — every modal in the app is built on this IonModal setup now (feedback:
+ * Shared modal shell: every modal in the app is built on this IonModal setup now (feedback:
  * "every modal should reuse the same base, this is currently not the case"). Originally only
  * ExerciseInfoPanel.vue and WorkoutDetail.vue used it (title + close button + one scrolling
  * body); RoutineWizard.vue kept its own hand-rolled `<IonModal>` with a custom multi-step
  * header, on the reasoning that its header shape was genuinely different. That reasoning was
- * right about the *header*, wrong about needing a whole separate shell for it — the `#header`
+ * right about the *header*, wrong about needing a whole separate shell for it: the `#header`
  * slot below lets a caller replace the title bar with anything (a step indicator, a name input,
  * whatever) while still going through the same IonModal sizing/background/dismiss plumbing.
  *
@@ -13,7 +13,7 @@
  *   - No `#header` slot: the original title+close bar, and the whole `.sheet` is one scrolling
  *     region (unchanged from before this file grew a second shape).
  *   - `#header` slot provided: that content renders pinned (flex:none) above a separate
- *     scrolling `.sheet-scroll` body — what a multi-step flow actually wants (the step
+ *     scrolling `.sheet-scroll` body: what a multi-step flow actually wants (the step
  *     indicator shouldn't scroll away).
  *
  * Two desktop shapes, chosen by `desktopVariant`. Both used to be fought out per-caller with a
@@ -22,23 +22,23 @@
  * actual content. Centralizing both shapes here means a caller picks one by name instead of
  * hand-rolling `::part()` CSS, and the info/detail sheets can now deliberately share the same
  * drawer treatment instead of drifting independently:
- *   - "card" (default): rounded on every side, centered — a floating panel.
- *   - "drawer": square corners, pinned to the right edge, left border, full height — a
+ *   - "card" (default): rounded on every side, centered: a floating panel.
+ *   - "drawer": square corners, pinned to the right edge, left border, full height: a
  *     reference panel meant to sit alongside the page behind it, not float over it.
  *
  * Default background is `var(--surface-hybrid-bg)`, and `::part(content)` below adds the
  * blur/shadow half of the surface-hybrid recipe for every sheet *except* `.full-modal` ones (the
- * `sheet: false` full-bleed flows — RoutineWizard.vue, OnboardingGuide.vue — which pass their own
+ * `sheet: false` full-bleed flows: RoutineWizard.vue, OnboardingGuide.vue: which pass their own
  * `background="var(--bg)"` deliberately, so they show the page's own sweep instead of a floating
  * card; skipping them here isn't an oversight, it's this same rule not re-fighting a choice those
  * two callers already made explicitly). Also carries the same gradient-hairline `::after` every
- * other `.surface-hybrid`/`.panel` consumer gets — chaining a pseudo-element off a shadow part
+ * other `.surface-hybrid`/`.panel` consumer gets: chaining a pseudo-element off a shadow part
  * (`::part(content)::after`) does render, positioned against that part's own box, in this app's
  * target Chromium; the mask-composite ring lines up on the modal's real edges exactly like the
  * light-DOM version.
  *
  * `desktopWidth`/`desktopHeight` are optional overrides of `width`/`height` for the ≥900px
- * breakpoint (falling back to the base value when unset) — implemented as a plain CSS custom-
+ * breakpoint (falling back to the base value when unset): implemented as a plain CSS custom-
  * property cascade inside this component's own stylesheet (`--sheet-width-desktop` feeding
  * `--width` via `var()` with a fallback), deliberately *not* by having a caller's own external
  * `@media` rule try to override this component's inline `:style` binding for the same property:
@@ -46,22 +46,22 @@
  * silently doesn't do anything.
  *
  * Closing. Every close path here and in every caller used to just emit `close`/flip the parent's
- * own v-if straight away, which unmounts this whole component — including the live
- * `<ion-modal>` custom element — while `:is-open` was still `true` and Ionic hadn't been told to
+ * own v-if straight away, which unmounts this whole component: including the live
+ * `<ion-modal>` custom element: while `:is-open` was still `true` and Ionic hadn't been told to
  * close. Ionic's own dismiss() does real async teardown (finishes any animation, detaches itself
  * from the DOM in a controlled order); yanking the element out from under it via Vue unmount
- * races that teardown and null-derefs — this produced a real "Cannot read properties of null
+ * races that teardown and null-derefs: this produced a real "Cannot read properties of null
  * (reading 'insertBefore')" crash in routine create/edit, and left the workout-delete confirm
  * stuck. `@ionic/vue`'s `<IonModal>` doesn't expose a `dismiss()` method on its own component
  * instance (confirmed against the installed 9.0.0: no `defineExpose` anywhere in its
- * `defineOverlayContainer`) — the real method lives on the underlying custom element, reached
+ * `defineOverlayContainer`): the real method lives on the underlying custom element, reached
  * via the template ref's `.$el`. So: nothing in this file or its callers unmounts anything
  * directly. Every close path calls `dismiss()` below, which calls the *real* Ionic dismiss;
  * only its `@did-dismiss` callback (guaranteed to fire after Ionic's own teardown finishes)
  * emits `close`, and only *that* event is what callers use to actually unmount/reset state.
  *
  * `@did-dismiss` firing "after Ionic's own teardown finishes" turned out not to mean "after
- * Ionic's internal overlay-stack bookkeeping has fully detached the DOM subtree" — a real
+ * Ionic's internal overlay-stack bookkeeping has fully detached the DOM subtree": a real
  * `insertBefore`-on-null crash happened *synchronously inside* the `did-dismiss` handler's own
  * call stack: emitting `close` here triggers the caller's reactive unmount in the same tick,
  * which can race Ionic's own cleanup of that same subtree. `requestAnimationFrame` (not
@@ -82,16 +82,16 @@ withDefaults(
     desktopHeight?: string;
     maxWidth?: string;
     background?: string;
-    /** true (default): a native draggable bottom sheet (breakpoints [0,1]) — the info/detail-
+    /** true (default): a native draggable bottom sheet (breakpoints [0,1]): the info/detail-
      *  panel shape. false: a static full-bleed modal with no drag handle, always square-
-     *  cornered regardless of `desktopVariant` — what a full-screen flow like the routine
+     *  cornered regardless of `desktopVariant`: what a full-screen flow like the routine
      *  wizard wants; dragging it partway closed mid-edit would be a bad time to discover your
      *  draft is gone. */
     sheet?: boolean;
     /** Only meaningful together with the `#header` slot. Default: `.sheet-scroll` is a normal
      *  scrolling region. true: it becomes a column flex container instead (`overflow: hidden`),
      *  so a single child that sets `flex: 1; min-height: 0` (an interactive map, e.g.
-     *  RouteWizard.vue/LiveRunScreen.vue) can actually grow to fill it — plain `overflow-y: auto`
+     *  RouteWizard.vue/LiveRunScreen.vue) can actually grow to fill it: plain `overflow-y: auto`
      *  isn't a flex container, so that pattern was silently inert until this existed, and the
      *  child's own min-height floor decided the real height instead, which is what let content
      *  overflow into a scroll `.sheet-scroll` was never meant to need. */
@@ -122,7 +122,7 @@ const slots = useSlots();
 const { t } = useI18n();
 
 const modalRef = ref<InstanceType<typeof IonModal> | null>(null);
-/** The one correct way to close this modal — see the header comment. Exposed so a caller can
+/** The one correct way to close this modal: see the header comment. Exposed so a caller can
  *  close it in response to its own action (e.g. "delete succeeded", "nothing to save") instead
  *  of reaching into its own v-if/emit directly. */
 function dismiss() {
@@ -178,21 +178,21 @@ defineExpose({ dismiss });
 <style>
 /* IonModal's internal parts render outside this component's scoped-CSS reach. --width and
    --height are computed from the --sheet-width(-desktop) / --sheet-height(-desktop) inline
-   inputs above, not bound directly — see this file's header comment for why. */
+   inputs above, not bound directly: see this file's header comment for why. */
 .sheet-modal {
   --background: var(--modal-bg);
   --width: var(--sheet-width);
   --height: var(--sheet-height);
 }
 .sheet-modal.drawer-modal::part(content) {
-  /* Square at every breakpoint — a drawer collapses to a full-bleed sheet on mobile, which
+  /* Square at every breakpoint: a drawer collapses to a full-bleed sheet on mobile, which
      shouldn't have rounded corners either. */
   border-radius: 0;
 }
 /* Every sheet except the full-bleed flows gets the full surface-hybrid recipe on its actual
    painted box (see header comment). `--background` above only sets fill color (an Ionic-internal
    custom property); backdrop-filter and the gradient hairline both have to target the real
-   shadow-DOM node via ::part(content) instead — plain scoped CSS can't reach in there. */
+   shadow-DOM node via ::part(content) instead: plain scoped CSS can't reach in there. */
 .sheet-modal:not(.full-modal)::part(content) {
   backdrop-filter: blur(var(--surface-hybrid-blur));
   -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
@@ -232,7 +232,7 @@ defineExpose({ dismiss });
   flex-direction: column;
 }
 /* Full-bleed modal at height:100% starts at the very top of the viewport, under the notch/status
-   bar on Android — see capacitor.config.ts's adjustMarginsForEdgeToEdge comment for why the CSS
+   bar on Android: see capacitor.config.ts's adjustMarginsForEdgeToEdge comment for why the CSS
    inset is the fallback layer, not the primary fix. Covers every caller of the default `.sheet-
    head` fallback below (NoteCapture, RpeCapture, SetKindPicker, RouteMapEditor, LiveRunMap) in
    one place instead of several. */

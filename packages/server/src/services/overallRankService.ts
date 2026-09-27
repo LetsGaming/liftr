@@ -1,5 +1,5 @@
 /**
- * Overall Lifter Rank — thin orchestration around @liftr/shared's
+ * Overall Lifter Rank: thin orchestration around @liftr/shared's
  * computeOverallRank/computeOverallPeak. Computed on-demand from the already-small, single-user
  * `ranks` table rather than persisted into its own derived-cache table: the input is cheap to
  * aggregate fresh on every request, and this avoids a second cache needing its own invalidation
@@ -20,7 +20,7 @@ export async function getOverallRank(db: LiftrDb, userId: string): Promise<Overa
   const current = computeOverallRank(rows.map((r) => ({ tier: r.tier, division: r.division, lp: r.lp, trust: r.trust })));
 
   // Peak aggregate only includes rows that actually have a peak snapshot (a row recomputed since
-  // peak tracking was added always does; excludes nothing else — same "exclude, don't zero"
+  // peak tracking was added always does; excludes nothing else: same "exclude, don't zero"
   // philosophy as current).
   const peakRows = rows.filter(
     (r) => r.peakTier != null && r.peakDivision != null && r.peakLp != null,

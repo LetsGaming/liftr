@@ -7,7 +7,7 @@ import { ingestMuscleAssets } from "~ingest/ingestMuscleAssets.js";
 // Minimal fixtures exercising every recolor pass ingestMuscleAssets.ts runs:
 //  - recolorBody: grayscale fill:#RRGGBB values remapped by luminance into the dark-theme range.
 //    #000000 (luminance 0, the darkest in this 2-value fixture) and #ffffff (luminance 255, the
-//    lightest) land exactly on BODY_DARK/BODY_LIGHT (t=0 / t=1) — see that constant's own values
+//    lightest) land exactly on BODY_DARK/BODY_LIGHT (t=0 / t=1): see that constant's own values
 //    (#1a2033 / #4f5c82, matching the recolorBody doc comment's own worked example).
 const BODY_SVG = `<svg><path style="fill:#000000"/><path style="fill:#ffffff"/></svg>`;
 //  - recolorOverlay: wger's baked primary/secondary colors + low opacity swapped for this app's

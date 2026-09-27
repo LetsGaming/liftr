@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // activeWorkoutStore.ts now calls i18n.ts's t() (progressLabel), which reads localStorage at
-// module load (needs a DOM) — jsdom's navigator.language always reports "en-US", so i18n.ts's
+// module load (needs a DOM): jsdom's navigator.language always reports "en-US", so i18n.ts's
 // getStoredLocale() would otherwise default the shared i18n singleton to "en" for the rest of
 // the test process.
 import { createPinia, setActivePinia } from "pinia";
@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "~client/i18n";
 
 // persist() (idb.ts) hits real IndexedDB, which doesn't exist under Vitest's default node
-// environment — stub it the same way every mutation in this store already treats it: a
+// environment: stub it the same way every mutation in this store already treats it: a
 // fire-and-forget write whose success/failure isn't observed by the caller.
 vi.mock("~client/lib/idb", () => ({
   saveActiveWorkout: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock("~client/stores/syncStore", () => ({
 
 import { useActiveWorkoutStore, type ActiveExercise } from "~client/stores/activeWorkoutStore";
 
-/** Builds a minimal one-exercise, one-set active session directly via $patch — avoids
+/** Builds a minimal one-exercise, one-set active session directly via $patch: avoids
  *  exercising start()'s own sync.enqueue call (already covered by its own concerns), since
  *  these tests only care about logCurrentSet()'s rpe/notes plumbing. */
 function seedOneSetExercise(store: ReturnType<typeof useActiveWorkoutStore>) {
@@ -78,7 +78,7 @@ beforeEach(() => {
   enqueueAndAwaitFlushMock.mockClear();
 });
 
-describe("activeWorkoutStore — rpe/notes plumbing (Task 1)", () => {
+describe("activeWorkoutStore: rpe/notes plumbing (Task 1)", () => {
   it("setCurrentSetRpe/setCurrentSetNotes write to currentSet without enqueueing sync", () => {
     const store = useActiveWorkoutStore();
     seedOneSetExercise(store);
@@ -88,7 +88,7 @@ describe("activeWorkoutStore — rpe/notes plumbing (Task 1)", () => {
 
     expect(store.currentSet?.rpe).toBe(8);
     expect(store.currentSet?.notes).toBe("felt heavy");
-    // Global Constraint 1: RPE/notes capture never enqueues on its own — only logCurrentSet()
+    // Global Constraint 1: RPE/notes capture never enqueues on its own: only logCurrentSet()
     // (via the log_set payload) or finish() sends anything over the wire.
     expect(enqueueMock).not.toHaveBeenCalled();
   });
@@ -121,7 +121,7 @@ describe("activeWorkoutStore — rpe/notes plumbing (Task 1)", () => {
   });
 });
 
-describe("activeWorkoutStore — workout-level notes (Task 2)", () => {
+describe("activeWorkoutStore: workout-level notes (Task 2)", () => {
   it("setWorkoutNotes writes workoutNotes", () => {
     const store = useActiveWorkoutStore();
     seedOneSetExercise(store);
@@ -158,10 +158,10 @@ describe("activeWorkoutStore — workout-level notes (Task 2)", () => {
 });
 
 // Bug fix (user report): reps was defaulting to last time's *actual* reps performed, which could
-// silently drift the target down (e.g. a failed/short set became the new "default" forever) —
+// silently drift the target down (e.g. a failed/short set became the new "default" forever):
 // unlike weightKg, reps should always start at the routine's prescribed target, editable from
 // there via the stepper, never at whatever happened to be logged last time.
-describe("activeWorkoutStore — reps defaulting on start (bug fix)", () => {
+describe("activeWorkoutStore: reps defaulting on start (bug fix)", () => {
   it("start() always defaults reps to the routine's target, ignoring last time's actual reps", async () => {
     const store = useActiveWorkoutStore();
     await store.start(null, "Test", [

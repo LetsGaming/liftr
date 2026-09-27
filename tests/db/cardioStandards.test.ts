@@ -22,7 +22,7 @@ describe("syncCardioStandards", () => {
     expect(rows.some((r) => r.activityType === "run")).toBe(true);
   });
 
-  it("changed:false on a second identical call — no-op, doesn't touch the table", async () => {
+  it("changed:false on a second identical call: no-op, doesn't touch the table", async () => {
     await syncCardioStandards(db);
 
     const result = await syncCardioStandards(db);
@@ -32,7 +32,7 @@ describe("syncCardioStandards", () => {
     expect(rows).toHaveLength(buildCardioStandards().length);
   });
 
-  it("changed:true against a run-only table — exactly the pre-walk/hike upgrade scenario", async () => {
+  it("changed:true against a run-only table: exactly the pre-walk/hike upgrade scenario", async () => {
     const built = buildCardioStandards();
     await db.insert(runStandards).values(
       built

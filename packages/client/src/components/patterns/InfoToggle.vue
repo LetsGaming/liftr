@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * A lightweight, always-reachable "what does this mean?" disclosure — tap-to-reveal, not a
+ * A lightweight, always-reachable "what does this mean?" disclosure: tap-to-reveal, not a
  * hover tooltip (this app has no hover surface) and not gated behind a one-time onboarding
  * modal that can't be reopened. Used for jargon like LP/≈/Gesamtrang/Division on both
  * RanksPage.vue and OverviewPage.vue instead of a `title` attribute (not discoverable) or a

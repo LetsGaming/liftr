@@ -110,9 +110,9 @@ describe("NumberStepper", () => {
 
     it("treats a value the browser's own number-input sanitizes to empty as 0, not as a no-op", async () => {
       // jsdom (like real browsers) already refuses to hold non-numeric text in a
-      // type="number" input's .value — typing "abc" leaves the element's value at "" rather
+      // type="number" input's .value: typing "abc" leaves the element's value at "" rather
       // than "abc". Number("") is 0, which passes the component's Number.isFinite guard, so
-      // this still commits — the guard only ever rejects truly non-finite results (Infinity/
+      // this still commits: the guard only ever rejects truly non-finite results (Infinity/
       // NaN), not merely-empty input.
       const wrapper = mountWithProviders(NumberStepper, { props: { modelValue: 50, size: "lg" } });
       await wrapper.find(".num-edit").trigger("click");

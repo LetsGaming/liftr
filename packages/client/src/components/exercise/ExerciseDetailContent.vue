@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * Exercise detail content — the 4-tab (Über / Rang / Statistiken / Verlauf) body shared by every
+ * Exercise detail content: the 4-tab (Über / Rang / Statistiken / Verlauf) body shared by every
  * entry point: `ExerciseDetailPage.vue` (routed `/exercises/:slug`, wraps this in `BasePage`) and
  * WorkoutPage.vue's mid-set ⓘ button (wraps this in a `SheetModal` instead, so opening it never
  * navigates away from the active workout screen). Owns its own data fetching (catalog lookup,
  * lazy history/rank fetch on tab switch) so neither host duplicates it.
  *
  * The tab strip is sticky rather than placed in a host-specific pinned slot (`BasePage`'s
- * `subheader` / `SheetModal`'s `#header`) — that would require splitting this component's own
+ * `subheader` / `SheetModal`'s `#header`): that would require splitting this component's own
  * render output across two different host-owned DOM locations, which a single component instance
  * can't do. Staying pinned via `position: sticky` inside whichever scrolling container the host
  * provides works the same for both hosts without them needing to cooperate on layout.
@@ -37,7 +37,7 @@ const { t } = useI18n();
 const catalog = useCatalogStore();
 onMounted(() => {
   // router.ts's beforeEnter already kicks catalog.load() off before this component mounts for the
-  // routed-page host — guarded here too so a component that outlives that prefetch (Fast Refresh,
+  // routed-page host: guarded here too so a component that outlives that prefetch (Fast Refresh,
   // catalog already loaded from another route) or the sheet host (no router prefetch at all)
   // doesn't skip loading, and doesn't fire a second concurrent full-catalog fetch either.
   if (!catalog.loaded) void catalog.load();
@@ -63,7 +63,7 @@ const activeTab = ref<TabKey>("ueber");
 function selectTab(tab: TabKey) {
   activeTab.value = tab;
   if (tab === "ueber" || !exercise.value) return;
-  // Lazy fetch, keyed by exercise id — first switch to any non-Über tab only (data-wiring
+  // Lazy fetch, keyed by exercise id: first switch to any non-Über tab only (data-wiring
   // rule above). historyCache already de-dupes repeat switches; toggleExpand() also flips an
   // `expanded` flag this component doesn't use, but calling it is harmless.
   if (!historyCache.has(exercise.value.id)) void toggleExpand(exercise.value.id);
@@ -108,7 +108,7 @@ const requirements = computed<TieredRequirement[]>(() => {
 });
 const ownedEquipment = computed(() => settingsStore.ownedEquipment);
 // Only a `required` miss gets the hard red "fehlt" treatment here; recommended/optional misses
-// get a softer "empfohlen"/"optional" note — informative, never alarming, since the exercise is
+// get a softer "empfohlen"/"optional" note: informative, never alarming, since the exercise is
 // still fully doable without them.
 const missing = computed(() => missingByTier(requirements.value, ownedEquipment.value));
 function missingBadge(req: TieredRequirement): string | null {
@@ -215,7 +215,7 @@ function missingBadge(req: TieredRequirement): string | null {
   font-size: 13px;
 }
 /* Keeps the tab strip visible while the tab body scrolls beneath it, inside whichever scrolling
-   container the host provides (BasePage's IonContent, or SheetModal's sheet body) — see this
+   container the host provides (BasePage's IonContent, or SheetModal's sheet body): see this
    file's header comment for why sticky instead of a host-pinned slot. */
 .sticky-tabs {
   position: sticky;
@@ -231,7 +231,7 @@ function missingBadge(req: TieredRequirement): string | null {
   -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
 }
 
-/* The Rang tab's own hero readout — the one place <RankProgress variant="card"> still gets a
+/* The Rang tab's own hero readout: the one place <RankProgress variant="card"> still gets a
    full tier-fill background: this is a single reward moment in a tab panel, not a grid cell with
    its own tier-accent rim, so there's no card border to carry tier color instead. Reuses
    tokens.css's .panel-reward (the same recipe the app's other reward surfaces use) rather than a
@@ -246,7 +246,7 @@ function missingBadge(req: TieredRequirement): string | null {
 }
 /* ProgressChart.vue's own scoped layout is a compact flex row (fixed 140px spark + inline
    latest-value label) sized for the Ränge grid's card slot. Full page width needs the spark to
-   actually grow — stack chart-above-label instead of forcing the label to share a row it no
+   actually grow: stack chart-above-label instead of forcing the label to share a row it no
    longer fits. */
 .wide-chart :deep(.progress-chart) {
   flex-direction: column;

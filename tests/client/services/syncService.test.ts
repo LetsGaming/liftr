@@ -38,7 +38,7 @@ describe("postSyncBatch", () => {
     expect(result).toBe(results);
   });
 
-  it("passes an empty items array through unchanged (no client-side batching/chunking here — that's syncStore's job)", async () => {
+  it("passes an empty items array through unchanged (no client-side batching/chunking here: that's syncStore's job)", async () => {
     mockPost.mockResolvedValue({ results: [] });
 
     const result = await postSyncBatch([]);

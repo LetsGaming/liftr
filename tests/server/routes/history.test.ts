@@ -84,7 +84,7 @@ describe("GET /api/history", () => {
     const body = res.json();
     expect(body.items).toHaveLength(2);
     expect(body.nextCursor).not.toBeNull();
-    // Most recent first: Run 2 (Sep 3), then Run 1 (Sep 2) — Run 0 is left for the next page.
+    // Most recent first: Run 2 (Sep 3), then Run 1 (Sep 2): Run 0 is left for the next page.
     expect(body.items.map((i: { title: string }) => i.title)).toEqual(["Run 2", "Run 1"]);
   });
 

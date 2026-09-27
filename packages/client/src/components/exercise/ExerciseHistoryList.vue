@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Verlauf tab of ExerciseInfoPanel.vue. Reverse-chronological list of a single exercise's logged
- * sets, grouped by calendar day. Pure presentational — props-in, no fetching of its own (matches
+ * sets, grouped by calendar day. Pure presentational: props-in, no fetching of its own (matches
  * useExerciseHistoryCache.ts's "a component does not fetch" convention); the parent sheet owns
  * the lazy fetch and passes the resulting sets array down.
  */
@@ -96,7 +96,7 @@ const groups = computed<DayGroup[]>(() => {
   font-size: 13px;
 }
 .set-row.warmup {
-  /* Was `border-style: dashed` on a real `border` shorthand — .surface-hybrid's edge is a
+  /* Was `border-style: dashed` on a real `border` shorthand: .surface-hybrid's edge is a
      mask-composite hairline on ::after, not a `border` property, so a dashed override on the
      host no longer has a border to restyle. The "Aufwärmen" text badge already marks a warmup
      set unambiguously; a lower opacity on the whole row is the hybrid-era equivalent of "this

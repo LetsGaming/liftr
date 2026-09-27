@@ -7,7 +7,7 @@ import { t } from "../i18n";
 
 // Returns the first validation error message (translated via i18n.ts's t(), to match the rest of
 // the page's copy), or null when the entry is valid. Deliberately checks the date BEFORE any
-// `new Date(...)` call that could throw a raw RangeError — see submitManual()'s "T12:00:00" +
+// `new Date(...)` call that could throw a raw RangeError: see submitManual()'s "T12:00:00" +
 // toISOString() call, which is exactly what used to leak that RangeError to the UI.
 export function validateManualEntry(distanceKm: string, minutes: string, date: string): string | null {
   const km = Number(distanceKm.replace(",", "."));

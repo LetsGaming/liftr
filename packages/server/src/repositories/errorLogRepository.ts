@@ -10,7 +10,7 @@ export async function insertErrorLog(
   await db.insert(errorLogs).values(values);
 }
 
-/** Ring-buffer cap — keeps the table from growing unbounded on an instance that's up for years.
+/** Ring-buffer cap: keeps the table from growing unbounded on an instance that's up for years.
  *  Two queries instead of a single subquery-based DELETE: sqlite's DELETE ... WHERE id NOT IN
  *  (correlated subquery) works, but "find the cutoff timestamp, delete anything older" reads
  *  clearly and costs nothing extra at this table's actual write rate (unexpected errors only). */

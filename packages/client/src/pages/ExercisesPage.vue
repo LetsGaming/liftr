@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Übungen — the exercise library, browsable any time. Every exercise's demo photos, how-to
+ * Übungen: the exercise library, browsable any time. Every exercise's demo photos, how-to
  * text, and muscle figure live at the routed `/exercises/:slug` detail page (ExerciseDetailPage.vue),
  * otherwise only reachable from inside an active workout on that workout's current exercise
  * (WorkoutPage.vue's ⓘ button). This page opens that route via the shared ExerciseList.vue in
- * "browse" mode (the routine wizard's picker step reuses the same list in "select" mode — one
+ * "browse" mode (the routine wizard's picker step reuses the same list in "select" mode: one
  * filterable/searchable implementation, not two).
  */
 import { onMounted, ref } from "vue";
@@ -23,7 +23,7 @@ onMounted(() => catalog.load());
 
 // Add-custom-exercise sheet: the form's created/cancel actions call dismiss() via this ref
 // rather than flipping `showAddForm` directly, so only SheetModal's own @close (fired after
-// Ionic's real dismiss teardown finishes) unmounts the sheet — flipping the v-if straight away
+// Ionic's real dismiss teardown finishes) unmounts the sheet: flipping the v-if straight away
 // yanks the element out from under Vue's unmount, causing teardown races and null-derefs (see
 // SheetModal.vue's own header comment). Mirrors RoutineWizard.vue's sheetRef/dismiss() pattern.
 const showAddForm = ref(false);
@@ -55,7 +55,7 @@ function onExerciseCreated() {
 }
 .add-custom-btn {
   /* Uses .surface-hybrid (translucent fill + gradient hairline, tokens.css) with its own dashed
-     `border` on top — .surface-hybrid's hairline lives on a separate ::after ring, so this
+     `border` on top: .surface-hybrid's hairline lives on a separate ::after ring, so this
      doesn't fight it; the dashed line is this button's own "insertion point" affordance (matches
      the app's other add-new dashed-border pattern, e.g. FastPathStep.vue/ArrangeStep.vue),
      independent of the surface treatment underneath it. */

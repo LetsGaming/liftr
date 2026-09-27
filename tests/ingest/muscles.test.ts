@@ -16,7 +16,7 @@ describe("MUSCLES", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("stores svgRegionKey as the string form of wgerMuscleId — the asset-lookup join key", () => {
+  it("stores svgRegionKey as the string form of wgerMuscleId: the asset-lookup join key", () => {
     for (const m of MUSCLES) {
       expect(m.svgRegionKey).toBe(String(m.wgerMuscleId));
     }

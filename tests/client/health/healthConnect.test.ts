@@ -66,7 +66,7 @@ function workout(
 
 beforeEach(() => {
   // jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-  // otherwise default the shared i18n singleton to "en" for the rest of the test process —
+  // otherwise default the shared i18n singleton to "en" for the rest of the test process.
   // mountWithProviders.ts resets this for component tests, but this file drives healthConnect.ts
   // directly, bypassing that helper.
   i18n.global.locale.value = "de";
@@ -282,7 +282,7 @@ describe("importNewHealthConnectWorkouts", () => {
   });
 });
 
-describe("importNewHealthConnectWorkouts — in-flight guard", () => {
+describe("importNewHealthConnectWorkouts: in-flight guard", () => {
   it("a second concurrent call awaits the first call's result instead of starting its own run", async () => {
     let resolveQuery!: (v: { workouts: unknown[] }) => void;
     queryWorkoutsMock.mockReturnValue(new Promise((resolve) => (resolveQuery = resolve)));

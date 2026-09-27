@@ -27,7 +27,7 @@ describe("hashPassword / verifyPassword", () => {
     const [algo, n, r, p, salt, digest] = parts;
     expect(algo).toBe("scrypt");
     // N is intentionally much lower than production under Vitest (see passwords.ts's own
-    // comment on SCRYPT_N) — the "production params are what actually ship" guarantee is
+    // comment on SCRYPT_N): the "production params are what actually ship" guarantee is
     // pinned separately below, without this file's own tests paying full production cost.
     expect(n).toBe("1024");
     expect(r).toBe("8");

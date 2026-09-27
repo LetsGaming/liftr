@@ -50,7 +50,7 @@ export function formatDateShort(iso: string): string {
 
 /** Distance in meters to km, e.g. "5.20 km", or an em dash when unknown. Was reimplemented
  *  separately in RunDetailPage.vue, OverviewPage.vue's runLabel, LiveRunScreen.vue's distanceKm,
- *  and DiagnosticsPage.vue's workoutSummary — the last of those at a different precision (1
+ *  and DiagnosticsPage.vue's workoutSummary: the last of those at a different precision (1
  *  decimal instead of 2), so the same run's distance rendered differently depending on the
  *  screen. */
 export function formatDistanceKm(meters: number | null, decimals = 2): string {

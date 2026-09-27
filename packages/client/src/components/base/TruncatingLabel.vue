@@ -4,14 +4,14 @@
  * strings, so text doesn't wrap mid-word in an undersized column.
  *
  * Deliberately a separate component from tokens.css's `.eyebrow` rule (which also sets
- * `overflow-wrap: break-word`) — that rule solves a different problem: a short, fixed-vocabulary
+ * `overflow-wrap: break-word`): that rule solves a different problem: a short, fixed-vocabulary
  * section label ("ERHOLUNGSZONE") that must never overflow its card at extreme zoom, where
  * breaking mid-word is an acceptable last resort. THIS component is for open-ended, potentially
  * long strings (exercise names, routine titles) where a clipped ellipsis reads better than a
- * mid-word break — the two must never be merged into one shared rule, which is exactly the
+ * mid-word break: the two must never be merged into one shared rule, which is exactly the
  * ambiguity this component exists to remove.
  *
- * The parent element supplying this component must itself be a flex or grid container —
+ * The parent element supplying this component must itself be a flex or grid container:
  * `min-width: 0` only overrides a flex/grid item's default auto min-width; it does nothing
  * inside a plain block/inline-block parent.
  */

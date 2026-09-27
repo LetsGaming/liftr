@@ -26,7 +26,7 @@ function jaccard(a: string[], b: string[]): number {
 }
 
 /** Below this, a candidate shares too little with the target to be a sane stand-in (e.g. a
- *  different movement pattern with only incidental muscle overlap) — better to show nothing
+ *  different movement pattern with only incidental muscle overlap); it's better to show nothing
  *  than a wrong substitute. */
 const MIN_SCORE = 0.35;
 
@@ -36,7 +36,7 @@ const MIN_SCORE = 0.35;
  * movementPattern + muscles for every exercise, so
  * a substitute graph would just be a second, driftable copy of the same information).
  *
- * Same movement pattern dominates the score — a substitute for a horizontal press should still
+ * Same movement pattern dominates the score: a substitute for a horizontal press should still
  * be a horizontal press. Muscle overlap (primary weighted above secondary) breaks ties between
  * same-pattern candidates. Returns null rather than guessing when nothing clears MIN_SCORE.
  */

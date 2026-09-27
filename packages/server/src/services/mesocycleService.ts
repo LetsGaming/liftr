@@ -10,7 +10,7 @@ import {
   type Mesocycle,
 } from "../repositories/mesocycleRepository.js";
 
-/** `mesocycles` has no `user_id` of its own (child-via-parent, one-to-one with `routines`) — every
+/** `mesocycles` has no `user_id` of its own (child-via-parent, one-to-one with `routines`): every
  *  entry point here checks the parent routine belongs to `userId` first, so a guessed/cross-user
  *  routineId is a 404, not a leak into or mutation of someone else's cycle. */
 async function assertOwnsRoutine(db: LiftrDb, userId: string, routineId: string): Promise<void> {
@@ -18,7 +18,7 @@ async function assertOwnsRoutine(db: LiftrDb, userId: string, routineId: string)
   if (!routine) throw new NotFoundError();
 }
 
-/** Attach a new cycle to a routine, replacing any existing one — a routine has at most one
+/** Attach a new cycle to a routine, replacing any existing one: a routine has at most one
  *  active mesocycle at a time (schema.ts: `routineId` is unique on the mesocycles table). */
 export async function startMesocycle(db: LiftrDb, userId: string, routineId: string, totalWeeks: number): Promise<Mesocycle> {
   await assertOwnsRoutine(db, userId, routineId);
@@ -33,7 +33,7 @@ export async function endMesocycle(db: LiftrDb, userId: string, routineId: strin
 }
 
 /** Called once a workout on this routine finishes; capped at totalWeeks rather than looping, so
- *  a finished cycle needs a deliberate restart — the one real decision in this file, and why it
+ *  a finished cycle needs a deliberate restart: the one real decision in this file, and why it
  *  isn't just a repository update. */
 export async function advanceMesocycle(db: LiftrDb, userId: string, routineId: string): Promise<Mesocycle> {
   await assertOwnsRoutine(db, userId, routineId);

@@ -103,7 +103,7 @@ describe("RankProgress", () => {
     expect(chips[1]!.classes()).toContain("fill");
   });
 
-  it("shows a single reps outline chip for a bodyweight exercise (no weight target) — never a lone filled chip", () => {
+  it("shows a single reps outline chip for a bodyweight exercise (no weight target): never a lone filled chip", () => {
     const wrapper = mountWithProviders(RankProgress, {
       props: { tier: "athlete", division: 2, lp: 40, nextTargetWeightKg: null, nextTargetReps: 12 },
     });

@@ -17,10 +17,10 @@ export interface RoutineExercise {
   id: string;
   exerciseId: string;
   orderIndex: number;
-  /** One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid) — set count is this array's length. */
+  /** One {reps, weightKg} target per set (e.g. a 10/8/6 pyramid): set count is this array's length. */
   targetSets: SetTarget[];
   supersetGroup: number | null;
-  /** Per-exercise rest overrides — null falls back to RestTimer's built-in default.
+  /** Per-exercise rest overrides: null falls back to RestTimer's built-in default.
    *  `restBetweenSetsSeconds` applies between sets
    *  of this exercise; `restAfterExerciseSeconds` applies once after its last set, before moving
    *  to the next exercise. */
@@ -45,19 +45,19 @@ export interface Routine {
   mesocycle: Mesocycle | null;
 }
 
-/** One suggested exercise from POST /api/routines/suggest, keyed by exerciseId — the picker
+/** One suggested exercise from POST /api/routines/suggest, keyed by exerciseId: the picker
  *  resolves display name/equipment/etc. from catalogStore itself, same as everywhere else. */
 export interface SuggestedExercise {
   exerciseId: string;
   slug: string;
   targetSets: SetTarget[];
-  /** Muscle-guided suggestions only — which requested muscle slug produced this pick. Mirrors
+  /** Muscle-guided suggestions only: which requested muscle slug produced this pick. Mirrors
    *  server's routineSuggestionService.ts SuggestedExercise; see that file for how it's derived. */
   matchedMuscleSlug?: string;
   /** True when the suggester swapped in this exercise because the preferred pick needed
    *  equipment the user doesn't own (see @liftr/shared's findSubstitute). */
   isSubstitute?: boolean;
-  /** Present only when isSubstitute is true — raw equipment item slugs (e.g. "barbell") the
+  /** Present only when isSubstitute is true: raw equipment item slugs (e.g. "barbell") the
    *  originally preferred exercise needed. Mirrors the server interface 1:1. */
   missingEquipment?: string[];
 }
@@ -116,7 +116,7 @@ export async function suggestExercises(muscleSlugs: string[], exercisesPerMuscle
 }
 
 /** Sets/reps/weight for exercises already picked (manual routine-wizard selection, Quick Start)
- *  — same recommendation engine as suggestExercises above, just skipping the muscle-candidate
+ * : same recommendation engine as suggestExercises above, just skipping the muscle-candidate
  *  selection step since the caller already knows which exercises it wants. */
 export async function recommendExercises(exerciseIds: string[], experienceLevel?: string): Promise<SuggestedExercise[]> {
   const { exercises } = await api.post<{ exercises: SuggestedExercise[] }>("/api/routines/recommend", {

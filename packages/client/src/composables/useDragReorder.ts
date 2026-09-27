@@ -1,20 +1,20 @@
 import { onUnmounted, ref } from "vue";
 
 /**
- * Minimal drag-to-reorder for one vertical list, built on native Pointer Events — no external
+ * Minimal drag-to-reorder for one vertical list, built on native Pointer Events: no external
  * dependency for a single, scoped interaction (the routine wizard's exercise cards). Not a
  * general-purpose drag library: one list, vertical only, no cross-list drop.
  *
  * Model: while dragging, the dragged card gets `transform: translateY()` following the pointer
  * 1:1 (no jumps), and any cards between its original slot and the live target slot shift by one
  * card-height to visually "make room" (the standard reorder-preview pattern). The underlying
- * array is only actually mutated once, in `onPointerUp`, via the caller's `onReorder(from, to)`
- * — never mid-drag — so there's nothing to keep in sync between a live array splice and a
+ * array is only actually mutated once, in `onPointerUp`, via the caller's `onReorder(from, to)`,
+ * never mid-drag, so there's nothing to keep in sync between a live array splice and a
  * still-animating pointer position.
  *
  * Card height is measured from the dragged card itself at drag-start and used as the shift
  * unit for every other card. This is an approximation when list items have very different
- * heights (e.g. a 1-set vs. a 5-set exercise card) — the target-index math can be slightly off
+ * heights (e.g. a 1-set vs. a 5-set exercise card): the target-index math can be slightly off
  * near a boundary in that case. Accepted trade-off: correct in the common case (similar-height
  * cards), and the final drop position is still whatever the user visually lands on, since the
  * target index is continuously recomputed from live pointer position, not committed early.
@@ -71,7 +71,7 @@ export function useDragReorder(onReorder: (from: number, to: number) => void) {
     removeWindowListeners();
   }
 
-  // Covers the component unmounting mid-drag (before pointerup/pointercancel ever fires) — without
+  // Covers the component unmounting mid-drag (before pointerup/pointercancel ever fires); without
   // this the three window listeners (and their closure over onReorder/component state) leak.
   onUnmounted(removeWindowListeners);
 

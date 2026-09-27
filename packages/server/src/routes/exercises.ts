@@ -14,7 +14,7 @@ const tieredRequirementResponse = z.object({
 const exerciseResponse = z.object({
   id: z.string(),
   slug: z.string(),
-  /** Literal display name — set for custom (user-created) exercises. Null for catalog exercises,
+  /** Literal display name, set for custom (user-created) exercises. Null for catalog exercises,
    *  which resolve their name client-side via i18n keyed on `slug` (see the client's
    *  useExerciseName.ts). */
   name: z.string().nullable(),
@@ -33,7 +33,7 @@ const exerciseResponse = z.object({
 const customExerciseSchema = z.object({
   // Constrained to the same slug shape every catalog entry already follows: closes a
   // path-traversal-shaped gap, since `slug` is later joined into a filesystem path unmodified
-  // (`hasImage` below) — a `../` sequence with no format check would probe outside `imagesRoot`.
+  // (`hasImage` below): a `../` sequence with no format check would probe outside `imagesRoot`.
   slug: z.string().regex(EXERCISE_SLUG_PATTERN, "slug must be lowercase, alphanumeric, hyphen-separated"),
   name: z.string().min(1),
   equipment: z.string().optional(),
@@ -44,16 +44,16 @@ const customExerciseSchema = z.object({
 
 /**
  * `imagesRoot` (already resolved once in app.ts) lets this route tell the client up front
- * whether an exercise's demo photo actually exists — without it, image 404s for catalog slugs
+ * whether an exercise's demo photo actually exists; without it, image 404s for catalog slugs
  * with no mirrored photo (documented in ExerciseThumb.vue: no open-licensed source exists for
  * them) were spamming the console, because the client had no way to know except by attempting
  * the request and catching the failure. `demoStartImage`/`demoEndImage` are separate,
- * still-unused DB columns (ingest never writes them) — not repurposed here since fixing that
+ * still-unused DB columns (ingest never writes them), not repurposed here since fixing that
  * would mean also changing ingestImages.ts's write path; a live existsSync check against the
  * already-mirrored files is simpler and can't drift from what's actually on disk.
  */
 export function registerExerciseRoutes(app: ZodFastifyInstance, db: AppDb, imagesRoot: string) {
-  // GET /api/exercises — full catalog + muscle tags. Cacheable: catalog only changes on ingest.
+  // GET /api/exercises: full catalog + muscle tags. Cacheable, since the catalog only changes on ingest.
   app.get("/api/exercises", { schema: { response: { 200: z.array(exerciseResponse) } } }, async (_req, reply) => {
     const rows = await findAllExercisesWithMuscles(db);
     reply.header("Cache-Control", "public, max-age=300");
@@ -74,7 +74,7 @@ export function registerExerciseRoutes(app: ZodFastifyInstance, db: AppDb, image
     }));
   });
 
-  // POST /api/exercises — custom user-added exercise, for catalog extensibility.
+  // POST /api/exercises: custom user-added exercise, for catalog extensibility.
   app.post("/api/exercises", { schema: { body: customExerciseSchema } }, async (req, reply) => {
     const row = await insertCustomExercise(db, req.userId, req.body);
     reply.code(201);

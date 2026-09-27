@@ -2,9 +2,9 @@
 //
 // WorkoutClock reads activeWorkoutStore state directly (see the component's own header comment
 // on *why*: the Pinia elapsedSeconds getter is memoized against reactive deps and doesn't tick
-// on its own) and repaints on a plain setInterval — vi.useFakeTimers() drives that deterministically.
+// on its own) and repaints on a plain setInterval: vi.useFakeTimers() drives that deterministically.
 // activeWorkoutStore's mutating actions fire-and-forget persist() into IndexedDB (idb.ts), which
-// doesn't exist under vitest's jsdom environment — stubbed the same way
+// doesn't exist under vitest's jsdom environment: stubbed the same way
 // tests/client/stores/activeWorkoutStore.spec.ts does.
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,7 +37,7 @@ describe("WorkoutClock", () => {
   it("counts up once a workout is running, repainting every second from the store's raw fields", async () => {
     const wrapper = mountWithProviders(WorkoutClock);
     // mountWithProviders' pinia becomes the globally active one the moment app.use(pinia) runs
-    // inside mount() — grabbing the store afterward returns that same instance.
+    // inside mount(): grabbing the store afterward returns that same instance.
     const store = useActiveWorkoutStore();
     const startedAt = Date.now();
     store.$patch({ startedAt, pausedAt: null, totalPausedMs: 0 });

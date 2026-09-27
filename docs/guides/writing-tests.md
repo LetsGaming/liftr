@@ -1,6 +1,6 @@
 # Writing tests
 
-All tests live under [`tests/`](../../tests), mirroring the `packages/<pkg>/src/...` layout —
+All tests live under [`tests/`](../../tests), mirroring the `packages/<pkg>/src/...` layout:
 nothing under `packages/*/src` should have a colocated `*.test.ts`/`*.spec.ts` file. A test for
 `packages/server/src/services/foo.ts` goes in `tests/server/services/foo.test.ts`.
 
@@ -11,9 +11,9 @@ pnpm test              # vitest run, whole repo
 pnpm test tests/ingest # just one directory, e.g. while adding an exercise
 ```
 
-The one doc that explains the conventions — import aliases (`~server/*`, `~client/*`,
-`~ingest/*`), the shared test helpers (`createTestDb`, `createTestApp`, `mountWithProviders`,
-`withSetup`), the `vi.hoisted()` gotcha, jsdom vs. node environments, and general style — is
+The one doc that explains the conventions (import aliases such as `~server/*`, `~client/*`, and
+`~ingest/*`; the shared test helpers `createTestDb`, `createTestApp`, `mountWithProviders`, and
+`withSetup`; the `vi.hoisted()` gotcha; jsdom vs. node environments; and general style) is
 [`tests/README.md`](../../tests/README.md). Read that before writing your first test; it's kept
 current as the suite's own source of truth, so this page won't duplicate it.
 

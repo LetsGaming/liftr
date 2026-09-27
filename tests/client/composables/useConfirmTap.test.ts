@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// useConfirmTap calls onUnmounted(), which needs an active component instance — mounted via
+// useConfirmTap calls onUnmounted(), which needs an active component instance: mounted via
 // withSetup so the disarm-timer's cleanup can actually be exercised on unmount.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useConfirmTap } from "~client/composables/useConfirmTap";

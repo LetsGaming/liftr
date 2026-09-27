@@ -1,7 +1,7 @@
 /**
  * Where every unexpected (500) error goes, beyond the pino log line app.ts's error handler
  * already writes. `report(error, context)` deliberately mirrors `Sentry.captureException(error,
- * { tags: context })`'s shape — today's reporters (DB + file) are the free, no-extra-service
+ * { tags: context })`'s shape. Today's reporters (DB + file) are the free, no-extra-service
  * option; if this project (or others sharing infra) ever justifies self-hosting something
  * Sentry-compatible (e.g. GlitchTip), adding it is a ~5-line adapter implementing this same
  * interface and pushing it into `buildReporters`' array below, with zero changes to app.ts's call
@@ -23,7 +23,7 @@ export interface ErrorReporter {
 }
 
 /** Fans one error out to every configured reporter. A reporter failing to record the error must
- *  never affect the response already sent to the client — each is isolated and logged via
+ *  never affect the response already sent to the client: each is isolated and logged via
  *  `onReporterFailure` rather than thrown. */
 export async function reportError(
   reporters: ErrorReporter[],

@@ -1,4 +1,4 @@
-/** UI language preference. Purely a client-side rendering preference — not synced to the server,
+/** UI language preference. Purely a client-side rendering preference: not synced to the server,
  *  same reasoning as themeStore.ts's theme and xpStore.ts's showXp flag: this needs to be readable
  *  before the app has even authenticated (i18n.ts reads it at module scope to construct the
  *  vue-i18n instance, before Pinia exists).
@@ -19,7 +19,7 @@ export function getStoredLocale(): Locale {
   return navigator.language?.toLowerCase().startsWith("en") ? "en" : "de";
 }
 
-/** Keeps <html lang> in sync with the active locale — screen readers and browser features
+/** Keeps <html lang> in sync with the active locale: screen readers and browser features
  *  (spellcheck, translate prompts, date pickers) key off this, not off vue-i18n's internal state. */
 export function applyLocale(locale: Locale) {
   document.documentElement.lang = locale;

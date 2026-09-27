@@ -1,7 +1,7 @@
 /**
  * slug -> wger muscle id + which side it's drawn on. Single source of truth for the client;
  * mirrors packages/ingest/src/muscles.ts (the ingest-side copy that seeds exercise_muscles and
- * recolors the mirrored SVG assets — a separate package, so it can't import this one without a
+ * recolors the mirrored SVG assets: a separate package, so it can't import this one without a
  * build-order cycle). MuscleFigure.vue and ExercisesPage.vue both import this one copy so they
  * can't drift independently.
  */
@@ -53,10 +53,10 @@ const MUSCLE_LABEL_KEY: Record<string, string> = {
 };
 
 /**
- * Unions primary/secondary muscle involvement across a set of exercises — primary wins if an
+ * Unions primary/secondary muscle involvement across a set of exercises: primary wins if an
  * exercise disagrees with another (e.g. it's primary for one movement, secondary for another
  * in the same list). Shared by WorkoutPage.vue's session-muscle preview (an active workout's
- * exercises) and the routine-card / launchpad previews (a routine's planned exercises) — same
+ * exercises) and the routine-card / launchpad previews (a routine's planned exercises): same
  * aggregation, two different sources of exercise lists, previously duplicated per call site.
  */
 export function aggregateMuscles(muscleLists: { slug: string; role: "primary" | "secondary" }[][]): { primary: string[]; secondary: string[] } {

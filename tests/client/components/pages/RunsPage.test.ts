@@ -1,7 +1,7 @@
-// RunsPage.vue mirrors WorkoutPage.vue's flat structure: no sub-tabs, RouteList (stubbed here —
+// RunsPage.vue mirrors WorkoutPage.vue's flat structure: no sub-tabs, RouteList (stubbed here:
 // its own rendering is RouteList's concern) is the page's primary content. Individual-run
 // browsing (history, replay, rank/PR chips, delete) moved to RunDetail.vue (see
-// RunDetail.test.ts), reached from OverviewPage.vue's "Letzte Aktivität" — this file only tests
+// RunDetail.test.ts), reached from OverviewPage.vue's "Letzte Aktivität": this file only tests
 // RunsPage's own remaining job: loading runs/routes, the manual-entry/import actions, and wiring
 // RouteList's edit/start/create events to the route wizard and the manual pre-fill flow.
 import { flushPromises } from "@vue/test-utils";
@@ -22,7 +22,7 @@ interface RunSummary {
 }
 
 // `reactive` isn't available inside vi.hoisted()'s factory (it runs before "vue" itself has been
-// linked, per this project's vi.mock hoisting) — declared as a plain top-of-file const instead,
+// linked, per this project's vi.mock hoisting): declared as a plain top-of-file const instead,
 // referenced only inside an uninvoked closure below (tests/README's documented TDZ workaround).
 const runsStore = reactive({
   runs: [] as RunSummary[],

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// Profil & Einstellungen. Bodyweight log lives here — enough to close the rank-engine's
+// Profil & Einstellungen. Bodyweight log lives here: enough to close the rank-engine's
 // hardcoded-75kg fallback gap. Account login/logout now happens via AuthGate's setup/login/join
-// forms and the member management below — no more raw token entry.
+// forms and the member management below: no more raw token entry.
 // Split into composables (each owns its own loading/error state) since this page used to mix
-// six+ unrelated concerns directly in its script setup — see composables/use{ProfileForm,
+// six+ unrelated concerns directly in its script setup: see composables/use{ProfileForm,
 // GymSetup,HealthConnectImport,DataExport}.ts.
 import BasePage from "../components/patterns/BasePage.vue";
 import { computed, nextTick, onMounted, ref } from "vue";
@@ -59,7 +59,7 @@ const bodyweight = useBodyweightStore();
 const theme = useThemeStore();
 const locale = useLocaleStore();
 // Language names are shown as their own endonym ("Deutsch"/"English") regardless of the active
-// UI locale — the universal convention for a language picker, not something to translate.
+// UI locale: the universal convention for a language picker, not something to translate.
 const localeLabel: Record<Locale, string> = { de: "Deutsch", en: "English" };
 const xp = useXpStore();
 const settingsStore = useSettingsStore();
@@ -89,7 +89,7 @@ const {
 } = useHealthConnectImport();
 const { exporting, exportError, exportData } = useDataExport();
 
-// Native-only — the web build always talks to whatever origin it's served from, no server
+// Native-only: the web build always talks to whatever origin it's served from, no server
 // concept to show/change here. See ServerGate.vue for the first-launch counterpart of this flow.
 const isNativePlatform = isNative();
 const { serverUrl, checking: serverChecking, error: serverError, verifyAndSave: verifyAndSaveServer } = useServerConnection();
@@ -111,7 +111,7 @@ async function saveServer() {
   }
 }
 
-// Android-only — the update is an APK asset, meaningless on iOS/web. App.vue already runs one
+// Android-only: the update is an APK asset, meaningless on iOS/web. App.vue already runs one
 // check on launch (silently); this page's own effectively re-checks on open too (shared module
 // state, see useAppUpdate.ts's header comment) so the section is never stuck showing a stale
 // "no update" from before a release went out mid-session.
@@ -127,7 +127,7 @@ const {
   openDownload: openAppUpdateDownload,
 } = useAppUpdate();
 
-/** The manual "Nach Updates suchen" button always needs *some* visible reaction to a tap — the
+/** The manual "Nach Updates suchen" button always needs *some* visible reaction to a tap: the
  *  automatic on-launch check (App.vue) usually already settled `updateAvailable`/`error` before
  *  the user gets here, so re-running check() alone can look like a dead button when it finds
  *  nothing new. A toast makes every tap visibly do something regardless of the outcome. */
@@ -172,7 +172,7 @@ async function removeMemberAndRefresh(id: string) {
   members.value = await listMembers();
 }
 
-/** Same shape as AuthGate.vue's `describeAuthError` — a 401 here means "wrong current password"
+/** Same shape as AuthGate.vue's `describeAuthError`: a 401 here means "wrong current password"
  *  rather than "not logged in" (the app-wide auth hook already let the request through), so it
  *  gets its own message per call site instead of AuthGate's generic one. */
 function describeCredentialError(err: unknown, fallback: string): string {
@@ -258,7 +258,7 @@ const sessionsLoading = ref(false);
 const revokingSessionId = ref<string | null>(null);
 
 /** Composes the session-list device string from the server's structured `{os, browser}` (see
- *  server/lib/deviceLabel.ts) — `null` means no User-Agent was recorded; a present-but-unknown
+ *  server/lib/deviceLabel.ts): `null` means no User-Agent was recorded; a present-but-unknown
  *  `os`/`browser` field falls back to `profile.sessions.unknown` per field, same granularity the
  *  server used to bake into its own German sentence. */
 function deviceLabel(device: Session["device"]): string {
@@ -328,7 +328,7 @@ onMounted(async () => {
   if (isAndroidPlatform) void checkForAppUpdate();
   if (isNativePlatform) void checkVersionMismatch();
 
-  // Lets a toast/notification elsewhere ("Update verfügbar — siehe Profil") link straight to
+  // Lets a toast/notification elsewhere ("Update verfügbar: siehe Profil") link straight to
   // the section it's talking about instead of just naming it and leaving the user to find it.
   if (route.query.focus === "account-app") {
     accountAppCardOpen.value = true;
@@ -731,19 +731,19 @@ async function saveWeight() {
 <style scoped>
 /* .surface-hybrid (applied in the template alongside .card, tokens.css) gives every settings
    section a translucent panel look over the cosmic sweep instead of an opaque box. border-radius
-   stays local since .surface-hybrid doesn't set one — it's layered over whatever shape the host
+   stays local since .surface-hybrid doesn't set one: it's layered over whatever shape the host
    already uses. */
 .card {
   position: relative;
   border-radius: var(--r-lg);
   padding: var(--sp4);
   margin-top: var(--sp4);
-  /* Entrance stagger — a single-column settings list, so a plain top-to-bottom cascade fits.
+  /* Entrance stagger: a single-column settings list, so a plain top-to-bottom cascade fits.
      --ease-out, not --ease-spring: the overshoot easing is reserved for earned moments
      (rank-up, PR, level-up) per motion.css's own convention. */
   animation: pop-in var(--dur-base) var(--ease-out) both;
 }
-/* The 1px gradient hairline ring (tokens.css's .panel::after technique, reproduced here —
+/* The 1px gradient hairline ring (tokens.css's .panel::after technique, reproduced here:
    see that comment for the mask-composite mechanics). Replaces the old flat `border: 1px
    solid var(--line)` on .card itself. */
 .card::after {
@@ -770,7 +770,7 @@ async function saveWeight() {
 .card:nth-of-type(n + 4) {
   animation-delay: 120ms;
 }
-/* Settings are genuinely single-column here — centering the whole column (not stretching any
+/* Settings are genuinely single-column here: centering the whole column (not stretching any
    individual card) is the correct desktop fix. */
 @media (min-width: 900px) {
   .profile-content {
@@ -781,7 +781,7 @@ async function saveWeight() {
 /* Every other page uses .eyebrow, tokens.css's canonical small-caps section label, for its
    card/section headers. Headings stay semantic <h2> elements (a11y: still real headings, screen
    readers still get section structure) but are visually demoted to the app's eyebrow treatment,
-   same as ErholungszoneCard/RankDistributionDonut/RunCard — the label names the section, the
+   same as ErholungszoneCard/RankDistributionDonut/RunCard: the label names the section, the
    controls underneath carry the visual weight, not the heading. */
 .card .eyebrow {
   display: block;
@@ -800,7 +800,7 @@ async function saveWeight() {
 .logout-btn {
   margin-top: var(--sp4);
 }
-/* Bodyweight directly feeds the rank engine (see .hint below it) — the one accent tying this
+/* Bodyweight directly feeds the rank engine (see .hint below it): the one accent tying this
    settings card back to the app's core mechanic, using the same blue the rank bar itself falls
    back to (tokens.css's .rankbar fallback) rather than inventing a new hue. */
 .bw-eyebrow {
@@ -915,8 +915,8 @@ input.server-address-input {
 .chip:active:not(.locked) {
   transform: scale(0.96);
 }
-/* Selected state now takes the app's actual accent — the CTA/reward gradient (.btn-primary,
-   .chip's onboarding sibling could use this too) — instead of a flat --blue-lo fill, so a
+/* Selected state now takes the app's actual accent: the CTA/reward gradient (.btn-primary,
+   .chip's onboarding sibling could use this too): instead of a flat --blue-lo fill, so a
    selected chip visually agrees with every other "this is the active/primary thing" surface
    in the app rather than inventing its own one-off blue. */
 .chip.active {
@@ -926,7 +926,7 @@ input.server-address-input {
   font-weight: 800;
   box-shadow: 0 4px 14px -6px var(--nebula-glow);
 }
-/* Bodyweight equipment chip — always owned, never deselectable (fix: it could previously be
+/* Bodyweight equipment chip: always owned, never deselectable (fix: it could previously be
    toggled off, silently breaking exercise suggestions for a piece of "equipment" everyone
    always has). Kept visually active but with a locked affordance instead of just disabling
    the button outright, so it still reads as "on" rather than as dead UI. */
@@ -1028,7 +1028,7 @@ input.server-address-input {
 .card--quiet {
   opacity: 0.92;
 }
-/* Same armed-confirm-tap treatment as list-card.css's `.card-menu button.danger` — reused here
+/* Same armed-confirm-tap treatment as list-card.css's `.card-menu button.danger`: reused here
    since this is the only full-width (not menu-row) destructive button in the app so far. */
 .btn-secondary.danger {
   color: var(--danger);

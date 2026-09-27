@@ -1,12 +1,12 @@
 /**
- * Per-run plausibility gate — the run-side sibling of `plausibility.ts`'s per-workout gate. Same
+ * Per-run plausibility gate: the run-side sibling of `plausibility.ts`'s per-workout gate. Same
  * spirit: not a fraud verdict, an honest heuristic that discounts a run's XP/LP/peak contribution
  * rather than discarding it outright. Deliberately a pure function with no knowledge of `source`
- * ("manual" vs GPS-tracked) — the call site (rankService.ts/syncService.ts, Task 8's concern) is
+ * ("manual" vs GPS-tracked): the call site (rankService.ts/syncService.ts, Task 8's concern) is
  * responsible for only ever calling this for GPS-tracked runs, since a manual entry has no
  * `run_points` to independently check distance against in the first place.
  *
- * `paceSeverity` in the workout gate is seconds-per-*set* and has no meaning here — a run's two
+ * `paceSeverity` in the workout gate is seconds-per-*set* and has no meaning here: a run's two
  * heuristics below are genuinely new, not a reuse of that one.
  */
 
@@ -15,8 +15,8 @@ import type { RankedActivityType } from "../math/riegel.js";
 import { PLAUSIBILITY_FLOOR } from "./plausibility.js";
 
 /** Below this sustained average speed (m/s), no discount at all. Set comfortably above real-world
- *  elite *distance* pace — world-record marathon pace is ~5.8 m/s, world-record 10K ~6.4 m/s,
- *  world-record 5K ~6.6 m/s — so a genuinely elite (but real) performance never starts the ramp.
+ *  elite *distance* pace: world-record marathon pace is ~5.8 m/s, world-record 10K ~6.4 m/s,
+ *  world-record 5K ~6.6 m/s: so a genuinely elite (but real) performance never starts the ramp.
  *  Severity then rises from here up to `MAX_PLAUSIBLE_SPEED_M_S` (8 m/s, already "faster than
  *  world-class marathon pace" per gps.ts and the actual point-level jitter-rejection ceiling used
  *  when a run is first summarized), where it's treated as physically impossible to sustain and
@@ -40,13 +40,13 @@ export const WALK_SPEED_FINE_THRESHOLD_M_S = 3.0;
  *  that differs from the stored `distanceM` by more than this fraction starts rising in severity.
  *  Kept generous because `distanceM` is derived from a *smoothed*, pause-gap-filtered, jitter-
  *  rejecting pass over the raw points (`summarizeRun`), while this check's `pathDistanceM` is a
- *  raw, unfiltered straight-line sum over the same points — some daylight between the two is
+ *  raw, unfiltered straight-line sum over the same points: some daylight between the two is
  *  expected for any real run and must not be flagged. */
 export const DISTANCE_MISMATCH_FINE_FRACTION = 0.15;
 
 /** A mismatch at/beyond this fraction is far past any plausible smoothing/filtering daylight and
  *  reads as a fabricated or corrupted `distanceM` (a manual override of a GPS-derived value, or a
- *  bad import) — maximal severity. */
+ *  bad import): maximal severity. */
 export const DISTANCE_MISMATCH_MAX_SEVERITY_FRACTION = 0.5;
 
 export interface RunPlausibilityInput {

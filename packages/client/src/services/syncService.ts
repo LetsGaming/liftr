@@ -30,7 +30,7 @@ export interface SyncResult {
   newMuscleSlugs?: string[];
 }
 
-/** POSTs one batch to /api/sync — chunking happens in syncStore.ts's `flush()`, which is the
+/** POSTs one batch to /api/sync: chunking happens in syncStore.ts's `flush()`, which is the
  *  only caller; this stays a thin one-call wrapper around the endpoint. */
 export async function postSyncBatch(items: SyncItem[]): Promise<SyncResult[]> {
   const { results } = await api.post<{ results: SyncResult[] }>("/api/sync", { items });

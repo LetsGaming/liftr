@@ -5,12 +5,12 @@
 // A prior High-severity bug (BUG-01) had flush() post the *entire* outbox in one request; once
 // the queue grew past ~200 items the server's per-request cap rejected the whole batch every
 // time, permanently wedging sync with no user-visible recovery. The fix chunks flush() into
-// <=150-item batches (SYNC_CHUNK_SIZE) — these tests exercise the real queueing/flush/retry
+// <=150-item batches (SYNC_CHUNK_SIZE): these tests exercise the real queueing/flush/retry
 // logic (not a thin wrapper) and specifically regression-test that failure mode, per
 // .claude/agents/sync-correctness-reviewer.md.
 //
 // Mocked at their true external boundaries only: `~client/lib/idb` (no real IndexedDB under
-// vitest), `~client/lib/api` (no real network — this also lets syncService.ts's own thin
+// vitest), `~client/lib/api` (no real network: this also lets syncService.ts's own thin
 // postSyncBatch wrapper run for real, so the store's chunking is exercised end-to-end through
 // it), `~client/health/healthConnect` and the `@capacitor/*` native plugins (no native runtime).
 // jsdom (not the default node environment) because the store reads `navigator.onLine` and
@@ -94,7 +94,7 @@ function setOnline(online: boolean) {
 }
 
 function seedOutbox(n: number, prefix = "c"): void {
-  // Real (recent) timestamps, not raw indices — flush() now filters items older than
+  // Real (recent) timestamps, not raw indices: flush() now filters items older than
   // STUCK_AFTER_MS by wall-clock age, and `queuedAt: i` would put every seeded item decades in
   // the past relative to Date.now().
   const base = Date.now();
@@ -106,7 +106,7 @@ function seedOutbox(n: number, prefix = "c"): void {
 
 /** Waits out a macrotask so any already-in-flight promise chain (e.g. the fire-and-forget flush
  *  that startAutoFlush()/enqueue() kick off) fully settles before the test's own assertions or
- *  its own flush() call — otherwise the store's single-flight `flushing` guard silently no-ops
+ *  its own flush() call: otherwise the store's single-flight `flushing` guard silently no-ops
  *  the test's own call, since it doesn't distinguish who triggered the still-running flush. */
 function tick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
@@ -132,7 +132,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("syncStore — initial state", () => {
+describe("syncStore: initial state", () => {
   it("starts with no pending items, not flushing, no error", () => {
     const store = useSyncStore();
 
@@ -142,7 +142,7 @@ describe("syncStore — initial state", () => {
   });
 });
 
-describe("syncStore — enqueue()", () => {
+describe("syncStore: enqueue()", () => {
   it("stamps the item with queuedAt, writes it to the outbox, and updates pendingCount", async () => {
     setOnline(false); // keep the fire-and-forget flush from racing this test's assertions
     const store = useSyncStore();
@@ -170,7 +170,7 @@ describe("syncStore — enqueue()", () => {
   });
 });
 
-describe("syncStore — enqueueAndAwaitFlush()", () => {
+describe("syncStore: enqueueAndAwaitFlush()", () => {
   it("awaits the flush and returns this specific item's own result", async () => {
     apiPostMock.mockResolvedValue({ results: [{ clientId: "c-finish", status: "created" }] });
     const store = useSyncStore();
@@ -226,7 +226,7 @@ describe("syncStore — enqueueAndAwaitFlush()", () => {
   });
 });
 
-describe("syncStore — refreshPendingCount()", () => {
+describe("syncStore: refreshPendingCount()", () => {
   it("re-reads pendingCount from the outbox", async () => {
     const store = useSyncStore();
     expect(store.pendingCount).toBe(0);
@@ -238,7 +238,7 @@ describe("syncStore — refreshPendingCount()", () => {
   });
 });
 
-describe("syncStore — flush()", () => {
+describe("syncStore: flush()", () => {
   it("no-ops while offline, leaving the queue untouched", async () => {
     setOnline(false);
     seedOutbox(1);
@@ -302,7 +302,7 @@ describe("syncStore — flush()", () => {
     expect(store.pendingCount).toBe(1);
   });
 
-  it("keeps retrying a recent error-status item indefinitely across many flushes (e.g. unknown_workout waiting on a sibling per 04895e8) — pins current unbounded-while-fresh retry behavior", async () => {
+  it("keeps retrying a recent error-status item indefinitely across many flushes (e.g. unknown_workout waiting on a sibling per 04895e8): pins current unbounded-while-fresh retry behavior", async () => {
     seedOutbox(1);
     apiPostMock.mockResolvedValue({ results: [{ clientId: "c-0000", status: "error", error: "unknown_workout" }] });
     const store = useSyncStore();
@@ -382,7 +382,7 @@ describe("syncStore — flush()", () => {
       expect(body.items.length).toBeGreaterThan(0);
     }
     expect(results).toHaveLength(320);
-    // The queue actually drains — this is the exact "wedges forever past 200 items" scenario.
+    // The queue actually drains: this is the exact "wedges forever past 200 items" scenario.
     expect(outbox.size).toBe(0);
     expect(store.pendingCount).toBe(0);
   });
@@ -433,7 +433,7 @@ describe("syncStore — flush()", () => {
   });
 });
 
-describe("syncStore — startAutoFlush()", () => {
+describe("syncStore: startAutoFlush()", () => {
   it("immediately triggers a flush and a pendingCount refresh", async () => {
     seedOutbox(1);
     apiPostMock.mockResolvedValue({ results: [{ clientId: "c-0000", status: "created" }] });

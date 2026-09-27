@@ -1,5 +1,5 @@
 /** RFC 4180-ish CSV encoding for the data export. CRLF line endings, quote
- * only fields that need it — keeps small exports readable when opened as plain text too. */
+ * only fields that need it, keeping small exports readable when opened as plain text too. */
 export function toCsv(headers: string[], rows: (string | number | boolean | null | undefined)[][]): string {
   const escape = (v: string | number | boolean | null | undefined) => {
     if (v == null) return "";

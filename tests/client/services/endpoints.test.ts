@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 
 /** Table of thin fetch-wrapper services that do nothing beyond "call api.<method>(path) and
- *  return its result verbatim" — real request/response handling is covered once, thoroughly, by
+ *  return its result verbatim": real request/response handling is covered once, thoroughly, by
  *  tests/client/lib/api.test.ts (base URL, auth header, 204, ApiError, timeout, bodyless DELETE).
  *  Each of these used to be its own 1-2-test file asserting the exact same shape with a
  *  different path; consolidated here instead of duplicated per service. Services that do more
@@ -38,7 +38,7 @@ beforeEach(() => {
  *  methods) keep their own dedicated file: syncService, exerciseService, runService,
  *  routineService, settingsService, historyService, plannedRouteService, workoutService's
  *  `deleteWorkout` (folded in below, it's still a bare passthrough) and `logBodyweight`
- *  (kept below too — it has a request body worth pinning). */
+ *  (kept below too: it has a request body worth pinning). */
 describe.each([
   { name: "getPrs", path: "/api/prs", call: () => getPrs() },
   { name: "getRankEvents", path: "/api/rank-events", call: () => getRankEvents() },

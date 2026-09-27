@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The sacred loop. "Start" prefers a real saved Routine — one tap, no rebuilding. The old
+ * The sacred loop. "Start" prefers a real saved Routine: one tap, no rebuilding. The old
  * "quick start first 4 catalog exercises" ad-hoc flow stays as a fallback for when no routine
  * exists yet, since it's still useful to exercise the loop on a fresh install before you've
  * built anything.
@@ -66,10 +66,10 @@ const historyStore = useHistoryStore();
 const { exerciseName } = useStartRoutine();
 
 const restTrigger = ref(0);
-/** Which rest duration RestTimer should run for next — set by logSet() from whatever
+/** Which rest duration RestTimer should run for next, set by logSet() from whatever
  *  store.logCurrentSet() decided (between-set vs after-exercise pauses can differ). */
 const restSeconds = ref(90);
-/** Which of the three rest states logCurrentSet() just produced — 'between-sets'/
+/** Which of the three rest states logCurrentSet() just produced: 'between-sets'/
  *  'after-exercise' for a real rest duration, 'superset-continue' for the mid-superset
  *  round-robin case where logCurrentSet() returns null (round not yet complete, no rest).
  *  RestTimer.vue renders all three distinctly instead of just "running vs not". */
@@ -81,7 +81,7 @@ const restKind = ref<"between-sets" | "after-exercise" | "superset-continue">("b
  *  *unless* the whole `<li>` gets torn down and remounted (Vue's `:key="s.index"` diffing can do
  *  exactly that when items shift), which would visibly stutter given sets can be logged in quick
  *  succession. Tracking the index that *just* logged instead means pop-in only ever applies for
- *  one short window right after the event, then clears itself — later re-renders of the same row
+ *  one short window right after the event, then clears itself: later re-renders of the same row
  *  see `justLoggedIndex === null` and never re-add the class. */
 const justLoggedIndex = ref<number | null>(null);
 
@@ -117,14 +117,14 @@ const {
 );
 
 /** Keeps App.vue's top-hud in sync with the recap being shown here, so it can hide its own
- *  level/XP chip while FinishSequence's Fortschritt beat displays the same number — see
+ *  level/XP chip while FinishSequence's Fortschritt beat displays the same number: see
  *  useWorkoutChrome.ts for why this isn't just activeWorkoutStore state. */
 watch(
   finishedSummary,
   (v) => {
     showingFinishRecap.value = v != null;
   },
-  // immediate: resyncs the module singleton to this fresh mount's (always-null) initial value —
+  // immediate: resyncs the module singleton to this fresh mount's (always-null) initial value:
   // guards against a stale `true` surviving if the user left mid-recap via the tab bar instead of
   // tapping "Fertig" (which is the only other place finishedSummary gets cleared).
   { immediate: true },
@@ -136,7 +136,7 @@ watch(
  *  discounted-only session must never look genuine, so it falls back to no badge at all,
  *  matching FinishSequence's topTierClass. */
 /** The post-Finish-Sequence recap chip below must show the *full* session total, not just the
- *  client-accumulated per-set sessionXp — the two session-level bonuses (consistency, variety)
+ *  client-accumulated per-set sessionXp: the two session-level bonuses (consistency, variety)
  *  are computed server-side once at finish time and arrive via useWorkoutFinish alongside it. */
 const sessionXpTotal = computed(() => sessionXp.value + consistencyBonusXp.value + varietyBonusXp.value);
 
@@ -148,7 +148,7 @@ const topRankUp = computed(() => {
   );
 });
 
-/** Share-card tier badge: the account's current overall rank + level, not a per-exercise band —
+/** Share-card tier badge: the account's current overall rank + level, not a per-exercise band:
  *  same overallRankStore/xpStore data App.vue's shell and OverviewPage.vue's "Gesamtrang" tile
  *  already read, reused here rather than a third source of truth. */
 const shareTier = computed(() =>
@@ -171,14 +171,14 @@ async function onCopyFinished() {
 /** The occasional-use session actions ("Übung hinzufügen", "Workout-Notiz", "Aufwärmsätze
  *  einfügen", "Workout abbrechen") live behind one compact "⋯" trigger (see `.overflow-btn`
  *  below), opened as a small sheet, rather than as always-visible buttons crammed in right below
- *  the clock/pause — the single most-crowded spot on the screen, competing for space with the
+ *  the clock/pause: the single most-crowded spot on the screen, competing for space with the
  *  elapsed-time clock and the rank-reveal icon a lifter actually touches every set. Everything a
  *  lifter touches every set (clock/pause, current exercise, weight/reps entry) stays exactly
  *  where it was. */
 const showWorkoutMenu = ref(false);
 
 /** "Workout abbrechen" confirmation: a visible inline banner the user must explicitly dismiss
- *  or confirm — no auto-expiring timer. Was previously a silent tap-twice-within-3s pattern
+ *  or confirm: no auto-expiring timer. Was previously a silent tap-twice-within-3s pattern
  *  (useConfirmTap), which only swapped a tiny icon-button's label with no dialog/banner and no
  *  visible countdown; too easy to trigger by accident on a destructive, unrecoverable,
  *  whole-workout-ending action (UX audit finding). */
@@ -199,7 +199,7 @@ const { showAddExercise, addExerciseSearch, addExerciseCandidates, addExerciseTo
 
 const { xpChip, trigger: triggerXpChip } = useXpChip();
 
-/** Opened as a sheet, not a navigation — leaving the workout screen mid-set would unmount the
+/** Opened as a sheet, not a navigation: leaving the workout screen mid-set would unmount the
  *  active rest timer/scroll position/open pickers even though the workout itself survives in the
  *  store. Every other entry point (ExercisesPage, RankLifterSection, ...) still routes to
  *  `/exercises/:slug`. */
@@ -213,16 +213,16 @@ function openInfo(exerciseId: string) {
   if (exercise) infoExerciseSlug.value = exercise.slug;
 }
 
-/** "Satzart auswählen" — which set's picker is open. */
+/** "Satzart auswählen": which set's picker is open. */
 const kindPickerFor = ref<{ workoutExerciseId: string; setIndex: number } | null>(null);
 
-/** RPE capture — off the primary logging path: this only toggles a sheet's visibility, never
+/** RPE capture: off the primary logging path: this only toggles a sheet's visibility, never
  *  touches `Satz speichern`'s disabled condition. Reads/writes straight off
  *  `store.currentSet.rpe` (no local copy to go stale) so it automatically reads as unset again
  *  once the set logs and the store's `currentSet` advances to the next one. */
 const showRpeCapture = ref(false);
 
-/** Notes capture — one sheet, two targets: 'set' writes store.currentSet.notes (same
+/** Notes capture: one sheet, two targets: 'set' writes store.currentSet.notes (same
  *  per-set, off-the-primary-path timing as RPE, rides along in the next logCurrentSet() call),
  *  'workout' writes store.workoutNotes (session-level, sent in finish()'s payload).
  *  A single ref instead of two separate open-flags since only one of these sheets is ever open
@@ -236,7 +236,7 @@ const noteCaptureValue = computed(() =>
 );
 function saveNoteCapture(value: string | null) {
   // NoteCapture.vue dismisses its own sheet (sheetRef.dismiss()) before/alongside emitting
-  // "save" — that dismiss's @did-dismiss fires @close above, which is what actually nulls
+  // "save": that dismiss's @did-dismiss fires @close above, which is what actually nulls
   // noteCaptureTarget. Don't also toggle it here: unmounting NoteCapture out from under Ionic's
   // own async dismiss teardown is exactly the crash SheetModal.vue's header comment documents.
   if (noteCaptureTarget.value === "workout") store.setWorkoutNotes(value);
@@ -251,13 +251,13 @@ function kindLabel(kind: SetKind | undefined): string {
   return setKindLabel(kind ?? "normal");
 }
 /** Normal sets show their position in the exercise; every other kind shows a fixed letter
- *  instead — matches the reference app's "A"/"F"/"D" badges (SetKindPicker.vue uses the same
+ *  instead: matches the reference app's "A"/"F"/"D" badges (SetKindPicker.vue uses the same
  *  setKindLabel() for its own row icons). */
 function kindLetter(kind: SetKind | undefined, index: number): string {
   return !kind || kind === "normal" ? String(index + 1) : setKindLabel(kind)[0]!;
 }
 
-/** "Superset 2/3" — position within the group, for the focus header. */
+/** "Superset 2/3": position within the group, for the focus header. */
 const supersetLabel = computed(() => {
   const ex = store.currentExercise;
   if (!ex || ex.supersetGroup == null) return null;
@@ -279,7 +279,7 @@ onMounted(async () => {
 });
 
 /** On a short exercise, "Satz speichern" can render entirely within the fixed mobile tab bar's
- *  own band — geometrically inside ion-content's scrollport, but visually covered by a sibling
+ *  own band: geometrically inside ion-content's scrollport, but visually covered by a sibling
  *  the browser's own visibility check knows nothing about. `scroll-margin-bottom` (see
  *  .log-set-wrap) tells `scrollIntoView` to treat that band as off-screen too, so this only
  *  scrolls when the button would otherwise land there. */
@@ -291,9 +291,9 @@ async function ensureLogButtonVisible() {
   logSetWrapRef.value?.scrollIntoView?.({ block: "nearest" });
 }
 
-/** A single compact line — the next exercise's name plus its *first set's* weight/reps (e.g.
+/** A single compact line: the next exercise's name plus its *first set's* weight/reps (e.g.
  *  "Nächste Übung: Schulterdrücken · 40 kg × 10"), letting a lifter prep plates/equipment before
- *  the transition. `undefined` on the routine's last exercise — the empty state (see the
+ *  the transition. `undefined` on the routine's last exercise: the empty state (see the
  *  template's `next-ex-empty` branch) rather than silently hiding the whole row, which would
  *  look like a layout bug. */
 const nextExercisePreview = computed(() => {
@@ -306,7 +306,7 @@ const nextExercisePreview = computed(() => {
 });
 
 /** The "overview" affordance opens the full exercise list (reusing ExerciseRail's own data/jump
- *  logic via its `variant="vertical"` rendering) in a sheet — preserves
+ *  logic via its `variant="vertical"` rendering) in a sheet: preserves
  *  store.jumpToExercise(i)'s jump-to-any capability, just moved behind a deliberate tap instead
  *  of an always-visible rail. */
 const showExerciseOverview = ref(false);
@@ -314,15 +314,15 @@ const showExerciseOverview = ref(false);
 /** The rank/XP display keeps its exact existing presentation (RankProgress, variant="inline",
  *  below) rather than being folded into ExerciseInfoPanel's Rang tab. It's hidden by default and
  *  only rendered once this deliberate-reveal toggle is tapped, instead of always being on screen
- *  mid-set. No reserved-height skeleton is needed for this — a user can only reach this toggle
+ *  mid-set. No reserved-height skeleton is needed for this: a user can only reach this toggle
  *  after the page has already painted, so there's no auto-appearing-content layout shift to
  *  guard against here. */
 const showRank = ref(false);
 
-/** The exercise currently in focus's cached rank row, if one exists yet — context for the
+/** The exercise currently in focus's cached rank row, if one exists yet: context for the
  *  in-session RankProgress bar. Rank is now only ever recomputed once, when the workout
  *  finishes (see finishWorkout() below), so this reads the value as of the *start* of the
- *  session and stays static while logging — it no longer animates set-by-set. The reward for
+ *  session and stays static while logging: it no longer animates set-by-set. The reward for
  *  what actually changed this session shows in the finish sequence instead. */
 const currentRank = computed(() => {
   const exerciseId = store.currentExercise?.exerciseId;
@@ -345,11 +345,11 @@ async function logSet() {
   } else if (set && reps > 0) {
     // Mid-superset round-robin: the round hasn't wrapped yet, so there's genuinely no rest to
     // run. Still bump the trigger so RestTimer.vue can render its distinct "no rest" state
-    // instead of silently doing nothing — RestTimer.vue renders three distinct rest states.
+    // instead of silently doing nothing: RestTimer.vue renders three distinct rest states.
     //
     // Guarded on set && reps > 0 (snapshotted *before* the await above) so a double-tap that
-    // lands on logCurrentSet()'s other null-return cases — no current set, or its belt-and-
-    // braces reps<=0 guard — can't masquerade as this case and stomp a real rest state that the
+    // lands on logCurrentSet()'s other null-return cases: no current set, or its belt-and-
+    // braces reps<=0 guard: can't masquerade as this case and stomp a real rest state that the
     // first tap just set.
     restKind.value = "superset-continue";
     restTrigger.value += 1;
@@ -358,7 +358,7 @@ async function logSet() {
   if (set) {
     void haptics.tap();
     triggerXpChip(logSetXp(weightKg, reps, tier));
-    // One-shot pop-in trigger — see justLoggedIndex's declaration. 260ms gives --dur-base's
+    // One-shot pop-in trigger: see justLoggedIndex's declaration. 260ms gives --dur-base's
     // 220ms animation a little headroom to finish before the class clears.
     justLoggedIndex.value = set.index;
     setTimeout(() => {
@@ -369,7 +369,7 @@ async function logSet() {
   void ensureLogButtonVisible();
 }
 
-// Same two tabs as RunsPage.vue's own TabSwitcher — kept as a literal here rather than a shared
+// Same two tabs as RunsPage.vue's own TabSwitcher: kept as a literal here rather than a shared
 // constant since it's just two short { id, label, to } objects, not logic. computed() rather than
 // a plain const so the labels re-translate when the locale changes.
 const WORKOUT_RUNS_TABS = computed(() => [
@@ -788,7 +788,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
 .caption-item b {
   font-size: 12.5px;
 }
-/* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
+/* .panel (tokens.css) supplies background/border/radius: a utility surface, not a reward one. */
 .beat-panel {
   margin-top: var(--sp4);
   padding: var(--sp4);
@@ -842,7 +842,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   flex-direction: column;
   gap: var(--sp5);
 }
-/* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
+/* .panel (tokens.css) supplies background/border/radius: a utility surface, not a reward one. */
 .stale-banner {
   display: flex;
   flex-direction: column;
@@ -859,7 +859,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
 }
 
 /* Uses the shared .surface-hybrid utility (translucent + blurred, gradient hairline via ::after)
-   rather than a flat fill + border — border dropped since the hairline pseudo-element does that
+   rather than a flat fill + border: border dropped since the hairline pseudo-element does that
    job (same pattern as .panel above). */
 .next-ex-row {
   display: flex;
@@ -871,8 +871,8 @@ const WORKOUT_RUNS_TABS = computed(() => [
 }
 /* Was a single nowrap+ellipsis line cramming label/name/weight×reps together, which truncated
    on anything but a short name (feedback: "should go across more rows to actually be able to
-   display all the data" — the mid-workout screen already has the vertical room for it). Three
-   stacked rows instead — label, name, summary — each free to wrap instead of being clipped. */
+   display all the data": the mid-workout screen already has the vertical room for it). Three
+   stacked rows instead: label, name, summary: each free to wrap instead of being clipped. */
 .next-ex-lines {
   display: flex;
   flex-direction: column;
@@ -909,7 +909,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   font-size: 15px;
   flex: none;
 }
-/* Placed after .next-ex-row's own unconditional `display: flex` (source order matters here —
+/* Placed after .next-ex-row's own unconditional `display: flex` (source order matters here:
    two same-specificity class selectors on one element resolve ties by whichever rule comes
    later) so this actually wins at >=900px, where the vertical rail in .rail-col already covers
    "what's next"/jump-to-any and this row would otherwise duplicate it. */
@@ -955,7 +955,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
 }
 /* Bug fix (product owner report): title and actions used to sit side by side
    (row + space-between), which squeezed a long exercise name against the skip/rank/info
-   buttons. Now stacked — title on its own row, actions on the row below — same pattern as
+   buttons. Now stacked: title on its own row, actions on the row below: same pattern as
    the rest of this header's children. */
 .focus-head {
   display: flex;
@@ -965,7 +965,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   margin-bottom: var(--sp2);
 }
 /* Flex column + min-width:0 wrapper so TruncatingLabel's h2 can actually truncate instead of
-   wrapping/breaking mid-word — TruncatingLabel.vue's header comment requires an immediate
+   wrapping/breaking mid-word: TruncatingLabel.vue's header comment requires an immediate
    flex/grid parent, which this unclassed div previously was not (min-width:0 only overrides a
    flex/grid item's default auto min-width, it does nothing inside a plain block parent). */
 .focus-head-title {
@@ -996,14 +996,14 @@ const WORKOUT_RUNS_TABS = computed(() => [
 }
 /* Law-of-Proximity fix (UX-08): groups the two icon-only affordances (rank/info) away from the
    unrelated "Übung überspringen" pill instead of all three reading as one row of same-weight
-   controls — pushed to the row's far end so the skip pill and the info group visually separate. */
+   controls: pushed to the row's far end so the skip pill and the info group visually separate. */
 .focus-head-info-group {
   display: flex;
   align-items: center;
   gap: var(--sp2);
   margin-left: auto;
 }
-/* N2: was a flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). */
+/* N2: was a flat --surface-2 fill: .surface-hybrid instead (see .next-ex-row above). */
 .skip-btn {
   font-size: 11.5px;
   font-weight: 700;
@@ -1013,7 +1013,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   white-space: nowrap;
 }
 /* Was 30x30px, below the 44px touch-target floor .btn-close already meets (critique finding:
-   applied inconsistently). N2: was a flat --surface-2 fill — .surface-hybrid instead. */
+   applied inconsistently). N2: was a flat --surface-2 fill: .surface-hybrid instead. */
 .info-btn {
   width: 44px;
   height: 44px;
@@ -1034,7 +1034,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   background: color-mix(in srgb, var(--nebula-m) 22%, var(--surface-hybrid-bg));
   box-shadow: var(--surface-hybrid-shadow), 0 0 0 1px var(--nebula-ink);
 }
-/* .panel (tokens.css) supplies background/border/radius — a utility surface, not a reward one. */
+/* .panel (tokens.css) supplies background/border/radius: a utility surface, not a reward one. */
 .add-ex-panel {
   display: flex;
   flex-direction: column;
@@ -1080,9 +1080,9 @@ const WORKOUT_RUNS_TABS = computed(() => [
 .last-ref-hidden {
   visibility: hidden;
 }
-/* RPE/notes (Tasks 4-5) — small, --dim text, non-.btn-primary, deliberately not inline with the
+/* RPE/notes (Tasks 4-5): small, --dim text, non-.btn-primary, deliberately not inline with the
    weight/reps steppers and not competing with "Satz speichern" (Global Constraint 4). N2: was a
-   flat --surface-2 fill — .surface-hybrid instead (see .next-ex-row above). .warmup-btn/
+   flat --surface-2 fill: .surface-hybrid instead (see .next-ex-row above). .warmup-btn/
    .add-ex-btn (the same row-family) were removed once their triggers moved into the overflow
    sheet (header-decluttering fix). */
 .set-meta-row {
@@ -1103,16 +1103,16 @@ const WORKOUT_RUNS_TABS = computed(() => [
   white-space: nowrap;
   max-width: 220px;
 }
-/* Was --glow-blue on every instance — this is the ordinary CTA class (Quick Start, "Satz
+/* Was --glow-blue on every instance: this is the ordinary CTA class (Quick Start, "Satz
    speichern", "Starten", routine save, …), so *every* screen had a glowing button, which
    reads as "everything is emphasized" = nothing is. Flat saturated fill instead (.btn-primary,
-   tokens.css, itself bright now — the rework's whole point was that the *fill* should carry
+   tokens.css, itself bright now: the rework's whole point was that the *fill* should carry
    the emphasis, not a glow bolted onto a dark one); glow/motion stays reserved for an actually
-   rare moment — the finish sequence's rank-up beat (FinishSequence.vue). */
+   rare moment: the finish sequence's rank-up beat (FinishSequence.vue). */
 .log-set-wrap {
   position: relative;
   /* On a short exercise (little "Letztes Mal"/RPE/note content above it), this button can land
-     exactly in the fixed mobile tab bar's band on first paint — --bottom-chrome-h (0 on desktop,
+     exactly in the fixed mobile tab bar's band on first paint: --bottom-chrome-h (0 on desktop,
      where there's no tab bar) tells scrollIntoView's visibility check to treat that band as
      "not actually visible", so the auto-scroll below (see logSetWrapRef) clears it. */
   scroll-margin-bottom: var(--bottom-chrome-h, 0px);
@@ -1121,7 +1121,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   margin: var(--sp3) 0;
 }
 /* The most-tapped button in the app gets a tier-tinted focus ring instead of the global default
-   (:focus-visible in tokens.css) — a small, cheap reminder of the user's tier on the one control
+   (:focus-visible in tokens.css): a small, cheap reminder of the user's tier on the one control
    they touch every set. Falls back to the standard --blue-hi ring before the tier loads. */
 .log-set-btn:focus-visible {
   outline-color: var(--tier-accent, var(--blue-hi));
@@ -1135,11 +1135,11 @@ const WORKOUT_RUNS_TABS = computed(() => [
 .reps-hint-hidden {
   visibility: hidden;
 }
-/* "+N XP" (engagement rework W3) — floats up off the log-set button and fades, echoing the
+/* "+N XP" (engagement rework W3): floats up off the log-set button and fades, echoing the
    client-computed XP for the set that was just logged. Purely decorative; the real total
    still comes from xpStore via the server.
    Feedback: "the little xp gain animation is too quick, it is not really possible to see how
-   much that set gained you" — the old 700ms run faded continuously from 15% straight to 100%,
+   much that set gained you": the old 700ms run faded continuously from 15% straight to 100%,
    so it was never actually at full opacity for more than an instant. This holds at full
    opacity/scale through the middle of the run (25%-70%) before fading, and runs longer overall
    (1600ms, set in JS below alongside the matching xpChip clear-timeout) so there's real time to
@@ -1186,7 +1186,7 @@ const WORKOUT_RUNS_TABS = computed(() => [
   margin-top: var(--sp4);
 }
 /* N2: was a flat --surface-2 fill. Given to <li> directly rather than via the shared
-   .surface-hybrid class (translucency + blur only, no ::after hairline/box-shadow) — these rows
+   .surface-hybrid class (translucency + blur only, no ::after hairline/box-shadow): these rows
    are dense repeated list items, not floating cards, so the full card recipe (gradient ring +
    drop shadow on every single set) would read as visual noise; translucency alone is still
    enough to read as "in the system" rather than a leftover opaque row. */
@@ -1201,13 +1201,13 @@ const WORKOUT_RUNS_TABS = computed(() => [
   -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
   font-size: 13.5px;
 }
-/* Was `opacity: 0.75` — the only visible consequence of completing a set was that it faded
+/* Was `opacity: 0.75`: the only visible consequence of completing a set was that it faded
    (critique finding: the reward inverts). A logged set now gets a faint green tint instead,
-   full opacity — done work reads as brighter, not dimmer.
+   full opacity: done work reads as brighter, not dimmer.
    N2 re-derivation (not a mechanical --surface-2 -> --surface-hybrid-bg swap): the old base was
    fully opaque, so color-mix's 14%-green output was itself fully opaque and its exact hue was
    the whole visual story. --surface-hybrid-bg is translucent (~0.88 alpha) and this row has no
-   card behind it — color-mix here still carries that alpha through (mixing a ~14%-weighted
+   card behind it: color-mix here still carries that alpha through (mixing a ~14%-weighted
    opaque green into an ~0.88-alpha base yields ~0.90 alpha), so the result is a translucent tint
    sitting directly over whatever's rendered behind it (the page content and, at the row's own
    position, the pervasive cosmic sweep) rather than over a flat neutral fill. A straight 14%
@@ -1223,9 +1223,9 @@ const WORKOUT_RUNS_TABS = computed(() => [
   color: var(--dim);
 }
 /* .sn is a <button> for an unlogged set (tap to open "Satzart auswählen") and a plain <span>
-   once logged — border/font reset here so the button variant doesn't inherit native button
+   once logged: border/font reset here so the button variant doesn't inherit native button
    chrome; color comes from the .k-* kind classes below, same palette as SetKindPicker.vue. */
-/* Was 22x22px — under the 44px touch-target floor .btn-close was already raised to meet
+/* Was 22x22px: under the 44px touch-target floor .btn-close was already raised to meet
    (critique finding: applied inconsistently). Only the interactive (unlogged) state needs the
    floor; the logged state is a plain, non-interactive <span> and stays compact so the row
    doesn't visually swell once every set is logged. */
@@ -1278,10 +1278,10 @@ button.sn:active {
 /* Header-decluttering audit fix: "Übung hinzufügen" / "Workout-Notiz" / "Aufwärmsätze einfügen"
    now live in one sheet (see the SheetModal in the template, opened from the "⋯" .overflow-btn
    next to .progress) instead of always-visible buttons crammed under the clock. Plain stacked
-   list rows, full-width — a sheet's contents don't need to compete for horizontal space the way
+   list rows, full-width: a sheet's contents don't need to compete for horizontal space the way
    the old inline pill row did. "Workout abbrechen" used to live here too as `.menu-item-danger`,
    but a later bug-fix pass relocated cancel next to the pause button (`.cancel-btn` below) so it
-   reads as "same family of control, different action" — this sheet no longer offers a second,
+   reads as "same family of control, different action": this sheet no longer offers a second,
    redundant way to trigger the same destructive action. */
 .workout-menu {
   display: flex;
@@ -1303,12 +1303,12 @@ button.sn:active {
 /* Bug fix (product owner report): used to live alone far down the rail with a completely
    different look (a wide text pill) from the pause button it has nothing to do with visually.
    Now positioned right next to WorkoutClock's pause `.icon-btn` (same 40px height, same
-   border-radius, same border weight — "same family of control") but red instead of neutral,
+   border-radius, same border weight: "same family of control") but red instead of neutral,
    so it reads as "same family, higher stakes" rather than an unrelated control. Widens past
-   the 40px square only for the "Wirklich?" confirm label — auto width keeps the icon state a
+   the 40px square only for the "Wirklich?" confirm label: auto width keeps the icon state a
    true square matching the pause button exactly. */
 .cancel-btn {
-  /* Slot content keeps WorkoutPage's own scope id, not WorkoutClock.vue's — so its scoped
+  /* Slot content keeps WorkoutPage's own scope id, not WorkoutClock.vue's: so its scoped
      `.icon-btn` rules don't reach in here; base sizing is repeated explicitly to match it. */
   display: flex;
   align-items: center;
@@ -1325,7 +1325,7 @@ button.sn:active {
   border: 1px solid var(--danger-lo);
 }
 /* Law-of-Proximity fix (UX-07): a plain hairline between Pause and Workout-abbrechen so the
-   destructive action doesn't read as just another same-size icon button glued to the safe one —
+   destructive action doesn't read as just another same-size icon button glued to the safe one:
    on top of the red-outlined treatment .cancel-btn already carries. */
 .cancel-divider {
   width: 1px;
@@ -1333,7 +1333,7 @@ button.sn:active {
   background: var(--line-2);
   flex: none;
 }
-/* Visible, explicit cancel-workout confirmation — replaces the old silent tap-twice-within-3s
+/* Visible, explicit cancel-workout confirmation: replaces the old silent tap-twice-within-3s
    pattern (useConfirmTap). .panel (tokens.css) supplies background/border/radius. */
 .cancel-confirm {
   display: flex;
@@ -1375,7 +1375,7 @@ button.sn:active {
    the pair as a unit is the P0 minimum fix; a real third context zone (rank progress + muscle
    preview, per the audit's §6 spec) is a larger content addition for later, not a structural
    one. The pre-workout routine list below used to just center at a fixed card size on the
-   reasoning that a short list shouldn't stretch — feedback overturned that: the cards
+   reasoning that a short list shouldn't stretch: feedback overturned that: the cards
    themselves should get bigger and use more whitespace on desktop, not just be recentered
    (see .routine-grid's own min-width:900px rule for the actual size bump). */
 @media (min-width: 900px) {

@@ -9,7 +9,7 @@ import { i18n } from "~client/i18n";
 import { tierLabel } from "~client/lib/tierIcons";
 import { mountWithProviders } from "../../helpers/mountWithProviders";
 
-// Plain top-of-file consts (not vi.hoisted — `reactive` isn't available inside that factory, see
+// Plain top-of-file consts (not vi.hoisted: `reactive` isn't available inside that factory, see
 // RunsPage.test.ts's comment) referenced only inside uninvoked closures below, so vi.mock's own
 // hoisting above these declarations never dereferences them before they exist.
 const ranksState = reactive({ ranks: [] as unknown[], loaded: false, error: false, load: vi.fn() });
@@ -20,7 +20,7 @@ const overallRankState = reactive({
   error: false,
   load: vi.fn(),
 });
-// Not `reactive` — `byId` is a plain function reference (a Pinia getter would be), and reactive()
+// Not `reactive`: `byId` is a plain function reference (a Pinia getter would be), and reactive()
 // would wrap it in a way vi.fn() call-tracking doesn't expect.
 const catalogState = { byId: vi.fn(), load: vi.fn() };
 
@@ -29,11 +29,11 @@ vi.mock("~client/stores/overallRankStore", () => ({ useOverallRankStore: () => o
 vi.mock("~client/stores/catalogStore", () => ({ useCatalogStore: () => catalogState }));
 
 // RankDistributionDonut/RankUpCalendar are self-fetching feature components (own store/service
-// reads) already covered at their own layer — stubbed so this test only asserts *whether* they
+// reads) already covered at their own layer: stubbed so this test only asserts *whether* they
 // render, not their internals.
 const STUBS = { RankDistributionDonut: true, RankUpCalendar: true };
 
-// Real 9-tier ids (@liftr/shared's TIERS), not the pre-migration "bronze/silver/gold" names —
+// Real 9-tier ids (@liftr/shared's TIERS), not the pre-migration "bronze/silver/gold" names:
 // TierBadge's emblem geometry now indexes TIER_PALETTE by this string directly and throws on an
 // unknown key, where the old CSS-only badge silently no-op'd on a class like `t-bronze` that
 // matched nothing. A fake tier name here used to be harmless; it no longer is.
@@ -137,15 +137,15 @@ describe("RankLifterSection", () => {
     const back = wrapper.findComponent({ name: "RankExerciseBack" });
     expect(back.exists()).toBe(true);
     // THIS exercise's own tier/division ("elite"/2, from makeRank() above), not the account's
-    // overall rank ("silver"/2, from overallRankState above) — the actual bug being fixed here.
+    // overall rank ("silver"/2, from overallRankState above): the actual bug being fixed here.
     expect(back.props("tier")).toBe("elite");
     expect(back.props("division")).toBe(2);
     expect(wrapper.find(".rank-flip-card").classes()).toContain("flipped");
-    // The front face stays mounted (rotated away via CSS, not removed) — this is what makes the
+    // The front face stays mounted (rotated away via CSS, not removed): this is what makes the
     // flip an actual transform instead of the old height-jumping content swap.
     expect(wrapper.findComponent(RankProgress).exists()).toBe(true);
 
-    // No "Zurück" button anymore — the whole back face is tappable to flip back, same as the front.
+    // No "Zurück" button anymore: the whole back face is tappable to flip back, same as the front.
     await wrapper.find(".flip-face-back").trigger("click");
     expect(wrapper.find(".rank-flip-card").classes()).not.toContain("flipped");
     // Stays mounted after unflipping (lazy-activated once, then kept via v-show-equivalent) so a

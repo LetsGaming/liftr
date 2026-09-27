@@ -1,7 +1,7 @@
 # Setting up Android release signing
 
 `release.yml` (triggered by pushing a `v1.2.3`-style tag) builds an installable APK and attaches
-it to a GitHub Release. Without a keystore configured, it still builds — just **unsigned** — which
+it to a GitHub Release. Without a keystore configured, it still builds, just **unsigned**, which
 Android will refuse to install on most devices. This guide walks through generating a keystore
 once and teaching both your local machine and GitHub Actions about it. If you've never done this
 before: it's a one-time, ~10 minute setup, and every step below is copy-pasteable.
@@ -9,7 +9,7 @@ before: it's a one-time, ~10 minute setup, and every step below is copy-pasteabl
 ## Why this matters (read before you start)
 
 The keystore you generate is the app's permanent identity. Every future release must be signed
-with the **same** keystore, or Android treats it as a different app — an update won't overwrite
+with the **same** keystore, or Android treats it as a different app: an update won't overwrite
 the old install; you'll have to uninstall it first, losing anything only stored client-side. There
 is no "reset" or "recover" for a lost keystore; back it up somewhere durable (a password manager
 that supports file attachments, an encrypted drive, etc.), not just this one machine.
@@ -25,12 +25,12 @@ keytool -genkeypair -v \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-You'll be prompted for a keystore password, then some identity fields (name/org/etc — these end
+You'll be prompted for a keystore password, then some identity fields (name/org/etc, these end
 up in the certificate but don't matter functionally for a self-signed, non-Play-Store app; answer
 them however you like, including leaving them blank), then a key password (you can reuse the
-keystore password when prompted, or set a different one — just remember which).
+keystore password when prompted, or set a different one, just remember which).
 
-This produces one file: `liftr-release.keystore`. **Do not commit it to the repo** —
+This produces one file: `liftr-release.keystore`. **Do not commit it to the repo**:
 `packages/client/android/.gitignore` already excludes `*.keystore`/`*.jks`/`keystore.properties`,
 but keep it out of any git command (`git add`) regardless.
 
@@ -55,7 +55,7 @@ base64 -i liftr-release.keystore | pbcopy
 base64 -w0 liftr-release.keystore | xclip -selection clipboard   # or: base64 -w0 liftr-release.keystore > keystore.b64.txt
 ```
 
-Paste the copied value as the secret's value (it's one long line — that's expected).
+Paste the copied value as the secret's value (it's one long line, that's expected).
 
 Alternatively, if you have the `gh` CLI installed and authenticated (`gh auth login`), you can set
 all four from your terminal instead of the web UI:
@@ -68,11 +68,11 @@ gh secret set ANDROID_KEY_PASSWORD --body "<your key password>"
 ```
 
 Once all four are set, push a tag (`git tag v0.1.0 && git push origin v0.1.0`) or run the
-**Release** workflow manually from the Actions tab (`workflow_dispatch`) — the build log's
+**Release** workflow manually from the Actions tab (`workflow_dispatch`); the build log's
 "Decode release keystore" step will no longer print the unsigned-build warning, and the resulting
 APK will install as an update over any previously-signed install of the app.
 
-No backend URL to configure here — the app asks for its server's address on first launch and
+No backend URL to configure here: the app asks for its server's address on first launch and
 verifies it before proceeding (see `docs/features.md`), so the same APK works against any
 instance without a rebuild.
 
@@ -102,4 +102,4 @@ The signed APK lands at `packages/client/android/app/build/outputs/apk/release/a
 
 Generate a new keystore (step 1), update the four GitHub secrets (step 2) with the new values, and
 treat the next release as a fresh install for anyone who already has the app on their device
-(uninstall the old one first — same as installing on a new phone).
+(uninstall the old one first, same as installing on a new phone).

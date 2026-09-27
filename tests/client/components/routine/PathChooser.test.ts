@@ -1,4 +1,4 @@
-// PathChooser.vue is pure presentation — two cards, each emitting "choose" with its own mode.
+// PathChooser.vue is pure presentation: two cards, each emitting "choose" with its own mode.
 // No composables/stores to mock.
 import { describe, expect, it } from "vitest";
 import PathChooser from "~client/components/routine/PathChooser.vue";

@@ -1,5 +1,5 @@
 /**
- * One-time (re-runnable) helper: `tsx src/matchWgerIds.ts` — populates curated.yaml's `wgerId`
+ * One-time (re-runnable) helper: `tsx src/matchWgerIds.ts`: populates curated.yaml's `wgerId`
  * for every entry that doesn't have one yet, so the ingest pipeline can pull the *full*
  * multi-item equipment tag list wger already carries per exercise (see wgerSource.ts's
  * wgerFullEquipmentSource) instead of guessing via deriveRequirements()'s slug/pattern rules.
@@ -8,12 +8,12 @@
  * documents for freeExerciseDbId: try an exact English-name lookup first (wger's own `name`
  * filter is exact-match only), fall back to token-overlap fuzzy scoring against the full
  * English translation list for everything that doesn't hit exactly, auto-accept only
- * high-confidence matches, and print the rest for manual review rather than guessing — some
+ * high-confidence matches, and print the rest for manual review rather than guessing: some
  * entries staying unresolved is expected and fine (same as freeExerciseDbId's "12 exercises
  * left with no id on purpose").
  *
  * Read-only against curated.yaml: prints a report + ready-to-paste `wgerId:` lines, doesn't
- * write the file itself — pasting the matches in is the one genuinely manual step in the
+ * write the file itself: pasting the matches in is the one genuinely manual step in the
  * equipment-tier feature.
  */
 import { readFile } from "node:fs/promises";
@@ -50,7 +50,7 @@ async function fetchAllEnglishTranslations(): Promise<WgerTranslation[]> {
   return rows;
 }
 
-/** Trailing-"s" plural stemming ("Dips"->"dip") — deliberately conservative (skips short words
+/** Trailing-"s" plural stemming ("Dips"->"dip"): deliberately conservative (skips short words
  *  and anything ending "ss") so it never mangles a real word into a false match, just closes the
  *  singular/plural gap that was otherwise scoring e.g. "Ring Dip" vs "Ring Dips" as barely
  *  related. */
@@ -74,18 +74,18 @@ export function tokenize(s: string): Set<string> {
 /**
  * Two scores combined, whichever is higher: plain Jaccard (good for "same words, different
  * order"), and containment *anchored to the curated name* (intersection / curated's own token
- * count — good for "wger's official name adds a qualifier", e.g. curated's "Incline Bench Press"
+ * count: good for "wger's official name adds a qualifier", e.g. curated's "Incline Bench Press"
  * fully contained in wger's "Incline Bench Press - Barbell"). Deliberately asymmetric: it only
- * rewards wger's candidate for containing *every* curated token, never the reverse — an earlier
+ * rewards wger's candidate for containing *every* curated token, never the reverse: an earlier
  * version anchored to whichever set was smaller instead, which let a short generic wger entry
  * ("Bench Press") falsely max out containment against a more specific curated name ("Incline
  * Bench Press") just because its 2 words happened to both appear, silently losing the "incline".
  *
  * The containment boost is further capped to candidates adding at most one extra word beyond
- * curated's own token count — without this, a short 2-word curated name ("Barbell Curl") would
+ * curated's own token count: without this, a short 2-word curated name ("Barbell Curl") would
  * containment-match against an unrelated, more specific exercise that just happens to be a
  * superset ("Barbell Reverse Wrist Curl"), or "Lat Pulldown" against a niche single-arm
- * half-kneeling variant — two extra qualifier words is usually a genuinely different exercise,
+ * half-kneeling variant: two extra qualifier words is usually a genuinely different exercise,
  * not the same one under a fuller name.
  */
 export function tokenOverlapScore(curatedName: string, candidateName: string): number {
@@ -106,7 +106,7 @@ async function main() {
   const unmatched = catalog.exercises.filter((e) => e.wgerId == null);
 
   if (unmatched.length === 0) {
-    console.log("every curated.yaml entry already has a wgerId — nothing to do.");
+    console.log("every curated.yaml entry already has a wgerId: nothing to do.");
     return;
   }
 
@@ -138,20 +138,20 @@ async function main() {
     }
   }
 
-  console.log(`=== auto-accepted (${accepted.length}) — paste into curated.yaml as wgerId: N ===`);
+  console.log(`=== auto-accepted (${accepted.length}): paste into curated.yaml as wgerId: N ===`);
   for (const a of accepted) {
     console.log(`  ${a.slug}: wgerId: ${a.wgerId}  (${a.via}, matched "${a.matchedName}")`);
   }
 
-  console.log(`\n=== needs manual review (${flagged.length}) — left as null, deriveRequirements() rules still apply ===`);
+  console.log(`\n=== needs manual review (${flagged.length}): left as null, deriveRequirements() rules still apply ===`);
   for (const f of flagged) {
-    const guess = f.bestGuess ? ` — best guess: "${f.bestGuess.name}" (id ${f.bestGuess.wgerId}, score ${f.bestGuess.score.toFixed(2)})` : "";
+    const guess = f.bestGuess ? `: best guess: "${f.bestGuess.name}" (id ${f.bestGuess.wgerId}, score ${f.bestGuess.score.toFixed(2)})` : "";
     console.log(`  ${f.slug} ("${f.nameEn}")${guess}`);
   }
 }
 
 // Guarded so importing this module (e.g. from tests, to exercise the pure matching helpers
-// above) never triggers the real network/file-system run — only `tsx src/matchWgerIds.ts`
+// above) never triggers the real network/file-system run: only `tsx src/matchWgerIds.ts`
 // itself, where import.meta.url resolves to the invoked script path, does.
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err) => {

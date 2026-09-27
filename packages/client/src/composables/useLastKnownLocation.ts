@@ -1,7 +1,7 @@
 /**
  * Persists the last geolocation fix a route-editing map got (from a "use my location" button or
  * a silent on-open lookup) so the map can open centered on somewhere relevant to the user instead
- * of a hardcoded fallback — useful both offline and while a fresh fix is still resolving.
+ * of a hardcoded fallback: useful both offline and while a fresh fix is still resolving.
  * Extracted out of RouteMapEditor.vue.
  */
 const LAST_LOCATION_KEY = "liftr.route-editor.lastKnownLocation";
@@ -18,7 +18,7 @@ function getStoredLocation(): Coords | null {
     const parsed = JSON.parse(raw);
     if (typeof parsed?.lat === "number" && typeof parsed?.lon === "number") return parsed;
   } catch {
-    // corrupt/unavailable storage — fall through to the caller's own fallback
+    // corrupt/unavailable storage: fall through to the caller's own fallback
   }
   return null;
 }
@@ -27,13 +27,13 @@ function storeLocation(lat: number, lon: number) {
   try {
     localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify({ lat, lon }));
   } catch {
-    // storage unavailable (private browsing etc.) — non-fatal, just skip persisting
+    // storage unavailable (private browsing etc.): non-fatal, just skip persisting
   }
 }
 
 export function useLastKnownLocation() {
   /** Fetches a fresh fix and, on success, stores it and hands it to `onFix`. Errors/denials are
-   *  silently ignored — callers are expected to already have a reasonable fallback center
+   *  silently ignored: callers are expected to already have a reasonable fallback center
    *  rendered before calling this. */
   function locate(onFix: (coords: Coords) => void, options?: PositionOptions) {
     if (!navigator.geolocation) return;

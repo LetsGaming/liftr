@@ -35,7 +35,7 @@ async function logSet(exerciseId: string, weightKg: number, reps: number, logged
 }
 
 /** Peak corroboration (XP/rank balancing redesign §3) requires a second, distinct day at the same
- *  or stronger performance before a peak is established — see rankService.test.ts's own helper of
+ *  or stronger performance before a peak is established: see rankService.test.ts's own helper of
  *  the same name for the full rationale. */
 async function establishCorroboratedPeak(exerciseId: string, weightKg: number, reps: number) {
   await logSet(exerciseId, weightKg, reps);

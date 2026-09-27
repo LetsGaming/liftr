@@ -1,5 +1,5 @@
 /**
- * GET /api/prs — Personal Records ledger. Same shape as `overallRank.ts`: the route is a thin
+ * GET /api/prs: Personal Records ledger. Same shape as `overallRank.ts`: the route is a thin
  * schema wrapper, the actual query lives in `prService.ts`.
  */
 import { z } from "zod";

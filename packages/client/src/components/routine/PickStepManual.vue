@@ -4,7 +4,7 @@
  *  reviewable/editable on the next step, never saved directly from here.
  *
  *  Split out of a single PickStep.vue that took a `mode: "manual" | "muscles"` prop and branched
- *  its whole template/state on it — the two modes shared no DOM, state, or emits (this one emits
+ *  its whole template/state on it: the two modes shared no DOM, state, or emits (this one emits
  *  `continue`, PickStepMuscles.vue emits `suggest`), so they were two components glued together by
  *  a prop rather than one. RoutineWizard.vue picks between this and PickStepMuscles.vue directly. */
 import { computed } from "vue";

@@ -1,7 +1,7 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { exercises, prs, rankEvents, ranks, sets, standards, workoutExercises, type LiftrDb } from "@liftr/db";
 
-/** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx` —
+/** Accepts either the top-level `LiftrDb` or a `db.transaction((tx) => ...)` callback's `tx`:
  *  same reasoning/pattern as plannedRouteRepository.ts's `PlannedRouteDbClient`: the read/write
  *  helpers used inside rankService.ts's synchronous recompute transaction (findRankByExerciseId,
  *  findBestPrByKind, upsertRank, insertPr, insertRankEvent) need to run against `tx` there, but
@@ -13,22 +13,22 @@ export function findAllRanksWithExercise(db: LiftrDb, userId: string) {
   return db.query.ranks.findMany({ where: eq(ranks.userId, userId), with: { exercise: true } });
 }
 
-/** Every computed rank for this user, bare — used where only the tier-by-exercise lookup matters (xp.ts). */
+/** Every computed rank for this user, bare: used where only the tier-by-exercise lookup matters (xp.ts). */
 export function findAllRanks(db: LiftrDb, userId: string) {
   return db.query.ranks.findMany({ where: eq(ranks.userId, userId) });
 }
 
-/** Shared catalog — not user-scoped. */
+/** Shared catalog: not user-scoped. */
 export function findExerciseById(db: LiftrDb, exerciseId: string) {
   return db.query.exercises.findFirst({ where: eq(exercises.id, exerciseId) });
 }
 
 /**
- * `sex` defaults to "male" — the population ANCHOR_STANDARDS was already calibrated against
+ * `sex` defaults to "male": the population ANCHOR_STANDARDS was already calibrated against
  * before FEMALE_ANCHOR_STANDARDS existed, so an unset profile keeps today's behavior rather than
  * silently switching anyone's ranks. Every ingested exercise has rows for both sexes (see
  * ingestStandards.ts), so this is a real, sourced choice for "female," not a fallback standing in
- * for missing data. Shared catalog — not user-scoped.
+ * for missing data. Shared catalog: not user-scoped.
  */
 export function findStandardsForExercise(db: LiftrDb, exerciseId: string, sex: "male" | "female" = "male") {
   return db.query.standards.findMany({ where: and(eq(standards.exerciseId, exerciseId), eq(standards.sex, sex)) });
@@ -56,9 +56,9 @@ export interface RankUpsert {
   trust: (typeof ranks.$inferInsert)["trust"];
   nextTargetWeightKg: number | null;
   nextTargetReps: number | null;
-  /** Ratchet-only "best ever" snapshot — see tiers.ts's `ratchetPeak`.
+  /** Ratchet-only "best ever" snapshot: see tiers.ts's `ratchetPeak`.
    *  Nullable: a badly-flagged first-ever recompute (no prior peak to compare against) does not
-   *  establish one — see rankService.ts's `peak` computation. */
+   *  establish one: see rankService.ts's `peak` computation. */
   peakTier: (typeof ranks.$inferInsert)["peakTier"];
   peakDivision: number | null;
   peakLp: number | null;
@@ -85,12 +85,12 @@ export function insertPr(db: RankDbClient, userId: string, values: Omit<typeof p
   return db.insert(prs).values({ ...values, userId });
 }
 
-/** History row for a genuine rank-up — mirrors `insertPr` above. */
+/** History row for a genuine rank-up: mirrors `insertPr` above. */
 export function insertRankEvent(db: RankDbClient, userId: string, values: Omit<typeof rankEvents.$inferInsert, "userId">) {
   return db.insert(rankEvents).values({ ...values, userId });
 }
 
-/** Raw rank-up timestamps (+ plausibility flag) within the window, for this user — the weekday
+/** Raw rank-up timestamps (+ plausibility flag) within the window, for this user: the weekday
  *  reduction happens in the service layer (readinessService.ts's "repository fetches, service
  *  reduces" split). */
 export function findRankEventsSince(db: LiftrDb, userId: string, since: Date) {

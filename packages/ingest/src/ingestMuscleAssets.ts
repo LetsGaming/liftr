@@ -1,8 +1,8 @@
 /**
- * `pnpm ingest --muscles` — mirrors wger's real anatomical muscle-map assets, built on real
+ * `pnpm ingest --muscles`: mirrors wger's real anatomical muscle-map assets, built on real
  * anatomy rather than hand-drawn blobs. Source: wger's own static assets,
  * which are themselves a CC-BY-SA 3.0 derivative of Wikimedia Commons illustrations
- * ("Muscular_system.svg" / "Muscular_system-back.svg" by Termininja) — see
+ * ("Muscular_system.svg" / "Muscular_system-back.svg" by Termininja): see
  * wger/core/static/images/muscles/SOURCES in the wger repo. Mirrored once, recolored once,
  * never hotlinked or re-fetched at runtime, per the ingest-once rule.
  *
@@ -11,7 +11,7 @@
  *    grayscale palette into a dark-theme-appropriate blue-gray range.
  *  - 15 x 2 muscle highlight overlays (one "main"/primary + one "secondary" shape per muscle,
  *    aligned to the same coordinate space as the base bodies). wger bakes primary as solid red
- *    (#fc0000) and secondary as orange (#f57900) — recolored here to this app's blue accent
+ *    (#fc0000) and secondary as orange (#f57900): recolored here to this app's blue accent
  *    tokens so the map reads as part of the same design system as the rest of the UI.
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -22,28 +22,28 @@ import { MUSCLES } from "./muscles.js";
 const RAW_BASE = "https://raw.githubusercontent.com/wger-project/wger/master/wger/core/static/images/muscles";
 
 const PRIMARY_FROM = "#fc0000";
-/* Mannequin contrast fix: was #5ba0ff (--blue-hi) — too
+/* Mannequin contrast fix: was #5ba0ff (--blue-hi): too
  * close in lightness to the recolored body outline's own lightest shade (BODY_LIGHT below,
  * #4f5c82) and to the surrounding dark-panel backgrounds this figure renders on (StatTile/panel
  * hybrid surfaces), so a "recovered" region barely read as highlighted at all, especially at the
  * lower end of heatOverlaysFor()'s opacity ramp (MuscleFigure.vue fades main-variant opacity down
- * to 0.35 just above the recovery threshold). This is NOT a tokens.css value read at runtime —
+ * to 0.35 just above the recovery threshold). This is NOT a tokens.css value read at runtime:
  * it's baked directly into the pre-generated overlay SVGs at ingest time (see module doc above),
  * so a CSS-only fix would have had zero effect on what's actually served; this file is the real
  * fix, followed by `pnpm ingest --muscles` to regenerate the served assets. Pushed noticeably
  * lighter/more saturated than --blue-hi while staying in the same blue family (deliberately no
- * longer an exact token match — this asset is generated once, not live-themed, so it only needs
+ * longer an exact token match: this asset is generated once, not live-themed, so it only needs
  * to read clearly against the dark body/panel it's drawn on, not stay pixel-identical to a token
  * used elsewhere for very different, non-anatomical UI). */
 const PRIMARY_TO = "#8fd0ff";
 const SECONDARY_FROM = "#f57900";
 const SECONDARY_TO = "#5f7fd6"; // matches the app's existing --mm-sec token
 
-// Readiness hero — a third, local-only recolor pass reading the
+// Readiness hero: a third, local-only recolor pass reading the
 // already-mirrored `main/` overlays (no network fetch, no re-download) and swapping the blue
 // highlight for the app's fire-orange token, so MuscleFigure.vue's `heat` mode can render a
 // fatigued muscle warm and a recovered one in its normal cool blue. Deterministic string swap,
-// same technique as the two passes above, not a runtime CSS filter — easier to keep visually
+// same technique as the two passes above, not a runtime CSS filter: easier to keep visually
 // tuned than a hue-rotate() that has to be re-eyeballed per asset.
 const FATIGUE_COLOR = "#ff7a1f"; // --fire
 
@@ -66,7 +66,7 @@ function recolorOverlay(svg: string): string {
     .join(SECONDARY_TO)
     // wger's originals are drawn at ~52% opacity for a white background; boost toward opaque
     // so the highlight reads clearly against our dark surfaces (the "clear visible distinction"
-    // requirement) — cosmetic, not required for wger asset attribution/compatibility.
+    // requirement): cosmetic, not required for wger asset attribution/compatibility.
     .replace(/opacity:0\.52424239;/g, "opacity:0.92;");
 }
 

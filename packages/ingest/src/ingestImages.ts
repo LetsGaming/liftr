@@ -1,17 +1,17 @@
 /**
  * `pnpm ingest --images`. Downloads free-exercise-db (Unlicense) start/end photos
  * for every curated exercise that declares a freeExerciseDbId, and mirrors them into
- * data/images/<slug>/. This is the one ingest step that touches the network — it must never
+ * data/images/<slug>/. This is the one ingest step that touches the network: it must never
  * run outside this CLI (the "ingest once" rule) and the server must never hotlink these
  * URLs at request time.
  *
  * Fallback path: a handful of entries have no free-exercise-db photo at all but do have a wger
- * photo (`wgerImageId`) — CC-BY-SA 4.0, single frame only, mirrored to start.jpg via the same
+ * photo (`wgerImageId`): CC-BY-SA 4.0, single frame only, mirrored to start.jpg via the same
  * "ingest once, never hotlink" rule. Checked only when freeExerciseDbId is unset, so a slug
  * never mixes frames from two different sources.
  *
  * NOTE: images are saved as-downloaded (jpg/png). WebP re-encoding at two widths needs an
- * image library (e.g. sharp) — deferred to keep this step dependency-light while the local
+ * image library (e.g. sharp): deferred to keep this step dependency-light while the local
  * native-build toolchain is still being set up; swap in a resize pass later without touching
  * the rest of the pipeline.
  */
@@ -37,8 +37,8 @@ interface WgerImageListResponse {
 }
 
 /** Looks up the main photo URL for a wger exercise id via the exerciseimage list endpoint
- *  (`?exercise=<id>` filter — confirmed against the live API, see the sourcing research doc).
- *  Returns null on any failure (offline, id has no image) rather than throwing — same
+ *  (`?exercise=<id>` filter: confirmed against the live API, see the sourcing research doc).
+ *  Returns null on any failure (offline, id has no image) rather than throwing: same
  *  "don't abort the whole ingest over one flaky upstream" rule the equipment resolvers follow. */
 async function fetchWgerImageUrl(wgerImageId: number): Promise<string | null> {
   try {
@@ -61,7 +61,7 @@ export async function ingestImages(entries: CatalogEntry[], imagesDir: string) {
       const dir = path.join(imagesDir, entry.slug);
       await mkdir(dir, { recursive: true });
 
-      // free-exercise-db convention: <id>/0.jpg (start), <id>/1.jpg (end) — no "images/" subpath
+      // free-exercise-db convention: <id>/0.jpg (start), <id>/1.jpg (end): no "images/" subpath
       // (verified against the actual repo structure; an earlier version of this guessed wrong).
       const startOk = await downloadTo(
         `${FREE_EXERCISE_DB_RAW}/${entry.freeExerciseDbId}/0.jpg`,

@@ -1,5 +1,5 @@
 /**
- * Tiered rank engine. Pure functions — no DB access — so the client can recompute
+ * Tiered rank engine. Pure functions: no DB access: so the client can recompute
  * optimistically offline and the server can recompute authoritatively after sync, with
  * guaranteed-identical results.
  */
@@ -11,16 +11,16 @@ export const TIERS = [
 ] as const;
 export type Tier = (typeof TIERS)[number];
 
-/** Divisions per tier — deliberately more at the bottom (frequent rank-ups early) and fewer at
+/** Divisions per tier: deliberately more at the bottom (frequent rank-ups early) and fewer at
  *  the top (Apex has exactly 1: a single real milestone, not another grind). Within a tier of N
- *  divisions, values run N (weakest, entry) down to 1 (strongest, closest to promotion) — same
+ *  divisions, values run N (weakest, entry) down to 1 (strongest, closest to promotion): same
  *  "higher number = weaker" convention as the old fixed III/II/I, generalized to N divisions.
  *
  *  Reduced from the original 6/5/5/4/4/3/3/2/1 (33 bands total) to 5/4/4/3/3/3/2/2/1 (27 bands)
  *  because the original bottom-heavy clustering, combined with
  *  a first-ever set's typically-generous first resolution, let a single first-ever performance
  *  clear 3-4 tiers at once regardless of which exercise it was. Still strictly "more at the
- *  bottom, fewer at the top" (never increasing tier-to-tier), just less extreme — paired with
+ *  bottom, fewer at the top" (never increasing tier-to-tier), just less extreme: paired with
  *  `defaultStandards.ts`'s `widenAnchorSpread` (which makes each tier require a genuinely bigger
  *  jump in real strength, independent of division count) to address the "too easy to climb"
  *  complaint from two different angles at once. */
@@ -65,7 +65,7 @@ export function ordinal(tier: Tier, division: number): number {
 
 export const MAX_ORDINAL = Object.values(TIER_DIVISION_COUNT).reduce((a, b) => a + b, 0) - 1;
 
-/** Inverse of `ordinal` — clamped to the valid range (an ordinal past `MAX_ORDINAL` returns
+/** Inverse of `ordinal`: clamped to the valid range (an ordinal past `MAX_ORDINAL` returns
  *  Apex's single division). Centralizes what `decay.ts` and `aggregate.ts` previously each
  *  duplicated as their own `positionToBand`, since that fixed-length-array inversion no longer
  *  works once tiers have different division counts. */
@@ -82,7 +82,7 @@ export function ordinalToBand(ord: number): { tier: Tier; division: number } {
 
 /** Inverse of a continuous strength position (`ordinal * 100 + lp`) back into a tier/division/lp
  *  triple. Centralizes what `decay.ts`, `aggregate.ts`, and `rankService.ts` previously each
- *  duplicated as their own `positionToBand` — unlike `ordinalToBand`, this preserves LP past
+ *  duplicated as their own `positionToBand`: unlike `ordinalToBand`, this preserves LP past
  *  `MAX_ORDINAL` instead of clamping it to 100, so post-Apex LP growth survives decay,
  *  recovery-gain, and the overall-rank aggregate instead of being silently erased. */
 export function positionToBand(position: number): { tier: Tier; division: number; lp: number } {
@@ -95,7 +95,7 @@ export function positionToBand(position: number): { tier: Tier; division: number
 
 /** Sort thresholds ascending by strength (weakest first). Exported for callers that need to
  *  pick a specific point along the strength scale rather than resolve a lifter's actual value
- *  against it — e.g. the routine builder's experience-level entry point (recommend.ts). */
+ *  against it: e.g. the routine builder's experience-level entry point (recommend.ts). */
 export function sortedThresholds(thresholds: StandardThreshold[]): StandardThreshold[] {
   return [...thresholds].sort((a, b) => ordinal(a.tier, a.division) - ordinal(b.tier, b.division));
 }
@@ -140,7 +140,7 @@ export function resolveRank(value: number, thresholds: StandardThreshold[]): Ran
     // No threshold above the current one (top of the ladder, i.e. Apex): LP keeps growing
     // logarithmically past 100 instead of freezing, so continued genuine strength gains at the
     // top of the ladder still register as real progress. `x` measures how far past `current`'s
-    // threshold `value` is, in units of the width of the division just below it — at `x = 0`
+    // threshold `value` is, in units of the width of the division just below it: at `x = 0`
     // this is exactly 100 (no discontinuity at the old hard cap), and each doubling of `x` is
     // worth another flat +100 LP.
     const previous = sorted[currentIdx - 1] ?? null;
@@ -161,7 +161,7 @@ export function resolveRank(value: number, thresholds: StandardThreshold[]): Ran
 
 /**
  * Given a next-tier threshold ratio and the lifter's bodyweight, find the minimum
- * (weight, reps) pair — biased toward the lifter's recent rep pattern — that crosses it.
+ * (weight, reps) pair: biased toward the lifter's recent rep pattern: that crosses it.
  * Mirrors the mockup's "nächster: 10 kg × 6" display. Search is a small integer grid: it
  * doesn't need to be exact, it needs to read as an achievable, concrete next step.
  */
@@ -171,7 +171,7 @@ export function nextLoadTarget(
   preferredReps: number,
 ): { weightKg: number; reps: number } {
   // `nextThresholdRatio` is a rank-skill-score ratio (rank scoring uses `rankSkillScore`, not
-  // Epley) — the target must be inverted through the same curve or the suggested weight would
+  // Epley): the target must be inverted through the same curve or the suggested weight would
   // not actually cross the threshold it came from.
   const targetScore = nextThresholdRatio * bodyweightKg;
   // search reps within +/-2 of the lifter's recent pattern, clamped to a sane 1-15 range
@@ -199,7 +199,7 @@ export function nextRepTarget(thresholds: StandardThreshold[], currentReps: numb
 }
 
 /**
- * Find the next-target threshold, if any, strictly above a given ordinal position — mirrors
+ * Find the next-target threshold, if any, strictly above a given ordinal position: mirrors
  * `resolveRank`'s own current/next search but keyed on tier/division ordinal rather than raw
  * metric value. Used to keep next-target predictions consistent with a *decayed* current band
  * instead of the freshly-resolved naive value.
@@ -232,23 +232,23 @@ export interface PeakSnapshot {
  * Peak is a ratchet: it is never recomputed retroactively (e.g. against today's bodyweight),
  * only compared-against and possibly replaced by a genuinely stronger result. `storedPeak`
  * being `null` (first recompute after peak tracking was added, or a brand-new exercise) always
- * yields `current` as the peak — PROVIDED `isCorroborated` is true (see below).
+ * yields `current` as the peak: PROVIDED `isCorroborated` is true (see below).
  *
- * `isCorroborated`: a result only gets to become — or replace — the peak once it has been
+ * `isCorroborated`: a result only gets to become: or replace: the peak once it has been
  * reached on at least one OTHER day, not just the single best-ever set. Without this, one outlier (a typo'd weight, a fluke rep, unusually good form that one day) could
  * permanently define a lifter's rank for that exercise. The caller (rankService.ts) computes this
  * by re-checking the full set history for a second, separate day whose own resolved position
- * meets or beats the candidate's — this function stays a pure comparison and doesn't know about
+ * meets or beats the candidate's: this function stays a pure comparison and doesn't know about
  * "days" or set history itself.
  *
  * When `isCorroborated` is false, this simply returns `storedPeak` unchanged (which may be `null`
- * if there is no confirmed peak yet) — strictly a delay, never a demotion: a corroborated peak is
+ * if there is no confirmed peak yet): strictly a delay, never a demotion: a corroborated peak is
  * never taken away by a later, weaker, or uncorroborated result. This applies even to the very
- * first peak an exercise ever gets, not just later promotions — a single lucky first set shouldn't
+ * first peak an exercise ever gets, not just later promotions: a single lucky first set shouldn't
  * define a lifter's rank any more than a single lucky later one should override an established
  * peak. Note this only gates the *stored, decay-protected* peak; the live/current rank shown
  * before any peak is confirmed is unaffected (see `recomputeRankForExercise`'s `peak == null`
- * branch) — a first-ever set still shows a real rank immediately, it just isn't "peak" yet.
+ * branch): a first-ever set still shows a real rank immediately, it just isn't "peak" yet.
  */
 export function ratchetPeak(
   current: { tier: Tier; division: Division; lp: number; e1rm: number },

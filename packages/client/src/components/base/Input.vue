@@ -50,7 +50,7 @@ withDefaults(
   font-size: 16px;
 }
 /* The app's own accent gradient, not the browser default outline, announces "you're editing
-   this field" — same recipe every hand-rolled text input on this page family already used. */
+   this field": same recipe every hand-rolled text input on this page family already used. */
 .input-el:focus-visible {
   outline: none;
   border-color: var(--nebula-m);

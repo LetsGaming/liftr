@@ -111,7 +111,7 @@ describe("PlatesStep", () => {
     const { wrapper } = mountPlatesStep(draft);
 
     const rows = wrapper.findAll(".plate-row");
-    expect(rows).toHaveLength(1); // bar row only — no plate-count section for dumbbell-only
+    expect(rows).toHaveLength(1); // bar row only; no plate-count section for dumbbell-only
     expect(rows[0]!.text()).toContain("Kurzhantel-Griff");
     expect(rows[0]!.find(".tnum").text()).toContain("2.5");
     expect(wrapper.text()).not.toContain("Scheiben pro Größe");

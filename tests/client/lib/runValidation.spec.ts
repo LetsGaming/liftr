@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 //
 // runValidation.ts now calls i18n.ts's t(), which reads localStorage at module load (needs a
-// DOM) — jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
-// otherwise default the shared i18n singleton to "en" for the rest of the test process —
+// DOM): jsdom's navigator.language always reports "en-US", so i18n.ts's getStoredLocale() would
+// otherwise default the shared i18n singleton to "en" for the rest of the test process:
 // mountWithProviders.ts resets this for component tests, but this file imports the lib function
 // directly, bypassing that helper.
 import { beforeEach, describe, expect, it } from "vitest";

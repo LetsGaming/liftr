@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * Thin wrapper around tokens.css's `.btn-icon`/`.btn-close`/`.btn-icon.danger`/`.btn-icon.confirming`
- * rules (there is no `--danger` token in this palette — `.danger`/`.confirming` key off `--red`/
- * `--red-lo` directly, see tokens.css's own comment) plus a chromeless `ghost` variant and a small
- * `sm` size, neither of which exists in tokens.css yet. `confirming` must be driven by the caller's
- * own `useConfirmTap` state — this component never owns a confirm timer itself.
+ * rules. There is no `--danger` token in this palette: `.danger`/`.confirming` key off `--red`/
+ * `--red-lo` directly, see tokens.css's own comment. This plus a chromeless `ghost` variant and a
+ * small `sm` size, neither of which exists in tokens.css yet. `confirming` must be driven by the
+ * caller's own `useConfirmTap` state; this component never owns a confirm timer itself.
  */
 import { useSlots, onMounted } from "vue";
 import AppIcon, { type AppIconName } from "../base/AppIcon.vue";
@@ -24,7 +24,7 @@ const slots = useSlots();
 if (import.meta.env.DEV) {
   onMounted(() => {
     if (!props.icon && !slots.default) {
-      console.warn('[IconButton] needs either an "icon" prop or default slot content — it would render empty otherwise.');
+      console.warn('[IconButton] needs either an "icon" prop or default slot content, or it renders empty.');
     }
   });
 }

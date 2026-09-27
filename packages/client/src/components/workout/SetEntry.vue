@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** The two big steppers — the core interaction of the whole app (plan 1.5). Built on the shared
+/** The two big steppers: the core interaction of the whole app (plan 1.5). Built on the shared
  *  NumberStepper.vue (size="lg"), which this component's original markup/CSS became. */
 import { calculatePlates, calculatePlatesFromInventory, DEFAULT_BAR_WEIGHT_KG } from "@liftr/shared";
 import { computed, ref } from "vue";
@@ -15,7 +15,7 @@ const store = useActiveWorkoutStore();
 const settingsStore = useSettingsStore();
 const catalog = useCatalogStore();
 
-// Plate calculator (plan Phase 6.2) — an optional reveal, not a default-on element, so it
+// Plate calculator (plan Phase 6.2): an optional reveal, not a default-on element, so it
 // never adds a tap to the sacred log-a-set path. Uses the user's real bar weight + plate
 // inventory (Profil > Scheiben & Stange) once configured; falls back to the unlimited 20kg-bar
 // standard set until they've set one up, so the calculator is useful from day one either way.

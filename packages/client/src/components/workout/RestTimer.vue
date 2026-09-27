@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Auto-starts after each logged set (plan 1.5). Purely a UI timer — not persisted to
+ * Auto-starts after each logged set (plan 1.5). Purely a UI timer: not persisted to
  * IndexedDB, since losing a rest countdown on a crash is a minor annoyance, not lost data.
  * Fires a Notification when it hits zero, if permission was granted.
  */
@@ -27,21 +27,21 @@ async function fireRestOverNotification() {
 // `restKind` discriminates why `trigger` fired: 'between-sets' and 'after-exercise' both render
 // the normal ring+countdown+skip state; 'superset-continue' renders a distinct compact
 // "acknowledged, move on" state with no ring/countdown/skip, since there is genuinely nothing to
-// count down mid-superset (logCurrentSet() returned null — round not yet complete, no rest).
+// count down mid-superset (logCurrentSet() returned null: round not yet complete, no rest).
 const props = defineProps<{
   trigger: number;
   seconds?: number;
   restKind: "between-sets" | "after-exercise" | "superset-continue";
 }>();
 // RestTimer is one persistent instance for the whole workout, so `currentTotal` must be a ref
-// re-read fresh on every start() rather than a plain const captured once from props.seconds —
+// re-read fresh on every start() rather than a plain const captured once from props.seconds:
 // otherwise moving to an exercise with a different configured rest duration ("adjust the pause,
 // per set and per exercise") would silently have no effect. Keeping it in a ref also lets
 // progressPercent's denominator stay correct.
 const currentTotal = ref(props.seconds ?? 90);
 const left = ref(currentTotal.value);
 const running = ref(false);
-// Fires a one-shot pulse class on the ring at zero (engagement rework W3) — a still ring at
+// Fires a one-shot pulse class on the ring at zero (engagement rework W3): a still ring at
 // 00:00 reads as "stopped/broken", a pulse reads as "time's up".
 const justFinished = ref(false);
 let interval: ReturnType<typeof setInterval> | null = null;
@@ -72,7 +72,7 @@ watch(
   () => props.trigger,
   (v) => {
     if (v <= 0) return;
-    // 'superset-continue' has no rest to count down (logCurrentSet() returned null) — stop any
+    // 'superset-continue' has no rest to count down (logCurrentSet() returned null): stop any
     // in-flight ring instead of starting a new countdown, so the template's third state renders
     // cleanly instead of a stale ring sitting mid-fill underneath it.
     if (props.restKind === "superset-continue") {
@@ -122,7 +122,7 @@ const progressPercent = () => Math.round((1 - Math.max(left.value, 0) / currentT
 /* @property registers --p as an animatable <percentage>, so the conic-gradient sweeps
    continuously (engagement rework W3) instead of the 1s-step jump a plain custom property
    gives a browser no interpolation model for. Falls back to the old step behaviour on any
-   engine that doesn't support @property — still correct, just not smooth. */
+   engine that doesn't support @property: still correct, just not smooth. */
 @property --p {
   syntax: "<percentage>";
   inherits: true;
@@ -154,11 +154,11 @@ const progressPercent = () => Math.round((1 - Math.max(left.value, 0) / currentT
     transform: scale(1);
   }
 }
-/* Deliberately NOT converted to a translucent hybrid fill — this is the countdown digit
+/* Deliberately NOT converted to a translucent hybrid fill: this is the countdown digit
    readout itself (a live numeric value the lifter reads mid-rest), and it sits inside the
    already-translucent .surface-hybrid card above it. Stacking a second layer of translucency
    directly behind the one number on this screen someone is actively timing their next set
-   against would risk exactly the legibility regression the redesign spec calls out avoiding —
+   against would risk exactly the legibility regression the redesign spec calls out avoiding:
    kept as the opaque --surface fill on purpose. */
 .ring i {
   width: 42px;
@@ -179,7 +179,7 @@ const progressPercent = () => Math.round((1 - Math.max(left.value, 0) / currentT
   font-size: 12px;
   color: var(--faint);
 }
-/* Compact "acknowledged, move on" state — lower visual weight than the ring+countdown states
+/* Compact "acknowledged, move on" state: lower visual weight than the ring+countdown states
    (no ring, no skip button, smaller vertical footprint) so it reads as distinct rather than as
    a stripped-down/broken timer. */
 .rest-timer-continue {

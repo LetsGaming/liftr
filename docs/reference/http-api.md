@@ -1,7 +1,7 @@
 # HTTP API Reference
 
 Lookup reference for every endpoint the server exposes. Generated from the actual route
-registrations, not from a spec — if this drifts from the code, the code wins. Source of truth for
+registrations, not from a spec. If this drifts from the code, the code wins. Source of truth for
 each entry is linked inline; when in doubt, open the linked file.
 
 ## How to read this document
@@ -10,16 +10,16 @@ each entry is linked inline; when in doubt, open the linked file.
   (`/images/*`, and the client SPA at `/`) registered in
   [`packages/server/src/app.ts`](../../packages/server/src/app.ts).
 - **Auth**: every `/api/*` route (other than the public auth routes and `/api/health`) sits
-  behind a session bearer-token gate — see [Auth](#auth) below. It is not repeated per-endpoint.
+  behind a session bearer-token gate (see [Auth](#auth) below). It is not repeated per-endpoint.
 - **Validation**: request bodies/params/query are Zod schemas registered via
   `fastify-type-provider-zod` directly on the route (`{ schema: { body, params, querystring,
-  response } }`). A schema mismatch never reaches route code — it's rejected by the validator
+  response } }`). A schema mismatch never reaches route code: it's rejected by the validator
   before the handler runs.
-- **Errors**: see [Error shapes](#error-shapes) below — every non-2xx response documented here
+- **Errors**: see [Error shapes](#error-shapes) below. Every non-2xx response documented here
   follows one of those shapes, produced by the single `setErrorHandler` in `app.ts`, not by
   individual routes.
 - Response shapes are the route's registered Zod `response` schema where one exists. A few routes
-  (noted inline) have no response schema — the shape shown there is the object the handler
+  (noted inline) have no response schema; the shape shown there is the object the handler
   literally returns/throws, read from the code.
 
 ## Auth
@@ -30,16 +30,16 @@ wired up in `app.ts`'s `onRequest` hook for every request whose URL starts with 
 `/api/health`.
 
 - Session bearer token: `Authorization: Bearer <token>`, checked against the `sessions` table by
-  its SHA-256 hash (only the hash is stored — see [SECURITY.md](../SECURITY.md#auth-model)).
+  its SHA-256 hash (only the hash is stored; see [SECURITY.md](../SECURITY.md#auth-model)).
 - A token is issued by `POST /api/auth/setup` (first-run owner setup), `POST /api/auth/login`, or
-  `POST /api/auth/register` (invite-code redemption) — see [Auth routes](#auth-authts) below.
+  `POST /api/auth/register` (invite-code redemption); see [Auth routes](#auth-authts) below.
 - On failure: `401 { "error": "unauthorized" }`.
 - This resolves a real per-person `userId`/`role` (inline in `auth.ts`'s `requireAuth`), not a
-  single shared identity — every per-user table/route is scoped by that resolved `userId` (see
+  single shared identity: every per-user table/route is scoped by that resolved `userId` (see
   [ADR 0006](../adr/0006-multi-user-hardening.md) for the schema groundwork this was built on).
 - `/api/auth/setup` and `/api/auth/login` are additionally rate-limited (10 attempts / 15 minutes,
   keyed by username). `/api/auth/register` is separately rate-limited at the same 10/15-minute
-  budget but keyed purely by request IP, never by username — an attacker guessing an invite code
+  budget but keyed purely by request IP, never by username: an attacker guessing an invite code
   can pick a fresh throwaway username on every attempt, which would make a username-keyed bucket
   never actually engage for that route. See [SECURITY.md](../SECURITY.md#auth-model).
 
@@ -57,11 +57,11 @@ Response `200`: `{ needsSetup: boolean }`
 One-time: sets the owner's password. Public. `409 { "error": "already_set_up" }` if setup already
 ran.
 
-Request body: `{ password: string }` (min 8 chars, rejected if it's a common/guessable password —
+Request body: `{ password: string }` (min 8 chars, rejected if it's a common/guessable password;
 see [SECURITY.md](../SECURITY.md#auth-model)) · `400 { "error": "password_too_common" }` for that
 rejection specifically, distinct from the generic `invalid_request` other validation failures use.
 
-Response `200`: `{ token: string }` — a usable session token, same as login.
+Response `200`: `{ token: string }` (a usable session token, same as login).
 
 ### `POST /api/auth/login`
 Public.
@@ -69,7 +69,7 @@ Public.
 Request body: `{ username: string; password: string }`
 
 Response `200`: `{ token: string }` · `401 { "error": "invalid_credentials" }` for any wrong
-username or password (identical response either way — see [SECURITY.md](../SECURITY.md#auth-model)
+username or password (identical response either way; see [SECURITY.md](../SECURITY.md#auth-model)
 on enumeration resistance).
 
 ### `POST /api/auth/register`
@@ -95,7 +95,7 @@ Response `200`: `{ ok: true }`
 
 ### `DELETE /api/auth/me`
 Self-service account deletion. Deletes the current user and, via `ON DELETE CASCADE`, every row
-that references them (sessions, workouts, runs, routines, etc.) — irreversible. The owner cannot
+that references them (sessions, workouts, runs, routines, etc.); this is irreversible. The owner cannot
 use this route (`400 { "error": "cannot_delete_owner" }`); removing the owner account would leave
 no one able to reach the owner-only [member routes](#member-routes-membersts). A member can always
 delete their own account this way, without needing the owner to do it via
@@ -104,14 +104,14 @@ delete their own account this way, without needing the owner to do it via
 Response `200`: `{ ok: true }` · `400 { "error": "cannot_delete_owner" }`
 
 ### `PATCH /api/auth/me/password`
-Changes the current user's password — owner or member, no special-casing. Requires the current
+Changes the current user's password; owner or member, no special-casing. Requires the current
 password (rate-limited: 10 attempts / 15 minutes, keyed on the authenticated user). On success,
-revokes every *other* session for this user (`deleteOtherSessionsForUser` — the same "sign out
+revokes every *other* session for this user (`deleteOtherSessionsForUser`, the same "sign out
 everywhere else" behavior the `reset-password` CLI applies) while keeping the caller's own token
 valid.
 
 Request body: `{ currentPassword: string; newPassword: string }` (`newPassword`: same rules as
-setup/register — min 8 chars, not a common password)
+setup/register: min 8 chars, not a common password)
 
 Response `200`: `{ ok: true }` · `401 { "error": "invalid_credentials" }` for a wrong current
 password · `400 { "error": "password_too_common" }` for a weak/common new password · `429` if
@@ -129,7 +129,7 @@ Response `200`: `{ id: string; username: string; name: string; role: "owner" | "
 rate-limited
 
 ### `PATCH /api/auth/me/name`
-Changes the current user's display `name` — the non-credential name shown in the UI (distinct
+Changes the current user's display `name`: the non-credential name shown in the UI (distinct
 from `username`, the login handle). No password required, since it isn't a credential; doesn't
 revoke any sessions.
 
@@ -138,9 +138,9 @@ Request body: `{ name: string }` (1-40 chars, trimmed)
 Response `200`: `{ id: string; username: string; name: string; role: "owner" | "member" }`
 
 ### `GET /api/auth/sessions`
-Lists every active session for the current user — the "Aktive Sitzungen" list in the Profil page.
+Lists every active session for the current user: the "Aktive Sitzungen" list in the Profil page.
 `device` is a coarse `{os, browser}` pair derived from the session's stored `User-Agent` (display
-only, never used to gate auth — see [SECURITY.md](../SECURITY.md#auth-model)); either field, or the
+only, never used to gate auth; see [SECURITY.md](../SECURITY.md#auth-model)); either field, or the
 whole object, is `null` when the User-Agent was missing or unrecognized. The client composes and
 translates the display string itself, rather than receiving a finished sentence from the server.
 `current` marks the session making this very request.
@@ -150,13 +150,13 @@ absoluteExpiresAt: Date; device: { os: string | null; browser: string | null } |
 current: boolean }>`
 
 ### `DELETE /api/auth/sessions/:id`
-Revokes one of the current user's own sessions by id. Scoped to `req.userId` — another user's
+Revokes one of the current user's own sessions by id. Scoped to `req.userId`: another user's
 session id 404s rather than succeeding or leaking whether it exists.
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404 { "error": "not_found" }`
 
 ### `DELETE /api/auth/sessions`
-Revokes every session for the current user *except* the one making this request — "alle anderen
+Revokes every session for the current user *except* the one making this request: "alle anderen
 Geräte abmelden" in the Profil page.
 
 Response `200`: `{ ok: true }`
@@ -181,7 +181,7 @@ Lists every account (owner + members).
 Response `200`: `Array<{ id: string; username: string; name: string; role: "owner" | "member"; createdAt: Date }>`
 
 ### `DELETE /api/members/:id`
-Removes an account — its session tokens stop working on the next request. `400
+Removes an account; its session tokens stop working on the next request. `400
 { "error": "cannot_delete_self" }` or `400 { "error": "cannot_delete_owner" }` if either guard
 trips.
 
@@ -193,13 +193,13 @@ Params: `{ id: string }` · Response `200`: `{ ok: true }`
 
 Source: [`packages/server/src/routes/diagnostics.ts`](../../packages/server/src/routes/diagnostics.ts)
 
-Owner-only (`requireOwner`). Backs the Profil page's "Diagnose" panel — see
+Owner-only (`requireOwner`). Backs the Profil page's "Diagnose" panel: see
 [`docs/operations/docker-deployment.md`](../operations/docker-deployment.md#diagnosing-problems)
 for the durable-file counterpart and the self-hosted-Sentry-later seam
 ([`lib/errorReporting.ts`](../../packages/server/src/lib/errorReporting.ts)).
 
 ### `GET /api/diagnostics/errors`
-The last 100 unexpected (500) errors, newest first — a capped ring buffer, not a full audit log.
+The last 100 unexpected (500) errors, newest first: a capped ring buffer, not a full audit log.
 
 Response `200`: `Array<{ id: string; occurredAt: Date; method: string; url: string; statusCode: number; message: string; stack: string | null }>`
 
@@ -213,12 +213,12 @@ Source: `configureApp()`'s `setErrorHandler` in
 |---|---|---|
 | `400` | `{ "error": "invalid_request", "detail": string }` | Zod schema validation failed (body/params/querystring don't match) |
 | `401` | `{ "error": "unauthorized" }` | Missing/wrong bearer token (see [Auth](#auth)) |
-| `404` | `{ "error": "not_found" }` | Route throws `NotFoundError` — entity looked up by id doesn't exist |
-| `409` | `{ "error": "conflict", "detail": string }` | Route throws `ConflictError` — action conflicts with current state |
+| `404` | `{ "error": "not_found" }` | Route throws `NotFoundError`: entity looked up by id doesn't exist |
+| `409` | `{ "error": "conflict", "detail": string }` | Route throws `ConflictError`: action conflicts with current state |
 | `500` | `{ "error": "internal_error" }` | Anything else (unexpected exception); real error is logged server-side only, never leaked to the client |
 
 A few routes without a Zod `body` schema (multipart upload endpoints) do inline validation and
-return their own 400 body shapes instead of `invalid_request` — called out under
+return their own 400 body shapes instead of `invalid_request`; this is called out under
 [Runs](#runs-runsts) below.
 
 ---
@@ -240,7 +240,7 @@ Array<{ id: string; date: string; weightKg: number }>
 ```
 
 ### `POST /api/bodyweight`
-Upserts by `date` (YYYY-MM-DD) — logging twice for the same date overwrites, never duplicates.
+Upserts by `date` (YYYY-MM-DD); logging twice for the same date overwrites, never duplicates.
 
 Request body:
 ```ts
@@ -259,7 +259,7 @@ Source: [`packages/server/src/routes/exercises.ts`](../../packages/server/src/ro
 Tests: [`tests/server/routes/exercises.test.ts`](../../tests/server/routes/exercises.test.ts)
 
 ### `GET /api/exercises`
-Full catalog + muscle tags. Cacheable — the catalog only changes on ingest, so the response
+Full catalog + muscle tags. Cacheable: the catalog only changes on ingest, so the response
 carries `Cache-Control: public, max-age=300`.
 
 Response `200`:
@@ -296,7 +296,7 @@ Request body:
 }
 ```
 
-Response `201`: the created exercise row (no explicit response schema on this route — shape comes
+Response `201`: the created exercise row (no explicit response schema on this route; shape comes
 from `insertCustomExercise`'s return value; matches the `exerciseResponse` shape above with
 `isCustom: true`).
 
@@ -311,7 +311,7 @@ Source: [`packages/server/src/routes/export.ts`](../../packages/server/src/route
 Tests: [`tests/server/routes/export.test.ts`](../../tests/server/routes/export.test.ts)
 
 ### `GET /api/export.zip`
-Full data export/backup as a zip. **No Zod response schema** — this returns binary, not JSON.
+Full data export/backup as a zip. **No Zod response schema**: this returns binary, not JSON.
 See [`services/exportService.ts`](../../packages/server/src/services/exportService.ts) for what's
 included.
 
@@ -392,7 +392,7 @@ Response `200`:
 ```
 
 ### `DELETE /api/routines/:id/mesocycle`
-End/detach the cycle — the routine reverts to plain (non-periodized) behavior.
+End/detach the cycle: the routine reverts to plain (non-periodized) behavior.
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }`
 
@@ -410,7 +410,7 @@ Source: [`packages/server/src/routes/overallRank.ts`](../../packages/server/src/
 Tests: [`tests/server/routes/overallRank.test.ts`](../../tests/server/routes/overallRank.test.ts)
 
 ### `GET /api/overall-rank`
-Account-level "how good a lifter am I overall" aggregate. Thin schema wrapper — aggregation
+Account-level "how good a lifter am I overall" aggregate. Thin schema wrapper: aggregation
 logic lives in `services/overallRankService.ts`.
 
 Response `200`:
@@ -458,13 +458,13 @@ type Waypoint = { lat: number; lon: number };
   createdAt: Date;
 }
 
-// routePointResponse — one resolved point of the (possibly road-snapped) route line
+// routePointResponse: one resolved point of the (possibly road-snapped) route line
 { idx: number; lat: number; lon: number; ele: number | null }
 ```
 
 ### `GET /api/planned-routes`
-Lists active (non-archived) planned routes. No geometry — `waypoints` only, not the resolved
-`points` — for a lightweight list view.
+Lists active (non-archived) planned routes. No geometry: `waypoints` only, not the resolved
+`points`, kept minimal for a lightweight list view.
 
 Response `200`: `Array<plannedRouteResponse>`
 
@@ -477,10 +477,10 @@ Response `200`: `plannedRouteResponse & { points: routePointResponse[] }` · `40
 doesn't exist or belongs to another user.
 
 ### `POST /api/planned-routes/preview`
-Computes geometry for a waypoint set **without persisting anything** — no id is created or
+Computes geometry for a waypoint set **without persisting anything**: no id is created or
 returned. Runs through the exact same `computeGeometry` path as create/update, so what the map
 shows can't drift from what gets saved. The client no longer calls this on every waypoint edit
-(see `docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md` — the wizard renders locally
+(see `docs/adr/0009-street-aware-loop-closure-via-avoid-polygons.md`; the wizard renders locally
 while editing and only shows the real snapped line after Save); it's currently only called once,
 when seeding a brand-new route from an already-recorded run's GPS track.
 
@@ -493,7 +493,7 @@ Creates a route: resolves geometry from `waypoints` (ORS if `LIFTR_ORS_API_KEY` 
 reachable, straight-line fallback otherwise) and persists it. A waypoint list whose first and last
 point coincide (within 25m) is treated as a closed loop: the outbound leg is routed normally, then
 the closing leg back to the start is routed against a corridor that avoids the outbound leg's own
-snapped streets, so the loop doesn't just retrace itself (two ORS calls instead of one — see
+snapped streets, so the loop doesn't just retrace itself (two ORS calls instead of one; see
 ADR-0009). Waypoints flagged `gen` (the wizard's local return-leg arc) are excluded from what
 actually gets routed, but still persisted as-is.
 
@@ -506,7 +506,7 @@ Response `201`: `plannedRouteResponse & { points: routePointResponse[] }`
 
 ### `PATCH /api/planned-routes/:id`
 Partial update. Geometry is only recomputed (re-calling ORS/straight-line and rewriting the stored
-points) when `waypoints` is present in the body — renaming a route or reordering it doesn't trigger
+points) when `waypoints` is present in the body: renaming a route or reordering it doesn't trigger
 a wasted recompute/network call. The same closed-loop detection as `POST /api/planned-routes`
 applies when it is.
 
@@ -518,7 +518,7 @@ Params: `{ id: string }` · Body:
 Response `200`: `{ ok: true }` · `404` if the route doesn't exist or belongs to another user.
 
 ### `DELETE /api/planned-routes/:id`
-Soft archive — same pattern as routines (`DELETE /api/routines/:id`), not a hard delete, so a run
+Soft archive: same pattern as routines (`DELETE /api/routines/:id`), not a hard delete, so a run
 already linked via `plannedRouteId` keeps a valid reference.
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404` if the route doesn't exist or
@@ -592,7 +592,7 @@ Array<{
   trust: "real" | "derived" | "synthetic";
   nextTargetWeightKg: number | null;
   nextTargetReps: number | null;
-  // Peak snapshot (rank engine redesign) — null only for rows never recomputed since that migration.
+  // Peak snapshot (rank engine redesign): null only for rows never recomputed since that migration.
   peakTier: Tier | null;
   peakDivision: number | null;
 }>
@@ -608,7 +608,7 @@ Tests: [`tests/server/routes/readiness.test.ts`](../../tests/server/routes/readi
 ### `GET /api/readiness`
 Last-trained timestamp per muscle, primary vs. secondary role. Feeds the Übersicht
 "Erholungszone" hero. The actual 0-1 readiness math runs client-side against these raw
-timestamps (`@liftr/shared`'s `computeReadiness`) — this endpoint returns facts, not a derived
+timestamps (`@liftr/shared`'s `computeReadiness`); this endpoint returns facts, not a derived
 score.
 
 Response `200`:
@@ -630,7 +630,7 @@ Tests: [`tests/server/routes/routines.test.ts`](../../tests/server/routes/routin
 ### `GET /api/routines`
 Lists routines with their exercises and any active mesocycle attached.
 
-Response `200` (no explicit schema — inferred from the handler):
+Response `200` (no explicit schema; inferred from the handler):
 ```ts
 Array<Routine & { mesocycle: Mesocycle | null }>
 ```
@@ -663,14 +663,14 @@ Response `201`: the created routine row (no response schema declared on this rou
 ### `PATCH /api/routines/:id`
 Edit name/order, or replace the exercise list wholesale (any combination of fields).
 
-Params: `{ id: string }` · Body: `routinePatchInput` (all fields above, all optional — a field
+Params: `{ id: string }` · Body: `routinePatchInput` (all fields above, all optional; a field
 that's omitted is left untouched, not reset to its create-time default; `exercises: []` sent
 explicitly still clears the list)
 
 Response `200`: `{ ok: true }`
 
 ### `DELETE /api/routines/:id`
-Soft delete (archive) — past workouts keep a valid `routineId` reference.
+Soft delete (archive): past workouts keep a valid `routineId` reference.
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }`
 
@@ -681,7 +681,7 @@ Params: `{ id: string }` · Response `200`: `{ ok: true }`
 Source: [`packages/server/src/routes/routineSuggestions.ts`](../../packages/server/src/routes/routineSuggestions.ts) ·
 Tests: [`tests/server/routes/routineSuggestions.test.ts`](../../tests/server/routes/routineSuggestions.test.ts)
 
-Route is a thin wrapper — candidate-selection/recommendation logic lives in
+Route is a thin wrapper: candidate-selection/recommendation logic lives in
 `services/routineSuggestionService.ts`.
 
 ### `POST /api/routines/suggest`
@@ -697,12 +697,12 @@ Request body:
 }
 ```
 
-Response `200` (no explicit schema): `{ exercises: [...] }` — shape produced by
+Response `200` (no explicit schema): `{ exercises: [...] }`, shape produced by
 `suggestExercisesForMuscles`.
 
 ### `POST /api/routines/recommend`
 Sets/reps/weight recommendations for exercises the user already picked manually (routine wizard,
-Quick Start) — reuses the same recommendation engine as `/suggest` instead of a hardcoded
+Quick Start); reuses the same recommendation engine as `/suggest` instead of a hardcoded
 "8 reps, 0 kg" default.
 
 Request body:
@@ -713,7 +713,7 @@ Request body:
 }
 ```
 
-Response `200` (no explicit schema): `{ exercises: [...] }` — shape produced by
+Response `200` (no explicit schema): `{ exercises: [...] }`, shape produced by
 `recommendForChosenExercises`.
 
 ---
@@ -722,14 +722,14 @@ Response `200` (no explicit schema): `{ exercises: [...] }` — shape produced b
 
 Source: [`packages/server/src/routes/runOverallRank.ts`](../../packages/server/src/routes/runOverallRank.ts)
 
-The running analog of [Overall rank](#overall-rank-overallrankts) above — see
+The running analog of [Overall rank](#overall-rank-overallrankts) above; see
 [rank-engine.md](../concepts/rank-engine.md#cardio-ranks-running-walking-hiking) for why this is a
 genuinely separate aggregate from Overall Lifter Rank rather than folded into it.
 
 ### `GET /api/runs/overall-rank`
-Account-level "how good a runner am I overall" aggregate. No query parameters — only activities
+Account-level "how good a runner am I overall" aggregate. No query parameters: only activities
 whose registry entry sets `countsTowardOverallRunnerRank` feed it (running only, today; walking
-and hiking are excluded — see `cardioActivities.ts`). Thin schema wrapper — aggregation logic
+and hiking are excluded; see `cardioActivities.ts`). Thin schema wrapper: aggregation logic
 lives in `services/overallRunnerRankService.ts`, which reuses the exact same
 `computeOverallRank`/`computeOverallPeak` math as the strength version, just averaged over the
 counted activities' `runRanks` rows instead of `ranks` (one row per exercise).
@@ -748,12 +748,12 @@ Response `200`:
 
 Source: [`packages/server/src/routes/runPrs.ts`](../../packages/server/src/routes/runPrs.ts)
 
-The running analog of [PRs](#prs-prsts) above. Unlike `prs.ts`, no service layer/join is needed —
+The running analog of [PRs](#prs-prsts) above. Unlike `prs.ts`, no service layer/join is needed:
 `run_prs` carries `category` directly (no exercise table to join to), so this route reads straight
 off the repository.
 
 ### `GET /api/runs/prs`
-Cardio Personal Records ledger — every ranked activity type (run/walk/hike) together, no filter.
+Cardio Personal Records ledger: every ranked activity type (run/walk/hike) together, no filter.
 
 Response `200`:
 ```ts
@@ -761,7 +761,7 @@ Array<{
   id: string;
   activityType: "run" | "walk" | "hike";
   category: RunCategory | "all";  // "all" for a single-speed activity's one bucket (walk/hike)
-  kind: "time" | "speed";         // single-speed activities only ever have "speed" — no fixed
+  kind: "time" | "speed";         // single-speed activities only ever have "speed": no fixed
                                    // category distance to derive a "time" PR from
   value: number;                  // seconds for kind "time", m/s for kind "speed"
   runId: string;                  // links back to the run that set this PR
@@ -775,7 +775,7 @@ Array<{
 
 Source: [`packages/server/src/routes/runRanks.ts`](../../packages/server/src/routes/runRanks.ts)
 
-The cardio analog of [Ranks](#ranks-ranksts) above — see
+The cardio analog of [Ranks](#ranks-ranksts) above; see
 [rank-engine.md](../concepts/rank-engine.md#cardio-ranks-running-walking-hiking) for the two rank
 shapes (running's five categories vs. walking/hiking's single bucket), the Riegel-adjustment step,
 and why manual runs never appear here (rank recompute only ever runs for GPS-tracked activities).
@@ -783,7 +783,7 @@ and why manual runs never appear here (rank recompute only ever runs for GPS-tra
 ### `GET /api/runs/ranks`
 Every rank bucket with a computed rank for one activity type, sorted by `lp` descending.
 
-Query: `{ activityType?: "run" | "walk" | "hike" }` — defaults to `"run"`. Every rank bucket in
+Query: `{ activityType?: "run" | "walk" | "hike" }`, defaults to `"run"`. Every rank bucket in
 the response belongs to this one activity type; fetch each activity type separately (the client's
 `runRankStore` does this and combines the results).
 
@@ -798,7 +798,7 @@ Array<{
   bestSpeedMps: number | null;    // Riegel-adjusted for running; raw average speed for walk/hike
   trust: "real" | "derived" | "synthetic" | null;
   nextTargetSpeedMps: number | null;
-  // Peak snapshot — null only for a row never recomputed since peak tracking was added; a normal
+  // Peak snapshot: null only for a row never recomputed since peak tracking was added; a normal
   // row always has both set together. Mirrors `routes/ranks.ts`'s own peakTier/peakDivision.
   peakTier: Tier | null;
   peakDivision: number | null;
@@ -812,7 +812,7 @@ Array<{
 Source: [`packages/server/src/routes/runs.ts`](../../packages/server/src/routes/runs.ts) ·
 Tests: [`tests/server/routes/runs.test.ts`](../../tests/server/routes/runs.test.ts)
 
-Both file-import and manual-entry paths converge on the same `runs`/`run_points` tables — see
+Both file-import and manual-entry paths converge on the same `runs`/`run_points` tables; see
 `services/runImportService.ts`.
 
 `POST /api/runs/import`, `POST /api/runs/healthconnect`, and `POST /api/runs` are each rate-limited
@@ -849,7 +849,7 @@ Response `200`: `runResponse & { points: Array<{ runId: string; idx: number; t: 
 Notable statuses: `404 { error: "not_found" }` if the run doesn't exist.
 
 ### `POST /api/runs/import`
-Multipart GPX/FIT file upload. **No `schema.body`** — this route is multipart, not JSON, so
+Multipart GPX/FIT file upload. **No `schema.body`**: this route is multipart, not JSON, so
 validation happens inline in the handler rather than via a declared Zod schema.
 
 Request: `multipart/form-data` with a `file` part.
@@ -857,23 +857,23 @@ Request: `multipart/form-data` with a `file` part.
 Response `201`: `runResponse` (source `"gpx"` or `"fit"` depending on the file).
 
 Notable statuses (all inline, not the generic `invalid_request` shape):
-- `400 { "error": "no_file" }` — no file part in the multipart body
-- `400 { "error": "unsupported_format", "detail": string }` — unrecognized file extension
-- `400 { "error": "parse_failed", "detail": string }` — recognized extension, but the file
+- `400 { "error": "no_file" }`: no file part in the multipart body
+- `400 { "error": "unsupported_format", "detail": string }`: unrecognized file extension
+- `400 { "error": "parse_failed", "detail": string }`: recognized extension, but the file
   couldn't be parsed (thrown as `RunParseError`)
 
 ### `POST /api/runs/healthconnect`
 Native in-app import via `capacitor-health`. `platformId` (Health Connect's own record id) is the
-idempotency key — replaying the same `platformId` returns the same run's `id` instead of
+idempotency key: replaying the same `platformId` returns the same run's `id` instead of
 duplicating it. `workoutType` is Health Connect's own raw exercise-type string (e.g. `"RUNNING"`,
 `"WALKING"`, `"HIKING"`, `"BIKING"`); classified server-side into an `activityType` via the
 registry in `cardioActivities.ts`, so the mapping stays re-classifiable without a client release.
 
 `points` may be empty for a workout Health Connect withheld the route for (consent not granted for
-that specific record, or no route ever recorded) — in that case `distanceM`/`durationS` (the
+that specific record, or no route ever recorded); in that case `distanceM`/`durationS` (the
 watch's own aggregate) are the fallback and `startedAt` is required, since there's no first point
 to derive it from. At least one of `points` or `distanceM`+`durationS` must be present; a payload
-with neither is rejected. A route-less import still earns XP/streak, but never a rank — no GPS
+with neither is rejected. A route-less import still earns XP/streak, but never a rank: no GPS
 trace to independently check the claimed distance against.
 
 Request body:
@@ -881,7 +881,7 @@ Request body:
 {
   platformId: string;    // min length 1
   name?: string | null;
-  workoutType: string;   // min length 1 — Health Connect's raw exercise-type string
+  workoutType: string;   // min length 1, Health Connect's raw exercise-type string
   startedAt?: Date;      // coerced; required when points is empty
   distanceM?: number;    // positive; required (with durationS) when points is empty
   durationS?: number;    // positive
@@ -895,17 +895,17 @@ Request body:
 }
 ```
 
-Response `200` (not 201 — this is an idempotent upsert): `runResponse`.
+Response `200` (not 201; this is an idempotent upsert): `runResponse`.
 
-Notable statuses: `400 { "error": "parse_failed", "detail": "no_route_or_distance" }` — neither a
+Notable statuses: `400 { "error": "parse_failed", "detail": "no_route_or_distance" }`: neither a
 usable route nor a distance/duration fallback was present. `detail` is a machine-readable code here
 (not prose): the client maps it to a translated message via `lib/errorMessages.ts`'s
 `serverErrorMessage()`.
 
 ### `DELETE /api/runs/:id`
 Cascades to `run_points` via FK. GPS-tracked runs *do* feed rank now (see
-[Run ranks](#run-ranks-runranksts) above), but deletion still doesn't trigger a live recompute here
-— `runRanks`/`runPrs` are derived caches of the *current* best, not an append-only ledger that
+[Run ranks](#run-ranks-runranksts) above), but deletion still doesn't trigger a live recompute here:
+`runRanks`/`runPrs` are derived caches of the *current* best, not an append-only ledger that
 needs pruning, same reasoning as workout deletion not retroactively undoing past rank state. The
 next rank-eligible run logged in that category recomputes from whatever history remains.
 Deliberately leaves that date's streak credit alone even if this was the day's only run.
@@ -913,7 +913,7 @@ Deliberately leaves that date's streak credit alone even if this was the day's o
 Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404` if the run doesn't exist.
 
 ### `POST /api/runs`
-Manual run entry — no file.
+Manual run entry: no file.
 
 Request body:
 ```ts
@@ -929,7 +929,7 @@ Request body:
 ```
 
 Response `201`: `runResponse` with `source: "manual"`. Note `runResponse` itself (shared by every
-`/api/runs*` endpoint) also carries `plannedRouteId: string | null` — set here, always `null` for
+`/api/runs*` endpoint) also carries `plannedRouteId: string | null`, set here, always `null` for
 GPX/FIT/Health Connect imports.
 
 ---
@@ -940,7 +940,7 @@ Source: [`packages/server/src/routes/settings.ts`](../../packages/server/src/rou
 Tests: [`tests/server/routes/settings.test.ts`](../../tests/server/routes/settings.test.ts)
 
 Every setting here is one k/v row (`readJsonSetting`/`writeJsonSetting`), scoped by `user_id`
-alongside the key — resolves to a single owner identity today (see the Auth section above), but
+alongside the key; resolves to a single owner identity today (see the Auth section above), but
 already per-user underneath. `null` distinguishes "never configured" from "configured to an empty
 value."
 
@@ -964,7 +964,7 @@ Partial<{
   birthYear?: number;              // 1900..currentYear
   experienceLevel?: "beginner" | "intermediate" | "advanced";
   workoutsPerWeek?: number;        // int, 1-14
-  // Convenience only — not itself part of the stored/returned profile:
+  // Convenience only, not itself part of the stored/returned profile:
   currentWeightKg?: number;        // positive, <=400; also upserts today's bodyweightLogs entry
 }
 ```
@@ -975,7 +975,7 @@ same shape as the `GET` (without `currentWeightKg`).
 Owned-equipment filter, used by routine suggestions.
 
 `GET` response `200`: `{ equipment: string[] | null }` (`null` = never configured, `[]` would
-mean "configured to own nothing" — the two are kept distinct).
+mean "configured to own nothing"; the two are kept distinct).
 
 `PUT` request body: `{ equipment: string[] }` · Response `200`: echoes the same body.
 
@@ -1007,7 +1007,7 @@ Tests: [`tests/server/routes/streak.test.ts`](../../tests/server/routes/streak.t
 ### `GET /api/streak`
 Current streak + remaining streak-protection tokens. Protection scales with the onboarding
 profile's `workoutsPerWeek` when set (a 2x/week-by-design lifter's on-schedule rest days
-shouldn't read as a broken streak) — see `@liftr/shared`'s `computeStreak`.
+shouldn't read as a broken streak); see `@liftr/shared`'s `computeStreak`.
 
 Response `200`: `{ streak: number; tokensRemaining: number }`
 
@@ -1019,7 +1019,7 @@ Source: [`packages/server/src/routes/sync.ts`](../../packages/server/src/routes/
 Tests: [`tests/server/routes/sync.test.ts`](../../tests/server/routes/sync.test.ts) ·
 Service (per-item behavior in full): [`packages/server/src/services/syncService.ts`](../../packages/server/src/services/syncService.ts)
 
-The offline outbox flush endpoint — the heart of Liftr's offline-first design. This route is only
+The offline outbox flush endpoint: the heart of Liftr's offline-first design. This route is only
 the schema wrapper; per-item idempotency/plausibility/XP decisions live in `syncService.ts`.
 
 `POST /api/sync` is rate-limited to 60 requests per minute per user.
@@ -1087,7 +1087,7 @@ Response `200` (no explicit response schema; shape from `SyncResult` in `syncSer
 Notable statuses: `400 invalid_request` for an empty `items` array, a missing `items` field, an
 unrecognized `type` (discriminated union mismatch), a `payload` missing required fields for its
 `type`, or a batch over the 200-item cap. A per-item failure (e.g. an unknown
-`workoutExerciseId`) is **not** an HTTP error — it's `status: "error"` inside an otherwise-`200`
+`workoutExerciseId`) is **not** an HTTP error: it's `status: "error"` inside an otherwise-`200`
 response, so one bad item in a batch doesn't fail the rest.
 
 ---
@@ -1098,7 +1098,7 @@ Source: [`packages/server/src/routes/workouts.ts`](../../packages/server/src/rou
 Tests: [`tests/server/routes/workouts.test.ts`](../../tests/server/routes/workouts.test.ts)
 
 ### `POST /api/workouts`
-Starts a session. Idempotent on `clientId` — replaying the same `clientId` returns the existing
+Starts a session. Idempotent on `clientId`: replaying the same `clientId` returns the existing
 workout (status `200`) instead of creating a duplicate (status `201` on first creation).
 
 Request body:
@@ -1132,13 +1132,13 @@ Full detail for the history detail view and share cards.
 Params: `{ id: string }` (no response schema declared)
 
 Response `200`: the workout with `workoutExercises[].sets[]`, each set carrying a computed
-`isPr: boolean` (collapsed from a joined `prs` existence check — history/share views previously
+`isPr: boolean` (collapsed from a joined `prs` existence check; history/share views previously
 hardcoded this to `false`).
 
 Notable statuses: `404 { error: "not_found" }` if the workout doesn't exist.
 
 ### `DELETE /api/workouts/:id`
-Deletes the workout; cascades to its exercises/sets and triggers a rank recompute — see
+Deletes the workout; cascades to its exercises/sets and triggers a rank recompute: see
 [`services/workoutService.ts`](../../packages/server/src/services/workoutService.ts).
 
 Params: `{ id: string }` · Response `200`: `{ ok: true }` · `404` if the workout doesn't exist.
@@ -1152,7 +1152,7 @@ Tests: [`tests/server/routes/xp.test.ts`](../../tests/server/routes/xp.test.ts)
 
 ### `GET /api/xp`
 Total XP across every logged non-warmup set + every logged run + the two session-level bonuses +
-the resulting level. Strength and running XP converge into this one global total/level — see
+the resulting level. Strength and running XP converge into this one global total/level; see
 [xp-and-streaks.md](../concepts/xp-and-streaks.md#one-level-two-disciplines). Aggregation lives in
 `services/xpService.ts`'s `getXpSummary`.
 
@@ -1171,17 +1171,17 @@ Response `200`:
 
 ## Non-`/api` endpoints
 
-Registered directly in `app.ts`, outside the per-file route registrations above — no auth gate
+Registered directly in `app.ts`, outside the per-file route registrations above: no auth gate
 (only `/api/*` is gated):
 
-- `GET /api/health` — `{ ok: true, service: "liftr", version: <server version> }` (Zod-validated
-  response schema). **Public** (no token required), despite the `/api/` prefix — deliberately
+- `GET /api/health`: `{ ok: true, service: "liftr", version: <server version> }` (Zod-validated
+  response schema). **Public** (no token required), despite the `/api/` prefix, deliberately
   exempted in the auth `onRequest` hook alongside the public auth routes, since liveness checks
   (Docker healthchecks, the CI boot-smoke test, monitoring) need to reach it with no credentials.
   `service`/`version` also let a native client tell a real Liftr instance apart from any other
-  server answering on that host/path, and detect a client/server version mismatch — see
+  server answering on that host/path, and detect a client/server version mismatch; see
   `useServerConnection.ts`'s `checkServerIdentity`/`checkVersionMismatch`.
-- `GET /images/*` — static file server rooted at `LIFTR_IMAGES_DIR`, only registered if that
+- `GET /images/*`: static file server rooted at `LIFTR_IMAGES_DIR`, only registered if that
   directory exists on disk at startup.
-- `GET /*` — serves the built client SPA from `LIFTR_CLIENT_DIST`, only registered if that
+- `GET /*`: serves the built client SPA from `LIFTR_CLIENT_DIST`, only registered if that
   directory exists on disk at startup (in dev, the client runs on its own Vite dev server instead).

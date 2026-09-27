@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Shared chrome for a "drill-in screen" reached by tapping a card instead of starting
- * immediately (RoutineOverviewPage.vue, RouteOverviewPage.vue) — no nav-bar entry of its own, so
+ * immediately (RoutineOverviewPage.vue, RouteOverviewPage.vue): no nav-bar entry of its own, so
  * it needs an explicit back affordance, a not-yet-loaded skeleton, a not-found fallback, a title
  * row, and a sticky start bar pinned to the bottom of the viewport. Extracted here instead of
  * being copied verbatim between the two pages a second time.
@@ -18,16 +18,16 @@ defineProps<{
   skeletonCount?: number;
   /** Opt-in: the default slot fills the remaining viewport height instead of flowing/scrolling
    *  with the page (see .drill-in.fill-height below). For a screen whose main content is an
-   *  interactive map — dragging to scroll the page would instead pan the map, trapping the
-   *  gesture — not for a normal content list, which should keep scrolling normally (the default
+   *  interactive map: dragging to scroll the page would instead pan the map, trapping the
+   *  gesture: not for a normal content list, which should keep scrolling normally (the default
    *  RoutineOverviewPage.vue relies on). The caller must also disable its own IonContent's
    *  scroll (`:scroll-y="false"`) for this to actually stop the page from scrolling underneath.
-   *  Also folds the standalone back-button row into the title row (see .ro-header-combined) —
+   *  Also folds the standalone back-button row into the title row (see .ro-header-combined):
    *  every row not spent on chrome is a row the map below gets instead, which matters more here
    *  than on a normal scrolling drill-in. */
   fillHeight?: boolean;
   /** True when the page wrapping this screen already renders a real back button of its own
-   *  (patterns/BasePage.vue's header) — suppresses this component's own inline back affordance so
+   *  (patterns/BasePage.vue's header): suppresses this component's own inline back affordance so
    *  the user isn't shown two of them at once. Default false preserves this component's original
    *  "no nav-bar entry of its own" behavior for any caller that still owns its own bare header. */
   hideBackButton?: boolean;
@@ -46,7 +46,7 @@ function goBack() {
 <template>
   <div class="drill-in" :class="{ 'fill-height': fillHeight }">
     <!-- fillHeight screens (an interactive map is the main content) fold the back button into
-         the title row below instead of giving it a row of its own — see .ro-header-combined
+         the title row below instead of giving it a row of its own: see .ro-header-combined
          below for why that height matters more here than on a normal scrolling drill-in. Loading
          and not-found have no title yet to combine it with, so it stays standalone in both
          modes for those two states. -->
@@ -110,7 +110,7 @@ function goBack() {
   padding-bottom: 88px;
 }
 /* Opt-in (see the fillHeight prop doc above): fills the page instead of flowing/scrolling with
-   it — the caller's IonContent must also have scroll disabled for this to matter. */
+   it: the caller's IonContent must also have scroll disabled for this to matter. */
 .drill-in.fill-height {
   height: 100%;
   padding-bottom: 0;
@@ -139,7 +139,7 @@ function goBack() {
   gap: var(--sp2);
 }
 /* fillHeight only: folds the standalone back-button row into this one, buying back roughly a
-   full row of height for the map below — RouteOverviewPage.vue's map is the whole reason this
+   full row of height for the map below: RouteOverviewPage.vue's map is the whole reason this
    mode exists, so every row not spent on it is a row the map doesn't get. */
 .ro-header-combined {
   margin-top: var(--sp1);

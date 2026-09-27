@@ -7,7 +7,7 @@
  * for trailing buttons. Used by BasePage.vue.
  *
  * Split out of a single BaseHeader.vue that took a `variant: "page" | "wizard"` prop and branched
- * its whole template/props/emits on it — this and WizardHeader.vue shared no DOM, no props beyond
+ * its whole template/props/emits on it: this and WizardHeader.vue shared no DOM, no props beyond
  * the title itself, and no emits (this one emits `back-button-click`, WizardHeader emits `close`),
  * so they were two components glued together by a prop rather than one.
  *
@@ -16,10 +16,10 @@
  * component's root element too. A previous split into this same shape once left RoutineWizard.vue/
  * RouteWizard.vue each carrying their own leftover `.wizard-head`/`.name-input`/`.close-btn` rules
  * from before WizardHeader existed, which leaked onto its root and silently clobbered the
- * safe-area padding-top — that's why the two were merged into one file for a while. Splitting
+ * safe-area padding-top: that's why the two were merged into one file for a while. Splitting
  * again is safe now because neither wizard file has a colliding local rule left (verified before
  * this split; RoutineWizard.vue has no `<style>` block at all, RouteWizard.vue's uses distinct
- * `.wizard-map`/`.wizard-foot`/`.stats`/`.loop-toggle` names) — but if you ever add a page-header
+ * `.wizard-map`/`.wizard-foot`/`.stats`/`.loop-toggle` names): but if you ever add a page-header
  * lookalike rule to a caller's own scoped styles, give it a name that can't collide with this
  * file's, not a generic one.
  */
@@ -53,11 +53,11 @@ const { t } = useI18n();
 .base-page-header {
   padding-top: env(safe-area-inset-top, 0px);
 }
-/* Below 900px, ion-title is already hidden globally (ionic-theme.css) — the toolbar's only job
+/* Below 900px, ion-title is already hidden globally (ionic-theme.css): the toolbar's only job
    there used to be a decorative blurred backdrop App.vue's mobile .top-hud always painted over
    (its translucency/blur was moot, nothing needed to be seen through it). BasePage.vue paints
    this toolbar *above* .top-hud (see its own z-index comment), so that same translucency+blur
-   would instead wash out .top-hud's level-ring/streak chip behind it — stripped only at this
+   would instead wash out .top-hud's level-ring/streak chip behind it: stripped only at this
    breakpoint, only on this variant's own toolbar, so every other IonToolbar in the app is
    unaffected. */
 @media (max-width: 899px) {

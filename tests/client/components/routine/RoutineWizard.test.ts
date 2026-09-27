@@ -1,15 +1,15 @@
 // RoutineWizard.vue is the orchestrator: it owns the whole draft (`selected`), decides which step
 // renders, and wires each step's emits back into that state. Its six step children (PathChooser/
 // PickStepManual/PickStepMuscles/FastPathStep/ArrangeStep/ReviewStep) each have their own full
-// rendering/emit-logic test file already — testing THIS component's own logic again through their
+// rendering/emit-logic test file already; testing THIS component's own logic again through their
 // real markup would just re-test them. So every step child (plus SheetModal, whose real shell
-// wraps @ionic/vue's IonModal — see tests/README.md's note on stubbing an Ionic-backed element
+// wraps @ionic/vue's IonModal (see tests/README.md's note on stubbing an Ionic-backed element
 // rather than loading the real Stencil runtime) is stubbed here with a minimal template exposing
 // exactly the prop/emit surface this component's own logic reads and reacts to.
 //
 // External boundaries mocked: routineStore (real create/update/suggest hit the network) and
 // routineService's recommendExercises (called directly by toggleSelect's fire-and-forget
-// background upgrade). catalogStore is left real/empty — toggleSelect's only read from it
+// background upgrade). catalogStore is left real/empty: toggleSelect's only read from it
 // (catalog.byId(id)?.isBodyweight) degrades to `false` on an empty catalog, which is fine since
 // none of these tests care about the bodyweight-default-weight distinction.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -179,7 +179,7 @@ beforeEach(() => {
   toasts.splice(0, toasts.length);
 });
 
-describe("RoutineWizard — create mode navigation", () => {
+describe("RoutineWizard: create mode navigation", () => {
   it("starts on the path-choose step", () => {
     const wrapper = mountWizard();
 
@@ -284,7 +284,7 @@ describe("RoutineWizard — create mode navigation", () => {
   });
 });
 
-describe("RoutineWizard — muscle-guided suggestion flow", () => {
+describe("RoutineWizard: muscle-guided suggestion flow", () => {
   it("emits suggest, applies the result to the draft, and advances past PickStepMuscles on a non-empty response", async () => {
     suggestMock.mockResolvedValue([
       { exerciseId: "ex-9", slug: "squat", targetSets: [{ reps: 5, weightKg: 60 }], matchedMuscleSlug: "chest" },
@@ -344,7 +344,7 @@ describe("RoutineWizard — muscle-guided suggestion flow", () => {
   });
 });
 
-describe("RoutineWizard — edit mode", () => {
+describe("RoutineWizard: edit mode", () => {
   it("hydrates directly into the full ArrangeStep (linked exercises are never fast-path eligible)", () => {
     const wrapper = mountWizard({ routine: makeRoutine() });
 
@@ -374,7 +374,7 @@ describe("RoutineWizard — edit mode", () => {
   });
 });
 
-describe("RoutineWizard — saving", () => {
+describe("RoutineWizard: saving", () => {
   async function reachFastPathWithOneExercise(name = "Legs") {
     const wrapper = mountWizard();
     await wrapper.find(".choose-manual").trigger("click");
@@ -426,11 +426,11 @@ describe("RoutineWizard — saving", () => {
 
     expect(sheetDismissSpy).not.toHaveBeenCalled();
     expect(wrapper.emitted("created")).toBeUndefined();
-    expect(toasts.at(-1)?.text).toBe("Speichern fehlgeschlagen — bitte erneut versuchen.");
+    expect(toasts.at(-1)?.text).toBe("Speichern fehlgeschlagen. Bitte erneut versuchen.");
   });
 });
 
-describe("RoutineWizard — closing", () => {
+describe("RoutineWizard: closing", () => {
   it("dismisses immediately when nothing has been picked yet", async () => {
     const wrapper = mountWizard();
 

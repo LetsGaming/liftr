@@ -18,7 +18,7 @@ export interface HistoryPage {
 
 /**
  * K-way-merge pagination across two sources (workouts, runs): each source is queried for up to
- * `limit` rows before the cursor, the results are merged and sorted, then trimmed to `limit` —
+ * `limit` rows before the cursor, the results are merged and sorted, then trimmed to `limit`:
  * a correct approach because fetching the top `limit` from *each* source guarantees the true
  * top `limit` overall is present before the final slice, not just an approximation.
  */
@@ -30,7 +30,7 @@ export async function getHistoryPage(db: LiftrDb, userId: string, cursor: string
     findRecentRunsPage(db, userId, before, limit),
   ]);
 
-  // XP per workout — reuses the same exercise/set data already joined above, keyed
+  // XP per workout: reuses the same exercise/set data already joined above, keyed
   // by each exercise's *current* rank tier (not a historical snapshot; this is a purely-additive
   // gamification layer, not a strict ledger, so re-tiering an exercise later is fine to apply
   // retroactively rather than needing a migration to track it per-set).
@@ -50,10 +50,10 @@ export async function getHistoryPage(db: LiftrDb, userId: string, cursor: string
           0,
         );
       // Must match what the Finish Sequence showed for this exact session (xpService's
-      // getXpSummary sums the same three terms across all workouts) — otherwise a past workout's
+      // getXpSummary sums the same three terms across all workouts): otherwise a past workout's
       // history-feed XP figure silently disagrees with what the user was actually shown at finish
       // time. These two columns are frozen at finish-workout time (syncService) and always set for
-      // any workout with `endedAt` — the `?? 0` here is purely to satisfy the schema's nullable
+      // any workout with `endedAt`: the `?? 0` here is purely to satisfy the schema's nullable
       // column type (null models an in-progress workout, which this query already excludes).
       const xp = perSetXp + (w.consistencyBonusXp ?? 0) + (w.varietyBonusXp ?? 0);
       return {

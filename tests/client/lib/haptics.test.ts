@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // runtime), so both are mocked; everything else (the reduced-motion gate, the tap/bump/success
 // mapping, swallowing a rejected native call) is haptics.ts's own logic and is exercised for real.
 // vi.mock factories are hoisted above the rest of the file, so any mock fn they reference must
-// come from vi.hoisted() — a plain top-level `const` would still be in its temporal dead zone
+// come from vi.hoisted(): a plain top-level `const` would still be in its temporal dead zone
 // when the (hoisted) factory actually runs.
 const { isNativePlatformMock, impactMock, notificationMock } = vi.hoisted(() => ({
   isNativePlatformMock: vi.fn(),

@@ -1,5 +1,5 @@
 /**
- * Minimal ZIP writer, store method (no compression) — the export's CSVs are tens of KB at
+ * Minimal ZIP writer, store method (no compression): the export's CSVs are tens of KB at
  * most, so deflating them isn't worth pulling in a zip dependency for one download button.
  * Produces a spec-valid archive (local file headers + central directory + EOCD) that any
  * standard unzip tool reads correctly.
@@ -38,7 +38,7 @@ export function buildZip(entries: ZipEntry[]): Buffer {
     const size = entry.data.length;
 
     // Local file header (PK\x03\x04): signature, version-needed, flags, method (0 = store),
-    // mod time/date (left zeroed — no tool cares for this export), crc-32, compressed/uncompressed
+    // mod time/date (left zeroed: no tool cares for this export), crc-32, compressed/uncompressed
     // size (equal since we don't compress), name length, extra-field length.
     const localHeader = Buffer.alloc(30);
     localHeader.writeUInt32LE(0x04034b50, 0);

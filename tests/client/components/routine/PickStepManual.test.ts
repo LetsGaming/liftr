@@ -1,4 +1,4 @@
-// PickStepManual.vue renders the real ExerciseList in select mode — no composable/store needs
+// PickStepManual.vue renders the real ExerciseList in select mode. No composable/store needs
 // mocking (catalogStore is a real Pinia store with no network boundary crossed just by rendering),
 // so this seeds a real Pinia with a couple of catalog exercises rather than mocking anything.
 // mountWithProviders always builds its own fresh Pinia internally, so to seed one *before* mount we
@@ -6,7 +6,7 @@
 // tests/README.md's mountWithProviders section).
 //
 // Split out of a single PickStep.test.ts alongside PickStepManual.vue/PickStepMuscles.vue's own
-// split from PickStep.vue — see PickStepManual.vue's doc comment.
+// split from PickStep.vue; see PickStepManual.vue's doc comment.
 import { createPinia } from "pinia";
 import { describe, expect, it } from "vitest";
 import { i18n } from "~client/i18n";

@@ -3,12 +3,12 @@
 // workout finish. Honest empty state, no locked/teaser treatment.
 //
 // Running Rekorde section (Task 12): a second, independent ledger sourced from Task 10's
-// runRankStore (/api/runs/prs) — five fixed rows, one per RunCategory, each showing that
+// runRankStore (/api/runs/prs): five fixed rows, one per RunCategory, each showing that
 // category's fastest *time* PR (kind === "time"; "speed" PRs carry the same underlying number
 // but time is what a runner actually cares about seeing here, per the plan). Deliberately not
 // reusing .pr-row/.pr-list for these: unlike the strength ledger (a variable-length history of
 // every kind, sorted newest first), this section is a fixed 5-row grid that must always render
-// all five categories even when some have no PR yet — different enough shape to warrant its own
+// all five categories even when some have no PR yet: different enough shape to warrant its own
 // classes rather than forcing the existing list markup to do both jobs.
 import BasePage from "../components/patterns/BasePage.vue";
 import { computed, onMounted } from "vue";
@@ -33,7 +33,7 @@ const router = useRouter();
 onMounted(() => {
   // router.ts's beforeEnter already prefetches prStore for this route, so guard against a
   // redundant re-fetch on mount (same pattern as RoutineOverviewPage.vue's onMounted). No such
-  // prefetch exists for runRankStore, so its load stays unconditional — this is a cold-load
+  // prefetch exists for runRankStore, so its load stays unconditional: this is a cold-load
   // safety net for it, not a redundant refresh.
   if (!prStore.loaded) void prStore.load();
   void runRankStore.loadPrs();
@@ -62,8 +62,8 @@ const bestRunTimeByCategory = computed(() => {
   return out;
 });
 
-/** Single-speed activities (walk/hike) have no "time" PR — no fixed distance to divide by, see
- *  runRankService.ts's PR-detection comment — so their record row shows the fastest (highest-
+/** Single-speed activities (walk/hike) have no "time" PR: no fixed distance to divide by, see
+ *  runRankService.ts's PR-detection comment: so their record row shows the fastest (highest-
  *  value) "speed" PR instead, rendered as a pace via formatPace. */
 const bestSpeedByActivity = computed(() => {
   const out: Record<string, RunPrListItem> = {};
@@ -88,7 +88,7 @@ function isRecentlyAchieved(iso: string): boolean {
 function formatValue(kind: string, value: number): string {
   if (kind === "reps") return t("recordsPage.repsValue", { n: Math.round(value) });
   if (kind === "volume") return `${Math.round(value).toLocaleString("de-DE")} kg`;
-  // "weight" and "e1rm" — e1rm in particular is computed (epley formula: weightKg * (1 +
+  // "weight" and "e1rm": e1rm in particular is computed (epley formula: weightKg * (1 +
   // reps/30)) and routinely lands on a non-terminating decimal (e.g. 100kg x 8 reps ->
   // 126.66666666666667), which rendered here unrounded as "126.66666666666667 kg". Round to a
   // whole kg, matching the convention already used for e1rm everywhere else it's displayed
@@ -251,7 +251,7 @@ function formatValue(kind: string, value: number): string {
   font-size: 12px;
   color: var(--faint);
 }
-/* .shimmer (styles/motion.css) only supplies the sweep gradient + animation — the call site
+/* .shimmer (styles/motion.css) only supplies the sweep gradient + animation: the call site
    must give the block its own background-color or the "loading" state is just page background
    with a near-invisible 8%-white sweep (same technique as RanksPage.vue's .rank-skel-block). */
 .pr-skel-row {
@@ -270,7 +270,7 @@ function formatValue(kind: string, value: number): string {
   gap: var(--sp3);
   margin-top: var(--sp4);
 }
-/* Rides .panel (hybrid bg/blur/shadow + hairline) same as .pr-row, but on a <button> — same
+/* Rides .panel (hybrid bg/blur/shadow + hairline) same as .pr-row, but on a <button>: same
    treatment RunsPage.vue's .run-row and OverviewPage.vue's .feed-btn already give a clickable
    panel row, so a native button needs its own explicit width/text-align/background reset since
    .panel itself is unopinionated about either. */

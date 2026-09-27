@@ -25,7 +25,7 @@ function makeExercise(overrides: Partial<CatalogExercise> = {}): CatalogExercise
 }
 
 /** ExerciseThumb reads catalogStore.bySlug() directly (not via props), so the catalog has to be
- *  seeded on the exact Pinia instance the component ends up using — built explicitly here and
+ *  seeded on the exact Pinia instance the component ends up using: built explicitly here and
  *  handed to mountWithProviders via `global.plugins` (which fully replaces the helper's own
  *  default plugin list, so i18n/router are re-supplied alongside it) rather than seeded after
  *  mount, so every assertion below sees the catalog state from the very first render. */

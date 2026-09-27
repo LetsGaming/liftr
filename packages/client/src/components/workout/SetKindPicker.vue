@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * "Satzart auswählen" — lets the lifter set what kind a set is (warmup, normal, drop, etc.). A
+ * "Satzart auswählen": lets the lifter set what kind a set is (warmup, normal, drop, etc.). A
  * small sheet, not inlined into WorkoutPage.vue (already the largest file in the app): pick a
- * kind for the given set, or remove it. Both actions only apply to unlogged sets — see
+ * kind for the given set, or remove it. Both actions only apply to unlogged sets: see
  * activeWorkoutStore.ts's setSetKind()/removeSet() for why.
  */
 import { useI18n } from "vue-i18n";
@@ -17,7 +17,7 @@ defineProps<{ workoutExerciseId: string; setIndex: number }>();
 const emit = defineEmits<{ close: []; pick: [kind: SetKind]; remove: [] }>();
 
 // Letter = the shared label's first character (same convention WorkoutPage.vue's set-row
-// badge uses) — one definition (setKindLabel) instead of a second hand-typed letter/label
+// badge uses): one definition (setKindLabel) instead of a second hand-typed letter/label
 // pair here that could drift from the badge's own mapping.
 const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   ["warmup", "normal", "failure", "dropset"] as const
@@ -45,10 +45,10 @@ const OPTIONS: { kind: SetKind; letter: string; label: string }[] = (
   flex-direction: column;
   gap: var(--sp2);
 }
-/* Was a flat --surface-2 fill + 1px --line border — .surface-hybrid instead (see template), same
+/* Was a flat --surface-2 fill + 1px --line border: .surface-hybrid instead (see template), same
    recipe as every other row/card converted to it. This sheet's own backdrop (SheetModal.vue)
    still defaults to an opaque --surface fill, so the backdrop-blur this utility adds has no
-   visible effect here — kept anyway for the translucent bg + gradient hairline, so this row
+   visible effect here: kept anyway for the translucent bg + gradient hairline, so this row
    still reads as "in the system" rather than needing a second, sheet-specific treatment.
    ListRow (patterns/ListRow.vue) supplies the row's flex layout and interactive-button reset;
    the element qualifier here keeps padding/color/font from losing to ListRow's own

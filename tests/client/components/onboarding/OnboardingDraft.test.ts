@@ -28,7 +28,7 @@ describe("createOnboardingDraft", () => {
     expect(draft.plates.size).toBe(0);
   });
 
-  it("is reactive — mutations on the returned object are observed directly", () => {
+  it("is reactive: mutations on the returned object are observed directly", () => {
     const draft = createOnboardingDraft();
     draft.sex = "female";
     draft.equipment.add("barbell");

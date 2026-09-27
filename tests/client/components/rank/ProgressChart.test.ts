@@ -116,7 +116,7 @@ describe("ProgressChart", () => {
 
     expect(wrapper.find("svg.spark").attributes("aria-label")).toBe("Gleichbleibender Verlauf, von 133 auf 133 kg e1RM");
     // A flat trend is not "up" (last >= first is technically true when equal, so it still
-    // renders green) — assert the label is right regardless of stroke color choice.
+    // renders green): assert the label is right regardless of stroke color choice.
   });
 
   it("sorts sets by calendar day ascending regardless of input order", () => {

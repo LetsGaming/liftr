@@ -131,12 +131,12 @@ describe("computeGeometry loop closure", () => {
   it("treats a near-duplicate closing point as a loop, but not a clearly-different one", async () => {
     vi.mocked(fetch).mockResolvedValue(orsBody([A, B, C], 500));
 
-    // ~10m north of A — well inside the 25m loop-closure threshold.
+    // ~10m north of A: well inside the 25m loop-closure threshold.
     await computeGeometry([aWp, bWp, cWp, { lat: 52.5001, lon: 13.4 }], noopLogger);
     expect(fetch).toHaveBeenCalledTimes(2); // loop: outbound + closing leg
 
     vi.mocked(fetch).mockClear();
-    // ~200m north of A — clearly not a loop closure.
+    // ~200m north of A: clearly not a loop closure.
     await computeGeometry([aWp, bWp, cWp, { lat: 52.502, lon: 13.4 }], noopLogger);
     expect(fetch).toHaveBeenCalledTimes(1); // not a loop: one plain call
   });
@@ -153,7 +153,7 @@ describe("computeGeometry loop closure", () => {
   });
 
   it("builds the corridor from the snapped geometry, not the raw waypoints", async () => {
-    // Outbound call returns geometry well off the raw A/B/C taps — the corridor must buffer this
+    // Outbound call returns geometry well off the raw A/B/C taps: the corridor must buffer this
     // returned shape, not the input.
     const snapped: [number, number][] = [[13.4, 52.5], [13.405, 52.5005], [13.41, 52.501]];
     vi.mocked(fetch).mockResolvedValueOnce(orsBody(snapped, 500)).mockResolvedValueOnce(orsBody([C, A], 400));

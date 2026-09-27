@@ -1,7 +1,7 @@
 # XP, levels, and streaks
 
 Rank ([rank-engine.md](./rank-engine.md)) is the primary reward in Liftr. XP and levels are
-**flavour on top of it, never a gate or a replacement** — the audit is explicit about this: "no
+**flavour on top of it, never a gate or a replacement**: the audit is explicit about this: "no
 new reward currencies... don't add a third, fourth, fifth thing to track, deepen what exists."
 Everything in this document computes client-side too (all of it lives in
 `packages/shared/src/math/xp.ts` and `packages/shared/src/streak/streak.ts`, pure functions with
@@ -13,7 +13,7 @@ no DB access), specifically so it works with no round trip while offline.
 one set's XP. Three things worth knowing that aren't obvious from the signature:
 
 **It no longer scales with the weight you typed.** Every set uses a nominal
-`BODYWEIGHT_NOMINAL_LOAD_KG` (30) as its base load, regardless of what you actually lifted — XP
+`BODYWEIGHT_NOMINAL_LOAD_KG` (30) as its base load, regardless of what you actually lifted. XP
 magnitude comes from `reps × tier multiplier × repeat-decay × plausibility`, not from load. The
 `weightKg` parameter is still there and still matters, but only indirectly: see the anti-cheat
 note below.
@@ -25,16 +25,16 @@ climbing a demanding lift's tiers.
 **It decays toward a floor, not to zero, on repetition.** `repeatSetMultiplier(occurrence)`
 computes `1 / (1 + REPEAT_XP_DECAY_STEP * (occurrence - 1))`, floored at
 `REPEAT_XP_FLOOR_MULTIPLIER` (0.5). Doing the exact same exercise/weight/reps combo repeatedly
-still earns *something* — just progressively less — which nudges a lifter toward more weight or
+still earns *something*, just progressively less, which nudges a lifter toward more weight or
 more reps rather than punishing them for training the same exercise at all.
 
 ### The load-bucket anti-cheat
 
 Since XP magnitude no longer depends on typed weight, a naive implementation would let someone
 dodge `repeatSetMultiplier`'s decay forever by nudging the typed weight by a fraction of a kg
-between otherwise-identical sets — each "new" weight would look like a first-ever occurrence.
+between otherwise-identical sets: each "new" weight would look like a first-ever occurrence.
 `quantizeLoadForDecay` closes this by bucketing weight in **log space** (fixed-width bands in
-`ln(weightKg)`, not a naive `weightKg / step`, which is a no-op — see the function's own comment
+`ln(weightKg)`, not a naive `weightKg / step`, which is a no-op; see the function's own comment
 for why the naive version always collapses to the same constant). This gives a genuinely
 load-proportional bucket width: 0.5kg is a big jump on a 10kg lift but negligible on a 200kg one.
 The bucket only feeds the repeat-decay *occurrence key* in `computeTotalXp`, never the XP
@@ -43,7 +43,7 @@ magnitude itself.
 ### Summing a full history: `computeTotalXp`
 
 `computeTotalXp(sets)` is the **single source of truth** for "how much XP has this person earned,
-total" — it sorts sets chronologically, tracks per-`exerciseId|loadBucket|reps` occurrence counts,
+total": it sorts sets chronologically, tracks per-`exerciseId|loadBucket|reps` occurrence counts,
 and applies `computeSetXp` with the right occurrence number. `GET /api/xp` and anything else
 computing a total must go through this rather than re-summing `computeSetXp` directly, or the
 repeat-decay silently stops applying.
@@ -51,17 +51,17 @@ repeat-decay silently stops applying.
 ## Cardio XP
 
 `computeRunXp(runs)` in `packages/shared/src/math/runXp.ts` is the cardio-side sibling of
-`computeTotalXp` above — same anti-grinding philosophy (decay toward a floor on repetition, never
+`computeTotalXp` above: same anti-grinding philosophy (decay toward a floor on repetition, never
 to zero), adapted for the fact that, unlike a repeated identical set, two different distances
 genuinely are different activities. Covers all four activity types (run, walk, hike, other):
 
 - **Linear in distance (run/walk/hike), linear in duration (other).** A single activity's base XP
-  is `(distanceM / 1000) * cardioXpPerKm(activityType)` for run/walk/hike — unlike `computeSetXp`,
+  is `(distanceM / 1000) * cardioXpPerKm(activityType)` for run/walk/hike: unlike `computeSetXp`,
   which deliberately flattens out the weight typed, an activity's raw magnitude legitimately
   scales with how far it covered. `"other"` (cycling, rowing, ...) pays by time instead
   (`(durationS / 60) * OTHER_XP_PER_MINUTE`), since distance isn't comparable across those
   activity types. Each activity has its own per-km/per-minute rate, declared on its registry entry
-  in `cardioActivities.ts` — running pays the most, walking the least of the distance-based three,
+  in `cardioActivities.ts`: running pays the most, walking the least of the distance-based three,
   hiking in between. The anti-grinding protection lives entirely in the decay term below, not in
   the base formula.
 - **Repeat-distance decay keys on a rounded distance *bucket*, namespaced by activity type.**
@@ -69,19 +69,19 @@ genuinely are different activities. Covers all four activity types (run, walk, h
   tracked as an "occurrence" of that bucket; `"other"` quantizes on a 10-minute duration bucket
   instead. The occurrence key (`runDecayKey`) is prefixed by activity type
   (e.g. `"run:10"` vs. `"walk:10"`), so a daily walk can't burn down the decay counter for the
-  user's runs of the same distance, or vice versa — each activity type gets its own independent
+  user's runs of the same distance, or vice versa: each activity type gets its own independent
   occurrence sequence. The decay curve itself (`repeatRunMultiplier`) reuses the exact same shape
   and constants as `repeatSetMultiplier`.
 - **Manual entries are XP-only, always at full multiplier.** `plausibilityMultiplier` on
-  `RunXpInput` defaults to 1 — the cardio-specific plausibility gate
+  `RunXpInput` defaults to 1: the cardio-specific plausibility gate
   ([rank-engine.md](./rank-engine.md#cardio-ranks-running-walking-hiking)) never runs against a
   manual entry, since there are no `run_points` to independently check `distanceM` against. A
   GPS-tracked activity's XP is discounted by that same multiplier the same way its rank
-  contribution is (for run/walk/hike — `"other"` never earns rank at all, see rank-engine.md).
+  contribution is (for run/walk/hike: `"other"` never earns rank at all, see rank-engine.md).
 - **A source bonus for Health Connect imports.** An activity imported from Android Health Connect
   gets an 8% XP bonus over a GPX-imported or manually-logged one
   (`HEALTHCONNECT_XP_BONUS_MULTIPLIER = 1.08`), applied unconditionally on top of the plausibility
-  multiplier and the repeat-distance decay above, for every activity type alike — the bonus
+  multiplier and the repeat-distance decay above, for every activity type alike: the bonus
   rewards corroboration fidelity (watch-derived GPS+HR vs. phone-only), not the activity's
   modality:
 
@@ -99,7 +99,7 @@ genuinely are different activities. Covers all four activity types (run, walk, h
 Cardio and strength XP are **not** tracked as separate totals feeding separate level curves.
 Whatever `computeRunXp` returns (across running, walking, hiking, and other cardio alike) is added
 straight into the same total that `computeTotalXp` feeds, and that combined total is what
-`computeLevel` converts into a level — there's exactly one global level, the same "no new reward
+`computeLevel` converts into a level: there's exactly one global level, the same "no new reward
 currencies" principle the rest of this document already commits to. A lifter who never does cardio
 and a runner who never lifts climb the same curve; someone who does both just gets there from two
 directions at once.
@@ -107,7 +107,7 @@ directions at once.
 ## Session-level bonuses
 
 Two bonuses fire **once per finished workout**, computed in `syncService.ts`'s
-`applyFinishWorkout` and frozen onto the `workouts` row (`consistencyBonusXp`/`varietyBonusXp`) —
+`applyFinishWorkout` and frozen onto the `workouts` row (`consistencyBonusXp`/`varietyBonusXp`):
 same "freeze a derived value once at finish-time" convention `plausibilityMultiplier` already
 established, rather than re-deriving it on every later read.
 
@@ -116,13 +116,13 @@ established, rather than re-deriving it on every later read.
 `computeConsistencyBonus(streakDays)` = `CONSISTENCY_BASE + CONSISTENCY_SCALE * sqrt(min(streakDays,
 CONSISTENCY_STREAK_CAP))`. `Math.sqrt` of a capped streak length is deliberate: it rises fast
 early (day 1 already feels like a real reward) and flattens smoothly, **never dips**, and has no
-threshold to "reset and re-farm" — this is what guarantees maintaining a streak is always at
+threshold to "reset and re-farm": this is what guarantees maintaining a streak is always at
 least as good as breaking and rebuilding one. The cap (`CONSISTENCY_STREAK_CAP`, ~75 days) keeps
 the term visibly climbing through a beginner's entire early habit-forming period rather than
 plateauing over years.
 
 Structurally un-fabricable by construction: it requires genuine, calendar-spread finished
-workouts via the same token-protected `computeStreak` mechanism described below — there's no
+workouts via the same token-protected `computeStreak` mechanism described below: there's no
 separate "consistency counter" to fake independently of actually training.
 
 ### Variety bonus
@@ -136,7 +136,7 @@ as "new" since there's nothing to compare against yet.
 
 This is additive-only by construction (`newMuscleCount` can never be negative), so it never reads
 as a penalty, and it's a diff against the user's *own* prior session, never a full-body checklist
-— it never punishes specialization. `syncService.ts` also returns the actual `newMuscleSlugs` list
+it never punishes specialization. `syncService.ts` also returns the actual `newMuscleSlugs` list
 (not just the count) so the client's finish sequence can name them ("Schultern zum ersten Mal seit
 letztem Training") rather than showing a bare number.
 
@@ -152,7 +152,7 @@ level 6's threshold, and the curve ran away to level 69 by month 6.
 
 `LEVEL_XP_SCALE` (4600) is sized to roughly one first session's total XP, which is what pins day 1
 to exactly level 1. `LEVEL_CURVE_EXPONENT` (0.8) sits between 1.0 (a pure "one level per session"
-line that never decelerates) and the old curve's implicit deceleration — early sessions still
+line that never decelerates) and the old curve's implicit deceleration: early sessions still
 grant close to a level each, then growth visibly slows. `xpAtLevel(level)` is the exact inverse,
 exported as the single source of truth for "how much XP does level N require" rather than
 re-deriving it at each call site. `computeLevel` re-establishes the defining invariant
@@ -164,11 +164,11 @@ comparison against the old curve.
 ## Streaks and protection
 
 `computeStreak(activityDates, now, workoutsPerWeek)` in `packages/shared/src/streak/streak.ts` is
-computed **fresh from a set of activity dates on every read**, not incrementally maintained — so
+computed **fresh from a set of activity dates on every read**, not incrementally maintained: so
 it's always self-consistent with whatever's actually logged, with no separate counter that can
 drift out of sync.
 
-It walks backward day-by-day from today (or yesterday, if today has no activity yet — that's not
+It walks backward day-by-day from today (or yesterday, if today has no activity yet: that's not
 treated as a break, just "the day isn't over"), counting consecutive active days. A gap day
 doesn't necessarily break the streak: it consumes one **protection token** from a pool instead,
 as long as tokens remain.
@@ -178,7 +178,7 @@ as long as tokens remain.
 The pool isn't a flat constant. `tokenPoolFor(workoutsPerWeek)` derives it from the lifter's own
 stated training frequency (an onboarding answer): the longest gap a stated frequency implies
 within a week, plus one. A lifter who trains 2×/week has, by design, roughly 5 non-training days
-a week — without this, a flat small pool exhausts mid-week and reports a "broken" streak for
+a week: without this, a flat small pool exhausts mid-week and reports a "broken" streak for
 someone perfectly on their own schedule. The pool is clamped between `DEFAULT_TOKEN_POOL` (2, the
 fallback for anyone who hasn't answered the onboarding question) and `MAX_TOKEN_POOL` (6), so a
 very low stated frequency doesn't inflate the pool to where "streak" stops meaning anything.
@@ -189,7 +189,7 @@ The module's own header comment is upfront about this: protection is **a fresh p
 computation**, not a true weekly-accrual bank ("1 token per week, max 2 banked" was the original
 plan-level idea, never actually implemented that way). Every walk starts over with a full pool
 rather than tracking token balance across time. Close enough in practice for "a missed day
-doesn't wreck a streak" — flagged directly in the source rather than silently overclaiming
+doesn't wreck a streak": flagged directly in the source rather than silently overclaiming
 precision.
 
 The backward walk is bounded by the single earliest logged activity date, so a lone logged day
@@ -202,18 +202,18 @@ app being used at all.
 finished workout, in this order:
 
 1. `creditStreak` records today's date.
-2. `computeStreak` (now reflecting the just-recorded date) feeds `computeConsistencyBonus` — the
+2. `computeStreak` (now reflecting the just-recorded date) feeds `computeConsistencyBonus`: the
    caller does **not** add +1 manually, since the streak function already sees today's credit.
 3. `computeVarietyBonus` runs off a plain muscle-slug diff against the prior finished session.
 4. The [plausibility gate](./rank-engine.md#the-plausibility-gate) is computed once for the whole
-   session and its multiplier is passed into `computeSetXp` as `plausibilityMultiplier` — a
+   session and its multiplier is passed into `computeSetXp` as `plausibilityMultiplier`: a
    badly-flagged session's XP is discounted the same way its rank contribution is, never zeroed
    outright (both floor at a nonzero value, `PLAUSIBILITY_FLOOR` in `plausibility.ts`).
-5. Rank recompute runs once per exercise touched this session — see
+5. Rank recompute runs once per exercise touched this session: see
    [rank-engine.md](./rank-engine.md) for what that does.
 
-Notably, `computeStreak` is called with `item.payload.endedAt` as "now," not `new Date()` —
-unlike the live `GET /api/streak` route — so a delayed or replayed sync flush computes the streak
+Notably, `computeStreak` is called with `item.payload.endedAt` as "now," not `new Date()`:
+unlike the live `GET /api/streak` route: so a delayed or replayed sync flush computes the streak
 the user actually earned on the day they finished the workout, not whatever day the batch
 happened to reach the server.
 
@@ -223,7 +223,7 @@ happened to reach the server.
   rationale/worked before/after table (2026-09-06 xp-rank balancing design, §1) were point-in-time
   planning documents that have since been removed from the repo; this document reflects the
   current implementation directly.
-- [rank-engine.md](./rank-engine.md) — the tier system that `TIER_XP_MULTIPLIER` reads from, and
+- [rank-engine.md](./rank-engine.md): the tier system that `TIER_XP_MULTIPLIER` reads from, and
   the plausibility gate whose multiplier flows into `computeSetXp`.
-- [sync-and-offline.md](./sync-and-offline.md) — how a finished workout actually reaches the
+- [sync-and-offline.md](./sync-and-offline.md): how a finished workout actually reaches the
   server (and why streak/XP computation happens inside that same sync handler).

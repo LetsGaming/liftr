@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
- * Base card shape for CardGrid.vue's grid — the "workout card" shape (RoutineList.vue's routine
+ * Base card shape for CardGrid.vue's grid: the "workout card" shape (RoutineList.vue's routine
  * cards) generalized so RouteList.vue's route cards render through the exact same markup/CSS
  * instead of a hand-kept-in-sync lookalike. Owns the tap-to-open surface, the head row (optional
  * drag handle, title, optional badge, optional ⋮ menu), the main content slot, an optional meta
  * line, an optional actions row, and an optional footer (RoutineList's inline mesocycle form).
- * Content each list actually differs on — exercise preview vs. map thumbnail, menu items, tier
- * accent — stays local to that list's own component via slots/fallthrough class.
+ * Content each list actually differs on (exercise preview vs. map thumbnail, menu items, tier
+ * accent) stays local to that list's own component via slots/fallthrough class.
  */
 import type { StyleValue } from "vue";
 

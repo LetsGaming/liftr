@@ -1,7 +1,7 @@
 /**
  * The finish-workout flow: snapshot the session, await the server's rank verdicts, build the
  * finish-sequence's reward beats, and offer to update the routine if the session out-performed
- * its targets. Extracted out of WorkoutPage.vue — that file was the largest in the app, 1280 LOC
+ * its targets. Extracted out of WorkoutPage.vue: that file was the largest in the app, 1280 LOC
  * mixing session orchestration, sharing, mesocycle UI, and this finish flow together.
  */
 import { computed, ref, watch, type ComputedRef } from "vue";
@@ -46,7 +46,7 @@ function plausibilityNote(reason: string | null | undefined): string | null {
 
 /** A one-time post-workout caption for an exercise's rank card, surfaced only when there's
  *  something worth saying (a same-band recovery-style LP gain, or a
- *  plausibility-gate note). Purely presentational — nothing here is persisted. */
+ *  plausibility-gate note). Purely presentational; nothing here is persisted. */
 export interface SessionCaption {
   exerciseId: string;
   exerciseName: string;
@@ -62,7 +62,7 @@ interface Stores {
   xpStore: ReturnType<typeof useXpStore>;
   historyStore: ReturnType<typeof useHistoryStore>;
   catalogStore: ReturnType<typeof useCatalogStore>;
-  /** The finish flow needs the *post*-session overall tier for the share card's badge — a
+  /** The finish flow needs the *post*-session overall tier for the share card's badge: a
    *  rank-up mid-session can move it, so it's reloaded alongside
    *  streak/XP below rather than trusted from whatever it was at session start. */
   overallRankStore: ReturnType<typeof useOverallRankStore>;
@@ -81,7 +81,7 @@ export function useWorkoutFinish(
   /**
    * Session-earned signals, accumulated live as sets are logged so finishWorkout() can hand them
    * to FinishSequence instead of the old hardcoded prCount:0/rankUps:[].
-   * Reset whenever the active workoutId actually changes — a session resumed after an app reload
+   * Reset whenever the active workoutId actually changes: a session resumed after an app reload
    * (store.restore()) gets a fresh workoutId only if it differs from whatever was here before,
    * so a crash-recovered session under-counts whatever XP/rank-ups it earned in the previous app
    * session before the reload. A minor, documented simplification, not a claim of exact lifetime
@@ -90,12 +90,12 @@ export function useWorkoutFinish(
   const sessionXp = ref(0);
   const sessionRankUps = ref<RankUpSummary[]>([]);
   /** Unlike sessionRankUps (filtered to rankedUp/newPr, for the celebration beat), this covers
-   *  every touched exercise's verdict — a same-band recovery LP gain or a plausibility note is
+   *  every touched exercise's verdict: a same-band recovery LP gain or a plausibility note is
    *  exactly the case that never trips rankedUp/newPr, so it needs its own list. */
   const sessionCaptions = ref<SessionCaption[]>([]);
   /**
    * Unlike sessionXp above (accumulated client-side, live, per logged set), these two bonuses
-   * only exist server-side and are computed once at finish time — they arrive in store.finish()'s
+   * only exist server-side and are computed once at finish time; they arrive in store.finish()'s
    * result and are populated in finishWorkout() below, not accumulated here.
    */
   const consistencyBonusXp = ref(0);
@@ -115,7 +115,7 @@ export function useWorkoutFinish(
     },
   );
 
-  /** Snapshot of xpStore's level/progress right before finishWorkout() triggers a reload —
+  /** Snapshot of xpStore's level/progress right before finishWorkout() triggers a reload:
    *  xpStore is only ever refreshed at app boot (App.vue), after a finish (below), and after a
    *  Health Connect import (useCardioDerivedStores.ts), so its state at the moment
    *  finishWorkout() runs *is* "before this session's XP was added." levelAfter/progressAfter
@@ -133,7 +133,7 @@ export function useWorkoutFinish(
   const updatingRoutine = ref(false);
 
   /** Client-side echo of a just-logged set's XP, for the live sessionXp total and the "+N XP"
-   *  chip — the real total is recomputed server-side at finish() above. Lives here (not
+   *  chip; the real total is recomputed server-side at finish() above. Lives here (not
    *  WorkoutPage.vue) since it mutates the same sessionXp this composable owns. */
   function logSetXp(weightKg: number | null, reps: number, tier: Tier | null): number {
     const amount = Math.round(computeSetXp(weightKg, reps, tier));
@@ -142,12 +142,12 @@ export function useWorkoutFinish(
   }
 
   /** sessionCaptions carries the honest copy but not the badge/next-target data to render a
-   *  RankProgress card — that lives on ranksStore's row for the exercise (already refreshed by
+   *  RankProgress card; that lives on ranksStore's row for the exercise (already refreshed by
    *  applyVerdict() in finishWorkout() above). Joined here rather than left in WorkoutPage.vue so
-   *  ranksStore stays the single source of truth for "what's this exercise's rank right now" —
+   *  ranksStore stays the single source of truth for "what's this exercise's rank right now",
    *  the same pattern RanksPage.vue and ExerciseInfoPanel.vue already use. A caption whose
-   *  exercise has no ranksStore row yet (shouldn't happen — applyVerdict() runs for every touched
-   *  exercise before this — but kept defensive) is simply dropped rather than rendered with
+   *  exercise has no ranksStore row yet (shouldn't happen: applyVerdict() runs for every touched
+   *  exercise before this: but kept defensive) is simply dropped rather than rendered with
    *  guessed data. */
   const captionRows = computed(() =>
     sessionCaptions.value.flatMap((c) => {
@@ -170,7 +170,7 @@ export function useWorkoutFinish(
   }
 
   /** Last 7 calendar days, oldest first, marked active from whatever history is already loaded.
-   *  Deliberately simple — "a workout happened that day" — not a full re-derivation of
+   *  Deliberately simple ("a workout happened that day"), not a full re-derivation of
    *  streak.ts's protection-token walk (that number is computed server-side and shown as-is);
    *  good enough to draw the week's shape. */
   const streakDays = computed<StreakDay[]>(() => {
@@ -206,8 +206,8 @@ export function useWorkoutFinish(
     }));
 
     // If a user made changes to the routine while in the workout (more weight/reps than the
-    // default), the app should ask to overwrite the routine. Snapshotted here — before
-    // store.finish() resets the session — since that's the last point store.exercises still
+    // default), the app should ask to overwrite the routine. Snapshotted here, before
+    // store.finish() resets the session, since that's the last point store.exercises still
     // reflects what was actually logged. JSON round-trip strips Pinia's reactive Proxy, same
     // reason persist() does it in activeWorkoutStore.ts, so the plain snapshot survives past
     // finish() for the "update routine" button below to use.
@@ -217,7 +217,7 @@ export function useWorkoutFinish(
     routineBeats.value = sourceRoutine ? findRoutineBeats(sourceRoutine, beatActiveExercises.value) : [];
     routineUpdated.value = false;
 
-    // Rank is now recomputed once, here, rather than after every set — store.finish() awaits the
+    // Rank is now recomputed once, here, rather than after every set. store.finish() awaits the
     // real network round trip (unlike every other mutation in this store) so the verdicts are
     // known before finishedSummary is set below. Setting finishedSummary first and populating
     // sessionRankUps afterward would race FinishSequence's onMounted, which decides whether to
@@ -250,7 +250,7 @@ export function useWorkoutFinish(
     }
 
     // Recovery-gain / plausibility captions for the post-finish summary panel. A recovery gain
-    // is exactly a same-band LP increase with no tier/division change — this is deliberately not
+    // is exactly a same-band LP increase with no tier/division change: this is deliberately not
     // restricted to "was this specifically a decay-recovery climb", since the server doesn't
     // return that distinction; a normal (non-decayed) session that simply logs a better set and
     // gains LP in the same band also satisfies this and will show the same label. Known,
@@ -268,7 +268,7 @@ export function useWorkoutFinish(
     finishedSummary.value = { routineName, durationLabel: formatDurationMinutes(elapsedS), volumeKg, setCount, muscles, exercises: exercisesSnapshot };
 
     // store.finish() already awaited the network round trip, so the streaks row and this
-    // session's XP are already reflected server-side — no more guessing with a timeout.
+    // session's XP are already reflected server-side: no more guessing with a timeout.
     void streakStore.load();
     void xpStore.load();
     void overallRankStore.load();
