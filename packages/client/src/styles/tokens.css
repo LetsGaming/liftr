@@ -88,10 +88,12 @@
   --line: rgba(255, 255, 255, 0.14);
   --line-2: rgba(255, 255, 255, 0.2);
   --text: #eef2fb;
-  /* 5.60:1 on the new --surface-2 (was 4.4:1). */
-  --dim: #98a2c0;
-  /* 4.79:1 on the new --surface-2 (was ~4.6:1 on the old value). */
-  --faint: #8b95b5;
+  /* 6.60:1 on --surface-2, 4.94:1 on --surface-3 (design-QA pass: the previous value cleared
+     --surface-2 at 5.60:1 but only reached 4.4:1 on --surface-3, below WCAG AA's 4.5:1 floor —
+     .set-chip/.chip put this token on --surface-3, not --surface-2). */
+  --dim: #a2acc8;
+  /* 5.71:1 on --surface-2, 4.79:1 on --surface-3 (same design-QA pass; was 3.8:1 on --surface-3). */
+  --faint: #9ea9cd;
 
   --blue: #3b8cff;
   --blue-hi: #5ba0ff;
@@ -112,7 +114,9 @@
   --fire: #ff7a1f;
   --fire-hi: #ffa04d;
   --violet: #8f6dff;
-  --red: #ff4757;
+  /* 4.57:1 on --surface-2 (design-QA pass: was 4.3:1, below WCAG AA's 4.5:1 floor — .delete-btn/
+     .chip-danger put this token's text directly on --surface-2). */
+  --red: #ff5564;
   --red-lo: #a01722;
   --green: #37d67a;
   --pr: #ffd23f;
@@ -149,7 +153,11 @@
      (shadow) and -3 (highlight) stop — that shift is what keeps the ramp reading as metal/gem
      material rather than one hue at three lightnesses ("plastic"). This is the single source of
      truth for these 36 values; packages/client/src/lib/tierPalette.ts's TIER_PALETTE must be kept
-     in sync (a vitest test asserts the two match — see tests/client/lib/tierPalette.test.ts). */
+     in sync (a vitest test asserts the two match — see tests/client/lib/tierPalette.test.ts).
+     Design-QA pass: -t (the reward-panel text color, via --tt) sits on a gradient starting at -2,
+     so -t-on--2 is the real worst case, not -t-on--1. athlete/lifter/elite/expert's -t were
+     lightened, and apex-2 darkened instead (apex-t was already near-white — even pure white only
+     reaches 4.37:1 on the old apex-2 — so apex's fix has to come from the background side). */
   --initiate-1: #141a26;
   --initiate-2: #2a3448;
   --initiate-3: #5a6a88;
@@ -165,11 +173,11 @@
   --athlete-1: #0d2c3f;
   --athlete-2: #1a6a9e;
   --athlete-3: #2f9fe0;
-  --athlete-t: #a8ddf7;
+  --athlete-t: #c4e8fa;
   --lifter-1: #0f2246;
   --lifter-2: #1f5bb8;
   --lifter-3: #3b8cff;
-  --lifter-t: #b3d2ff;
+  --lifter-t: #c0daff;
   --advanced-1: #171d4e;
   --advanced-2: #3a44c8;
   --advanced-3: #6b74ff;
@@ -177,13 +185,13 @@
   --elite-1: #231a52;
   --elite-2: #5b45d4;
   --elite-3: #8a6dff;
-  --elite-t: #cfc4ff;
+  --elite-t: #dbd2ff;
   --expert-1: #3a1152;
   --expert-2: #9a2fd6;
   --expert-3: #d63aff;
-  --expert-t: #efc0ff;
+  --expert-t: #f7dfff;
   --apex-1: #4a1046;
-  --apex-2: #c23ad0;
+  --apex-2: #b235bf;
   --apex-3: #ff7bf0;
   --apex-t: #fff0fb;
 

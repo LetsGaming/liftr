@@ -112,7 +112,7 @@ describe("ExerciseDetailPage", () => {
 
     expect(wrapper.find("ion-title").text()).toBe("Bankdrücken");
     const tabs = wrapper.findAll(".tab-pill");
-    expect(tabs.map((t) => t.text())).toEqual(["Über", "Rang", "Statistiken", "Verlauf"]);
+    expect(tabs.map((t) => t.text())).toEqual(["Über", "Rang", "Statistik", "Verlauf"]);
     expect(tabs[0]!.classes()).toContain("active");
   });
 

@@ -8,6 +8,7 @@
  */
 import { SET_KIND_BADGE, type SetKind } from "@liftr/shared";
 import { setKindLabel } from "../../lib/setKindLabels";
+import { equipmentLabel } from "../../lib/equipmentIcons";
 import { useI18n } from "vue-i18n";
 import ExerciseRow from "../exercise/ExerciseRow.vue";
 import AppIcon from "../base/AppIcon.vue";
@@ -125,7 +126,7 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
             :name="exerciseName(catalog.byId(cfg.exerciseId)?.slug ?? '', catalog.byId(cfg.exerciseId)?.name)"
           >
             <template #meta>
-              <span class="equip">{{ catalog.byId(cfg.exerciseId)?.equipment }}</span>
+              <span class="equip">{{ equipmentLabel((catalog.byId(cfg.exerciseId)?.equipment ?? "bodyweight") as Parameters<typeof equipmentLabel>[0]) }}</span>
             </template>
           </ExerciseRow>
           <IconButton
@@ -288,9 +289,12 @@ const KIND_CHIP_VARIANT: Record<SetKind, "neutral" | "fire" | "danger" | "accent
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
   font-size: 11px;
   color: var(--dim);
-  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .set-rows {
   display: flex;

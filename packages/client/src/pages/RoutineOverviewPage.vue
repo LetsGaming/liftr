@@ -128,7 +128,7 @@ async function jetztStarten() {
               :aria-expanded="!!expandedExercises[re.id]"
               @click="toggleExpanded(re.id)"
             >
-              <span class="ro-ex-name">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
+              <span class="ro-ex-name" :title="exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name)">{{ exerciseDisplayName(re.exerciseId, re.exercise.slug, re.exercise.name) }}</span>
               <template #trailing>
                 <span class="ro-ex-summary">{{ setSummary(re.targetSets) }}</span>
                 <svg

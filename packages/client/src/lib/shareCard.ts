@@ -41,7 +41,7 @@ const COLORS = {
   surface: "#212a42", // --surface-2
   surface2: "#2f3a5c", // --surface-3
   text: "#eef2fb", // --text
-  dim: "#98a2c0", // --dim
+  dim: "#a2acc8", // --dim
   blue: "#3b8cff", // --blue
   blueHi: "#5ba0ff", // --blue-hi
   violet: "#8f6dff", // --violet

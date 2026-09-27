@@ -19,15 +19,12 @@ defineEmits<{ open: [] }>();
 </script>
 
 <template>
-  <div
-    class="card surface-hybrid"
-    :class="{ dragging }"
-    :style="dragStyle"
-    role="button"
-    tabindex="0"
-    @click="$emit('open')"
-    @keydown.enter="$emit('open')"
-  >
+  <div class="card surface-hybrid" :class="{ dragging }" :style="dragStyle">
+    <!-- Stretched-link overlay: the card's single "open" target, first in DOM/tab order so
+         keyboard/screen-reader users reach it before the nested controls below. A real <button>
+         (not role=button on the card root) gets Enter/Space activation for free and, critically,
+         its own accessible name instead of one that swallows every descendant's text. -->
+    <button type="button" class="card-open-overlay" :aria-label="title" @click="$emit('open')" />
     <div class="card-head">
       <slot name="drag-handle" />
       <b class="card-name">{{ title }}</b>
@@ -36,11 +33,11 @@ defineEmits<{ open: [] }>();
         <slot name="menu" />
       </div>
     </div>
-    <slot />
+    <div class="card-body"><slot /></div>
     <span v-if="$slots.meta" class="card-meta"><slot name="meta" /></span>
     <div v-if="$slots.actions" class="card-actions" @click.stop>
       <slot name="actions" />
     </div>
-    <slot name="footer" />
+    <div v-if="$slots.footer" class="card-footer"><slot name="footer" /></div>
   </div>
 </template>

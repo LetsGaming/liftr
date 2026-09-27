@@ -109,6 +109,7 @@ profile:
     data: Daten
     about: Über
   appearance:
+    title: "Theme & Sprache"
     # Label above the language chip row in Profil → Darstellung, next to the theme chips.
     language: Sprache
     dark: Dunkel
@@ -132,6 +133,7 @@ profile:
     current: "Aktuell:"
     noEntry: "Trag dein Gewicht oben ein. Bis dahin nutzt die Rang-Berechnung vorläufig 75 kg."
   trainingProfile:
+    title: "Persönliche Angaben"
     hint: "Legt fest, mit welchen Gewichten Liftr im Routinen-Assistenten startet, solange du eine Übung noch nie gemacht hast."
     sex:
       label: Geschlecht
@@ -239,6 +241,7 @@ profile:
     confirm: "Wirklich löschen?"
     cta: Konto löschen
   healthConnect:
+    title: "Health Connect"
     hint: "Läufe, die du mit deiner Uhr aufgezeichnet hast, importieren, inklusive Route, sobald Health Connect sie liefert. Einmal verbinden, danach synchronisiert Liftr neue Läufe automatisch bei jedem App-Start; der Button stößt eine Synchronisierung jederzeit sofort an."
     syncing: "Synchronisiere…"
     syncNow: Jetzt synchronisieren
@@ -398,6 +401,7 @@ workoutDetailPage:
   loadError: "Dieses Workout ließ sich nicht laden. Möglicherweise keine Verbindung zum Server."
   exercises: Übungen
   prTitle: Persönlicher Rekord
+  warmupTitle: Aufwärmsatz
   shareTitle: Mein Liftr-Workout
   delete:
     deleting: "Wird gelöscht…"
@@ -633,7 +637,7 @@ exerciseUi:
     tabs:
       ueber: Über
       rang: Rang
-      statistiken: Statistiken
+      statistiken: Statistik
       verlauf: Verlauf
     notFoundText: Diese Übung wurde nicht gefunden.
     notFoundBack: "Zu den Übungen →"
@@ -683,6 +687,8 @@ exerciseUi:
     altBack: Rückansicht
 rank:
   decayCaption: "Schon mal erreicht: {tier} {division}"
+  flipCard:
+    flipBackAriaLabel: "{name}: zurück zur Vorderseite"
   tierLadder:
     stepsLabel: "{n} Stufen"
   lifterSection:

@@ -64,7 +64,7 @@ function render() {
 
   const ringColor = cssVar("--bg", "#0a0c14");
   startMarker = L.circleMarker(latLngs[0]!, { radius: 6, color: ringColor, weight: 2, fillColor: cssVar("--green", "#37d67a"), fillOpacity: 1 }).addTo(map);
-  endMarker = L.circleMarker(latLngs[latLngs.length - 1]!, { radius: 6, color: ringColor, weight: 2, fillColor: cssVar("--red", "#ff4757"), fillOpacity: 1 }).addTo(map);
+  endMarker = L.circleMarker(latLngs[latLngs.length - 1]!, { radius: 6, color: ringColor, weight: 2, fillColor: cssVar("--red", "#ff5564"), fillOpacity: 1 }).addTo(map);
 
   marker = L.circleMarker(latLngs[0]!, { radius: 7, color: "#fff", weight: 2, fillColor: cssVar("--blue-hi", "#5ba0ff"), fillOpacity: 1 });
   marker.addTo(map);

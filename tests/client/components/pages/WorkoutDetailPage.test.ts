@@ -193,7 +193,8 @@ describe("WorkoutDetailPage", () => {
     const chips = wrapper.findAll(".ex-list li")[0]!.findAll(".set-chip");
     expect(chips).toHaveLength(3);
 
-    expect(chips[0]!.text()).toBe("5"); // warmup set has weightKg: null -> reps only
+    // warmup set has weightKg: null -> reps only, plus the non-color "W" warmup badge
+    expect(chips[0]!.text()).toBe("W5");
     expect(chips[0]!.classes()).toContain("warmup");
     expect(chips[0]!.classes()).not.toContain("pr");
 

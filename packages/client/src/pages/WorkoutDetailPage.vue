@@ -167,7 +167,15 @@ async function share() {
           <ExerciseRow visual="icon" :size="18" :slug="we.exercise.slug" :equipment="we.exercise.equipment" :name="exerciseName(we.exercise.slug, we.exercise.name)">
             <template #meta>
               <span class="tnum set-chips">
-                <Chip v-for="s in we.sets" :key="s.id" size="sm" class="set-chip" :class="{ warmup: s.isWarmup, pr: s.isPr }" :title="s.isPr ? t('workoutDetailPage.prTitle') : undefined">
+                <Chip
+                  v-for="s in we.sets"
+                  :key="s.id"
+                  size="sm"
+                  class="set-chip"
+                  :class="{ warmup: s.isWarmup, pr: s.isPr }"
+                  :title="s.isPr ? t('workoutDetailPage.prTitle') : s.isWarmup ? t('workoutDetailPage.warmupTitle') : undefined"
+                >
+                  <template v-if="s.isWarmup" #leading><span class="warmup-badge" aria-hidden="true">W</span></template>
                   <template v-if="s.weightKg != null">{{ s.reps }}×{{ Math.round(s.weightKg * 100) / 100 }}kg</template>
                   <template v-else>{{ s.reps }}</template>
                   <span v-if="s.isPr" aria-hidden="true"> <AppIcon name="trophy" /></span>
@@ -248,6 +256,14 @@ async function share() {
 }
 .set-chip.warmup {
   color: var(--faint);
+}
+/* A ~13/255 RGB color shift was the only signal a set was a warmup, not a working set —
+   invisible for colorblind/low-vision users. This badge is the non-color cue. */
+.warmup-badge {
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.8;
 }
 .set-chip.pr {
   color: var(--pr);

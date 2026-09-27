@@ -386,7 +386,7 @@ async function saveWeight() {
     </section>
 
     <section class="card surface-hybrid">
-      <CollapsibleCard :title="t('profile.groups.training')">
+      <CollapsibleCard :title="t('profile.trainingProfile.title')">
         <p class="hint">{{ t("profile.trainingProfile.hint") }}</p>
         <FormField :label="t('profile.trainingProfile.sex.label')" class="profile-field">
           <div class="chip-row">
@@ -498,7 +498,7 @@ async function saveWeight() {
     <h2 class="group-header">{{ t("profile.groups.appearance") }}</h2>
 
     <section class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">{{ t("profile.groups.appearance") }}</h2>
+      <h2 class="eyebrow">{{ t("profile.appearance.title") }}</h2>
       <div class="chip-row">
         <button class="chip" :class="{ active: theme.theme === 'dark' }" @click="theme.theme === 'light' && theme.toggle()">{{ t("profile.appearance.dark") }}</button>
         <button class="chip" :class="{ active: theme.theme === 'light' }" @click="theme.theme === 'dark' && theme.toggle()">{{ t("profile.appearance.light") }}</button>
@@ -702,7 +702,7 @@ async function saveWeight() {
     <h2 class="group-header">{{ t("profile.groups.data") }}</h2>
 
     <section v-if="healthConnectAvailable" class="card card--quiet surface-hybrid">
-      <h2 class="eyebrow">Health Connect</h2>
+      <h2 class="eyebrow">{{ t("profile.healthConnect.title") }}</h2>
       <p class="hint">
         {{ t("profile.healthConnect.hint") }}
       </p>

@@ -211,7 +211,9 @@ describe("RoutineList", () => {
     const { wrapper, router } = mountRoutineList([makeRoutine({ id: "r1" })]);
     const pushSpy = vi.spyOn(router, "push");
 
-    await wrapper.find(".card").trigger("click");
+    // The card's own open target: a dedicated overlay button, not the card root itself (which no
+    // longer carries role=button so it can't swallow the real drag/menu/actions buttons nested in it).
+    await wrapper.find(".card-open-overlay").trigger("click");
 
     expect(pushSpy).toHaveBeenCalledWith("/routines/r1");
   });

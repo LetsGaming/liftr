@@ -23,6 +23,10 @@
  * (`.card-grid > .card`): the two inner faces are plain positioned panes, not `.card`s themselves,
  * so they don't double up on that styling or break the grid's direct-child selectors.
  */
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
+
 withDefaults(
   defineProps<{
     name: string;
@@ -62,16 +66,18 @@ defineEmits<{ flip: [] }>();
         <slot name="front" />
       </div>
     </div>
-    <!-- Tappable to flip back, same as the front: there was no way back to the front except the
-         explicit "Zurück" button before this; now the whole card is symmetric, tap it either way. -->
-    <div
-      v-if="backActivated"
-      class="flip-face flip-face-back"
-      role="button"
-      tabindex="0"
-      @click="$emit('flip')"
-      @keydown.enter="$emit('flip')"
-    >
+    <!-- Unlike the front face, the back face's content (RankExerciseBack) has a real nested
+         "Stats" button, so it can't use role=button on this whole div without swallowing that
+         button's accessible name and tab stop (the exact ListCard.vue bug). A dedicated overlay
+         button carries the "flip back to front" action instead; the back face's own text and its
+         Stats button both stay independently reachable above it. -->
+    <div v-if="backActivated" class="flip-face flip-face-back">
+      <button
+        type="button"
+        class="flip-face-overlay"
+        :aria-label="t('rank.flipCard.flipBackAriaLabel', { name })"
+        @click="$emit('flip')"
+      />
       <b class="rfc-name">{{ name }}</b>
       <div class="rfc-content">
         <slot name="back" />
@@ -127,6 +133,19 @@ defineEmits<{ flip: [] }>();
   align-items: center;
   justify-content: center;
   gap: var(--sp2);
+  position: relative;
+  z-index: 1;
+}
+.flip-face-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 .flip-face-front {
   transform: rotateY(0deg);
@@ -146,6 +165,8 @@ defineEmits<{ flip: [] }>();
   transform: rotateY(0deg);
 }
 .rfc-name {
+  position: relative;
+  z-index: 1;
   font-size: 15.5px;
   max-width: 100%;
   overflow: hidden;

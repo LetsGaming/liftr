@@ -15,15 +15,29 @@
  * `min-width: 0` only overrides a flex/grid item's default auto min-width; it does nothing
  * inside a plain block/inline-block parent.
  */
+import { ref, onMounted, onUpdated } from "vue";
+
 withDefaults(defineProps<{ lines?: number; as?: string }>(), { lines: 1, as: "span" });
+
+/** Mirrors the slot's own text into `title` so a truncated/clipped label still exposes its full
+ *  text on hover/long-press, without every call site having to pass it separately. */
+const rootEl = ref<HTMLElement | null>(null);
+const fullText = ref("");
+function syncFullText() {
+  fullText.value = rootEl.value?.textContent?.trim() ?? "";
+}
+onMounted(syncFullText);
+onUpdated(syncFullText);
 </script>
 
 <template>
   <component
     :is="as"
+    ref="rootEl"
     class="truncating-label"
     :class="{ 'multi-line': lines > 1 }"
     :style="lines > 1 ? { WebkitLineClamp: lines, lineClamp: lines } : undefined"
+    :title="fullText"
   >
     <slot />
   </component>

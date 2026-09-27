@@ -165,7 +165,11 @@ const COVERAGE_CHIP_VARIANT: Record<CoverageState, "success" | "neutral" | "fire
 .ex-reps {
   color: var(--dim);
   font-size: 12px;
-  flex: none;
+  flex: 0 1 auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ex-note {
   margin-top: 4px;

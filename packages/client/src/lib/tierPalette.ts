@@ -28,12 +28,12 @@ export const TIER_PALETTE: Record<Tier, TierColorStops> = {
   initiate: { sh: "#141a26", base: "#2a3448", hi: "#5a6a88", tint: "#9aa8c4" },
   apprentice: { sh: "#16202f", base: "#2d4260", hi: "#5f86b8", tint: "#a8c4e4" },
   trainee: { sh: "#0f2733", base: "#1d5470", hi: "#3fa0c4", tint: "#9fd8ec" },
-  athlete: { sh: "#0d2c3f", base: "#1a6a9e", hi: "#2f9fe0", tint: "#a8ddf7" },
-  lifter: { sh: "#0f2246", base: "#1f5bb8", hi: "#3b8cff", tint: "#b3d2ff" },
+  athlete: { sh: "#0d2c3f", base: "#1a6a9e", hi: "#2f9fe0", tint: "#c4e8fa" },
+  lifter: { sh: "#0f2246", base: "#1f5bb8", hi: "#3b8cff", tint: "#c0daff" },
   advanced: { sh: "#171d4e", base: "#3a44c8", hi: "#6b74ff", tint: "#c3c8ff" },
-  elite: { sh: "#231a52", base: "#5b45d4", hi: "#8a6dff", tint: "#cfc4ff" },
-  expert: { sh: "#3a1152", base: "#9a2fd6", hi: "#d63aff", tint: "#efc0ff" },
-  apex: { sh: "#4a1046", base: "#c23ad0", hi: "#ff7bf0", tint: "#fff0fb" },
+  elite: { sh: "#231a52", base: "#5b45d4", hi: "#8a6dff", tint: "#dbd2ff" },
+  expert: { sh: "#3a1152", base: "#9a2fd6", hi: "#d63aff", tint: "#f7dfff" },
+  apex: { sh: "#4a1046", base: "#b235bf", hi: "#ff7bf0", tint: "#fff0fb" },
 };
 
 /** Parses a `#rrggbb` hex string into 0-255 channel values. */

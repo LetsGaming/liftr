@@ -145,8 +145,9 @@ describe("RankLifterSection", () => {
     // flip an actual transform instead of the old height-jumping content swap.
     expect(wrapper.findComponent(RankProgress).exists()).toBe(true);
 
-    // No "Zurück" button anymore: the whole back face is tappable to flip back, same as the front.
-    await wrapper.find(".flip-face-back").trigger("click");
+    // No "Zurück" button anymore: a dedicated overlay (not the whole back face, which now has a
+    // real nested "Stats" button that must stay independently clickable) flips back to front.
+    await wrapper.find(".flip-face-back .flip-face-overlay").trigger("click");
     expect(wrapper.find(".rank-flip-card").classes()).not.toContain("flipped");
     // Stays mounted after unflipping (lazy-activated once, then kept via v-show-equivalent) so a
     // second flip of the same card never remounts/reflows.
@@ -187,7 +188,9 @@ describe("RankLifterSection", () => {
     const wrapper = mount(RankLifterSection, { global: { plugins: [createPinia(), i18n, router], stubs: STUBS } });
 
     await wrapper.find(".flip-face-front").trigger("click");
-    await wrapper.find(".card button").trigger("click"); // "Rang-Statistiken", the back's first button
+    // The back face's own "Rang-Statistiken" button, not its flip-back overlay (also a <button>,
+    // but the first one in DOM order now that the overlay exists).
+    await wrapper.find(".rfc-content button").trigger("click");
 
     await vi.waitFor(() => expect(router.currentRoute.value.path).toBe("/exercises/bench-press"));
   });

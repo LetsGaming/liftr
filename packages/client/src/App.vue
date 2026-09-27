@@ -15,6 +15,8 @@ import { showingFinishRecap } from "./composables/useWorkoutChrome";
 import { isAndroid, isNative } from "./lib/platform";
 import { useActiveWorkoutStore } from "./stores/activeWorkoutStore";
 import { useOverallRankStore } from "./stores/overallRankStore";
+import { useCatalogStore } from "./stores/catalogStore";
+import { useExerciseName } from "./composables/useExerciseName";
 import { useRoutineStore } from "./stores/routineStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useStreakStore } from "./stores/streakStore";
@@ -162,6 +164,8 @@ const navItems = [
  * route.meta.title (router.ts) instead. Falls back to the app name for anything with neither.
  */
 const route = useRoute();
+const catalog = useCatalogStore();
+const { exerciseName } = useExerciseName();
 const pageTitle = computed(() => {
   const match = navItems.find((item) => item.to === route.path);
   if (match) return t(match.labelKey);
@@ -169,6 +173,15 @@ const pageTitle = computed(() => {
   // (WorkoutPage.vue/RunsPage.vue), but the route itself is unchanged and still needs a real
   // heading here, not the "Liftr" fallback.
   if (route.path === "/runs") return t("nav.runs");
+  // Drill-ins whose title should be the specific entity's name (not the generic fallback
+  // string route.meta.title resolves to): checked before that fallback below.
+  if (route.name === "exercise-detail") {
+    const exercise = catalog.bySlug(route.params.slug as string);
+    if (exercise) return exerciseName(exercise.slug, exercise.name);
+  }
+  if (route.name === "workout-detail" && typeof route.query.title === "string") {
+    return route.query.title;
+  }
   // Drill-ins with no navItems entry set their title via route.meta.title (router.ts) instead;
   // otherwise they'd silently fall through to "Liftr".
   if (route.meta.title) return t(route.meta.title);

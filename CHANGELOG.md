@@ -1,8 +1,11 @@
 # Changelog
 
 All notable changes to this project are documented in this file. Format loosely follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project does not yet follow
-Semantic Versioning strictly; see `.github/workflows/release.yml` for how a release is cut.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project follows
+[Semantic Versioning](https://semver.org/): `scripts/bump-version.mjs` enforces a strict
+`MAJOR.MINOR.PATCH` version everywhere (root and per-package `package.json`, the release tag,
+and this file's own version headings); see `.github/workflows/release.yml` for how a release is
+cut.
 
 ## [Unreleased]
 
@@ -18,6 +21,8 @@ Semantic Versioning strictly; see `.github/workflows/release.yml` for how a rele
 - Walking and hiking ranks are now benchmarked against brisk fitness-walking pace instead of ordinary comfortable walking speed; existing walk/hike ranks will drop accordingly.
 - The Ränge page header is more compact on mobile: the "Rekorde ansehen" link now sits next to the Workout/Läufe tabs instead of its own full-width row, so the rank list starts higher up the screen.
 - On the Übersicht activity filter, the reset pill now says "Alle" instead of "Beides" once there are more than two activity types to filter by (workout, run, walk, hike), since "Beides" ("Both") stopped making sense past two.
+- The exercise detail page's "Statistiken" tab is now labeled "Statistik" in German, so it no longer gets clipped on narrow phones.
+- A workout's warmup sets now carry a small "W" badge instead of relying on a subtle color difference alone to tell them apart from working sets.
 
 ### Fixed
 
@@ -27,6 +32,16 @@ Semantic Versioning strictly; see `.github/workflows/release.yml` for how a rele
 - Password-strength errors during setup/signup are now detected reliably rather than by matching the server's English error text, which could occasionally show the wrong message.
 - On the Ränge tier ladder, a never-ranked account now highlights its actual starting division (the lowest one) on the bottom tier instead of showing no highlighted division at all.
 - The Übersicht activity filter's "Alle"/"Beides" pill and its dropdown filter now line up at the same height instead of one sitting slightly taller than the other.
+- In the routine builder, an exercise's name no longer gets squeezed out of view by a long set summary (many sets, or decimal weights) on the arrange/review screens.
+- The "Alle Details anpassen" arrange step now shows equipment names in German instead of the raw English catalog value.
+- The exercise detail page's Statistik chart no longer clips its best-lift value off the edge of the screen.
+- The exercise detail and workout detail pages' titles (used by the browser tab and screen readers) now show the actual exercise or workout name instead of a generic placeholder.
+- Routine and route cards now expose their controls (open, drag, menu, start) as separate, clearly labeled actions to screen readers instead of one long unlabeled button.
+- A rank card's "flip back" and "view exercise stats" actions on the Ränge page are now separate, clearly labeled controls instead of one action swallowing the other.
+- Improved color contrast on rank tier badges, chip labels, and delete buttons so they meet accessibility contrast guidelines.
+- Fixed two Profil sections ("Trainingsprofil", "Darstellung") whose card title duplicated their section heading verbatim.
+- The Übersicht page's "Mehr anzeigen" and "Mehr laden" activity controls no longer both appear at once with unclear, overlapping meanings.
+- Several Übersicht cards (Erholungszone, today's routine, first-run tier ladder, Entdecken, activity feed) no longer stretch awkwardly wide with empty space on larger screens.
 
 ## [1.8.0] - 2026-09-24
 

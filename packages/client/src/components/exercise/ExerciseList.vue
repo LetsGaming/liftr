@@ -252,12 +252,12 @@ button.equipment-toggle.active {
   text-transform: capitalize;
 }
 .missing-note {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--warning-hi);
 }
 .recommended-note {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--faint);
 }

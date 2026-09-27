@@ -375,7 +375,7 @@ function retryFailed() {
 
         <section class="discover">
           <div class="eyebrow tile-head">{{ t("overview.discover.title") }}</div>
-          <div class="progress-tiles">
+          <div class="discover-tiles">
             <router-link to="/ranks" class="tile discover-tile surface-hybrid">
               <div class="discover-icon"><AppIcon name="trophy" /></div>
               <b>{{ t("overview.discover.rankAnalysis") }}</b>
@@ -463,7 +463,13 @@ function retryFailed() {
             </button>
           </template>
 
-          <Button v-if="history.nextCursor" variant="secondary" block :disabled="history.loadingMore" @click="history.loadMore()">
+          <Button
+            v-if="history.nextCursor && activityShownCount >= filteredActivity.length"
+            variant="secondary"
+            block
+            :disabled="history.loadingMore"
+            @click="history.loadMore()"
+          >
             {{ history.loadingMore ? t("overview.activity.loadingMore") : t("overview.activity.loadMore") }}
           </Button>
         </section>
@@ -488,6 +494,17 @@ function retryFailed() {
   }
   .progress-tiles {
     grid-template-columns: repeat(3, 1fr);
+  }
+  /* Unlike .progress-tiles above, these sections hold a fixed amount of content (a hero card, a
+     CTA, a tier ladder, an activity list): stretching them to --content-w-wide's full width just
+     leaves the extra space empty rather than giving their content anywhere useful to grow. */
+  .tile--priority,
+  .first-run-ladder,
+  .discover,
+  .activity {
+    max-width: var(--content-w-standard);
+    width: 100%;
+    margin-inline: auto;
   }
 }
 
@@ -593,6 +610,14 @@ function retryFailed() {
 }
 
 .progress-tiles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp3);
+}
+/* Its own class, not a reuse of .progress-tiles: .discover only ever holds one tile, so it must
+   not pick up .progress-tiles's desktop 3-column rule (that stretched this single tile into a
+   1-of-3 grid cell instead of a full-width card). */
+.discover-tiles {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--sp3);

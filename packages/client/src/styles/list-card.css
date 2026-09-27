@@ -91,6 +91,27 @@
     font-size: 18px;
   }
 }
+/* Sits under every other direct child (z-index:0 vs. their z-index:1) so it only intercepts
+   taps/clicks in the dead space those children don't cover. */
+.card-open-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.card-head,
+.card-body,
+.card-meta,
+.card-actions,
+.card-footer {
+  position: relative;
+  z-index: 1;
+}
 .card-head {
   display: flex;
   align-items: center;

@@ -106,6 +106,7 @@ profile:
     data: Data
     about: About
   appearance:
+    title: "Theme & Language"
     language: Language
     dark: Dark
     light: Light
@@ -128,6 +129,7 @@ profile:
     current: "Current:"
     noEntry: "Log your weight above. Until then, rank calculations use 75 kg as a placeholder."
   trainingProfile:
+    title: "Personal Details"
     hint: "Determines the starting weights the routine wizard suggests until you've logged an exercise for the first time."
     sex:
       label: Sex
@@ -235,6 +237,7 @@ profile:
     confirm: "Really delete?"
     cta: Delete account
   healthConnect:
+    title: "Health Connect"
     hint: "Import runs you recorded with your watch, including the route, as soon as Health Connect provides one. Connect once, and Liftr then syncs new runs automatically on every app start; the button can also trigger a sync anytime."
     syncing: "Syncing…"
     syncNow: Sync now
@@ -394,6 +397,7 @@ workoutDetailPage:
   loadError: "This workout couldn't be loaded. Maybe no connection to the server."
   exercises: Exercises
   prTitle: Personal record
+  warmupTitle: Warmup set
   shareTitle: My Liftr workout
   delete:
     deleting: "Deleting…"
@@ -679,6 +683,8 @@ exerciseUi:
     altBack: Back view
 rank:
   decayCaption: "Previous best: {tier} {division}"
+  flipCard:
+    flipBackAriaLabel: "{name}: back to front"
   tierLadder:
     stepsLabel: "{n} steps"
   lifterSection:

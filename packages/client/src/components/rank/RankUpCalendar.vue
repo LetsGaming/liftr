@@ -108,10 +108,13 @@ const total = computed(() => days.value.reduce((sum, d) => sum + d.count, 0));
   color: var(--on-blue-lo);
 }
 .dot.active {
-  /* A rank-up is a tier event, so the dot carries the tier's own accent as the bright stop.
-     Keeps --blue as the base stop rather than --tier-deep, since b1 tones run near-black at
-     low tiers and would read as a muddy dot at 32px. */
-  background: linear-gradient(160deg, var(--tier-accent, var(--blue-hi)), var(--blue));
+  /* Solid tier metal (--b2), not a two-stop gradient: a gradient's rendered midpoint color can't
+     be contrast-checked against one fixed text color across all 9 possible tier accents (dark
+     initiate vs. near-white apex have no text color safe against both), but every tier's own
+     --b2/--tt pairing is already verified >= 4.5:1 (tokens.css's tier ramp). --tt/--b2 cascade
+     down from the app shell's tier class the same way --tier-accent does. */
+  background: var(--b2, var(--blue-lo));
+  color: var(--tt, var(--on-blue-lo));
 }
 /* Small accent marking which weekdays had at least one rank-up this week; only present in the
    DOM for days with count > 0 (v-if above), not just visually hidden. A real element rather

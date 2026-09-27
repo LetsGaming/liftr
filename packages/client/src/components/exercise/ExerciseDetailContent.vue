@@ -230,6 +230,19 @@ function missingBadge(req: TieredRequirement): string | null {
   backdrop-filter: blur(var(--surface-hybrid-blur));
   -webkit-backdrop-filter: blur(var(--surface-hybrid-blur));
 }
+/* This strip is the only bare (non -sm) .tab-pill consumer in the client, so overriding its
+   flex here is safe: tokens.css's shared rule forces flex:1 (equal-width pills), which truncates
+   the longest label ("Statistiken") on narrow screens. Size to content instead. */
+.tab-strip :deep(.tab-pill) {
+  flex: 0 1 auto;
+  min-width: 64px;
+}
+@media (max-width: 380px) {
+  .tab-strip :deep(.tab-pill) {
+    font-size: 12px;
+    padding: 6px 6px;
+  }
+}
 
 /* The Rang tab's own hero readout: the one place <RankProgress variant="card"> still gets a
    full tier-fill background: this is a single reward moment in a tab panel, not a grid cell with
@@ -240,15 +253,19 @@ function missingBadge(req: TieredRequirement): string | null {
 .rank-reward {
   padding: var(--sp3) var(--sp4);
 }
-.wide-chart {
-  width: 100%;
-  margin-bottom: var(--sp4);
-}
 /* ProgressChart.vue's own scoped layout is a compact flex row (fixed 140px spark + inline
    latest-value label) sized for the Ränge grid's card slot. Full page width needs the spark to
    actually grow: stack chart-above-label instead of forcing the label to share a row it no
-   longer fits. */
-.wide-chart :deep(.progress-chart) {
+   longer fits. No `:deep()` for the flex-direction/align-items/gap part: `.wide-chart` and
+   `.progress-chart` are the SAME element (this class lands on ProgressChart's own root, which
+   already carries this file's scope attribute via Vue's normal fallthrough), and Vue's `:deep()`
+   always compiles to a descendant combinator regardless of source spacing — `.wide-chart
+   :deep(.progress-chart)` and `.wide-chart:deep(.progress-chart)` both become `.wide-chart[data-v]
+   .progress-chart`, which can never match its own element. A plain rule on `.wide-chart` needs no
+   `:deep()` at all here. */
+.wide-chart {
+  width: 100%;
+  margin-bottom: var(--sp4);
   flex-direction: column;
   align-items: stretch;
   gap: var(--sp2);
