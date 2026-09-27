@@ -74,6 +74,48 @@ jobs:
     if: needs.check-ci.outputs.already-passed != 'true'
     uses: ./.github/workflows/ci.yml
 
+  docker-build:
+    needs: [check-ci, test]
+    # See build-apk's matching comment: `test` can be legitimately skipped rather than succeeded.
+    if: |
+      always() &&
+      needs.check-ci.result == 'success' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build Docker image
+        run: docker build -t liftr:ci .
+
+      - name: Boot a container from the built image
+        run: docker run -d --name liftr-ci -p 3001:3001 liftr:ci
+
+      - name: Wait for the container to report healthy
+        run: |
+          deadline=$((SECONDS + 60))
+          while true; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' liftr-ci)
+            if [[ "$status" == "healthy" ]]; then
+              echo "Container is healthy."
+              break
+            fi
+            if [[ "$status" == "unhealthy" || "$SECONDS" -ge "$deadline" ]]; then
+              echo "::error::Container did not become healthy (status: $status)"
+              docker logs liftr-ci
+              exit 1
+            fi
+            sleep 3
+          done
+
+      - name: Show container logs
+        if: always()
+        run: docker logs liftr-ci
+
+      - name: Stop and remove container
+        if: always()
+        run: docker rm -f liftr-ci
+
   build-apk:
     needs: [check-ci, test]
     # `test` is legitimately skipped (not failed) when check-ci found this commit already green —
