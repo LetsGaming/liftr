@@ -179,8 +179,8 @@ importers:
         specifier: ^13.1.1
         version: 13.1.1
       '@fastify/multipart':
-        specifier: ^10.1.1
-        version: 10.1.1
+        specifier: ^10.1.2
+        version: 10.1.2
       '@fastify/rate-limit':
         specifier: ^11.2.0
         version: 11.2.0
@@ -215,8 +215,8 @@ importers:
         specifier: ^10.0.5
         version: 10.0.5
       drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
+        specifier: ^0.45.3
+        version: 0.45.3(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
       eslint:
         specifier: ^10.10.0
         version: 10.11.0(supports-color@10.2.2)
@@ -293,14 +293,14 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.5.2)
       '@ionic/vue':
-        specifier: ^9.0.4
-        version: 9.0.4(@stencil/core@4.45.0)(vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.43(typescript@5.9.3)))(rolldown@1.2.9)(rollup@4.63.4)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@5.9.3)))(vue@3.5.43(typescript@5.9.3))
+        specifier: ^9.0.5
+        version: 9.0.5(@stencil/core@4.45.0)(vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.43(typescript@5.9.3)))(rolldown@1.2.9)(rollup@4.63.4)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@5.9.3)))(vue@3.5.43(typescript@5.9.3))
       '@liftr/shared':
         specifier: workspace:*
         version: link:../shared
       capacitor-health:
-        specifier: ^8.2.0
-        version: 8.2.0(patch_hash=7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b)(@capacitor/core@8.5.2)
+        specifier: ^8.4.0
+        version: 8.4.0(patch_hash=7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b)(@capacitor/core@8.5.2)
       idb:
         specifier: ^8.0.3
         version: 8.0.3
@@ -354,8 +354,8 @@ importers:
         specifier: ^13.0.3
         version: 13.0.3
       drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
+        specifier: ^0.45.3
+        version: 0.45.3(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.13
@@ -379,8 +379,8 @@ importers:
         specifier: workspace:*
         version: link:../shared
       drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
+        specifier: ^0.45.3
+        version: 0.45.3(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -407,17 +407,17 @@ importers:
         specifier: ^13.1.1
         version: 13.1.1
       '@fastify/multipart':
-        specifier: ^10.1.1
-        version: 10.1.1
+        specifier: ^10.1.2
+        version: 10.1.2
       '@fastify/rate-limit':
         specifier: ^11.2.0
         version: 11.2.0
       '@fastify/static':
-        specifier: ^10.1.4
-        version: 10.1.4
+        specifier: ^10.1.5
+        version: 10.1.5
       '@garmin/fitsdk':
-        specifier: ^21.214.0
-        version: 21.214.0
+        specifier: ^21.217.0
+        version: 21.217.0
       '@liftr/db':
         specifier: workspace:*
         version: link:../db
@@ -425,8 +425,8 @@ importers:
         specifier: workspace:*
         version: link:../shared
       drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
+        specifier: ^0.45.3
+        version: 0.45.3(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)
       fast-xml-parser:
         specifier: ^5.11.1
         version: 5.11.1
@@ -1738,8 +1738,8 @@ packages:
   '@fastify/merge-json-schemas@0.2.1':
     resolution: {integrity: sha512-OA3KGBCy6KtIvLf8DINC5880o5iBlDX4SxzLQS8HorJAbqluzLRn80UXU0bxZn7UOFhFgpRJDasfwn9nG4FG4A==}
 
-  '@fastify/multipart@10.1.1':
-    resolution: {integrity: sha512-jyRHgnFVdchZRKjJRf6kGPEiDp3Bg4MLo4d6/krt8Z4RutLrqL5IYWihx8a4tnv7Tu7JfuHcyC+dU9zPzTxiSg==}
+  '@fastify/multipart@10.1.2':
+    resolution: {integrity: sha512-WHsqW5ffDXCbXXtdBQDryxu58fQvFPVGh4E4MlCO6hwCLNm0lYTCS6GKXUw2P64REDoECUNpMVvtMMstdIyBjQ==}
 
   '@fastify/proxy-addr@5.1.1':
     resolution: {integrity: sha512-zv07Y9GEuDsJPegZoDFd4SDWaZOW8N2pa0GSrYmKpId/tjt1Hgo3BjZBVjdVpfVrHaA+Qv5jawtS2O50J5xM9g==}
@@ -1750,14 +1750,14 @@ packages:
   '@fastify/send@4.1.1':
     resolution: {integrity: sha512-BYo+EiaKwlxH+WetGk6hAs1d39iP0y1gqB8lGF/qwkJ9ZZ/cBY1vx5NvExb9Sc3yRMFjD5X4Eyh4e4+TzRkzdw==}
 
-  '@fastify/static@10.1.4':
-    resolution: {integrity: sha512-YWYmXV0c3t/3DDyV32kRXJTgTY16FOkqtQ4mmBjbkWeukGR5n+Sr+7ppknNpS7hiRPrLU9zcySZZ1nLJVHTZkg==}
+  '@fastify/static@10.1.5':
+    resolution: {integrity: sha512-3r0ZFXo82nKlPzySOUYhwWVfPZStfiwjmyevkX7cJWL2yXmEzl0Rpxv+L6L1R4OxqvlDGqf3g8OdBzILKgqe6w==}
 
   '@fastify/swagger@9.8.1':
     resolution: {integrity: sha512-VpHMnqZTY8iBZYJE8WWkbKPrXIYWy2rDfIf5qLr6DzZSpQYZ+KxQVcJFiq/AMlvNwI4gCBd66++iUlxXXGT0IQ==}
 
-  '@garmin/fitsdk@21.214.0':
-    resolution: {integrity: sha512-c3ydrRYD0kPnX8USl+JEyJ9smhol3/JRxcU9QVZUvmb7ZBoGwhsqCAe7wXhwMJnMba97x4x+9J/yXr6WYUVaYQ==}
+  '@garmin/fitsdk@21.217.0':
+    resolution: {integrity: sha512-oIkDo28Yrv8ZhJiOTBZWn8Cb9kIkcAx7oVfNtgqRuNvzbCyFWdLg1StUVECjIo9rbtpvTDuW8Jqd3PTnVapiAw==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2007,8 +2007,8 @@ packages:
     resolution: {integrity: sha512-TshtaFQsovB4NWRBydbNFawql6yul7d5bMiW1WYYf17hd99V6xdDdk3vtF51bw6sLkxON3bDQpWsnUc9/hVo3g==}
     engines: {node: '>=16.0.0'}
 
-  '@ionic/core@9.0.4':
-    resolution: {integrity: sha512-tNYTxBt8+Tla61B8OwAeEHuTWuJdJn6+buftCNikhPHi5TW9MbduIPsWn+D8KtlWhZKPVshVyvItfWcYxMN3JA==}
+  '@ionic/core@9.0.5':
+    resolution: {integrity: sha512-Fo3hC0f7YI3XP0eAUUlm49q00u0OG0z55+EZ+s2YZHCUyNL1xq20JKtiPf79pn2tJ8CAYw4u52x6QcWUkL4P3A==}
     engines: {node: '>= 16'}
 
   '@ionic/utils-array@2.1.6':
@@ -2039,8 +2039,8 @@ packages:
     resolution: {integrity: sha512-3cKScz9Jx2/Pr9ijj1OzGlBDfcmx7OMVBt4+P1uRR0SSW4cm1/y3Mo4OY3lfkuaYifMNBW8Wz6lQHbs1bihr7A==}
     engines: {node: '>=16.0.0'}
 
-  '@ionic/vue@9.0.4':
-    resolution: {integrity: sha512-tFGJnnsD1ODiu8daRtOdoB/ee+N7qkaqXZvpFFqpGgTgFcsfwf4gJCCg5JsCrKfoRb0dS8LAyrwI8WZ7k+tUhw==}
+  '@ionic/vue@9.0.5':
+    resolution: {integrity: sha512-d5HDYRynpr6OlMO4gawIPR4sSEBnc8yCtYWTx6W616HSMi3tEloncj2HPMQC/f8D75wTOTaVGDHkGg+LETDgDQ==}
 
   '@isaacs/cliui@9.0.0':
     resolution: {integrity: sha512-AokJm4tuBHillT+FpMtxQ60n8ObyXBatq7jD2/JA9dxbDDokKQm8KMht5ibGzLVU9IJDIKK4TPKgMHEYMn3lMg==}
@@ -2872,8 +2872,8 @@ packages:
   caniuse-lite@1.0.30001810:
     resolution: {integrity: sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg==}
 
-  capacitor-health@8.2.0:
-    resolution: {integrity: sha512-ppnw6GIs3lHHlX3uNDJXLfJz5LDZ33JOiEe96qoYrHpy3zM3dKnpV9x/imczRAMdPOaYoABPdE+kxkf04QZHwg==}
+  capacitor-health@8.4.0:
+    resolution: {integrity: sha512-T5qXqz9TppU57PNIHQVk17lNIixUZrVDCotiCR97muwamL9bi+Z/mnLVJoxfLYxqDyXKCVGZJLDbTyYLtn/1Ag==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -3042,8 +3042,8 @@ packages:
     resolution: {integrity: sha512-7OZcmQUrdGI+DUNNsKBn1aW8qSoKuTH7d0mYgSP8bAzdFzKoovxEFnoGQp2dVs82EOJeYycqRtciopszwUf8bw==}
     hasBin: true
 
-  drizzle-orm@0.45.2:
-    resolution: {integrity: sha512-kY0BSaTNYWnoDMVoyY8uxmyHjpJW1geOmBMdSSicKo9CIIWkSxMIj2rkeSR51b8KAPB7m+qysjuHme5nKP+E5Q==}
+  drizzle-orm@0.45.3:
+    resolution: {integrity: sha512-CAloER21cDdcgZ1OmjrZX82EeRNsdP+y0onX/eyoYDaYzki/adrAa91lzM5jWh7zZPK4qUbw/6LGv9J+A+uizA==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -3051,6 +3051,7 @@ packages:
       '@libsql/client': '>=0.10.0'
       '@libsql/client-wasm': '>=0.10.0'
       '@neondatabase/serverless': '>=0.10.0'
+      '@netlify/db': '>=0.4.0'
       '@op-engineering/op-sqlite': '>=2'
       '@opentelemetry/api': ^1.4.1
       '@planetscale/database': '>=1.13'
@@ -3086,6 +3087,8 @@ packages:
       '@libsql/client-wasm':
         optional: true
       '@neondatabase/serverless':
+        optional: true
+      '@netlify/db':
         optional: true
       '@op-engineering/op-sqlite':
         optional: true
@@ -6236,7 +6239,7 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
-  '@fastify/multipart@10.1.1':
+  '@fastify/multipart@10.1.2':
     dependencies:
       '@fastify/busboy': 3.2.2
       '@fastify/deepmerge': 3.2.1
@@ -6264,7 +6267,7 @@ snapshots:
       http-errors: 2.0.1
       mime: 3.0.0
 
-  '@fastify/static@10.1.4':
+  '@fastify/static@10.1.5':
     dependencies:
       '@fastify/accept-negotiator': 2.1.0
       '@fastify/error': 4.2.0
@@ -6284,7 +6287,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@garmin/fitsdk@21.214.0': {}
+  '@garmin/fitsdk@21.217.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -6482,7 +6485,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/core@9.0.4':
+  '@ionic/core@9.0.5':
     dependencies:
       '@stencil/core': 4.45.0
       ionicons: 8.1.0
@@ -6556,9 +6559,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/vue@9.0.4(@stencil/core@4.45.0)(vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.43(typescript@5.9.3)))(rolldown@1.2.9)(rollup@4.63.4)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@5.9.3)))(vue@3.5.43(typescript@5.9.3))':
+  '@ionic/vue@9.0.5(@stencil/core@4.45.0)(vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.43(typescript@5.9.3)))(rolldown@1.2.9)(rollup@4.63.4)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@5.9.3)))(vue@3.5.43(typescript@5.9.3))':
     dependencies:
-      '@ionic/core': 9.0.4
+      '@ionic/core': 9.0.5
       '@stencil/vue-output-target': 0.14.2(@stencil/core@4.45.0)(vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.43(typescript@5.9.3)))(rolldown@1.2.9)(rollup@4.63.4)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.43(typescript@5.9.3)))(vue@3.5.43(typescript@5.9.3))
       ionicons: 8.1.0
     transitivePeerDependencies:
@@ -7324,7 +7327,7 @@ snapshots:
 
   caniuse-lite@1.0.30001810: {}
 
-  capacitor-health@8.2.0(patch_hash=7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b)(@capacitor/core@8.5.2):
+  capacitor-health@8.4.0(patch_hash=7f8377035cb9811c94ef43cb5eeb482959c5f34cdf080f5efee021f28039ad1b)(@capacitor/core@8.5.2):
     dependencies:
       '@capacitor/core': 8.5.2
 
@@ -7479,7 +7482,7 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3):
+  drizzle-orm@0.45.3(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3):
     optionalDependencies:
       '@types/better-sqlite3': 7.6.13
       better-sqlite3: 13.0.3
