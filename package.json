@@ -26,9 +26,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@fastify/helmet": "^13.1.1",
-    "@fastify/multipart": "^10.1.1",
-    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/helmet": "^13.1.2",
+    "@fastify/multipart": "^10.1.3",
+    "@fastify/rate-limit": "^11.2.1",
     "@intlify/unplugin-vue-i18n": "^11.2.5",
     "@liftr/db": "workspace:*",
     "@liftr/shared": "workspace:*",
@@ -39,7 +39,7 @@
     "@vitejs/plugin-vue": "^6.0.9",
     "@vue/test-utils": "^2.5.1",
     "concurrently": "^10.0.5",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.45.4",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.11.0",
@@ -54,8 +54,8 @@
     "vitest": "^2.1.9",
     "vue": "^3.5.43",
     "vue-eslint-parser": "^10.4.1",
-    "vue-i18n": "^11.4.12",
-    "vue-router": "^5.3.1",
+    "vue-i18n": "^11.4.14",
+    "vue-router": "^5.4.0",
     "yaml": "^2.9.1"
   },
   "packageManager": "pnpm@12.6.0"
