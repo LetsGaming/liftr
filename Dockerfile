@@ -44,7 +44,7 @@ COPY packages/client/package.json packages/client/package.json
 # .node binary doesn't need it at runtime, only the compile step does.
 COPY patches patches
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
- && pnpm install --prod --frozen-lockfile \
+ && pnpm install --prod --frozen-lockfile --filter @liftr/server... --filter @liftr/ingest... \
  && apt-get purge -y --auto-remove python3 make g++ \
  && rm -rf /var/lib/apt/lists/*
 
