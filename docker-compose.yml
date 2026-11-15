@@ -3,6 +3,13 @@ services:
     build: .
     image: liftr:local
     restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    mem_limit: 512m
+    pids_limit: 200
+    cpus: 0.5
     env_file: .env
     environment:
       NODE_ENV: production
