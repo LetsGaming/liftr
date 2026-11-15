@@ -67,6 +67,10 @@ ENV LIFTR_DB_PATH=/data/liftr.db \
 # /data is a named volume mounted at runtime, so it inherits root ownership from Docker unless
 # chown'd here up front.
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# The package manager CLIs are unused at runtime and bundle their own vulnerable dependencies.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/lib/node_modules/pnpm \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
+
 RUN mkdir -p /data && chown -R node:node /data /app
 USER node
 
