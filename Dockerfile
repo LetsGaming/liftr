@@ -66,6 +66,7 @@ ENV LIFTR_DB_PATH=/data/liftr.db \
 # node:*-slim images ship a non-root `node` user (uid/gid 1000) — run as that instead of root.
 # /data is a named volume mounted at runtime, so it inherits root ownership from Docker unless
 # chown'd here up front.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /data && chown -R node:node /data /app
 USER node
 
